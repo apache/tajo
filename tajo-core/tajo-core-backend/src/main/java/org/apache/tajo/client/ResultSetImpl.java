@@ -68,12 +68,12 @@ public class ResultSetImpl implements ResultSet {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.desc = desc;
-    this.schema = desc.getMeta().getSchema();
+    this.schema = desc.getSchema();
     if(desc != null) {
       fs = desc.getPath().getFileSystem(conf);
-      this.totalRow = desc.getMeta().getStat() != null ? desc.getMeta().getStat().getNumRows() : 0;
+      this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
       Collection<Fragment> frags = getFragments(desc.getMeta(), desc.getPath());
-      scanner = new MergeScanner(conf, desc.getMeta(), frags);
+      scanner = new MergeScanner(conf, desc.getMeta(), schema, frags);
     }
     init();
   }
@@ -107,7 +107,7 @@ public class ResultSetImpl implements ResultSet {
       if (files[i].getLen() == 0) {
         continue;
       }
-      fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), meta, 0l, files[i].getLen()));
+      fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), 0l, files[i].getLen()));
     }
     return fraglist;
   }
@@ -675,7 +675,7 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    return new ResultSetMetaDataImpl(desc.getMeta());
+    return new ResultSetMetaDataImpl(desc);
   }
 
   /*

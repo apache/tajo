@@ -37,11 +37,11 @@ public class TestDDLBuilder {
     Schema schema = new Schema();
     schema.addColumn("name", TajoDataTypes.Type.BLOB);
     schema.addColumn("addr", TajoDataTypes.Type.TEXT);
-    TableMeta meta = CatalogUtil.newTableMeta(schema, CatalogProtos.StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
     meta.putOption("csv.delimiter", "|");
     meta.putOption(TableMeta.COMPRESSION_CODEC, GzipCodec.class.getName());
 
-    TableDesc desc = new TableDescImpl("table1", meta, new Path("/table1"));
+    TableDesc desc = new TableDesc("table1", schema, meta, new Path("/table1"));
 
     assertEquals(FileUtil.readTextFile(new File("src/test/results/testBuildDDL.result")), DDLBuilder.buildDDL(desc));
   }

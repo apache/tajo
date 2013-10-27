@@ -66,14 +66,14 @@ public class TestPlannerUtil {
     schema3.addColumn("deptName", Type.TEXT);
     schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc people = new TableDescImpl("employee", meta, CommonTestingUtil.getTestDir());
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableDesc people = new TableDesc("employee", schema, meta, CommonTestingUtil.getTestDir());
     catalog.addTable(people);
 
-    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
+    TableDesc student = new TableDesc("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(student);
 
-    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
+    TableDesc score = new TableDesc("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,

@@ -33,7 +33,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.util.FileUtil;
 
 import java.io.IOException;
 
@@ -46,7 +45,7 @@ public class BackendTestingUtil {
     mockupSchema = new Schema();
     mockupSchema.addColumn("deptname", Type.TEXT);
     mockupSchema.addColumn("score", Type.INT4);
-    mockupMeta = CatalogUtil.newTableMeta(mockupSchema, StoreType.CSV);
+    mockupMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 	}
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)
@@ -62,7 +61,7 @@ public class BackendTestingUtil {
     }
     fs.mkdirs(tablePath);
 
-    appender = sm.getAppender(mockupMeta, filePath);
+    appender = sm.getAppender(mockupMeta, mockupSchema, filePath);
     appender.init();
 
     int deptSize = 10000;

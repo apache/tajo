@@ -44,32 +44,32 @@ public class StatisticsUtil {
     return aggregated;
   }
 
-  public static TableStat aggregateTableStat(List<TableStat> tableStats) {
-    if(tableStats == null || tableStats.size() == 0 || tableStats.get(0) == null)
+  public static TableStats aggregateTableStat(List<TableStats> tableStatses) {
+    if(tableStatses == null || tableStatses.size() == 0 || tableStatses.get(0) == null)
       return null;
-    TableStat aggregated = new TableStat();
+    TableStats aggregated = new TableStats();
 
-    ColumnStat [] css = null;
-    if (tableStats.size() > 0) {
-      for (TableStat ts : tableStats) {
+    ColumnStats[] css = null;
+    if (tableStatses.size() > 0) {
+      for (TableStats ts : tableStatses) {
         // A TableStats cannot contain any ColumnStat if there is no output.
         // So, we should consider such a condition.
         if (ts.getColumnStats().size() > 0) {
-          css = new ColumnStat[ts.getColumnStats().size()];
+          css = new ColumnStats[ts.getColumnStats().size()];
           for (int i = 0; i < css.length; i++) {
-            css[i] = new ColumnStat(ts.getColumnStats().get(i).getColumn());
+            css[i] = new ColumnStats(ts.getColumnStats().get(i).getColumn());
           }
           break;
         }
       }
     }
 
-    for (TableStat ts : tableStats) {
+    for (TableStats ts : tableStatses) {
       // if there is empty stats
       if (ts.getColumnStats().size() > 0) {
         // aggregate column stats for each table
         for (int i = 0; i < ts.getColumnStats().size(); i++) {
-          ColumnStat cs = ts.getColumnStats().get(i);
+          ColumnStats cs = ts.getColumnStats().get(i);
           if (cs == null) {
             LOG.warn("ERROR: One of column stats is NULL (expected column: " + css[i].getColumn() + ")");
             continue;
@@ -102,25 +102,25 @@ public class StatisticsUtil {
     return aggregated;
   }
 
-  public static TableStat computeStatFromUnionBlock(Collection<TableStat> stats) {
-    TableStat stat = new TableStat();
-    TableStat childStat;
+  public static TableStats computeStatFromUnionBlock(Collection<TableStats> stats) {
+    TableStats stat = new TableStats();
+    TableStats childStat;
     long avgRows = 0, numBytes = 0, numRows = 0;
     int numBlocks = 0, numPartitions = 0;
-    List<ColumnStat> columnStats = Lists.newArrayList();
+    List<ColumnStats> columnStatses = Lists.newArrayList();
 
-    Iterator<TableStat> it = stats.iterator();
+    Iterator<TableStats> it = stats.iterator();
     while (it.hasNext()) {
       childStat = it.next();
       avgRows += childStat.getAvgRows();
-      columnStats.addAll(childStat.getColumnStats());
+      columnStatses.addAll(childStat.getColumnStats());
       numBlocks += childStat.getNumBlocks();
       numBytes += childStat.getNumBytes();
       numPartitions += childStat.getNumPartitions();
       numRows += childStat.getNumRows();
     }
 
-    stat.setColumnStats(columnStats);
+    stat.setColumnStats(columnStatses);
     stat.setNumBlocks(numBlocks);
     stat.setNumBytes(numBytes);
     stat.setNumPartitions(numPartitions);

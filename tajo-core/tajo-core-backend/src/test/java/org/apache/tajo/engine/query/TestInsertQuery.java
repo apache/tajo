@@ -64,7 +64,7 @@ public class TestInsertQuery {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(5, desc.getMeta().getStat().getNumRows().intValue());
+    assertEquals(5, desc.getStats().getNumRows().intValue());
   }
 
   @Test
@@ -80,8 +80,8 @@ public class TestInsertQuery {
     res = tpch.execute("insert overwrite into " + tableName + " select l_orderkey from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(5, desc.getMeta().getStat().getNumRows().intValue());
-    assertEquals(originalDesc.getMeta().getSchema(), desc.getMeta().getSchema());
+    assertEquals(5, desc.getStats().getNumRows().intValue());
+    assertEquals(originalDesc.getSchema(), desc.getSchema());
   }
 
   @Test
@@ -98,7 +98,7 @@ public class TestInsertQuery {
         + " (col1, col3) select l_orderkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(5, desc.getMeta().getStat().getNumRows().intValue());
+    assertEquals(5, desc.getStats().getNumRows().intValue());
 
     res = tpch.execute("select * from " + tableName);
     assertTrue(res.next());
@@ -133,7 +133,7 @@ public class TestInsertQuery {
     assertFalse(res.next());
     res.close();
 
-    assertEquals(originalDesc.getMeta().getSchema(), desc.getMeta().getSchema());
+    assertEquals(originalDesc.getSchema(), desc.getSchema());
   }
 
   @Test
@@ -148,7 +148,7 @@ public class TestInsertQuery {
     res = tpch.execute("insert overwrite into " + tableName + " select * from lineitem where l_orderkey = 3");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(2, desc.getMeta().getStat().getNumRows().intValue());
+    assertEquals(2, desc.getStats().getNumRows().intValue());
   }
 
   @Test
@@ -163,7 +163,7 @@ public class TestInsertQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(tableName));
     TableDesc orderKeys = catalog.getTableDesc(tableName);
-    assertEquals(5, orderKeys.getMeta().getStat().getNumRows().intValue());
+    assertEquals(5, orderKeys.getStats().getNumRows().intValue());
 
     // this query will result in the two rows.
     res = tpch.execute(
@@ -173,7 +173,7 @@ public class TestInsertQuery {
 
     assertTrue(catalog.existsTable(tableName));
     orderKeys = catalog.getTableDesc(tableName);
-    assertEquals(2, orderKeys.getMeta().getStat().getNumRows().intValue());
+    assertEquals(2, orderKeys.getStats().getNumRows().intValue());
   }
 
   @Test
@@ -188,7 +188,7 @@ public class TestInsertQuery {
     res = tpch.execute("insert overwrite into " + tableName + " select * from lineitem where l_orderkey = 3");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(2, desc.getMeta().getStat().getNumRows().intValue());
+    assertEquals(2, desc.getStats().getNumRows().intValue());
   }
 
   @Test
@@ -213,7 +213,7 @@ public class TestInsertQuery {
     res = tpch.execute("insert overwrite into " + tableName + " select  l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey = 3");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
-    assertEquals(2, desc.getMeta().getStat().getNumRows().intValue());
+    assertEquals(2, desc.getStats().getNumRows().intValue());
 
     FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
     assertTrue(fs.exists(desc.getPath()));

@@ -37,13 +37,13 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.exception.InvalidQueryException;
+import org.apache.tajo.engine.exception.UndefinedFunctionException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.exception.InvalidQueryException;
-import org.apache.tajo.engine.exception.UndefinedFunctionException;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
 
@@ -184,11 +184,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       try {
         FileSystem fs = desc.getPath().getFileSystem(new Configuration());
         FileStatus status = fs.getFileStatus(desc.getPath());
-        if (desc.getMeta().getStat() != null && (status.isDirectory() || status.isFile())) {
+        if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
           ContentSummary summary = fs.getContentSummary(desc.getPath());
           if (summary != null) {
             long volume = summary.getLength();
-            desc.getMeta().getStat().setNumBytes(volume);
+            desc.getStats().setNumBytes(volume);
           }
         }
       } catch (Throwable t) {
@@ -848,7 +848,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           targetSchema.addColumn(targetColumn);
         }
       } else {
-        Schema targetTableSchema = desc.getMeta().getSchema();
+        Schema targetTableSchema = desc.getSchema();
         for (int i = 0; i < subQuery.getOutSchema().getColumnNum(); i++) {
           targetSchema.addColumn(targetTableSchema.getColumn(i));
         }

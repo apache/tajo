@@ -24,8 +24,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -57,15 +58,15 @@ public class RawFile {
     private boolean eof = false;
     private long fileSize;
 
-    public RawFileScanner(Configuration conf, TableMeta meta, Path path) throws IOException {
-      super(conf, meta, null);
+    public RawFileScanner(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
+      super(conf, meta, schema, null);
       this.path = path;
       init();
     }
 
     @SuppressWarnings("unused")
-    public RawFileScanner(Configuration conf, TableMeta meta, Fragment fragment) throws IOException {
-      this(conf, meta, fragment.getPath());
+    public RawFileScanner(Configuration conf, TableMeta meta, Schema schema, Fragment fragment) throws IOException {
+      this(conf, meta, schema, fragment.getPath());
     }
 
     public void init() throws IOException {
@@ -308,8 +309,8 @@ public class RawFile {
 
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
-      super(conf, meta, path);
+    public RawFileAppender(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
+      super(conf, meta, schema, path);
     }
 
     public void init() throws IOException {
@@ -512,7 +513,7 @@ public class RawFile {
     }
 
     @Override
-    public TableStat getStats() {
+    public TableStats getStats() {
       if (enabledStats) {
         return stats.getTableStat();
       } else {

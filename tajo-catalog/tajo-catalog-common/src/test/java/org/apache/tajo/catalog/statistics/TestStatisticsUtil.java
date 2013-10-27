@@ -58,9 +58,9 @@ public class TestStatisticsUtil {
 
   @Test
   public void testEmptyAggregate() {
-    TableStat stat1 = new TableStat();
-    TableStat stat2 = new TableStat();
-    TableStat stat3 = new TableStat();
+    TableStats stat1 = new TableStats();
+    TableStats stat2 = new TableStats();
+    TableStats stat3 = new TableStats();
 
     assertNotNull(StatisticsUtil.aggregateTableStat(
         Lists.newArrayList(stat1, stat2, stat3)));

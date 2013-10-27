@@ -86,24 +86,23 @@ message FragmentProto {
 	required string path = 2;
 	required int64 startOffset = 3;
 	required int64 length = 4;
-	required TableProto meta = 5;
-	optional TableStatProto stat = 6;
-  optional bool distCached = 7 [default = false];
-  repeated string hosts = 8;
-  repeated int32 diskIds = 9;
+	optional TableStatsProto stats = 5;
+  optional bool distCached = 6 [default = false];
+  repeated string hosts = 7;
+  repeated int32 diskIds = 8;
 }
 
 message TableProto {
-    required SchemaProto schema = 1;
-    required StoreType storeType = 2;
-    required KeyValueSetProto params = 3;
-    optional TableStatProto stat = 4;
+    required StoreType storeType = 1;
+    optional KeyValueSetProto params = 2;
 }
 
 message TableDescProto {
 	required string id = 1;
 	required string path = 2;
 	required TableProto meta = 3;
+	required SchemaProto schema = 4;
+	optional TableStatsProto stats = 5;
 }
 
 enum FunctionType {
@@ -169,16 +168,16 @@ message ContainFunctionRequest {
 	repeated DataType parameterTypes = 3;
 }
 
-message TableStatProto {
+message TableStatsProto {
 	required int64 numRows = 1;
 	required int64 numBytes = 2;
 	optional int32 numBlocks = 4;
 	optional int32 numPartitions = 5;
 	optional int64 avgRows = 6;
-	repeated ColumnStatProto colStat = 7;
+	repeated ColumnStatsProto colStat = 7;
 }
 
-message ColumnStatProto {
+message ColumnStatsProto {
     required ColumnProto column = 1;
     optional int64 numDistVal = 2;
     optional int64 numNulls = 3;

@@ -13,7 +13,6 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.JSPUtil;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.glassfish.grizzly.threadpool.FixedThreadPool;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 

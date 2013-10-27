@@ -33,7 +33,7 @@ public class DDLBuilder {
     sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
     sb.append("CREATE EXTERNAL TABLE ").append(desc.getName());
-    buildSchema(sb, desc.getMeta().getSchema());
+    buildSchema(sb, desc.getSchema());
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
     buildLocationClause(sb, desc);

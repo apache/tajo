@@ -31,7 +31,7 @@ import java.io.IOException;
 public class TableUtil {
   public static TableMeta getTableMeta(Configuration conf, Path tablePath) 
       throws IOException {
-    TableMetaImpl meta = null;
+    TableMeta meta = null;
     
     FileSystem fs = tablePath.getFileSystem(conf);
     
@@ -44,7 +44,7 @@ public class TableUtil {
 
     TableProto tableProto = (TableProto) FileUtil.loadProto(tableMetaIn, 
       TableProto.getDefaultInstance());
-    meta = new TableMetaImpl(tableProto);
+    meta = new TableMeta(tableProto);
 
     return meta;
   }

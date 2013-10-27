@@ -33,14 +33,10 @@ import java.util.List;
 import java.util.Map;
 
 public class MemStore implements CatalogStore {
-  private final Map<String,TableDesc> tables
-    = Maps.newHashMap();
-  private final Map<String, FunctionDesc> functions
-    = Maps.newHashMap();
-  private final Map<String, IndexDescProto> indexes
-    = Maps.newHashMap();
-  private final Map<String, IndexDescProto> indexesByColumn
-  = Maps.newHashMap();
+  private final Map<String,TableDesc> tables = Maps.newHashMap();
+  private final Map<String, FunctionDesc> functions = Maps.newHashMap();
+  private final Map<String, IndexDescProto> indexes = Maps.newHashMap();
+  private final Map<String, IndexDescProto> indexesByColumn = Maps.newHashMap();
   
   public MemStore(Configuration conf) {
   }

@@ -100,14 +100,14 @@ public class TestRangeRetrieverHandler {
     Tuple firstTuple = null;
     Tuple lastTuple;
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
-    Appender appender = sm.getAppender(employeeMeta, tableDir);
+    Appender appender = sm.getAppender(employeeMeta, schema, tableDir);
     appender.init();
 
-    Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < TEST_TUPLE; i++) {
       tuple.put(
           new Datum[] {
@@ -124,7 +124,7 @@ public class TestRangeRetrieverHandler {
     appender.flush();
     appender.close();
 
-    TableDesc employee = new TableDescImpl("employee", employeeMeta, tableDir);
+    TableDesc employee = new TableDesc("employee", schema, employeeMeta, tableDir);
     catalog.addTable(employee);
 
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employeeMeta, tableDir, Integer.MAX_VALUE);
@@ -158,7 +158,7 @@ public class TestRangeRetrieverHandler {
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
 
-    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, employeeMeta,
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, employeeMeta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
 
     scanner.init();
@@ -215,12 +215,12 @@ public class TestRangeRetrieverHandler {
     Tuple firstTuple = null;
     Tuple lastTuple;
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path tablePath = StorageUtil.concatPath(testDir, "testGetFromDescendingOrder", "table.csv");
     fs.mkdirs(tablePath.getParent());
-    Appender appender = sm.getAppender(meta, tablePath);
+    Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {
       tuple.put(
           new Datum[] {
@@ -237,7 +237,7 @@ public class TestRangeRetrieverHandler {
     appender.flush();
     appender.close();
 
-    TableDesc employee = new TableDescImpl("employee", meta, tablePath);
+    TableDesc employee = new TableDesc("employee", schema, meta, tablePath);
     catalog.addTable(employee);
 
     Fragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
@@ -269,7 +269,7 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta,
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
     scanner.init();
     int cnt = 0;

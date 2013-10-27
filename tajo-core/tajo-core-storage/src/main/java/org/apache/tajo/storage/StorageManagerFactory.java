@@ -19,8 +19,6 @@
 package org.apache.tajo.storage;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,7 +34,7 @@ import java.util.Map;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
 public class StorageManagerFactory {
-  private static final Map<String, AbstractStorageManager> storageManagers = Maps.newConcurrentMap();
+  private static final Map<String, AbstractStorageManager> storageManagers = Maps.newHashMap();
 
   public static AbstractStorageManager getStorageManager(TajoConf conf) throws IOException {
     return getStorageManager(conf, null);
@@ -83,17 +81,17 @@ public class StorageManagerFactory {
   }
 
   public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Fragment fragment, Schema schema) throws IOException {
-    return (SeekableScanner)getStorageManager(conf, null, false).getScanner(meta, fragment, schema);
+      TajoConf conf, TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+    return (SeekableScanner)getStorageManager(conf, null, false).getScanner(meta, schema, fragment, target);
   }
 
   public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Path path) throws IOException {
+      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
 
     FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
-    Fragment fragment = new Fragment(path.getName(), path, meta, 0, status.getLen());
+    Fragment fragment = new Fragment(path.getName(), path, 0, status.getLen());
 
-    return getSeekableScanner(conf, meta, fragment, fragment.getSchema());
+    return getSeekableScanner(conf, meta, schema, fragment, schema);
   }
 }

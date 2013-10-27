@@ -19,6 +19,7 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,14 +32,13 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.SortNode;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.*;
@@ -55,10 +55,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,6 +75,7 @@ public class Task {
   private final TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
   private final LogicalNode plan;
+  private final Map<String, TableDesc> descs = Maps.newHashMap();
   private PhysicalExec executor;
   private boolean interQuery;
   private boolean killed = false;
@@ -150,6 +148,12 @@ public class Task {
     this.context.setEnforcer(request.getEnforcer());
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
+    LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
+    for (LogicalNode node : scanNode) {
+      ScanNode scan = (ScanNode)node;
+      descs.put(scan.getCanonicalName(), scan.getTableDesc());
+    }
+
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();
@@ -179,7 +183,8 @@ public class Task {
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     for (Fragment f: request.getFragments()) {
-      LOG.info("Table Id:" + f.getName() + ", path:" + f.getPath() + "(" + f.getMeta().getStoreType() + "), " +
+      TableDesc desc = descs.get(f.getName());
+      LOG.info("Table Id:" + f.getName() + ", path:" + desc.getPath() + "(" + desc.getMeta().getStoreType() + "), " +
           "(start:" + f.getStartOffset() + ", length: " + f.getLength() + ")");
     }
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
@@ -328,7 +333,7 @@ public class Task {
     if (context.hasResultStats()) {
       builder.setResultStats(context.getResultStats().getProto());
     } else {
-      builder.setResultStats(new TableStat().getProto());
+      builder.setResultStats(new TableStats().getProto());
     }
 
     Iterator<Entry<Integer,String>> it = context.getRepartitions();
@@ -350,8 +355,7 @@ public class Task {
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
     for (String inputTable: inputs) {
       File tableDir = new File(context.getFetchIn(), inputTable);
-      Fragment [] frags = localizeFetchedData(tableDir, inputTable,
-          context.getTable(inputTable).getMeta());
+      Fragment [] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.changeFragment(inputTable, frags);
     }
   }
@@ -461,7 +465,7 @@ public class Task {
       if (f.getLen() == 0) {
         continue;
       }
-      tablet = new Fragment(name, f.getPath(), meta, 0l, f.getLen());
+      tablet = new Fragment(name, f.getPath(), 0l, f.getLen());
       listTablets.add(tablet);
     }
 

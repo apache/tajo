@@ -114,7 +114,7 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.addTable(new TableDescImpl(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
+      cat.addTable(new TableDesc(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets = null;

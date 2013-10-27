@@ -24,59 +24,62 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnStatProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonObject {
-  private TableStatProto.Builder builder = TableStatProto.newBuilder();
+public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, GsonObject {
+  private TableStatsProto.Builder builder = TableStatsProto.newBuilder();
 
   @Expose private Long numRows = null; // required
   @Expose private Long numBytes = null; // required
-  @Expose private Integer numFiles = null; // required
   @Expose private Integer numBlocks = null; // optional
   @Expose private Integer numPartitions = null; // optional
   @Expose private Long avgRows = null; // optional
-  @Expose private List<ColumnStat> columnStats = null; // repeated
+  @Expose private List<ColumnStats> columnStatses = null; // repeated
 
-  public TableStat() {
+  public TableStats() {
     numRows = 0l;
     numBytes = 0l;
-    numFiles = 0;
     numBlocks = 0;
     numPartitions = 0;
     avgRows = 0l;
-    columnStats = TUtil.newList();
+    columnStatses = TUtil.newList();
   }
 
-  public TableStat(TableStatProto proto) {
+  public TableStats(CatalogProtos.TableStatsProto proto) {
     this.numRows = proto.getNumRows();
     this.numBytes = proto.getNumBytes();
-    //this.numFiles =
 
     if (proto.hasNumBlocks()) {
       this.numBlocks = proto.getNumBlocks();
+    } else {
+      this.numBlocks = 0;
     }
     if (proto.hasNumPartitions()) {
       this.numPartitions = proto.getNumPartitions();
+    } else {
+      this.numPartitions = 0;
     }
     if (proto.hasAvgRows()) {
       this.avgRows = proto.getAvgRows();
+    } else {
+      this.avgRows = 0l;
     }
 
-    this.columnStats = TUtil.newList();
-    for (ColumnStatProto colProto : proto.getColStatList()) {
+    this.columnStatses = TUtil.newList();
+    for (CatalogProtos.ColumnStatsProto colProto : proto.getColStatList()) {
       if (colProto.getColumn().getDataType().getType() == TajoDataTypes.Type.PROTOBUF) {
         continue;
       }
-      columnStats.add(new ColumnStat(colProto));
+      columnStatses.add(new ColumnStats(colProto));
     }
   }
 
@@ -120,28 +123,29 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonOb
     this.avgRows = avgRows;
   }
 
-  public List<ColumnStat> getColumnStats() {
-    return this.columnStats;
+  public List<ColumnStats> getColumnStats() {
+    return this.columnStatses;
   }
 
-  public void setColumnStats(List<ColumnStat> columnStats) {
-    this.columnStats = new ArrayList<ColumnStat>(columnStats);
+  public void setColumnStats(List<ColumnStats> columnStatses) {
+    this.columnStatses = new ArrayList<ColumnStats>(columnStatses);
   }
 
-  public void addColumnStat(ColumnStat columnStat) {
-    this.columnStats.add(columnStat);
+  public void addColumnStat(ColumnStats columnStats) {
+    this.columnStatses.add(columnStats);
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof TableStat) {
-      TableStat other = (TableStat) obj;
+    if (obj instanceof TableStats) {
+      TableStats other = (TableStats) obj;
 
-      return this.numRows.equals(other.numRows)
-          && this.numBytes.equals(other.numBytes)
-          && TUtil.checkEquals(this.numBlocks, other.numBlocks)
-          && TUtil.checkEquals(this.numPartitions, other.numPartitions)
-          && TUtil.checkEquals(this.avgRows, other.avgRows)
-          && TUtil.checkEquals(this.columnStats, other.columnStats);
+      boolean eq = this.numRows.equals(other.numRows);
+      eq = eq && this.numBytes.equals(other.numBytes);
+      eq = eq && TUtil.checkEquals(this.numBlocks, other.numBlocks);
+      eq = eq && TUtil.checkEquals(this.numPartitions, other.numPartitions);
+      eq = eq && TUtil.checkEquals(this.avgRows, other.avgRows);
+      eq = eq && TUtil.checkEquals(this.columnStatses, other.columnStatses);
+      return eq;
     } else {
       return false;
     }
@@ -149,17 +153,17 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonOb
 
   public int hashCode() {
     return Objects.hashCode(numRows, numBytes,
-        numBlocks, numPartitions, columnStats);
+        numBlocks, numPartitions, columnStatses);
   }
 
   public Object clone() throws CloneNotSupportedException {
-    TableStat stat = (TableStat) super.clone();
-    stat.builder = TableStatProto.newBuilder();
-    stat.numRows = numRows;
-    stat.numBytes = numBytes;
-    stat.numBlocks = numBlocks;
-    stat.numPartitions = numPartitions;
-    stat.columnStats = new ArrayList<ColumnStat>(this.columnStats);
+    TableStats stat = (TableStats) super.clone();
+    stat.builder = CatalogProtos.TableStatsProto.newBuilder();
+    stat.numRows = numRows != null ? numRows.longValue() : null;
+    stat.numBytes = numBytes != null ? numBytes.longValue() : null;
+    stat.numBlocks = numBlocks != null ? numBlocks.intValue() : null;
+    stat.numPartitions = numPartitions != null ? numPartitions.intValue() : null;
+    stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
 
     return stat;
   }
@@ -171,13 +175,13 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonOb
 
   @Override
   public String toJson() {
-    return CatalogGsonHelper.toJson(this, TableStat.class);
+    return CatalogGsonHelper.toJson(this, TableStats.class);
   }
 
   @Override
-  public TableStatProto getProto() {
+  public TableStatsProto getProto() {
     if (builder == null) {
-      builder = TableStatProto.newBuilder();
+      builder = CatalogProtos.TableStatsProto.newBuilder();
     } else {
       builder.clear();
     }
@@ -194,8 +198,8 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonOb
     if (this.avgRows != null) {
       builder.setAvgRows(this.avgRows);
     }
-    if (this.columnStats != null) {
-      for (ColumnStat colStat : columnStats) {
+    if (this.columnStatses != null) {
+      for (ColumnStats colStat : columnStatses) {
         builder.addColStat(colStat.getProto());
       }
     }

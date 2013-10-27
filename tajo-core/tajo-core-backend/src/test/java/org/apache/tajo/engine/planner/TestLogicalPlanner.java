@@ -75,14 +75,14 @@ public class TestLogicalPlanner {
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc people = new TableDescImpl("employee", meta, CommonTestingUtil.getTestDir());
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableDesc people = new TableDesc("employee", schema, meta, CommonTestingUtil.getTestDir());
     catalog.addTable(people);
 
-    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
+    TableDesc student = new TableDesc("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(student);
 
-    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
+    TableDesc score = new TableDesc("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
@@ -98,8 +98,8 @@ public class TestLogicalPlanner {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), StoreType.CSV);
-      TableDesc d = CatalogUtil.newTableDesc(table, m, CommonTestingUtil.getTestDir());
+      TableMeta m = CatalogUtil.newTableMeta(StoreType.CSV);
+      TableDesc d = CatalogUtil.newTableDesc(table, tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
       catalog.addTable(d);
     }
 

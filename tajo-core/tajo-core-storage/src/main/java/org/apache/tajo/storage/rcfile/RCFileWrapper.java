@@ -25,11 +25,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
@@ -47,8 +49,8 @@ public class RCFileWrapper {
 
     private TableStatistics stats = null;
 
-    public RCFileAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
-      super(conf, meta, path);
+    public RCFileAppender(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
+      super(conf, meta, schema, path);
     }
 
     public void init() throws IOException {
@@ -148,7 +150,7 @@ public class RCFileWrapper {
     }
 
     @Override
-    public TableStat getStats() {
+    public TableStats getStats() {
       if (enabledStats) {
         return stats.getTableStat();
       } else {
@@ -157,6 +159,7 @@ public class RCFileWrapper {
     }
   }
 
+  @ForSplitableStore
   public static class RCFileScanner extends FileScanner {
     private FileSystem fs;
     private RCFile.Reader reader;
@@ -167,9 +170,9 @@ public class RCFileWrapper {
     private boolean more;
     long end;
 
-    public RCFileScanner(Configuration conf, final TableMeta meta,
-                          final Fragment fragment) throws IOException {
-      super(conf, meta, fragment);
+    public RCFileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+        throws IOException {
+      super(conf, meta, schema, fragment);
       fs = fragment.getPath().getFileSystem(conf);
 
       end = fragment.getStartOffset() + fragment.getLength();

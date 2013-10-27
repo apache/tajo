@@ -92,8 +92,8 @@ public class TestCatalog {
     schema1.addColumn(FieldName2, Type.INT4);
     schema1.addColumn(FieldName3, Type.INT8);
     
-	  TableMeta info = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
-	  TableDesc desc = new TableDescImpl();
+	  TableMeta info = CatalogUtil.newTableMeta(StoreType.CSV);
+	  TableDesc desc = new TableDesc();
 	  desc.setMeta(info);
 	  
 	  catalog.addTable(desc);

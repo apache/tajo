@@ -31,7 +31,7 @@ import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.CharDatum;
 import org.apache.tajo.datum.Datum;
@@ -39,6 +39,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.Bytes;
@@ -74,12 +75,11 @@ public class CSVFile {
     private byte[] nullChars;
     private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
-    public CSVAppender(Configuration conf, final TableMeta meta,
-                       final Path path) throws IOException {
-      super(conf, meta, path);
+    public CSVAppender(Configuration conf, final TableMeta meta, final Schema schema, final Path path) throws IOException {
+      super(conf, meta, schema, path);
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
-      this.schema = meta.getSchema();
+      this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
@@ -298,7 +298,7 @@ public class CSVFile {
     }
 
     @Override
-    public TableStat getStats() {
+    public TableStats getStats() {
       if (enabledStats) {
         return stats.getTableStat();
       } else {
@@ -315,10 +315,11 @@ public class CSVFile {
     }
   }
 
+  @ForSplitableStore
   public static class CSVScanner extends FileScanner implements SeekableScanner {
-    public CSVScanner(Configuration conf, final TableMeta meta,
-                      final Fragment fragment) throws IOException {
-      super(conf, meta, fragment);
+    public CSVScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+        throws IOException {
+      super(conf, meta, schema, fragment);
       factory = new CompressionCodecFactory(conf);
       codec = factory.getCodec(fragment.getPath());
       if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
@@ -327,10 +328,10 @@ public class CSVFile {
 
       // Buffer size, Delimiter
       this.bufSize = DEFAULT_BUFFER_SIZE;
-      String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
+      String delim  = meta.getOption(DELIMITER, DELIMITER_DEFAULT);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(fragment.getMeta().getOption(NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {

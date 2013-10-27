@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.querymaster;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -29,7 +28,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.TaskState;
@@ -59,7 +58,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private Map<String, Set<URI>> fetchMap;
 	
   private List<Partition> partitions;
-	private TableStat stats;
+	private TableStats stats;
   private List<DataLocation> dataLocations;
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
@@ -283,7 +282,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		return str;
 	}
 	
-	public void setStats(TableStat stats) {
+	public void setStats(TableStats stats) {
 	  this.stats = stats;
 	}
 	
@@ -291,7 +290,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  this.partitions = Collections.unmodifiableList(partitions);
 	}
 	
-	public TableStat getStats() {
+	public TableStats getStats() {
 	  return this.stats;
 	}
 	

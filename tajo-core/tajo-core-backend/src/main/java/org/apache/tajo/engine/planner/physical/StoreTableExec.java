@@ -24,11 +24,14 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -54,19 +57,20 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     TableMeta meta;
     if (plan.hasOptions()) {
-      meta = CatalogUtil.newTableMeta(outSchema, plan.getStorageType(), plan.getOptions());
+      meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(outSchema, plan.getStorageType());
+      meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
     if (context.isInterQuery()) {
       Path storeTablePath = new Path(context.getWorkDir(), "out");
       FileSystem fs = new RawLocalFileSystem();
       fs.mkdirs(storeTablePath);
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
           StorageUtil.concatPath(storeTablePath, "0"));
     } else {
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, context.getOutputPath());
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
+          context.getOutputPath());
     }
     appender.enableStats();
     appender.init();

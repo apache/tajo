@@ -25,15 +25,15 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -66,7 +66,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasPartitionKey());
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(this.outSchema, StoreType.CSV);
+    this.meta = CatalogUtil.newTableMeta(StoreType.CSV);
     
     // about the partitions
     this.numPartitions = this.plan.getNumPartitions();
@@ -98,7 +98,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
         FileStatus status = fs.getFileStatus(dataFile);
         LOG.info("File size: " + status.getLen());
       }
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, dataFile);
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
       appender.enableStats();
       appender.init();
       appenderMap.put(partition, appender);
@@ -124,7 +124,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       appender.addTuple(tuple);
     }
     
-    List<TableStat> statSet = new ArrayList<TableStat>();
+    List<TableStats> statSet = new ArrayList<TableStats>();
     for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
       int partNum = entry.getKey();
       Appender app = entry.getValue();
@@ -137,7 +137,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     }
     
     // Collect and aggregated statistics data
-    TableStat aggregated = StatisticsUtil.aggregateTableStat(statSet);
+    TableStats aggregated = StatisticsUtil.aggregateTableStat(statSet);
     context.setResultStats(aggregated);
     
     return null;

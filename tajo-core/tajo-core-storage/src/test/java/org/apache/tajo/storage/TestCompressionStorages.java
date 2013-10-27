@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -101,11 +101,11 @@ public class TestCompressionStorages {
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     meta.putOption("compression.codec", BZip2Codec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "SplitCompression");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
 
     appender.init();
@@ -126,7 +126,7 @@ public class TestCompressionStorages {
     }
     appender.close();
 
-    TableStat stat = appender.getStats();
+    TableStats stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
     tablePath = tablePath.suffix(extention);
 
@@ -135,10 +135,10 @@ public class TestCompressionStorages {
     long randomNum = (long) (Math.random() * fileLen) + 1;
 
     Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("SplitCompression", tablePath, meta, 0, randomNum);
-    tablets[1] = new Fragment("SplitCompression", tablePath, meta, randomNum, (fileLen - randomNum));
+    tablets[0] = new Fragment("SplitCompression", tablePath, 0, randomNum);
+    tablets[1] = new Fragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
 
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[0], schema);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
@@ -147,7 +147,7 @@ public class TestCompressionStorages {
     }
     scanner.close();
 
-    scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[1], schema);
+    scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
     scanner.init();
     while ((tuple = scanner.next()) != null) {
       tupleCnt++;
@@ -162,12 +162,12 @@ public class TestCompressionStorages {
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, storeType);
+    TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.putOption("compression.codec", codec.getCanonicalName());
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
 
     appender.init();
@@ -188,15 +188,15 @@ public class TestCompressionStorages {
     }
     appender.close();
 
-    TableStat stat = appender.getStats();
+    TableStats stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
     tablePath = tablePath.suffix(extension);
     FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
     Fragment[] tablets = new Fragment[1];
-    tablets[0] = new Fragment(fileName, tablePath, meta, 0, fileLen);
+    tablets[0] = new Fragment(fileName, tablePath, 0, fileLen);
 
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[0], schema);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;

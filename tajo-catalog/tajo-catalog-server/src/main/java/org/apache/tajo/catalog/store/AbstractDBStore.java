@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 
@@ -208,7 +208,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String colSql;
       int columnId = 0;
-      for (Column col : table.getMeta().getSchema().getColumns()) {
+      for (Column col : table.getSchema().getColumns()) {
         colSql = columnToSQL(tid, table, columnId, col);
         if (LOG.isDebugEnabled()) {
           LOG.debug(colSql);
@@ -235,11 +235,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         CatalogUtil.closeSQLWrapper(pstmt);
       }
 
-      if (table.getMeta().getStat() != null) {
+      if (table.getStats() != null) {
         sql = "INSERT INTO " + TB_STATISTICS + " (" + C_TABLE_ID + ", num_rows, num_bytes) "
             + "VALUES ('" + table.getName() + "', "
-            + table.getMeta().getStat().getNumRows() + ","
-            + table.getMeta().getStat().getNumBytes() + ")";
+            + table.getStats().getNumRows() + ","
+            + table.getStats().getNumBytes() + ")";
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql);
         }
@@ -361,7 +361,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Path path = null;
     StoreType storeType = null;
     Options options;
-    TableStat stat = null;
+    TableStats stat = null;
 
     try {
       String sql =
@@ -445,7 +445,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = stmt.executeQuery(sql);
 
       if (res.next()) {
-        stat = new TableStat();
+        stat = new TableStats();
         stat.setNumRows(res.getLong("num_rows"));
         stat.setNumBytes(res.getLong("num_bytes"));
       }
@@ -455,11 +455,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
 
-    TableMeta meta = new TableMetaImpl(schema, storeType, options);
+    TableMeta meta = new TableMeta(storeType, options);
+    TableDesc table = new TableDesc(tableName, schema, meta, path);
     if (stat != null) {
-      meta.setStat(stat);
+      table.setStats(stat);
     }
-    TableDesc table = new TableDescImpl(tableName, meta, path);
 
     return table;
   }

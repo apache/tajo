@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.LazyTuple;
@@ -67,9 +68,9 @@ public class CSVFileScanner extends FileScannerV2 {
   private long totalReadBytesForFetch;
   private long totalReadBytesFromDisk;
 
-  public CSVFileScanner(Configuration conf, final TableMeta meta,
-                    final Fragment fragment) throws IOException {
-    super(conf, meta, fragment);
+  public CSVFileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+      throws IOException {
+    super(conf, meta, schema, fragment);
     factory = new CompressionCodecFactory(conf);
     codec = factory.getCodec(fragment.getPath());
     if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
@@ -81,7 +82,7 @@ public class CSVFileScanner extends FileScannerV2 {
   public void init() throws IOException {
     // Buffer size, Delimiter
     this.bufSize = DEFAULT_BUFFER_SIZE;
-    String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
+    String delim  = meta.getOption(DELIMITER, DELIMITER_DEFAULT);
     this.delimiter = delim.charAt(0);
 
     super.init();

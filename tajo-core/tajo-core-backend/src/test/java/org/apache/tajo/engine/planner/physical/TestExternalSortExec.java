@@ -75,12 +75,12 @@ public class TestExternalSortExec {
     schema.addColumn("empId", Type.INT4);
     schema.addColumn("deptName", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
-    Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(rnd.nextInt(50)),
           DatumFactory.createInt4(rnd.nextInt(100)),
@@ -92,7 +92,7 @@ public class TestExternalSortExec {
 
     System.out.println("Total Rows: " + appender.getStats().getNumRows());
 
-    employee = new TableDescImpl("employee", employeeMeta, employeePath);
+    employee = new TableDesc("employee", schema, employeeMeta, employeePath);
     catalog.addTable(employee);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);

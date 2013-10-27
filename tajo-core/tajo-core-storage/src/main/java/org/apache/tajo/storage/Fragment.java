@@ -19,15 +19,10 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Objects;
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.storage.json.StorageGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -35,12 +30,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, GsonObject {
+public class Fragment implements Comparable<Fragment> {
   protected FragmentProto.Builder builder = null;
 
   @Expose private String tableName; // required
   @Expose private Path uri; // required
-  @Expose private TableMeta meta; // required
   @Expose private Long startOffset; // required
   @Expose private Long length; // required
   @Expose private boolean distCached = false; // optional
@@ -53,47 +47,35 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     builder = FragmentProto.newBuilder();
   }
 
-  public Fragment(String tableName, Path uri, TableMeta meta, BlockLocation blockLocation, int[] diskIds) throws IOException {
+  public Fragment(String tableName, Path uri, BlockLocation blockLocation, int[] diskIds)
+      throws IOException {
     this();
-    //TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    TableMeta newMeta = meta;
-    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
-        .getSchema().getProto());
-    newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(tableName, uri, newMeta, blockLocation.getOffset(), blockLocation.getLength(),
+    this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(),
         blockLocation.getHosts(), diskIds);
   }
 
   // Non splittable
-  public Fragment(String tableName, Path uri, TableMeta meta, long start, long length, String[] hosts, int[] hostsBlockCount) {
+  public Fragment(String tableName, Path uri, long start, long length, String[] hosts,
+                  int[] hostsBlockCount) {
     this();
-    TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
-        .getSchema().getProto());
-    newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(tableName, uri, newMeta, start, length, null, null);
+    this.set(tableName, uri, start, length, null, null);
     this.hosts = hosts;
     this.hostsBlockCount = hostsBlockCount;
   }
 
-  public Fragment(String fragmentId, Path path, TableMeta meta, long start, long length) {
+  public Fragment(String fragmentId, Path path, long start, long length) {
     this();
-    TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
-        .getSchema().getProto());
-    newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(fragmentId, path, newMeta, start, length, null, null);
+    this.set(fragmentId, path, start, length, null, null);
   }
 
   public Fragment(FragmentProto proto) {
     this();
-    TableMeta newMeta = new TableMetaImpl(proto.getMeta());
     int[] diskIds = new int[proto.getDiskIdsList().size()];
     int i = 0;
     for(Integer eachValue: proto.getDiskIdsList()) {
       diskIds[i++] = eachValue;
     }
-    this.set(proto.getId(), new Path(proto.getPath()), newMeta,
+    this.set(proto.getId(), new Path(proto.getPath()),
         proto.getStartOffset(), proto.getLength(),
         proto.getHostsList().toArray(new String[]{}),
         diskIds);
@@ -102,11 +84,10 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     }
   }
 
-  private void set(String tableName, Path path, TableMeta meta, long start,
+  private void set(String tableName, Path path, long start,
       long length, String[] hosts, int[] diskIds) {
     this.tableName = tableName;
     this.uri = path;
-    this.meta = meta;
     this.startOffset = start;
     this.length = length;
     this.hosts = hosts;
@@ -152,32 +133,16 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     return this.tableName;
   }
 
-  @Override
   public void setName(String tableName) {
     this.tableName = tableName;
   }
-  
-  @Override
+
   public Path getPath() {
     return this.uri;
   }
 
-  @Override
   public void setPath(Path path) {
     this.uri = path;
-  }
-  
-  public Schema getSchema() {
-    return getMeta().getSchema();
-  }
-
-  public TableMeta getMeta() {
-    return this.meta;
-  }
-
-  @Override
-  public void setMeta(TableMeta meta) {
-    this.meta = meta;
   }
 
   public Long getStartOffset() {
@@ -243,7 +208,6 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     frag.builder = FragmentProto.newBuilder();
     frag.tableName = tableName;
     frag.uri = uri;
-    frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
     frag.distCached = distCached;
     frag.diskIds = diskIds;
     frag.hosts = hosts;
@@ -259,14 +223,12 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
         + getLength() + ", \"distCached\": " + distCached + "}" ;
   }
 
-  @Override
   public FragmentProto getProto() {
     if (builder == null) {
       builder = FragmentProto.newBuilder();
     }
     builder.setId(this.tableName);
     builder.setStartOffset(this.startOffset);
-    builder.setMeta(meta.getProto());
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
     builder.setDistCached(this.distCached);
@@ -283,11 +245,5 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     }
 
     return builder.build();
-  }
-
-  @Override
-  public String toJson() {
-	  Gson gson = StorageGsonHelper.getInstance();
-	  return gson.toJson(this, TableDesc.class);
   }
 }

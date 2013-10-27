@@ -30,7 +30,7 @@ public interface CatalogService {
    * Get a table description by name
    * @param name table name
    * @return a table description
-   * @see org.apache.tajo.catalog.TableDescImpl
+   * @see TableDesc
    * @throws Throwable
    */
   TableDesc getTableDesc(String name);
@@ -51,7 +51,7 @@ public interface CatalogService {
 
   /**
    * Add a table via table description
-   * @see org.apache.tajo.catalog.TableDescImpl
+   * @see TableDesc
    * @throws Throwable
    */
   boolean addTable(TableDesc desc);

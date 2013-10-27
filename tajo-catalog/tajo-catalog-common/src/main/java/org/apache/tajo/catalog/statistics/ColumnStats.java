@@ -24,16 +24,16 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnStatProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
-public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable, GsonObject {
-  private ColumnStatProto.Builder builder = ColumnStatProto.newBuilder();
+public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>, Cloneable, GsonObject {
+  private CatalogProtos.ColumnStatsProto.Builder builder = CatalogProtos.ColumnStatsProto.newBuilder();
 
   @Expose private Column column = null; // required
   @Expose private Long numDistVals = null; // optional
@@ -41,13 +41,13 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable, Gson
   @Expose private Datum minValue = null; // optional
   @Expose private Datum maxValue = null; // optional
 
-  public ColumnStat(Column column) {
+  public ColumnStats(Column column) {
     this.column = column;
     numDistVals = 0l;
     numNulls = 0l;
   }
 
-  public ColumnStat(ColumnStatProto proto) {
+  public ColumnStats(CatalogProtos.ColumnStatsProto proto) {
     this.column = new Column(proto.getColumn());
 
     if (proto.hasNumDistVal()) {
@@ -109,8 +109,8 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable, Gson
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof ColumnStat) {
-      ColumnStat other = (ColumnStat) obj;
+    if (obj instanceof ColumnStats) {
+      ColumnStats other = (ColumnStats) obj;
       return getColumn().equals(other.getColumn())
           && getNumDistValues().equals(other.getNumDistValues())
           && getNumNulls().equals(other.getNumNulls())
@@ -126,8 +126,8 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable, Gson
   }
 
   public Object clone() throws CloneNotSupportedException {
-    ColumnStat stat = (ColumnStat) super.clone();
-    stat.builder = ColumnStatProto.newBuilder();
+    ColumnStats stat = (ColumnStats) super.clone();
+    stat.builder = CatalogProtos.ColumnStatsProto.newBuilder();
     stat.column = (Column) this.column.clone();
     stat.numDistVals = numDistVals;
     stat.numNulls = numNulls;
@@ -138,19 +138,19 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable, Gson
   }
 
   public String toString() {
-    return CatalogGsonHelper.getPrettyInstance().toJson(this, ColumnStat.class);
+    return CatalogGsonHelper.getPrettyInstance().toJson(this, ColumnStats.class);
   }
 
   @Override
   public String toJson() {
-    return CatalogGsonHelper.toJson(this, ColumnStat.class);
+    return CatalogGsonHelper.toJson(this, ColumnStats.class);
   }
 
 
   @Override
-  public ColumnStatProto getProto() {
+  public CatalogProtos.ColumnStatsProto getProto() {
     if (builder == null) {
-      builder = ColumnStatProto.newBuilder();
+      builder = CatalogProtos.ColumnStatsProto.newBuilder();
     }
     if (this.column != null) {
       builder.setColumn(this.column.getProto());

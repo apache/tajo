@@ -456,7 +456,7 @@ public class TestSelectQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable("orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc("orderkeys");
-    assertEquals(5, orderKeys.getMeta().getStat().getNumRows().intValue());
+    assertEquals(5, orderKeys.getStats().getNumRows().intValue());
   }
 
   @Test

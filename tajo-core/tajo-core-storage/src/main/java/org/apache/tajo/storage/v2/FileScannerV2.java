@@ -72,10 +72,11 @@ public abstract class FileScannerV2 implements Scanner {
 
 	public FileScannerV2(final Configuration conf,
                        final TableMeta meta,
+                       final Schema schema,
                        final Fragment fragment) throws IOException {
     this.conf = conf;
     this.meta = meta;
-    this.schema = meta.getSchema();
+    this.schema = schema;
     this.fragment = fragment;
     this.columnNum = this.schema.getColumnNum();
 

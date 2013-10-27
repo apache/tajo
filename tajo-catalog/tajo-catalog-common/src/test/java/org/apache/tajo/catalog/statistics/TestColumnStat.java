@@ -31,52 +31,52 @@ public class TestColumnStat {
 
   @Test
   public final void testColumnStat() {
-    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
+    ColumnStats stat = new ColumnStats(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     
     assertTrue(1000 == stat.getNumDistValues());
     assertTrue(999 == stat.getNumNulls());
     
-    ColumnStat stat2 = new ColumnStat(stat.getProto());
+    ColumnStats stat2 = new ColumnStats(stat.getProto());
     assertTrue(1000 == stat2.getNumDistValues());
     assertTrue(999 == stat2.getNumNulls());
   }
 
   @Test
   public final void testEqualsObject() {
-    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
+    ColumnStats stat = new ColumnStats(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     stat.setMinValue(DatumFactory.createInt8(5));
     stat.setMaxValue(DatumFactory.createInt8(10));
     
-    ColumnStat stat2 = new ColumnStat(stat.getProto());
+    ColumnStats stat2 = new ColumnStats(stat.getProto());
     assertEquals(stat, stat2);
   }
 
   @Test
   public final void testJson() throws CloneNotSupportedException {
-    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
+    ColumnStats stat = new ColumnStats(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     stat.setMinValue(DatumFactory.createInt8(5));
     stat.setMaxValue(DatumFactory.createInt8(10));
 
     String json = stat.toJson();
-    ColumnStat fromJson = CatalogGsonHelper.fromJson(json, ColumnStat.class);
+    ColumnStats fromJson = CatalogGsonHelper.fromJson(json, ColumnStats.class);
     assertEquals(stat, fromJson);
   }
 
   @Test
   public final void testClone() throws CloneNotSupportedException {
-    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
+    ColumnStats stat = new ColumnStats(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     stat.setMinValue(DatumFactory.createInt8(5));
     stat.setMaxValue(DatumFactory.createInt8(10));
     
-    ColumnStat stat2 = (ColumnStat) stat.clone();
+    ColumnStats stat2 = (ColumnStats) stat.clone();
     assertEquals(stat, stat2);
   }
 }

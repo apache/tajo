@@ -21,18 +21,15 @@ package org.apache.tajo.engine.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.catalog.function.Function;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.catalog.json.FunctionAdapter;
-import org.apache.tajo.catalog.json.TableDescAdapter;
 import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.json.*;
 import org.apache.tajo.util.TUtil;
@@ -50,7 +47,6 @@ public class CoreGsonHelper {
 	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
     Map<Type, GsonSerDerAdapter> adapters = TUtil.newHashMap();
     adapters.put(Path.class, new PathSerializer());
-    adapters.put(TableDesc.class, new TableDescAdapter());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());
     adapters.put(EvalNode.class, new EvalNodeAdapter());

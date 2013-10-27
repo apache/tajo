@@ -24,8 +24,9 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.TableStatistics;
@@ -46,8 +47,8 @@ public class TrevniAppender extends FileAppender {
   private TableStatistics stats = null;
   private boolean flushed = false;
 
-  public TrevniAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
-    super(conf, meta, path);
+  public TrevniAppender(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
+    super(conf, meta, schema, path);
   }
 
   public void init() throws IOException {
@@ -60,9 +61,9 @@ public class TrevniAppender extends FileAppender {
     fos = fs.create(path);
 
     ColumnMetaData [] trevniMetas =
-        new ColumnMetaData[meta.getSchema().getColumnNum()];
+        new ColumnMetaData[schema.getColumnNum()];
     int i = 0;
-    for (Column column : meta.getSchema().getColumns()) {
+    for (Column column : schema.getColumns()) {
       trevniMetas[i++] = new ColumnMetaData(column.getColumnName(),
           getType(column.getDataType().getType()));
     }
@@ -190,7 +191,7 @@ public class TrevniAppender extends FileAppender {
   }
 
   @Override
-  public TableStat getStats() {
+  public TableStats getStats() {
     if (enabledStats) {
       return stats.getTableStat();
     } else {

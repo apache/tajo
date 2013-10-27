@@ -21,6 +21,7 @@ package org.apache.tajo.storage.trevni;
 import com.google.protobuf.Message;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.datum.DatumFactory;
@@ -45,8 +46,8 @@ public class TrevniScanner extends FileScanner {
   private int [] projectionMap;
   private ColumnValues [] columns;
 
-  public TrevniScanner(Configuration conf, TableMeta meta, Fragment fragment) throws IOException {
-    super(conf, meta, fragment);
+  public TrevniScanner(Configuration conf, TableMeta meta, Schema schema, Fragment fragment) throws IOException {
+    super(conf, meta, schema, fragment);
     reader = new ColumnFileReader(new HadoopInput(fragment.getPath(), conf));
   }
 

@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -37,15 +37,14 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.LocalTajoTestingUtility;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 // this is not a physical operator in itself, but it uses the HashLeftOuterJoinExec with switched inputs order
 public class TestRightOuterHashJoinExec {
@@ -91,12 +90,11 @@ public class TestRightOuterHashJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta(dep3Schema,
-        StoreType.CSV);
+    TableMeta dep3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(dep3Meta, dep3Path);
+    Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
-    Tuple tuple = new VTuple(dep3Meta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(dep3Schema.getColumnNum());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
                     DatumFactory.createText("dept_" + i),
@@ -106,7 +104,7 @@ public class TestRightOuterHashJoinExec {
 
     appender1.flush();
     appender1.close();
-    dep3 = CatalogUtil.newTableDesc("dep3", dep3Meta, dep3Path);
+    dep3 = CatalogUtil.newTableDesc("dep3", dep3Schema, dep3Meta, dep3Path);
     catalog.addTable(dep3);
 
     //----------------- job3 ------------------------------
@@ -121,12 +119,11 @@ public class TestRightOuterHashJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta(job3Schema,
-        StoreType.CSV);
+    TableMeta job3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(job3Meta, job3Path);
+    Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
-    Tuple tuple2 = new VTuple(job3Meta.getSchema().getColumnNum());
+    Tuple tuple2 = new VTuple(job3Schema.getColumnNum());
     for (int i = 1; i < 4; i++) {
       int x = 100 + i;
       tuple2.put(new Datum[] { DatumFactory.createInt4(100 + i),
@@ -136,7 +133,7 @@ public class TestRightOuterHashJoinExec {
 
     appender2.flush();
     appender2.close();
-    job3 = CatalogUtil.newTableDesc("job3", job3Meta, job3Path);
+    job3 = CatalogUtil.newTableDesc("job3", job3Schema, job3Meta, job3Path);
     catalog.addTable(job3);
 
 
@@ -161,11 +158,11 @@ public class TestRightOuterHashJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta(emp3Schema, StoreType.CSV);
+    TableMeta emp3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = StorageManagerFactory.getStorageManager(conf).getAppender(emp3Meta, emp3Path);
+    Appender appender3 = StorageManagerFactory.getStorageManager(conf).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
-    Tuple tuple3 = new VTuple(emp3Meta.getSchema().getColumnNum());
+    Tuple tuple3 = new VTuple(emp3Schema.getColumnNum());
 
     for (int i = 1; i < 4; i += 2) {
       int x = 10 + i;
@@ -200,7 +197,7 @@ public class TestRightOuterHashJoinExec {
 
     appender3.flush();
     appender3.close();
-    emp3 = CatalogUtil.newTableDesc("emp3", emp3Meta, emp3Path);
+    emp3 = CatalogUtil.newTableDesc("emp3", emp3Schema, emp3Meta, emp3Path);
     catalog.addTable(emp3);
 
     analyzer = new SQLAnalyzer();

@@ -34,14 +34,14 @@ message TaskStatusProto {
   required float progress = 3;
   required TaskAttemptState state = 4;
   optional StatSetProto stats = 5;
-  optional TableStatProto resultStats = 6;
+  optional TableStatsProto resultStats = 6;
   repeated Partition partitions = 7;
 }
 
 message TaskCompletionReport {
   required QueryUnitAttemptIdProto id = 1;
   optional StatSetProto stats = 2;
-  optional TableStatProto resultStats = 3;
+  optional TableStatsProto resultStats = 3;
   repeated Partition partitions = 4;
 }
 

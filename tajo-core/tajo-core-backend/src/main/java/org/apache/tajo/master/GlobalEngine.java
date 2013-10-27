@@ -33,7 +33,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ConstEval;
@@ -240,11 +240,9 @@ public class GlobalEngine extends AbstractService {
     TableMeta meta;
 
     if (createTable.hasOptions()) {
-      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStorageType(), createTable.getOptions());
+      meta = CatalogUtil.newTableMeta(createTable.getStorageType(), createTable.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStorageType());
+      meta = CatalogUtil.newTableMeta(createTable.getStorageType());
     }
 
     if(!createTable.isExternal()){
@@ -254,10 +252,11 @@ public class GlobalEngine extends AbstractService {
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
-    return createTableOnDirectory(createTable.getTableName(), meta, createTable.getPath(), true);
+    return createTableOnDirectory(createTable.getTableName(), createTable.getSchema(), meta,
+        createTable.getPath(), true);
   }
 
-  public TableDesc createTableOnDirectory(String tableName, TableMeta meta, Path path, boolean isCreated)
+  public TableDesc createTableOnDirectory(String tableName, Schema schema, TableMeta meta, Path path, boolean isCreated)
       throws IOException {
     if (catalog.existsTable(tableName)) {
       throw new AlreadyExistsTableException(tableName);
@@ -281,14 +280,13 @@ public class GlobalEngine extends AbstractService {
       LOG.error("Cannot calculate the size of the relation", e);
     }
 
-    TableStat stat = new TableStat();
-    stat.setNumBytes(totalSize);
-    meta.setStat(stat);
-
-    TableDesc desc = CatalogUtil.newTableDesc(tableName, meta, path);
+    TableStats stats = new TableStats();
+    stats.setNumBytes(totalSize);
+    TableDesc desc = CatalogUtil.newTableDesc(tableName, schema, meta, path);
+    desc.setStats(stats);
     catalog.addTable(desc);
 
-    LOG.info("Table " + desc.getName() + " is created (" + desc.getMeta().getStat().getNumBytes() + ")");
+    LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
 
     return desc;
   }
@@ -435,7 +433,7 @@ public class GlobalEngine extends AbstractService {
       if (insertNode.hasTargetTable()) { // if a target table is given, it computes the proper schema.
         storeNode.getOptions().putAll(insertNode.getTargetTable().getMeta().toMap());
 
-        Schema targetTableSchema = insertNode.getTargetTable().getMeta().getSchema();
+        Schema targetTableSchema = insertNode.getTargetTable().getSchema();
         Schema targetProjectedSchema = insertNode.getTargetSchema();
 
         int [] targetColumnIds = new int[targetProjectedSchema.getColumnNum()];

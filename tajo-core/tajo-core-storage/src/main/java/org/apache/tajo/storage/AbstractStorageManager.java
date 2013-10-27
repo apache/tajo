@@ -28,15 +28,16 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.TableMetaImpl;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -67,8 +68,9 @@ public abstract class AbstractStorageManager {
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
       new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
-  public abstract Scanner getScanner(TableMeta meta, Fragment fragment,
-                                   Schema target) throws IOException;
+  public abstract Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException;
+
+  public abstract Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException;
 
   protected AbstractStorageManager(TajoConf conf) throws IOException {
     this.conf = conf;
@@ -80,17 +82,17 @@ public abstract class AbstractStorageManager {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
   }
 
-  public Scanner getScanner(TableMeta meta, Path path)
+  public Scanner getScanner(TableMeta meta, Schema schema, Path path)
       throws IOException {
     FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
-    Fragment fragment = new Fragment(path.getName(), path, meta, 0, status.getLen());
-    return getScanner(meta, fragment);
+    Fragment fragment = new Fragment(path.getName(), path, 0, status.getLen());
+    return getScanner(meta, schema, fragment);
   }
 
-  public Scanner getScanner(TableMeta meta, Fragment fragment)
+  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment)
       throws IOException {
-    return getScanner(meta, fragment, meta.getSchema());
+    return getScanner(meta, schema, fragment, schema);
   }
 
   public FileSystem getFileSystem() {
@@ -129,7 +131,7 @@ public abstract class AbstractStorageManager {
     return new Path(tableBaseDir, tableName);
   }
 
-  public Appender getAppender(TableMeta meta, Path path)
+  public Appender getAppender(TableMeta meta, Schema schema, Path path)
       throws IOException {
     Appender appender;
 
@@ -149,7 +151,7 @@ public abstract class AbstractStorageManager {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    appender = newAppenderInstance(appenderClass, conf, meta, path);
+    appender = newAppenderInstance(appenderClass, conf, meta, schema, path);
 
     return appender;
   }
@@ -168,7 +170,7 @@ public abstract class AbstractStorageManager {
 
     CatalogProtos.TableProto tableProto = (CatalogProtos.TableProto) FileUtil.loadProto(tableMetaIn,
         CatalogProtos.TableProto.getDefaultInstance());
-    meta = new TableMetaImpl(tableProto);
+    meta = new TableMeta(tableProto);
 
     return meta;
   }
@@ -191,7 +193,7 @@ public abstract class AbstractStorageManager {
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus file : fileLists) {
-      tablet = new Fragment(tablePath.getName(), file.getPath(), meta, 0, file.getLen());
+      tablet = new Fragment(tablePath.getName(), file.getPath(), 0, file.getLen());
       listTablets.add(tablet);
     }
 
@@ -225,14 +227,14 @@ public abstract class AbstractStorageManager {
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tableName, file.getPath(), meta, start, defaultBlockSize);
+          tablet = new Fragment(tableName, file.getPath(), start, defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
         }
-        listTablets.add(new Fragment(tableName, file.getPath(), meta, start, remainFileSize));
+        listTablets.add(new Fragment(tableName, file.getPath(), start, remainFileSize));
       } else {
-        listTablets.add(new Fragment(tableName, file.getPath(), meta, 0, remainFileSize));
+        listTablets.add(new Fragment(tableName, file.getPath(), 0, remainFileSize));
       }
     }
 
@@ -257,14 +259,14 @@ public abstract class AbstractStorageManager {
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tableName, file.getPath(), meta, start, defaultBlockSize);
+          tablet = new Fragment(tableName, file.getPath(), start, defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
         }
-        listTablets.add(new Fragment(tableName, file.getPath(), meta, start, remainFileSize));
+        listTablets.add(new Fragment(tableName, file.getPath(), start, remainFileSize));
       } else {
-        listTablets.add(new Fragment(tableName, file.getPath(), meta, 0, remainFileSize));
+        listTablets.add(new Fragment(tableName, file.getPath(), 0, remainFileSize));
       }
     }
 
@@ -389,13 +391,28 @@ public abstract class AbstractStorageManager {
    * <code>false</code> to ensure that individual input files are never split-up
    * so that Mappers process entire files.
    *
+   *
    * @param filename the file name to check
    * @return is this file isSplittable?
    */
-  protected boolean isSplittable(TableMeta meta, Path filename) throws IOException {
-    Scanner scanner = getScanner(meta, filename);
+  protected boolean isSplittable(TableMeta meta, Schema schema, Path filename) throws IOException {
+    Scanner scanner = getScanner(meta, schema, filename);
     return scanner.isSplittable();
   }
+
+  protected boolean isSplittable(CatalogProtos.StoreType storeType) throws IOException {
+    Method[] methods = getScannerClass(storeType).getMethods();
+
+    for (Method method : methods) {
+      ForSplitableStore annos = method.getAnnotation(ForSplitableStore.class);
+      if (annos != null) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
 
   @Deprecated
   protected long computeSplitSize(long blockSize, long minSize,
@@ -428,12 +445,12 @@ public abstract class AbstractStorageManager {
    * by sub-classes to make sub-types
    */
   protected Fragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length) {
-    return new Fragment(fragmentId, file, meta, start, length);
+    return new Fragment(fragmentId, file, start, length);
   }
 
   protected Fragment makeSplit(String fragmentId, TableMeta meta, Path file, BlockLocation blockLocation,
                                int[] diskIds) throws IOException {
-    return new Fragment(fragmentId, file, meta, blockLocation, diskIds);
+    return new Fragment(fragmentId, file, blockLocation, diskIds);
   }
 
   // for Non Splittable. eg, compressed gzip TextFile
@@ -468,7 +485,7 @@ public abstract class AbstractStorageManager {
       hosts[i] = entry.getKey();
       hostsBlockCount[i] = entry.getValue();
     }
-    return new Fragment(fragmentId, file, meta, start, length, hosts, hostsBlockCount);
+    return new Fragment(fragmentId, file, start, length, hosts, hostsBlockCount);
   }
 
   /**
@@ -544,7 +561,7 @@ public abstract class AbstractStorageManager {
    *
    * @throws IOException
    */
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Path inputPath) throws IOException {
+  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
     // generate splits'
 
     List<Fragment> splits = new ArrayList<Fragment>();
@@ -555,7 +572,7 @@ public abstract class AbstractStorageManager {
       long length = file.getLen();
       if (length > 0) {
         BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-        boolean splittable = isSplittable(meta, path);
+        boolean splittable = isSplittable(meta, schema, inputPath);
         if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
           // supported disk volume
           BlockStorageLocation[] blockStorageLocations = ((DistributedFileSystem) fs)
@@ -597,19 +614,21 @@ public abstract class AbstractStorageManager {
   private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
       Configuration.class,
       TableMeta.class,
+      Schema.class,
       Fragment.class
   };
 
   private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
       Configuration.class,
       TableMeta.class,
+      Schema.class,
       Path.class
   };
 
   /**
    * create a scanner instance.
    */
-  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, TableMeta meta,
+  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, TableMeta meta, Schema schema,
                                          Fragment fragment) {
     T result;
     try {
@@ -619,7 +638,7 @@ public abstract class AbstractStorageManager {
         meth.setAccessible(true);
         CONSTRUCTOR_CACHE.put(theClass, meth);
       }
-      result = meth.newInstance(new Object[]{conf, meta, fragment});
+      result = meth.newInstance(new Object[]{conf, meta, schema, fragment});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -630,7 +649,7 @@ public abstract class AbstractStorageManager {
   /**
    * create a scanner instance.
    */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TableMeta meta,
+  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TableMeta meta, Schema schema,
                                           Path path) {
     T result;
     try {
@@ -640,7 +659,7 @@ public abstract class AbstractStorageManager {
         meth.setAccessible(true);
         CONSTRUCTOR_CACHE.put(theClass, meth);
       }
-      result = meth.newInstance(new Object[]{conf, meta, path});
+      result = meth.newInstance(new Object[]{conf, meta, schema, path});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

@@ -27,6 +27,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
@@ -280,32 +281,19 @@ public class TajoClient {
     return tajoMasterService.existTable(null, builder.build()).getValue();
   }
 
-  public TableDesc attachTable(String name, String path)
-      throws ServiceException {
-    AttachTableRequest.Builder builder = AttachTableRequest.newBuilder();
-    builder.setName(name);
-    builder.setPath(path);
-    TableResponse res = tajoMasterService.attachTable(null, builder.build());
-    return CatalogUtil.newTableDesc(res.getTableDesc());
-  }
-
-  public TableDesc attachTable(String name, Path path)
-      throws ServiceException {
-    return attachTable(name, path.toString());
-  }
-
   public boolean detachTable(String name) throws ServiceException {
     StringProto.Builder builder = StringProto.newBuilder();
     builder.setValue(name);
     return tajoMasterService.detachTable(null, builder.build()).getValue();
   }
 
-  public TableDesc createExternalTable(String name, Path path, TableMeta meta)
+  public TableDesc createExternalTable(String name, Schema schema, Path path, TableMeta meta)
       throws SQLException, ServiceException {
     CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
     builder.setName(name);
-    builder.setPath(path.toUri().toString());
+    builder.setSchema(schema.getProto());
     builder.setMeta(meta.getProto());
+    builder.setPath(path.toUri().toString());
     TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
     if (res.getResultCode() == ResultCode.OK) {
       return CatalogUtil.newTableDesc(res.getTableDesc());

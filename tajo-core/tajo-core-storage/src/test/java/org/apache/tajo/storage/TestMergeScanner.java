@@ -26,7 +26,7 @@ import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -89,10 +89,10 @@ public class TestMergeScanner {
     schema.addColumn("age", Type.INT8);
     
     Options options = new Options();
-    TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
-    Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, table1Path);
+    Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, table1Path);
     appender1.enableStats();
     appender1.init();
     int tupleNum = 10000;
@@ -108,13 +108,13 @@ public class TestMergeScanner {
     }
     appender1.close();
     
-    TableStat stat1 = appender1.getStats();
+    TableStats stat1 = appender1.getStats();
     if (stat1 != null) {
       assertEquals(tupleNum, stat1.getNumRows().longValue());
     }
 
     Path table2Path = new Path(testDir, storeType + "_2.data");
-    Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, table2Path);
+    Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, table2Path);
     appender2.enableStats();
     appender2.init();
 
@@ -128,7 +128,7 @@ public class TestMergeScanner {
     }
     appender2.close();
 
-    TableStat stat2 = appender2.getStats();
+    TableStats stat2 = appender2.getStats();
     if (stat2 != null) {
       assertEquals(tupleNum, stat2.getNumRows().longValue());
     }
@@ -137,10 +137,10 @@ public class TestMergeScanner {
     FileStatus status1 = fs.getFileStatus(table1Path);
     FileStatus status2 = fs.getFileStatus(table2Path);
     Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("tablet1", table1Path, meta, 0, status1.getLen());
-    tablets[1] = new Fragment("tablet1", table2Path, meta, 0, status2.getLen());
+    tablets[0] = new Fragment("tablet1", table1Path, 0, status1.getLen());
+    tablets[1] = new Fragment("tablet1", table2Path, 0, status2.getLen());
     
-    Scanner scanner = new MergeScanner(conf, meta, TUtil.newList(tablets));
+    Scanner scanner = new MergeScanner(conf, meta, schema, TUtil.newList(tablets));
     scanner.init();
     int totalCounts = 0;
     while (scanner.next() != null) {

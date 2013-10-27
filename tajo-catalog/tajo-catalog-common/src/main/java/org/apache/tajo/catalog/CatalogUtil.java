@@ -19,16 +19,11 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
-import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.util.FileUtil;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -58,35 +53,6 @@ public class CatalogUtil {
     return sb.toString();
   }
 
-  public static String prettyPrint(TableMeta meta) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("store type: ").append(meta.getStoreType()).append("\n");
-    sb.append("schema: \n");
-
-    for(int i = 0; i < meta.getSchema().getColumnNum(); i++) {
-      Column col = meta.getSchema().getColumn(i);
-      sb.append(col.getColumnName()).append("\t").append(col.getDataType());
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  public static void printTableMeta(File file) throws IOException {
-    CatalogProtos.TableProto proto = (CatalogProtos.TableProto) FileUtil.
-        loadProto(file, CatalogProtos.TableProto.getDefaultInstance());
-    System.out.println(prettyPrint(new TableMetaImpl(proto)));
-  }
-
-  public static void main(String [] args) throws IOException {
-    if (args.length < 2) {
-      System.out.println("catalog print [filename]");
-      System.exit(-1);
-    }
-
-    File file = new File(args[1]);
-    printTableMeta(file);
-  }
-
   public static StoreType getStoreType(final String typeStr) {
     if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
       return StoreType.CSV;
@@ -105,32 +71,24 @@ public class CatalogUtil {
     }
   }
 
-  public static TableMeta newTableMeta(Schema schema, StoreType type) {
-    return new TableMetaImpl(schema, type, new Options());
+  public static TableMeta newTableMeta(StoreType type) {
+    return new TableMeta(type, new Options());
   }
 
-  public static TableMeta newTableMeta(Schema schema, StoreType type,
-      Options options) {
-    return new TableMetaImpl(schema, type, options);
+  public static TableMeta newTableMeta(StoreType type, Options options) {
+    return new TableMeta(type, options);
   }
 
-  public static TableMeta newTableMeta(Schema schema, StoreType type, Options options,
-      TableStat stat) {
-    return new TableMetaImpl(schema, type, options, stat);
-  }
-
-  public static TableDesc newTableDesc(String tableName, TableMeta meta,
-      Path path) {
-    return new TableDescImpl(tableName, meta, path);
+  public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
+    return new TableDesc(tableName, schema, meta, path);
   }
 
   public static TableDesc newTableDesc(TableDescProto proto) {
-    return new TableDescImpl(proto);
+    return new TableDesc(proto);
   }
 
-  public static TableDesc newTableDesc(String tableName,
-      Schema schema, StoreType type, Options options, Path path) {
-    return new TableDescImpl(tableName, schema, type, options, path);
+  public static TableDesc newTableDesc(String tableName, Schema schema, StoreType type, Options options, Path path) {
+    return new TableDesc(tableName, schema, type, options, path);
   }
 
   /**

@@ -121,8 +121,9 @@ message GetTableDescRequest {
 
 message CreateTableRequest {
   required string name = 1;
-  required string path = 2;
+  required SchemaProto schema = 2;
   required TableProto meta = 3;
+  required string path = 4;
 }
 
 message AttachTableRequest {

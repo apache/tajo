@@ -72,14 +72,14 @@ public class TestSortExec {
     schema.addColumn("empId", Type.INT4);
     schema.addColumn("deptName", Type.TEXT);
 
-    employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(rnd.nextInt(5)),
@@ -90,7 +90,7 @@ public class TestSortExec {
     appender.flush();
     appender.close();
 
-    TableDesc desc = new TableDescImpl("employee", employeeMeta, tablePath);
+    TableDesc desc = new TableDesc("employee", schema, employeeMeta, tablePath);
     catalog.addTable(desc);
 
     analyzer = new SQLAnalyzer();

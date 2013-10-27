@@ -103,14 +103,15 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    meta = CatalogUtil.newTableMeta(StoreType.CSV);
     tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
 
-    FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
+    FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema,
+        tablePath);
     appender.init();
-    Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < 10000; i++) {
       
       Tuple key = new VTuple(this.idxSchema.getColumnNum());
@@ -134,8 +135,7 @@ public class TestBSTIndexExec {
     appender.close();
     writer.close();
 
-    TableDesc desc = new TableDescImpl("employee", meta,
-        sm.getTablePath("employee"));
+    TableDesc desc = new TableDesc("employee", schema, meta, sm.getTablePath("employee"));
     catalog.addTable(desc);
 
     analyzer = new SQLAnalyzer();

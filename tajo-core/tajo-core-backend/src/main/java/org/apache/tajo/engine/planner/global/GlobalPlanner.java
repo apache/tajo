@@ -131,8 +131,8 @@ public class GlobalPlanner {
   public static ScanNode buildInputExecutor(LogicalPlan plan, DataChannel channel) {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() +" -> "+ channel.getTargetId().getId()+") is not initialized");
-    TableMeta meta = new TableMetaImpl(channel.getSchema(), channel.getStoreType(), new Options());
-    TableDesc desc = new TableDescImpl(channel.getSrcId().toString(), meta, new Path("/"));
+    TableMeta meta = new TableMeta(channel.getStoreType(), new Options());
+    TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
     return new ScanNode(plan.newPID(), desc);
   }
 
@@ -169,14 +169,14 @@ public class GlobalPlanner {
       ScanNode leftScan = (ScanNode) leftNode;
       ScanNode rightScan = (ScanNode) rightNode;
 
-      TableMeta leftMeta = leftScan.getTableDesc().getMeta();
-      TableMeta rightMeta = rightScan.getTableDesc().getMeta();
+      TableDesc leftDesc = leftScan.getTableDesc();
+      TableDesc rightDesc = rightScan.getTableDesc();
       long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
-      if (leftMeta.getStat().getNumBytes() < broadcastThreshold) {
+      if (leftDesc.getStats().getNumBytes() < broadcastThreshold) {
         leftBroadcasted = true;
       }
-      if (rightMeta.getStat().getNumBytes() < broadcastThreshold) {
+      if (rightDesc.getStats().getNumBytes() < broadcastThreshold) {
         rightBroadcasted = true;
       }
 

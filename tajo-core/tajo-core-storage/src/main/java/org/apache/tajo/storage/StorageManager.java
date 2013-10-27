@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 
 import java.io.IOException;
@@ -34,27 +35,28 @@ public class StorageManager extends AbstractStorageManager {
   }
 
   @Override
-  public Scanner getScanner(TableMeta meta, Fragment fragment,
-                                   Schema target) throws IOException {
-    Scanner scanner;
-
-    Class<? extends Scanner> scannerClass;
-
-    String handlerName = meta.getStoreType().name().toLowerCase();
-    scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
+  public Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException {
+    String handlerName = storeType.name().toLowerCase();
+    Class<? extends Scanner> scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
-          String.format("tajo.storage.scanner-handler.%s.class",
-              meta.getStoreType().name().toLowerCase()), null,
-          Scanner.class);
+          String.format("tajo.storage.scanner-handler.%s.class",storeType.name().toLowerCase()), null, Scanner.class);
       SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+      throw new IOException("Unknown Storage Type: " + storeType.name());
     }
 
-    scanner = newScannerInstance(scannerClass, conf, meta, fragment);
+    return scannerClass;
+  }
+
+  @Override
+  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+    Scanner scanner;
+
+    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
+    scanner = newScannerInstance(scannerClass, conf, meta, schema, fragment);
     if (scanner.isProjectable()) {
       scanner.setTarget(target.toArray());
     }

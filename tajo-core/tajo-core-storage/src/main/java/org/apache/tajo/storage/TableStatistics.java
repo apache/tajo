@@ -19,8 +19,8 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.statistics.ColumnStat;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.ColumnStats;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -97,16 +97,16 @@ public class TableStatistics {
     }
   }
 
-  public TableStat getTableStat() {
-    TableStat stat = new TableStat();
+  public TableStats getTableStat() {
+    TableStats stat = new TableStats();
 
-    ColumnStat columnStat;
+    ColumnStats columnStats;
     for (int i = 0; i < schema.getColumnNum(); i++) {
-      columnStat = new ColumnStat(schema.getColumn(i));
-      columnStat.setNumNulls(numNulls[i]);
-      columnStat.setMinValue(minValues.get(i));
-      columnStat.setMaxValue(maxValues.get(i));
-      stat.addColumnStat(columnStat);
+      columnStats = new ColumnStats(schema.getColumn(i));
+      columnStats.setNumNulls(numNulls[i]);
+      columnStats.setMinValue(minValues.get(i));
+      columnStats.setMaxValue(maxValues.get(i));
+      stat.addColumnStat(columnStats);
     }
 
     stat.setNumRows(this.numRows);

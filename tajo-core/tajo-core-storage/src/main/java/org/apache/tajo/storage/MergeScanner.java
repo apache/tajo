@@ -33,15 +33,17 @@ import java.util.List;
 public class MergeScanner implements Scanner {
   private Configuration conf;
   private TableMeta meta;
+  private Schema schema;
   private List<Fragment> fragments;
   private Iterator<Fragment> iterator;
   private Fragment currentFragment;
   private Scanner currentScanner;
   private Tuple tuple;
 
-  public MergeScanner(Configuration conf, TableMeta meta, Collection<Fragment> fragments) {
+  public MergeScanner(Configuration conf, TableMeta meta, Schema schema, Collection<Fragment> fragments) {
     this.conf = conf;
     this.meta = meta;
+    this.schema = schema;
     this.fragments = new ArrayList<Fragment>(fragments);
     iterator = this.fragments.iterator();
   }
@@ -62,7 +64,8 @@ public class MergeScanner implements Scanner {
         currentScanner.close();
       }
       currentFragment = iterator.next();
-      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, currentFragment);
+      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
+          currentFragment);
       currentScanner.init();
       return currentScanner.next();
     } else {
@@ -75,7 +78,8 @@ public class MergeScanner implements Scanner {
     iterator = fragments.iterator();
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, currentFragment);
+      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
+          currentFragment);
     }
   }
 
@@ -110,7 +114,7 @@ public class MergeScanner implements Scanner {
 
   @Override
   public Schema getSchema() {
-    return meta.getSchema();
+    return schema;
   }
 
   @Override

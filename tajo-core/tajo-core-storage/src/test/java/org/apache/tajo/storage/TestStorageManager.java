@@ -62,7 +62,7 @@ public class TestStorageManager {
 		schema.addColumn("age",Type.INT4);
 		schema.addColumn("name",Type.TEXT);
 
-		TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+		TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
 		
 		Tuple[] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -75,14 +75,14 @@ public class TestStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-		Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, path);
+		Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, path);
     appender.init();
 		for(Tuple t : tuples) {
 		  appender.addTuple(t);
 		}
 		appender.close();
 
-		Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, path);
+		Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, path);
     scanner.init();
 		int i=0;
 		while(scanner.next() != null) {

@@ -26,7 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.statistics.ColumnStat;
+import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -364,9 +364,9 @@ public class TupleUtil {
         .toTuple(schema, endBytes));
   }
 
-  public static TupleRange columnStatToRange(Schema schema, Schema target, List<ColumnStat> colStats) {
-    Map<Column, ColumnStat> statSet = Maps.newHashMap();
-    for (ColumnStat stat : colStats) {
+  public static TupleRange columnStatToRange(Schema schema, Schema target, List<ColumnStats> colStats) {
+    Map<Column, ColumnStats> statSet = Maps.newHashMap();
+    for (ColumnStats stat : colStats) {
       statSet.put(stat.getColumn(), stat);
     }
 

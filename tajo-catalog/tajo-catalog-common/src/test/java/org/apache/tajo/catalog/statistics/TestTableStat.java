@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class TestTableStat {
   @Test
   public final void testTableStat() throws CloneNotSupportedException {
-    TableStat stat = new TableStat();
+    TableStats stat = new TableStats();
     stat.setNumRows(957685);
     stat.setNumBytes(1023234);
     stat.setNumBlocks(3123);
@@ -37,9 +37,9 @@ public class TestTableStat {
     stat.setAvgRows(80000);
         
     int numCols = 3;
-    ColumnStat[] cols = new ColumnStat[numCols];
+    ColumnStats[] cols = new ColumnStats[numCols];
     for (int i = 0; i < numCols; i++) {
-      cols[i] = new ColumnStat(new Column("col_" + i, Type.INT8));
+      cols[i] = new ColumnStats(new Column("col_" + i, Type.INT8));
       cols[i].setNumDistVals(1024 * i);
       cols[i].setNumNulls(100 * i);
       stat.addColumnStat(cols[i]);
@@ -55,18 +55,18 @@ public class TestTableStat {
       assertEquals(cols[i], stat.getColumnStats().get(i));
     }
     
-    TableStat stat2 = new TableStat(stat.getProto());
+    TableStats stat2 = new TableStats(stat.getProto());
     tableStatEquals(stat, stat2);
     
-    TableStat stat3 = (TableStat) stat.clone();
+    TableStats stat3 = (TableStats) stat.clone();
     tableStatEquals(stat, stat3);
 
     String json = stat.toJson();
-    TableStat fromJson = CatalogGsonHelper.fromJson(json, TableStat.class);
+    TableStats fromJson = CatalogGsonHelper.fromJson(json, TableStats.class);
     tableStatEquals(stat, fromJson);
   }
   
-  public void tableStatEquals(TableStat s1, TableStat s2) {
+  public void tableStatEquals(TableStats s1, TableStats s2) {
     assertEquals(s1.getNumRows(), s2.getNumRows());
     assertEquals(s1.getNumBlocks(), s2.getNumBlocks());
     assertEquals(s1.getNumPartitions(), s2.getNumPartitions());

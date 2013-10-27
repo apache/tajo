@@ -81,9 +81,8 @@ public class LocalTajoTestingUtility {
       fs.mkdirs(tablePath);
       Path dfsPath = new Path(tablePath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
-          CatalogProtos.StoreType.CSV, option);
-      client.createExternalTable(names[i], tablePath, meta);
+      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, option);
+      client.createExternalTable(names[i], schemas[i], tablePath, meta);
     }
 
     LOG.info("===================================================");

@@ -231,8 +231,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public static double getCost(LogicalNode node) {
     if (node instanceof ScanNode) {
       ScanNode scanNode = (ScanNode) node;
-      if (scanNode.getTableDesc().getMeta().getStat() != null) {
-        return ((ScanNode)node).getTableDesc().getMeta().getStat().getNumBytes();
+      if (scanNode.getTableDesc().getStats() != null) {
+        return ((ScanNode)node).getTableDesc().getStats().getNumBytes();
       } else {
         return Long.MAX_VALUE;
       }

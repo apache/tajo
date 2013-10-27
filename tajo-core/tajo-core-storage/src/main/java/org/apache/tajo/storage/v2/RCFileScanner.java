@@ -23,11 +23,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
 import org.apache.tajo.util.Bytes;
@@ -36,6 +38,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 
+@ForSplitableStore
 public class RCFileScanner extends FileScannerV2 {
   private static final Log LOG = LogFactory.getLog(RCFileScanner.class);
 
@@ -50,10 +53,9 @@ public class RCFileScanner extends FileScannerV2 {
   private boolean first = true;
   private int maxBytesPerSchedule;
 
-  public RCFileScanner(final Configuration conf,
-                       final TableMeta meta,
-                       final Fragment fragment) throws IOException {
-    super(conf, meta, fragment);
+  public RCFileScanner(final Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+      throws IOException {
+    super(conf, meta, schema, fragment);
 
     this.start = fragment.getStartOffset();
     this.end = start + fragment.getLength();

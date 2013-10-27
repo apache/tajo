@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -46,7 +46,7 @@ public class TaskAttemptContext {
   private final Map<String, List<Fragment>> fragmentMap = new HashMap<String, List<Fragment>>();
 
   private TaskAttemptState state;
-  private TableStat resultStats;
+  private TableStats resultStats;
   private QueryUnitAttemptId queryId;
   private final Path workDir;
   private boolean needFetch = false;
@@ -115,11 +115,11 @@ public class TaskAttemptContext {
     return resultStats != null;
   }
 
-  public void setResultStats(TableStat stats) {
+  public void setResultStats(TableStats stats) {
     this.resultStats = stats;
   }
 
-  public TableStat getResultStats() {
+  public TableStats getResultStats() {
     return this.resultStats;
   }
   

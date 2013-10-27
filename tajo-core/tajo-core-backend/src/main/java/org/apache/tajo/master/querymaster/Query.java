@@ -28,16 +28,15 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableDescImpl;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -317,7 +316,8 @@ public class Query implements EventHandler<QueryEvent> {
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
             DataChannel finalChannel = masterPlan.getChannel(castEvent.getExecutionBlockId(), nextBlock.getId());
             Path finalOutputDir = commitOutputData(query);
-            TableDesc finalTableDesc = buildOrUpdateResultTableDesc(query, castEvent.getExecutionBlockId(), finalOutputDir);
+            TableDesc finalTableDesc = buildOrUpdateResultTableDesc(query, castEvent.getExecutionBlockId(),
+                finalOutputDir);
 
             QueryContext queryContext = query.context.getQueryContext();
             CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
@@ -380,15 +380,16 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       TableMeta meta = subQuery.getTableMeta();
+      TableStats stats = subQuery.getTableStat();
       try {
         FileSystem fs = finalOutputDir.getFileSystem(query.systemConf);
         ContentSummary directorySummary = fs.getContentSummary(finalOutputDir);
-        if(meta.getStat() == null) meta.setStat(new TableStat());
-        meta.getStat().setNumBytes(directorySummary.getLength());
+        stats.setNumBytes(directorySummary.getLength());
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
       }
-      TableDesc outputTableDesc = new TableDescImpl(outputTableName, meta, finalOutputDir);
+      TableDesc outputTableDesc = new TableDesc(outputTableName, subQuery.getSchema(), meta, finalOutputDir);
+      outputTableDesc.setStats(stats);
       TableDesc finalTableDesc = outputTableDesc;
 
       // If a query has a target table, a TableDesc is updated.
@@ -397,7 +398,7 @@ public class Query implements EventHandler<QueryEvent> {
           CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
           Preconditions.checkNotNull(catalog, "CatalogService is NULL");
           TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
-          updatingTable.getMeta().setStat(meta.getStat());
+          updatingTable.setStats(stats);
           finalTableDesc = updatingTable;
         }
       }

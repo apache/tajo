@@ -31,10 +31,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
-import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -46,7 +43,6 @@ import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
@@ -288,12 +284,12 @@ public class TajoMasterClientService extends AbstractService {
       if (catalog.existsTable(name)) {
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.OK)
-            .setTableDesc((TableDescProto) catalog.getTableDesc(name).getProto())
+            .setTableDesc(catalog.getTableDesc(name).getProto())
             .build();
       } else {
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.ERROR)
-            .setErrorMessage("No such a table: " + request.getTableName())
+            .setErrorMessage("ERROR: no such a table: " + request.getTableName())
             .build();
       }
     }
@@ -309,27 +305,13 @@ public class TajoMasterClientService extends AbstractService {
           throw new IOException("No such a directory: " + path);
         }
 
-        TableMeta meta = new TableMetaImpl(request.getMeta());
-
-        if (meta.getStat() == null) {
-          meta.setStat(new TableStat());
-        }
-
-        TableStat stat = meta.getStat();
-        long totalSize;
-        try {
-          totalSize = fs.getContentSummary(path).getSpaceConsumed();
-        } catch (IOException e) {
-          String message =
-              "Cannot get the volume of the table \"" + request.getName() + "\" from " + request.getPath();
-          LOG.warn(message);
-          throw new IOException(message, e);
-        }
-        stat.setNumBytes(totalSize);
+        Schema schema = new Schema(request.getSchema());
+        TableMeta meta = new TableMeta(request.getMeta());
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), meta, path, false);
+          desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), schema, meta, path,
+              false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)
@@ -338,7 +320,7 @@ public class TajoMasterClientService extends AbstractService {
 
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.OK)
-            .setTableDesc((TableDescProto) desc.getProto()).build();
+            .setTableDesc(desc.getProto()).build();
       } catch (IOException ioe) {
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.ERROR)
@@ -352,53 +334,6 @@ public class TajoMasterClientService extends AbstractService {
         throws ServiceException {
       context.getGlobalEngine().dropTable(tableNameProto.getValue());
       return BOOL_TRUE;
-    }
-
-    @Override
-    public TableResponse attachTable(RpcController controller,
-                                     AttachTableRequest request)
-        throws ServiceException {
-
-      TableDesc desc;
-      if (catalog.existsTable(request.getName())) {
-        throw new AlreadyExistsTableException(request.getName());
-      }
-
-      Path tablePath = new Path(request.getPath());
-
-      LOG.info(tablePath.toUri());
-
-      TableMeta meta;
-      try {
-        meta = TableUtil.getTableMeta(conf, tablePath);
-      } catch (IOException e) {
-        throw new RemoteException(e);
-      }
-
-      if (meta.getStat() == null) {
-        long totalSize;
-        try {
-          FileSystem fs = tablePath.getFileSystem(conf);
-          totalSize = fs.getContentSummary(tablePath).getSpaceConsumed();
-        } catch (IOException e) {
-          LOG.error("Cannot get the volume of the table", e);
-          return null;
-        }
-
-        meta = new TableMetaImpl(meta.getProto());
-        TableStat stat = new TableStat();
-        stat.setNumBytes(totalSize);
-        meta.setStat(stat);
-      }
-
-      desc = new TableDescImpl(request.getName(), meta, tablePath);
-      catalog.addTable(desc);
-      LOG.info("Table " + desc.getName() + " is attached ("
-          + meta.getStat().getNumBytes() + ")");
-
-      return TableResponse.newBuilder().
-          setTableDesc((TableDescProto) desc.getProto())
-          .build();
     }
 
     @Override

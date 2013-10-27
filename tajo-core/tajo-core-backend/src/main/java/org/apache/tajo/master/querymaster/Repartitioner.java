@@ -23,22 +23,21 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.Fragment;
@@ -77,7 +76,7 @@ public class Repartitioner {
 
     Path tablePath;
     Fragment [] fragments = new Fragment[2];
-    TableStat [] stats = new TableStat[2];
+    TableStats[] stats = new TableStats[2];
 
     // initialize variables from the child operators
     for (int i =0; i < 2; i++) {
@@ -90,13 +89,12 @@ public class Repartitioner {
 
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat();
-        fragments[i] = new Fragment(scans[i].getCanonicalName(), tablePath,
-            CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV), 0, 0);
+        fragments[i] = new Fragment(scans[i].getCanonicalName(), tablePath, 0, 0);
       } else {
         tablePath = tableDesc.getPath();
-        stats[i] = tableDesc.getMeta().getStat();
-        fragments[i] = storageManager.getSplits(scans[i].getCanonicalName(),
-            tableDesc.getMeta(), tablePath).get(0);
+        stats[i] = tableDesc.getStats();
+        fragments[i] = storageManager.getSplits(scans[i].getCanonicalName(), tableDesc.getMeta(), tableDesc.getSchema(),
+            tablePath).get(0);
       }
     }
 
@@ -212,7 +210,8 @@ public class Repartitioner {
     meta = desc.getMeta();
 
     FileSystem fs = inputPath.getFileSystem(subQuery.getContext().getConf());
-    List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, inputPath);
+    List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
+        inputPath);
     QueryUnit queryUnit;
     List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
 
@@ -310,7 +309,7 @@ public class Repartitioner {
                                                          SubQuery childSubQuery, DataChannel channel, int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStat stat = childSubQuery.getTableStat();
+    TableStats stat = childSubQuery.getTableStat();
     if (stat.getNumRows() == 0) {
       return new QueryUnit[0];
     }
@@ -343,8 +342,7 @@ public class Repartitioner {
         " sub ranges (total units: " + determinedTaskNum + ")");
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
 
-    Fragment dummyFragment = new Fragment(scan.getTableName(), tablePath,
-        CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),0, 0);
+    Fragment dummyFragment = new Fragment(scan.getTableName(), tablePath, 0, 0);
 
     List<String> basicFetchURIs = new ArrayList<String>();
 
@@ -423,13 +421,13 @@ public class Repartitioner {
                                                  SubQuery childSubQuery, DataChannel channel, int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
 
-    List<TableStat> tableStats = new ArrayList<TableStat>();
+    List<TableStats> tableStatses = new ArrayList<TableStats>();
     List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
     for (ExecutionBlock childBlock : childBlocks) {
       SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-      tableStats.add(childExecSM.getTableStat());
+      tableStatses.add(childExecSM.getTableStat());
     }
-    TableStat totalStat = StatisticsUtil.computeStatFromUnionBlock(tableStats);
+    TableStats totalStat = StatisticsUtil.computeStatFromUnionBlock(tableStatses);
 
     if (totalStat.getNumRows() == 0) {
       return new QueryUnit[0];
@@ -440,8 +438,7 @@ public class Repartitioner {
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
 
-    Fragment frag = new Fragment(scan.getCanonicalName(), tablePath,
-        CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV), 0, 0);
+    Fragment frag = new Fragment(scan.getCanonicalName(), tablePath, 0, 0);
 
 
     Map<String, List<IntermediateEntry>> hashedByHost;

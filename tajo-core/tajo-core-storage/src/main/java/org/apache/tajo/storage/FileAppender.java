@@ -35,10 +35,10 @@ public abstract class FileAppender implements Appender {
 
   protected boolean enabledStats;
   
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
+  public FileAppender(Configuration conf, TableMeta meta, Schema schema, Path path) {
     this.conf = conf;
     this.meta = meta;
-    this.schema = meta.getSchema();
+    this.schema = schema;
     this.path = path;
   }
 

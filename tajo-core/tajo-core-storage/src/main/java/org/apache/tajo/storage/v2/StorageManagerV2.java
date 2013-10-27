@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.Fragment;
@@ -53,29 +54,32 @@ public class StorageManagerV2 extends AbstractStorageManager {
 	}
 
   @Override
-  public Scanner getScanner(TableMeta meta, Fragment fragment,
-                            Schema target) throws IOException {
-    Scanner scanner;
-
+  public Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException {
     Class<? extends Scanner> scannerClass;
 
-    String handlerName = meta.getStoreType().name().toLowerCase();
+    String handlerName = storeType.name().toLowerCase();
     String handlerNameKey = handlerName + "_v2";
 
     scannerClass = SCANNER_HANDLER_CACHE.get(handlerNameKey);
     if (scannerClass == null) {
-      scannerClass = conf.getClass(
-          String.format("tajo.storage.scanner-handler.v2.%s.class",
-              meta.getStoreType().name().toLowerCase()), null,
-          Scanner.class);
+      scannerClass = conf.getClass(String.format("tajo.storage.scanner-handler.v2.%s.class",
+          storeType.name().toLowerCase()), null, Scanner.class);
       SCANNER_HANDLER_CACHE.put(handlerNameKey, scannerClass);
     }
 
+    return scannerClass;
+  }
+
+  @Override
+  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+    Scanner scanner;
+
+    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
     if (scannerClass == null) {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    scanner = newScannerInstance(scannerClass, conf, meta, fragment);
+    scanner = newScannerInstance(scannerClass, conf, meta, schema, fragment);
     if (scanner.isProjectable()) {
       scanner.setTarget(target.toArray());
     }

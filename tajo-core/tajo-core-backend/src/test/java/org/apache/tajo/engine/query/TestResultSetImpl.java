@@ -27,7 +27,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.ResultSetImpl;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -51,6 +51,7 @@ public class TestResultSetImpl {
   private static TableDesc desc;
   private static AbstractStorageManager sm;
   private static TableMeta scoreMeta;
+  private static Schema scoreSchema;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -58,15 +59,16 @@ public class TestResultSetImpl {
     conf = util.getConfiguration();
     sm = StorageManagerFactory.getStorageManager(conf);
 
-    Schema scoreSchema = new Schema();
+    scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
-    scoreMeta = CatalogUtil.newTableMeta(scoreSchema, StoreType.CSV);
-    TableStat stat = new TableStat();
+    scoreMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableStats stats = new TableStats();
 
     Path p = sm.getTablePath("score");
     sm.getFileSystem().mkdirs(p);
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, new Path(p, "score"));
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, scoreSchema,
+        new Path(p, "score"));
     appender.init();
     int deptSize = 100;
     int tupleNum = 10000;
@@ -81,13 +83,13 @@ public class TestResultSetImpl {
       appender.addTuple(tuple);
     }
     appender.close();
-    stat.setNumRows(tupleNum);
-    stat.setNumBytes(written);
-    stat.setAvgRows(tupleNum);
-    stat.setNumBlocks(1000);
-    stat.setNumPartitions(100);
-    scoreMeta.setStat(stat);
-    desc = new TableDescImpl("score", scoreMeta, p);
+    stats.setNumRows(tupleNum);
+    stats.setNumBytes(written);
+    stats.setAvgRows(tupleNum);
+    stats.setNumBlocks(1000);
+    stats.setNumPartitions(100);
+    desc = new TableDesc("score", scoreSchema, scoreMeta, p);
+    desc.setStats(stats);
   }
 
   @AfterClass
@@ -100,7 +102,7 @@ public class TestResultSetImpl {
     ResultSetImpl rs = new ResultSetImpl(null, null, conf, desc);
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
-    Schema schema = scoreMeta.getSchema();
+    Schema schema = scoreSchema;
     assertEquals(schema.getColumnNum(), meta.getColumnCount());
     for (int i = 0; i < meta.getColumnCount(); i++) {
       assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i + 1));

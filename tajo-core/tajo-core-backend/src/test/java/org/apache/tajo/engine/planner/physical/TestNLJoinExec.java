@@ -78,11 +78,11 @@ public class TestNLJoinExec {
     schema.addColumn("memId", Type.INT4);
     schema.addColumn("deptName", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
+    Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < 50; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(i),
@@ -93,8 +93,7 @@ public class TestNLJoinExec {
     }
     appender.flush();
     appender.close();
-    employee = CatalogUtil.newTableDesc("employee", employeeMeta,
-        employeePath);
+    employee = CatalogUtil.newTableDesc("employee", schema, employeeMeta, employeePath);
     catalog.addTable(employee);
     
     Schema peopleSchema = new Schema();
@@ -102,11 +101,11 @@ public class TestNLJoinExec {
     peopleSchema.addColumn("fk_memId", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta(peopleSchema, StoreType.CSV);
+    TableMeta peopleMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = StorageManagerFactory.getStorageManager(conf).getAppender(peopleMeta, peoplePath);
+    appender = StorageManagerFactory.getStorageManager(conf).getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
-    tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
+    tuple = new VTuple(peopleSchema.getColumnNum());
     for (int i = 1; i < 50; i += 2) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(i),
@@ -118,8 +117,7 @@ public class TestNLJoinExec {
     appender.flush();
     appender.close();
     
-    people = CatalogUtil.newTableDesc("people", peopleMeta,
-        peoplePath);
+    people = CatalogUtil.newTableDesc("people", peopleSchema, peopleMeta, peoplePath);
     catalog.addTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);

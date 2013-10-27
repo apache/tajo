@@ -65,8 +65,8 @@ public class TestEvalTree {
     schema.addColumn("score", INT4);
     schema.addColumn("age", INT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta, CommonTestingUtil.getTestDir());
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableDesc desc = new TableDesc("people", schema, meta, CommonTestingUtil.getTestDir());
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,
@@ -159,7 +159,7 @@ public class TestEvalTree {
 
     EvalNode expr;
 
-    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    Schema peopleSchema = cat.getTableDesc("people").getSchema();
     EvalContext evalCtx;
     expr = getRootSelection(QUERIES[0]);
     evalCtx = expr.newContext();
@@ -609,7 +609,7 @@ public class TestEvalTree {
     assertTrue(not.terminate(evalCtx).asBool());
     
     // Evaluation Test
-    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    Schema peopleSchema = cat.getTableDesc("people").getSchema();
     expr = getRootSelection(NOT[0]);
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuples[0]);
@@ -631,7 +631,7 @@ public class TestEvalTree {
   public final void testLike() {
     EvalNode expr;
 
-    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    Schema peopleSchema = cat.getTableDesc("people").getSchema();
     // prefix
     expr = getRootSelection(LIKE[0]);
     EvalContext evalCtx = expr.newContext();

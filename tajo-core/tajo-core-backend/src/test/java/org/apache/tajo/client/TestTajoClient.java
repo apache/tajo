@@ -89,7 +89,7 @@ public class TestTajoClient {
 
     assertFalse(client.existTable(tableName));
 
-    client.createExternalTable(tableName, tablePath, BackendTestingUtil.mockupMeta);
+    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
     assertTrue(client.existTable(tableName));
     client.dropTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -183,12 +183,12 @@ public class TestTajoClient {
     assertNotNull(tablePath);
     assertFalse(client.existTable(tableName1));
 
-    client.createExternalTable("table3", tablePath, BackendTestingUtil.mockupMeta);
+    client.createExternalTable("table3", BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
     assertTrue(client.existTable(tableName1));
 
     TableDesc desc = client.getTableDesc(tableName1);
     assertNotNull(desc);
     assertEquals(tableName1, desc.getName());
-    assertTrue(desc.getMeta().getStat().getNumBytes() > 0);
+    assertTrue(desc.getStats().getNumBytes() > 0);
   }
 }

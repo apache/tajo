@@ -23,7 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.catalog.store.AbstractDBStore;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -69,15 +69,15 @@ public class TestDBStore {
     String tableName = "addedtable";
     Options opts = new Options();
     opts.put("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV, opts);
-    TableDesc desc = new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
 
     TableDesc retrieved = store.getTable(tableName);
     // Schema order check
-    assertSchemaOrder(desc.getMeta().getSchema(), retrieved.getMeta().getSchema());
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
     store.deleteTable(tableName);
     assertFalse(store.existTable(tableName));
   }
@@ -93,23 +93,23 @@ public class TestDBStore {
     String tableName = "gettable";
     Options opts = new Options();
     opts.put("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    TableStat stat = new TableStat();
+    TableStats stat = new TableStats();
     stat.setNumRows(957685);
     stat.setNumBytes(1023234);
-    meta.setStat(stat);
 
-    TableDesc desc = new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "gettable"));
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "gettable"));
+    desc.setStats(stat);
 
     store.addTable(desc);
     TableDesc retrieved = store.getTable(tableName);
     assertEquals(",", retrieved.getMeta().getOption("file.delimiter"));
     assertEquals(desc, retrieved);
-    assertTrue(957685 == desc.getMeta().getStat().getNumRows());
-    assertTrue(1023234 == desc.getMeta().getStat().getNumBytes());
+    assertTrue(957685 == desc.getStats().getNumRows());
+    assertTrue(1023234 == desc.getStats().getNumBytes());
     // Schema order check
-    assertSchemaOrder(desc.getMeta().getSchema(), retrieved.getMeta().getSchema());
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
     store.deleteTable(tableName);
   }
   
@@ -124,8 +124,8 @@ public class TestDBStore {
     int numTables = 5;
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
-      TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-      TableDesc desc = new TableDescImpl(tableName, meta,
+      TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+      TableDesc desc = new TableDesc(tableName, schema, meta,
           new Path(CommonTestingUtil.getTestDir(), "tableA_" + i));
       store.addTable(desc);
     }
@@ -205,8 +205,8 @@ public class TestDBStore {
     
     String tableName = "indexed";
     
-    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    return new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "indexed"));
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    return new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "indexed"));
   }
 
   public static void assertSchemaOrder(Schema s1, Schema s2) {

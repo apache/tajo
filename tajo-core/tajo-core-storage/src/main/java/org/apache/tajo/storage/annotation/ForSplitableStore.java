@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.storage.annotation;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class SubQuerySucceeEvent extends SubQueryCompletedEvent {
-  public SubQuerySucceeEvent(final ExecutionBlockId id) {
-    super(id, SubQueryState.SUCCEEDED);
-  }
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface ForSplitableStore {
 }

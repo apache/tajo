@@ -29,7 +29,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -367,7 +367,7 @@ public class TajoCli {
 
               ResultSetMetaData rsmd = res.getMetaData();
               TableDesc desc = client.getResultDesc(queryId);
-              TableStat stat = desc.getMeta().getStat();
+              TableStats stat = desc.getStats();
               String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
               long resultRows = stat.getNumRows();
               sout.println("result: " + desc.getPath() + ", " + resultRows + " rows (" + volume + ")");
@@ -438,10 +438,10 @@ public class TajoCli {
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
     sb.append("table path: ").append(desc.getPath()).append("\n");
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
-    if (desc.getMeta().getStat() != null) {
-      sb.append("number of rows: ").append(desc.getMeta().getStat().getNumRows()).append("\n");
+    if (desc.getStats() != null) {
+      sb.append("number of rows: ").append(desc.getStats().getNumRows()).append("\n");
       sb.append("volume: ").append(
-          FileUtil.humanReadableByteCount(desc.getMeta().getStat().getNumBytes(),
+          FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
               true)).append("\n");
     }
     sb.append("Options: \n");
@@ -452,8 +452,8 @@ public class TajoCli {
     sb.append("\n");
     sb.append("schema: \n");
 
-    for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {
-      Column col = desc.getMeta().getSchema().getColumn(i);
+    for(int i = 0; i < desc.getSchema().getColumnNum(); i++) {
+      Column col = desc.getSchema().getColumn(i);
       sb.append(col.getColumnName()).append("\t").append(col.getDataType().getType());
       if (col.getDataType().hasLength()) {
         sb.append("(").append(col.getDataType().getLength()).append(")");

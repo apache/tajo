@@ -30,26 +30,23 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Options;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.ColumnStat;
+import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.TaskScheduler;
@@ -79,8 +76,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private MasterPlan masterPlan;
   private ExecutionBlock block;
   private int priority;
+  private Schema schema;
   private TableMeta meta;
-  private TableStat statistics;
+  private TableStats statistics;
   private EventHandler eventHandler;
   private final AbstractStorageManager sm;
   private TaskSchedulerImpl taskScheduler;
@@ -264,12 +262,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return tasks.get(qid);
   }
 
-  @SuppressWarnings("UnusedDeclaration")
+  public Schema getSchema() {
+    return schema;
+  }
+
   public TableMeta getTableMeta() {
     return meta;
   }
 
-  public TableStat getTableStat() {
+  public TableStats getTableStat() {
     return statistics;
   }
 
@@ -306,12 +307,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  public static TableStat computeStatFromUnionBlock(SubQuery subQuery) {
-    TableStat stat = new TableStat();
-    TableStat childStat;
+  public static TableStats computeStatFromUnionBlock(SubQuery subQuery) {
+    TableStats stat = new TableStats();
+    TableStats childStat;
     long avgRows = 0, numBytes = 0, numRows = 0;
     int numBlocks = 0, numPartitions = 0;
-    List<ColumnStat> columnStats = Lists.newArrayList();
+    List<ColumnStats> columnStatses = Lists.newArrayList();
 
     MasterPlan masterPlan = subQuery.getMasterPlan();
     Iterator<ExecutionBlock> it = masterPlan.getChilds(subQuery.getBlock()).iterator();
@@ -320,14 +321,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       SubQuery childSubQuery = subQuery.context.getSubQuery(block.getId());
       childStat = childSubQuery.getTableStat();
       avgRows += childStat.getAvgRows();
-      columnStats.addAll(childStat.getColumnStats());
+      columnStatses.addAll(childStat.getColumnStats());
       numBlocks += childStat.getNumBlocks();
       numBytes += childStat.getNumBytes();
       numPartitions += childStat.getNumPartitions();
       numRows += childStat.getNumRows();
     }
 
-    stat.setColumnStats(columnStats);
+    stat.setColumnStats(columnStatses);
     stat.setNumBlocks(numBlocks);
     stat.setNumBytes(numBytes);
     stat.setNumPartitions(numPartitions);
@@ -336,13 +337,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return stat;
   }
 
-  private TableStat computeStatFromTasks() {
-    List<TableStat> stats = Lists.newArrayList();
+  private TableStats computeStatFromTasks() {
+    List<TableStats> stats = Lists.newArrayList();
     for (QueryUnit unit : getQueryUnits()) {
       stats.add(unit.getStats());
     }
-    TableStat tableStat = StatisticsUtil.aggregateTableStat(stats);
-    return tableStat;
+    TableStats tableStats = StatisticsUtil.aggregateTableStat(stats);
+    return tableStats;
   }
 
   private void stopScheduler() {
@@ -360,11 +361,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   private void finish() {
-    TableStat stat;
+    TableStats stats;
     if (block.hasUnion()) {
-      stat = computeStatFromUnionBlock(this);
+      stats = computeStatFromUnionBlock(this);
     } else {
-      stat = computeStatFromTasks();
+      stats = computeStatFromTasks();
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
@@ -376,12 +377,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     if (storeTableNode != null) {
       storeType = storeTableNode.getStorageType();
     }
-    meta = CatalogUtil.newTableMeta(channel.getSchema(), storeType, new Options());
-    meta.setStat(stat);
-    statistics = stat;
+    schema = channel.getSchema();
+    meta = CatalogUtil.newTableMeta(storeType, new Options());
+    statistics = stats;
     setFinishTime();
 
-    eventHandler.handle(new SubQuerySucceeEvent(getId(), meta));
+    eventHandler.handle(new SubQuerySucceeEvent(getId()));
   }
 
   @Override
@@ -592,7 +593,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
         ScanNode outerScan = execBlock.getScanNodes()[0];
-        TableStat stat = tableMap.get(outerScan.getCanonicalName()).getMeta().getStat();
+        TableStats stat = tableMap.get(outerScan.getCanonicalName()).getStats();
         return stat.getNumBytes();
       } else {
         long aggregatedVolume = 0;
@@ -641,7 +642,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       meta = desc.getMeta();
 
       // TODO - should be change the inner directory
-      List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, inputPath);
+      List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
+          inputPath);
 
       QueryUnit queryUnit;
       List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();

@@ -501,32 +501,6 @@ public class TajoTestingCluster {
     LOG.info("Minicluster is down");
   }
 
-  public static ResultSet runInLocal(String[] tableNames,
-                                     Schema[] schemas,
-                                     Options option,
-                                     String[][] tables,
-                                     String query) throws Exception {
-    TajoTestingCluster util = new TajoTestingCluster();
-    util.startMiniClusterInLocal(1);
-    TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClient(conf);
-
-    File tmpDir = util.setupClusterTestBuildDir();
-    for (int i = 0; i < tableNames.length; i++) {
-      File tableDir = new File(tmpDir,tableNames[i]);
-      tableDir.mkdirs();
-      File tableFile = new File(tableDir, tableNames[i]);
-      writeLines(tableFile, tables[i]);
-      TableMeta meta = CatalogUtil
-          .newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
-      client.createExternalTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
-    }
-    Thread.sleep(1000);
-    ResultSet res = client.executeQueryAndGetResult(query);
-    util.shutdownMiniCluster();
-    return res;
-  }
-
   public static ResultSet run(String[] names,
                               Schema[] schemas,
                               Options option,
@@ -556,9 +530,8 @@ public class TajoTestingCluster {
         out.write((tables[i][j]+"\n").getBytes());
       }
       out.close();
-      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
-          CatalogProtos.StoreType.CSV, option);
-      client.createExternalTable(names[i], tablePath, meta);
+      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, option);
+      client.createExternalTable(names[i], schemas[i], tablePath, meta);
     }
     Thread.sleep(1000);
     ResultSet res = client.executeQueryAndGetResult(query);

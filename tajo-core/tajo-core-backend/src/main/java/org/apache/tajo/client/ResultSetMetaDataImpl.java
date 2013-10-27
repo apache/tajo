@@ -21,7 +21,7 @@
  */
 package org.apache.tajo.client;
 
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.UnsupportedException;
 
@@ -31,10 +31,11 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 public class ResultSetMetaDataImpl implements ResultSetMetaData {
-  private TableMeta meta;
+  private TableDesc desc;
+
   
-  public ResultSetMetaDataImpl(TableMeta meta) {
-    this.meta = meta;
+  public ResultSetMetaDataImpl(TableDesc desc) {
+    this.desc = desc;
   }
 
   /* (non-Javadoc)
@@ -67,7 +68,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnClassName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).getClass().getName();
+    return desc.getSchema().getColumn(column - 1).getClass().getName();
   }
 
   /* (non-Javadoc)
@@ -75,7 +76,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public int getColumnCount() throws SQLException {
-    return meta.getSchema().getColumnNum();
+    return desc.getSchema().getColumnNum();
   }
 
   /* (non-Javadoc)
@@ -91,7 +92,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnLabel(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).getQualifiedName();
+    return desc.getSchema().getColumn(column - 1).getQualifiedName();
   }
 
   /* (non-Javadoc)
@@ -99,7 +100,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).getColumnName();
+    return desc.getSchema().getColumn(column - 1).getColumnName();
   }
 
   /* (non-Javadoc)
@@ -108,7 +109,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
   @Override
   public int getColumnType(int column) throws SQLException {
     // TODO
-    DataType type = meta.getSchema().getColumn(column - 1).getDataType();
+    DataType type = desc.getSchema().getColumn(column - 1).getDataType();
     switch (type.getType()) {
       case BOOLEAN:
         return Types.BOOLEAN;
@@ -146,7 +147,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnTypeName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).
+    return desc.getSchema().getColumn(column - 1).
         getDataType().getClass().getCanonicalName();
   }
 
@@ -179,7 +180,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getTableName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).getQualifier();
+    return desc.getSchema().getColumn(column - 1).getQualifier();
   }
 
   /* (non-Javadoc)

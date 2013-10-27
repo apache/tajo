@@ -18,10 +18,10 @@
 
 package org.apache.tajo.catalog.json;
 
-import com.google.common.base.Preconditions;
 import com.google.gson.*;
+import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.TableMetaImpl;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
@@ -32,19 +32,22 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 	public TableMeta deserialize(JsonElement json, Type typeOfT,
 			JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
-		String typeName = jsonObject.get("type").getAsJsonPrimitive().getAsString();
-    Preconditions.checkState(typeName.equals("TableMeta"));
-		return context.deserialize(jsonObject.get("body"), TableMetaImpl.class);
+
+    CatalogProtos.StoreType type = CatalogProtos.StoreType.valueOf(jsonObject.get("store").getAsString());
+
+    Options options = null;
+    if (jsonObject.has("options")) {
+      options = context.deserialize(jsonObject.get("options"), Options.class);
+    }
+		return new TableMeta(type, options);
 	}
 
 	@Override
 	public JsonElement serialize(TableMeta src, Type typeOfSrc,
 			JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("type", "TableMeta");
-    src.mergeProtoToLocal();
-		JsonElement jsonElem = context.serialize(src, TableMetaImpl.class);
-		jsonObj.add("body", jsonElem);
+    jsonObj.addProperty("store", src.getStoreType().name());
+    jsonObj.add("options", context.serialize(src.getOptions(), Options.class));
 		return jsonObj;
 	}
 

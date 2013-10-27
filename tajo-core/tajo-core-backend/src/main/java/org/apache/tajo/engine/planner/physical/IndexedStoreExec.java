@@ -68,11 +68,11 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = CatalogUtil
-        .newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
+        .newTableMeta(CatalogProtos.StoreType.CSV);
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-        new Path(storeTablePath, "output"));
+        outSchema, new Path(storeTablePath, "output"));
     this.appender.enableStats();
     this.appender.init();
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),

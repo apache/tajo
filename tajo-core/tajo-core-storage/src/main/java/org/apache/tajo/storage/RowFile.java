@@ -26,11 +26,13 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.BitArray;
 
@@ -50,6 +52,7 @@ public class RowFile {
   private final static int DEFAULT_BUFFER_SIZE = 65535;
   public static int SYNC_INTERVAL;
 
+  @ForSplitableStore
   public static class RowFileScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream in;
@@ -65,9 +68,9 @@ public class RowFile {
     private int numBitsOfNullFlags;
     private long bufferStartPos;
 
-    public RowFileScanner(Configuration conf, final TableMeta meta,
-                          final Fragment fragment) throws IOException {
-      super(conf, meta, fragment);
+    public RowFileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+        throws IOException {
+      super(conf, meta, schema, fragment);
 
       SYNC_INTERVAL =
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
@@ -323,9 +326,9 @@ public class RowFile {
     // statistics
     private TableStatistics stats;
 
-    public RowFileAppender(Configuration conf, final TableMeta meta, final Path path)
+    public RowFileAppender(Configuration conf, final TableMeta meta, final Schema schema, final Path path)
         throws IOException {
-      super(conf, meta, path);
+      super(conf, meta, schema, path);
     }
 
     public void init() throws IOException {
@@ -495,7 +498,7 @@ public class RowFile {
     }
 
     @Override
-    public TableStat getStats() {
+    public TableStats getStats() {
       if (enabledStats) {
         return stats.getTableStat();
       } else {

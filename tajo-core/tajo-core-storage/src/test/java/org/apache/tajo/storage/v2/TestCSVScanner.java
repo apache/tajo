@@ -66,7 +66,7 @@ public class TestCSVScanner {
     schema.addColumn("age", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, CatalogProtos.StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
 
     Tuple[] tuples = new Tuple[4];
     for(int i=0; i < tuples.length; i++) {
@@ -79,14 +79,14 @@ public class TestCSVScanner {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, path);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, path);
     appender.init();
     for(Tuple t : tuples) {
       appender.addTuple(t);
     }
     appender.close();
 
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, path);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, path);
     scanner.init();
     int i=0;
     Tuple tuple = null;
@@ -103,12 +103,12 @@ public class TestCSVScanner {
     schema.addColumn("age", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(schema, CatalogProtos.StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
 
 
     Path path = StorageUtil.concatPath(testDir, "testPartitionFile", "table.csv");
     fs.mkdirs(path.getParent());
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, path);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, path);
     appender.init();
 
     String keyValue = "";
@@ -144,8 +144,8 @@ public class TestCSVScanner {
       long startOffset = (64 * 1024 * 1024) * scanCount;
       long length = Math.min(64 * 1024 * 1024, fileLength - startOffset);
 
-      Fragment fragment = new Fragment("Test", path, meta, startOffset, length, null, null);
-      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, fragment, schema);
+      Fragment fragment = new Fragment("Test", path, startOffset, length, null, null);
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment, schema);
       scanner.init();
       Tuple tuple = null;
       while( (tuple = scanner.next()) != null) {

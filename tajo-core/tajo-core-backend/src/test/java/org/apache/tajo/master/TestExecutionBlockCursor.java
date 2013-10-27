@@ -24,7 +24,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
@@ -64,9 +64,9 @@ public class TestExecutionBlockCursor {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpch.getTableNames()) {
-      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
-      m.setStat(new TableStat());
-      TableDesc d = CatalogUtil.newTableDesc(table, m, CommonTestingUtil.getTestDir());
+      TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
+      TableDesc d = CatalogUtil.newTableDesc(table, tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
+      d.setStats(new TableStats());
       catalog.addTable(d);
     }
 

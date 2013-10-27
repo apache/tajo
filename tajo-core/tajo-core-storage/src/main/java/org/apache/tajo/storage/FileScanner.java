@@ -35,10 +35,10 @@ public abstract class FileScanner implements Scanner {
 
   protected Column [] targets;
   
-  public FileScanner(Configuration conf, final TableMeta meta, final Fragment fragment) {
+  public FileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment) {
     this.conf = conf;
     this.meta = meta;
-    this.schema = meta.getSchema();
+    this.schema = schema;
     this.fragment = fragment;
     this.columnNum = this.schema.getColumnNum();
   }

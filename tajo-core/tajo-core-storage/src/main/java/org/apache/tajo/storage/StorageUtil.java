@@ -57,8 +57,7 @@ public class StorageUtil {
     }
   }
 
-  public static void writeTableMeta(Configuration conf, Path tableroot, 
-      TableMeta meta) throws IOException {
+  public static void writeTableMeta(Configuration conf, Path tableroot, TableMeta meta) throws IOException {
     FileSystem fs = tableroot.getFileSystem(conf);
     FSDataOutputStream out = fs.create(new Path(tableroot, ".meta"));
     FileUtil.writeProto(out, meta.getProto());

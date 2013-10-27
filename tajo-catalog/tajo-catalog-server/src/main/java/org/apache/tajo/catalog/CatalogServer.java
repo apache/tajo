@@ -18,7 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -183,10 +182,10 @@ public class CatalogServer extends AbstractService {
           throw new NoSuchTableException(tableId);
         }
         TableDesc desc = store.getTable(tableId);
-        SchemaProto schemaProto = desc.getMeta().getSchema().getProto();
+        SchemaProto schemaProto = desc.getSchema().getProto();
         SchemaProto qualifiedSchema = CatalogUtil.getQualfiedSchema(tableId, schemaProto);
-        desc.getMeta().setSchema(new Schema(qualifiedSchema));
-        return (TableDescProto) desc.getProto();
+        desc.setSchema(new Schema(qualifiedSchema));
+        return desc.getProto();
       } catch (IOException ioe) {
         // TODO - handle exception
         LOG.error(ioe);
@@ -229,8 +228,6 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto addTable(RpcController controller, TableDescProto tableDesc)
         throws ServiceException {
-      Preconditions.checkArgument(tableDesc.hasId(), "Must be set to the table name");
-      Preconditions.checkArgument(tableDesc.hasPath(), "Must be set to the table URI");
 
       wlock.lock();
       try {
@@ -239,12 +236,12 @@ public class CatalogServer extends AbstractService {
         }
 
         // rewrite schema
-        TableProto.Builder metaBuilder = TableProto.newBuilder(tableDesc.getMeta());
-        metaBuilder.setSchema(tableDesc.getMeta().getSchema());
         TableDescProto.Builder descBuilder = TableDescProto.newBuilder(tableDesc);
-        descBuilder.setMeta(metaBuilder.build());
+        descBuilder.setMeta(tableDesc.getMeta());
+        descBuilder.setSchema(tableDesc.getSchema());
 
-        store.addTable(new TableDescImpl(descBuilder.build()));
+
+        store.addTable(new TableDesc(descBuilder.build()));
 
       } catch (IOException ioe) {
         LOG.error(ioe.getMessage(), ioe);

@@ -21,6 +21,8 @@ package org.apache.tajo.catalog;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.ColumnStats;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,17 +35,35 @@ import static org.junit.Assert.assertEquals;
 
 public class TestTableDesc {
 	TableMeta info;
+  Schema schema;
 	TableDesc desc;
   Path path;
+  TableStats stats;
 	
 	@Before
 	public void setup() throws IOException {
-	  Schema schema = new Schema();
+	  schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    info = CatalogUtil.newTableMeta(StoreType.CSV);
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
-    desc = new TableDescImpl("table1", info, path);
+    desc = new TableDesc("table1", schema, info, path);
+    stats = new TableStats();
+    stats.setNumRows(957685);
+    stats.setNumBytes(1023234);
+    stats.setNumBlocks(3123);
+    stats.setNumPartitions(5);
+    stats.setAvgRows(80000);
+
+    int numCols = 2;
+    ColumnStats[] cols = new ColumnStats[numCols];
+    for (int i = 0; i < numCols; i++) {
+      cols[i] = new ColumnStats(schema.getColumn(i));
+      cols[i].setNumDistVals(1024 * i);
+      cols[i].setNumNulls(100 * i);
+      stats.addColumnStat(cols[i]);
+    }
+    desc.setStats(stats);
 	}
 
   @Test
@@ -51,12 +71,12 @@ public class TestTableDesc {
     Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    TableMeta info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta info = CatalogUtil.newTableMeta(StoreType.CSV);
     testClone(info);
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
 
-    TableDesc desc = new TableDescImpl("table1", info, path);
+    TableDesc desc = new TableDesc("table1", schema, info, path);
     assertEquals("table1", desc.getName());
     
     assertEquals(path, desc.getPath());
@@ -67,17 +87,19 @@ public class TestTableDesc {
   @Test
   public void testGetProto() throws CloneNotSupportedException, IOException {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
-    TableDesc desc = new TableDescImpl("table1", info, path);
-    CatalogProtos.TableDescProto proto = (CatalogProtos.TableDescProto) desc.getProto();
+    TableDesc desc = new TableDesc("table1", schema, info, path);
+    desc.setStats(stats);
+    CatalogProtos.TableDescProto proto = desc.getProto();
 
-    TableDesc fromProto = new TableDescImpl(proto);
+    TableDesc fromProto = new TableDesc(proto);
     assertEquals("equality check the object deserialized from json", desc, fromProto);
   }
 
   @Test
   public void testToJson() throws CloneNotSupportedException, IOException {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
-    TableDesc desc = new TableDescImpl("table1", info, path);
+    TableDesc desc = new TableDesc("table1", schema, info, path);
+    desc.setStats(stats);
     String json = desc.toJson();
 
     TableDesc fromJson = CatalogGsonHelper.fromJson(json, TableDesc.class);
