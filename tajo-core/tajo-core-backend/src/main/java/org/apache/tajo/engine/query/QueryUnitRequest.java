@@ -21,12 +21,12 @@
  */
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;
 import java.util.List;
@@ -34,7 +34,7 @@ import java.util.List;
 public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUnitRequestProto> {
 
 	public QueryUnitAttemptId getId();
-	public List<Fragment> getFragments();
+	public List<CatalogProtos.FragmentProto> getFragments();
 	public String getOutputTableId();
 	public boolean isClusteredOutput();
 	public String getSerializedData();

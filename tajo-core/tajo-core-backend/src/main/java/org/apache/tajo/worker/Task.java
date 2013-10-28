@@ -45,9 +45,9 @@ import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.io.File;
@@ -57,6 +57,8 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class Task {
   private static final Log LOG = LogFactory.getLog(Task.class);
@@ -141,8 +143,7 @@ public class Task {
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
     this.context = new TaskAttemptContext(systemConf, taskId,
-        request.getFragments().toArray(new Fragment[request.getFragments().size()]),
-        taskDir);
+        request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
 
@@ -159,7 +160,7 @@ public class Task {
       StoreTableNode store = (StoreTableNode) plan;
       this.partitionType = store.getPartitionType();
       if (partitionType == PartitionType.RANGE_PARTITION) {
-        SortNode sortNode = (SortNode) store.getChild();
+        SortNode sortNode = store.getChild();
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }
@@ -181,11 +182,6 @@ public class Task {
         + (interQuery ? ", Use " + this.partitionType  + " partitioning":""));
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
-    for (Fragment f: request.getFragments()) {
-      TableDesc desc = descs.get(f.getName());
-      LOG.info("Table Id:" + f.getName() + ", path:" + desc.getPath() + "(" + desc.getMeta().getStoreType() + "), " +
-          "(start:" + f.getStartOffset() + ", length: " + f.getLength() + ")");
-    }
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
     for (Fetch f : request.getFetches()) {
       LOG.info("Table Id: " + f.getName() + ", url: " + f.getUrls());
@@ -237,25 +233,6 @@ public class Task {
 
   public void localize(QueryUnitRequest request) throws IOException {
     fetcherRunners = getFetchRunners(context, request.getFetches());
-
-    List<Fragment> cached = Lists.newArrayList();
-    for (Fragment frag : request.getFragments()) {
-      if (frag.isDistCached()) {
-        cached.add(frag);
-      }
-    }
-
-    if (cached.size() > 0) {
-      Path inFile;
-
-      int i = fetcherRunners.size();
-      for (Fragment cache : cached) {
-        inFile = new Path(inputTableBaseDir, "in_" + i);
-        taskRunnerContext.getDefaultFS().copyToLocalFile(cache.getPath(), inFile);
-        cache.setPath(inFile);
-        i++;
-      }
-    }
   }
 
   public QueryUnitAttemptId getId() {
@@ -354,8 +331,8 @@ public class Task {
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
     for (String inputTable: inputs) {
       File tableDir = new File(context.getFetchIn(), inputTable);
-      Fragment [] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
-      context.changeFragment(inputTable, frags);
+      FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
+      context.updateAssignedFragments(inputTable, frags);
     }
   }
 
@@ -449,26 +426,26 @@ public class Task {
     return false;
   }
 
-  private Fragment[] localizeFetchedData(File file, String name, TableMeta meta)
+  private FileFragment[] localizeFetchedData(File file, String name, TableMeta meta)
       throws IOException {
     Configuration c = new Configuration(systemConf);
     c.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, "file:///");
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
 
-    List<Fragment> listTablets = new ArrayList<Fragment>();
-    Fragment tablet;
+    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus f : fileLists) {
       if (f.getLen() == 0) {
         continue;
       }
-      tablet = new Fragment(name, f.getPath(), 0l, f.getLen());
+      tablet = new FileFragment(name, f.getPath(), 0l, f.getLen());
       listTablets.add(tablet);
     }
 
-    Fragment[] tablets = new Fragment[listTablets.size()];
+    FileFragment[] tablets = new FileFragment[listTablets.size()];
     listTablets.toArray(tablets);
 
     return tablets;

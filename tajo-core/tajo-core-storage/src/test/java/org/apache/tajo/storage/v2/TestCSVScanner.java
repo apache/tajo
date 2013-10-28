@@ -29,6 +29,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -86,7 +87,7 @@ public class TestCSVScanner {
     }
     appender.close();
 
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, path);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(meta, schema, path);
     scanner.init();
     int i=0;
     Tuple tuple = null;
@@ -144,7 +145,7 @@ public class TestCSVScanner {
       long startOffset = (64 * 1024 * 1024) * scanCount;
       long length = Math.min(64 * 1024 * 1024, fileLength - startOffset);
 
-      Fragment fragment = new Fragment("Test", path, startOffset, length, null, null);
+      FileFragment fragment = new FileFragment("Test", path, startOffset, length, null, null);
       Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment, schema);
       scanner.init();
       Tuple tuple = null;

@@ -35,6 +35,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.FileUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -106,7 +107,7 @@ public class TestRowFile {
     TableProto proto = (TableProto) FileUtil.loadProto(
         cluster.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
     meta = new TableMeta(proto);
-    Fragment fragment = new Fragment("test.tbl", dataPath, 0, file.getLen());
+    FileFragment fragment = new FileFragment("test.tbl", dataPath, 0, file.getLen());
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
@@ -124,8 +125,8 @@ public class TestRowFile {
     long fileLen = file.getLen()/13;
 
     for (int i = 0; i < 13; i++) {
-      fragment = new Fragment("test.tbl", dataPath, fileStart, fileLen);
-      scanner = new RowFile.RowFileScanner(conf, meta, schema, fragment);
+      fragment = new FileFragment("test.tbl", dataPath, fileStart, fileLen);
+      scanner = new RowFile.RowFileScanner(conf, schema, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {
         if (!idSet.remove(tuple.get(0).asInt4())) {

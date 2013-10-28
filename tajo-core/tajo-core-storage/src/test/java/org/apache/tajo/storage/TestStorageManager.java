@@ -82,7 +82,7 @@ public class TestStorageManager {
 		}
 		appender.close();
 
-		Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, path);
+		Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(meta, schema, path);
     scanner.init();
 		int i=0;
 		while(scanner.next() != null) {

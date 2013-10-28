@@ -18,6 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -28,7 +31,6 @@ import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -41,13 +43,13 @@ public class SeqScanExec extends PhysicalExec {
   private EvalNode qual = null;
   private EvalContext qualCtx;
 
-  private Fragment [] fragments;
+  private CatalogProtos.FragmentProto [] fragments;
 
   private Projector projector;
   private EvalContext [] evalContexts;
 
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
-                     ScanNode plan, Fragment [] fragments) throws IOException {
+                     ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
@@ -88,8 +90,9 @@ public class SeqScanExec extends PhysicalExec {
     this.evalContexts = projector.renew();
 
     if (fragments.length > 1) {
-      this.scanner = new MergeScanner(context.getConf(), plan.getTableDesc().getMeta(), plan.getTableSchema(),
-          TUtil.newList(fragments));
+      this.scanner = new MergeScanner(context.getConf(), plan.getTableSchema(), plan.getTableDesc().getMeta(),
+          FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
+              fragments));
     } else {
       this.scanner = StorageManagerFactory.getStorageManager(
           context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getTableSchema(), fragments[0], projected);

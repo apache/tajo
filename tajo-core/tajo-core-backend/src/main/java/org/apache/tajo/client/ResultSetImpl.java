@@ -31,7 +31,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.MergeScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
@@ -72,8 +72,8 @@ public class ResultSetImpl implements ResultSet {
     if(desc != null) {
       fs = desc.getPath().getFileSystem(conf);
       this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
-      Collection<Fragment> frags = getFragments(desc.getMeta(), desc.getPath());
-      scanner = new MergeScanner(conf, desc.getMeta(), schema, frags);
+      Collection<FileFragment> frags = getFragments(desc.getMeta(), desc.getPath());
+      scanner = new MergeScanner(conf, schema, desc.getMeta(), frags);
     }
     init();
   }
@@ -91,9 +91,9 @@ public class ResultSetImpl implements ResultSet {
     }
   }
 
-  private Collection<Fragment> getFragments(TableMeta meta, Path tablePath)
+  private Collection<FileFragment> getFragments(TableMeta meta, Path tablePath)
       throws IOException {
-    List<Fragment> fraglist = Lists.newArrayList();
+    List<FileFragment> fraglist = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
       @Override
       public boolean accept(Path path) {
@@ -107,7 +107,7 @@ public class ResultSetImpl implements ResultSet {
       if (files[i].getLen() == 0) {
         continue;
       }
-      fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), 0l, files[i].getLen()));
+      fraglist.add(new FileFragment(tbname + "_" + i, files[i].getPath(), 0l, files[i].getLen()));
     }
     return fraglist;
   }

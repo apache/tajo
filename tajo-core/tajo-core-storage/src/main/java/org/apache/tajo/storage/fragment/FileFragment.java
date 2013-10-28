@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.fragment;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -30,9 +31,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Fragment implements Comparable<Fragment> {
-  protected FragmentProto.Builder builder = null;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FileFragmentProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
+public class FileFragment implements Fragment, Comparable<FileFragment> {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
   @Expose private Long startOffset; // required
@@ -43,33 +45,36 @@ public class Fragment implements Comparable<Fragment> {
   @Expose private int[] hostsBlockCount; // list of block count of hosts
   @Expose private int[] diskIds;
 
-  public Fragment() {
-    builder = FragmentProto.newBuilder();
+  public FileFragment(ByteString raw) throws InvalidProtocolBufferException {
+    FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
+    builder.mergeFrom(raw);
+    builder.build();
+    init(builder.build());
   }
 
-  public Fragment(String tableName, Path uri, BlockLocation blockLocation, int[] diskIds)
+  public FileFragment(String tableName, Path uri, BlockLocation blockLocation, int[] diskIds)
       throws IOException {
-    this();
     this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(),
         blockLocation.getHosts(), diskIds);
   }
 
   // Non splittable
-  public Fragment(String tableName, Path uri, long start, long length, String[] hosts,
-                  int[] hostsBlockCount) {
-    this();
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts,
+                      int[] hostsBlockCount) {
     this.set(tableName, uri, start, length, null, null);
     this.hosts = hosts;
     this.hostsBlockCount = hostsBlockCount;
   }
 
-  public Fragment(String fragmentId, Path path, long start, long length) {
-    this();
+  public FileFragment(String fragmentId, Path path, long start, long length) {
     this.set(fragmentId, path, start, length, null, null);
   }
 
-  public Fragment(FragmentProto proto) {
-    this();
+  public FileFragment(FileFragmentProto proto) {
+    init(proto);
+  }
+
+  private void init(FileFragmentProto proto) {
     int[] diskIds = new int[proto.getDiskIdsList().size()];
     int i = 0;
     for(Integer eachValue: proto.getDiskIdsList()) {
@@ -129,12 +134,8 @@ public class Fragment implements Comparable<Fragment> {
     return diskIds;
   }
 
-  public String getName() {
+  public String getTableName() {
     return this.tableName;
-  }
-
-  public void setName(String tableName) {
-    this.tableName = tableName;
   }
 
   public Path getPath() {
@@ -145,11 +146,11 @@ public class Fragment implements Comparable<Fragment> {
     this.uri = path;
   }
 
-  public Long getStartOffset() {
+  public Long getStartKey() {
     return this.startOffset;
   }
 
-  public Long getLength() {
+  public Long getEndKey() {
     return this.length;
   }
 
@@ -169,9 +170,9 @@ public class Fragment implements Comparable<Fragment> {
    * @return If the table paths are not same, return -1.
    */
   @Override
-  public int compareTo(Fragment t) {
+  public int compareTo(FileFragment t) {
     if (getPath().equals(t.getPath())) {
-      long diff = this.getStartOffset() - t.getStartOffset();
+      long diff = this.getStartKey() - t.getStartKey();
       if (diff < 0) {
         return -1;
       } else if (diff > 0) {
@@ -186,11 +187,11 @@ public class Fragment implements Comparable<Fragment> {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof Fragment) {
-      Fragment t = (Fragment) o;
+    if (o instanceof FileFragment) {
+      FileFragment t = (FileFragment) o;
       if (getPath().equals(t.getPath())
-          && TUtil.checkEquals(t.getStartOffset(), this.getStartOffset())
-          && TUtil.checkEquals(t.getLength(), this.getLength())
+          && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
+          && TUtil.checkEquals(t.getEndKey(), this.getEndKey())
           && TUtil.checkEquals(t.isDistCached(), this.isDistCached())) {
         return true;
       }
@@ -204,8 +205,7 @@ public class Fragment implements Comparable<Fragment> {
   }
   
   public Object clone() throws CloneNotSupportedException {
-    Fragment frag = (Fragment) super.clone();
-    frag.builder = FragmentProto.newBuilder();
+    FileFragment frag = (FileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
     frag.distCached = distCached;
@@ -219,14 +219,12 @@ public class Fragment implements Comparable<Fragment> {
   @Override
   public String toString() {
     return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
-    		+getPath() + "\", \"start\": " + this.getStartOffset() + ",\"length\": "
-        + getLength() + ", \"distCached\": " + distCached + "}" ;
+    		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
+        + getEndKey() + ", \"distCached\": " + distCached + "}" ;
   }
 
   public FragmentProto getProto() {
-    if (builder == null) {
-      builder = FragmentProto.newBuilder();
-    }
+    FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
     builder.setId(this.tableName);
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
@@ -244,6 +242,9 @@ public class Fragment implements Comparable<Fragment> {
       builder.addAllHosts(TUtil.newList(hosts));
     }
 
-    return builder.build();
+    FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
+    fragmentBuilder.setId(this.tableName);
+    fragmentBuilder.setContents(builder.buildPartial().toByteString());
+    return fragmentBuilder.build();
   }
 }

@@ -75,7 +75,7 @@ public class ExternalSortExec extends SortExec {
     // So, I add the scheme 'file:/' to path. But, it should be improved.
     Path localPath = new Path(sortTmpDir + "/0_" + chunkId);
 
-    appender = new RawFile.RawFileAppender(context.getConf(), meta, inSchema, localPath);
+    appender = new RawFile.RawFileAppender(context.getConf(), inSchema, meta, localPath);
     appender.init();
 
     for (Tuple t : tupleSlots) {
@@ -147,7 +147,7 @@ public class ExternalSortExec extends SortExec {
             Path leftChunk = getChunkPath(level, chunkId);
             Path rightChunk = getChunkPath(level, chunkId + 1);
 
-            appender = new RawFile.RawFileAppender(context.getConf(), meta, inSchema, nextChunk);
+            appender = new RawFile.RawFileAppender(context.getConf(), inSchema, meta, nextChunk);
             appender.init();
             merge(appender, leftChunk, rightChunk);
 
@@ -167,7 +167,7 @@ public class ExternalSortExec extends SortExec {
       }
 
       Path result = getChunkPath(level, 0);
-      this.result = new RawFile.RawFileScanner(context.getConf(), meta, plan.getInSchema(), result);
+      this.result = new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, result);
       sorted = true;
     }
 
@@ -176,10 +176,10 @@ public class ExternalSortExec extends SortExec {
 
   private void merge(RawFile.RawFileAppender appender, Path left, Path right)
       throws IOException {
-    RawFile.RawFileScanner leftScan = new RawFile.RawFileScanner(context.getConf(), meta, plan.getInSchema(), left);
+    RawFile.RawFileScanner leftScan = new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, left);
 
     RawFile.RawFileScanner rightScan =
-        new RawFile.RawFileScanner(context.getConf(), meta, plan.getInSchema(), right);
+        new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, right);
 
     Tuple leftTuple = leftScan.next();
     Tuple rightTuple = rightScan.next();

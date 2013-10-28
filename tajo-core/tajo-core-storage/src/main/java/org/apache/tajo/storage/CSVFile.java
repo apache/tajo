@@ -39,9 +39,9 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.Bytes;
 
 import java.io.*;
@@ -75,8 +75,8 @@ public class CSVFile {
     private byte[] nullChars;
     private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
-    public CSVAppender(Configuration conf, final TableMeta meta, final Schema schema, final Path path) throws IOException {
-      super(conf, meta, schema, path);
+    public CSVAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path) throws IOException {
+      super(conf, schema, meta, path);
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
@@ -315,11 +315,10 @@ public class CSVFile {
     }
   }
 
-  @ForSplitableStore
   public static class CSVScanner extends FileScanner implements SeekableScanner {
-    public CSVScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+    public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
         throws IOException {
-      super(conf, meta, schema, fragment);
+      super(conf, schema, meta, fragment);
       factory = new CompressionCodecFactory(conf);
       codec = factory.getCodec(fragment.getPath());
       if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
@@ -365,11 +364,11 @@ public class CSVFile {
     @Override
     public void init() throws IOException {
 
-      // Fragment information
+      // FileFragment information
       fs = fragment.getPath().getFileSystem(conf);
       fis = fs.open(fragment.getPath());
-      startOffset = fragment.getStartOffset();
-      length = fragment.getLength();
+      startOffset = fragment.getStartKey();
+      length = fragment.getEndKey();
 
       if(startOffset > 0) startOffset--; // prev line feed
 

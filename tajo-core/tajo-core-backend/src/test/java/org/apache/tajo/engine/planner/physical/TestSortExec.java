@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -108,10 +109,10 @@ public class TestSortExec {
 
   @Test
   public final void testNext() throws IOException, PlanningException {
-    Fragment [] frags = sm.splitNG(conf, "employee", employeeMeta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = sm.splitNG(conf, "employee", employeeMeta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility
-        .newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
+        .newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(context);

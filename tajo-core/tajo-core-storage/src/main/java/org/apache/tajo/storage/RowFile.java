@@ -32,8 +32,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.annotation.ForSplitableStore;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
 import java.io.FileNotFoundException;
@@ -52,7 +52,6 @@ public class RowFile {
   private final static int DEFAULT_BUFFER_SIZE = 65535;
   public static int SYNC_INTERVAL;
 
-  @ForSplitableStore
   public static class RowFileScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream in;
@@ -68,9 +67,9 @@ public class RowFile {
     private int numBitsOfNullFlags;
     private long bufferStartPos;
 
-    public RowFileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+    public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
         throws IOException {
-      super(conf, meta, schema, fragment);
+      super(conf, schema, meta, fragment);
 
       SYNC_INTERVAL =
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
@@ -78,8 +77,8 @@ public class RowFile {
       numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
       nullFlags = new BitArray(numBitsOfNullFlags);
       tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE/8);
-      this.start = fragment.getStartOffset();
-      this.end = this.start + fragment.getLength();
+      this.start = fragment.getStartKey();
+      this.end = this.start + fragment.getEndKey();
     }
 
     public void init() throws IOException {
@@ -326,9 +325,9 @@ public class RowFile {
     // statistics
     private TableStatistics stats;
 
-    public RowFileAppender(Configuration conf, final TableMeta meta, final Schema schema, final Path path)
+    public RowFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
         throws IOException {
-      super(conf, meta, schema, path);
+      super(conf, schema, meta, path);
     }
 
     public void init() throws IOException {

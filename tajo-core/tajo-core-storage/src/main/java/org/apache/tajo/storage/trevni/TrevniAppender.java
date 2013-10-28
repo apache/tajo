@@ -47,8 +47,8 @@ public class TrevniAppender extends FileAppender {
   private TableStatistics stats = null;
   private boolean flushed = false;
 
-  public TrevniAppender(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
-    super(conf, meta, schema, path);
+  public TrevniAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
+    super(conf, schema, meta, path);
   }
 
   public void init() throws IOException {

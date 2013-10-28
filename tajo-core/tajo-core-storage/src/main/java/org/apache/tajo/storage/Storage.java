@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
 
@@ -39,6 +40,6 @@ public abstract class Storage {
   public abstract Appender getAppender(TableMeta meta, Path path)
     throws IOException;
 
-  public abstract Scanner openScanner(Schema schema, Fragment [] tablets)
+  public abstract Scanner openScanner(Schema schema, FileFragment[] tablets)
     throws IOException;
 }

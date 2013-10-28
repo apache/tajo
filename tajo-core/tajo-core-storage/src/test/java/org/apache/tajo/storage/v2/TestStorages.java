@@ -33,6 +33,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
@@ -114,9 +115,9 @@ public class TestStorages {
       long fileLen = status.getLen();
       long randomNum = (long) (Math.random() * fileLen) + 1;
 
-      Fragment[] tablets = new Fragment[2];
-      tablets[0] = new Fragment("Splitable", tablePath, 0, randomNum);
-      tablets[1] = new Fragment("Splitable", tablePath, randomNum, (fileLen - randomNum));
+      FileFragment[] tablets = new FileFragment[2];
+      tablets[0] = new FileFragment("Splitable", tablePath, 0, randomNum);
+      tablets[1] = new FileFragment("Splitable", tablePath, randomNum, (fileLen - randomNum));
 
       Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
       scanner.init();
@@ -162,7 +163,7 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
-    Fragment fragment = new Fragment("testReadAndWrite", tablePath, 0, status.getLen());
+    FileFragment fragment = new FileFragment("testReadAndWrite", tablePath, 0, status.getLen());
 
     Schema target = new Schema();
     target.addColumn("age", Type.INT8);
@@ -227,7 +228,7 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
-    Fragment fragment = new Fragment("table", tablePath, 0, status.getLen());
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
     Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 

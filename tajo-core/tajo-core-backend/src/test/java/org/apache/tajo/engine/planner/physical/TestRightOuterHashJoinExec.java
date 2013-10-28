@@ -19,8 +19,9 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -37,14 +38,15 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.apache.tajo.LocalTajoTestingUtility;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 // this is not a physical operator in itself, but it uses the HashLeftOuterJoinExec with switched inputs order
 public class TestRightOuterHashJoinExec {
@@ -217,12 +219,12 @@ public class TestRightOuterHashJoinExec {
 
   @Test
   public final void testRightOuter_HashJoinExec0() throws IOException, PlanningException {
-    Fragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
+    FileFragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] dep3Frags = StorageManager.splitNG(conf, "dep3", dep3.getMeta(), dep3.getPath(),
+    FileFragment[] dep3Frags = StorageManager.splitNG(conf, "dep3", dep3.getMeta(), dep3.getPath(),
         Integer.MAX_VALUE);
 
-    Fragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
+    FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec0");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
@@ -257,12 +259,12 @@ public class TestRightOuterHashJoinExec {
 
   @Test
   public final void testRightOuter_HashJoinExec1() throws IOException, PlanningException {
-    Fragment[] job3Frags = StorageManager.splitNG(conf, "job3", job3.getMeta(), job3.getPath(),
+    FileFragment[] job3Frags = StorageManager.splitNG(conf, "job3", job3.getMeta(), job3.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
+    FileFragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
         Integer.MAX_VALUE);
 
-    Fragment[] merged = TUtil.concat(emp3Frags, job3Frags);
+    FileFragment[] merged = TUtil.concat(emp3Frags, job3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec1");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
@@ -297,12 +299,12 @@ public class TestRightOuterHashJoinExec {
     @Test
   public final void testRightOuter_HashJoinExec2() throws IOException, PlanningException {
     
-    Fragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
+    FileFragment[] emp3Frags = StorageManager.splitNG(conf, "emp3", emp3.getMeta(), emp3.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] job3Frags = StorageManager.splitNG(conf, "job3", job3.getMeta(), job3.getPath(),
+    FileFragment[] job3Frags = StorageManager.splitNG(conf, "job3", job3.getMeta(), job3.getPath(),
         Integer.MAX_VALUE);
 
-    Fragment[] merged = TUtil.concat(job3Frags, emp3Frags);
+    FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec2");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,

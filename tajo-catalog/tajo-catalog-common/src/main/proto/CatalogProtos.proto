@@ -82,6 +82,11 @@ message KeyValueSetProto {
 }
 
 message FragmentProto {
+  required string id = 1;
+  required bytes contents = 2;
+}
+
+message FileFragmentProto {
 	required string id = 1;
 	required string path = 2;
 	required int64 startOffset = 3;

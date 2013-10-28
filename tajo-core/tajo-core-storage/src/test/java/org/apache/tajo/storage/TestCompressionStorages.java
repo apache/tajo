@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -134,9 +135,9 @@ public class TestCompressionStorages {
     long fileLen = status.getLen();
     long randomNum = (long) (Math.random() * fileLen) + 1;
 
-    Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("SplitCompression", tablePath, 0, randomNum);
-    tablets[1] = new Fragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
+    FileFragment[] tablets = new FileFragment[2];
+    tablets[0] = new FileFragment("SplitCompression", tablePath, 0, randomNum);
+    tablets[1] = new FileFragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
     scanner.init();
@@ -193,8 +194,8 @@ public class TestCompressionStorages {
     tablePath = tablePath.suffix(extension);
     FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
-    Fragment[] tablets = new Fragment[1];
-    tablets[0] = new Fragment(fileName, tablePath, 0, fileLen);
+    FileFragment[] tablets = new FileFragment[1];
+    tablets[0] = new FileFragment(fileName, tablePath, 0, fileLen);
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
     scanner.init();

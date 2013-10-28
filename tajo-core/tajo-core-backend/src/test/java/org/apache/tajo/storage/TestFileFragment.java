@@ -20,8 +20,8 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,67 +32,64 @@ import java.util.SortedSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestFragment {
-  private Schema schema1;
+public class TestFileFragment {
   private Path path;
   
   @Before
   public final void setUp() throws Exception {
-    schema1 = new Schema();
-    schema1.addColumn("id", Type.INT4);
-    schema1.addColumn("name", Type.TEXT);
     path = CommonTestingUtil.getTestDir();
   }
 
   @Test
   public final void testGetAndSetFields() {
-    Fragment fragment1 = new Fragment("table1_1", new Path(path, "table0"), 0, 500);
+    FileFragment fragment1 = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
     fragment1.setDistCached();
 
-    assertEquals("table1_1", fragment1.getName());
+    assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(fragment1.isDistCached());
-    assertTrue(0 == fragment1.getStartOffset());
-    assertTrue(500 == fragment1.getLength());
+    assertTrue(0 == fragment1.getStartKey());
+    assertTrue(500 == fragment1.getEndKey());
   }
 
   @Test
-  public final void testTabletTabletProto() {
-    Fragment fragment0 = new Fragment("table1_1", new Path(path, "table0"), 0, 500);
-    fragment0.setDistCached();
-    Fragment fragment1 = new Fragment(fragment0.getProto());
-    assertEquals("table1_1", fragment1.getName());
+  public final void testGetProtoAndRestore() {
+    FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
+    fragment.setDistCached();
+
+    FileFragment fragment1 = FragmentConvertor.convert(FileFragment.class, fragment.getProto());
+    assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
-    assertTrue(fragment1.isDistCached());
-    assertTrue(0 == fragment1.getStartOffset());
-    assertTrue(500 == fragment1.getLength());
+    assertTrue(fragment.isDistCached());
+    assertTrue(0 == fragment1.getStartKey());
+    assertTrue(500 == fragment1.getEndKey());
   }
 
   @Test
   public final void testCompareTo() {
     final int num = 10;
-    Fragment [] tablets = new Fragment[num];
+    FileFragment[] tablets = new FileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new Fragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500);
+      tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500);
     }
     
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {
-      assertEquals("tablet1_"+i, tablets[i].getName());
+      assertEquals("tablet1_"+i, tablets[i].getTableName());
     }
   }
 
   @Test
   public final void testCompareTo2() {
     final int num = 1860;
-    Fragment [] tablets = new Fragment[num];
+    FileFragment[] tablets = new FileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new Fragment("tablet1_"+i, new Path(path, "tablet0"), (long)i * 6553500, (long)(i+1) * 6553500);
+      tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), (long)i * 6553500, (long)(i+1) * 6553500);
     }
 
     SortedSet sortedSet = Sets.newTreeSet();
-    for (Fragment frag : tablets) {
+    for (FileFragment frag : tablets) {
       sortedSet.add(frag);
     }
     assertEquals(num, sortedSet.size());

@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 
@@ -56,7 +57,7 @@ public class StorageManager extends AbstractStorageManager {
     Scanner scanner;
 
     Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
-    scanner = newScannerInstance(scannerClass, conf, meta, schema, fragment);
+    scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
     if (scanner.isProjectable()) {
       scanner.setTarget(target.toArray());
     }

@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 
@@ -44,7 +44,7 @@ public abstract class FileScannerV2 implements Scanner {
   protected final Configuration conf;
   protected final TableMeta meta;
   protected final Schema schema;
-  protected final Fragment fragment;
+  protected final FileFragment fragment;
   protected final int columnNum;
   protected Column[] targets;
   protected long totalScanTime = 0;
@@ -73,7 +73,7 @@ public abstract class FileScannerV2 implements Scanner {
 	public FileScannerV2(final Configuration conf,
                        final TableMeta meta,
                        final Schema schema,
-                       final Fragment fragment) throws IOException {
+                       final FileFragment fragment) throws IOException {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;
@@ -106,8 +106,8 @@ public abstract class FileScannerV2 implements Scanner {
   }
 
   public String getId() {
-    return fragment.getPath().getName() + ":" + fragment.getStartOffset() + ":" +
-        fragment.getLength() + "_" + System.currentTimeMillis();
+    return fragment.getPath().getName() + ":" + fragment.getStartKey() + ":" +
+        fragment.getEndKey() + "_" + System.currentTimeMillis();
   }
 
   @Override
@@ -129,7 +129,7 @@ public abstract class FileScannerV2 implements Scanner {
 
   public int getDiskId() {
     if(fragment.getDiskIds().length <= 0) {
-      //LOG.warn("===> No DiskId:" + fragment.getPath() + ":" + fragment.getStartOffset());
+      //LOG.warn("===> No DiskId:" + fragment.getPath() + ":" + fragment.getStartKey());
       return -1;
     } else {
       return fragment.getDiskIds()[0];
@@ -147,7 +147,7 @@ public abstract class FileScannerV2 implements Scanner {
   }
 
   public String toString() {
-    return fragment.getPath() + ":" + fragment.getStartOffset();
+    return fragment.getPath() + ":" + fragment.getStartKey();
   }
 
   public void scan(int maxBytesPerSchedule) throws IOException {

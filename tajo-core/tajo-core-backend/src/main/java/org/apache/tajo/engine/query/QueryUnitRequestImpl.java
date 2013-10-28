@@ -18,22 +18,24 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+
 public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
   private QueryUnitAttemptId id;
-  private List<Fragment> fragments;
+  private List<FragmentProto> fragments;
   private String outputTable;
 	private boolean isUpdated;
 	private boolean clusteredOutput;
@@ -55,7 +57,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.isUpdated = false;
 	}
 	
-	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
+	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
 			String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
 		this();
@@ -69,7 +71,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		isUpdated = false;
 	}
 	
-	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
+	public void set(QueryUnitAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
 			String serializedData, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
 		this.id = id;
@@ -106,16 +108,16 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 
 	@Override
-	public List<Fragment> getFragments() {
+	public List<FragmentProto> getFragments() {
 		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (fragments != null) {
 			return fragments;
 		}
 		if (fragments == null) {
-			fragments = new ArrayList<Fragment>();
+			fragments = new ArrayList<FragmentProto>();
 		}
 		for (int i = 0; i < p.getFragmentsCount(); i++) {
-			fragments.add(new Fragment(p.getFragments(i)));
+			fragments.add(p.getFragments(i));
 		}
 		return this.fragments;
 	}
@@ -284,7 +286,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		}
 		if (fragments != null) {
 			for (int i = 0; i < fragments.size(); i++) {
-				builder.addFragments(fragments.get(i).getProto());
+				builder.addFragments(fragments.get(i));
 			}
 		}
 		if (this.outputTable != null) {

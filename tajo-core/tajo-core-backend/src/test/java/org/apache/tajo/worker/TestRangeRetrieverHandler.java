@@ -37,6 +37,7 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
@@ -127,11 +128,11 @@ public class TestRangeRetrieverHandler {
     TableDesc employee = new TableDesc("employee", schema, employeeMeta, tableDir);
     catalog.addTable(employee);
 
-    Fragment[] frags = StorageManager.splitNG(conf, "employee", employeeMeta, tableDir, Integer.MAX_VALUE);
+    FileFragment[] frags = StorageManager.splitNG(conf, "employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
     TaskAttemptContext
         ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
-        new Fragment[] {frags[0]}, testDir);
+        new FileFragment[] {frags[0]}, testDir);
     Expr expr = analyzer.parse(SORT_QUERY[0]);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -240,11 +241,11 @@ public class TestRangeRetrieverHandler {
     TableDesc employee = new TableDesc("employee", schema, meta, tablePath);
     catalog.addTable(employee);
 
-    Fragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
 
     TaskAttemptContext
         ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
-        new Fragment[] {frags[0]}, testDir);
+        new FileFragment[] {frags[0]}, testDir);
     Expr expr = analyzer.parse(SORT_QUERY[1]);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);

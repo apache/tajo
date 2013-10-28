@@ -27,6 +27,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -37,14 +40,15 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
@@ -177,12 +181,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) {
+  private long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) throws IOException {
     long size = 0;
     for (String tableId : tableIds) {
-      Fragment[] fragments = ctx.getTables(tableId);
-      for (Fragment frag : fragments) {
-        size += frag.getLength();
+      // TODO - CSV is a hack.
+      List<FileFragment> fragments = FragmentConvertor.convert(ctx.getConf(), CatalogProtos.StoreType.CSV,
+          ctx.getTables(tableId));
+      for (FileFragment frag : fragments) {
+        size += frag.getEndKey();
       }
     }
     return size;
@@ -636,7 +642,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
         "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");
 
-    Fragment[] fragments = ctx.getTables(scanNode.getCanonicalName());
+    FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
     return new SeqScanExec(ctx, sm, scanNode, fragments);
   }
 
@@ -751,17 +757,17 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Preconditions.checkNotNull(ctx.getTable(annotation.getCanonicalName()),
         "Error: There is no table matched to %s", annotation.getCanonicalName());
 
-    Fragment[] fragments = ctx.getTables(annotation.getTableName());
+    FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
+    List<FileFragment> fragments =
+        FragmentConvertor.convert(ctx.getConf(), CatalogProtos.StoreType.CSV, fragmentProtos);
 
-    String indexName = IndexUtil.getIndexNameOfFrag(fragments[0],
-        annotation.getSortKeys());
+    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new TupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());
-    return new BSTIndexScanExec(ctx, sm, annotation, fragments[0], new Path(
-        indexPath, indexName), annotation.getKeySchema(), comp,
-        annotation.getDatum());
+    return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), new Path(indexPath, indexName),
+        annotation.getKeySchema(), comp, annotation.getDatum());
 
   }
 

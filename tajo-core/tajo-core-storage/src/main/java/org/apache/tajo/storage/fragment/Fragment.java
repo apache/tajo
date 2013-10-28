@@ -16,15 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.storage.fragment;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.common.ProtoObject;
 
-public class SubQuerySucceeEvent extends SubQueryCompletedEvent {
-  public SubQuerySucceeEvent(final ExecutionBlockId id) {
-    super(id, SubQueryState.SUCCEEDED);
-  }
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+
+public interface Fragment extends ProtoObject<FragmentProto> {
+
+  public abstract String getTableName();
+
+  @Override
+  public abstract FragmentProto getProto();
 }

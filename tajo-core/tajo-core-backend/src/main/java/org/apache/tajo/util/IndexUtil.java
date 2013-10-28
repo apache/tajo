@@ -28,17 +28,17 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 
 public class IndexUtil {
-  public static String getIndexNameOfFrag(Fragment fragment, SortSpec[] keys) {
+  public static String getIndexNameOfFrag(FileFragment fragment, SortSpec[] keys) {
     StringBuilder builder = new StringBuilder(); 
     builder.append(fragment.getPath().getName() + "_");
-    builder.append(fragment.getStartOffset() + "_" + fragment.getLength() + "_");
+    builder.append(fragment.getStartKey() + "_" + fragment.getEndKey() + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
       builder.append(keys[i].getSortKey().getColumnName()+"_");
     }

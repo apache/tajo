@@ -26,10 +26,9 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.annotation.ForSplitableStore;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
 import org.apache.tajo.util.Bytes;
@@ -38,7 +37,6 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@ForSplitableStore
 public class RCFileScanner extends FileScannerV2 {
   private static final Log LOG = LogFactory.getLog(RCFileScanner.class);
 
@@ -53,12 +51,12 @@ public class RCFileScanner extends FileScannerV2 {
   private boolean first = true;
   private int maxBytesPerSchedule;
 
-  public RCFileScanner(final Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+  public RCFileScanner(final Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
       throws IOException {
     super(conf, meta, schema, fragment);
 
-    this.start = fragment.getStartOffset();
-    this.end = start + fragment.getLength();
+    this.start = fragment.getStartKey();
+    this.end = start + fragment.getEndKey();
     key = new LongWritable();
     column = new BytesRefArrayWritable();
 	}
@@ -243,8 +241,8 @@ public class RCFileScanner extends FileScannerV2 {
         sin = new ScheduledInputStream(
             fragment.getPath(),
             fs.open(fragment.getPath()),
-            fragment.getStartOffset(),
-            fragment.getLength(),
+            fragment.getStartKey(),
+            fragment.getEndKey(),
             fs.getLength(fragment.getPath()));
 
         this.in = new RCFile.Reader(fragment.getPath(), sin, fs, fs.getConf());

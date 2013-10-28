@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
 
@@ -30,12 +31,12 @@ public abstract class FileScanner implements Scanner {
   protected final Configuration conf;
   protected final TableMeta meta;
   protected final Schema schema;
-  protected final Fragment fragment;
+  protected final FileFragment fragment;
   protected final int columnNum;
 
   protected Column [] targets;
   
-  public FileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment) {
+  public FileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment) {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;

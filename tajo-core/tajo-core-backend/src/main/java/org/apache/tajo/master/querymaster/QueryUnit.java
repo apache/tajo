@@ -28,12 +28,14 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.URI;
@@ -43,6 +45,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class QueryUnit implements EventHandler<TaskEvent> {
   /** Class Logger */
@@ -54,7 +58,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private LogicalNode plan = null;
 	private List<ScanNode> scan;
 	
-	private Map<String, Fragment> fragMap;
+	private Map<String, FragmentProto> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
   private List<Partition> partitions;
@@ -130,7 +134,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.isLeafTask;
   }
 
-  public void setDataLocations(Fragment fragment) {
+  public void setDataLocations(FileFragment fragment) {
     String[] hosts = fragment.getHosts();
     int[] blockCount = fragment.getHostsBlockCount();
     int[] volumeIds = fragment.getDiskIds();
@@ -176,13 +180,13 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	}
 
   @Deprecated
-  public void setFragment(String tableId, Fragment fragment) {
-    this.fragMap.put(tableId, fragment);
+  public void setFragment(String tableId, FileFragment fragment) {
+    this.fragMap.put(tableId, fragment.getProto());
     setDataLocations(fragment);
   }
 
-  public void setFragment2(Fragment fragment) {
-    this.fragMap.put(fragment.getName(), fragment);
+  public void setFragment2(FileFragment fragment) {
+    this.fragMap.put(fragment.getTableName(), fragment.getProto());
     setDataLocations(fragment);
   }
 
@@ -220,12 +224,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  this.fetchMap.clear();
 	  this.fetchMap.putAll(fetches);
 	}
-	
-  public Fragment getFragment(String tableId) {
-    return this.fragMap.get(tableId);
-  }
 
-  public Collection<Fragment> getAllFragments() {
+  public Collection<FragmentProto> getAllFragments() {
     return fragMap.values();
   }
 	
@@ -268,7 +268,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	@Override
 	public String toString() {
 		String str = new String(plan.getType() + " \n");
-		for (Entry<String, Fragment> e : fragMap.entrySet()) {
+		for (Entry<String, FragmentProto> e : fragMap.entrySet()) {
 		  str += e.getKey() + " : ";
       str += e.getValue() + " ";
 		}

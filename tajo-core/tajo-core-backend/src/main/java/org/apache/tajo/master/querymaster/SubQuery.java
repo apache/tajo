@@ -53,7 +53,7 @@ import org.apache.tajo.master.TaskScheduler;
 import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
 import java.util.*;
@@ -642,14 +642,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       meta = desc.getMeta();
 
       // TODO - should be change the inner directory
-      List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
+      List<FileFragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
           inputPath);
 
       QueryUnit queryUnit;
       List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
 
       int i = 0;
-      for (Fragment fragment : fragments) {
+      for (FileFragment fragment : fragments) {
         queryUnit = newQueryUnit(subQuery, i++, fragment);
         queryUnits.add(queryUnit);
       }
@@ -657,7 +657,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return queryUnits.toArray(new QueryUnit[queryUnits.size()]);
     }
 
-    private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, Fragment fragment) {
+    private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit unit = new QueryUnit(
           QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), execBlock.isLeafBlock(),

@@ -554,7 +554,7 @@ public class TestRCFile {
     }
     for (int i = 0; i < writeCount; i++) {
       if (i == intervalRecordCount) {
-        System.out.println("write position:" + writer.getLength());
+        System.out.println("write position:" + writer.getEndKey());
       }
       writer.append(bytes);
     }

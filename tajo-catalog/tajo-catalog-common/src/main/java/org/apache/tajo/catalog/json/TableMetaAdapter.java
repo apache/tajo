@@ -20,6 +20,7 @@ package org.apache.tajo.catalog.json;
 
 import com.google.gson.*;
 import org.apache.tajo.catalog.Options;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonSerDerAdapter;

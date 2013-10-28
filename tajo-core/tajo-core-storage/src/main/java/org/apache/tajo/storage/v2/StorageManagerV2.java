@@ -25,8 +25,8 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -79,7 +79,7 @@ public class StorageManagerV2 extends AbstractStorageManager {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    scanner = newScannerInstance(scannerClass, conf, meta, schema, fragment);
+    scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
     if (scanner.isProjectable()) {
       scanner.setTarget(target.toArray());
     }

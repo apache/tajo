@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.Before;
@@ -136,11 +137,11 @@ public class TestMergeScanner {
 
     FileStatus status1 = fs.getFileStatus(table1Path);
     FileStatus status2 = fs.getFileStatus(table2Path);
-    Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("tablet1", table1Path, 0, status1.getLen());
-    tablets[1] = new Fragment("tablet1", table2Path, 0, status2.getLen());
+    FileFragment[] fragment = new FileFragment[2];
+    fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
+    fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
     
-    Scanner scanner = new MergeScanner(conf, meta, schema, TUtil.newList(tablets));
+    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.<FileFragment>newList(fragment));
     scanner.init();
     int totalCounts = 0;
     while (scanner.next() != null) {

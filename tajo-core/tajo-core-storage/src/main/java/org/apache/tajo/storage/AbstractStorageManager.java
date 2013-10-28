@@ -30,16 +30,19 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.annotation.ForSplitableStore;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public abstract class AbstractStorageManager {
   private final Log LOG = LogFactory.getLog(AbstractStorageManager.class);
@@ -82,16 +85,23 @@ public abstract class AbstractStorageManager {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
   }
 
-  public Scanner getScanner(TableMeta meta, Schema schema, Path path)
+  public Scanner getFileScanner(TableMeta meta, Schema schema, Path path)
       throws IOException {
     FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
-    Fragment fragment = new Fragment(path.getName(), path, 0, status.getLen());
+    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
     return getScanner(meta, schema, fragment);
   }
 
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment)
-      throws IOException {
+  public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment) throws IOException {
+    return getScanner(meta, schema, FragmentConvertor.convert(conf, meta.getStoreType(), fragment), schema);
+  }
+
+  public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
+    return getScanner(meta, schema, FragmentConvertor.convert(conf, meta.getStoreType(), fragment), target);
+  }
+
+  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
     return getScanner(meta, schema, fragment, schema);
   }
 
@@ -175,51 +185,51 @@ public abstract class AbstractStorageManager {
     return meta;
   }
 
-  public Fragment[] split(String tableName) throws IOException {
+  public FileFragment[] split(String tableName) throws IOException {
     Path tablePath = new Path(tableBaseDir, tableName);
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
-  public Fragment[] split(String tableName, long fragmentSize) throws IOException {
+  public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
     Path tablePath = new Path(tableBaseDir, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
 
-  public Fragment[] splitBroadcastTable(Path tablePath) throws IOException {
+  public FileFragment[] splitBroadcastTable(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     TableMeta meta = getTableMeta(tablePath);
-    List<Fragment> listTablets = new ArrayList<Fragment>();
-    Fragment tablet;
+    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus file : fileLists) {
-      tablet = new Fragment(tablePath.getName(), file.getPath(), 0, file.getLen());
+      tablet = new FileFragment(tablePath.getName(), file.getPath(), 0, file.getLen());
       listTablets.add(tablet);
     }
 
-    Fragment[] tablets = new Fragment[listTablets.size()];
+    FileFragment[] tablets = new FileFragment[listTablets.size()];
     listTablets.toArray(tablets);
 
     return tablets;
   }
 
-  public Fragment[] split(Path tablePath) throws IOException {
+  public FileFragment[] split(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     return split(tablePath.getName(), tablePath, fs.getDefaultBlockSize());
   }
 
-  public Fragment[] split(String tableName, Path tablePath) throws IOException {
+  public FileFragment[] split(String tableName, Path tablePath) throws IOException {
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
-  private Fragment[] split(String tableName, Path tablePath, long size)
+  private FileFragment[] split(String tableName, Path tablePath, long size)
       throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
 
     TableMeta meta = getTableMeta(tablePath);
     long defaultBlockSize = size;
-    List<Fragment> listTablets = new ArrayList<Fragment>();
-    Fragment tablet;
+    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus file : fileLists) {
@@ -227,31 +237,31 @@ public abstract class AbstractStorageManager {
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tableName, file.getPath(), start, defaultBlockSize);
+          tablet = new FileFragment(tableName, file.getPath(), start, defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
         }
-        listTablets.add(new Fragment(tableName, file.getPath(), start, remainFileSize));
+        listTablets.add(new FileFragment(tableName, file.getPath(), start, remainFileSize));
       } else {
-        listTablets.add(new Fragment(tableName, file.getPath(), 0, remainFileSize));
+        listTablets.add(new FileFragment(tableName, file.getPath(), 0, remainFileSize));
       }
     }
 
-    Fragment[] tablets = new Fragment[listTablets.size()];
+    FileFragment[] tablets = new FileFragment[listTablets.size()];
     listTablets.toArray(tablets);
 
     return tablets;
   }
 
-  public static Fragment[] splitNG(Configuration conf, String tableName, TableMeta meta,
+  public static FileFragment[] splitNG(Configuration conf, String tableName, TableMeta meta,
                                    Path tablePath, long size)
       throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
 
     long defaultBlockSize = size;
-    List<Fragment> listTablets = new ArrayList<Fragment>();
-    Fragment tablet;
+    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus file : fileLists) {
@@ -259,18 +269,18 @@ public abstract class AbstractStorageManager {
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tableName, file.getPath(), start, defaultBlockSize);
+          tablet = new FileFragment(tableName, file.getPath(), start, defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
         }
-        listTablets.add(new Fragment(tableName, file.getPath(), start, remainFileSize));
+        listTablets.add(new FileFragment(tableName, file.getPath(), start, remainFileSize));
       } else {
-        listTablets.add(new Fragment(tableName, file.getPath(), 0, remainFileSize));
+        listTablets.add(new FileFragment(tableName, file.getPath(), 0, remainFileSize));
       }
     }
 
-    Fragment[] tablets = new Fragment[listTablets.size()];
+    FileFragment[] tablets = new FileFragment[listTablets.size()];
     listTablets.toArray(tablets);
 
     return tablets;
@@ -396,23 +406,9 @@ public abstract class AbstractStorageManager {
    * @return is this file isSplittable?
    */
   protected boolean isSplittable(TableMeta meta, Schema schema, Path filename) throws IOException {
-    Scanner scanner = getScanner(meta, schema, filename);
+    Scanner scanner = getFileScanner(meta, schema, filename);
     return scanner.isSplittable();
   }
-
-  protected boolean isSplittable(CatalogProtos.StoreType storeType) throws IOException {
-    Method[] methods = getScannerClass(storeType).getMethods();
-
-    for (Method method : methods) {
-      ForSplitableStore annos = method.getAnnotation(ForSplitableStore.class);
-      if (annos != null) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
 
   @Deprecated
   protected long computeSplitSize(long blockSize, long minSize,
@@ -444,17 +440,17 @@ public abstract class AbstractStorageManager {
    * A factory that makes the split for this class. It can be overridden
    * by sub-classes to make sub-types
    */
-  protected Fragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length) {
-    return new Fragment(fragmentId, file, start, length);
+  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length) {
+    return new FileFragment(fragmentId, file, start, length);
   }
 
-  protected Fragment makeSplit(String fragmentId, TableMeta meta, Path file, BlockLocation blockLocation,
+  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, BlockLocation blockLocation,
                                int[] diskIds) throws IOException {
-    return new Fragment(fragmentId, file, blockLocation, diskIds);
+    return new FileFragment(fragmentId, file, blockLocation, diskIds);
   }
 
   // for Non Splittable. eg, compressed gzip TextFile
-  protected Fragment makeNonSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
+  protected FileFragment makeNonSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
                                   BlockLocation[] blkLocations) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<String, Integer>();
@@ -485,7 +481,7 @@ public abstract class AbstractStorageManager {
       hosts[i] = entry.getKey();
       hostsBlockCount[i] = entry.getValue();
     }
-    return new Fragment(fragmentId, file, start, length, hosts, hostsBlockCount);
+    return new FileFragment(fragmentId, file, start, length, hosts, hostsBlockCount);
   }
 
   /**
@@ -536,9 +532,9 @@ public abstract class AbstractStorageManager {
    * Generate the map of host and make them into Volume Ids.
    *
    */
-  private Map<String, Set<Integer>> getVolumeMap(List<Fragment> frags) {
+  private Map<String, Set<Integer>> getVolumeMap(List<FileFragment> frags) {
     Map<String, Set<Integer>> volumeMap = new HashMap<String, Set<Integer>>();
-    for (Fragment frag : frags) {
+    for (FileFragment frag : frags) {
       String[] hosts = frag.getHosts();
       int[] diskIds = frag.getDiskIds();
       for (int i = 0; i < hosts.length; i++) {
@@ -561,10 +557,10 @@ public abstract class AbstractStorageManager {
    *
    * @throws IOException
    */
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
+  public List<FileFragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
     // generate splits'
 
-    List<Fragment> splits = new ArrayList<Fragment>();
+    List<FileFragment> splits = new ArrayList<FileFragment>();
     List<FileStatus> files = listStatus(inputPath);
     FileSystem fs = inputPath.getFileSystem(conf);
     for (FileStatus file : files) {
@@ -613,22 +609,22 @@ public abstract class AbstractStorageManager {
 
   private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
       Configuration.class,
-      TableMeta.class,
       Schema.class,
-      Fragment.class
+      TableMeta.class,
+      FileFragment.class
   };
 
   private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
       Configuration.class,
-      TableMeta.class,
       Schema.class,
+      TableMeta.class,
       Path.class
   };
 
   /**
    * create a scanner instance.
    */
-  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, TableMeta meta, Schema schema,
+  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, Schema schema, TableMeta meta,
                                          Fragment fragment) {
     T result;
     try {
@@ -638,7 +634,7 @@ public abstract class AbstractStorageManager {
         meth.setAccessible(true);
         CONSTRUCTOR_CACHE.put(theClass, meth);
       }
-      result = meth.newInstance(new Object[]{conf, meta, schema, fragment});
+      result = meth.newInstance(new Object[]{conf, schema, meta, fragment});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -659,7 +655,7 @@ public abstract class AbstractStorageManager {
         meth.setAccessible(true);
         CONSTRUCTOR_CACHE.put(theClass, meth);
       }
-      result = meth.newInstance(new Object[]{conf, meta, schema, path});
+      result = meth.newInstance(new Object[]{conf, schema, meta, path});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

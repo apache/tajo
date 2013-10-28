@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
@@ -29,12 +30,15 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 
 import java.io.File;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 
 /**
@@ -43,7 +47,7 @@ import java.util.concurrent.CountDownLatch;
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
   private final TajoConf conf;
-  private final Map<String, List<Fragment>> fragmentMap = new HashMap<String, List<Fragment>>();
+  private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
   private TaskAttemptState state;
   private TableStats resultStats;
@@ -61,18 +65,18 @@ public class TaskAttemptContext {
   private Enforcer enforcer;
 
   public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
-                            final Fragment[] fragments,
+                            final FragmentProto[] fragments,
                             final Path workDir) {
     this.conf = conf;
     this.queryId = queryId;
     
-    for(Fragment t : fragments) {
-      if (fragmentMap.containsKey(t.getName())) {
-        fragmentMap.get(t.getName()).add(t);
+    for(FragmentProto t : fragments) {
+      if (fragmentMap.containsKey(t.getId())) {
+        fragmentMap.get(t.getId()).add(t);
       } else {
-        List<Fragment> frags = new ArrayList<Fragment>();
+        List<FragmentProto> frags = new ArrayList<FragmentProto>();
         frags.add(t);
-        fragmentMap.put(t.getName(), frags);
+        fragmentMap.put(t.getId(), frags);
       }
     }
 
@@ -80,6 +84,12 @@ public class TaskAttemptContext {
     this.repartitions = Maps.newHashMap();
     
     state = TaskAttemptState.TA_PENDING;
+  }
+
+  @VisibleForTesting
+  public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
+                            final Fragment [] fragments,  final Path workDir) {
+    this(conf, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
@@ -173,15 +183,15 @@ public class TaskAttemptContext {
     return repartitions.entrySet().iterator();
   }
   
-  public void changeFragment(String tableId, Fragment [] fragments) {
+  public void updateAssignedFragments(String tableId, Fragment[] fragments) {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
-      if (fragmentMap.containsKey(t.getName())) {
-        fragmentMap.get(t.getName()).add(t);
+      if (fragmentMap.containsKey(t.getTableName())) {
+        fragmentMap.get(t.getTableName()).add(t.getProto());
       } else {
-        List<Fragment> frags = new ArrayList<Fragment>();
-        frags.add(t);
-        fragmentMap.put(t.getName(), frags);
+        List<FragmentProto> frags = new ArrayList<FragmentProto>();
+        frags.add(t.getProto());
+        fragmentMap.put(t.getTableName(), frags);
       }
     }
   }
@@ -202,7 +212,7 @@ public class TaskAttemptContext {
     this.progress = progress;
   }
 
-  public Fragment getTable(String id) {
+  public FragmentProto getTable(String id) {
     return fragmentMap.get(id).get(0);
   }
 
@@ -214,8 +224,8 @@ public class TaskAttemptContext {
     return fragmentMap.keySet();
   }
   
-  public Fragment [] getTables(String id) {
-    return fragmentMap.get(id).toArray(new Fragment[fragmentMap.get(id).size()]);
+  public FragmentProto [] getTables(String id) {
+    return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
   
   public int hashCode() {

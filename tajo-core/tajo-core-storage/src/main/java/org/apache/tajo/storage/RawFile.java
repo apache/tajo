@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -58,15 +59,15 @@ public class RawFile {
     private boolean eof = false;
     private long fileSize;
 
-    public RawFileScanner(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
-      super(conf, meta, schema, null);
+    public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
+      super(conf, schema, meta, null);
       this.path = path;
       init();
     }
 
     @SuppressWarnings("unused")
-    public RawFileScanner(Configuration conf, TableMeta meta, Schema schema, Fragment fragment) throws IOException {
-      this(conf, meta, schema, fragment.getPath());
+    public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
+      this(conf, schema, meta, fragment.getPath());
     }
 
     public void init() throws IOException {
@@ -309,8 +310,8 @@ public class RawFile {
 
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, TableMeta meta, Schema schema, Path path) throws IOException {
-      super(conf, meta, schema, path);
+    public RawFileAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
+      super(conf, schema, meta, path);
     }
 
     public void init() throws IOException {

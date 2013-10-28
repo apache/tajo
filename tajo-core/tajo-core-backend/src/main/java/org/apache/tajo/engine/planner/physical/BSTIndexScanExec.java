@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -48,7 +49,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   
   public BSTIndexScanExec(TaskAttemptContext context,
                           AbstractStorageManager sm , ScanNode scanNode ,
-       Fragment fragment, Path fileName , Schema keySchema,
+       FileFragment fragment, Path fileName , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;

@@ -27,15 +27,20 @@ import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.compress.CodecPool;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Bytes;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class CSVFileScanner extends FileScannerV2 {
   public static final String DELIMITER = "csvfile.delimiter";
@@ -68,11 +73,11 @@ public class CSVFileScanner extends FileScannerV2 {
   private long totalReadBytesForFetch;
   private long totalReadBytesFromDisk;
 
-  public CSVFileScanner(Configuration conf, final TableMeta meta, final Schema schema, final Fragment fragment)
+  public CSVFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
       throws IOException {
     super(conf, meta, schema, fragment);
     factory = new CompressionCodecFactory(conf);
-    codec = factory.getCodec(fragment.getPath());
+    codec = factory.getCodec(this.fragment.getPath());
     if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
       splittable = false;
     }
@@ -96,9 +101,9 @@ public class CSVFileScanner extends FileScannerV2 {
       if(sin == null) {
         FSDataInputStream fin = fs.open(fragment.getPath(), 128 * 1024);
         sin = new ScheduledInputStream(fragment.getPath(), fin,
-            fragment.getStartOffset(), fragment.getLength(), fs.getLength(fragment.getPath()));
-        startOffset = fragment.getStartOffset();
-        length = fragment.getLength();
+            fragment.getStartKey(), fragment.getEndKey(), fs.getLength(fragment.getPath()));
+        startOffset = fragment.getStartKey();
+        length = fragment.getEndKey();
 
         if (startOffset > 0) {
           startOffset--; // prev line feed

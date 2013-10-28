@@ -25,12 +25,47 @@
     <value>false</value>
   </property>
 
-  <!--- Scanner Handler -->
+  <property>
+    <name>tajo.storage.manager.maxReadBytes</name>
+    <value>8388608</value>
+    <description></description>
+  </property>
+
+  <property>
+    <name>tajo.storage.manager.concurrency.perDisk</name>
+    <value>1</value>
+    <description></description>
+  </property>
+
+  <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
     <value>csv,raw,rcfile,row,trevni</value>
   </property>
 
+  <!--- Fragment Class Configurations -->
+  <property>
+    <name>tajo.storage.fragment.csv.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.raw.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.rcfile.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.row.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.trevni.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+
+  <!--- Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler.csv.class</name>
     <value>org.apache.tajo.storage.CSVFile$CSVScanner</value>
