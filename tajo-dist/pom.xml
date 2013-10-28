@@ -99,7 +99,6 @@
                       run rm -rf tajo-${project.version}
                       run mkdir tajo-${project.version}
                       run cd tajo-${project.version}
-                      run mkdir share
                       run cp -r $ROOT/tajo-common/target/tajo-common-${project.version}/* .
                       run cp -r $ROOT/tajo-rpc/target/tajo-rpc-${project.version}/* .
                       run cp -r $ROOT/tajo-algebra/target/tajo-algebra-${project.version}/* .
@@ -107,6 +106,7 @@
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}/* .
                       run cp -r ${project.basedir}/src/main/bin .
                       run cp -r ${project.basedir}/src/main/conf .
+                      run rm -rf lib/tajo-*-${project.version}.jar
                       echo
                       echo "Tajo dist layout available at: ${project.build.directory}/tajo-${project.version}"
                       echo
