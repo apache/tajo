@@ -123,6 +123,7 @@
                   <goal>copy-dependencies</goal>
                 </goals>
                 <configuration>
+                  <excludeGroupIds>org.apache.tajo</excludeGroupIds>
                   <outputDirectory>${project.build.directory}/lib</outputDirectory>
                   <overWriteReleases>false</overWriteReleases>
                   <overWriteSnapshots>false</overWriteSnapshots>

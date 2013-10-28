@@ -223,6 +223,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-281: 'mvn package -Pdist' generates duplicate Tajo jar files.
+    (hyunsik)
+
     TAJO-277: Infinite loop occurs when a table is empty. (jinho)
 
     TAJO-273: NotEval incurs NPE with boolean column. (hyunsik)
