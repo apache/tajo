@@ -360,6 +360,8 @@ Release 0.2.0 - unreleased
 
   TASKS
 
+    TAJO-288: Correct NOTICE file and LICENSE.txt. (hyunsik)
+
     TAJO-271: Add MIT license to NOTICE.txt and LICENSE.txt for jquery and 
     jsPlumb. (hyunsik)
 
