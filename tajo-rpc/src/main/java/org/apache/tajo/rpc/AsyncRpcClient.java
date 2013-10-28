@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
+
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
@@ -46,6 +48,8 @@ public class AsyncRpcClient extends NettyClientBase {
 
   private final Class<?> protocol;
   private final Method stubMethod;
+
+  private RpcConnectionKey key;
 
   public AsyncRpcClient(final Class<?> protocol,
                         final InetSocketAddress addr)
@@ -62,10 +66,21 @@ public class AsyncRpcClient extends NettyClientBase {
         RpcResponse.getDefaultInstance());
     super.init(addr, pipeFactory);
     rpcChannel = new ProxyRpcChannel(getChannel());
+    this.key = new RpcConnectionKey(addr, protocol, true);
   }
 
-  public <T> T getStub() throws Exception {
-    return (T) stubMethod.invoke(null, rpcChannel);
+  @Override
+  public RpcConnectionKey getKey() {
+    return key;
+  }
+
+  @Override
+  public <T> T getStub() {
+    try {
+      return (T) stubMethod.invoke(null, rpcChannel);
+    } catch (Exception e) {
+      throw new RuntimeException(e.getMessage(), e);
+    }
   }
 
   public RpcChannel getRpcChannel() {
@@ -99,6 +114,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
       handler.registerCallback(nextSeqId,
           new ResponseCallback(controller, responseType, done));
+
       channel.write(rpcRequest);
     }
 
@@ -131,20 +147,16 @@ public class AsyncRpcClient extends NettyClientBase {
       this.callback = callback;
     }
 
+    @Override
     public void run(RpcResponse rpcResponse) {
-
       // if hasErrorMessage is true, it means rpc-level errors.
-      // it does not call the callback function
+      // it does not call the callback function\
       if (rpcResponse.hasErrorMessage()) {
-
         if (controller != null) {
           this.controller.setFailed(rpcResponse.getErrorMessage());
         }
         callback.run(null);
-        throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
-
       } else { // if rpc call succeed
-
         try {
           Message responseMessage;
           if (!rpcResponse.hasResponseMessage()) {
@@ -184,7 +196,6 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
-
       RpcResponse response = (RpcResponse) e.getMessage();
       ResponseCallback callback = requests.remove(response.getId());
 
@@ -200,7 +211,22 @@ public class AsyncRpcClient extends NettyClientBase {
         throws Exception {
       LOG.error(addr + "," + protocol + "," + e.getCause().getMessage(), e.getCause());
       e.getChannel().close();
-      throw new RemoteException(getErrorMessage(addr.toString()), e.getCause());
+
+      for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {
+        ResponseCallback callback = callbackEntry.getValue();
+        Integer id = callbackEntry.getKey();
+
+        RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
+            .setErrorMessage(e.toString())
+            .setId(id);
+
+        callback.run(responseBuilder.build());
+      }
+      if(LOG.isDebugEnabled()) {
+        LOG.error("" + e.getCause(), e.getCause());
+      } else {
+        LOG.error("RPC Exception:" + e.getCause());
+      }
     }
   }
 }

@@ -39,15 +39,14 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.ipc.QueryMasterProtocol.*;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetSocketAddress;
-import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -70,7 +69,7 @@ public class TaskRunner extends AbstractService {
   private ContainerId containerId;
 
   // Cluster Management
-  private QueryMasterProtocolService.Interface master;
+  //private TajoWorkerProtocol.TajoWorkerProtocolService.Interface master;
 
   // for temporal or intermediate files
   private FileSystem localFS;
@@ -102,16 +101,20 @@ public class TaskRunner extends AbstractService {
   private String baseDir;
   private Path baseDirPath;
 
-  private AsyncRpcClient client;
-
   private TaskRunnerManager taskRunnerManager;
 
   private long finishTime;
+
+  private RpcConnectionPool connPool;
+
+  private InetSocketAddress qmMasterAddr;
 
   public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
     super(TaskRunner.class.getName());
 
     this.taskRunnerManager = taskRunnerManager;
+    this.connPool = RpcConnectionPool.getPool(conf);
+
     try {
       final ExecutionBlockId executionBlockId = TajoIdUtils.createExecutionBlockId(args[1]);
 
@@ -128,23 +131,23 @@ public class TaskRunner extends AbstractService {
       // QueryMaster's address
       String host = args[4];
       int port = Integer.parseInt(args[5]);
-      final InetSocketAddress masterAddr = NetUtils.createSocketAddrForHost(host, port);
+      this.qmMasterAddr = NetUtils.createSocketAddrForHost(host, port);
 
-      LOG.info("QueryMaster Address:" + masterAddr);
+      LOG.info("QueryMaster Address:" + qmMasterAddr);
       // TODO - 'load credential' should be implemented
       // Getting taskOwner
       UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.USERNAME));
       //taskOwner.addToken(token);
 
-      // initialize QueryMasterProtocol as an actual task owner.
-      this.client =
-          taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
-            @Override
-            public AsyncRpcClient run() throws Exception {
-              return new AsyncRpcClient(QueryMasterProtocol.class, masterAddr);
-            }
-          });
-      this.master = client.getStub();
+      // initialize MasterWorkerProtocol as an actual task owner.
+//      this.client =
+//          taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
+//            @Override
+//            public AsyncRpcClient run() throws Exception {
+//              return new AsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
+//            }
+//          });
+//      this.master = client.getStub();
 
       this.executionBlockId = executionBlockId;
       this.queryId = executionBlockId.getQueryId();
@@ -213,10 +216,10 @@ public class TaskRunner extends AbstractService {
       }
     }
 
-    if(client != null) {
-      client.close();
-      client = null;
-    }
+//    if(client != null) {
+//      client.close();
+//      client = null;
+//    }
 
     LOG.info("Stop TaskRunner: " + executionBlockId);
     synchronized (this) {
@@ -237,9 +240,9 @@ public class TaskRunner extends AbstractService {
       return nodeId.toString();
     }
 
-    public QueryMasterProtocolService.Interface getMaster() {
-      return master;
-    }
+//    public TajoWorkerProtocolService.Interface getMaster() {
+//      return master;
+//    }
 
     public FileSystem getLocalFS() {
       return localFS;
@@ -282,12 +285,13 @@ public class TaskRunner extends AbstractService {
     return taskRunnerContext;
   }
 
-  static void fatalError(QueryMasterProtocolService.Interface proxy,
+  static void fatalError(QueryMasterProtocolService.Interface qmClientService,
                          QueryUnitAttemptId taskAttemptId, String message) {
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())
         .setErrorMessage(message);
-    proxy.fatalError(null, builder.build(), NullCallback.get());
+
+    qmClientService.fatalError(null, builder.build(), NullCallback.get());
   }
 
   public void run() {
@@ -303,7 +307,12 @@ public class TaskRunner extends AbstractService {
           QueryUnitRequestProto taskRequest = null;
 
           while(!stopped) {
+            NettyClientBase qmClient = null;
+            QueryMasterProtocolService.Interface qmClientService = null;
             try {
+              qmClient = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+              qmClientService = qmClient.getStub();
+
               if (callFuture == null) {
                 callFuture = new CallFuture<QueryUnitRequestProto>();
                 LOG.info("Request GetTask: " + getId());
@@ -311,7 +320,8 @@ public class TaskRunner extends AbstractService {
                     .setExecutionBlockId(executionBlockId.getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
                     .build();
-                master.getTask(null, request, callFuture);
+
+                qmClientService.getTask(null, request, callFuture);
               }
               try {
                 // wait for an assigning task for 3 seconds
@@ -347,14 +357,14 @@ public class TaskRunner extends AbstractService {
 
                   QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
                   if (tasks.containsKey(taskAttemptId)) {
-                    fatalError(master, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
+                    fatalError(qmClientService, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
                     continue;
                   }
 
                   LOG.info("Initializing: " + taskAttemptId);
                   Task task;
                   try {
-                    task = new Task(taskAttemptId, taskRunnerContext, master,
+                    task = new Task(taskAttemptId, taskRunnerContext, qmClientService,
                         new QueryUnitRequestImpl(taskRequest));
                     tasks.put(taskAttemptId, task);
 
@@ -365,7 +375,7 @@ public class TaskRunner extends AbstractService {
                     // task.run() is a blocking call.
                     task.run();
                   } catch (Throwable t) {
-                    fatalError(taskRunnerContext.getMaster(), taskAttemptId, t.getMessage());
+                    fatalError(qmClientService, taskAttemptId, t.getMessage());
                     t.printStackTrace();
                   } finally {
                     callFuture = null;
@@ -374,7 +384,11 @@ public class TaskRunner extends AbstractService {
                 }
               }
             } catch (Throwable t) {
+              connPool.closeConnection(qmClient);
+              qmClient = null;
               t.printStackTrace();
+            } finally {
+              connPool.releaseConnection(qmClient);
             }
           }
         }

@@ -42,11 +42,14 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
@@ -159,8 +162,22 @@ public class QueryMasterTask extends CompositeService {
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
     CallFuture future = new CallFuture();
-    queryMasterContext.getWorkerContext().getTajoMasterRpcClient()
-        .stopQueryMaster(null, queryId.getProto(), future);
+
+    RpcConnectionPool connPool = RpcConnectionPool.getPool(queryMasterContext.getConf());
+    NettyClientBase tmClient = null;
+    try {
+      tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+          TajoMasterProtocol.class, true);
+      TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+      masterClientService.stopQueryMaster(null, queryId.getProto(), future);
+    } catch (Exception e) {
+      connPool.closeConnection(tmClient);
+      tmClient = null;
+      LOG.error(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(tmClient);
+    }
+
     try {
       future.get(3, TimeUnit.SECONDS);
     } catch (Throwable t) {

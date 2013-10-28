@@ -21,9 +21,8 @@
  */
 package org.apache.tajo.catalog;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.rpc.NettyClientBase;
 
 import java.io.IOException;
 
@@ -32,22 +31,29 @@ import java.io.IOException;
  * local.
  */
 public class LocalCatalogWrapper extends AbstractCatalogClient {
-  private static final Log LOG = LogFactory.getLog(LocalCatalogWrapper.class);
   private CatalogServer catalog;
+  private CatalogProtocol.CatalogProtocolService.BlockingInterface stub;
 
   public LocalCatalogWrapper(final TajoConf conf) throws IOException {
+    super(conf, null);
     this.catalog = new CatalogServer();
     this.catalog.init(conf);
     this.catalog.start();
-    setStub(catalog.getHandler());
+    this.stub = catalog.getHandler();
   }
 
   public LocalCatalogWrapper(final CatalogServer server) {
+    super(server.getConf(), null);
     this.catalog = server;
-    setStub(server.getHandler());
+    this.stub = server.getHandler();
   }
 
   public void shutdown() {
     this.catalog.stop();
+  }
+
+  @Override
+  CatalogProtocol.CatalogProtocolService.BlockingInterface getStub(NettyClientBase client) {
+    return stub;
   }
 }

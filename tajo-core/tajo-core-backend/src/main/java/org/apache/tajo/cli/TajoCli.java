@@ -289,7 +289,10 @@ public class TajoCli {
 
       } else { // submit a query to TajoMaster
         ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
-        if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (response == null) {
+          sout.println("response is null");
+        }
+        else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
           QueryId queryId = null;
           try {
             queryId = new QueryId(response.getQueryId());

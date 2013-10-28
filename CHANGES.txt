@@ -59,6 +59,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-274: Maintaining connectivity to Tajo master regardless of the restart
+    of the Tajo master. (Keuntae Park via hyunsik)
+
     TAJO-287: Refactor TableDesc, TableMeta, and Fragment. (hyunsik)
 
     TAJO-275: Separating QueryMaster and TaskRunner roles in worker. 

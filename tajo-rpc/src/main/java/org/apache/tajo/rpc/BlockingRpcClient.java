@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
+
 public class BlockingRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
@@ -49,6 +51,8 @@ public class BlockingRpcClient extends NettyClientBase {
 
   private final Class<?> protocol;
   private final Method stubMethod;
+
+  private RpcConnectionKey key;
 
   public BlockingRpcClient(final Class<?> protocol,
                            final InetSocketAddress addr)
@@ -66,10 +70,22 @@ public class BlockingRpcClient extends NettyClientBase {
         RpcResponse.getDefaultInstance());
     super.init(addr, pipeFactory);
     rpcChannel = new ProxyRpcChannel(getChannel());
+
+    this.key = new RpcConnectionKey(addr, protocol, false);
   }
 
-  public <T> T getStub() throws Exception {
-    return (T) stubMethod.invoke(null, rpcChannel);
+  @Override
+  public RpcConnectionKey getKey() {
+    return key;
+  }
+
+  @Override
+  public <T> T getStub() {
+    try {
+      return (T) stubMethod.invoke(null, rpcChannel);
+    } catch (Exception e) {
+      throw new RuntimeException(e.getMessage(), e);
+    }
   }
 
   public BlockingRpcChannel getBlockingRpcChannel() {
@@ -109,7 +125,12 @@ public class BlockingRpcClient extends NettyClientBase {
       try {
         return callFuture.get();
       } catch (Throwable t) {
-        throw new RemoteException(t);
+        if(t instanceof ExecutionException) {
+          ExecutionException ee = (ExecutionException)t;
+          throw new ServiceException(ee.getCause());
+        } else {
+          throw new RemoteException(t);
+        }
       }
     }
 
@@ -151,9 +172,8 @@ public class BlockingRpcClient extends NettyClientBase {
         LOG.warn("Dangling rpc call");
       } else {
         if (rpcResponse.hasErrorMessage()) {
-          if (callback.controller != null) {
-            callback.setFailed(rpcResponse.getErrorMessage());
-          }
+          callback.setFailed(rpcResponse.getErrorMessage(),
+              new ServiceException(getErrorMessage(rpcResponse.getErrorMessage())));
           throw new RemoteException(
               getErrorMessage(rpcResponse.getErrorMessage()));
         } else {
@@ -176,7 +196,14 @@ public class BlockingRpcClient extends NettyClientBase {
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
       e.getChannel().close();
-      throw new RemoteException(getErrorMessage(""), e.getCause());
+      for(ProtoCallFuture callback: requests.values()) {
+        callback.setFailed(e.getCause().getMessage(), e.getCause());
+      }
+      if(LOG.isDebugEnabled()) {
+        LOG.error("" + e.getCause().getMessage(), e.getCause());
+      } else {
+        LOG.error("RPC Exception:" + e.getCause().getMessage());
+      }
     }
   }
 
@@ -186,6 +213,8 @@ public class BlockingRpcClient extends NettyClientBase {
     private Message returnType;
 
     private RpcController controller;
+
+    private ExecutionException ee;
 
     public ProtoCallFuture(RpcController controller, Message message) {
       this.controller = controller;
@@ -200,6 +229,9 @@ public class BlockingRpcClient extends NettyClientBase {
     @Override
     public Message get() throws InterruptedException, ExecutionException {
       sem.acquire();
+      if(ee != null) {
+        throw ee;
+      }
       return response;
     }
 
@@ -228,8 +260,11 @@ public class BlockingRpcClient extends NettyClientBase {
       sem.release();
     }
 
-    public void setFailed(String errorText) {
-      this.controller.setFailed(errorText);
+    public void setFailed(String errorText, Throwable t) {
+      if(controller != null) {
+        this.controller.setFailed(errorText);
+      }
+      ee = new ExecutionException(errorText, t);
       sem.release();
     }
   }

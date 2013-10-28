@@ -18,6 +18,7 @@
 
 package org.apache.tajo.rpc;
 
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.test.DummyProtocol;
 import org.apache.tajo.rpc.test.DummyProtocol.DummyProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
@@ -78,6 +79,39 @@ public class TestBlockingRpc {
         .setMessage(MESSAGE).build();
     EchoMessage response2 = stub.echo(null, message);
     assertEquals(MESSAGE, response2.getMessage());
+  }
+
+  @Test
+  public void testRpcWithServiceCallable() throws Exception {
+    final SumRequest request = SumRequest.newBuilder()
+        .setX1(1)
+        .setX2(2)
+        .setX3(3.15d)
+        .setX4(2.0f).build();
+
+    SumResponse response =
+    new ServerCallable<SumResponse>(new TajoConf(), server.getListenAddress(), DummyProtocol.class, false) {
+      @Override
+      public SumResponse call(NettyClientBase client) throws Exception {
+        BlockingInterface stub2 = client.getStub();
+        SumResponse response1 = stub2.sum(null, request);
+        return response1;
+      }
+    }.withRetries();
+
+    assertTrue(8.15d == response.getResult());
+
+    response =
+        new ServerCallable<SumResponse>(new TajoConf(), server.getListenAddress(), DummyProtocol.class, false) {
+          @Override
+          public SumResponse call(NettyClientBase client) throws Exception {
+            BlockingInterface stub2 = client.getStub();
+            SumResponse response1 = stub2.sum(null, request);
+            return response1;
+          }
+        }.withoutRetries();
+
+    assertTrue(8.15d == response.getResult());
   }
 
   @Test

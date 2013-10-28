@@ -37,86 +37,75 @@ import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
-import org.apache.tajo.rpc.BlockingRpcClient;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.rpc.ServerCallable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @ThreadSafe
 public class TajoClient {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
 
   private final TajoConf conf;
-  private BlockingRpcClient tasjoMasterClient;
-  private TajoMasterClientProtocolService.BlockingInterface tajoMasterService;
 
-  private Map<QueryId, QueryMasterClientProtocolService.BlockingInterface> queryMasterConnectionMap =
-          new HashMap<QueryId, QueryMasterClientProtocolService.BlockingInterface>();
+  private Map<QueryId, InetSocketAddress> queryMasterMap = new ConcurrentHashMap<QueryId, InetSocketAddress>();
 
-  private Map<QueryId, BlockingRpcClient> queryMasterClientMap =
-          new HashMap<QueryId, BlockingRpcClient>();
+  private InetSocketAddress tajoMasterAddr;
+
+  private RpcConnectionPool connPool;
 
   public TajoClient(TajoConf conf) throws IOException {
+    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)));
+  }
+
+  public TajoClient(TajoConf conf, InetSocketAddress addr) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
-    String masterAddr = this.conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
-    InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
-    connect(addr);
+    this.tajoMasterAddr = addr;
+
+    connPool = RpcConnectionPool.getPool(conf);
   }
 
   public TajoClient(InetSocketAddress addr) throws IOException {
-    this.conf = new TajoConf();
-    connect(addr);
+    this(new TajoConf(), addr);
   }
 
   public TajoClient(String hostname, int port) throws IOException {
-    this.conf = new TajoConf();
-    connect(NetUtils.createSocketAddr(hostname, port));
-  }
-
-  private void connect(InetSocketAddress addr) throws IOException {
-    try {
-      tasjoMasterClient = new BlockingRpcClient(TajoMasterClientProtocol.class, addr);
-      tajoMasterService = tasjoMasterClient.getStub();
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
+    this(new TajoConf(), NetUtils.createSocketAddr(hostname, port));
   }
 
   public void close() {
-    tasjoMasterClient.close();
-
-    for(BlockingRpcClient eachClient: queryMasterClientMap.values()) {
-      eachClient.close();
-    }
-    queryMasterClientMap.clear();
-    queryMasterConnectionMap.clear();
+    queryMasterMap.clear();
   }
 
-  public void closeQuery(QueryId queryId) {
-    if(queryMasterClientMap.containsKey(queryId)) {
+  /**
+   * Call to QueryMaster closing query resources
+   * @param queryId
+   */
+  public void closeQuery(final QueryId queryId) {
+    if(queryMasterMap.containsKey(queryId)) {
+      NettyClientBase qmClient = null;
       try {
-        queryMasterConnectionMap.get(queryId).killQuery(null, queryId.getProto());
+        qmClient = connPool.getConnection(queryMasterMap.get(queryId), QueryMasterClientProtocol.class, false);
+        QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
+        queryMasterService.killQuery(null, queryId.getProto());
       } catch (Exception e) {
+        connPool.closeConnection(qmClient);
+        qmClient = null;
         LOG.warn("Fail to close a QueryMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
+      } finally {
+        connPool.releaseConnection(qmClient);
+        queryMasterMap.remove(queryId);
       }
-      queryMasterClientMap.get(queryId).close();
-      LOG.info("Closed a QueryMaster connection (qid=" + queryId + ", addr="
-          + queryMasterClientMap.get(queryId).getRemoteAddress() + ")");
-      queryMasterClientMap.remove(queryId);
-      queryMasterConnectionMap.remove(queryId);
     }
-  }
-
-  public boolean isConnected() {
-    return tasjoMasterClient.isConnected();
   }
 
   /**
@@ -125,11 +114,17 @@ public class TajoClient {
    * In order to get the result, you should use {@link #getQueryResult(org.apache.tajo.QueryId)}
    * or {@link #getQueryResultAndWait(org.apache.tajo.QueryId)}.
    */
-  public GetQueryStatusResponse executeQuery(String sql) throws ServiceException {
-    QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(sql);
+  public GetQueryStatusResponse executeQuery(final String sql) throws ServiceException {
+    return new ServerCallable<GetQueryStatusResponse>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
+        final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setQuery(sql);
 
-    return tajoMasterService.submitQuery(null, builder.build());
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.submitQuery(null, builder.build());
+      }
+    }.withRetries();
   }
 
   /**
@@ -140,11 +135,19 @@ public class TajoClient {
    *
    * @return If failed, return null.
    */
-  public ResultSet executeQueryAndGetResult(String sql)
+  public ResultSet executeQueryAndGetResult(final String sql)
       throws ServiceException, IOException {
-    QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(sql);
-    GetQueryStatusResponse response = tajoMasterService.submitQuery(null, builder.build());
+    GetQueryStatusResponse response = new ServerCallable<GetQueryStatusResponse>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
+        final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setQuery(sql);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.submitQuery(null, builder.build());
+      }
+    }.withRetries();
+
     QueryId queryId = new QueryId(response.getQueryId());
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return this.createNullResultSet(queryId);
@@ -159,38 +162,56 @@ public class TajoClient {
     builder.setQueryId(queryId.getProto());
 
     GetQueryStatusResponse res = null;
-    if(queryMasterConnectionMap.containsKey(queryId)) {
-      QueryMasterClientProtocolService.BlockingInterface queryMasterService = queryMasterConnectionMap.get(queryId);
-      res = queryMasterService.getQueryStatus(null, builder.build());
-    } else {
-      res = tajoMasterService.getQueryStatus(null, builder.build());
-
-      String queryMasterHost = res.getQueryMasterHost();
-      if(queryMasterHost != null && !queryMasterHost.isEmpty()) {
-        connectionToQueryMaster(queryId, queryMasterHost, res.getQueryMasterPort());
-
-        QueryMasterClientProtocolService.BlockingInterface queryMasterService = queryMasterConnectionMap.get(queryId);
+    if(queryMasterMap.containsKey(queryId)) {
+      NettyClientBase qmClient = null;
+      try {
+        qmClient = connPool.getConnection(queryMasterMap.get(queryId),
+            QueryMasterClientProtocol.class, false);
+        QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
         res = queryMasterService.getQueryStatus(null, builder.build());
+      } catch (Exception e) {
+        connPool.closeConnection(qmClient);
+        qmClient = null;
+        throw new ServiceException(e.getMessage(), e);
+      } finally {
+        connPool.releaseConnection(qmClient);
+      }
+    } else {
+      NettyClientBase tmClient = null;
+      try {
+        tmClient = connPool.getConnection(tajoMasterAddr,
+            TajoMasterClientProtocol.class, false);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
+        res = tajoMasterService.getQueryStatus(null, builder.build());
+
+        String queryMasterHost = res.getQueryMasterHost();
+        if(queryMasterHost != null && !queryMasterHost.isEmpty()) {
+          NettyClientBase qmClient = null;
+          try {
+            InetSocketAddress qmAddr = NetUtils.createSocketAddr(queryMasterHost, res.getQueryMasterPort());
+            qmClient = connPool.getConnection(
+                qmAddr, QueryMasterClientProtocol.class, false);
+            QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
+            res = queryMasterService.getQueryStatus(null, builder.build());
+
+            queryMasterMap.put(queryId, qmAddr);
+          } catch (Exception e) {
+            connPool.closeConnection(qmClient);
+            qmClient = null;
+            throw new ServiceException(e.getMessage(), e);
+          } finally {
+            connPool.releaseConnection(qmClient);
+          }
+        }
+      } catch (Exception e) {
+        connPool.closeConnection(tmClient);
+        tmClient = null;
+        throw new ServiceException(e.getMessage(), e);
+      } finally {
+        connPool.releaseConnection(tmClient);
       }
     }
     return new QueryStatus(res);
-  }
-
-  private void connectionToQueryMaster(QueryId queryId, String queryMasterHost, int queryMasterPort) {
-    try {
-      InetSocketAddress addr = NetUtils.createSocketAddr(queryMasterHost, queryMasterPort);
-      BlockingRpcClient client = new BlockingRpcClient(QueryMasterClientProtocol.class, addr);
-      QueryMasterClientProtocolService.BlockingInterface service = client.getStub();
-
-      queryMasterConnectionMap.put(queryId, service);
-      queryMasterClientMap.put(queryId, client);
-
-      LOG.info("Connected to Query Master (qid=" + queryId + ", addr=" + NetUtils.normalizeInetSocketAddress(addr)
-          + ")");
-    } catch (Exception e) {
-      LOG.error(e.getMessage());
-      throw new RuntimeException(e);
-    }
   }
 
   private static boolean isQueryRunnning(QueryState state) {
@@ -204,9 +225,9 @@ public class TajoClient {
 
   public ResultSet getQueryResult(QueryId queryId)
       throws ServiceException, IOException {
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        return createNullResultSet(queryId);
-      }
+    if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+      return createNullResultSet(queryId);
+    }
 
     TableDesc tableDesc = getResultDesc(queryId);
     return new ResultSetImpl(this, queryId, conf, tableDesc);
@@ -253,59 +274,125 @@ public class TajoClient {
       return null;
     }
 
-    QueryMasterClientProtocolService.BlockingInterface queryMasterService = queryMasterConnectionMap.get(queryId);
-    if(queryMasterService == null) {
-      LOG.warn("No Connection to QueryMaster for " + queryId);
-      return null;
+    NettyClientBase client = null;
+    try {
+      InetSocketAddress queryMasterAddr = queryMasterMap.get(queryId);
+      if(queryMasterAddr == null) {
+        LOG.warn("No Connection to QueryMaster for " + queryId);
+        return null;
+      }
+      client = connPool.getConnection(queryMasterAddr, QueryMasterClientProtocol.class, false);
+      QueryMasterClientProtocolService.BlockingInterface queryMasterService = client.getStub();
+      GetQueryResultRequest.Builder builder = GetQueryResultRequest.newBuilder();
+      builder.setQueryId(queryId.getProto());
+      GetQueryResultResponse response = queryMasterService.getQueryResult(null,
+          builder.build());
+
+      return CatalogUtil.newTableDesc(response.getTableDesc());
+    } catch (Exception e) {
+      connPool.closeConnection(client);
+      client = null;
+      throw new ServiceException(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(client);
     }
-    GetQueryResultRequest.Builder builder = GetQueryResultRequest.newBuilder();
-    builder.setQueryId(queryId.getProto());
-    GetQueryResultResponse response = queryMasterService.getQueryResult(null,
-        builder.build());
-
-    return CatalogUtil.newTableDesc(response.getTableDesc());
   }
 
-  public boolean updateQuery(String sql) throws ServiceException {
-    QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(sql);
+  public boolean updateQuery(final String sql) throws ServiceException {
+    return new ServerCallable<Boolean>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setQuery(sql);
 
-    ResultCode resultCode =
-        tajoMasterService.updateQuery(null, builder.build()).getResultCode();
-    return resultCode == ResultCode.OK;
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        ResultCode resultCode =
+            tajoMasterService.updateQuery(null, builder.build()).getResultCode();
+        return resultCode == ResultCode.OK;
+      }
+    }.withRetries();
   }
 
-  public boolean existTable(String name) throws ServiceException {
-    StringProto.Builder builder = StringProto.newBuilder();
-    builder.setValue(name);
-    return tajoMasterService.existTable(null, builder.build()).getValue();
+  /**
+   * Test for the existence of table in catalog data.
+   * <p/>
+   * This will return true if table exists, false if not.
+   * @param name
+   * @return
+   * @throws ServiceException
+   */
+  public boolean existTable(final String name) throws ServiceException {
+    return new ServerCallable<Boolean>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        StringProto.Builder builder = StringProto.newBuilder();
+        builder.setValue(name);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.existTable(null, builder.build()).getValue();
+      }
+    }.withRetries();
   }
 
-  public boolean detachTable(String name) throws ServiceException {
-    StringProto.Builder builder = StringProto.newBuilder();
-    builder.setValue(name);
-    return tajoMasterService.detachTable(null, builder.build()).getValue();
+  /**
+   * Deletes table schema from catalog data, but doesn't delete data file in hdfs.
+   * @param tableName
+   * @return
+   * @throws ServiceException
+   */
+  public boolean detachTable(final String tableName) throws ServiceException {
+    return new ServerCallable<Boolean>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        StringProto.Builder builder = StringProto.newBuilder();
+        builder.setValue(tableName);
+        return tajoMasterService.detachTable(null, builder.build()).getValue();
+      }
+    }.withRetries();
   }
 
-  public TableDesc createExternalTable(String name, Schema schema, Path path, TableMeta meta)
+  public TableDesc createExternalTable(final String name, final Schema schema, final Path path, final TableMeta meta)
       throws SQLException, ServiceException {
-    CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
-    builder.setName(name);
-    builder.setSchema(schema.getProto());
-    builder.setMeta(meta.getProto());
-    builder.setPath(path.toUri().toString());
-    TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-    if (res.getResultCode() == ResultCode.OK) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
-    } else {
-      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-    }
+    return new ServerCallable<TableDesc>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
+        builder.setName(name);
+        builder.setSchema(schema.getProto());
+        builder.setMeta(meta.getProto());
+        builder.setPath(path.toUri().toString());
+        TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
+        if (res.getResultCode() == ResultCode.OK) {
+          return CatalogUtil.newTableDesc(res.getTableDesc());
+        } else {
+          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+        }
+      }
+    }.withRetries();
   }
 
-  public boolean dropTable(String name) throws ServiceException {
-    StringProto.Builder builder = StringProto.newBuilder();
-    builder.setValue(name);
-    return tajoMasterService.dropTable(null, builder.build()).getValue();
+  /**
+   * Deletes table schema from catalog data and deletes data file in hdfs
+   * @param tableName
+   * @return
+   * @throws ServiceException
+   */
+  public boolean dropTable(final String tableName) throws ServiceException {
+    return new ServerCallable<Boolean>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        StringProto.Builder builder = StringProto.newBuilder();
+        builder.setValue(tableName);
+        return tajoMasterService.dropTable(null, builder.build()).getValue();
+      }
+    }.withRetries();
+
   }
 
   /**
@@ -313,30 +400,48 @@ public class TajoClient {
    * represented as lower-case letters.
    */
   public List<String> getTableList() throws ServiceException {
-    GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
-    GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
-    return res.getTablesList();
+    return new ServerCallable<List<String>>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public List<String> call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
+        GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
+        return res.getTablesList();
+      }
+    }.withRetries();
   }
 
-  public TableDesc getTableDesc(String tableName) throws SQLException, ServiceException {
-    GetTableDescRequest.Builder build = GetTableDescRequest.newBuilder();
-    build.setTableName(tableName);
-    TableResponse res = tajoMasterService.getTableDesc(null, build.build());
-    if (res.getResultCode() == ResultCode.OK) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
-    } else {
-      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-    }
+  public TableDesc getTableDesc(final String tableName) throws SQLException, ServiceException {
+    return new ServerCallable<TableDesc>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false) {
+      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        GetTableDescRequest.Builder build = GetTableDescRequest.newBuilder();
+        build.setTableName(tableName);
+        TableResponse res = tajoMasterService.getTableDesc(null, build.build());
+        if (res.getResultCode() == ResultCode.OK) {
+          return CatalogUtil.newTableDesc(res.getTableDesc());
+        } else {
+          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+        }
+      }
+    }.withRetries();
   }
 
-  public boolean killQuery(QueryId queryId)
+  public boolean killQuery(final QueryId queryId)
       throws ServiceException, IOException {
 
     QueryStatus status = getQueryStatus(queryId);
 
+    NettyClientBase tmClient = null;
     try {
       /* send a kill to the TM */
+      tmClient = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
       tajoMasterService.killQuery(null, queryId.getProto());
+
       long currentTimeMillis = System.currentTimeMillis();
       long timeKillIssued = currentTimeMillis;
       while ((currentTimeMillis < timeKillIssued + 10000L) && (status.getState()
@@ -350,9 +455,13 @@ public class TajoClient {
         currentTimeMillis = System.currentTimeMillis();
         status = getQueryStatus(queryId);
       }
-    } catch(ServiceException io) {
-      LOG.debug("Error when checking for application status", io);
+    } catch(Exception e) {
+      connPool.closeConnection(tmClient);
+      tmClient = null;
+      LOG.debug("Error when checking for application status", e);
       return false;
+    } finally {
+      connPool.releaseConnection(tmClient);
     }
 
     return true;

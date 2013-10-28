@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
+import com.google.protobuf.RpcController;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -30,6 +31,15 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   private final Semaphore sem = new Semaphore(0);
   private boolean done = false;
   private T response;
+  private RpcController controller;
+
+  public CallFuture() {
+    controller = new DefaultRpcController();
+  }
+
+  public RpcController getController() {
+    return controller;
+  }
 
   @Override
   public void run(T t) {

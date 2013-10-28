@@ -18,50 +18,35 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.BlockingRpcClient;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
  */
 public class CatalogClient extends AbstractCatalogClient {
-  private final Log LOG = LogFactory.getLog(CatalogClient.class);
-  private BlockingRpcClient client;
-
   /**
    * @throws java.io.IOException
    *
    */
   public CatalogClient(final TajoConf conf) throws IOException {
-    String catalogAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
-    connect(NetUtils.createSocketAddr(catalogAddr));
+    super(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.CATALOG_ADDRESS)));
   }
 
-  public CatalogClient(String host, int port) throws IOException {
-    connect(NetUtils.createSocketAddr(host, port));
+  public CatalogClient(TajoConf conf, String host, int port) throws IOException {
+    super(conf, NetUtils.createSocketAddr(host, port));
   }
 
-  private void connect(InetSocketAddress serverAddr) throws IOException {
-    String addrStr = NetUtils.normalizeInetSocketAddress(serverAddr);
-    LOG.info("Trying to connect the catalog (" + addrStr + ")");
-    try {
-      client = new BlockingRpcClient(CatalogProtocol.class, serverAddr);
-      setStub((BlockingInterface) client.getStub());
-    } catch (Exception e) {
-      throw new IOException("Can't connect the catalog server (" + addrStr +")");
-    }
-    LOG.info("Connected to the catalog server (" + addrStr + ")");
+  @Override
+  BlockingInterface getStub(NettyClientBase client) {
+    return client.getStub();
   }
 
   public void close() {
-    client.close();
   }
 }

@@ -47,6 +47,8 @@ import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.io.IOException;
@@ -234,8 +236,21 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
               .setExecutionBlockId(event.getExecutionBlockId().getProto())
               .build();
 
-      queryTaskContext.getQueryMasterContext().getWorkerContext().
-          getTajoMasterRpcClient().allocateWorkerResources(null, request, callBack);
+      RpcConnectionPool connPool = RpcConnectionPool.getPool(queryTaskContext.getConf());
+      NettyClientBase tmClient = null;
+      try {
+        tmClient = connPool.getConnection(
+            queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+            TajoMasterProtocol.class, true);
+        TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+        masterClientService.allocateWorkerResources(null, request, callBack);
+      } catch (Exception e) {
+        connPool.closeConnection(tmClient);
+        tmClient = null;
+        LOG.error(e.getMessage(), e);
+      } finally {
+        connPool.releaseConnection(tmClient);
+      }
 
       TajoMasterProtocol.WorkerResourceAllocationResponse response = null;
       while(!stopped.get()) {

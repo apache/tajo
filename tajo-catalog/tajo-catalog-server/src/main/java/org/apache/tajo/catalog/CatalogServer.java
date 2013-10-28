@@ -120,6 +120,10 @@ public class CatalogServer extends AbstractService {
     super.init(conf);
   }
 
+  public TajoConf getConf() {
+    return conf;
+  }
+
   public String getCatalogServerName() {
     return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", jdbc="
         + conf.get(CatalogConstants.JDBC_URI);

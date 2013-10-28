@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,8 +37,9 @@ import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
@@ -52,7 +54,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -82,11 +83,6 @@ public class TajoWorker extends CompositeService {
 
   private InetSocketAddress tajoMasterAddress;
 
-  //to TajoMaster
-  private AsyncRpcClient tajoMasterRpc;
-
-  private TajoMasterProtocol.TajoMasterProtocolService tajoMasterRpcClient;
-
   private CatalogClient catalogClient;
 
   private WorkerContext workerContext;
@@ -112,6 +108,8 @@ public class TajoWorker extends CompositeService {
   private int httpPort;
 
   private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
+  private RpcConnectionPool connPool;
 
   private String[] cmdArgs;
 
@@ -162,7 +160,8 @@ public class TajoWorker extends CompositeService {
     this.systemConf = (TajoConf)conf;
     RackResolver.init(systemConf);
 
-    workerContext = new WorkerContext();
+    this.connPool = RpcConnectionPool.getPool(systemConf);
+    this.workerContext = new WorkerContext();
 
     String resourceManagerClassName = systemConf.getVar(ConfVars.RESOURCE_MANAGER_CLASS);
 
@@ -232,8 +231,7 @@ public class TajoWorker extends CompositeService {
     super.init(conf);
 
     if(yarnContainerMode && queryMasterMode) {
-      String tajoMasterAddress = cmdArgs[2];
-      connectToTajoMaster(tajoMasterAddress);
+      tajoMasterAddress = NetUtils.createSocketAddr(cmdArgs[2]);
       connectToCatalog();
 
       QueryId queryId = TajoIdUtils.parseQueryId(cmdArgs[1]);
@@ -242,7 +240,7 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      connectToTajoMaster(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+      tajoMasterAddress = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
       connectToCatalog();
       workerHeartbeatThread = new WorkerHeartbeatThread();
       workerHeartbeatThread.start();
@@ -280,8 +278,8 @@ public class TajoWorker extends CompositeService {
       catalogClient.close();
     }
 
-    if(tajoMasterRpc != null) {
-      tajoMasterRpc.close();
+    if(connPool != null) {
+      connPool.close();
     }
 
     if(webServer != null && webServer.isAlive()) {
@@ -312,10 +310,6 @@ public class TajoWorker extends CompositeService {
 
     public TajoWorkerClientService getTajoWorkerClientService() {
       return tajoWorkerClientService;
-    }
-
-    public TajoMasterProtocol.TajoMasterProtocolService getTajoMasterRpcClient() {
-      return tajoMasterRpcClient;
     }
 
     public TaskRunnerManager getTaskRunnerManager() {
@@ -364,6 +358,10 @@ public class TajoWorker extends CompositeService {
       return TajoWorker.this.numClusterSlots.get();
     }
 
+    public InetSocketAddress getTajoMasterAddress() {
+      return tajoMasterAddress;
+    }
+
     public int getPeerRpcPort() {
       return getTajoWorkerManagerService() == null ? 0 : getTajoWorkerManagerService().getBindAddr().getPort();
     }
@@ -379,27 +377,6 @@ public class TajoWorker extends CompositeService {
 
   public void stopWorkerForce() {
     stop();
-  }
-
-  private void connectToTajoMaster(String tajoMasterAddrString) {
-    LOG.info("Connecting to TajoMaster (" + tajoMasterAddrString +")");
-    this.tajoMasterAddress = NetUtils.createSocketAddr(tajoMasterAddrString);
-
-    while(true) {
-      try {
-        tajoMasterRpc = new AsyncRpcClient(TajoMasterProtocol.class, this.tajoMasterAddress);
-        tajoMasterRpcClient = tajoMasterRpc.getStub();
-        break;
-      } catch (Exception e) {
-        LOG.error("Can't connect to TajoMaster[" + NetUtils.normalizeInetSocketAddress(tajoMasterAddress) + "], "
-            + e.getMessage(), e);
-      }
-
-      try {
-        Thread.sleep(3000);
-      } catch (InterruptedException e) {
-      }
-    }
   }
 
   private void connectToCatalog() {
@@ -456,8 +433,6 @@ public class TajoWorker extends CompositeService {
     }
 
     public void run() {
-      CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
-          new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
       int pullServerPort = 0;
@@ -535,9 +510,15 @@ public class TajoWorker extends CompositeService {
             .setServerStatus(serverStatus)
             .build();
 
-        workerContext.getTajoMasterRpcClient().heartbeat(null, heartbeatProto, callBack);
-
+        NettyClientBase tmClient = null;
         try {
+          CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
+              new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
+
+          tmClient = connPool.getConnection(tajoMasterAddress, TajoMasterProtocol.class, true);
+          TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+          masterClientService.heartbeat(callBack.getController(), heartbeatProto, callBack);
+
           TajoMasterProtocol.TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
           if(response != null) {
             if(response.getNumClusterNodes() > 0) {
@@ -547,10 +528,19 @@ public class TajoWorker extends CompositeService {
             if(response.getNumClusterSlots() > 0) {
               workerContext.setNumClusterSlots(response.getNumClusterSlots());
             }
+          } else {
+            if(callBack.getController().failed()) {
+              throw new ServiceException(callBack.getController().errorText());
+            }
           }
         } catch (InterruptedException e) {
           break;
-        } catch (TimeoutException e) {
+        } catch (Exception e) {
+          connPool.closeConnection(tmClient);
+          tmClient = null;
+          LOG.error(e.getMessage(), e);
+        } finally {
+          connPool.releaseConnection(tmClient);
         }
 
         try {

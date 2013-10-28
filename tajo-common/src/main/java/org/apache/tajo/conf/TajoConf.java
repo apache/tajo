@@ -169,6 +169,11 @@ public class TajoConf extends YarnConfiguration {
         (long)256 * 1048576),
 
     //////////////////////////////////
+    // RPC
+    //////////////////////////////////
+    RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
+
+    //////////////////////////////////
     // The Below is reserved
     //////////////////////////////////
 

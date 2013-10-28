@@ -31,7 +31,7 @@ import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
-public class NettyClientBase implements Closeable {
+public abstract class NettyClientBase implements Closeable {
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private ClientSocketChannelFactory factory;
@@ -42,6 +42,9 @@ public class NettyClientBase implements Closeable {
 
   public NettyClientBase() {
   }
+
+  public abstract <T> T getStub();
+  public abstract RpcConnectionPool.RpcConnectionKey getKey();
 
   public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory) {
     this.addr = addr;

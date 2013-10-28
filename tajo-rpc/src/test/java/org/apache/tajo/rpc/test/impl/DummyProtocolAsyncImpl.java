@@ -79,4 +79,9 @@ public class DummyProtocolAsyncImpl implements Interface {
 
     done.run(request);
   }
+
+  public void throwException(RpcController controller, EchoMessage request,
+                             RpcCallback<EchoMessage> done) {
+    done.run(request);
+  }
 }

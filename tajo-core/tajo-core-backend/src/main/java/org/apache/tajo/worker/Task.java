@@ -40,10 +40,9 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.ipc.QueryMasterProtocol.*;
-import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.engine.query.QueryUnitRequest;
+import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
@@ -66,7 +65,7 @@ public class Task {
   private final QueryContext queryContext;
   private final FileSystem localFS;
   private final TaskRunner.TaskRunnerContext taskRunnerContext;
-  private final QueryMasterProtocol.QueryMasterProtocolService.Interface masterProxy;
+  private final QueryMasterProtocolService.Interface masterProxy;
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 

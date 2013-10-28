@@ -32,10 +32,12 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
+import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.worker.TajoWorker;
@@ -44,10 +46,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
+import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeatResponse;
 
 // TODO - when exception, send error status to QueryJobManager
 public class QueryMaster extends CompositeService implements EventHandler {
@@ -81,6 +83,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private TajoWorker.WorkerContext workerContext;
 
+  private RpcConnectionPool connPool;
+
   public QueryMaster(TajoWorker.WorkerContext workerContext) {
     super(QueryMaster.class.getName());
     this.workerContext = workerContext;
@@ -89,7 +93,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
   public void init(Configuration conf) {
     LOG.info("QueryMaster init");
     try {
-      systemConf = (TajoConf)conf;
+      this.systemConf = (TajoConf)conf;
+      this.connPool = RpcConnectionPool.getPool(systemConf);
 
       querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);
@@ -160,7 +165,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   public void reportQueryStatusToQueryMaster(QueryId queryId, TajoProtos.QueryState state) {
     LOG.info("Send QueryMaster Ready to QueryJobManager:" + queryId);
+    NettyClientBase tmClient = null;
     try {
+      tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+          TajoMasterProtocol.class, true);
+      TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+
       TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
           .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
           .setPeerRpcPort(workerContext.getPeerRpcPort())
@@ -169,9 +179,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
           .setState(state)
           .setQueryId(queryId.getProto());
 
-      workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeatBuilder.build(), NullCallback.get());
+      CallFuture<TajoHeartbeatResponse> callBack =
+          new CallFuture<TajoHeartbeatResponse>();
+
+      masterClientService.heartbeat(callBack.getController(), queryHeartbeatBuilder.build(), callBack);
     } catch (Exception e) {
+      connPool.closeConnection(tmClient);
+      tmClient = null;
       LOG.error(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(tmClient);
     }
   }
 
@@ -265,12 +282,20 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       if(queryMasterTask != null) {
         TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-        CallFuture future = new CallFuture();
-        workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, future);
+        CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
+
+        NettyClientBase tmClient = null;
         try {
-          future.get(3, TimeUnit.SECONDS);
-        } catch (Throwable e) {
-          LOG.warn(e);
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+          TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+          masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
+        } catch (Exception e) {
+          connPool.closeConnection(tmClient);
+          tmClient = null;
+          LOG.error(e.getMessage(), e);
+        } finally {
+          connPool.releaseConnection(tmClient);
         }
 
         try {
@@ -331,9 +356,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
         }
         synchronized(queryMasterTasks) {
           for(QueryMasterTask eachTask: tempTasks) {
+            NettyClientBase tmClient;
             try {
+              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                  TajoMasterProtocol.class, true);
+              TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+
+              CallFuture<TajoHeartbeatResponse> callBack =
+                  new CallFuture<TajoHeartbeatResponse>();
+
               TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(eachTask);
-              workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, NullCallback.get());
+              masterClientService.heartbeat(callBack.getController(), queryHeartbeat, callBack);
             } catch (Throwable t) {
               t.printStackTrace();
             }

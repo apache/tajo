@@ -27,4 +27,5 @@ service DummyProtocolService {
   rpc getError (EchoMessage) returns (EchoMessage);
   rpc getNull (EchoMessage) returns (EchoMessage);
   rpc deley (EchoMessage) returns (EchoMessage);
+  rpc throwException (EchoMessage) returns (EchoMessage);
 }

@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class TestAsyncRpc {
   private static Log LOG = LogFactory.getLog(TestAsyncRpc.class);
@@ -144,5 +145,22 @@ public class TestAsyncRpc {
 
     assertFalse(future.isDone());
     assertEquals(future.get(1, TimeUnit.SECONDS), echoMessage);
+  }
+
+  @Test
+  public void testCallFutureDisconnected() throws Exception {
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+
+    server.shutdown();
+    server = null;
+
+    stub.echo(future.getController(), echoMessage, future);
+    EchoMessage response = future.get();
+
+    assertNull(response);
+    assertTrue(future.getController().failed());
+    assertTrue(future.getController().errorText() != null);
   }
 }

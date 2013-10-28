@@ -31,7 +31,9 @@ import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcConnectionPool;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -160,11 +162,24 @@ public class TajoContainerProxy extends ContainerProxy {
           .build()
       );
     }
-    context.getQueryMasterContext().getWorkerContext().getTajoMasterRpcClient()
-        .releaseWorkerResource(null,
-            TajoMasterProtocol.WorkerResourceReleaseRequest.newBuilder()
-                .addAllWorkerResources(workerResourceProtos)
-                .build(),
-            NullCallback.get());
+
+    RpcConnectionPool connPool = RpcConnectionPool.getPool(context.getConf());
+    NettyClientBase tmClient = null;
+    try {
+        tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+            TajoMasterProtocol.class, true);
+        TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+        masterClientService.releaseWorkerResource(null,
+          TajoMasterProtocol.WorkerResourceReleaseRequest.newBuilder()
+              .addAllWorkerResources(workerResourceProtos)
+              .build(),
+          NullCallback.get());
+    } catch (Exception e) {
+      connPool.closeConnection(tmClient);
+      tmClient = null;
+      LOG.error(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(tmClient);
+    }
   }
 }
