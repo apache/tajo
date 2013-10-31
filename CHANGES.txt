@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-285: Add CREATE TABLE... BY PARTITION statement to parser. (hyunsik)
+
     TAJO-267: Implement equals() and deepEquals() functions at LogicalNode. 
     (jihoon)
 

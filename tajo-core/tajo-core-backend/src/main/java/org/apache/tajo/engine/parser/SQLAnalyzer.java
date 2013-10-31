@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.parser;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.NotNull;
@@ -31,9 +32,11 @@ import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.CSVFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
+import static org.apache.tajo.algebra.CreateTable.*;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -849,7 +852,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     String tableName = ctx.table_name().getText();
     CreateTable createTable = new CreateTable(tableName);
 
-    if (ctx.EXTERNAL() != null) {
+    if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
       CreateTable.ColumnDefinition [] elements = getDefinitions(ctx.table_elements());
@@ -860,25 +863,31 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setStorageType(fileType);
       createTable.setLocation(path);
     } else {
-      if (ctx.table_elements() != null) {
+      if (checkIfExist(ctx.table_elements())) {
         CreateTable.ColumnDefinition [] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
       }
 
-      if (ctx.USING() != null) {
+      if (checkIfExist(ctx.USING())) {
         String fileType = ctx.file_type.getText();
         createTable.setStorageType(fileType);
       }
 
-      if (ctx.query_expression() != null) {
+      if (checkIfExist(ctx.query_expression())) {
         Expr subquery = visitQuery_expression(ctx.query_expression());
         createTable.setSubQuery(subquery);
       }
     }
 
-    if (ctx.param_clause() != null) {
+    if (checkIfExist(ctx.param_clause())) {
       Map<String, String> params = escapeTableMeta(getParams(ctx.param_clause()));
       createTable.setParams(params);
+    }
+
+    if (checkIfExist(ctx.table_partitioning_clauses())) {
+      CreateTable.PartitionOption partitionOption =
+          parseTablePartitioningClause(ctx.table_partitioning_clauses());
+      createTable.setPartition(partitionOption);
     }
     return createTable;
   }
@@ -893,6 +902,65 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     return elements;
+  }
+
+  public CreateTable.PartitionOption parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
+
+    if (checkIfExist(ctx.range_partitions())) { // For Range Partition
+      Range_partitionsContext rangePartitionsContext = ctx.range_partitions();
+      List<Range_value_clauseContext> rangeValueClause = rangePartitionsContext.
+          range_value_clause_list().range_value_clause();
+
+      List<RangePartitionSpecifier> specifiers = Lists.newArrayList();
+
+      for (Range_value_clauseContext rangeValue : rangeValueClause) {
+        if (checkIfExist(rangeValue.MAXVALUE())) { // LESS THAN (MAXVALUE)
+          specifiers.add(new RangePartitionSpecifier(rangeValue.partition_name().getText()));
+        } else { // LESS THAN (expr)
+          specifiers.add(new RangePartitionSpecifier(rangeValue.partition_name().getText(),
+              visitValue_expression(rangeValue.value_expression())));
+        }
+      }
+      return new CreateTable.RangePartition(getColumnReferences(ctx.range_partitions().column_reference_list()),
+          specifiers);
+
+    } else if (checkIfExist(ctx.hash_partitions())) { // For Hash Partition
+      Hash_partitionsContext hashPartitions = ctx.hash_partitions();
+
+      if (checkIfExist(hashPartitions.hash_partitions_by_quantity())) { // PARTITIONS (num)
+        return new HashPartition(getColumnReferences(hashPartitions.column_reference_list()),
+            visitNumeric_value_expression(hashPartitions.hash_partitions_by_quantity().quantity));
+
+      } else { // ( PARTITION part_name , ...)
+        List<CreateTable.PartitionSpecifier> specifiers = Lists.newArrayList();
+        for (Individual_hash_partitionContext partition :
+            hashPartitions.individual_hash_partitions().individual_hash_partition()) {
+          specifiers.add(new CreateTable.PartitionSpecifier(partition.partition_name().getText()));
+        }
+        return new HashPartition(getColumnReferences(hashPartitions.column_reference_list()), specifiers);
+      }
+
+    } else if (checkIfExist(ctx.list_partitions())) { // For List Partition
+      List_partitionsContext listPartitions = ctx.list_partitions();
+      List<List_value_partitionContext> partitions = listPartitions.list_value_clause_list().list_value_partition();
+      List<ListPartitionSpecifier> specifiers = Lists.newArrayList();
+
+      for (List_value_partitionContext listValuePartition : partitions) {
+        int size = listValuePartition.in_value_list().row_value_expression().size();
+        Expr [] exprs = new Expr[size];
+        for (int i = 0; i < size; i++) {
+          exprs[i] = visitRow_value_expression(listValuePartition.in_value_list().row_value_expression(i));
+        }
+        specifiers.add(new ListPartitionSpecifier(listValuePartition.partition_name().getText(),
+            new ValueListExpr(exprs)));
+      }
+      return new ListPartition(getColumnReferences(ctx.list_partitions().column_reference_list()), specifiers);
+
+    } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
+      return new CreateTable.ColumnPartition(getColumnReferences(ctx.column_partitions().column_reference_list()));
+    } else {
+      throw new SQLSyntaxError("Wrong partition option");
+    }
   }
 
   @Override

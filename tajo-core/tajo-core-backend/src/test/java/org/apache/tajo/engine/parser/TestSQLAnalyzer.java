@@ -20,7 +20,10 @@ package org.apache.tajo.engine.parser;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.LiteralValue;
+import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.engine.parser.SQLParser.Boolean_value_expressionContext;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.util.FileUtil;
@@ -28,6 +31,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * This unit tests uses a number of query files located in tajo/tajo-core/tajo-core-backend/test/queries.
@@ -237,6 +244,86 @@ public class TestSQLAnalyzer {
   public void testCreateTable10() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_10.sql"));
     parseQuery(sql);
+  }
+
+  @Test
+  public void testCreateTablePartitionByHash1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_partition_by_hash_1.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertTrue(createTable.hasPartition());
+    assertEquals(CreateTable.PartitionType.HASH, createTable.getPartition().getPartitionType());
+    CreateTable.HashPartition hashPartition = createTable.getPartition();
+    assertEquals("col1", hashPartition.getColumns()[0].getCanonicalName());
+    assertTrue(hashPartition.hasQuantifier());
+  }
+
+  @Test
+  public void testCreateTablePartitionByHash2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_partition_by_hash_2.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertTrue(createTable.hasPartition());
+    assertEquals(CreateTable.PartitionType.HASH, createTable.getPartition().getPartitionType());
+    CreateTable.HashPartition hashPartition = createTable.getPartition();
+    assertEquals("col1", hashPartition.getColumns()[0].getCanonicalName());
+    assertTrue(hashPartition.hasSpecifiers());
+    assertEquals(3, hashPartition.getSpecifiers().size());
+  }
+
+  @Test
+  public void testCreateTablePartitionByRange() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_partition_by_range.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertTrue(createTable.hasPartition());
+    assertEquals(CreateTable.PartitionType.RANGE, createTable.getPartition().getPartitionType());
+    CreateTable.RangePartition rangePartition = createTable.getPartition();
+    assertEquals("col1", rangePartition.getColumns()[0].getCanonicalName());
+    assertEquals(3, rangePartition.getSpecifiers().size());
+  }
+
+  @Test
+  public void testCreateTablePartitionByList() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_partition_by_list.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertTrue(createTable.hasPartition());
+    assertEquals(CreateTable.PartitionType.LIST, createTable.getPartition().getPartitionType());
+    CreateTable.ListPartition listPartition = createTable.getPartition();
+    assertEquals("col1", listPartition.getColumns()[0].getCanonicalName());
+    assertEquals(2, listPartition.getSpecifiers().size());
+    Iterator<CreateTable.ListPartitionSpecifier> iterator = listPartition.getSpecifiers().iterator();
+    CreateTable.ListPartitionSpecifier specifier = iterator.next();
+    LiteralValue value1 = (LiteralValue) specifier.getValueList().getValues()[0];
+    LiteralValue value2 = (LiteralValue) specifier.getValueList().getValues()[1];
+    assertEquals("Seoul", value1.getValue());
+    assertEquals("서울", value2.getValue());
+
+    specifier = iterator.next();
+    value1 = (LiteralValue) specifier.getValueList().getValues()[0];
+    value2 = (LiteralValue) specifier.getValueList().getValues()[1];
+    assertEquals("Busan", value1.getValue());
+    assertEquals("부산", value2.getValue());
+  }
+
+  @Test
+  public void testCreateTablePartitionByColumn() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_partition_by_column.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertTrue(createTable.hasPartition());
+    assertEquals(CreateTable.PartitionType.COLUMN, createTable.getPartition().getPartitionType());
+    CreateTable.ColumnPartition columnPartition = createTable.getPartition();
+    assertEquals(3, columnPartition.getColumns().length);
+    assertEquals("col1", columnPartition.getColumns()[0].getCanonicalName());
+    assertEquals("col2", columnPartition.getColumns()[1].getCanonicalName());
+    assertEquals("col3", columnPartition.getColumns()[2].getCanonicalName());
   }
 
   @Test

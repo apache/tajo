@@ -120,32 +120,20 @@ AND : A N D;
 ANY : A N Y;
 ASYMMETRIC : A S Y M M E T R I C;
 ASC : A S C;
-AVG : A V G;
 
-BETWEEN : B E T W E E N;
 BOTH : B O T H;
-BY : B Y;
 
 CASE : C A S E;
 CAST : C A S T;
-CHARACTER : C H A R A C T E R;
-COALESCE : C O A L E S C E;
-COUNT : C O U N T;
 CREATE : C R E A T E;
 CROSS : C R O S S;
-CUBE : C U B E;
 
-DEC : D E C;
 DESC : D E S C;
 DISTINCT : D I S T I N C T;
-DROP : D R O P;
 
 END : E N D;
 ELSE : E L S E;
-EVERY : E V E R Y;
 EXCEPT : E X C E P T;
-EXISTS : E X I S T S;
-EXTERNAL : E X T E R N A L;
 
 FALSE : F A L S E;
 FILTER : F I L T E R;
@@ -158,6 +146,7 @@ GROUP : G R O U P;
 GROUPING : G R O U P I N G;
 
 HAVING : H A V I N G;
+HASH : H A S H;
 
 ILIKE : I L I K E;
 IN : I N;
@@ -175,6 +164,7 @@ LEADING : L E A D I N G;
 LEFT : L E F T;
 LIKE : L I K E;
 LIMIT : L I M I T;
+LIST : L I S T;
 LOCATION : L O C A T I O N;
 
 NATIONAL : N A T I O N A L;
@@ -194,15 +184,15 @@ OVERWRITE : O V E R W R I T E;
 
 PRECISION : P R E C I S I ON;
 
+RANGE : R A N G E;
 REGEXP : R E G E X P;
 RIGHT : R I G H T;
 RLIKE : R L I K E;
-ROLLUP : R O L L U P;
 
-SYMMETRIC : S Y M M E T R I C;
 SET : S E T;
 SELECT : S E L E C T;
 SOME : S O M E;
+SYMMETRIC : S Y M M E T R I C;
 
 TABLE : T A B L E;
 THEN : T H E N;
@@ -214,7 +204,6 @@ UNIQUE : U N I Q U E;
 UNKNOWN : U N K N O W N;
 USING : U S I N G;
 
-VALUES : V A L U E S;
 VAR_SAMP : V A R UNDERLINE S A M P;
 VAR_POP : V A R UNDERLINE P O P;
 VARYING : V A R Y I N G;
@@ -230,29 +219,89 @@ ZONE : Z O N E;
   Non Reserved Keywords
 ===============================================================================
 */
+AVG : A V G;
 
+BETWEEN : B E T W E E N;
+BY : B Y;
+
+CHARACTER : C H A R A C T E R;
 COLLECT : C O L L E C T;
+COALESCE : C O A L E S C E;
+COLUMN : C O L U M N;
+COUNT : C O U N T;
+CUBE : C U B E;
+
+DEC : D E C;
+DROP : D R O P;
+
+EVERY : E V E R Y;
+EXISTS : E X I S T S;
+EXTERNAL : E X T E R N A L;
+
+LESS : L E S S;
 
 FUSION : F U S I O N;
 
 INTERSECTION : I N T E R S E C T I O N;
 
+MAXVALUE : M A X V A L U E;
+
+PARTITION : P A R T I T I O N;
+PARTITIONS : P A R T I T I O N S;
+
+ROLLUP : R O L L U P;
+
 SIMILAR : S I M I L A R;
 STDDEV_POP : S T D D E V UNDERLINE P O P;
 STDDEV_SAMP : S T D D E V UNDERLINE S A M P;
+SUBPARTITION : S U B P A R T I T I O N;
 SUM : S U M;
 
+TABLESPACE : T A B L E S P A C E;
+THAN : T H A N;
 TRIM : T R I M;
 TO : T O;
 
+VALUES : V A L U E S;
+
 Nonreserved_keywords
-  : COLLECT
+  : AVG
+  | BETWEEN
+  | BY
+
+  | CHARACTER
+  | COALESCE
+  | COLLECT
+  | COLUMN
+  | COUNT
+  | CUBE
+  | DEC
+  | DROP
+  | EVERY
+  | EXISTS
+  | EXTERNAL
   | FUSION
+  | HASH
   | INTERSECTION
+
+  | LESS
+  | LIST
+
+  | MAXVALUE
+
+  | VALUES
+  | PARTITION
+  | PARTITIONS
+  | ROLLUP
+
   | SIMILAR
   | STDDEV_POP
   | STDDEV_SAMP
+  | SUBPARTITION
   | SUM
+
+  | TABLESPACE
+  | THAN
   | TRIM
   | TO
   ;

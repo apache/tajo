@@ -20,6 +20,7 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
+import java.util.List;
 import java.util.Map;
 
 public class CreateTable extends Expr {
@@ -30,6 +31,7 @@ public class CreateTable extends Expr {
   private String location;
   private Expr subquery;
   private Map<String, String> params;
+  private PartitionOption partition;
 
   public CreateTable(final String tableName) {
     super(OpType.CreateTable);
@@ -101,6 +103,18 @@ public class CreateTable extends Expr {
     this.params = params;
   }
 
+  public boolean hasPartition() {
+    return partition != null;
+  }
+
+  public void setPartition(PartitionOption partition) {
+    this.partition = partition;
+  }
+
+  public <T extends PartitionOption> T getPartition() {
+    return (T) this.partition;
+  }
+
   public boolean hasSubQuery() {
     return subquery != null;
   }
@@ -154,6 +168,162 @@ public class CreateTable extends Expr {
       }
 
       return false;
+    }
+  }
+
+  public static enum PartitionType {
+    RANGE,
+    HASH,
+    LIST,
+    COLUMN
+  }
+
+  public static abstract class PartitionOption {
+    PartitionType type;
+
+    public PartitionOption(PartitionType type) {
+      this.type = type;
+    }
+
+    public PartitionType getPartitionType() {
+      return type;
+    }
+  }
+
+  public static class RangePartition extends PartitionOption {
+    ColumnReferenceExpr [] columns;
+    List<RangePartitionSpecifier> specifiers;
+
+    public RangePartition(ColumnReferenceExpr [] columns, List<RangePartitionSpecifier> specifiers) {
+      super(PartitionType.RANGE);
+      this.columns = columns;
+      this.specifiers = specifiers;
+    }
+
+    public ColumnReferenceExpr [] getColumns() {
+      return columns;
+    }
+
+    public List<RangePartitionSpecifier> getSpecifiers() {
+      return specifiers;
+    }
+  }
+
+  public static class HashPartition extends PartitionOption {
+    ColumnReferenceExpr [] columns;
+    Expr quantity;
+    List<PartitionSpecifier> specifiers;
+    public HashPartition(ColumnReferenceExpr [] columns, Expr quantity) {
+      super(PartitionType.HASH);
+      this.columns = columns;
+      this.quantity = quantity;
+    }
+
+    public HashPartition(ColumnReferenceExpr [] columns, List<PartitionSpecifier> specifier) {
+      super(PartitionType.HASH);
+      this.columns = columns;
+      this.specifiers = specifier;
+    }
+
+    public ColumnReferenceExpr [] getColumns() {
+      return columns;
+    }
+
+    public boolean hasQuantifier() {
+      return quantity != null;
+    }
+
+    public Expr getQuantifier() {
+      return quantity;
+    }
+
+    public boolean hasSpecifiers() {
+      return specifiers != null;
+    }
+
+    public List<PartitionSpecifier> getSpecifiers() {
+      return specifiers;
+    }
+  }
+
+  public static class ListPartition extends PartitionOption {
+    ColumnReferenceExpr [] columns;
+    List<ListPartitionSpecifier> specifiers;
+
+    public ListPartition(ColumnReferenceExpr [] columns, List<ListPartitionSpecifier> specifers) {
+      super(PartitionType.LIST);
+      this.columns = columns;
+      this.specifiers = specifers;
+    }
+
+    public ColumnReferenceExpr [] getColumns() {
+      return columns;
+    }
+
+    public List<ListPartitionSpecifier> getSpecifiers() {
+      return specifiers;
+    }
+  }
+
+  public static class ColumnPartition extends PartitionOption {
+    ColumnReferenceExpr [] columns;
+
+    public ColumnPartition(ColumnReferenceExpr [] columns) {
+      super(PartitionType.COLUMN);
+      this.columns = columns;
+    }
+
+    public ColumnReferenceExpr [] getColumns() {
+      return columns;
+    }
+  }
+
+  public static class RangePartitionSpecifier extends PartitionSpecifier {
+    String name;
+    Expr end;
+    boolean maxValue;
+
+    public RangePartitionSpecifier(String name, Expr end) {
+      super(name);
+      this.end = end;
+    }
+
+    public RangePartitionSpecifier(String name) {
+      super(name);
+      maxValue = true;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public Expr getEnd() {
+      return end;
+    }
+
+    public boolean isEndMaxValue() {
+      return this.maxValue;
+    }
+  }
+
+  public static class ListPartitionSpecifier extends PartitionSpecifier {
+    ValueListExpr valueList;
+
+    public ListPartitionSpecifier(String name, ValueListExpr valueList) {
+      super(name);
+      this.valueList = valueList;
+    }
+
+    public ValueListExpr getValueList() {
+      return valueList;
+    }
+  }
+
+  public static class PartitionSpecifier {
+    String name;
+
+    public PartitionSpecifier(String name) {
+      this.name = name;
     }
   }
 }

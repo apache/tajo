@@ -65,9 +65,9 @@ index_statement
 
 create_table_statement
   : CREATE EXTERNAL TABLE table_name table_elements USING file_type=Identifier
-    (param_clause)? (LOCATION path=Character_String_Literal)
+    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)
   | CREATE TABLE table_name (table_elements)? (USING file_type=Identifier)?
-    (param_clause)? (AS query_expression)?
+    (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
   ;
 
 table_elements
@@ -92,6 +92,71 @@ param
 
 method_specifier
   : USING m=Identifier
+  ;
+
+table_space_specifier
+  : TABLESPACE table_space_name
+  ;
+
+table_space_name
+  : Identifier
+  ;
+
+table_partitioning_clauses
+  : range_partitions
+  | hash_partitions
+  | list_partitions
+  | column_partitions
+  ;
+
+range_partitions
+  : PARTITION BY RANGE LEFT_PAREN column_reference_list RIGHT_PAREN
+    LEFT_PAREN range_value_clause_list RIGHT_PAREN
+  ;
+
+range_value_clause_list
+  : range_value_clause (COMMA range_value_clause)*
+  ;
+
+range_value_clause
+  : PARTITION partition_name VALUES LESS THAN (LEFT_PAREN value_expression RIGHT_PAREN | LEFT_PAREN? MAXVALUE RIGHT_PAREN?)
+  ;
+
+hash_partitions
+  : PARTITION BY HASH LEFT_PAREN column_reference_list RIGHT_PAREN
+    (LEFT_PAREN individual_hash_partitions RIGHT_PAREN | hash_partitions_by_quantity)
+  ;
+
+individual_hash_partitions
+  : individual_hash_partition (COMMA individual_hash_partition)*
+  ;
+
+individual_hash_partition
+  : PARTITION partition_name
+  ;
+
+hash_partitions_by_quantity
+  : PARTITIONS quantity = numeric_value_expression
+  ;
+
+list_partitions
+  : PARTITION BY LIST LEFT_PAREN column_reference_list RIGHT_PAREN LEFT_PAREN  list_value_clause_list RIGHT_PAREN
+  ;
+
+list_value_clause_list
+  : list_value_partition (COMMA list_value_partition)*
+  ;
+
+list_value_partition
+  : PARTITION partition_name VALUES (IN)? LEFT_PAREN in_value_list RIGHT_PAREN
+  ;
+
+column_partitions
+  : PARTITION BY COLUMN LEFT_PAREN column_reference_list RIGHT_PAREN
+  ;
+
+partition_name
+  : Identifier
   ;
 
 /*
@@ -880,10 +945,9 @@ in_predicate
   : predicand=numeric_value_expression  NOT? IN in_predicate_value
   ;
 
-
 in_predicate_value
   : table_subquery
-  | LEFT_PAREN in_value_list  RIGHT_PAREN
+  | LEFT_PAREN in_value_list RIGHT_PAREN
   ;
 
 in_value_list
