@@ -123,8 +123,8 @@
             <table border="1" class='border_table'>
               <tr><td width='100'>Table path</td><td width='410'><%=tableDesc.getPath()%></td></tr>
               <tr><td>Store type</td><td><%=tableDesc.getMeta().getStoreType()%></td></tr>
-              <tr><td># rows</td><td><%=tableDesc.getMeta().getStat().getNumRows()%></td></tr>
-              <tr><td>Volume</td><td><%=FileUtil.humanReadableByteCount(tableDesc.getMeta().getStat().getNumBytes(),true)%></td></tr>
+              <tr><td># rows</td><td><%=(tableDesc.hasStats() ? ("" + tableDesc.getStats().getNumRows()) : "-")%></td></tr>
+              <tr><td>Volume</td><td><%=(tableDesc.hasStats() ? FileUtil.humanReadableByteCount(tableDesc.getStats().getNumBytes(),true) : "-")%></td></tr>
               <tr><td>Options</td><td><%=optionStr%></td></tr>
             </table>
           </div>

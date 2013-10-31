@@ -20,13 +20,12 @@ package org.apache.tajo.master.rm;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.worker.TajoWorker;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class WorkerResource {
+public class WorkerResource implements Comparable<WorkerResource> {
   private static final Log LOG = LogFactory.getLog(WorkerResource.class);
 
   private String allocatedHost;
@@ -327,5 +326,13 @@ public class WorkerResource {
 
   public void releaseQueryMasterTask() {
     numQueryMasterTasks.getAndDecrement();
+  }
+
+  @Override
+  public int compareTo(WorkerResource workerResource) {
+    if(workerResource == null) {
+      return 1;
+    }
+    return getId().compareTo(workerResource.getId());
   }
 }

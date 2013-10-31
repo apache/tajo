@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -62,6 +63,8 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
   private WorkerResourceAllocationThread workerResourceAllocator;
 
+  private WorkerMonitorThread workerMonitor;
+
   private final BlockingQueue<WorkerResourceRequest> requestQueue;
 
   private final List<WorkerResourceRequest> reAllocationList;
@@ -77,6 +80,9 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
     workerResourceAllocator = new WorkerResourceAllocationThread();
     workerResourceAllocator.start();
+
+    workerMonitor = new WorkerMonitorThread();
+    workerMonitor.start();
   }
 
   public Map<String, WorkerResource> getWorkers() {
@@ -106,6 +112,9 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
     stopped.set(true);
     if(workerResourceAllocator != null) {
       workerResourceAllocator.interrupt();
+    }
+    if(workerMonitor != null) {
+      workerMonitor.interrupt();
     }
   }
 
@@ -188,6 +197,62 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
           new QueryId(request.getExecutionBlockId().getQueryId()), false, request, callBack));
     } catch (InterruptedException e) {
       LOG.error(e.getMessage(), e);
+    }
+  }
+
+  class WorkerMonitorThread extends Thread {
+    int heartbeatTimeout;
+
+    @Override
+    public void run() {
+      heartbeatTimeout = masterContext.getConf().getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_TIMEOUT);
+      LOG.info("WorkerMonitor start");
+      while(!stopped.get()) {
+        try {
+          Thread.sleep(10 * 1000);
+        } catch (InterruptedException e) {
+          if(stopped.get()) {
+            break;
+          }
+        }
+        synchronized(workerResourceLock) {
+          Set<String> workerHolders = new HashSet<String>();
+          workerHolders.addAll(liveWorkerResources);
+          for(String eachLiveWorker: workerHolders) {
+            WorkerResource worker = allWorkerResourceMap.get(eachLiveWorker);
+            if(worker == null) {
+              LOG.warn(eachLiveWorker + " not in WorkerReosurceMap");
+              continue;
+            }
+
+            if(System.currentTimeMillis() - worker.getLastHeartbeat() >= heartbeatTimeout) {
+              liveWorkerResources.remove(eachLiveWorker);
+              deadWorkerResources.add(eachLiveWorker);
+              worker.setWorkerStatus(WorkerStatus.DEAD);
+              LOG.warn("Worker [" + eachLiveWorker + "] is dead.");
+            }
+          }
+
+          //QueryMaster
+          workerHolders.clear();
+
+          workerHolders.addAll(liveQueryMasterWorkerResources);
+          for(String eachLiveWorker: workerHolders) {
+            WorkerResource worker = allWorkerResourceMap.get(eachLiveWorker);
+            if(worker == null) {
+              LOG.warn(eachLiveWorker + " not in WorkerResourceMap");
+              continue;
+            }
+
+            if(System.currentTimeMillis() - worker.getLastHeartbeat() >= heartbeatTimeout) {
+              liveQueryMasterWorkerResources.remove(eachLiveWorker);
+              deadWorkerResources.add(eachLiveWorker);
+              worker.setWorkerStatus(WorkerStatus.DEAD);
+              LOG.warn("QueryMaster [" + eachLiveWorker + "] is dead.");
+            }
+          }
+        }
+      }
     }
   }
 
@@ -368,9 +433,11 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
           if(queryMasterMode) {
             liveQueryMasterWorkerResources.add(workerKey);
             workerResource.setNumRunningTasks(0);
+            LOG.info("Heartbeat received from QueryMaster [" + workerKey + "] again.");
           }
           if(taskRunnerMode) {
             liveWorkerResources.add(workerKey);
+            LOG.info("Heartbeat received from Worker [" + workerKey + "] again.");
           }
         }
         workerResource.setLastHeartbeat(System.currentTimeMillis());

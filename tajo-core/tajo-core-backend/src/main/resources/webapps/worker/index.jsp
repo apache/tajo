@@ -63,7 +63,7 @@ if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
   List<QueryMasterTask> finishedQueryMasterTasks = JSPUtil.sortQueryMasterTask(tajoWorker.getWorkerContext()
           .getQueryMasterManagerService().getQueryMaster().getFinishedQueryMasterTasks(), true);
 %>
-  <h3>Running QueryMaster</h3>
+  <h3>Running Query</h3>
   <%
     if(queryMasterTasks.isEmpty()) {
       out.write("No running query master");
@@ -89,7 +89,7 @@ if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
   </table>
   <p/>
   <hr/>
-  <h3>Finished QueryMaster</h3>
+  <h3>Finished Query</h3>
   <%
     if(finishedQueryMasterTasks.isEmpty()) {
       out.write("No finished query master");

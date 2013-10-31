@@ -52,6 +52,9 @@ public class JSPUtil {
   }
 
   public static String getElapsedTime(long startTime, long finishTime) {
+    if(startTime == 0) {
+      return "-";
+    }
     return finishTime == 0 ? decimalF.format((System.currentTimeMillis() - startTime) / 1000) + " sec"
         : decimalF.format((finishTime - startTime) / 1000) + " sec";
   }
