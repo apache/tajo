@@ -29,11 +29,10 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.master.event.TaskAttemptAssignedEvent;
 import org.apache.tajo.master.event.TaskRequestEvent;
 import org.apache.tajo.master.event.TaskScheduleEvent;
@@ -42,8 +41,6 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.URI;
@@ -342,8 +339,8 @@ public class TaskSchedulerImpl extends AbstractService
   }
 
   private class ScheduledRequests {
-    private final HashSet<QueryUnitAttemptId> leafTasks = new HashSet<QueryUnitAttemptId>();
-    private final HashSet<QueryUnitAttemptId> nonLeafTasks = new HashSet<QueryUnitAttemptId>();
+    private final Set<QueryUnitAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
+    private final Set<QueryUnitAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private Map<String, TaskBlockLocation> leafTaskHostMapping = new HashMap<String, TaskBlockLocation>();
     private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
         new HashMap<String, LinkedList<QueryUnitAttemptId>>();
@@ -453,8 +450,10 @@ public class TaskSchedulerImpl extends AbstractService
 
           // random allocation
           if (attemptId == null && leafTaskNum() > 0) {
-            attemptId = leafTasks.iterator().next();
-            leafTasks.remove(attemptId);
+            synchronized (leafTasks){
+              attemptId = leafTasks.iterator().next();
+              leafTasks.remove(attemptId);
+            }
             //LOG.info(attemptId + " Assigned based on * match");
           }
         }
@@ -502,8 +501,10 @@ public class TaskSchedulerImpl extends AbstractService
         QueryUnitAttemptId attemptId;
         // random allocation
         if (nonLeafTasks.size() > 0) {
-          attemptId = nonLeafTasks.iterator().next();
-          nonLeafTasks.remove(attemptId);
+          synchronized (nonLeafTasks){
+            attemptId = nonLeafTasks.iterator().next();
+            nonLeafTasks.remove(attemptId);
+          }
           LOG.debug("Assigned based on * match");
 
           QueryUnit task;

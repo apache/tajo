@@ -230,6 +230,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-295: ConcurrentModificationException in TaskScheduler. (jinho)
+
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
     TAJO-281: 'mvn package -Pdist' generates duplicate Tajo jar files.
