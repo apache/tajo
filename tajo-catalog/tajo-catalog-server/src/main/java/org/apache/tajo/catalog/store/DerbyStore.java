@@ -43,12 +43,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class DerbyStore extends AbstractDBStore {
-  private static final String JDBC_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
+  private static final String CATALOG_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
   protected Lock rlock;
   protected Lock wlock;
 
-  protected String getJDBCDriverName(){
-    return JDBC_DRIVER;
+  protected String getCatalogDriverName(){
+    return CATALOG_DRIVER;
   }
   
   public DerbyStore(final Configuration conf)
@@ -58,7 +58,7 @@ public class DerbyStore extends AbstractDBStore {
   }
 
   protected Connection createConnection(Configuration conf) throws SQLException {
-    return DriverManager.getConnection(getJDBCUri());
+    return DriverManager.getConnection(getCatalogUri());
   }
 
   // TODO - DDL and index statements should be renamed
@@ -875,7 +875,7 @@ public class DerbyStore extends AbstractDBStore {
       //LOG.error(e.getMessage(), e);
     }
     
-    LOG.info("Shutdown database (" + jdbcUri + ")");
+    LOG.info("Shutdown database (" + catalogUri + ")");
   }
   
   

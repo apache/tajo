@@ -21,10 +21,10 @@ package org.apache.tajo.catalog;
 public class CatalogConstants {
   public static final String STORE_CLASS="tajo.catalog.store.class";
 
-  public static final String CONNECTION_ID = "tajo.catalog.jdbc.connection.id";
-  public static final String CONNECTION_PASSWORD = "tajo.catalog.jdbc.connection.password";
+  public static final String CONNECTION_ID = "tajo.catalog.connection.id";
+  public static final String CONNECTION_PASSWORD = "tajo.catalog.connection.password";
 
-  public static final String JDBC_URI="tajo.catalog.jdbc.uri";
+  public static final String CATALOG_URI="tajo.catalog.uri";
   public static final String TB_META = "META";
   public static final String TB_TABLES = "TABLES";
   public static final String TB_COLUMNS = "COLUMNS";

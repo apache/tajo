@@ -61,6 +61,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. (jaehwa)
+
     TAJO-287: Improve Fragment to be more generic. (hyunsik)
 
     TAJO-274: Maintaining connectivity to Tajo master regardless of the restart

@@ -32,9 +32,9 @@ import java.util.List;
 
 public class MySQLStore extends AbstractDBStore  {
 
-  private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-  protected String getJDBCDriverName(){
-    return JDBC_DRIVER;
+  private static final String CATALOG_DRIVER = "com.mysql.jdbc.Driver";
+  protected String getCatalogDriverName(){
+    return CATALOG_DRIVER;
   }
 
   public MySQLStore(Configuration conf) throws InternalException {
@@ -42,7 +42,7 @@ public class MySQLStore extends AbstractDBStore  {
   }
 
   protected Connection createConnection(Configuration conf) throws SQLException {
-    Connection con = DriverManager.getConnection(getJDBCUri(), conf.get(CONNECTION_ID), conf.get(CONNECTION_PASSWORD));
+    Connection con = DriverManager.getConnection(getCatalogUri(), conf.get(CONNECTION_ID), conf.get(CONNECTION_PASSWORD));
     //TODO con.setAutoCommit(false);
     return con;
   }

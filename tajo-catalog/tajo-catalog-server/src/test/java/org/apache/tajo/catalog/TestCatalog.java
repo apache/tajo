@@ -49,7 +49,7 @@ public class TestCatalog {
 	public static void setUp() throws Exception {
     TajoConf conf = new TajoConf();
 
-    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/TestCatalog/db;create=true");
+    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:target/test-data/TestCatalog/db;create=true");
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
 	  server = new CatalogServer();

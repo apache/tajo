@@ -125,8 +125,8 @@ public class CatalogServer extends AbstractService {
   }
 
   public String getCatalogServerName() {
-    return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", jdbc="
-        + conf.get(CatalogConstants.JDBC_URI);
+    return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", catalogUri="
+        + conf.get(CatalogConstants.CATALOG_URI);
   }
 
   private void initBuiltinFunctions(List<FunctionDesc> functions)

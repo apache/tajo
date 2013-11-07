@@ -48,8 +48,8 @@ public class TestDBStore {
     conf = new TajoConf();
     Path testDir = CommonTestingUtil.getTestDir("target/test-data/TestDBSTore");
     File absolutePath = new File(testDir.toUri());
-    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db;create=true");
-    LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
+    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db;create=true");
+    LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
     store = new DerbyStore(conf);
   }
 

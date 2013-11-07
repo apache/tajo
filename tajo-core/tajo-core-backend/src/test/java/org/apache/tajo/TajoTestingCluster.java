@@ -234,8 +234,8 @@ public class TajoTestingCluster {
     }
 
     conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
-    LOG.info("Apache Derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
+    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
+    LOG.info("Apache Derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
     catalogServer = new MiniCatalogServer(conf);
@@ -266,10 +266,10 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    c.set(CatalogConstants.JDBC_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
+    c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
 
-    LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
+    LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
       c.setVar(ConfVars.ROOT_DIR,
