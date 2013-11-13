@@ -216,6 +216,9 @@ public class TajoPullServerService extends AbstractService {
 
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
+
+      this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
+          , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
     } catch (Throwable t) {
       LOG.error(t);
     }
