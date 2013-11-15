@@ -39,10 +39,8 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
   @Expose private Path uri; // required
   @Expose private Long startOffset; // required
   @Expose private Long length; // required
-  @Expose private boolean distCached = false; // optional
 
   private String[] hosts; // Datanode hostnames
-  @Expose private int[] hostsBlockCount; // list of block count of hosts
   @Expose private int[] diskIds;
 
   public FileFragment(ByteString raw) throws InvalidProtocolBufferException {
@@ -59,11 +57,9 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
   }
 
   // Non splittable
-  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts,
-                      int[] hostsBlockCount) {
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts) {
     this.set(tableName, uri, start, length, null, null);
     this.hosts = hosts;
-    this.hostsBlockCount = hostsBlockCount;
   }
 
   public FileFragment(String fragmentId, Path path, long start, long length) {
@@ -84,9 +80,6 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
         proto.getStartOffset(), proto.getLength(),
         proto.getHostsList().toArray(new String[]{}),
         diskIds);
-    if (proto.hasDistCached() && proto.getDistCached()) {
-      distCached = true;
-    }
   }
 
   private void set(String tableName, Path path, long start,
@@ -108,18 +101,6 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
       this.hosts = new String[0];
     }
     return hosts;
-  }
-
-  /**
-   * Get the list of hosts block count
-   * if a fragment given multiple block, it returned 'host0:3, host1:1 ...'
-   */
-  public int[] getHostsBlockCount() {
-    if (hostsBlockCount == null) {
-      this.hostsBlockCount = new int[getHosts().length];
-      Arrays.fill(this.hostsBlockCount, 1);
-    }
-    return hostsBlockCount;
   }
 
   /**
@@ -154,14 +135,6 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
     return this.length;
   }
 
-  public Boolean isDistCached() {
-    return this.distCached;
-  }
-
-  public void setDistCached() {
-    this.distCached = true;
-  }
-
   /**
    * 
    * The offset range of tablets <b>MUST NOT</b> be overlapped.
@@ -191,8 +164,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
       FileFragment t = (FileFragment) o;
       if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
-          && TUtil.checkEquals(t.getEndKey(), this.getEndKey())
-          && TUtil.checkEquals(t.isDistCached(), this.isDistCached())) {
+          && TUtil.checkEquals(t.getEndKey(), this.getEndKey())) {
         return true;
       }
     }
@@ -201,18 +173,16 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName, uri, startOffset, length, isDistCached());
+    return Objects.hashCode(tableName, uri, startOffset, length);
   }
   
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
-    frag.distCached = distCached;
     frag.diskIds = diskIds;
     frag.hosts = hosts;
-    frag.hostsBlockCount = hostsBlockCount;
-    
+
     return frag;
   }
 
@@ -220,7 +190,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
   public String toString() {
     return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getEndKey() + ", \"distCached\": " + distCached + "}" ;
+        + getEndKey() + "}" ;
   }
 
   public FragmentProto getProto() {
@@ -229,7 +199,6 @@ public class FileFragment implements Fragment, Comparable<FileFragment> {
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
-    builder.setDistCached(this.distCached);
     if(diskIds != null) {
       List<Integer> idList = new ArrayList<Integer>();
       for(int eachId: diskIds) {

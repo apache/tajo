@@ -145,7 +145,7 @@ public class TestCSVScanner {
       long startOffset = (64 * 1024 * 1024) * scanCount;
       long length = Math.min(64 * 1024 * 1024, fileLength - startOffset);
 
-      FileFragment fragment = new FileFragment("Test", path, startOffset, length, null, null);
+      FileFragment fragment = new FileFragment("Test", path, startOffset, length, null);
       Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment, schema);
       scanner.init();
       Tuple tuple = null;

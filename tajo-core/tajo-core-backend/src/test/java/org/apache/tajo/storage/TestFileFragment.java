@@ -43,11 +43,9 @@ public class TestFileFragment {
   @Test
   public final void testGetAndSetFields() {
     FileFragment fragment1 = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
-    fragment1.setDistCached();
 
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
-    assertTrue(fragment1.isDistCached());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getEndKey());
   }
@@ -55,12 +53,10 @@ public class TestFileFragment {
   @Test
   public final void testGetProtoAndRestore() {
     FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
-    fragment.setDistCached();
 
     FileFragment fragment1 = FragmentConvertor.convert(FileFragment.class, fragment.getProto());
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
-    assertTrue(fragment.isDistCached());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getEndKey());
   }

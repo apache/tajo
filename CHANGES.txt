@@ -63,6 +63,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-309: Remove unused fields in FileFragment. (jihoon)
+
     TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. (jaehwa)
 
     TAJO-287: Improve Fragment to be more generic. (hyunsik)

@@ -474,14 +474,12 @@ public abstract class AbstractStorageManager {
     });
 
     String[] hosts = new String[blkLocations[0].getHosts().length];
-    int[] hostsBlockCount = new int[blkLocations[0].getHosts().length];
 
     for (int i = 0; i < hosts.length; i++) {
       Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
       hosts[i] = entry.getKey();
-      hostsBlockCount[i] = entry.getValue();
     }
-    return new FileFragment(fragmentId, file, start, length, hosts, hostsBlockCount);
+    return new FileFragment(fragmentId, file, start, length, hosts);
   }
 
   /**
