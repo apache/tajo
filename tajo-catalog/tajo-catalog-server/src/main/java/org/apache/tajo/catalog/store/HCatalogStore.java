@@ -48,7 +48,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   public HCatalogStore(final Configuration conf)
       throws InternalException {
     this.conf = conf;
-    this.catalogUri = conf.get(CATALOG_URI);
+    if(conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
+      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CATALOG_URI + " " +
+          "is deprecated. Use " + CatalogConstants.CATALOG_URI + " instead.");
+      this.catalogUri = conf.get(CatalogConstants.DEPRECATED_CATALOG_URI);
+    } else {
+      this.catalogUri = conf.get(CatalogConstants.CATALOG_URI);
+    }
   }
 
   @Override

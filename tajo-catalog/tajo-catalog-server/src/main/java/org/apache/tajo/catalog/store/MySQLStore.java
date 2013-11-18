@@ -42,7 +42,8 @@ public class MySQLStore extends AbstractDBStore  {
   }
 
   protected Connection createConnection(Configuration conf) throws SQLException {
-    Connection con = DriverManager.getConnection(getCatalogUri(), conf.get(CONNECTION_ID), conf.get(CONNECTION_PASSWORD));
+    Connection con = DriverManager.getConnection(getCatalogUri(), this.connectionId,
+        this.connectionPassword);
     //TODO con.setAutoCommit(false);
     return con;
   }

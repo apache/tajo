@@ -43,6 +43,8 @@ import java.util.Map.Entry;
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
+  protected String connectionId;
+  protected String connectionPassword;
   protected String catalogUri;
   private Connection conn;
 
@@ -60,7 +62,31 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       throws InternalException {
 
     this.conf = conf;
-    this.catalogUri = conf.get(CATALOG_URI);
+
+    if(conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
+      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CATALOG_URI + " " +
+          "is deprecated. Use " + CatalogConstants.CATALOG_URI + " instead.");
+      this.catalogUri = conf.get(CatalogConstants.DEPRECATED_CATALOG_URI);
+    } else {
+      this.catalogUri = conf.get(CatalogConstants.CATALOG_URI);
+    }
+
+    if(conf.get(CatalogConstants.DEPRECATED_CONNECTION_ID) != null) {
+      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CONNECTION_ID + " " +
+          "is deprecated. Use " + CatalogConstants.CONNECTION_ID + " instead.");
+      this.connectionId = conf.get(CatalogConstants.DEPRECATED_CONNECTION_ID);
+    } else {
+      this.connectionId = conf.get(CatalogConstants.CONNECTION_ID);
+    }
+
+    if(conf.get(CatalogConstants.DEPRECATED_CONNECTION_PASSWORD) != null) {
+      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CONNECTION_PASSWORD + " " +
+          "is deprecated. Use " + CatalogConstants.CONNECTION_PASSWORD + " instead.");
+      this.connectionPassword = conf.get(CatalogConstants.DEPRECATED_CONNECTION_PASSWORD);
+    } else {
+      this.connectionPassword = conf.get(CatalogConstants.CONNECTION_PASSWORD);
+    }
+
     String catalogDriver = getCatalogDriverName();
     try {
       Class.forName(getCatalogDriverName()).newInstance();

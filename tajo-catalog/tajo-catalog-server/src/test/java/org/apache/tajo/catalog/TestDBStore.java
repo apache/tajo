@@ -39,9 +39,9 @@ import java.io.IOException;
 import static org.junit.Assert.*;
 
 public class TestDBStore {
-  private static final Log LOG = LogFactory.getLog(TestDBStore.class);  
-  private static Configuration conf;
-  private static AbstractDBStore store;
+  protected static final Log LOG = LogFactory.getLog(TestDBStore.class);
+  protected static Configuration conf;
+  protected static AbstractDBStore store;
 
   @BeforeClass
   public static void setUp() throws Exception {

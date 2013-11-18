@@ -125,8 +125,17 @@ public class CatalogServer extends AbstractService {
   }
 
   public String getCatalogServerName() {
+    String catalogUri = null;
+    if(conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
+      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CATALOG_URI + " " +
+          "is deprecated. Use " + CatalogConstants.CATALOG_URI + " instead.");
+      catalogUri = conf.get(CatalogConstants.DEPRECATED_CATALOG_URI);
+    } else {
+      catalogUri = conf.get(CatalogConstants.CATALOG_URI);
+    }
+
     return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", catalogUri="
-        + conf.get(CatalogConstants.CATALOG_URI);
+        + catalogUri;
   }
 
   private void initBuiltinFunctions(List<FunctionDesc> functions)

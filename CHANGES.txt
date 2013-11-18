@@ -65,6 +65,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-313: Support deprecated variables in CatalogConstants. (jaehwa)
+
     TAJO-310: Make the DataLocation class as a separate class and move it to the tajo-core-storage package. (jihoon)
 
     TAJO-311: Improve Hive dependency. (jaehwa)
