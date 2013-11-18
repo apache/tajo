@@ -19,7 +19,7 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.storage.DataLocation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,12 +27,12 @@ import java.util.List;
 public class TaskScheduleEvent extends TaskSchedulerEvent {
   private final QueryUnitAttemptId attemptId;
   private final boolean isLeafQuery;
-  private final List<QueryUnit.DataLocation> dataLocations;
+  private final List<DataLocation> dataLocations;
   private final String[] racks;
 
   public TaskScheduleEvent(final QueryUnitAttemptId attemptId,
                            final EventType eventType, boolean isLeafQuery,
-                           final List<QueryUnit.DataLocation> dataLocations,
+                           final List<DataLocation> dataLocations,
                            final String[] racks) {
     super(eventType, attemptId.getQueryUnitId().getExecutionBlockId());
     this.attemptId = attemptId;
@@ -49,7 +49,7 @@ public class TaskScheduleEvent extends TaskSchedulerEvent {
     return this.isLeafQuery;
   }
 
-  public List<QueryUnit.DataLocation> getDataLocations() {
+  public List<DataLocation> getDataLocations() {
     return this.dataLocations;
   }
 

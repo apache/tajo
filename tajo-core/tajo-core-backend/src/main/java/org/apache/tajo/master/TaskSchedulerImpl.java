@@ -41,6 +41,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.URI;
@@ -346,9 +347,9 @@ public class TaskSchedulerImpl extends AbstractService
         new HashMap<String, LinkedList<QueryUnitAttemptId>>();
 
     public void addLeafTask(TaskScheduleEvent event) {
-      List<QueryUnit.DataLocation> locations = event.getDataLocations();
+      List<DataLocation> locations = event.getDataLocations();
 
-      for (QueryUnit.DataLocation location : locations) {
+      for (DataLocation location : locations) {
         String host = location.getHost();
 
         TaskBlockLocation taskBlockLocation = leafTaskHostMapping.get(host);

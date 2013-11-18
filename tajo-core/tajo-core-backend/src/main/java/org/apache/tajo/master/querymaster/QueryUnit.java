@@ -34,6 +34,7 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.TajoIdUtils;
@@ -525,32 +526,6 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     public String getPullAddress() {
       return pullHost + ":" + port;
-    }
-  }
-
-  public static class DataLocation {
-    private String host;
-    private int volumeId;
-
-    public DataLocation(String host, int volumeId) {
-      this.host = host;
-      this.volumeId = volumeId;
-    }
-
-    public String getHost() {
-      return host;
-    }
-
-    public int getVolumeId() {
-      return volumeId;
-    }
-
-    @Override
-    public String toString() {
-      return "DataLocation{" +
-          "host=" + host +
-          ", volumeId=" + volumeId +
-          '}';
     }
   }
 }
