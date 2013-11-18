@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-176: Implement Tajo JDBC Driver. (Keuntae Park via jihoon)
+
     TAJO-16: Enable Tajo catalog to access Hive metastore. (jaehwa)
     
     TAJO-285: Add CREATE TABLE... BY PARTITION statement to parser. (hyunsik)

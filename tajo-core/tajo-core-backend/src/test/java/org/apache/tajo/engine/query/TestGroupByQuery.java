@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

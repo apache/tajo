@@ -40,9 +40,9 @@ public class RpcConnectionPool {
   }
 
   public synchronized static RpcConnectionPool getPool(TajoConf conf) {
-      if(instance == null) {
-        instance = new RpcConnectionPool(conf);
-      }
+    if(instance == null) {
+      instance = new RpcConnectionPool(conf);
+    }
 
     return instance;
   }
@@ -75,7 +75,9 @@ public class RpcConnectionPool {
     }
 
     try {
-      LOG.info("CloseConnection [" + client.getKey() + "]");
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("CloseConnection [" + client.getKey() + "]");
+      }
       synchronized(connections) {
         connections.remove(client.getKey());
       }
@@ -85,8 +87,10 @@ public class RpcConnectionPool {
     }
   }
 
-  public void close() {
-    LOG.info("Pool Closed");
+  public synchronized void close() {
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("Pool Closed");
+    }
     synchronized(connections) {
       for(NettyClientBase eachClient: connections.values()) {
         try {

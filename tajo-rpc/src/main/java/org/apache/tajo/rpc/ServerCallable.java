@@ -35,14 +35,21 @@ public abstract class ServerCallable<T> {
   protected long endTime;
   protected Class protocol;
   protected boolean asyncMode;
+  protected boolean closeConn;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
   public ServerCallable(TajoConf conf, InetSocketAddress addr, Class protocol, boolean asyncMode) {
+    this(conf, addr, protocol, asyncMode, false);
+  }
+
+  public ServerCallable(TajoConf conf, InetSocketAddress addr, Class protocol,
+                        boolean asyncMode, boolean closeConn) {
     this.tajoConf = conf;
     this.addr = addr;
     this.protocol = protocol;
     this.asyncMode = asyncMode;
+    this.closeConn = closeConn;
   }
 
   public void beforeCall() {
@@ -81,8 +88,10 @@ public abstract class ServerCallable<T> {
         }
         return call(client);
       } catch (Throwable t) {
-        RpcConnectionPool.getPool(tajoConf).closeConnection(client);
-        client = null;
+        if(!closeConn) {
+          RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+          client = null;
+        }
         exceptions.add(t);
         if(abort) {
           throw new ServiceException(t.getMessage(), t);
@@ -92,7 +101,11 @@ public abstract class ServerCallable<T> {
         }
       } finally {
         afterCall();
-        RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+        if(closeConn) {
+          RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+        } else {
+          RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+        }
       }
       try {
         Thread.sleep(pause * (tries + 1));
@@ -118,8 +131,10 @@ public abstract class ServerCallable<T> {
       client = RpcConnectionPool.getPool(tajoConf).getConnection(addr, protocol, asyncMode);
       return call(client);
     } catch (Throwable t) {
-      RpcConnectionPool.getPool(tajoConf).closeConnection(client);
-      client = null;
+      if(!closeConn) {
+        RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+        client = null;
+      }
       Throwable t2 = translateException(t);
       if (t2 instanceof IOException) {
         throw (IOException)t2;
@@ -128,7 +143,11 @@ public abstract class ServerCallable<T> {
       }
     } finally {
       afterCall();
-      RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+      if(closeConn) {
+        RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+      } else {
+        RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+      }
     }
   }
 

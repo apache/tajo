@@ -37,6 +37,7 @@ import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
@@ -83,7 +84,14 @@ public class TajoClient {
   }
 
   public void close() {
+    if(connPool != null) {
+      connPool.close();
+    }
     queryMasterMap.clear();
+  }
+
+  public TajoConf getConf() {
+    return conf;
   }
 
   /**
@@ -98,11 +106,9 @@ public class TajoClient {
         QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
         queryMasterService.killQuery(null, queryId.getProto());
       } catch (Exception e) {
-        connPool.closeConnection(qmClient);
-        qmClient = null;
         LOG.warn("Fail to close a QueryMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
       } finally {
-        connPool.releaseConnection(qmClient);
+        connPool.closeConnection(qmClient);
         queryMasterMap.remove(queryId);
       }
     }
@@ -116,7 +122,7 @@ public class TajoClient {
    */
   public GetQueryStatusResponse executeQuery(final String sql) throws ServiceException {
     return new ServerCallable<GetQueryStatusResponse>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setQuery(sql);
@@ -138,7 +144,7 @@ public class TajoClient {
   public ResultSet executeQueryAndGetResult(final String sql)
       throws ServiceException, IOException {
     GetQueryStatusResponse response = new ServerCallable<GetQueryStatusResponse>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setQuery(sql);
@@ -170,11 +176,9 @@ public class TajoClient {
         QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
         res = queryMasterService.getQueryStatus(null, builder.build());
       } catch (Exception e) {
-        connPool.closeConnection(qmClient);
-        qmClient = null;
         throw new ServiceException(e.getMessage(), e);
       } finally {
-        connPool.releaseConnection(qmClient);
+        connPool.closeConnection(qmClient);
       }
     } else {
       NettyClientBase tmClient = null;
@@ -196,19 +200,15 @@ public class TajoClient {
 
             queryMasterMap.put(queryId, qmAddr);
           } catch (Exception e) {
-            connPool.closeConnection(qmClient);
-            qmClient = null;
             throw new ServiceException(e.getMessage(), e);
           } finally {
-            connPool.releaseConnection(qmClient);
+            connPool.closeConnection(qmClient);
           }
         }
       } catch (Exception e) {
-        connPool.closeConnection(tmClient);
-        tmClient = null;
         throw new ServiceException(e.getMessage(), e);
       } finally {
-        connPool.releaseConnection(tmClient);
+        connPool.closeConnection(tmClient);
       }
     }
     return new QueryStatus(res);
@@ -228,9 +228,8 @@ public class TajoClient {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
-
     TableDesc tableDesc = getResultDesc(queryId);
-    return new ResultSetImpl(this, queryId, conf, tableDesc);
+    return new TajoResultSet(this, queryId, conf, tableDesc);
   }
 
   public ResultSet getQueryResultAndWait(QueryId queryId)
@@ -266,7 +265,7 @@ public class TajoClient {
   }
 
   public ResultSet createNullResultSet(QueryId queryId) throws IOException {
-    return new ResultSetImpl(this, queryId);
+    return new TajoResultSet(this, queryId);
   }
 
   public TableDesc getResultDesc(QueryId queryId) throws ServiceException {
@@ -290,17 +289,15 @@ public class TajoClient {
 
       return CatalogUtil.newTableDesc(response.getTableDesc());
     } catch (Exception e) {
-      connPool.closeConnection(client);
-      client = null;
       throw new ServiceException(e.getMessage(), e);
     } finally {
-      connPool.releaseConnection(client);
+      connPool.closeConnection(client);
     }
   }
 
   public boolean updateQuery(final String sql) throws ServiceException {
     return new ServerCallable<Boolean>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setQuery(sql);
@@ -323,7 +320,7 @@ public class TajoClient {
    */
   public boolean existTable(final String name) throws ServiceException {
     return new ServerCallable<Boolean>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         StringProto.Builder builder = StringProto.newBuilder();
         builder.setValue(name);
@@ -342,7 +339,7 @@ public class TajoClient {
    */
   public boolean detachTable(final String tableName) throws ServiceException {
     return new ServerCallable<Boolean>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
@@ -356,7 +353,7 @@ public class TajoClient {
   public TableDesc createExternalTable(final String name, final Schema schema, final Path path, final TableMeta meta)
       throws SQLException, ServiceException {
     return new ServerCallable<TableDesc>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
@@ -383,7 +380,7 @@ public class TajoClient {
    */
   public boolean dropTable(final String tableName) throws ServiceException {
     return new ServerCallable<Boolean>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
@@ -401,7 +398,7 @@ public class TajoClient {
    */
   public List<String> getTableList() throws ServiceException {
     return new ServerCallable<List<String>>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public List<String> call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
@@ -414,7 +411,7 @@ public class TajoClient {
 
   public TableDesc getTableDesc(final String tableName) throws SQLException, ServiceException {
     return new ServerCallable<TableDesc>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false) {
+        TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
@@ -456,12 +453,10 @@ public class TajoClient {
         status = getQueryStatus(queryId);
       }
     } catch(Exception e) {
-      connPool.closeConnection(tmClient);
-      tmClient = null;
       LOG.debug("Error when checking for application status", e);
       return false;
     } finally {
-      connPool.releaseConnection(tmClient);
+      connPool.closeConnection(tmClient);
     }
 
     return true;

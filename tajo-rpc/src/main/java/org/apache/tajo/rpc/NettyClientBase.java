@@ -87,7 +87,9 @@ public abstract class NettyClientBase implements Closeable {
   public void close() {
     this.channel.close().awaitUninterruptibly();
     this.bootstrap.releaseExternalResources();
-    LOG.info("Proxy is disconnected from " +
-        addr.getAddress().getHostAddress() + ":" + addr.getPort());
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("Proxy is disconnected from " +
+          addr.getAddress().getHostAddress() + ":" + addr.getPort());
+    }
   }
 }
