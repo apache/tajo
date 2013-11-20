@@ -385,6 +385,8 @@ Release 0.2.0 - unreleased
 
   TASKS
 
+    TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
+
     TAJO-288: Correct NOTICE file and LICENSE.txt. (hyunsik)
 
     TAJO-271: Add MIT license to NOTICE.txt and LICENSE.txt for jquery and 

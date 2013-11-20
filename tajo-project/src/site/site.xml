@@ -20,7 +20,7 @@
 <project xmlns="http://maven.apache.org/DECORATION/1.3.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/DECORATION/1.3.0
-         http://maven.apache.org/xsd/decoration-1.3.0.xsd" name="Tajo">
+         http://maven.apache.org/xsd/decoration-1.3.0.xsd" name="Tajo - A Big Data Warehouse System on Hadoop">
   <skin>
     <groupId>org.apache.maven.skins</groupId>
     <artifactId>maven-fluido-skin</artifactId>
@@ -30,7 +30,7 @@
 
   <bannerLeft>
     <name>Apache Tajo</name>
-	<src>./images/Tajo_logo.png</src>
+	<src>./images/tajo_logo.png</src>
     <href>http://tajo.incubator.apache.org</href>
 	<width>240</width>
   </bannerLeft>
@@ -46,6 +46,7 @@
 
   <body>
     <head>
+      <meta name="description" content="Apache Tajo,big data warehouse system on Hadoop,relational and distributed query engine" />
       <script type="text/javascript">
 
         var _gaq = _gaq || [];
@@ -67,11 +68,9 @@
       </style>
     </head>
 
-    <!--
     <links>
       <item name="GIT" href="https://git-wip-us.apache.org/repos/asf/incubator-tajo.git" />
     </links>
-    -->
 
     <breadcrumbs>
       <item name="Apache" href="http://www.apache.org" />
@@ -81,32 +80,35 @@
 
     <menu name="Tajo">
       <item name="Overview" href="index.html" />
+      <item name="License" href="http://www.apache.org/licenses/" />
+      <item name="Downloads" href="downloads.html" />
+    </menu>
+
+    <menu name="Community">
       <item name="Wiki" href="http://wiki.apache.org/tajo" />
       <item name="Team" href="team-list.html" />
       <item name="Mailing Lists" href="mail-lists.html" />
-      <item name="License" href="http://www.apache.org/licenses/" />
-      <item name="Issue Tracking" href="https://issues.apache.org/jira/browse/TAJO" />
-      <item name="Source Repository" href="source-repository.html" />
-      <item name="Logos" href="http://wiki.apache.org/tajo/Logos" />
-      <!-- <item name="FAQ" href="faq.html" /> -->
+      <item name="Issue Tracker" href="https://issues.apache.org/jira/browse/TAJO" />
+      <item name="Powered By" href="http://wiki.apache.org/tajo/PoweredBy" />
+      <item name="Presentations" href="http://wiki.apache.org/tajo/Presentations" />
     </menu>
 
-    <menu name="Users Documentation">
+    <menu name="Documentation">
       <item name="Getting Started" href="http://wiki.apache.org/tajo/GettingStarted" />
       <item name="Build Instruction" href="http://wiki.apache.org/tajo/BuildInstruction" />
-      <item name="Query Language Guide" href="http://wiki.apache.org/tajo/QueryLanguage" />
-      <item name="Configuration Guide" href="http://wiki.apache.org/tajo/Configuration" />
-      <item name="Catalog Manual" href="http://wiki.apache.org/tajo/Catalog" />
-      <item name="Backup and Restore Guide" href="http://wiki.apache.org/tajo/BackupAndRestore" />
-      <item name="Tajo Interactive Shell Manual" href="http://wiki.apache.org/tajo/tsql" />
+      <item name="Query Language" href="http://wiki.apache.org/tajo/QueryLanguage" />
+      <item name="Configuration" href="http://wiki.apache.org/tajo/Configuration" />
+      <item name="Tajo Catalog" href="http://wiki.apache.org/tajo/Catalog" />
+      <item name="Backup and Restore" href="http://wiki.apache.org/tajo/BackupAndRestore" />
+      <item name="Tajo Shell Manual" href="http://wiki.apache.org/tajo/tsql" />
       <item name="Functions" href="http://wiki.apache.org/tajo/Functions" />
     </menu>
 
-    <menu name="Developer Documents">
+    <menu name="Contributes">
+      <item name="Source Code" href="source-code.html" />
       <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html" />
       <item name="How To Contribute" href="http://wiki.apache.org/tajo/HowToContribute" />
-      <item name="Tajo Architecture" href="http://wiki.apache.org/tajo/Architecture" />
-      <item name="Tajo Internal" href="http://wiki.apache.org/tajo/TajoInternal" />
+      <item name="Review Board" href="https://reviews.apache.org/groups/tajo" />
       <item name="Coding Style" href="http://wiki.apache.org/tajo/CodingStyle" />
     </menu>
 
@@ -126,6 +128,12 @@
       <sourceLineNumbersEnabled>false</sourceLineNumbersEnabled>
       <profile>production</profile>
       <googleSearch />
+
+      <twitter>
+        <user>ApacheTajo</user>
+        <showUser>true</showUser>
+        <showFollowers>false</showFollowers>
+      </twitter>
     </fluidoSkin>
   </custom>
 </project>

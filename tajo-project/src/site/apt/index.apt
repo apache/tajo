@@ -14,31 +14,63 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-Introduction
+Tajo - Big Data Warehouse System on Hadoop
 
-	Tajo is a relational and distributed data warehouse system for Hadoop.
-	Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation
-	and ETL on large-data sets by leveraging advanced database techniques. It supports SQL standards.
-	Tajo uses HDFS as a primary storage layer and has its own query engine which allows direct
-	control of distributed execution and data flow. As a result, Tajo has a variety of query
-	evaluation strategies and more optimization opportunities. In addition, Tajo will have a native
-	columnar execution and and its optimizer.
+	Tajo is a distributed data warehouse system on Hadoop that provides
+	low-latency and scalable ad-hoc queries and ETL on large-data sets stored on HDFS and other data sources.
 
 Features
 
-  * Fast, low-latency, and fully distributed SQL query processing on large data sets stored in HDFS
+  * <<Scalability and low latency>>
 
-  * Rudiment ETL that transforms one data format to another data format.
+    * Fully distributed SQL query processing on large data sets stored in HDFS and other data sources
 
-  * Various file formats support, such as CSV, RCFile, RowFile (a row store file), and Trevni.
+    * Very low response time (100 msec ~) against simple queries (e.g., just aggregation or small-large join) on reasonable data size
 
-  * Interactive shell to allow users to submit SQL queries to Tajo clusters
+  * <<Long running query support>>
 
-  * Asynchronous/Synchronous Java API to enable clients to submit SQL queries to Tajo clusters
+    * Fault tolerance support that avoids query restart when some tasks are failed.
 
-  * User-defined Function support
+    * Dynamic scheduling support that handles struggling and heterogeneous cluster nodes
+
+  * <<ETL>>
+
+    * ETL features that transform one data format to another data format
+
+    * Various file formats support, such as CSV, RCFile, and RowFile (a row store file)
+
+  * <<Extensibility>>
+
+    * User-defined function support
+
+    * Scanner/Appender interface for custom file formats
+
+  * <<Compatibility>>
+
+    * ANSI/ISO SQL standard compliance and PostgreSQL compliance for non-standard parts
+
+    * HiveQL mode support
+
+    * Tables access in HCatalog and Hive MetaStore
+
+    * JDBC driver support
+
+  * <<Easy>>
+
+    * Interactive shell to allow users to submit SQL queries to Tajo clusters
+
+    * Backup/Restore utility
+
+    * Asynchronous/Synchronous Java API to enable clients to submit SQL queries to Tajo clusters
+
 
 News
+
+  * <<[2013-11-20]>> Tajo 0.2.0-incubating Released. Now available for {{{http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/}download}}!
+
+  * <<[2013-10-15]>> Tajo was presented at {{{http://www.meetup.com/hadoop/events/146077932/}Bay Area Hadoop User Group Special Event}}.
+
+  * <<[2013-10-15]>> Tajo was introduced at {{{http://deview.kr/2013/deview.nhn}Deview 2013}}.
 
   * <<[2013-05-27]>> Two projects were accepted to Google Summer of Code 2013.
 
@@ -48,23 +80,9 @@ News
 
   * <<[2012-10-15]>> A demonstration paper of Tajo was accepted to IEEE ICDE 2013.
 
-Documentation
+Downloads
 
-  * {{{http://wiki.apache.org/tajo/GettingStarted}Getting Started}}
-
-  * {{{http://wiki.apache.org/tajo/BuildInstruction}Build Instruction}}
-
-  * {{{http://wiki.apache.org/tajo/QueryLanguage}Query Language}}
-
-  * {{{http://wiki.apache.org/tajo/Configuration}Configuration Guide}}
-
-  * {{{http://wiki.apache.org/tajo/BackupAndRestore}Backup and Restore}}
-
-  * {{{http://wiki.apache.org/tajo/Functions}Functions}}
-
-Presentations
-
-  * <<[2013-02-24]>> {{{http://www.slideshare.net/hyunsikchoi/tajo-intro}Introduction to Tajo}}
+  * <<[2013-11-20]>> Most recent release: {{{http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/}Apache Tajo 0.2.0-incubating}} ({{{http://s.apache.org/tajo-0.2-release-notes}Release Notes}})
 
 Disclaimer
 

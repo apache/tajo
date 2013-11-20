@@ -22,7 +22,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-main</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
   <description>Tajo Main</description>
   <name>Tajo Main</name>
   <packaging>pom</packaging>
@@ -73,7 +73,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <tajo.version>0.2.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
   </properties>
 
   <modules>
