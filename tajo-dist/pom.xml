@@ -156,5 +156,40 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>visualize</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+                <configuration>
+                  <classpathScope>test</classpathScope>
+                  <mainClass>org.apache.hadoop.yarn.util.VisualizeStateMachine</mainClass>
+                  <arguments>
+                    <argument>Tajo</argument>
+                    <argument>org.apache.tajo.master.querymaster.Query,
+                      org.apache.tajo.master.querymaster.SubQuery,
+                      org.apache.tajo.master.querymaster.QueryUnit,
+                      org.apache.tajo.master.querymaster.QueryUnitAttempt
+                    </argument>
+                    <argument>Tajo.gv</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

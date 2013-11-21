@@ -83,7 +83,7 @@ public class Query implements EventHandler<QueryEvent> {
   // State Machine
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
 
-  private static final StateMachineFactory
+  protected static final StateMachineFactory
       <Query,QueryState,QueryEventType,QueryEvent> stateMachineFactory =
       new StateMachineFactory<Query, QueryState, QueryEventType, QueryEvent>
           (QueryState.QUERY_NEW)

@@ -58,7 +58,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
   private final List<String> diagnostics = new ArrayList<String>();
 
-  private static final StateMachineFactory
+  protected static final StateMachineFactory
       <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
       stateMachineFactory = new StateMachineFactory
       <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>

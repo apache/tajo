@@ -94,7 +94,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private StateMachine<SubQueryState, SubQueryEventType, SubQueryEvent>
       stateMachine;
 
-  private StateMachineFactory<SubQuery, SubQueryState,
+  protected static final StateMachineFactory<SubQuery, SubQueryState,
       SubQueryEventType, SubQueryEvent> stateMachineFactory =
       new StateMachineFactory <SubQuery, SubQueryState,
           SubQueryEventType, SubQueryEvent> (SubQueryState.NEW)
@@ -134,7 +134,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
                  SubQueryEventType.SQ_FAILED)
           .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_INTERNAL_ERROR);
+              SubQueryEventType.SQ_INTERNAL_ERROR)
+      .installTopology();
 
 
   private final Lock readLock;

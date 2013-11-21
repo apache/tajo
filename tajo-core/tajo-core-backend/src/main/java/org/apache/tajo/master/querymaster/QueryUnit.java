@@ -82,7 +82,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private long launchTime;
   private long finishTime;
 
-  private static final StateMachineFactory
+  protected static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
       new StateMachineFactory
           <QueryUnit, TaskState, TaskEventType, TaskEvent>(TaskState.NEW)

@@ -19,13 +19,15 @@ Release 0.8.0 - unreleased
 
     TAJO-313: Support deprecated variables in CatalogConstants. (jaehwa)
 
-    TAJO-310: Make the DataLocation class as a separate class and move it to the tajo-core-storage package. (jihoon)
+    TAJO-310: Make the DataLocation class as a separate class and move it to 
+    the tajo-core-storage package. (jihoon)
 
     TAJO-311: Improve Hive dependency. (jaehwa)
 
     TAJO-309: Remove unused fields in FileFragment. (jihoon)
 
-    TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. (jaehwa)
+    TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. 
+    (jaehwa)
 
     TAJO-287: Improve Fragment to be more generic. (hyunsik)
 
@@ -44,6 +46,8 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-320: Visualize Tajo statemachine. (Min Zhou via hyunsik)
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
 
