@@ -20,15 +20,11 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
 import java.util.Arrays;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public class TextDatum extends Datum {
   @Expose private int size;
@@ -94,7 +90,7 @@ public class TextDatum extends Datum {
 
   @Override
   public byte[] asTextBytes() {
-    return asByteArray();
+    return this.bytes;
   }
 
   @Override

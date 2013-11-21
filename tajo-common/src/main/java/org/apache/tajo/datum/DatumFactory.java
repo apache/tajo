@@ -61,7 +61,7 @@ public class DatumFactory {
     }
   }
 
-  public static Datum create(Type type, byte[]  val) {
+  public static Datum create(Type type, byte[] val) {
     switch (type) {
 
       case BOOLEAN:
@@ -99,14 +99,14 @@ public class DatumFactory {
     boolean boolVal = val == 0x01;
     return new BooleanDatum(boolVal);
   }
-  
+
   public static BooleanDatum createBool(boolean val) {
     return new BooleanDatum(val);
   }
-  
-	public static BitDatum createBit(byte val) {
-		return new BitDatum(val);
-	}
+
+  public static BitDatum createBit(byte val) {
+    return new BitDatum(val);
+  }
 
   public static CharDatum createChar(char val) {
     return new CharDatum(val);
@@ -124,46 +124,46 @@ public class DatumFactory {
     return new CharDatum(val);
   }
 
-	public static Int2Datum createInt2(short val) {
-		return new Int2Datum(val);
-	}
-	
-	public static Int2Datum createInt2(String val) {
-	  return new Int2Datum(Short.valueOf(val));
-	}
-	
-	public static Int4Datum createInt4(int val) {
-		return new Int4Datum(val);
-	}
-	
-	public static Int4Datum createInt4(String val) {
-	  return new Int4Datum(Integer.valueOf(val));
-	}
-	
-	public static Int8Datum createInt8(long val) {
-		return new Int8Datum(val);
-	}
-	
-	public static Int8Datum createInt8(String val) {
-	  return new Int8Datum(Long.valueOf(val));
-	}
-	
-	public static Float4Datum createFloat4(float val) {
-		return new Float4Datum(val);
-	}
-	
-	public static Float4Datum createFloat4(String val) {
-	  return new Float4Datum(Float.valueOf(val));
-	}
-	
-	public static Float8Datum createFloat8(double val) {
-		return new Float8Datum(val);
-	}
-	
-	public static Float8Datum createFloat8(String val) {
-	  return new Float8Datum(Double.valueOf(val));
-	}
-	
+  public static Int2Datum createInt2(short val) {
+    return new Int2Datum(val);
+  }
+
+  public static Int2Datum createInt2(String val) {
+    return new Int2Datum(Short.valueOf(val));
+  }
+
+  public static Int4Datum createInt4(int val) {
+    return new Int4Datum(val);
+  }
+
+  public static Int4Datum createInt4(String val) {
+    return new Int4Datum(Integer.valueOf(val));
+  }
+
+  public static Int8Datum createInt8(long val) {
+    return new Int8Datum(val);
+  }
+
+  public static Int8Datum createInt8(String val) {
+    return new Int8Datum(Long.valueOf(val));
+  }
+
+  public static Float4Datum createFloat4(float val) {
+    return new Float4Datum(val);
+  }
+
+  public static Float4Datum createFloat4(String val) {
+    return new Float4Datum(Float.valueOf(val));
+  }
+
+  public static Float8Datum createFloat8(double val) {
+    return new Float8Datum(val);
+  }
+
+  public static Float8Datum createFloat8(String val) {
+    return new Float8Datum(Double.valueOf(val));
+  }
+
   public static TextDatum createText(String val) {
     return new TextDatum(val);
   }
@@ -171,20 +171,28 @@ public class DatumFactory {
   public static TextDatum createText(byte[] val) {
     return new TextDatum(val);
   }
-	
-	public static BlobDatum createBlob(byte[] val) {
+
+  public static BlobDatum createBlob(byte[] val) {
     return new BlobDatum(val);
   }
-	
-	public static BlobDatum createBlob(String val) {
-	  return new BlobDatum(val.getBytes());
-	}
-	
-	public static Inet4Datum createInet4(byte[] val) {
-	  return new Inet4Datum(val);
-	}
-	
-	public static Inet4Datum createInet4(String val) {
-	  return new Inet4Datum(val);
-	}
+
+  public static BlobDatum createBlob(byte[] val, int offset, int length) {
+    return new BlobDatum(val, offset, length);
+  }
+
+  public static BlobDatum createBlob(String val) {
+    return new BlobDatum(val.getBytes());
+  }
+
+  public static Inet4Datum createInet4(byte[] val) {
+    return new Inet4Datum(val);
+  }
+
+  public static Inet4Datum createInet4(byte[] val, int offset, int length) {
+    return new Inet4Datum(val, offset, length);
+  }
+
+  public static Inet4Datum createInet4(String val) {
+    return new Inet4Datum(val);
+  }
 }

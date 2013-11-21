@@ -1,17 +1,56 @@
 Tajo Change Log
 
-Release 0.2.0 - unreleased
+Release 0.8.0 - unreleased
 
   NEW FEATURES
+
+    TAJO-200: RCFile compatible to apache hive. (jinho)
 
     TAJO-176: Implement Tajo JDBC Driver. (Keuntae Park via jihoon)
 
     TAJO-16: Enable Tajo catalog to access Hive metastore. (jaehwa)
-    
+
     TAJO-285: Add CREATE TABLE... BY PARTITION statement to parser. (hyunsik)
 
-    TAJO-267: Implement equals() and deepEquals() functions at LogicalNode. 
+    TAJO-267: Implement equals() and deepEquals() functions at LogicalNode.
     (jihoon)
+
+  IMPROVEMENTS
+
+    TAJO-313: Support deprecated variables in CatalogConstants. (jaehwa)
+
+    TAJO-310: Make the DataLocation class as a separate class and move it to the tajo-core-storage package. (jihoon)
+
+    TAJO-311: Improve Hive dependency. (jaehwa)
+
+    TAJO-309: Remove unused fields in FileFragment. (jihoon)
+
+    TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. (jaehwa)
+
+    TAJO-287: Improve Fragment to be more generic. (hyunsik)
+
+    TAJO-274: Maintaining connectivity to Tajo master regardless of the restart
+    of the Tajo master. (Keuntae Park via hyunsik)
+
+    TAJO-287: Refactor TableDesc, TableMeta, and Fragment. (hyunsik)
+
+    TAJO-275: Separating QueryMaster and TaskRunner roles in worker.
+    (Keuntae Park via jihoon)
+
+  BUG FIXES
+
+    TAJO-295: ConcurrentModificationException in TaskScheduler. (jinho)
+
+    TAJO-293: querymasters directory not found in single node setup. (hyunsik)
+
+  TASKS
+
+    TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
+
+
+Release 0.2.0 - released
+
+  NEW FEATURES
 
     TAJO-260: Add between predicate. (hyunsik)
 
@@ -64,26 +103,6 @@ Release 0.2.0 - unreleased
     TAJO-33: Implement a basic query progress indicator. (hyunsik)
 
   IMPROVEMENTS
-
-    TAJO-313: Support deprecated variables in CatalogConstants. (jaehwa)
-
-    TAJO-310: Make the DataLocation class as a separate class and move it to the tajo-core-storage package. (jihoon)
-
-    TAJO-311: Improve Hive dependency. (jaehwa)
-
-    TAJO-309: Remove unused fields in FileFragment. (jihoon)
-
-    TAJO-297: Rename JDBC variables in CatalogConstants to be more generic. (jaehwa)
-
-    TAJO-287: Improve Fragment to be more generic. (hyunsik)
-
-    TAJO-274: Maintaining connectivity to Tajo master regardless of the restart
-    of the Tajo master. (Keuntae Park via hyunsik)
-
-    TAJO-287: Refactor TableDesc, TableMeta, and Fragment. (hyunsik)
-
-    TAJO-275: Separating QueryMaster and TaskRunner roles in worker. 
-    (Keuntae Park via jihoon)
 
     TAJO-270: Boolean datum compatible to apache hive. (jinho)
 
@@ -244,10 +263,6 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
-    TAJO-295: ConcurrentModificationException in TaskScheduler. (jinho)
-
-    TAJO-293: querymasters directory not found in single node setup. (hyunsik)
-
     TAJO-281: 'mvn package -Pdist' generates duplicate Tajo jar files.
     (hyunsik)
 
@@ -384,8 +399,6 @@ Release 0.2.0 - unreleased
     TAJO-21: CREATE EXTERNAL TABLE should support a file path. (JaeHwa Jung)
 
   TASKS
-
-    TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
 
     TAJO-288: Correct NOTICE file and LICENSE.txt. (hyunsik)
 

@@ -44,6 +44,13 @@ public class BlobDatum extends Datum {
 		this.bb = ByteBuffer.wrap(val);	
 		bb.flip();
 	}
+
+  public BlobDatum(byte[] val, int offset, int length) {
+    this();
+    this.val = val;
+    this.bb = ByteBuffer.wrap(val, offset, length);
+    bb.flip();
+  }
 	
 	public BlobDatum(ByteBuffer val) {
 		this();

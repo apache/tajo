@@ -50,6 +50,15 @@ public class Inet4Datum extends Datum {
     address |= ((addr[0] << 24) & 0xFF000000);
 	}
 
+  public Inet4Datum(byte[] addr, int offset, int length) {
+    this();
+    Preconditions.checkArgument(length == size);
+    address  = addr[offset + 3] & 0xFF;
+    address |= ((addr[offset + 2] << 8) & 0xFF00);
+    address |= ((addr[offset + 1] << 16) & 0xFF0000);
+    address |= ((addr[offset] << 24) & 0xFF000000);
+  }
+
 	@Override
 	public int asInt4() {
 		return this.address;

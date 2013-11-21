@@ -18,20 +18,25 @@
 
 package org.apache.tajo.storage.v2;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.BinarySerializeDeserialize;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.storage.SerializeDeserialize;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -39,6 +44,8 @@ import java.util.ArrayList;
 
 public class RCFileScanner extends FileScannerV2 {
   private static final Log LOG = LogFactory.getLog(RCFileScanner.class);
+  public static final String SERDE = "rcfile.serde";
+  public static final String NULL = "rcfile.null";
 
   private RCFile.Reader in;
   private long start;
@@ -50,6 +57,8 @@ public class RCFileScanner extends FileScannerV2 {
   private ScheduledInputStream sin;
   private boolean first = true;
   private int maxBytesPerSchedule;
+  SerializeDeserialize serde;
+  byte[] nullChars;
 
   public RCFileScanner(final Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
       throws IOException {
@@ -59,6 +68,13 @@ public class RCFileScanner extends FileScannerV2 {
     this.end = start + fragment.getEndKey();
     key = new LongWritable();
     column = new BytesRefArrayWritable();
+
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
+    if (StringUtils.isEmpty(nullCharacters)) {
+      nullChars = NullDatum.get().asTextBytes();
+    } else {
+      nullChars = nullCharacters.getBytes();
+    }
 	}
 
   @Override
@@ -97,74 +113,10 @@ public class RCFileScanner extends FileScannerV2 {
     int tid; // target column id
     for (int i = 0; i < projectionMap.length; i++) {
       tid = projectionMap[i];
-      // if the column is byte[0], it presents a NULL value.
-      if (column.get(tid).getLength() == 0) {
-        tuple.put(tid, DatumFactory.createNullDatum());
-      } else {
-        switch (targets[i].getDataType().getType()) {
-          case BOOLEAN:
-            tuple.put(tid,
-                DatumFactory.createBool(column.get(tid).getBytesCopy()[0]));
-            break;
-          case BIT:
-            tuple.put(tid,
-                DatumFactory.createBit(column.get(tid).getBytesCopy()[0]));
-            break;
-          case CHAR:
-            byte[] buf = column.get(tid).getBytesCopy();
-            tuple.put(tid,
-                DatumFactory.createChar(buf));
-            break;
 
-          case INT2:
-            tuple.put(tid,
-                DatumFactory.createInt2(Bytes.toShort(
-                    column.get(tid).getBytesCopy())));
-            break;
-          case INT4:
-            tuple.put(tid,
-                DatumFactory.createInt4(Bytes.toInt(
-                    column.get(tid).getBytesCopy())));
-            break;
-
-          case INT8:
-            tuple.put(tid,
-                DatumFactory.createInt8(Bytes.toLong(
-                    column.get(tid).getBytesCopy())));
-            break;
-
-          case FLOAT4:
-            tuple.put(tid,
-                DatumFactory.createFloat4(Bytes.toFloat(
-                    column.get(tid).getBytesCopy())));
-            break;
-
-          case FLOAT8:
-            tuple.put(tid,
-                DatumFactory.createFloat8(Bytes.toDouble(
-                    column.get(tid).getBytesCopy())));
-            break;
-
-          case INET4:
-            tuple.put(tid,
-                DatumFactory.createInet4(column.get(tid).getBytesCopy()));
-            break;
-
-          case TEXT:
-            tuple.put(tid,
-                DatumFactory.createText(
-                    column.get(tid).getBytesCopy()));
-            break;
-
-          case BLOB:
-            tuple.put(tid,
-                DatumFactory.createBlob(column.get(tid).getBytesCopy()));
-            break;
-
-          default:
-            throw new IOException("Unsupport data type");
-        }
-      }
+      byte[] bytes = column.get(tid).getBytesCopy();
+      Datum datum = serde.deserialize(targets[i], bytes, 0, bytes.length, nullChars);
+      tuple.put(tid, datum);
     }
 
     return tuple;
@@ -246,6 +198,21 @@ public class RCFileScanner extends FileScannerV2 {
             fs.getLength(fragment.getPath()));
 
         this.in = new RCFile.Reader(fragment.getPath(), sin, fs, fs.getConf());
+
+        Text text = this.in.getMetadata().get(new Text(SERDE));
+
+        try {
+          String serdeClass;
+          if(text != null && !text.toString().isEmpty()){
+            serdeClass = text.toString();
+          } else{
+            serdeClass = this.meta.getOption(SERDE, BinarySerializeDeserialize.class.getName());
+          }
+          serde = (SerializeDeserialize) Class.forName(serdeClass).newInstance();
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+          throw new IOException(e);
+        }
       }
     }
     return true;

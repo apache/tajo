@@ -77,6 +77,10 @@ public class NonSyncDataOutputBuffer extends DataOutputStream {
     incCount(len);
   }
 
+  public void writeTo(DataOutputStream out) throws IOException {
+    buffer.writeTo(out);
+  }
+
   private void incCount(int value) {
     if (written + value < 0) {
       written = Integer.MAX_VALUE;

@@ -914,6 +914,45 @@ public class Bytes {
   }
 
   /**
+   * @param n Long to make a VLong of.
+   * @return VLong as bytes array.
+   */
+  public static byte[] vlongToBytes(long n) {
+    byte [] result;
+    int offset = 0;
+    if (n >= -112 && n <= 127) {
+      result = new byte[1];
+      result[offset] = (byte) n;
+      return result;
+    }
+
+    int len = -112;
+    if (n < 0) {
+      n ^= -1L; // take one's complement'
+      len = -120;
+    }
+
+    long tmp = n;
+    while (tmp != 0) {
+      tmp = tmp >> 8;
+      len--;
+    }
+
+    int size = WritableUtils.decodeVIntSize((byte)len);
+
+    result = new byte[size];
+    result[offset++] = (byte) len;
+    len = (len < -120) ? -(len + 120) : -(len + 112);
+
+    for (int idx = len; idx != 0; idx--) {
+      int shiftbits = (idx - 1) * 8;
+      long mask = 0xFFL << shiftbits;
+      result[offset++] = (byte)((n & mask) >> shiftbits);
+    }
+    return result;
+  }
+
+  /**
    * @param buffer buffer to convert
    * @return vint bytes as an integer.
    */
@@ -943,17 +982,17 @@ public class Bytes {
   public static long readVLong(final byte [] buffer, final int offset)
   throws IOException {
     byte firstByte = buffer[offset];
-    int len = WritableUtils.decodeVIntSize(firstByte);
-    if (len == 1) {
+    int length = (byte) WritableUtils.decodeVIntSize(firstByte);
+    if (length == 1) {
       return firstByte;
     }
     long i = 0;
-    for (int idx = 0; idx < len-1; idx++) {
+    for (int idx = 0; idx < length - 1; idx++) {
       byte b = buffer[offset + 1 + idx];
       i = i << 8;
       i = i | (b & 0xFF);
     }
-    return (WritableUtils.isNegativeVInt(firstByte) ? ~i : i);
+    return (WritableUtils.isNegativeVInt(firstByte) ? (i ^ -1L) : i);
   }
 
   /**

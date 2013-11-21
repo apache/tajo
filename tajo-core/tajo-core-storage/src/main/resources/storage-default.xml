@@ -88,7 +88,7 @@
 
   <property>
     <name>tajo.storage.scanner-handler.rcfile.class</name>
-    <value>org.apache.tajo.storage.rcfile.RCFileWrapper$RCFileScanner</value>
+    <value>org.apache.tajo.storage.rcfile.RCFile$RCFileScanner</value>
   </property>
 
   <property>
@@ -134,7 +134,7 @@
 
   <property>
     <name>tajo.storage.appender-handler.rcfile.class</name>
-    <value>org.apache.tajo.storage.rcfile.RCFileWrapper$RCFileAppender</value>
+    <value>org.apache.tajo.storage.rcfile.RCFile$RCFileAppender</value>
   </property>
 
   <property>

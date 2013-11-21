@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.rcfile;
 
+import org.apache.hadoop.fs.Seekable;
+
 import java.io.*;
 
 /**
@@ -25,7 +27,7 @@ import java.io.*;
  * synchronized modifiers.
  */
 public class NonSyncDataInputBuffer extends FilterInputStream implements
-    DataInput {
+    DataInput, Seekable {
 
   private final NonSyncByteArrayInputStream buffer;
 
@@ -64,11 +66,11 @@ public class NonSyncDataInputBuffer extends FilterInputStream implements
   /**
    * Reads bytes from the source stream into the byte array <code>buffer</code>.
    * The number of bytes actually read is returned.
-   * 
+   *
    * @param buffer
    *          the buffer to read bytes into
    * @return the number of bytes actually read or -1 if end of stream.
-   * 
+   *
    * @throws java.io.IOException
    *           If a problem occurs reading from this DataInputStream.
    *
@@ -96,6 +98,7 @@ public class NonSyncDataInputBuffer extends FilterInputStream implements
    *           If a problem occurs reading from this DataInputStream.
    *
    */
+  @Deprecated
   @Override
   public final int read(byte[] buffer, int offset, int length)
       throws IOException {
@@ -291,30 +294,30 @@ public class NonSyncDataInputBuffer extends FilterInputStream implements
     while (true) {
       int nextByte = in.read();
       switch (nextByte) {
-      case -1:
-        if (line.length() == 0 && !foundTerminator) {
-          return null;
-        }
-        return line.toString();
-      case (byte) '\r':
-        if (foundTerminator) {
-          ((PushbackInputStream) in).unread(nextByte);
+        case -1:
+          if (line.length() == 0 && !foundTerminator) {
+            return null;
+          }
           return line.toString();
-        }
-        foundTerminator = true;
+        case (byte) '\r':
+          if (foundTerminator) {
+            ((PushbackInputStream) in).unread(nextByte);
+            return line.toString();
+          }
+          foundTerminator = true;
         /* Have to be able to peek ahead one byte */
-        if (!(in.getClass() == PushbackInputStream.class)) {
-          in = new PushbackInputStream(in);
-        }
-        break;
-      case (byte) '\n':
-        return line.toString();
-      default:
-        if (foundTerminator) {
-          ((PushbackInputStream) in).unread(nextByte);
+          if (!(in.getClass() == PushbackInputStream.class)) {
+            in = new PushbackInputStream(in);
+          }
+          break;
+        case (byte) '\n':
           return line.toString();
-        }
-        line.append((char) nextByte);
+        default:
+          if (foundTerminator) {
+            ((PushbackInputStream) in).unread(nextByte);
+            return line.toString();
+          }
+          line.append((char) nextByte);
       }
     }
   }
@@ -456,7 +459,7 @@ public class NonSyncDataInputBuffer extends FilterInputStream implements
   }
 
   public static String convertUTF8WithBuf(byte[] buf, char[] out, int offset,
-      int utfSize) throws UTFDataFormatException {
+                                          int utfSize) throws UTFDataFormatException {
     int count = 0, s = 0, a;
     while (count < utfSize) {
       if ((out[s] = (char) buf[offset + count++]) < '\u0080') {
@@ -487,4 +490,18 @@ public class NonSyncDataInputBuffer extends FilterInputStream implements
     return new String(out, 0, s);
   }
 
+  @Override
+  public void seek(long pos) throws IOException {
+    buffer.seek((int)pos);
+  }
+
+  @Override
+  public long getPos() throws IOException {
+    return buffer.getPosition();
+  }
+
+  @Override
+  public boolean seekToNewSource(long targetPos) throws IOException {
+    return false;
+  }
 }

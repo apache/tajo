@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.*;
+import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -63,7 +64,8 @@ public class TestCompressionStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {StoreType.CSV}
+        {StoreType.CSV},
+        {StoreType.RCFILE}
     });
   }
 
@@ -74,7 +76,13 @@ public class TestCompressionStorages {
 
   @Test
   public void testGzipCodecCompressionData() throws IOException {
-    storageCompressionTest(storeType, GzipCodec.class);
+    if (storeType == StoreType.RCFILE) {
+      if( ZlibFactory.isNativeZlibLoaded(conf)) {
+        storageCompressionTest(storeType, GzipCodec.class);
+      }
+    } else {
+      storageCompressionTest(storeType, GzipCodec.class);
+    }
   }
 
   @Test
@@ -161,10 +169,12 @@ public class TestCompressionStorages {
   private void storageCompressionTest(StoreType storeType, Class<? extends CompressionCodec> codec) throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
+    schema.addColumn("age", Type.FLOAT4);
+    schema.addColumn("name", Type.TEXT);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.putOption("compression.codec", codec.getCanonicalName());
+    meta.putOption("rcfile.serde", "org.apache.tajo.storage.TextSerializeDeserialize");
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
@@ -178,13 +188,14 @@ public class TestCompressionStorages {
       extension = ((CSVFile.CSVAppender) appender).getExtension();
     }
 
-    int tupleNum = 10000;
+    int tupleNum = 100000;
     VTuple vTuple;
 
     for (int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
+      vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt4(i + 1));
-      vTuple.put(1, DatumFactory.createInt8(25l));
+      vTuple.put(1, DatumFactory.createFloat4((float)i));
+      vTuple.put(2, DatumFactory.createText(String.valueOf(i)));
       appender.addTuple(vTuple);
     }
     appender.close();

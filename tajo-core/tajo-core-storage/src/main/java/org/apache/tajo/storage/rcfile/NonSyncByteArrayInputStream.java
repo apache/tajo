@@ -106,4 +106,8 @@ public class NonSyncByteArrayInputStream extends ByteArrayInputStream {
   public int available() {
     return count - pos;
   }
+
+  public void seek(int pos) {
+    this.pos = pos;
+  }
 }
