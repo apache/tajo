@@ -82,6 +82,7 @@
       <item name="Overview" href="index.html" />
       <item name="License" href="http://www.apache.org/licenses/" />
       <item name="Downloads" href="downloads.html" />
+      <item name="Getting Started" href="tajo-0.2.0-doc.html#Tutorial" />
     </menu>
 
     <menu name="Community">
@@ -94,14 +95,8 @@
     </menu>
 
     <menu name="Documentation">
-      <item name="Getting Started" href="http://wiki.apache.org/tajo/GettingStarted" />
-      <item name="Build Instruction" href="http://wiki.apache.org/tajo/BuildInstruction" />
-      <item name="Query Language" href="http://wiki.apache.org/tajo/QueryLanguage" />
-      <item name="Configuration" href="http://wiki.apache.org/tajo/Configuration" />
-      <item name="Tajo Catalog" href="http://wiki.apache.org/tajo/Catalog" />
-      <item name="Backup and Restore" href="http://wiki.apache.org/tajo/BackupAndRestore" />
-      <item name="Tajo Shell Manual" href="http://wiki.apache.org/tajo/tsql" />
-      <item name="Functions" href="http://wiki.apache.org/tajo/Functions" />
+      <item name="0.8.0-SNAPSHOT (Dev)" href="tajo-0.8.0-doc.html" />
+      <item name="0.2.0-incubating (Current)" href="tajo-0.2.0-doc.html" />
     </menu>
 
     <menu name="Contributes">

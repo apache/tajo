@@ -49,6 +49,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-322: Documentation by version. (hyunsik)
+
     TAJO-320: Visualize Tajo statemachine. (Min Zhou via hyunsik)
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
