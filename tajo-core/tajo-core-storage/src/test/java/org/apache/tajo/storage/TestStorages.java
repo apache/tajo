@@ -120,6 +120,7 @@ public class TestStorages {
       tablets[1] = new FileFragment("Splitable", tablePath, randomNum, (fileLen - randomNum));
 
       Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+      assertTrue(scanner.isSplittable());
       scanner.init();
       int tupleCnt = 0;
       while (scanner.next() != null) {
@@ -128,6 +129,7 @@ public class TestStorages {
       scanner.close();
 
       scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
+      assertTrue(scanner.isSplittable());
       scanner.init();
       while (scanner.next() != null) {
         tupleCnt++;

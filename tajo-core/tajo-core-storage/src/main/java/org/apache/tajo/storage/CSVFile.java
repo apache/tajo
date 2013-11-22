@@ -321,8 +321,8 @@ public class CSVFile {
       super(conf, schema, meta, fragment);
       factory = new CompressionCodecFactory(conf);
       codec = factory.getCodec(fragment.getPath());
-      if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
-          splittable = false;
+      if (codec == null || codec instanceof SplittableCompressionCodec) {
+          splittable = true;
       }
 
       // Buffer size, Delimiter
@@ -348,7 +348,7 @@ public class CSVFile {
     private CompressionCodec codec;
     private Decompressor decompressor;
     private Seekable filePosition;
-    private boolean splittable = true;
+    private boolean splittable = false;
     private long startOffset, length;
     private byte[] buf = null;
     private byte[][] tuples = null;

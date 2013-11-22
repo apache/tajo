@@ -43,6 +43,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestCompressionStorages {
@@ -105,18 +107,18 @@ public class TestCompressionStorages {
 
   @Test
   public void testSplitCompressionData() throws IOException {
+    if(StoreType.CSV != storeType) return;
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.putOption("compression.codec", BZip2Codec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "SplitCompression");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
-
     appender.init();
 
     String extention = "";
@@ -148,6 +150,7 @@ public class TestCompressionStorages {
     tablets[1] = new FileFragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+    assertTrue(scanner.isSplittable());
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
@@ -157,6 +160,7 @@ public class TestCompressionStorages {
     scanner.close();
 
     scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
+    assertTrue(scanner.isSplittable());
     scanner.init();
     while ((tuple = scanner.next()) != null) {
       tupleCnt++;
@@ -194,7 +198,7 @@ public class TestCompressionStorages {
     for (int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt4(i + 1));
-      vTuple.put(1, DatumFactory.createFloat4((float)i));
+      vTuple.put(1, DatumFactory.createFloat4((float) i));
       vTuple.put(2, DatumFactory.createText(String.valueOf(i)));
       appender.addTuple(vTuple);
     }
@@ -209,6 +213,14 @@ public class TestCompressionStorages {
     tablets[0] = new FileFragment(fileName, tablePath, 0, fileLen);
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+
+    if (StoreType.CSV == storeType) {
+      if (SplittableCompressionCodec.class.isAssignableFrom(codec)) {
+        assertTrue(scanner.isSplittable());
+      } else {
+        assertFalse(scanner.isSplittable());
+      }
+    }
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;

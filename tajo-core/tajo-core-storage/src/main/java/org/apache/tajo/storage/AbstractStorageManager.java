@@ -566,7 +566,7 @@ public abstract class AbstractStorageManager {
       long length = file.getLen();
       if (length > 0) {
         BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-        boolean splittable = isSplittable(meta, schema, inputPath);
+        boolean splittable = isSplittable(meta, schema, path);
         if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
           // supported disk volume
           BlockStorageLocation[] blockStorageLocations = ((DistributedFileSystem) fs)
