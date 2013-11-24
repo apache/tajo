@@ -21,8 +21,6 @@ import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
-
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
  * An ExecutionBlock is a basic execution unit that could be distributed across a number of nodes.
@@ -35,9 +33,6 @@ public class ExecutionBlock {
   private LogicalNode plan = null;
   private StoreTableNode store = null;
   private List<ScanNode> scanlist = new ArrayList<ScanNode>();
-  private ExecutionBlock parent;
-  private Map<ScanNode, ExecutionBlock> childSubQueries = new HashMap<ScanNode, ExecutionBlock>();
-  private PartitionType outputType;
   private Enforcer enforcer = new Enforcer();
 
   private boolean hasJoinPlan;
@@ -51,10 +46,6 @@ public class ExecutionBlock {
 
   public ExecutionBlockId getId() {
     return executionBlockId;
-  }
-
-  public PartitionType getPartitionType() {
-    return outputType;
   }
 
   public void setPlan(LogicalNode plan) {
@@ -96,26 +87,6 @@ public class ExecutionBlock {
 
   public Enforcer getEnforcer() {
     return enforcer;
-  }
-
-  public boolean isRoot() {
-    return !hasParentBlock() || !(getParentBlock().hasParentBlock()) && getParentBlock().hasUnion();
-  }
-
-  public boolean hasParentBlock() {
-    return parent != null;
-  }
-
-  public ExecutionBlock getParentBlock() {
-    return parent;
-  }
-
-  public Collection<ExecutionBlock> getChildBlocks() {
-    return Collections.unmodifiableCollection(childSubQueries.values());
-  }
-
-  public boolean isLeafBlock() {
-    return childSubQueries.size() == 0;
   }
 
   public StoreTableNode getStoreTableNode() {

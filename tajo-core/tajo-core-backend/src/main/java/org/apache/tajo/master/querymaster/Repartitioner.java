@@ -227,7 +227,7 @@ public class Repartitioner {
   private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryUnit unit = new QueryUnit(
-        QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), execBlock.isLeafBlock(),
+        QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.getMasterPlan().isLeaf(execBlock),
         subQuery.getEventHandler());
     unit.setLogicalPlan(execBlock.getPlan());
     unit.setFragment2(fragment);
@@ -239,7 +239,7 @@ public class Repartitioner {
     QueryUnit [] tasks = new QueryUnit[taskNum];
     for (int i = 0; i < taskNum; i++) {
       tasks[i] = new QueryUnit(
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), i), execBlock.isLeafBlock(),
+          QueryIdFactory.newQueryUnitId(subQuery.getId(), i), subQuery.getMasterPlan().isLeaf(execBlock),
           subQuery.getEventHandler());
       tasks[i].setLogicalPlan(execBlock.getPlan());
       for (FileFragment fragment : fragments) {

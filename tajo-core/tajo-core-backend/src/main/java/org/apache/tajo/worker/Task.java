@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -157,10 +158,10 @@ public class Task {
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();
-      StoreTableNode store = (StoreTableNode) plan;
-      this.partitionType = store.getPartitionType();
+      this.partitionType = context.getDataChannel().getPartitionType();
+
       if (partitionType == PartitionType.RANGE_PARTITION) {
-        SortNode sortNode = store.getChild();
+        SortNode sortNode = (SortNode) PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }

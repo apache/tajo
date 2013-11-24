@@ -626,7 +626,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ContainerAllocationEvent event =
           new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
               subQuery.getId(), priority, resource, numRequest,
-              execBlock.isLeafBlock(), 0.0f);
+              subQuery.masterPlan.isLeaf(execBlock), 0.0f);
       subQuery.eventHandler.handle(event);
     }
 
@@ -661,7 +661,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit unit = new QueryUnit(
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), execBlock.isLeafBlock(),
+          QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.masterPlan.isLeaf(execBlock),
           subQuery.eventHandler);
       unit.setLogicalPlan(execBlock.getPlan());
       unit.setFragment2(fragment);

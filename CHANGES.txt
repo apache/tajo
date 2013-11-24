@@ -41,6 +41,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid values. (jihoon)
+
     TAJO-296: Late registration of Tajo workers. (hyoungjunkim via hyunsik)
 
     TAJO-321: Invalid split file of compressed text file. (jinho)

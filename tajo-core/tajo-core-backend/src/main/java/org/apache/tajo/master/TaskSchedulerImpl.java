@@ -471,7 +471,7 @@ public class TaskSchedulerImpl extends AbstractService
               task.getLogicalPlan().toJson(),
               context.getQueryContext(),
               subQuery.getDataChannel(), subQuery.getBlock().getEnforcer());
-          if (!subQuery.getBlock().isRoot()) {
+          if (!subQuery.getMasterPlan().isRoot(subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
 
@@ -520,7 +520,7 @@ public class TaskSchedulerImpl extends AbstractService
               context.getQueryContext(),
               subQuery.getDataChannel(),
               subQuery.getBlock().getEnforcer());
-          if (!subQuery.getBlock().isRoot()) {
+          if (!subQuery.getMasterPlan().isRoot(subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
           for (ScanNode scan : task.getScanNodes()) {
