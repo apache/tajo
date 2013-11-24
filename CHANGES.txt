@@ -41,6 +41,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-296: Late registration of Tajo workers. (hyoungjunkim via hyunsik)
+
     TAJO-321: Invalid split file of compressed text file. (jinho)
 
     TAJO-295: ConcurrentModificationException in TaskScheduler. (jinho)

@@ -25,6 +25,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.SessionIdManager;
 import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.*;
@@ -38,10 +39,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.BindException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class is borrowed from Hadoop and is simplified to our objective.
@@ -72,12 +70,15 @@ public class HttpServer {
       listener = createBaseListener(conf);
       listener.setHost(bindAddress);
       listener.setPort(port);
+
     } else {
       listenerStartedExternally = true;
       listener = connector;
     }
-
     webServer.addConnector(listener);
+
+    SessionIdManager sessionIdManager = new HashSessionIdManager(new Random(System.currentTimeMillis()));
+    webServer.setSessionIdManager(sessionIdManager);
 
     int maxThreads = conf.getInt("tajo.http.maxthreads", -1);
     // If HTTP_MAX_THREADS is not configured, QueueThreadPool() will use the
