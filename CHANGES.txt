@@ -17,6 +17,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-325: QueryState.NEW and QueryState.INIT should be combined into one
+    state. (Min Zhou via hyunsik)
+
     TAJO-313: Support deprecated variables in CatalogConstants. (jaehwa)
 
     TAJO-310: Make the DataLocation class as a separate class and move it to 

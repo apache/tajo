@@ -300,8 +300,6 @@ public class QueryMasterTask extends CompositeService {
       dispatcher.register(QueryEventType.class, query);
 
       queryTaskContext.getEventHandler().handle(new QueryEvent(queryId,
-          QueryEventType.INIT));
-      queryTaskContext.getEventHandler().handle(new QueryEvent(queryId,
           QueryEventType.START));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

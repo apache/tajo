@@ -216,7 +216,6 @@ public class TajoClient {
 
   private static boolean isQueryRunnning(QueryState state) {
     return state == QueryState.QUERY_NEW ||
-        state == QueryState.QUERY_INIT ||
         state == QueryState.QUERY_RUNNING ||
         state == QueryState.QUERY_MASTER_LAUNCHED ||
         state == QueryState.QUERY_MASTER_INIT ||

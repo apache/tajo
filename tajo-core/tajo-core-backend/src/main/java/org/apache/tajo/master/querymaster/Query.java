@@ -88,11 +88,7 @@ public class Query implements EventHandler<QueryEvent> {
       new StateMachineFactory<Query, QueryState, QueryEventType, QueryEvent>
           (QueryState.QUERY_NEW)
 
-      .addTransition(QueryState.QUERY_NEW,
-          EnumSet.of(QueryState.QUERY_INIT, QueryState.QUERY_FAILED),
-          QueryEventType.INIT, new InitTransition())
-
-      .addTransition(QueryState.QUERY_INIT, QueryState.QUERY_RUNNING,
+      .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_RUNNING,
           QueryEventType.START, new StartTransition())
 
       .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
@@ -259,22 +255,12 @@ public class Query implements EventHandler<QueryEvent> {
     return cursor;
   }
 
-  static class InitTransition
-      implements MultipleArcTransition<Query, QueryEvent, QueryState> {
-
-    @Override
-    public QueryState transition(Query query, QueryEvent queryEvent) {
-      query.setStartTime();
-      //query.context.setState(QueryState.QUERY_INIT);
-      return QueryState.QUERY_INIT;
-    }
-  }
-
   public static class StartTransition
       implements SingleArcTransition<Query, QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent queryEvent) {
+      query.setStartTime();
       SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
           query.getExecutionBlockCursor().nextBlock(), query.sm);
       subQuery.setPriority(query.priority--);
