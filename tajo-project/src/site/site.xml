@@ -82,7 +82,7 @@
       <item name="Overview" href="index.html" />
       <item name="License" href="http://www.apache.org/licenses/" />
       <item name="Downloads" href="downloads.html" />
-      <item name="Getting Started" href="tajo-0.2.0-doc.html#Tutorial" />
+      <item name="Getting Started" href="tajo-0.2.0-doc.html#GettingStarted" />
     </menu>
 
     <menu name="Community">
