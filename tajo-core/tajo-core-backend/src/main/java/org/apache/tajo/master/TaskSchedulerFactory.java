@@ -57,7 +57,7 @@ public class TaskSchedulerFactory {
     String handlerName = getSchedulerType(conf);
     Class<? extends AbstractTaskScheduler> schedulerClass = CACHED_SCHEDULER_CLASSES.get(handlerName);
     if (schedulerClass == null) {
-      schedulerClass = conf.getClass(String.format("tajo.master.scheduler-handler.%s.class", handlerName), null, AbstractTaskScheduler.class);
+      schedulerClass = conf.getClass(String.format("tajo.querymaster.scheduler-handler.%s.class", handlerName), null, AbstractTaskScheduler.class);
       CACHED_SCHEDULER_CLASSES.put(handlerName, schedulerClass);
     }
 
@@ -69,6 +69,6 @@ public class TaskSchedulerFactory {
   }
 
   public static String getSchedulerType(Configuration conf) {
-    return conf.get("tajo.master.scheduler.type", "default");
+    return conf.get("tajo.querymaster.scheduler-handler.type", "default");
   }
 }

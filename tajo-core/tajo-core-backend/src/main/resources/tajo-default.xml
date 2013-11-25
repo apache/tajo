@@ -39,19 +39,19 @@
 
   <!--- Registered Scheduler Handler -->
   <property>
-    <name>tajo.master.scheduler-handler</name>
+    <name>tajo.querymaster.scheduler-handler</name>
     <value>default</value>
   </property>
 
   <!--- Scheduler Configuration -->
   <property>
-    <name>tajo.master.scheduler.type</name>
+    <name>tajo.querymaster.scheduler-handler.type</name>
     <value>default</value>
   </property>
 
   <!--- Scheduler Handler -->
   <property>
-    <name>tajo.master.scheduler-handler.default.class</name>
+    <name>tajo.querymaster.scheduler-handler.default.class</name>
     <value>org.apache.tajo.master.DefaultTaskScheduler</value>
   </property>
 
