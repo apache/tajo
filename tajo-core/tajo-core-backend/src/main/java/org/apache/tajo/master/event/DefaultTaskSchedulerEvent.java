@@ -18,22 +18,44 @@
 
 package org.apache.tajo.master.event;
 
+import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.storage.DataLocation;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class TaskScheduleEvent extends TaskSchedulerEvent {
+public class DefaultTaskSchedulerEvent extends TaskSchedulerEvent {
   private final QueryUnitAttemptId attemptId;
   private final boolean isLeafQuery;
   private final List<DataLocation> dataLocations;
   private final String[] racks;
 
-  public TaskScheduleEvent(final QueryUnitAttemptId attemptId,
-                           final EventType eventType, boolean isLeafQuery,
-                           final List<DataLocation> dataLocations,
-                           final String[] racks) {
+  public DefaultTaskSchedulerEvent(final EventType eventType,
+                                   final QueryUnitAttempt attempt) {
+    super(eventType, attempt.getId().getQueryUnitId().getExecutionBlockId());
+    this.attemptId = attempt.getId();
+    this.isLeafQuery = attempt.isLeafTask();
+    if (this.isLeafQuery) {
+      this.dataLocations = attempt.getQueryUnit().getDataLocations();
+      Set<String> racks = new HashSet<String>();
+      for (DataLocation location : attempt.getQueryUnit().getDataLocations()) {
+        racks.add(RackResolver.resolve(location.getHost()).getNetworkLocation());
+      }
+      this.racks = racks.toArray(new String[racks.size()]);
+    } else {
+      this.dataLocations = null;
+      this.racks = null;
+    }
+  }
+
+  public DefaultTaskSchedulerEvent(final QueryUnitAttemptId attemptId,
+                                   final EventType eventType, boolean isLeafQuery,
+                                   final List<DataLocation> dataLocations,
+                                   final String[] racks) {
     super(eventType, attemptId.getQueryUnitId().getExecutionBlockId());
     this.attemptId = attemptId;
     this.isLeafQuery = isLeafQuery;
@@ -59,7 +81,7 @@ public class TaskScheduleEvent extends TaskSchedulerEvent {
 
   @Override
   public String toString() {
-    return "TaskScheduleEvent{" +
+    return "DefaultTaskSchedulerEvent{" +
         "attemptId=" + attemptId +
         ", isLeafQuery=" + isLeafQuery +
         ", hosts=" + (dataLocations == null ? null : dataLocations) +

@@ -22,13 +22,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
@@ -36,7 +36,6 @@ import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.URI;
@@ -53,6 +52,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(QueryUnit.class);
 
+  private final Configuration systemConf;
 	private QueryUnitId taskId;
   private EventHandler eventHandler;
 	private StoreTableNode store = null;
@@ -112,7 +112,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private final Lock readLock;
   private final Lock writeLock;
 
-	public QueryUnit(QueryUnitId id, boolean isLeafTask, EventHandler eventHandler) {
+	public QueryUnit(Configuration conf, QueryUnitId id,
+                   boolean isLeafTask, EventHandler eventHandler) {
+    this.systemConf = conf;
 		this.taskId = id;
     this.eventHandler = eventHandler;
     this.isLeafTask = isLeafTask;
@@ -387,10 +389,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
 
     if (failedAttempts > 0) {
-      eventHandler.handle(new TaskAttemptEvent(attempt.getId(),
+      eventHandler.handle(new TaskAttemptScheduleEvent(systemConf, attempt.getId(),
           TaskAttemptEventType.TA_RESCHEDULE));
     } else {
-      eventHandler.handle(new TaskAttemptEvent(attempt.getId(),
+      eventHandler.handle(new TaskAttemptScheduleEvent(systemConf, attempt.getId(),
           TaskAttemptEventType.TA_SCHEDULE));
     }
   }

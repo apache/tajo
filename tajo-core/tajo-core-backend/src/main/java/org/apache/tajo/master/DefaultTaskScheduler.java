@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
@@ -33,9 +32,9 @@ import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.event.DefaultTaskSchedulerEvent;
 import org.apache.tajo.master.event.TaskAttemptAssignedEvent;
 import org.apache.tajo.master.event.TaskRequestEvent;
-import org.apache.tajo.master.event.TaskScheduleEvent;
 import org.apache.tajo.master.event.TaskSchedulerEvent;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -51,9 +50,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class TaskSchedulerImpl extends AbstractService
-    implements TaskScheduler {
-  private static final Log LOG = LogFactory.getLog(TaskScheduleEvent.class);
+public class DefaultTaskScheduler extends AbstractTaskScheduler {
+  private static final Log LOG = LogFactory.getLog(DefaultTaskSchedulerEvent.class);
 
   private final QueryMasterTask.QueryMasterTaskContext context;
   private TajoAsyncDispatcher dispatcher;
@@ -72,8 +70,8 @@ public class TaskSchedulerImpl extends AbstractService
   private int rackLocalAssigned = 0;
   private int totalAssigned = 0;
 
-  public TaskSchedulerImpl(QueryMasterTask.QueryMasterTaskContext context) {
-    super(TaskSchedulerImpl.class.getName());
+  public DefaultTaskScheduler(QueryMasterTask.QueryMasterTaskContext context) {
+    super(DefaultTaskScheduler.class.getName());
     this.context = context;
     this.dispatcher = context.getDispatcher();
   }
@@ -162,7 +160,7 @@ public class TaskSchedulerImpl extends AbstractService
 
   private void handleEvent(TaskSchedulerEvent event) {
     if (event.getType() == EventType.T_SCHEDULE) {
-      TaskScheduleEvent castEvent = (TaskScheduleEvent) event;
+      DefaultTaskSchedulerEvent castEvent = (DefaultTaskSchedulerEvent) event;
       if (castEvent.isLeafQuery()) {
         scheduledRequests.addLeafTask(castEvent);
       } else {
@@ -221,6 +219,7 @@ public class TaskSchedulerImpl extends AbstractService
     }
   }
 
+  @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     taskRequests.handle(event);
   }
@@ -346,7 +345,7 @@ public class TaskSchedulerImpl extends AbstractService
     private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
         new HashMap<String, LinkedList<QueryUnitAttemptId>>();
 
-    public void addLeafTask(TaskScheduleEvent event) {
+    public void addLeafTask(DefaultTaskSchedulerEvent event) {
       List<DataLocation> locations = event.getDataLocations();
 
       for (DataLocation location : locations) {
@@ -378,7 +377,7 @@ public class TaskSchedulerImpl extends AbstractService
       leafTasks.add(event.getAttemptId());
     }
 
-    public void addNonLeafTask(TaskScheduleEvent event) {
+    public void addNonLeafTask(DefaultTaskSchedulerEvent event) {
       nonLeafTasks.add(event.getAttemptId());
     }
 

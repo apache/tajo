@@ -16,26 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.hadoop.yarn.service.AbstractService;
+import org.apache.tajo.master.event.TaskRequestEvent;
+import org.apache.tajo.master.event.TaskSchedulerEvent;
 
-public abstract class TaskSchedulerEvent extends AbstractEvent<EventType> {
-  public enum EventType {
-    T_SCHEDULE,
-    T_SUBQUERY_COMPLETED
+
+public abstract class AbstractTaskScheduler extends AbstractService
+    implements EventHandler<TaskSchedulerEvent> {
+
+  /**
+   * Construct the service.
+   *
+   * @param name service name
+   */
+  public AbstractTaskScheduler(String name) {
+    super(name);
   }
 
-  protected final ExecutionBlockId executionBlockId;
-
-  public TaskSchedulerEvent(EventType eventType, ExecutionBlockId queryBlockId) {
-    super(eventType);
-    this.executionBlockId = queryBlockId;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
-  }
+  public abstract void handleTaskRequestEvent(TaskRequestEvent event);
 }

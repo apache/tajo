@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.event;
 
-import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.tajo.master.event.TaskSchedulerEvent;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.QueryUnitAttemptId;
 
-public interface TaskScheduler extends EventHandler<TaskSchedulerEvent> {
+public class TaskAttemptScheduleEvent extends TaskAttemptEvent {
+  private Configuration conf;
 
+  public TaskAttemptScheduleEvent(final Configuration conf,
+                                  final QueryUnitAttemptId id,
+                                  final TaskAttemptEventType taskAttemptEventType) {
+    super(id, taskAttemptEventType);
+    this.conf = conf;
+  }
+
+  public Configuration getConf() {
+    return conf;
+  }
 }

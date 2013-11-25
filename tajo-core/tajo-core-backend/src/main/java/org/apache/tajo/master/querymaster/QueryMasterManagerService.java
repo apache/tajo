@@ -33,7 +33,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.TaskSchedulerImpl;
+import org.apache.tajo.master.DefaultTaskScheduler;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -129,7 +129,7 @@ public class QueryMasterManagerService extends CompositeService
 
       if(queryMasterTask == null || queryMasterTask.isStopped()) {
         LOG.debug("getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
-        done.run(TaskSchedulerImpl.stopTaskRunnerReq);
+        done.run(DefaultTaskScheduler.stopTaskRunnerReq);
       } else {
         LOG.debug("getTask:" + cid + ", ebId:" + ebId);
         queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(cid, ebId, done));

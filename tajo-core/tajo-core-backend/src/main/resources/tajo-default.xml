@@ -37,4 +37,28 @@
     <description></description>
   </property>
 
+  <!--- Registered Scheduler Handler -->
+  <property>
+    <name>tajo.master.scheduler-handler</name>
+    <value>default</value>
+  </property>
+
+  <!--- Scheduler Configuration -->
+  <property>
+    <name>tajo.master.scheduler.type</name>
+    <value>default</value>
+  </property>
+
+  <!--- Scheduler Handler -->
+  <property>
+    <name>tajo.master.scheduler-handler.default.class</name>
+    <value>org.apache.tajo.master.DefaultTaskScheduler</value>
+  </property>
+
+  <!-- Scheduler Event handler -->
+  <property>
+    <name>tajo.querymaster.task-schedule-event.default.class</name>
+    <value>org.apache.tajo.master.event.DefaultTaskSchedulerEvent</value>
+  </property>
+
 </configuration>

@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
-import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -31,10 +30,11 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
-import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.util.TajoIdUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -203,27 +203,9 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public void transition(QueryUnitAttempt taskAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
-
-      if (taskAttempt.isLeafTask()
-          && taskAttempt.getQueryUnit().getScanNodes().length == 1) {
-        Set<String> racks = new HashSet<String>();
-        for (DataLocation location : taskAttempt.getQueryUnit().getDataLocations()) {
-          racks.add(RackResolver.resolve(location.getHost()).getNetworkLocation());
-        }
-
-        taskAttempt.eventHandler.handle(new TaskScheduleEvent(
-            taskAttempt.getId(), EventType.T_SCHEDULE, true,
-            taskAttempt.getQueryUnit().getDataLocations(),
-            racks.toArray(new String[racks.size()])
-        ));
-      } else {
-        taskAttempt.eventHandler.handle(new TaskScheduleEvent(
-            taskAttempt.getId(), EventType.T_SCHEDULE,
-            false,
-            null,
-            null
-        ));
-      }
+      TaskAttemptScheduleEvent castEvent = (TaskAttemptScheduleEvent) taskAttemptEvent;
+      taskAttempt.eventHandler.handle(
+          TaskSchedulerEventFactory.getTaskSchedulerEvent(castEvent.getConf(), taskAttempt, EventType.T_SCHEDULE));
     }
   }
 

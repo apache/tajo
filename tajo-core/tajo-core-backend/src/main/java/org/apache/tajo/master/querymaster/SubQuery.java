@@ -47,10 +47,10 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.master.AbstractTaskScheduler;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
-import org.apache.tajo.master.TaskScheduler;
-import org.apache.tajo.master.TaskSchedulerImpl;
+import org.apache.tajo.master.TaskSchedulerFactory;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -81,7 +81,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TableStats statistics;
   private EventHandler eventHandler;
   private final AbstractStorageManager sm;
-  private TaskSchedulerImpl taskScheduler;
+  private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
 
   private long startTime;
@@ -177,7 +177,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return eventHandler;
   }
 
-  public TaskScheduler getTaskScheduler() {
+  public AbstractTaskScheduler getTaskScheduler() {
     return taskScheduler;
   }
 
@@ -461,7 +461,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     private void initTaskScheduler(SubQuery subQuery) {
-      subQuery.taskScheduler = new TaskSchedulerImpl(subQuery.context);
+      subQuery.taskScheduler = TaskSchedulerFactory.getTaskSCheduler(subQuery.context.getConf(), subQuery.context);
       subQuery.taskScheduler.init(subQuery.context.getConf());
       subQuery.taskScheduler.start();
     }
@@ -660,7 +660,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
       ExecutionBlock execBlock = subQuery.getBlock();
-      QueryUnit unit = new QueryUnit(
+      QueryUnit unit = new QueryUnit(subQuery.context.getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.masterPlan.isLeaf(execBlock),
           subQuery.eventHandler);
       unit.setLogicalPlan(execBlock.getPlan());

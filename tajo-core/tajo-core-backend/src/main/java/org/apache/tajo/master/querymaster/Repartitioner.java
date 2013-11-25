@@ -40,8 +40,8 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
@@ -106,8 +106,9 @@ public class Repartitioner {
     if (leftSmall && rightSmall) {
       LOG.info("[Distributed Join Strategy] : Immediate Two Way Join on Single Machine");
       tasks = new QueryUnit[1];
-      tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
-          false, subQuery.getEventHandler());
+      tasks[0] = new QueryUnit(subQuery.getContext().getConf(),
+          QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
+          subQuery.getMasterPlan().isLeaf(execBlock), subQuery.getEventHandler());
       tasks[0].setLogicalPlan(execBlock.getPlan());
       tasks[0].setFragment(scans[0].getCanonicalName(), fragments[0]);
       tasks[0].setFragment(scans[1].getCanonicalName(), fragments[1]);
@@ -226,7 +227,7 @@ public class Repartitioner {
 
   private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    QueryUnit unit = new QueryUnit(
+    QueryUnit unit = new QueryUnit(subQuery.getContext().getConf(),
         QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.getMasterPlan().isLeaf(execBlock),
         subQuery.getEventHandler());
     unit.setLogicalPlan(execBlock.getPlan());
@@ -238,7 +239,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryUnit [] tasks = new QueryUnit[taskNum];
     for (int i = 0; i < taskNum; i++) {
-      tasks[i] = new QueryUnit(
+      tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), i), subQuery.getMasterPlan().isLeaf(execBlock),
           subQuery.getEventHandler());
       tasks[i].setLogicalPlan(execBlock.getPlan());
@@ -567,7 +568,8 @@ public class Repartitioner {
     LogicalNode plan = subQuery.getBlock().getPlan();
     QueryUnit [] tasks = new QueryUnit[num];
     for (int i = 0; i < num; i++) {
-      tasks[i] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
+      tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
+          QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
           false, subQuery.getEventHandler());
       tasks[i].setFragment2(frag);
       tasks[i].setLogicalPlan(plan);

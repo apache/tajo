@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.event;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 
