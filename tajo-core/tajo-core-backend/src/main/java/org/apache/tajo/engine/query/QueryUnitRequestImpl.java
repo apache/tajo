@@ -21,10 +21,10 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DataChannelProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
-import org.apache.tajo.storage.fragment.Fragment;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -44,10 +44,11 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private List<Fetch> fetches;
   private Boolean shouldDie;
   private QueryContext queryContext;
-  private DataChannel dataChannel;
+  private List<DataChannel> incomingChanels;
+  private List<DataChannel> outgoingChannels;
   private Enforcer enforcer;
 	
-	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
+  private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
 	private boolean viaProto = false;
 	
@@ -59,9 +60,11 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
+			String serializedData, QueryContext queryContext, List<DataChannel> incomingChanels,
+      List<DataChannel> outgoingChannels, Enforcer enforcer) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel, enforcer);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, incomingChanels,
+        outgoingChannels, enforcer);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -73,7 +76,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public void set(QueryUnitAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
+			String serializedData, QueryContext queryContext, List<DataChannel> incomingChannels,
+      List<DataChannel> outgoingChannels, Enforcer enforcer) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
@@ -82,7 +86,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.isUpdated = true;
     this.queryContext = queryContext;
     this.queryContext = queryContext;
-    this.dataChannel = dataChannel;
+    this.incomingChanels = incomingChannels;
+    this.outgoingChannels = outgoingChannels;
     this.enforcer = enforcer;
 	}
 
@@ -206,22 +211,28 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     this.queryContext = queryContext;
   }
 
-  public void setDataChannel(DataChannel dataChannel) {
+  public void addIncomingChanel(DataChannel incomingChanel) {
     maybeInitBuilder();
-    this.dataChannel = dataChannel;
+    initIncomingChannels();
+    this.incomingChanels.add(incomingChanel);
+  }
+
+  public void addOutgoingChannel(DataChannel outgoingChannel) {
+    maybeInitBuilder();
+    initOutgoingChannels();
+    this.outgoingChannels.add(outgoingChannel);
   }
 
   @Override
-  public DataChannel getDataChannel() {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (dataChannel != null) {
-      return dataChannel;
-    }
-    if (!p.hasDataChannel()) {
-      return null;
-    }
-    this.dataChannel = new DataChannel(p.getDataChannel());
-    return this.dataChannel;
+  public List<DataChannel> getIncomingChannels() {
+    initIncomingChannels();
+    return this.incomingChanels;
+  }
+
+  @Override
+  public List<DataChannel> getOutgoingChannels() {
+    initOutgoingChannels();
+    return this.outgoingChannels;
   }
 
   @Override
@@ -242,6 +253,28 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
     return this.fetches;
 	}
+
+  private void initIncomingChannels() {
+    if (this.incomingChanels != null) {
+      return;
+    }
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    this.incomingChanels = new ArrayList<DataChannel>();
+    for (DataChannelProto channelProto : p.getIncomingChannelsList()) {
+      this.incomingChanels.add(new DataChannel(channelProto));
+    }
+  }
+
+  private void initOutgoingChannels() {
+    if (this.outgoingChannels != null) {
+      return;
+    }
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    this.outgoingChannels = new ArrayList<DataChannel>();
+    for (DataChannelProto channelProto : p.getOutgoingChannelsList()) {
+      this.outgoingChannels.add(new DataChannel(channelProto));
+    }
+  }
 	
 	private void initFetches() {
 	  if (this.fetches != null) {
@@ -310,8 +343,15 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (this.queryContext != null) {
       builder.setQueryContext(queryContext.getProto());
     }
-    if (this.dataChannel != null) {
-      builder.setDataChannel(dataChannel.getProto());
+    if (this.incomingChanels != null) {
+      for (DataChannel inChannel : this.incomingChanels) {
+        builder.addIncomingChannels(inChannel.getProto());
+      }
+    }
+    if (this.outgoingChannels != null) {
+      for (DataChannel outChannel : this.outgoingChannels) {
+        builder.addOutgoingChannels(outChannel.getProto());
+      }
     }
     if (this.enforcer != null) {
       builder.setEnforcer(enforcer.getProto());

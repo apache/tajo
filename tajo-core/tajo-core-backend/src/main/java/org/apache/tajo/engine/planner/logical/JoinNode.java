@@ -149,7 +149,13 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
 
     sb.append("\n\"out schema: ").append(getOutSchema());
     sb.append("\n\"in schema: ").append(getInSchema());
-    sb.append("\n" + getLeftChild().toString()).append(" and ").append(getRightChild());
+
+    if (leftChild != null) {
+      sb.append("\n"+ getLeftChild().toString());
+    }
+    if (rightChild != null) {
+      sb.append("\n" + getRightChild().toString());
+    }
     return sb.toString();
   }
 }

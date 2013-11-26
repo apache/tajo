@@ -30,6 +30,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
+import org.apache.tajo.engine.planner.global.InputContext;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.json.*;
 import org.apache.tajo.util.TUtil;
@@ -56,6 +58,8 @@ public class CoreGsonHelper {
     adapters.put(AggFunction.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
+    adapters.put(ExecutionPlan.class, new ExecutionPlanAdapter());
+    adapters.put(InputContext.class, new SourceContextAdapter());
 
     return adapters;
 	}

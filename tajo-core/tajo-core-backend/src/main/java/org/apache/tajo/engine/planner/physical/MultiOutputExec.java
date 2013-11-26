@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,21 +16,37 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.global.ExecutionPlan;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
-/**
- * This class generates a physical execution plan.
- */
-public interface PhysicalPlanner {
-  public PhysicalExec createPlan(TaskAttemptContext context,
-                                 ExecutionPlan execPlan)
-      throws InternalException;
+import java.io.IOException;
+
+public class MultiOutputExec extends UnaryPhysicalExec {
+  private Tuple buffer;
+  private int remainBufferCount;
+  private final int outputNumber;
+
+  public MultiOutputExec(TaskAttemptContext context, Schema outSchema, PhysicalExec child,
+                         int outputNumber) {
+    super(context, outSchema, outSchema, child);
+    this.outputNumber = outputNumber;
+  }
+
+  @Override
+  public void init() throws IOException {
+    remainBufferCount = outputNumber;
+  }
+
+  @Override
+  public Tuple next() throws IOException {
+    if (remainBufferCount == 0) {
+      buffer = child.next();
+      remainBufferCount = outputNumber;
+    }
+    remainBufferCount--;
+    return buffer;
+  }
 }

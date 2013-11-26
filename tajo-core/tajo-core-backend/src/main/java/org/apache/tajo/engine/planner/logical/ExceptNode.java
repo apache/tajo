@@ -41,6 +41,23 @@ public class ExceptNode extends BinaryNode {
   }
 
   public String toString() {
-    return getLeftChild().toString() + "\n EXCEPT \n" + getRightChild().toString();
+    StringBuffer sb = new StringBuffer();
+    if (leftChild != null) {
+      sb.append(getLeftChild().toString());
+    } else {
+      sb.append("null left child");
+    }
+    sb.append("\n EXCEPT \n");
+    if (rightChild != null) {
+      sb.append(getRightChild().toString());
+    } else {
+      sb.append("null right child");
+    }
+    return sb.toString();
+  }
+
+  @Override
+  public boolean deepEquals(Object o) {
+    return this.equals(o) && super.deepEquals(o);
   }
 }

@@ -38,23 +38,31 @@ public class DataChannel {
 
   private StoreType storeType = StoreType.CSV;
 
-  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
+  private Integer srcPID;
+  private Integer targetPID;
+
+  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, Integer srcPID, Integer targetPID) {
     this.srcId = srcId;
     this.targetId = targetId;
+    this.srcPID = srcPID;
+    this.targetPID = targetPID;
   }
 
-  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, PartitionType partitionType) {
-    this(srcId, targetId);
+  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, Integer srcPID, Integer targetPID,
+                     PartitionType partitionType) {
+    this(srcId, targetId, srcPID, targetPID);
     this.partitionType = partitionType;
   }
 
-  public DataChannel(ExecutionBlock src, ExecutionBlock target, PartitionType partitionType, int partNum) {
-    this(src.getId(), target.getId(), partitionType, partNum);
-    setSchema(src.getPlan().getOutSchema());
+  public DataChannel(ExecutionBlock src, ExecutionBlock target, Integer srcPID, Integer targetPID,
+                     PartitionType partitionType, int partNum, Schema schema) {
+    this(src.getId(), target.getId(), srcPID, targetPID, partitionType, partNum);
+    setSchema(schema);
   }
 
-  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, PartitionType partitionType, int partNum) {
-    this(srcId, targetId, partitionType);
+  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, Integer srcPID, Integer targetPID,
+                     PartitionType partitionType, int partNum) {
+    this(srcId, targetId, srcPID, targetPID, partitionType);
     this.partitionNum = partNum;
   }
 
@@ -76,6 +84,12 @@ public class DataChannel {
     }
     if (proto.hasPartitionNum()) {
       this.partitionNum = proto.getPartitionNum();
+    }
+    if (proto.hasSrcPID()) {
+      this.srcPID = proto.getSrcPID();
+    }
+    if (proto.hasTargetPID()) {
+      this.targetPID = proto.getTargetPID();
     }
   }
 
@@ -163,6 +177,12 @@ public class DataChannel {
     if (partitionNum != null) {
       builder.setPartitionNum(partitionNum);
     }
+    if (srcPID != null) {
+      builder.setSrcPID(srcPID);
+    }
+    if (targetPID != null) {
+      builder.setTargetPID(targetPID);
+    }
     return builder.build();
   }
 
@@ -177,7 +197,7 @@ public class DataChannel {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[").append(srcId.getQueryId()).append("] ");
-    sb.append(srcId.getId()).append(" => ").append(targetId.getId());
+    sb.append(srcId.getId()).append("."+srcPID).append(" => ").append(targetId.getId()).append("."+targetPID);
     sb.append(" (type=").append(partitionType);
     if (hasPartitionKey()) {
       sb.append(", key=");
@@ -194,5 +214,17 @@ public class DataChannel {
     }
     sb.append(")");
     return sb.toString();
+  }
+
+  public void updateSrcPID(int srcPID) {
+    this.srcPID = srcPID;
+  }
+
+  public Integer getSrcPID() {
+    return srcPID;
+  }
+
+  public Integer getTargetPID() {
+    return targetPID;
   }
 }

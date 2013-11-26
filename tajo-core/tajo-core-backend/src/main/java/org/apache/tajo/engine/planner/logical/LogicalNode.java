@@ -1,6 +1,6 @@
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
+ * or more contributor license aggreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
@@ -21,7 +21,10 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlanString;
@@ -40,6 +43,10 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
     this.pid = pid;
     this.type = type;
 	}
+
+  public void setPid(int pid) {
+    this.pid = pid;
+  }
 
   public int getPID() {
     return pid;
@@ -76,6 +83,11 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	public Schema getOutSchema() {
 	  return this.outputSchema;
 	}
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(pid, type, inputSchema, outputSchema, cost);
+  }
 	
 	@Override
 	public boolean equals(Object obj) {

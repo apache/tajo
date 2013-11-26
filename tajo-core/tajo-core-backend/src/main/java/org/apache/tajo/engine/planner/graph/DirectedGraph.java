@@ -45,7 +45,11 @@ public interface DirectedGraph<V, E> extends Graph<V, E> {
 
   boolean isLeaf(V v);
 
-  @Nullable V getParent(V v);
+  int getParentCount(V v);
+
+  @Nullable V getParent(V v, int idx);
+
+  List<V> getParents(V v);
 
   int getChildCount(V v);
 

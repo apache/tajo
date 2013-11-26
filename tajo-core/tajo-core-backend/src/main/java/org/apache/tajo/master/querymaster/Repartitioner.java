@@ -32,9 +32,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
-import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.engine.planner.global.ExecutionBlock;
-import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.global.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
@@ -72,7 +70,9 @@ public class Repartitioner {
     QueryMasterTask.QueryMasterTaskContext masterContext = subQuery.getContext();
     AbstractStorageManager storageManager = subQuery.getStorageManager();
 
-    ScanNode[] scans = execBlock.getScanNodes();
+    InputContext srcContext = execBlock.getInputContext();
+    Preconditions.checkState(srcContext.size() == 2);
+    ScanNode[] scans = srcContext.getScanNodes();
 
     Path tablePath;
     FileFragment[] fragments = new FileFragment[2];
@@ -109,9 +109,9 @@ public class Repartitioner {
       tasks[0] = new QueryUnit(subQuery.getContext().getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
           subQuery.getMasterPlan().isLeaf(execBlock), subQuery.getEventHandler());
-      tasks[0].setLogicalPlan(execBlock.getPlan());
-      tasks[0].setFragment(scans[0].getCanonicalName(), fragments[0]);
-      tasks[0].setFragment(scans[1].getCanonicalName(), fragments[1]);
+      tasks[0].setExecutionPlan(execBlock.getPlan());
+      tasks[0].setFragment2(fragments[0]);
+      tasks[0].setFragment2(fragments[1]);
     } else if (leftSmall ^ rightSmall) {
       LOG.info("[Distributed Join Strategy] : Broadcast Join");
       int broadcastIdx = leftSmall ? 0 : 1;
@@ -201,8 +201,11 @@ public class Repartitioner {
 
   private static QueryUnit [] createLeafTasksWithBroadcastTable(SubQuery subQuery, int baseScanId, FileFragment broadcasted) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    ScanNode[] scans = execBlock.getScanNodes();
-    Preconditions.checkArgument(scans.length == 2, "Must be Join Query");
+    MasterPlan masterPlan = subQuery.getMasterPlan();
+    InputContext srcContext = execBlock.getInputContext();
+    Preconditions.checkArgument(srcContext.size() == 2, "Must be Join Query");
+
+    ScanNode[] scans = srcContext.getScanNodes();
     TableMeta meta;
     Path inputPath;
     ScanNode scan = scans[baseScanId];
@@ -230,7 +233,7 @@ public class Repartitioner {
     QueryUnit unit = new QueryUnit(subQuery.getContext().getConf(),
         QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.getMasterPlan().isLeaf(execBlock),
         subQuery.getEventHandler());
-    unit.setLogicalPlan(execBlock.getPlan());
+    unit.setExecutionPlan(execBlock.getPlan());
     unit.setFragment2(fragment);
     return unit;
   }
@@ -242,7 +245,7 @@ public class Repartitioner {
       tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), i), subQuery.getMasterPlan().isLeaf(execBlock),
           subQuery.getEventHandler());
-      tasks[i].setLogicalPlan(execBlock.getPlan());
+      tasks[i].setExecutionPlan(execBlock.getPlan());
       for (FileFragment fragment : fragments) {
         tasks[i].setFragment2(fragment);
       }
@@ -315,7 +318,10 @@ public class Repartitioner {
       return new QueryUnit[0];
     }
 
-    ScanNode scan = execBlock.getScanNodes()[0];
+    InputContext srcContext = execBlock.getInputContext();
+    // TODO: maybe we need to check the number of input sources
+//    Preconditions.checkState(srcContext.size() == 1);
+    ScanNode scan = srcContext.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
@@ -434,13 +440,12 @@ public class Repartitioner {
       return new QueryUnit[0];
     }
 
-    ScanNode scan = execBlock.getScanNodes()[0];
+    InputContext srcContext = execBlock.getInputContext();
+    ScanNode scan = srcContext.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
-
     FileFragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0);
-
 
     Map<String, List<IntermediateEntry>> hashedByHost;
     Map<Integer, List<URI>> finalFetchURI = new HashMap<Integer, List<URI>>();
@@ -565,14 +570,14 @@ public class Repartitioner {
 
   public static QueryUnit [] createEmptyNonLeafTasks(SubQuery subQuery, int num,
                                                      FileFragment frag) {
-    LogicalNode plan = subQuery.getBlock().getPlan();
+    ExecutionPlan plan = subQuery.getBlock().getPlan();
     QueryUnit [] tasks = new QueryUnit[num];
     for (int i = 0; i < num; i++) {
       tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
           false, subQuery.getEventHandler());
       tasks[i].setFragment2(frag);
-      tasks[i].setLogicalPlan(plan);
+      tasks[i].setExecutionPlan(plan);
     }
     return tasks;
   }
@@ -602,23 +607,26 @@ public class Repartitioner {
     // TODO: the union handling is required when a join has unions as its child
     MasterPlan masterPlan = subQuery.getMasterPlan();
     keys = channel.getPartitionKey();
+    LogicalNode topnode = null;
     if (!masterPlan.isRoot(subQuery.getBlock()) ) {
       ExecutionBlock parentBlock = masterPlan.getParent(subQuery.getBlock());
-      if (parentBlock.getPlan().getType() == NodeType.JOIN) {
+      topnode = parentBlock.getPlan().getChild(parentBlock.getPlan().getTerminalNode(), 0);
+      if (topnode.getType() == NodeType.JOIN) {
         channel.setPartitionNum(desiredNum);
       }
     }
 
 
+    topnode = execBlock.getPlan().getChild(execBlock.getPlan().getTerminalNode(), 0);
     // set the partition number for group by and sort
     if (channel.getPartitionType() == HASH_PARTITION) {
-      if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
-        GroupbyNode groupby = (GroupbyNode) execBlock.getPlan();
+      if (topnode.getType() == NodeType.GROUP_BY) {
+        GroupbyNode groupby = (GroupbyNode) topnode;
         keys = groupby.getGroupingColumns();
       }
     } else if (channel.getPartitionType() == RANGE_PARTITION) {
-      if (execBlock.getPlan().getType() == NodeType.SORT) {
-        SortNode sort = (SortNode) execBlock.getPlan();
+      if (topnode.getType() == NodeType.SORT) {
+        SortNode sort = (SortNode) topnode;
         keys = new Column[sort.getSortKeys().length];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = sort.getSortKeys()[i].getSortKey();

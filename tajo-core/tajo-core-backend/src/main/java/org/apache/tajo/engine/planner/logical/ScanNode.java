@@ -145,8 +145,8 @@ public class ScanNode extends RelationNode implements Projectable {
 	  }	  
 	  
 	  return false;
-	}	
-	
+	}
+
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  ScanNode scanNode = (ScanNode) super.clone();

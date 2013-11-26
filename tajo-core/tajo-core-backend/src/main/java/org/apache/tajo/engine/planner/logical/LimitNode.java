@@ -61,7 +61,9 @@ public final class LimitNode extends UnaryNode implements Cloneable {
 
     sb.append("\n  \"out schema: ").append(getOutSchema())
         .append("\n  \"in schema: " + getInSchema());
-    sb.append("\n").append(getChild().toString());
+    if (child != null) {
+      sb.append("\n").append(getChild().toString());
+    }
 
     return sb.toString();
   }

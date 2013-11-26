@@ -70,7 +70,11 @@ public class SelectionNode extends UnaryNode implements Cloneable {
     sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
     sb.append("\n  \"in schema\": ").append(getInSchema()).append("}");
 
-    return sb.toString()+"\n"
-        + getChild().toString();
+    if (child != null) {
+      return sb.toString()+"\n"
+          + getChild().toString();
+    } else {
+      return sb.toString();
+    }
   }
 }

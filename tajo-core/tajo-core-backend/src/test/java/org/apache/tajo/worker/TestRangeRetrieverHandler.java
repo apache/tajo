@@ -34,6 +34,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.storage.*;
@@ -105,7 +106,8 @@ public class TestRangeRetrieverHandler {
 
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
-    Appender appender = sm.getAppender(employeeMeta, schema, tableDir);
+    Appender appender =
+        sm.getAppender(employeeMeta, schema, tableDir);
     appender.init();
 
     Tuple tuple = new VTuple(schema.getColumnNum());
@@ -137,10 +139,12 @@ public class TestRangeRetrieverHandler {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     MemSortExec sort = (MemSortExec) proj.getChild();
 
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
@@ -149,7 +153,7 @@ public class TestRangeRetrieverHandler {
 
     exec = idxStoreExec;
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
@@ -250,10 +254,12 @@ public class TestRangeRetrieverHandler {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     MemSortExec sort = (MemSortExec) proj.getChild();
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort,
@@ -261,7 +267,7 @@ public class TestRangeRetrieverHandler {
 
     exec = idxStoreExec;
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);

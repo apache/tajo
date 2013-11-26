@@ -39,7 +39,12 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
+import org.apache.tajo.engine.planner.global.InputContext;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
@@ -76,7 +81,7 @@ public class Task {
   private final QueryUnitRequest request;
   private final TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
-  private final LogicalNode plan;
+  private final ExecutionPlan plan;
   private final Map<String, TableDesc> descs = Maps.newHashMap();
   private PhysicalExec executor;
   private boolean interQuery;
@@ -99,9 +104,13 @@ public class Task {
   private AtomicBoolean progressFlag = new AtomicBoolean(false);
 
   // TODO - to be refactored
-  private PartitionType partitionType = null;
-  private Schema finalSchema = null;
-  private TupleComparator sortComp = null;
+  private static class TaskContext {
+    private PartitionType partitionType;
+    private Schema finalSchema;
+    private TupleComparator sortComp;
+  }
+
+  private List<TaskContext> taskContexts = new ArrayList<TaskContext>();
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
@@ -145,25 +154,31 @@ public class Task {
 
     this.context = new TaskAttemptContext(systemConf, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
-    this.context.setDataChannel(request.getDataChannel());
+    this.context.setIncomingChannels(request.getIncomingChannels());
+    this.context.setOutgoingChannels(request.getOutgoingChannels());
     this.context.setEnforcer(request.getEnforcer());
 
-    plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
-    LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
-    for (LogicalNode node : scanNode) {
-      ScanNode scan = (ScanNode)node;
+    plan = CoreGsonHelper.fromJson(request.getSerializedData(), ExecutionPlan.class);
+    // TODO: add meta information to regenerate a table desc
+    InputContext srcContext = plan.getInputContext();
+
+    for (ScanNode scan : srcContext.getScanNodes()) {
       descs.put(scan.getCanonicalName(), scan.getTableDesc());
     }
 
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();
-      this.partitionType = context.getDataChannel().getPartitionType();
-
-      if (partitionType == PartitionType.RANGE_PARTITION) {
-        SortNode sortNode = (SortNode) PlannerUtil.findTopNode(plan, NodeType.SORT);
-        this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
-        this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
+      for (DataChannel outChannel : request.getOutgoingChannels()) {
+        TaskContext taskContext = new TaskContext();
+        taskContext.partitionType = outChannel.getPartitionType();
+        if (taskContext.partitionType == PartitionType.RANGE_PARTITION) {
+          SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
+          Preconditions.checkArgument(sortNode != null);
+          taskContext.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
+          taskContext.sortComp = new TupleComparator(taskContext.finalSchema, sortNode.getSortKeys());
+        }
+        taskContexts.add(taskContext);
       }
     } else {
       // The final result of a task will be written in a file named part-ss-nnnnnnn,
@@ -179,8 +194,12 @@ public class Task {
     context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
     LOG.info("* Subquery " + request.getId() + " is initialized");
-    LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.partitionType  + " partitioning":""));
+    LOG.info("* InterQuery: " + interQuery);
+    if (interQuery) {
+      for (TaskContext taskContext : taskContexts) {
+        LOG.info(", Use " + taskContext.partitionType + " partitioning\":\"");
+      }
+    }
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
@@ -281,7 +300,7 @@ public class Task {
 
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
       try {
-        // context.getWorkDir() 지우기
+        // delete context.getWorkDir()
         localFS.delete(context.getWorkDir(), true);
         synchronized (taskRunnerContext.getTasks()) {
           taskRunnerContext.getTasks().remove(this.getId());

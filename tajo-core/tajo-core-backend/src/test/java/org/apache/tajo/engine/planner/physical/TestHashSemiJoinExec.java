@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -162,8 +163,11 @@ public class TestHashSemiJoinExec {
     System.out.println(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     // replace an equal join with an hash anti join.
     if (exec instanceof MergeJoinExec) {

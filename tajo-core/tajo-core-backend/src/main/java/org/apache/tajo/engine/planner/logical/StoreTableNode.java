@@ -172,7 +172,11 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     .append("\n  \"in schema\": ").append(getInSchema())
     .append("}");
     
-    return sb.toString() + "\n"
+    if (child != null) {
+      return sb.toString() + "\n"
         + getChild().toString();
+    } else {
+      return sb.toString();
+    }
   }
 }

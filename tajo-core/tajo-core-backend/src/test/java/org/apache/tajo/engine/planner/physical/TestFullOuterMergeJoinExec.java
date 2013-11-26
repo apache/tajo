@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -306,11 +307,14 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
+    exec = proj;
     int count = 0;
     exec.init();
 
@@ -341,11 +345,14 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
+    exec = proj;
 
     int count = 0;
     exec.init();
@@ -376,12 +383,14 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
-
+    exec = proj;
 
     int count = 0;
     exec.init();
@@ -412,13 +421,16 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
 
     // if it chose the hash join WITH REVERSED ORDER, convert to merge join exec
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
+    exec = proj;
 
     int count = 0;
     exec.init();
@@ -451,11 +463,14 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
+    exec = proj;
 
     int count = 0;
     exec.init();
@@ -488,11 +503,14 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
+    exec = proj;
 
     int count = 0;
     exec.init();

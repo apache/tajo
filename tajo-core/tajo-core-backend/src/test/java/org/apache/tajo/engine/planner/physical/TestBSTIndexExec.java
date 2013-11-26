@@ -23,9 +23,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -38,11 +35,15 @@ import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -168,7 +169,10 @@ public class TestBSTIndexExec {
     LogicalNode rootNode = optimizer.optimize(plan);
 
     TmpPlanner phyPlanner = new TmpPlanner(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     int tupleCount = this.randomValues.get(rndKey);
     int counter = 0;

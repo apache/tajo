@@ -356,7 +356,7 @@ public class QueryMasterTask extends CompositeService {
 
       // Create a subdirectories
       defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
-      LOG.info("The staging dir '" + outputDir + "' is created.");
+      LOG.info("The staging dir '" + stagingDir + "' is created.");
       queryContext.setStagingDir(stagingDir);
 
       /////////////////////////////////////////////////

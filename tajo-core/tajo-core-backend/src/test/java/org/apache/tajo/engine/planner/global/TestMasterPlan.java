@@ -31,9 +31,9 @@ public class TestMasterPlan {
   public void testConnect() {
     MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
 
-    ExecutionBlock eb1 = masterPlan.newExecutionBlock();
-    ExecutionBlock eb2 = masterPlan.newExecutionBlock();
-    ExecutionBlock eb3 = masterPlan.newExecutionBlock();
+    ExecutionBlock eb1 = masterPlan.newExecutionBlockForTest();
+    ExecutionBlock eb2 = masterPlan.newExecutionBlockForTest();
+    ExecutionBlock eb3 = masterPlan.newExecutionBlockForTest();
 
     masterPlan.addConnect(eb1, eb2, TajoWorkerProtocol.PartitionType.LIST_PARTITION);
     assertTrue(masterPlan.isConnected(eb1.getId(), eb2.getId()));

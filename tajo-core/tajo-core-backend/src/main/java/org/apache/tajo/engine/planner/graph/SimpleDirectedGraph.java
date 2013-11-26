@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.graph;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.util.TUtil;
 
@@ -33,9 +34,9 @@ import java.util.*;
  */
 public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   /** map: child -> parent */
-  protected Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
+  @Expose protected Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
   /** map: parent -> child */
-  protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
+  @Expose protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
 
   @Override
   public int getVertexSize() {
@@ -157,15 +158,6 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public @Nullable V getParent(V v) {
-    if (directedEdges.containsKey(v)) {
-      return directedEdges.get(v).keySet().iterator().next();
-    } else {
-      return null;
-    }
-  }
-
-  @Override
   public boolean isRoot(V v) {
     return !directedEdges.containsKey(v);
   }
@@ -173,6 +165,31 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   @Override
   public boolean isLeaf(V v) {
     return !reversedEdges.containsKey(v);
+  }
+
+  @Override
+  public int getParentCount(V v) {
+    if (directedEdges.containsKey(v)) {
+      return directedEdges.get(v).size();
+    } else {
+      return -1;
+    }
+  }
+
+  @Override
+  public V getParent(V v, int idx) {
+    return getParents(v).get(idx);
+  }
+
+  @Override
+  public List<V> getParents(V v) {
+    List<V> parentBlocks = new ArrayList<V>();
+    if (directedEdges.containsKey(v)) {
+      for (Map.Entry<V, E> entry: directedEdges.get(v).entrySet()) {
+        parentBlocks.add(entry.getKey());
+      }
+    }
+    return parentBlocks;
   }
 
   @Override

@@ -212,6 +212,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
   }
 
+  @Override
+  public int hashCode() {
+    return getProto().hashCode();
+  }
+
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Schema) {

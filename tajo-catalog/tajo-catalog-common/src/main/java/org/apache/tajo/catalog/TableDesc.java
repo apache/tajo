@@ -158,4 +158,9 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
     }
     return builder.build();
   }
+
+  @Override
+  public int hashCode() {
+    return getProto().hashCode();
+  }
 }

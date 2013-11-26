@@ -23,13 +23,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -43,6 +43,8 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
   private TupleComparator comp;
   private FileAppender appender;
   private TableMeta meta;
+
+  private Tuple prevKeyTuple;
 
   public IndexedStoreExec(final TaskAttemptContext context, final AbstractStorageManager sm,
       final PhysicalExec child, final Schema inSchema, final Schema outSchema,
@@ -79,17 +81,17 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     this.indexWriter.setLoadNum(100);
     this.indexWriter.open();
+    this.prevKeyTuple = null;
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    Tuple prevKeyTuple = null;
     long offset;
 
-
-    while((tuple = child.next()) != null) {
+    tuple = child.next();
+    if (tuple != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.getColumnNum());
@@ -100,7 +102,7 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
       }
     }
 
-    return null;
+    return tuple;
   }
 
   @Override

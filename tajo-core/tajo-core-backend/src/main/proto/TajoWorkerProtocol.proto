@@ -60,8 +60,9 @@ message QueryUnitRequestProto {
     repeated Fetch fetches = 7;
     optional bool shouldDie = 8;
     optional KeyValueSetProto queryContext = 9;
-    optional DataChannelProto dataChannel = 10;
-    optional EnforcerProto enforcer = 11;
+    repeated DataChannelProto incomingChannels = 10;
+    repeated DataChannelProto outgoingChannels = 11;
+    optional EnforcerProto enforcer = 12;
 }
 
 message Fetch {
@@ -143,6 +144,9 @@ message DataChannelProto {
   optional int32 partitionNum = 9 [default = 1];
 
   optional StoreType storeType = 10 [default = CSV];
+
+  optional int32 srcPID = 11;
+  optional int32 targetPID = 12;
 }
 
 message RunExecutionBlockRequestProto {

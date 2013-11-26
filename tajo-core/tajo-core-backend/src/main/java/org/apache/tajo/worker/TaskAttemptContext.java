@@ -61,7 +61,8 @@ public class TaskAttemptContext {
   private boolean stopped = false;
   private boolean interQuery = false;
   private Path outputPath;
-  private DataChannel dataChannel;
+  private List<DataChannel> incomingChannels;
+  private List<DataChannel> outgoingChannels;
   private Enforcer enforcer;
 
   public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
@@ -105,12 +106,20 @@ public class TaskAttemptContext {
     LOG.info("Query status of " + getTaskId() + " is changed to " + state);
   }
 
-  public void setDataChannel(DataChannel dataChannel) {
-    this.dataChannel = dataChannel;
+  public void setOutgoingChannels(List<DataChannel> outgoingChannels) {
+    this.outgoingChannels = outgoingChannels;
   }
 
-  public DataChannel getDataChannel() {
-    return dataChannel;
+  public void setIncomingChannels(List<DataChannel> incomingChannels) {
+    this.incomingChannels = incomingChannels;
+  }
+
+  public List<DataChannel> getOutgoingChannels() {
+    return outgoingChannels;
+  }
+
+  public List<DataChannel> getIncomingChannels() {
+    return incomingChannels;
   }
 
   public void setEnforcer(Enforcer enforcer) {

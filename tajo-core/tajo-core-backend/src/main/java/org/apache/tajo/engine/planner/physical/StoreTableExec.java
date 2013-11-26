@@ -81,11 +81,11 @@ public class StoreTableExec extends UnaryPhysicalExec {
    */
   @Override
   public Tuple next() throws IOException {
-    while((tuple = child.next()) != null) {
+    tuple = child.next();
+    if (tuple != null) {
       appender.addTuple(tuple);
     }
-        
-    return null;
+    return tuple;
   }
 
   @Override

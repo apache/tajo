@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
@@ -122,11 +123,13 @@ public class LogicalPlan {
   }
 
   public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
+    Preconditions.checkState(queryBlockGraph.getParentCount(srcBlock.getName()) <= 0,
+        "There should be only one parent block.");
     queryBlockGraph.addEdge(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
   }
 
   public QueryBlock getParentBlock(QueryBlock block) {
-    return queryBlocks.get(queryBlockGraph.getParent(block.getName()));
+    return queryBlocks.get(queryBlockGraph.getParent(block.getName(), 0));
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {
