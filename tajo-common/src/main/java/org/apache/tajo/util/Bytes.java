@@ -26,10 +26,7 @@ import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 import sun.misc.Unsafe;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -1413,19 +1410,19 @@ public class Bytes {
   }
 
   public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int[] target) {
-    return splitWorker(str, 0, separatorChar, true, target);
+    return splitWorker(str, 0, -1, separatorChar, true, target);
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar, int[] target) {
-    return splitWorker(str, length, separatorChar, true, target);
+  public static byte[][] splitPreserveAllTokens(byte[] str, int offset, int length, char separatorChar, int[] target) {
+    return splitWorker(str, offset, length, separatorChar, true, target);
   }
 
   public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar) {
-    return splitWorker(str, 0, separatorChar, true, null);
+    return splitWorker(str, 0, -1, separatorChar, true, null);
   }
 
   public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar) {
-    return splitWorker(str, length, separatorChar, true, null);
+    return splitWorker(str, 0, length, separatorChar, true, null);
   }
 
   /**
@@ -1442,20 +1439,19 @@ public class Bytes {
    * separators are treated as one separator.
    * @return an array of parsed Strings, <code>null</code> if null String input
    */
-  private static byte[][] splitWorker(byte[] str, int length, char separatorChar, boolean preserveAllTokens, int[] target) {
+  private static byte[][] splitWorker(byte[] str, int offset, int length, char separatorChar, boolean preserveAllTokens, int[] target) {
     // Performance tuned for 2.0 (JDK1.4)
 
     if (str == null) {
       return null;
     }
     int len = length;
-    if(len < 1){
-      len = str.length;
-    }
-
     if (len == 0) {
       return new byte[1][0];
+    }else if(len < 0){
+      len = str.length - offset;
     }
+
     List list = new ArrayList();
     int i = 0, start = 0;
     boolean match = false;
@@ -1463,15 +1459,15 @@ public class Bytes {
     int currentTarget = 0;
     int currentIndex = 0;
     while (i < len) {
-      if (str[i] == separatorChar) {
+      if (str[i + offset] == separatorChar) {
         if (match || preserveAllTokens) {
           if (target == null) {
             byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start, bytes, 0, bytes.length);
+            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
             list.add(bytes);
           } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
             byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start, bytes, 0, bytes.length);
+            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
             list.add(bytes);
             currentTarget++;
           } else {
@@ -1491,11 +1487,11 @@ public class Bytes {
     if (match || (preserveAllTokens && lastMatch)) {
       if (target == null) {
         byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start, bytes, 0, bytes.length);
+        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
         list.add(bytes);
       } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
         byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start, bytes, 0, bytes.length);
+        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
         list.add(bytes); //str.substring(start, i));
         currentTarget++;
       } else {
@@ -1767,4 +1763,16 @@ public class Bytes {
     return toString(b, 0, n);
   }
 
+  public static int readFully(InputStream is, byte[] buffer, int offset, int length)
+      throws IOException {
+    int nread = 0;
+    while (nread < length) {
+      int nbytes = is.read(buffer, offset + nread, length - nread);
+      if (nbytes < 0) {
+        return nread > 0 ? nread : nbytes;
+      }
+      nread += nbytes;
+    }
+    return nread;
+  }
 }

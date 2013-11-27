@@ -37,8 +37,7 @@ public class TextSerializeDeserialize implements SerializeDeserialize {
 
 
   @Override
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters)
-      throws IOException {
+  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException {
 
     byte[] bytes;
     int length = 0;
@@ -178,6 +177,7 @@ public class TextSerializeDeserialize implements SerializeDeserialize {
       }
       default:
         datum = NullDatum.get();
+        break;
     }
     return datum;
   }

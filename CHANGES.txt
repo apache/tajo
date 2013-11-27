@@ -46,6 +46,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-332: Invalid row count of CSVScanner. (jinho)
+
     TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid values. (jihoon)
 
     TAJO-296: Late registration of Tajo workers. (hyoungjunkim via hyunsik)
