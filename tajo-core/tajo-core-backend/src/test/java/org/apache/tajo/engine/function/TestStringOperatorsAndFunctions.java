@@ -178,4 +178,16 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "ABC,DEF,3.14", "select character_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
+
+  @Test
+  public void testLength() throws IOException {
+    testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABC,DEF,3.14", "select length(lower(col1) || lower(col2)) from table1",
+        new String[]{"6"});
+  }
 }
