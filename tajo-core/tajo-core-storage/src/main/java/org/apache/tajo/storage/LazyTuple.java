@@ -18,14 +18,9 @@
 
 package org.apache.tajo.storage;
 
-import com.google.protobuf.Message;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
-import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -37,6 +32,7 @@ public class LazyTuple implements Tuple {
   private byte[][] textBytes;
   private Schema schema;
   private byte[] nullBytes;
+  private static TextSerializeDeserialize serializeDeserialize = new TextSerializeDeserialize();
 
   public LazyTuple(Schema schema, byte[][] textBytes, long offset) {
     this(schema, textBytes, offset, NullDatum.get().asTextBytes());
@@ -123,7 +119,12 @@ public class LazyTuple implements Tuple {
     else if (textBytes.length <= fieldId) {
       values[fieldId] = NullDatum.get();  // split error. (col : 3, separator: ',', row text: "a,")
     } else if (textBytes[fieldId] != null) {
-      values[fieldId] = createByTextBytes(schema.getColumn(fieldId).getDataType(), textBytes[fieldId]);
+      try {
+        values[fieldId] = serializeDeserialize.deserialize(schema.getColumn(fieldId),
+            textBytes[fieldId], 0, textBytes[fieldId].length, nullBytes);
+      } catch (IOException e) {
+        values[fieldId] = NullDatum.get();
+      }
       textBytes[fieldId] = null;
     } else {
       //non-projection
@@ -284,68 +285,5 @@ public class LazyTuple implements Tuple {
       return Arrays.equals(toArray(), other.values);
     }
     return false;
-  }
-
-
-  public  boolean isNull(byte[] val){
-    return val == null || val.length == 0 || ((val.length == nullBytes.length) && Bytes.equals(val, nullBytes));
-  }
-
-  public  boolean isNullText(byte[] val){
-    return val == null || (val.length > 0 && val.length == nullBytes.length && Bytes.equals(val, nullBytes));
-  }
-
-  public boolean isNotNull(byte[] val){
-    return !isNull(val);
-  }
-
-  public boolean isNotNullText(byte[] val){
-    return !isNullText((val));
-  }
-
-  private  Datum createByTextBytes(TajoDataTypes.DataType type, byte [] val) {
-    switch (type.getType()) {
-      case BOOLEAN:
-        return isNotNull(val) ? DatumFactory.createBool(val[0] == 't' || val[0] == 'T') : NullDatum.get();
-      case INT2:
-        return isNotNull(val) ? DatumFactory.createInt2(new String(val)) : NullDatum.get();
-      case INT4:
-        return isNotNull(val) ? DatumFactory.createInt4(new String(val)) : NullDatum.get();
-      case INT8:
-        return isNotNull(val) ? DatumFactory.createInt8(new String(val)) : NullDatum.get();
-      case FLOAT4:
-        return isNotNull(val) ? DatumFactory.createFloat4(new String(val)) : NullDatum.get();
-      case FLOAT8:
-        return isNotNull(val) ? DatumFactory.createFloat8(new String(val)) : NullDatum.get();
-      case CHAR:
-        return isNotNullText(val) ? DatumFactory.createChar(new String(val).trim()) : NullDatum.get();
-      case TEXT:
-        return isNotNullText(val) ? DatumFactory.createText(val) : NullDatum.get();
-      case BIT:
-        return DatumFactory.createBit(Byte.parseByte(new String(val)));
-      case BLOB:
-        return DatumFactory.createBlob(Base64.decodeBase64(val));
-      case INET4:
-        return isNotNull(val) ? DatumFactory.createInet4(new String(val)) : NullDatum.get();
-      case PROTOBUF: {
-        if (isNotNull(val)) {
-          ProtobufDatumFactory factory = ProtobufDatumFactory.get(type);
-          Message.Builder builder = factory.newBuilder();
-          try {
-            ProtobufJsonFormat.getInstance().merge(val, builder);
-            return factory.createDatum(builder.build());
-          } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-          }
-        } else {
-          return NullDatum.get();
-        }
-      }
-      case NULL:
-        return NullDatum.get();
-      default:
-        throw new UnsupportedOperationException(type.toString());
-    }
   }
 }

@@ -228,6 +228,6 @@ public class TestCompressionStorages {
       tupleCnt++;
     }
     scanner.close();
-    assertEquals(tupleCnt, tupleNum);
+    assertEquals(tupleNum, tupleCnt);
   }
 }

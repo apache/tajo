@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-308: Implement length(string) function. (hyoungjunkim via hyunsik)
+
     TAJO-200: RCFile compatible to apache hive. (jinho)
 
     TAJO-176: Implement Tajo JDBC Driver. (Keuntae Park via jihoon)
@@ -45,6 +47,8 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-332: Invalid row count of CSVScanner. (jinho)
 
     TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid values. (jihoon)
 
