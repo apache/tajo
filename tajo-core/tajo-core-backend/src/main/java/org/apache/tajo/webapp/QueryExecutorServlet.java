@@ -6,6 +6,7 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -114,6 +115,11 @@ public class QueryExecutorServlet extends HttpServlet {
           }
         }
         QueryRunner queryRunner = new QueryRunner(queryRunnerId, query);
+        try {
+          queryRunner.sizeLimit = Integer.parseInt(request.getParameter("limitSize"));
+        } catch (java.lang.NumberFormatException nfe) {
+          queryRunner.sizeLimit = 1048576;
+        }
         synchronized(queryRunners) {
           queryRunners.put(queryRunnerId, queryRunner);
         }
@@ -150,6 +156,8 @@ public class QueryExecutorServlet extends HttpServlet {
             errorResponse(response, queryRunner.error);
             return;
           }
+          returnValue.put("numOfRows", queryRunner.numOfRows);
+          returnValue.put("resultSize", queryRunner.resultSize);
           returnValue.put("resultData", queryRunner.queryResult);
           returnValue.put("resultColumns", queryRunner.columnNames);
           returnValue.put("runningTime", JSPUtil.getElapsedTime(queryRunner.startTime, queryRunner.finishTime));
@@ -217,6 +225,9 @@ public class QueryExecutorServlet extends HttpServlet {
     AtomicBoolean stop = new AtomicBoolean(false);
     QueryId queryId;
     String query;
+    long resultSize;
+    int sizeLimit;
+    long numOfRows;
     Exception error;
 
     AtomicInteger progress = new AtomicInteger(0);
@@ -311,6 +322,7 @@ public class QueryExecutorServlet extends HttpServlet {
               try {
                 ResultSetMetaData rsmd = res.getMetaData();
                 TableDesc desc = tajoClient.getResultDesc(tajoQueryId);
+                resultSize = desc.getStats().getNumBytes();
                 LOG.info("Tajo Query Result: " + desc.getPath() + "\n");
 
                 int numOfColumns = rsmd.getColumnCount();
@@ -319,10 +331,15 @@ public class QueryExecutorServlet extends HttpServlet {
                 }
                 queryResult = new ArrayList<List<Object>>();
 
+                if(sizeLimit < resultSize) {
+                    numOfRows = (long)((float)(desc.getStats().getNumRows()) * ((float)sizeLimit / (float)resultSize));
+                } else {
+                    numOfRows = desc.getStats().getNumRows();
+                }
                 int rowCount = 0;
                 boolean hasMoreData = false;
                 while (res.next()) {
-                  if(rowCount > 1000) {
+                  if(rowCount > numOfRows) {
                     hasMoreData = true;
                     break;
                   }
