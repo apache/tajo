@@ -106,7 +106,7 @@ public class TextDatum extends Datum {
       case BLOB:
         return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());
 
-      case NULL:
+      case NULL_TYPE:
         return -1;
       default:
         throw new InvalidOperationException();
@@ -131,7 +131,7 @@ public class TextDatum extends Datum {
       case BLOB:
         return DatumFactory.createBool(UnsignedBytes.lexicographicalComparator()
             .compare(bytes, datum.asByteArray()) == 0);
-      case NULL:
+      case NULL_TYPE:
         return DatumFactory.createBool(false);
       default:
         throw new InvalidOperationException();

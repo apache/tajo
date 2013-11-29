@@ -111,7 +111,7 @@ public class TrevniAppender extends FileAppender {
         return ValueType.BYTES;
       case PROTOBUF:
         return ValueType.BYTES;
-      case NULL:
+      case NULL_TYPE:
         return ValueType.NULL;
       default:
         return null;
@@ -135,7 +135,7 @@ public class TrevniAppender extends FileAppender {
       if (!t.isNull(i)) {
         col = schema.getColumn(i);
         switch (col.getDataType().getType()) {
-          case NULL:
+          case NULL_TYPE:
             break;
           case BOOLEAN:
           case BIT:

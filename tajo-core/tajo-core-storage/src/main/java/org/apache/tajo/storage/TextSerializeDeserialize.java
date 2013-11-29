@@ -92,7 +92,7 @@ public class TextSerializeDeserialize implements SerializeDeserialize {
         length = protoBytes.length;
         out.write(protoBytes, 0, protoBytes.length);
         break;
-      case NULL:
+      case NULL_TYPE:
       default:
         break;
     }

@@ -201,7 +201,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL);
+    schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     Options options = new Options();
@@ -263,7 +263,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL);
+    schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     Options options = new Options();
@@ -326,7 +326,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL);
+    schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     Options options = new Options();

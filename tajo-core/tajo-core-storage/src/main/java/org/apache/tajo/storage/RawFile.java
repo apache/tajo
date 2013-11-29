@@ -231,7 +231,7 @@ public class RawFile {
             tuple.put(i, DatumFactory.createInet4(ipv4Bytes));
             break;
 
-          case NULL:
+          case NULL_TYPE:
             tuple.put(i, NullDatum.get());
             break;
 
@@ -402,7 +402,7 @@ public class RawFile {
         }
 
         switch(columnTypes[i].getType()) {
-          case NULL:
+          case NULL_TYPE:
             nullFlags.set(i);
             continue;
 

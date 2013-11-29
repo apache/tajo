@@ -23,7 +23,7 @@ option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 enum Type {
-  NULL = 0; // NULL type
+  NULL_TYPE = 0; // NULL type
 
   BOOLEAN = 1; // state of true of false [1 byte]
 

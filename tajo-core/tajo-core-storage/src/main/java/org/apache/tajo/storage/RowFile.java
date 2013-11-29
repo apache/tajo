@@ -436,7 +436,7 @@ public class RowFile {
               break;
             case INET6:
               buffer.put(t.getIPv6Bytes(i));
-            case NULL:
+            case NULL_TYPE:
               nullFlags.set(i);
               break;
             default:
