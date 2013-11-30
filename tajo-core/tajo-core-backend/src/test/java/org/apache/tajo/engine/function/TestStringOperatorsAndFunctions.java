@@ -190,4 +190,36 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "ABC,DEF,3.14", "select length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
+
+  @Test
+  public void testSubstr() throws IOException {
+    testSimpleEval("select substr('abcdef', 3, 2) as col1 ", new String[]{"cd"});
+    testSimpleEval("select substr('abcdef', 3) as col1 ", new String[]{"cdef"});
+    testSimpleEval("select substr('abcdef', 1, 1) as col1 ", new String[]{"a"});
+    testSimpleEval("select substr('abcdef', 0, 1) as col1 ", new String[]{""});
+    testSimpleEval("select substr('abcdef', 0, 2) as col1 ", new String[]{"a"});
+    testSimpleEval("select substr('abcdef', 0) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', 1, 100) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', 0, 100) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('일이삼사오', 2, 2) as col1 ", new String[]{"이삼"});
+    testSimpleEval("select substr('일이삼사오', 3) as col1 ", new String[]{"삼사오"});
+
+    //TODO If there is a minus value in function argument, next error occurred.
+    //org.apache.tajo.engine.parser.SQLSyntaxError: ERROR: syntax error at or near 'substr'
+    //LINE 1:7 select substr('abcdef', -1, 100) as col1
+    //               ^^^^^^
+    //at org.apache.tajo.engine.parser.SQLAnalyzer.parse(SQLAnalyzer.java:64)
+
+//    testSimpleEval("select substr('abcdef', -1) as col1 ", new String[]{"abcdef"});
+//    testSimpleEval("select substr('abcdef', -1, 100) as col1 ", new String[]{"abcdef"});
+//    testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
+//    testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
+        new String[]{"bcd"});
+  }
 }
