@@ -222,4 +222,16 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
         new String[]{"bcd"});
   }
+
+  @Test
+  public void testBitLength() throws IOException {
+    testSimpleEval("select bit_length('123456') as col1 ", new String[]{"48"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABC,DEF,3.14", "select bit_length(lower(col1) || lower(col2)) from table1",
+        new String[]{"48"});
+  }
 }

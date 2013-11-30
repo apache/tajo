@@ -352,7 +352,10 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("character_length", CharLength.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
+    sqlFuncs.add(
+        new FunctionDesc("bit_length", BitLength.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
     sqlFuncs.add(
         new FunctionDesc("split_part", SplitPart.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
