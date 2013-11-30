@@ -4,6 +4,10 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-207: Implement bit_length(string) function. (DaeMyung Kang via jihoon)
+
+    TAJO-341: Implement substr function. (hyoungjunkim via hyunsik)
+
     TAJO-308: Implement length(string) function. (hyoungjunkim via hyunsik)
 
     TAJO-200: RCFile compatible to apache hive. (jinho)
@@ -47,6 +51,10 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-345: MergeScanner should support projectable storages. (jihoon)
+
+    TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via jinho)
 
     TAJO-332: Invalid row count of CSVScanner. (jinho)
 

@@ -136,7 +136,7 @@ public class Int8Datum extends Datum implements NumericDatum {
         return DatumFactory.createBool(val == datum.asFloat4());
       case FLOAT8:
         return DatumFactory.createBool(val == datum.asFloat8());
-      case NULL:
+      case NULL_TYPE:
         return DatumFactory.createBool(false);
       default:
         throw new InvalidOperationException();
@@ -196,7 +196,7 @@ public class Int8Datum extends Datum implements NumericDatum {
           return 0;
         }
       }
-      case NULL:
+      case NULL_TYPE:
         return -1;
       default:
         throw new InvalidOperationException();
@@ -216,7 +216,7 @@ public class Int8Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val + datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
-    case NULL:
+    case NULL_TYPE:
       return datum;
     default:
       throw new InvalidOperationException(datum.type());
@@ -236,7 +236,7 @@ public class Int8Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val - datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
-    case NULL:
+    case NULL_TYPE:
       return datum;
     default:
       throw new InvalidOperationException(datum.type());
@@ -256,7 +256,7 @@ public class Int8Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val * datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val * datum.asFloat8());
-    case NULL:
+    case NULL_TYPE:
       return datum;
     default:
       throw new InvalidOperationException(datum.type());
@@ -276,7 +276,7 @@ public class Int8Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val / datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val / datum.asFloat8());
-    case NULL:
+    case NULL_TYPE:
       return datum;
     default:
       throw new InvalidOperationException(datum.type());
@@ -296,7 +296,7 @@ public class Int8Datum extends Datum implements NumericDatum {
         return DatumFactory.createFloat8(val % datum.asFloat4());
       case FLOAT8:
         return DatumFactory.createFloat8(val % datum.asFloat8());
-      case NULL:
+      case NULL_TYPE:
         return datum;
       default:
         throw new InvalidOperationException(datum.type());

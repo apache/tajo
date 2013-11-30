@@ -54,7 +54,7 @@ public class DatumFactory {
         return Inet4Datum.class;
       case ANY:
         return NullDatum.class;
-      case NULL:
+      case NULL_TYPE:
         return NullDatum.class;
       default:
         throw new UnsupportedOperationException(type.name());

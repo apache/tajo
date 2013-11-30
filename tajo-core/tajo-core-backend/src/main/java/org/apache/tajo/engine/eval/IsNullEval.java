@@ -20,14 +20,12 @@ package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
 public class IsNullEval extends BinaryEval {
@@ -65,7 +63,7 @@ public class IsNullEval extends BinaryEval {
     IsNullEvalCtx isNullCtx = (IsNullEvalCtx) ctx;
     leftExpr.eval(isNullCtx.predicandContext, schema, tuple);
     Datum result = leftExpr.terminate(((IsNullEvalCtx)ctx).predicandContext);
-    ((IsNullEvalCtx) ctx).result = DatumFactory.createBool(isNot ^ (result.type() == TajoDataTypes.Type.NULL));
+    ((IsNullEvalCtx) ctx).result = DatumFactory.createBool(isNot ^ (result.type() == TajoDataTypes.Type.NULL_TYPE));
   }
 
   @Override

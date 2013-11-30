@@ -199,7 +199,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL);
+    schema.addColumn("col12", Type.NULL_TYPE);
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);

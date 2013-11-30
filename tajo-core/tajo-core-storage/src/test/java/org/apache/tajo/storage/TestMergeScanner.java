@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestMergeScanner {
@@ -76,6 +76,7 @@ public class TestMergeScanner {
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
+    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni");
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
@@ -140,15 +141,39 @@ public class TestMergeScanner {
     FileFragment[] fragment = new FileFragment[2];
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
-    
-    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.<FileFragment>newList(fragment));
+
+    Schema targetSchema = new Schema();
+    targetSchema.addColumn(schema.getColumn(0));
+    targetSchema.addColumn(schema.getColumn(2));
+
+    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.<FileFragment>newList(fragment), targetSchema);
+    assertEquals(isProjectableStorage(meta.getStoreType()), scanner.isProjectable());
+
     scanner.init();
     int totalCounts = 0;
-    while (scanner.next() != null) {
+    Tuple tuple;
+    while ((tuple=scanner.next()) != null) {
       totalCounts++;
+      if (isProjectableStorage(meta.getStoreType())) {
+        assertNotNull(tuple.get(0));
+        assertNull(tuple.get(1));
+        assertNotNull(tuple.get(2));
+        assertNull(tuple.get(3));
+      }
     }
     scanner.close();
     
     assertEquals(tupleNum * 2, totalCounts);
 	}
+
+  private static boolean isProjectableStorage(StoreType type) {
+    switch (type) {
+      case RCFILE:
+      case TREVNI:
+      case CSV:
+        return true;
+      default:
+        return false;
+    }
+  }
 }

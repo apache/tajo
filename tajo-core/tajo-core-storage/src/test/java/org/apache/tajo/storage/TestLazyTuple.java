@@ -52,7 +52,7 @@ public class TestLazyTuple {
     schema.addColumn("col10", TajoDataTypes.Type.BLOB);
     schema.addColumn("col11", TajoDataTypes.Type.INET4);
     schema.addColumn("col12", TajoDataTypes.Type.INT4);
-    schema.addColumn("col13", TajoDataTypes.Type.NULL);
+    schema.addColumn("col13", TajoDataTypes.Type.NULL_TYPE);
 
     StringBuilder sb = new StringBuilder();
     sb.append(DatumFactory.createBool(true)).append('|');

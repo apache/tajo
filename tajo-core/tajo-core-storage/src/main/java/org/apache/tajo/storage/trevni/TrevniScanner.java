@@ -152,7 +152,7 @@ public class TrevniScanner extends FileScanner {
               new BlobDatum(((ByteBuffer) columns[i].nextValue())));
           break;
 
-        case NULL:
+        case NULL_TYPE:
           tuple.put(tid, NullDatum.get());
           break;
 

@@ -86,7 +86,7 @@ public class BinarySerializeDeserialize implements SerializeDeserialize {
         length = bytes.length;
         out.write(bytes, 0, length);
         break;
-      case NULL:
+      case NULL_TYPE:
       default:
         break;
     }

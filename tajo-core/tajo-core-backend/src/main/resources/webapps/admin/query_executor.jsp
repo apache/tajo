@@ -18,7 +18,6 @@
   */
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.master.*" %>
@@ -35,7 +34,6 @@
 <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Tajo</title>
-
 <style type="text/css">
   #progress_bar {
     border:1px solid #000000;
@@ -45,13 +43,16 @@
     border-radius: 16px;
   }
   #progress_status {background:#fbcb46; width:0%; height:16px; border-radius: 10px; }
-
 </style>
 <script src="/static/js/jquery.js" type="text/javascript"></script>
 <script type="text/javascript">
 var progressInterval = 1000;
 var progressTimer = null;
 var queryRunnerId = null;
+var PRINT_LIMIT = 25;
+var SIZE_LIMIT = 104857600; // Limit size of displayed results.(Bytes)
+var pageNum = 0;
+var pageCount, storedColumns, storedData;
 
 $(document).ready(function() {
   $('#btnSubmit').click(function() {
@@ -66,7 +67,16 @@ function init() {
   $("#queryResult").html("");
   queryRunnerId = null;
 }
+
 function runQuery() {
+  if(Math.ceil(Number($("#sizeLimit").val())) >= 2048) {
+    SIZE_LIMIT = 2048 * 1024 * 1024 - 1;
+  } else if(Math.ceil(Number($("#sizeLimit").val())) > 0) {
+    SIZE_LIMIT = Number($("#sizeLimit").val()) * 1024 * 1024;
+  }
+  if(Math.ceil(Number($("#printLimit").val())) > 0) {
+    PRINT_LIMIT = Number($("#printLimit").val());
+  }
   if(progressTimer != null) {
     alert("Already query running.");
     return;
@@ -77,7 +87,7 @@ function runQuery() {
   $.ajax({
     type: "POST",
     url: "query_exec",
-    data: { action: "runQuery", query: query}
+    data: { action: "runQuery", query: query, limitSize:SIZE_LIMIT }
   })
   .done(function(msg) {
     var resultJson = $.parseJSON(msg);
@@ -139,17 +149,21 @@ function getResult() {
     data: { action: "getQueryResult", queryRunnerId: queryRunnerId }
   })
   .done(function(msg) {
+    var printedLine = 0;
     var resultJson = $.parseJSON(msg);
     if(resultJson.success == "false") {
       alert(resultJson.errorMessage);
       $("#queryStatus").html(getQueryStatusHtml(resultJson));
       return;
     }
-    console.log(resultJson);
     $("#queryResult").html("");
     var resultColumns = resultJson.resultColumns;
     var resultData = resultJson.resultData;
-
+	
+    storedColumns = resultColumns;
+    storedData = resultData; 
+    pageCount = Math.ceil((storedData.length / PRINT_LIMIT)) - 1 ;
+	
     var resultTable = "<table width='100%' class='border_table'><tr>";
     for(var i = 0; i < resultColumns.length; i++) {
       resultTable += "<th>" + resultColumns[i] + "</th>";
@@ -160,11 +174,102 @@ function getResult() {
       for(var j = 0; j < resultData[i].length; j++) {
         resultTable += "<td>" + resultData[i][j] + "</td>";
       }
-      resultTable += "</tr>";
+      resultTable += "</tr>";	  
+      if(++printedLine >= PRINT_LIMIT) break;
     }
     resultTable += "</table>";
     $("#queryResult").html(resultTable);
-  });
+    $("#queryResultTools").html("");
+    $("#queryResultTools").append("<input type='button' value='Download to CSV' onclick='getCSV();'/> ");
+    $("#queryResultTools").append("<input type='button' value='Prev' onclick='getPrev();'/> ");
+    $("#queryResultTools").append("<input type='button' value='Next' onclick='getNext();'/> ");
+    var selectPage = "<select id='selectPage'>";
+    for(var i = 0; i <= pageCount; i++) {
+      selectPage += "<option value="+i+">"+(i+1)+"</option>";
+    }
+    selectPage += "</select>";
+    $("#queryResultTools").append(selectPage);
+    $("#selectPage").change(getSelectedPage);
+  })
+}
+
+function getCSV() {
+  var csvData = "";
+  var rowCount = storedData.length;
+  var colCount = storedColumns.length;
+  for(var colIndex = 0; colIndex < colCount; colIndex++) {
+    if(colIndex == 0) {
+      csvData += storedColumns[colIndex];  
+    } else {
+      csvData += "," + storedColumns[colIndex];
+    }
+  }
+  csvData += "\n";
+  for(var rowIndex=0; rowIndex < rowCount; rowIndex++) {
+    for(var colIndex = 0; colIndex < colCount; colIndex++){
+      if(colIndex == 0) {
+        csvData += storedData[rowIndex][colIndex];
+      } else {
+        csvData += "," + storedData[rowIndex][colIndex];
+      }
+    }   
+    csvData += "\n";
+  }
+  $("#csvData").val(csvData);
+  $("#dataForm").submit();  
+}
+
+function getNext() {
+	var printedLine = 0;	
+	if(pageCount > pageNum) {
+		pageNum++;
+		document.getElementById("selectPage").options.selectedIndex = pageNum;
+	}else {
+		alert("There's no next page.");
+		return;
+	}
+	getPage();
+}
+
+function getPrev() {
+	if(pageNum > 0  ) {
+		pageNum--;
+		document.getElementById("selectPage").options.selectedIndex = pageNum;
+	} else {
+		alert("There's no previous page.");
+		return;
+	}
+	getPage();
+}
+
+function getSelectedPage() {
+  if(pageNum >= 0 &&  pageNum <= pageCount ) {
+    pageNum = $("#selectPage option:selected").val();
+  } else {
+    alert("Out of range.");
+    return;
+  }
+  getPage();
+}
+
+function getPage() {
+  var printedLine = 0;
+  $("#queryResult").html("");
+  var resultTable = "<table width='100%' class='border_table'><tr>";
+  for(var i = 0; i < storedColumns.length; i++) {
+    resultTable += "<th>" + storedColumns[i] + "</th>";
+  }
+  resultTable += "</tr>";
+  for(var i = pageNum * PRINT_LIMIT; i < storedData.length; i++) {
+    resultTable += "<tr>";
+    for(var j = 0; j < storedData[i].length; j++) {
+      resultTable += "<td>" + storedData[i][j] + "</td>";
+    }
+    resultTable += "</tr>";
+    if(++printedLine >= PRINT_LIMIT) break;
+  }
+  resultTable += "</table>";
+  $("#queryResult").html(resultTable);
 }
 
 </script>
@@ -177,7 +282,11 @@ function getResult() {
   <hr/>
   <h3>Query</h3>
   <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
-  <p/>
+  <p />
+  Limit : <input id="sizeLimit" type="text" value="10" style="width:30px; text-align:center;" /> MB
+  <p />
+  Rows/Page : <input id="printLimit" type="text" value="25" style="width:30px; text-align:center;" />
+  <hr />
   <input id="btnSubmit" type="submit" value="Submit">
   <hr/>
   <div>
@@ -197,6 +306,10 @@ function getResult() {
   <hr/>
   <h3>Query Result</h3>
   <div id="queryResult"></div>
+  <hr/>
+  <div id="queryResultTools"></div>
+  <hr/>
+  <div style="dispaly:none;"><form name="dataForm" id="dataForm" method="post" action="getCSV.jsp"><input type="hidden" id="csvData" name="csvData" value="" /></div>
 </div>
 </body>
 </html>

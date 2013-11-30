@@ -139,7 +139,7 @@ public class CharDatum extends Datum {
       case CHAR:
         return DatumFactory.createBool(this.equals(datum));
 
-      case NULL:
+      case NULL_TYPE:
         return DatumFactory.createBool(false);
 
       default:
@@ -154,7 +154,7 @@ public class CharDatum extends Datum {
         CharDatum other = (CharDatum) datum;
         return UnsignedBytes.lexicographicalComparator().compare(bytes, other.bytes);
 
-      case NULL:
+      case NULL_TYPE:
         return -1;
 
       default:

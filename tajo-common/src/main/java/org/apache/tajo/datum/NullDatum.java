@@ -28,7 +28,7 @@ public class NullDatum extends Datum {
   }
 
   private NullDatum() {
-    super(Type.NULL);
+    super(Type.NULL_TYPE);
   }
 
   public static NullDatum get() {
