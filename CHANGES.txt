@@ -50,6 +50,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-345: MergeScanner should support projectable storages. (jihoon)
+
     TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via jinho)
 
     TAJO-332: Invalid row count of CSVScanner. (jinho)

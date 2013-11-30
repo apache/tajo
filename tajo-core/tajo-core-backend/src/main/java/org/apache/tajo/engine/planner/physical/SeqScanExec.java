@@ -92,7 +92,7 @@ public class SeqScanExec extends PhysicalExec {
     if (fragments.length > 1) {
       this.scanner = new MergeScanner(context.getConf(), plan.getTableSchema(), plan.getTableDesc().getMeta(),
           FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-              fragments));
+              fragments), projected);
     } else {
       this.scanner = StorageManagerFactory.getStorageManager(
           context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getTableSchema(), fragments[0], projected);

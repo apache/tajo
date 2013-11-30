@@ -23,11 +23,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -43,8 +41,17 @@ public class MergeScanner implements Scanner {
   private FileFragment currentFragment;
   private Scanner currentScanner;
   private Tuple tuple;
+  private boolean projectable = false;
+  private boolean selectable = false;
+  private Schema target;
 
   public MergeScanner(Configuration conf, Schema schema, TableMeta meta, Collection<FileFragment> rawFragmentList)
+      throws IOException {
+    this(conf, schema, meta, rawFragmentList, schema);
+  }
+
+  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, Collection<FileFragment> rawFragmentList,
+                      Schema target)
       throws IOException {
     this.conf = conf;
     this.schema = schema;
@@ -54,7 +61,12 @@ public class MergeScanner implements Scanner {
       fragments.add((FileFragment) f);
     }
 
-    iterator = this.fragments.iterator();
+    this.target = target;
+    this.reset();
+    if (currentScanner != null) {
+      this.projectable = currentScanner.isProjectable();
+      this.selectable = currentScanner.isSelectable();
+    }
   }
 
   @Override
@@ -68,27 +80,33 @@ public class MergeScanner implements Scanner {
 
     if (tuple != null) {
       return tuple;
-    } else if (iterator.hasNext()) {
+    } else {
       if (currentScanner != null) {
         currentScanner.close();
       }
-      currentFragment = iterator.next();
-      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
-          currentFragment);
-      currentScanner.init();
-      return currentScanner.next();
-    } else {
-      return null;
+      currentScanner = getNextScanner();
+      if (currentScanner != null) {
+        tuple = currentScanner.next();
+      }
     }
+    return tuple;
   }
 
   @Override
   public void reset() throws IOException {
-    iterator = fragments.iterator();
+    this.iterator = fragments.iterator();
+    this.currentScanner = getNextScanner();
+  }
+
+  private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
       currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
-          currentFragment);
+          currentFragment, target);
+      currentScanner.init();
+      return currentScanner;
+    } else {
+      return null;
     }
   }
 
@@ -105,16 +123,17 @@ public class MergeScanner implements Scanner {
 
   @Override
   public boolean isProjectable() {
-    return false;
+    return projectable;
   }
 
   @Override
   public void setTarget(Column[] targets) {
+    this.target = new Schema(targets);
   }
 
   @Override
   public boolean isSelectable() {
-    return false;
+    return selectable;
   }
 
   @Override
