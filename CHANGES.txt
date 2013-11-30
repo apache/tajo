@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-207: Implement bit_length(string) function. (DaeMyung Kang via jihoon)
+
     TAJO-341: Implement substr function. (hyoungjunkim via hyunsik)
 
     TAJO-308: Implement length(string) function. (hyoungjunkim via hyunsik)
