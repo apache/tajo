@@ -38,7 +38,7 @@ public class FunctionExpr extends Expr {
     if (type != OpType.Function && type != OpType.CountRowsFunction) {
       throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
     }
-    this.signature = signature;
+    this.signature = signature.toLowerCase();
   }
 
   protected FunctionExpr(OpType type, String signature, Expr [] params) {
@@ -46,7 +46,7 @@ public class FunctionExpr extends Expr {
     if (type != OpType.Function && type != OpType.GeneralSetFunction) {
       throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
     }
-    this.signature = signature;
+    this.signature = signature.toLowerCase();
     setParams(params);
   }
 

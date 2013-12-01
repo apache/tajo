@@ -53,6 +53,14 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testFunctionCallIngoreCases() throws IOException {
+    testSimpleEval("select ltrim(' trim') ", new String[]{"trim"});
+    testSimpleEval("select LTRIM(' trim') ", new String[]{"trim"});
+    testSimpleEval("select lTRim(' trim') ", new String[]{"trim"});
+    testSimpleEval("select ltrIM(' trim') ", new String[]{"trim"});
+  }
+
+  @Test
   public void testLTrim() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);

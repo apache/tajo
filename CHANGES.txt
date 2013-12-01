@@ -52,13 +52,18 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-347: Fix bug when to call function with insensitive function name. 
+    (DaeMyung Kang via hyunsik)
+
     TAJO-345: MergeScanner should support projectable storages. (jihoon)
 
-    TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via jinho)
+    TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via 
+    jinho)
 
     TAJO-332: Invalid row count of CSVScanner. (jinho)
 
-    TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid values. (jihoon)
+    TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid 
+    values. (jihoon)
 
     TAJO-296: Late registration of Tajo workers. (hyoungjunkim via hyunsik)
 
