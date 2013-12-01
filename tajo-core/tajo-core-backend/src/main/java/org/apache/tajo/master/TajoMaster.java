@@ -46,6 +46,9 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
+import org.apache.tajo.engine.function.math.Ceil;
+import org.apache.tajo.engine.function.math.Floor;
+import org.apache.tajo.engine.function.math.Round;
 import org.apache.tajo.engine.function.string.*;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -406,6 +409,34 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("substr", Substr.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.INT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("round", Round.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("round", Round.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("floor", Floor.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("floor", Floor.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("ceil", Ceil.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("ceil", Ceil.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
 
     return sqlFuncs;
   }
