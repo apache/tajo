@@ -26,6 +26,9 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 
 public class ApplicationIdUtils {
+  public static ApplicationAttemptId createApplicationAttemptId(QueryId queryId, int attemptId) {
+    return BuilderUtils.newApplicationAttemptId(queryIdToAppId(queryId), attemptId);
+  }
 
   public static ApplicationAttemptId createApplicationAttemptId(QueryId queryId) {
     return BuilderUtils.newApplicationAttemptId(queryIdToAppId(queryId), 1);

@@ -35,12 +35,12 @@ public class WorkerResource implements Comparable<WorkerResource> {
   private int pullServerPort;
   private int httpPort;
 
-  private int diskSlots;
+  private float diskSlots;
   private int cpuCoreSlots;
-  private int memoryMBSlots;
+  private int memoryMB;
 
-  private int usedDiskSlots;
-  private int usedMemoryMBSlots;
+  private float usedDiskSlots;
+  private int usedMemoryMB;
   private int usedCpuCoreSlots;
 
   private long maxHeap;
@@ -75,28 +75,11 @@ public class WorkerResource implements Comparable<WorkerResource> {
     this.allocatedHost = allocatedHost;
   }
 
-  public void addUsedDiskSlots(int diskSlots) {
-    usedDiskSlots += diskSlots;
-  }
-
-  public void addUsedMemoryMBSlots(int memoryMBSlots) {
-    try {
-      wlock.lock();
-      usedMemoryMBSlots += memoryMBSlots;
-    } finally {
-      wlock.unlock();
-    }
-  }
-
-  public void addUsedCpuCoreSlots(int cpuCoreSlots) {
-    usedCpuCoreSlots += cpuCoreSlots;
-  }
-
-  public int getDiskSlots() {
+  public float getDiskSlots() {
     return diskSlots;
   }
 
-  public void setDiskSlots(int diskSlots) {
+  public void setDiskSlots(float diskSlots) {
     this.diskSlots = diskSlots;
   }
 
@@ -108,36 +91,40 @@ public class WorkerResource implements Comparable<WorkerResource> {
     this.cpuCoreSlots = cpuCoreSlots;
   }
 
-  public int getMemoryMBSlots() {
+  public int getMemoryMB() {
     try {
       rlock.lock();
-      return memoryMBSlots;
+      return memoryMB;
     } finally {
       rlock.unlock();
     }
   }
 
-  public void setMemoryMBSlots(int memoryMBSlots) {
+  public void setMemoryMB(int memoryMB) {
     try {
       wlock.lock();
-      this.memoryMBSlots = memoryMBSlots;
+      this.memoryMB = memoryMB;
     } finally {
       wlock.unlock();
     }
   }
 
-  public int getAvailableDiskSlots() {
+  public float getAvailableDiskSlots() {
     return diskSlots - usedDiskSlots;
   }
 
-  public int getAvailableMemoryMBSlots() {
-    return getMemoryMBSlots() - getUsedMemoryMBSlots();
+  public int getAvailableMemoryMB() {
+    return memoryMB - usedMemoryMB;
+  }
+
+  public int getAvailableCpuCoreSlots() {
+    return cpuCoreSlots - usedCpuCoreSlots;
   }
 
   @Override
   public String toString() {
-    return "host:" + allocatedHost + ", port=" + portsToStr() + ", slots=" + memoryMBSlots + ":" + cpuCoreSlots + ":" + diskSlots +
-        ", used=" + getUsedMemoryMBSlots() + ":" + usedCpuCoreSlots + ":" + usedDiskSlots;
+    return "host:" + allocatedHost + ", port=" + portsToStr() + ", slots=m:" + memoryMB + ",d:" + diskSlots +
+        ",c:" + cpuCoreSlots + ", used=m:" + usedMemoryMB + ",d:" + usedDiskSlots + ",c:" + usedCpuCoreSlots;
   }
 
   public String portsToStr() {
@@ -148,23 +135,22 @@ public class WorkerResource implements Comparable<WorkerResource> {
     this.lastHeartbeat = heartbeatTime;
   }
 
-  public int getUsedMemoryMBSlots() {
+  public int getUsedMemoryMB() {
     try {
       rlock.lock();
-      return usedMemoryMBSlots;
+      return usedMemoryMB;
     } finally {
       rlock.unlock();
     }
   }
 
-  public void setUsedMemoryMBSlots(int usedMemoryMBSlots) {
+  public void setUsedMemoryMB(int usedMemoryMB) {
     try {
       wlock.lock();
-      this.usedMemoryMBSlots = usedMemoryMBSlots;
+      this.usedMemoryMB = usedMemoryMB;
     } finally {
       wlock.unlock();
     }
-
   }
 
   public int getUsedCpuCoreSlots() {
@@ -175,7 +161,7 @@ public class WorkerResource implements Comparable<WorkerResource> {
     this.usedCpuCoreSlots = usedCpuCoreSlots;
   }
 
-  public int getUsedDiskSlots() {
+  public float getUsedDiskSlots() {
     return usedDiskSlots;
   }
 
@@ -211,33 +197,40 @@ public class WorkerResource implements Comparable<WorkerResource> {
     this.taskRunnerMode = taskRunnerMode;
   }
 
-  public void releaseResource(WorkerResource workerResource) {
+  public void releaseResource(float diskSlots, int memoryMB) {
     try {
       wlock.lock();
-      usedMemoryMBSlots = usedMemoryMBSlots - workerResource.getMemoryMBSlots();
+      usedMemoryMB = usedMemoryMB - memoryMB;
+      usedDiskSlots -= diskSlots;
+      if(usedMemoryMB < 0) {
+        LOG.warn("Used memory can't be a minus: " + usedMemoryMB);
+        usedMemoryMB = 0;
+      }
+      if(usedDiskSlots < 0) {
+        LOG.warn("Used disk slot can't be a minus: " + usedDiskSlots);
+        usedDiskSlots = 0;
+      }
     } finally {
       wlock.unlock();
     }
+  }
 
-    if(getUsedMemoryMBSlots() < 0 || usedDiskSlots < 0 || usedCpuCoreSlots < 0) {
-      LOG.warn("Used resources can't be a minus.");
-      LOG.warn(this + " ==> " + workerResource);
+  public void allocateResource(float diskSlots, int memoryMB) {
+    try {
+      wlock.lock();
+      usedMemoryMB += memoryMB;
+      usedDiskSlots += diskSlots;
+
+      if(usedMemoryMB > this.memoryMB) {
+        usedMemoryMB = this.memoryMB;
+      }
+
+      if(usedDiskSlots > this.diskSlots) {
+        usedDiskSlots = this.diskSlots;
+      }
+    } finally {
+      wlock.unlock();
     }
-  }
-
-  public int getSlots() {
-    //TODO what is slot? 512MB = 1slot?
-    return getMemoryMBSlots()/512;
-  }
-
-  public int getAvaliableSlots() {
-    //TODO what is slot? 512MB = 1slot?
-    return getAvailableMemoryMBSlots()/512;
-  }
-
-  public int getUsedSlots() {
-    //TODO what is slot? 512MB = 1slot?
-    return getUsedMemoryMBSlots()/512;
   }
 
   public int getPeerRpcPort() {
@@ -316,16 +309,14 @@ public class WorkerResource implements Comparable<WorkerResource> {
     return numQueryMasterTasks.get();
   }
 
-  public void setNumQueryMasterTasks(int numQueryMasterTasks) {
-    this.numQueryMasterTasks.set(numQueryMasterTasks);
-  }
-
-  public void addNumQueryMasterTask() {
+  public void addNumQueryMasterTask(float diskSlots, int memoryMB) {
     numQueryMasterTasks.getAndIncrement();
+    allocateResource(diskSlots, memoryMB);
   }
 
-  public void releaseQueryMasterTask() {
+  public void releaseQueryMasterTask(float diskSlots, int memoryMB) {
     numQueryMasterTasks.getAndDecrement();
+    releaseResource(diskSlots, memoryMB);
   }
 
   @Override

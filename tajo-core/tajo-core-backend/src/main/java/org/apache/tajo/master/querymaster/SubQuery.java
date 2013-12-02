@@ -611,13 +611,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit [] tasks = subQuery.getQueryUnits();
 
+      //TODO consider disk slot
+      int requiredMemoryMBPerTask = 512;
+
       int numRequest = subQuery.getContext().getResourceAllocator().calculateNumRequestContainers(
-          subQuery.getContext().getQueryMasterContext().getWorkerContext(), tasks.length
+          subQuery.getContext().getQueryMasterContext().getWorkerContext(),
+          tasks.length,
+          requiredMemoryMBPerTask
       );
 
       final Resource resource = Records.newRecord(Resource.class);
 
-      resource.setMemory(2000);
+      resource.setMemory(requiredMemoryMBPerTask);
 
       LOG.info("Request Container for " + subQuery.getId() + " containers=" + numRequest);
 

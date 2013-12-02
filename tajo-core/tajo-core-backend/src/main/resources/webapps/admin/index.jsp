@@ -29,6 +29,7 @@
 <%@ page import="org.apache.hadoop.util.StringUtils" %>
 <%@ page import="org.apache.hadoop.fs.FileSystem" %>
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
+<%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -44,9 +45,9 @@
   int numDeadQueryMasters = 0;
   int runningQueryMasterTask = 0;
 
-  int totalSlot = 0;
-  int runningSlot = 0;
-  int idleSlot = 0;
+
+  TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary =
+          master.getContext().getResourceManager().getClusterResourceSummary();
 
   for(WorkerResource eachWorker: workers.values()) {
     if(eachWorker.getWorkerStatus() == WorkerStatus.LIVE) {
@@ -58,9 +59,6 @@
       if(eachWorker.isTaskRunnerMode()) {
         numWorkers++;
         numLiveWorkers++;
-        idleSlot += eachWorker.getAvaliableSlots();
-        totalSlot += eachWorker.getSlots();
-        runningSlot += eachWorker.getUsedSlots();
       }
     } else if(eachWorker.getWorkerStatus() == WorkerStatus.DEAD) {
       if(eachWorker.isQueryMasterMode()) {
@@ -143,24 +141,24 @@
 
   <h3>Cluster Summary</h3>
   <table width="100%" class="border_table" border="1">
-    <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Total Slots</th><th>Running Slots</th><th>Idle Slots</th></tr>
+    <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Running Master</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th></tr>
     <tr>
       <td><a href='cluster.jsp'>Query Master</a></td>
       <td align='right'><%=numQueryMasters%></td>
       <td align='right'><%=numLiveQueryMasters%></td>
       <td align='right'><%=numDeadQueryMastersHtml%></td>
-      <td align='right'>-</td>
       <td align='right'><%=runningQueryMasterTask%></td>
-      <td align='right'>-</td>
+      <td align='center'>-</td>
+      <td align='center'>-</td>
     </tr>
     <tr>
       <td><a href='cluster.jsp'>Worker</a></td>
       <td align='right'><%=numWorkers%></td>
       <td align='right'><%=numLiveWorkers%></td>
       <td align='right'><%=numDeadWorkersHtml%></td>
-      <td align='right'><%=totalSlot%></td>
-      <td align='right'><%=runningSlot%></td>
-      <td align='right'><%=idleSlot%></td>
+      <td align='right'>-</td>
+      <td align='center'><%=clusterResourceSummary.getTotalMemoryMB() - clusterResourceSummary.getTotalAvailableMemoryMB()%>/<%=clusterResourceSummary.getTotalMemoryMB()%></td>
+      <td align='center'><%=clusterResourceSummary.getTotalDiskSlots() - clusterResourceSummary.getTotalAvailableDiskSlots()%>/<%=clusterResourceSummary.getTotalDiskSlots()%></td>
     </tr>
   </table>
   <p/>

@@ -34,6 +34,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-317: Improve TajoResourceManager to support more elaborate resource management. (Keuntae Park via jihoon)
+
     TAJO-314: Make TaskScheduler be pluggable. (jihoon)
 
     TAJO-325: QueryState.NEW and QueryState.INIT should be combined into one

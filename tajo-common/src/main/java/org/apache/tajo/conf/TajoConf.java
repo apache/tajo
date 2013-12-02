@@ -81,6 +81,10 @@ public class TajoConf extends YarnConfiguration {
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
 
+    // QueryMaster resource
+    TAJO_QUERYMASTER_DISK_SLOT("tajo.qm.resource.disk.slots", 0.0f),
+    TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512),
+
     // Tajo Worker Service Addresses
     WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080"),
     WORKER_QM_INFO_ADDRESS("tajo.worker.qm-info-http.address", "0.0.0.0:28081"),
@@ -93,8 +97,8 @@ public class TajoConf extends YarnConfiguration {
 
     // Tajo Worker Resources
     WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores", 1),
-    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024),
-    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1),
+    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 512),
+    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
     WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
 
     // Tajo Worker Dedicated Resources
@@ -186,6 +190,12 @@ public class TajoConf extends YarnConfiguration {
     // Hive Configuration
     //////////////////////////////////
     HIVE_QUERY_MODE("tajo.hive.query.mode", false),
+
+    //////////////////////////////////
+    // Task Configuration
+    TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
+    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f)
+    //////////////////////////////////
     ;
 
     public final String varname;

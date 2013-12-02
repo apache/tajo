@@ -64,7 +64,9 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
   }
 
   @Override
-  public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext, int numTasks) {
+  public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext,
+                                           int numTasks,
+                                           int memoryMBPerTask) {
     int numClusterNodes = workerContext.getNumClusterNodes();
 
     TajoConf conf =  (TajoConf)workerContext.getQueryMaster().getConfig();
