@@ -345,6 +345,14 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
 
     sqlFuncs.add(
+        new FunctionDesc("left", Left.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("right", Right.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4)));
+    sqlFuncs.add(
         new FunctionDesc("to_hex", ToHex.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.INT4)));

@@ -1050,7 +1050,17 @@ unique_predicate
 */
 
 routine_invocation
-  : Identifier LEFT_PAREN sql_argument_list? RIGHT_PAREN
+  : function_name LEFT_PAREN sql_argument_list? RIGHT_PAREN
+  ;
+
+function_names_for_reserved_words
+  : LEFT
+  | RIGHT
+  ;
+
+function_name
+  : Identifier
+  | function_names_for_reserved_words
   ;
 
 sql_argument_list

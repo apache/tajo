@@ -769,7 +769,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public FunctionExpr visitRoutine_invocation(SQLParser.Routine_invocationContext ctx) {
-    String signature = ctx.Identifier().getText();
+    String signature = ctx.function_name().getText();
     FunctionExpr function = new FunctionExpr(signature);
     if (ctx.sql_argument_list() != null) {
       int numArgs = ctx.sql_argument_list().value_expression().size();

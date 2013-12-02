@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-352: Implement right/left(text, size) function. 
+    (DaeMyung Kang via hyunsik)
+
     TAJO-346: Implement hex function. (DaeMyung Kang via hyunsik)
 
     TAJO-349: Implement md5(text). (DaeMyung Kang via hyunsik)
@@ -34,7 +37,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-317: Improve TajoResourceManager to support more elaborate resource management. (Keuntae Park via jihoon)
+    TAJO-317: Improve TajoResourceManager to support more elaborate resource 
+    management. (Keuntae Park via jihoon)
 
     TAJO-314: Make TaskScheduler be pluggable. (jihoon)
 

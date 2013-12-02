@@ -150,6 +150,62 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testLeft() throws IOException {
+    testSimpleEval("select left('abcdef',1) as col1 ", new String[]{"a"});
+    testSimpleEval("select left('abcdef',2) as col1 ", new String[]{"ab"});
+    testSimpleEval("select left('abcdef',3) as col1 ", new String[]{"abc"});
+    testSimpleEval("select left('abcdef',4) as col1 ", new String[]{"abcd"});
+    testSimpleEval("select left('abcdef',5) as col1 ", new String[]{"abcde"});
+    testSimpleEval("select left('abcdef',6) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select left('abcdef',7) as col1 ", new String[]{"abcdef"});
+//    testSimpleEval("select from_left('abcdef',-1) as col1 ", new String[]{"abcde"});
+//    testSimpleEval("select from_left('abcdef',-2) as col1 ", new String[]{"abcd"});
+//    testSimpleEval("select from_left('abcdef',-3) as col1 ", new String[]{"abc"});
+//    testSimpleEval("select from_left('abcdef',-4) as col1 ", new String[]{"ab"});
+//    testSimpleEval("select from_left('abcdef',-5) as col1 ", new String[]{"a"});
+//    testSimpleEval("select from_left('abcdef',-6) as col1 ", new String[]{""});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", INT4);
+    schema.addColumn("col3", TEXT);
+
+    // for null tests
+    testEval(schema, "table1", ",1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,,ghi", "select left(col1,col2) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "abc,1,ghi", "select left(col1,1) || left(col3,3) from table1", new String[]{"aghi"});
+  }
+
+  @Test
+  public void testRight() throws IOException {
+    testSimpleEval("select right('abcdef',1) as col1 ", new String[]{"f"});
+    testSimpleEval("select right('abcdef',2) as col1 ", new String[]{"ef"});
+    testSimpleEval("select right('abcdef',3) as col1 ", new String[]{"def"});
+    testSimpleEval("select right('abcdef',4) as col1 ", new String[]{"cdef"});
+    testSimpleEval("select right('abcdef',5) as col1 ", new String[]{"bcdef"});
+    testSimpleEval("select right('abcdef',6) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select right('abcdef',7) as col1 ", new String[]{"abcdef"});
+//    testSimpleEval("select from_right('abcdef',-1) as col1 ", new String[]{"bcdef"});
+//    testSimpleEval("select from_right('abcdef',-2) as col1 ", new String[]{"cdef"});
+//    testSimpleEval("select from_right('abcdef',-3) as col1 ", new String[]{"def"});
+//    testSimpleEval("select from_right('abcdef',-4) as col1 ", new String[]{"ef"});
+//    testSimpleEval("select from_right('abcdef',-5) as col1 ", new String[]{"f"});
+//    testSimpleEval("select from_right('abcdef',-6) as col1 ", new String[]{""});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", INT4);
+    schema.addColumn("col3", TEXT);
+
+    // for null tests
+    testEval(schema, "table1", ",1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "abc,1,ghi", "select right(col1,1) || right(col3,3) from table1", new String[]{"cghi"});
+  }
+
+  @Test
   public void testReverse() throws IOException {
     testSimpleEval("select reverse('abcdef') as col1 ", new String[]{"fedcba"});
     testSimpleEval("select reverse('가') as col1 ", new String[]{"가"});
