@@ -150,6 +150,18 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testReverse() throws IOException {
+    testSimpleEval("select reverse('abcdef') as col1 ", new String[]{"fedcba"});
+    testSimpleEval("select reverse('가') as col1 ", new String[]{"가"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1", new String[]{"cbagfe"});
+  }
+
+  @Test
   public void testUpper() throws IOException {
     testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
 
