@@ -224,6 +224,21 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testHex() throws IOException {
+    testSimpleEval("select to_hex(1) as col1 ", new String[]{"1"});
+    testSimpleEval("select to_hex(10) as col1 ", new String[]{"a"});
+    testSimpleEval("select to_hex(1234) as col1 ", new String[]{"4d2"});
+    testSimpleEval("select to_hex(1023456788888888) as col1 ", new String[]{"3a2d41a583d38"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select to_hex(10) from table1",
+        new String[]{"a"});
+  }
+
+  @Test
   public void testSubstr() throws IOException {
     testSimpleEval("select substr('abcdef', 3, 2) as col1 ", new String[]{"cd"});
     testSimpleEval("select substr('abcdef', 3) as col1 ", new String[]{"cdef"});
