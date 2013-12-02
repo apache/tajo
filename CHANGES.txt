@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-349: Implement md5(text). (DaeMyung Kang via hyunsik)
+
     TAJO-351: Implement reverse(text). (DaeMyung Kang via hyunsik)
 
     TAJO-342: Implement strpos(string, substring) function. 

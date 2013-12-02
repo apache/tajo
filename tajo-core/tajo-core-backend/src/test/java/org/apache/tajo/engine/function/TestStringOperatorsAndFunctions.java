@@ -212,6 +212,18 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testMd5() throws IOException {
+    testSimpleEval("select md5('1') as col1 ", new String[]{"c4ca4238a0b923820dcc509a6f75849b"});
+    testSimpleEval("select md5('tajo') as col1 ", new String[]{"742721b3a79f71a9491681b8e8a7ce85"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1", new String[]{"900150983cd24fb0d6963f7d28e17f72"});
+  }
+
+  @Test
   public void testSubstr() throws IOException {
     testSimpleEval("select substr('abcdef', 3, 2) as col1 ", new String[]{"cd"});
     testSimpleEval("select substr('abcdef', 3) as col1 ", new String[]{"cdef"});
