@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-342: Implement strpos(string, substring) function. 
+    (hyoungjunkim via hyunsik)
+
     TAJO-350: Implement round, floor, ceil. (hyoungjunkim via hyunsik)
 
     TAJO-207: Implement bit_length(string) function. (DaeMyung Kang via jihoon)

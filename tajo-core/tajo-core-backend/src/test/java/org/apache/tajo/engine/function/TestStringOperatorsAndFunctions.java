@@ -242,4 +242,36 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "ABC,DEF,3.14", "select bit_length(lower(col1) || lower(col2)) from table1",
         new String[]{"48"});
   }
+
+  @Test
+  public void testStrpos() throws IOException {
+    testSimpleEval("select strpos('tajo','jo') as col1 ", new String[]{"3"});
+    testSimpleEval("select strpos('tajo','') as col1 ", new String[]{"1"});
+    testSimpleEval("select strpos('tajo','abcdef') as col1 ", new String[]{"0"});
+    testSimpleEval("select strpos('일이삼사오육','삼사') as col1 ", new String[]{"3"});
+    testSimpleEval("select strpos('일이삼사오육','일이삼') as col1 ", new String[]{"1"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strpos(lower(col1) || lower(col2), 'fh') from table1",
+        new String[]{"6"});
+  }
+
+  @Test
+  public void testStrposb() throws IOException {
+    testSimpleEval("select strposb('tajo','jo') as col1 ", new String[]{"3"});
+    testSimpleEval("select strposb('tajo','') as col1 ", new String[]{"1"});
+    testSimpleEval("select strposb('tajo','abcdef') as col1 ", new String[]{"0"});
+    testSimpleEval("select strposb('일이삼사오육','삼사') as col1 ", new String[]{"7"});    //utf8 1 korean word = 3 chars
+    testSimpleEval("select strposb('일이삼사오육','삼사일') as col1 ", new String[]{"0"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strposb(lower(col1) || lower(col2), 'fh') from table1",
+        new String[]{"6"});
+  }
 }
