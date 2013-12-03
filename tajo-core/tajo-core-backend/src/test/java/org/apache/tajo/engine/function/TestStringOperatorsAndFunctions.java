@@ -295,6 +295,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testOctetLength() throws IOException {
+    testSimpleEval("select octet_length('123456') as col1 ", new String[]{"6"});
+    testSimpleEval("select octet_length('1') as col1 ", new String[]{"1"});
+    testSimpleEval("select octet_length('가') as col1 ", new String[]{"3"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABC,DEF,3.14", "select octet_length(lower(col1) || lower(col2)) from table1",
+        new String[]{"6"});
+  }
+
+  @Test
   public void testSubstr() throws IOException {
     testSimpleEval("select substr('abcdef', 3, 2) as col1 ", new String[]{"cd"});
     testSimpleEval("select substr('abcdef', 3) as col1 ", new String[]{"cdef"});
