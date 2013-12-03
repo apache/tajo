@@ -397,4 +397,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strposb(lower(col1) || lower(col2), 'fh') from table1",
         new String[]{"6"});
   }
+
+  @Test
+  public void testInitcap() throws IOException {
+    testSimpleEval("select initcap('hi bro') ", new String[]{"Hi Bro"});
+    testSimpleEval("select initcap('HI BRO') ", new String[]{"Hi Bro"});
+  }
 }

@@ -4,9 +4,12 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-358: Implement initcap(string) function. (Seungun Choe via hyunsik)
+
     TAJO-355: Implement repeat(text,int) function. (DaeMyung Kang via jaehwa)
 
-    TAJO-339: Implement sin( x ) - returns the sine of x (x is in radians). (Jae Young Lee via jaehwa)
+    TAJO-339: Implement sin( x ) - returns the sine of x (x is in radians). 
+    (Jae Young Lee via jaehwa)
 
     TAJO-348: Implement octet_length(text). (DaeMyung Kang via jaehwa)
 
