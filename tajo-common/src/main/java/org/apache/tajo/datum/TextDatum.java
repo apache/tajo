@@ -30,6 +30,8 @@ public class TextDatum extends Datum {
   @Expose private int size;
   @Expose private byte [] bytes;
 
+  public static final TextDatum EMPTY_TEXT = new TextDatum("");
+
   public TextDatum() {
     super(TajoDataTypes.Type.TEXT);
   }

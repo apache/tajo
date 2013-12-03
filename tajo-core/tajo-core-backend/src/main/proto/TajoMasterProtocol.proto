@@ -50,12 +50,13 @@ message ServerStatusProto {
     }
 
     required System system = 1;
-    required int32 diskSlots = 2;
-    repeated Disk disk = 3;
-    required int32 runningTaskNum = 4;
-    required JvmHeap jvmHeap = 5;
-    required BoolProto queryMasterMode = 6;
-    required BoolProto taskRunnerMode = 7;
+    required float diskSlots = 2;
+    required int32 memoryResourceMB = 3;
+    repeated Disk disk = 4;
+    required int32 runningTaskNum = 5;
+    required JvmHeap jvmHeap = 6;
+    required BoolProto queryMasterMode = 7;
+    required BoolProto taskRunnerMode = 8;
 }
 
 message TajoHeartbeat {
@@ -79,16 +80,37 @@ message TajoHeartbeatResponse {
       repeated string params = 2;
   }
   required BoolProto heartbeatResult = 1;
-  required int32 numClusterNodes = 2;
-  required int32 numClusterSlots = 3;
-  optional ResponseCommand responseCommand = 4;
+  required ClusterResourceSummary clusterResourceSummary = 2;
+  optional ResponseCommand responseCommand = 3;
+}
+
+message ClusterResourceSummary {
+  required int32 numWorkers = 1;
+  required int32 totalDiskSlots = 2;
+  required int32 totalCpuCoreSlots = 3;
+  required int32 totalMemoryMB = 4;
+
+  required int32 totalAvailableDiskSlots = 5;
+  required int32 totalAvailableCpuCoreSlots = 6;
+  required int32 totalAvailableMemoryMB = 7;
+}
+
+enum ResourceRequestPriority {
+    MEMORY = 1;
+    DISK = 2;
 }
 
 message WorkerResourceAllocationRequest {
     required ExecutionBlockIdProto executionBlockId = 1;
-    required int32 numWorks = 2;
-    required int32 memoryMBSlots = 3 ;
-    required int32 diskSlots = 4;
+    required ResourceRequestPriority resourceRequestPriority = 2;
+
+    required int32 numContainers = 3;
+
+    required int32 maxMemoryMBPerContainer = 4;
+    required int32 minMemoryMBPerContainer = 5;
+
+    required float maxDiskSlotPerContainer = 6;
+    required float minDiskSlotPerContainer = 7;
 }
 
 message WorkerResourceProto {
@@ -96,19 +118,25 @@ message WorkerResourceProto {
     required int32 peerRpcPort = 2;
     required int32 queryMasterPort = 3;
     required ExecutionBlockIdProto executionBlockId = 4;
-    required int32 memoryMBSlots = 5 ;
+    required int32 memoryMB = 5 ;
     required int32 diskSlots = 6;
 }
 
 message WorkerResourceReleaseRequest {
-    repeated WorkerResourceProto workerResources = 1;
+    required ExecutionBlockIdProto executionBlockId = 1;
+    repeated ContainerIdProto containerIds = 2;
 }
 
 message WorkerAllocatedResource {
-    required string workerHost = 1;
-    required int32 peerRpcPort = 2;
-    required int32 queryMasterPort = 3;
-    required int32 workerPullServerPort = 4;
+    required ContainerIdProto containerId = 1;
+    required string nodeId = 2;
+    required string workerHost = 3;
+    required int32 peerRpcPort = 4;
+    required int32 queryMasterPort = 5;
+    required int32 workerPullServerPort = 6;
+
+    required int32 allocatedMemoryMB = 7;
+    required float allocatedDiskSlots = 8;
 }
 
 message WorkerResourceAllocationResponse {

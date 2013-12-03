@@ -21,7 +21,9 @@ package org.apache.tajo.master;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -29,7 +31,7 @@ import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -121,7 +123,8 @@ public class TajoContainerProxy extends ContainerProxy {
       this.state = ContainerState.KILLED_BEFORE_LAUNCH;
     } else {
       try {
-        releaseWorkerResource(context, executionBlockId, ((TajoWorkerContainer)container).getWorkerResource());
+        TajoWorkerContainer tajoWorkerContainer = ((TajoWorkerContainer)container);
+        releaseWorkerResource(context, executionBlockId, tajoWorkerContainer.getId());
         context.getResourceAllocator().removeContainer(containerID);
         this.state = ContainerState.DONE;
       } catch (Throwable t) {
@@ -138,29 +141,21 @@ public class TajoContainerProxy extends ContainerProxy {
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
-                                           WorkerResource workerResource) throws Exception {
-    List<WorkerResource> workerResources = new ArrayList<WorkerResource>();
-    workerResources.add(workerResource);
+                                           ContainerId containerId) throws Exception {
+    List<ContainerId> containerIds = new ArrayList<ContainerId>();
+    containerIds.add(containerId);
 
-    releaseWorkerResource(context, executionBlockId, workerResources);
+    releaseWorkerResource(context, executionBlockId, containerIds);
   }
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
-                                           List<WorkerResource> workerResources) throws Exception {
-    List<TajoMasterProtocol.WorkerResourceProto> workerResourceProtos =
-        new ArrayList<TajoMasterProtocol.WorkerResourceProto>();
+                                           List<ContainerId> containerIds) throws Exception {
+    List<YarnProtos.ContainerIdProto> containerIdProtos =
+        new ArrayList<YarnProtos.ContainerIdProto>();
 
-    for(WorkerResource eahWorkerResource: workerResources) {
-      workerResourceProtos.add(TajoMasterProtocol.WorkerResourceProto.newBuilder()
-          .setHost(eahWorkerResource.getAllocatedHost())
-          .setQueryMasterPort(eahWorkerResource.getQueryMasterPort())
-          .setPeerRpcPort(eahWorkerResource.getPeerRpcPort())
-          .setExecutionBlockId(executionBlockId.getProto())
-          .setMemoryMBSlots(eahWorkerResource.getMemoryMBSlots())
-          .setDiskSlots(eahWorkerResource.getDiskSlots())
-          .build()
-      );
+    for(ContainerId eachContainerId: containerIds) {
+      containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 
     RpcConnectionPool connPool = RpcConnectionPool.getPool(context.getConf());
@@ -171,7 +166,8 @@ public class TajoContainerProxy extends ContainerProxy {
         TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
         masterClientService.releaseWorkerResource(null,
           TajoMasterProtocol.WorkerResourceReleaseRequest.newBuilder()
-              .addAllWorkerResources(workerResourceProtos)
+              .setExecutionBlockId(executionBlockId.getProto())
+              .addAllContainerIds(containerIdProtos)
               .build(),
           NullCallback.get());
     } catch (Exception e) {

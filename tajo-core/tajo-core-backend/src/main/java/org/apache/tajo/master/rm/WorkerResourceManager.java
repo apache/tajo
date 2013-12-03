@@ -20,6 +20,8 @@ package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.yarn.proto.YarnProtos.*;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -56,13 +58,13 @@ public interface WorkerResourceManager {
 
   public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request);
 
-  public void releaseWorkerResource(QueryId queryId, WorkerResource workerResource);
+  public void releaseWorkerResource(ExecutionBlockId ebId, ContainerIdProto containerId);
 
   public Map<String, WorkerResource> getWorkers();
 
   public void stop();
 
-  public int getNumClusterSlots();
+  public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary();
 
   Collection<String> getQueryMasters();
 }

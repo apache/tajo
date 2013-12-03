@@ -4,6 +4,34 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-366: Implement trigonometric functions. (Jae Young Lee via jihoon)
+
+    TAJO-358: Implement initcap(string) function. (Seungun Choe via hyunsik)
+
+    TAJO-355: Implement repeat(text,int) function. (DaeMyung Kang via jaehwa)
+
+    TAJO-339: Implement sin( x ) - returns the sine of x (x is in radians). 
+    (Jae Young Lee via jaehwa)
+
+    TAJO-348: Implement octet_length(text). (DaeMyung Kang via jaehwa)
+
+    TAJO-357: Fix invalid filename TestMethFunction to TestMathFUnction.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-352: Implement right/left(text, size) function. 
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-346: Implement hex function. (DaeMyung Kang via hyunsik)
+
+    TAJO-349: Implement md5(text). (DaeMyung Kang via hyunsik)
+
+    TAJO-351: Implement reverse(text). (DaeMyung Kang via hyunsik)
+
+    TAJO-342: Implement strpos(string, substring) function. 
+    (hyoungjunkim via hyunsik)
+
+    TAJO-350: Implement round, floor, ceil. (hyoungjunkim via hyunsik)
+
     TAJO-207: Implement bit_length(string) function. (DaeMyung Kang via jihoon)
 
     TAJO-341: Implement substr function. (hyoungjunkim via hyunsik)
@@ -22,6 +50,11 @@ Release 0.8.0 - unreleased
     (jihoon)
 
   IMPROVEMENTS
+
+    TAJO-284: Add table partitioning entry to Catalog. (jaehwa)
+
+    TAJO-317: Improve TajoResourceManager to support more elaborate resource 
+    management. (Keuntae Park via jihoon)
 
     TAJO-314: Make TaskScheduler be pluggable. (jihoon)
 
@@ -52,13 +85,18 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-347: Fix bug when to call function with insensitive function name. 
+    (DaeMyung Kang via hyunsik)
+
     TAJO-345: MergeScanner should support projectable storages. (jihoon)
 
-    TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via jinho)
+    TAJO-290: TajoDataType.Type.NULL should be NULL_TYPE. (DaeMyung Kang via 
+    jinho)
 
     TAJO-332: Invalid row count of CSVScanner. (jinho)
 
-    TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid values. (jihoon)
+    TAJO-326: In ExecutionBlock, isRoot() and isLeafBlock() return invalid 
+    values. (jihoon)
 
     TAJO-296: Late registration of Tajo workers. (hyoungjunkim via hyunsik)
 

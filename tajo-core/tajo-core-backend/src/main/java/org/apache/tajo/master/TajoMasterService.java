@@ -22,13 +22,14 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.hadoop.yarn.service.AbstractService;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryJobManager;
-import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -118,8 +119,7 @@ public class TajoMasterService extends AbstractService {
         builder.setResponseCommand(command);
       }
 
-      builder.setNumClusterNodes(context.getResourceManager().getWorkers().size());
-      builder.setNumClusterSlots(context.getResourceManager().getNumClusterSlots());
+      builder.setClusterResourceSummary(context.getResourceManager().getClusterResourceSummary());
       done.run(builder.build());
     }
 
@@ -135,20 +135,11 @@ public class TajoMasterService extends AbstractService {
     public void releaseWorkerResource(RpcController controller,
                                            TajoMasterProtocol.WorkerResourceReleaseRequest request,
                                            RpcCallback<PrimitiveProtos.BoolProto> done) {
-      List<TajoMasterProtocol.WorkerResourceProto> workerResources = request.getWorkerResourcesList();
-      for(TajoMasterProtocol.WorkerResourceProto eachWorkerResource: workerResources) {
-        WorkerResource workerResource = new WorkerResource();
-        workerResource.setAllocatedHost(eachWorkerResource.getHost());
+      List<YarnProtos.ContainerIdProto> containerIds = request.getContainerIdsList();
+      ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
 
-        workerResource.setPeerRpcPort(eachWorkerResource.getPeerRpcPort());
-        workerResource.setQueryMasterPort(eachWorkerResource.getQueryMasterPort());
-        workerResource.setMemoryMBSlots(eachWorkerResource.getMemoryMBSlots());
-        workerResource.setDiskSlots(eachWorkerResource.getDiskSlots());
-
-        LOG.info("releaseWorkerResource:" + workerResource);
-        context.getResourceManager().releaseWorkerResource(
-            new QueryId(eachWorkerResource.getExecutionBlockId().getQueryId()),
-            workerResource);
+      for(YarnProtos.ContainerIdProto eachContainer: containerIds) {
+        context.getResourceManager().releaseWorkerResource(ebId, eachContainer);
       }
       done.run(BOOL_TRUE);
     }

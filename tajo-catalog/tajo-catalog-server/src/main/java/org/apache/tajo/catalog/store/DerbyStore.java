@@ -24,6 +24,9 @@ package org.apache.tajo.catalog.store;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
@@ -38,6 +41,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -68,143 +72,177 @@ public class DerbyStore extends AbstractDBStore {
     try {
       // META
       stmt = getConnection().createStatement();
-      String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(meta_ddl);
+
+      if (!baseTableMaps.get(TB_META)) {
+        String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(meta_ddl);
+        }
+        stmt.executeUpdate(meta_ddl);
+        LOG.info("Table '" + TB_META + " is created.");
       }
-      stmt.executeUpdate(meta_ddl);
-      LOG.info("Table '" + TB_META + " is created.");
 
       // TABLES
-      String tables_ddl = "CREATE TABLE "
-          + TB_TABLES + " ("
-          + "TID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), "
-          + C_TABLE_ID + " VARCHAR(255) NOT NULL CONSTRAINT TABLE_ID_UNIQ UNIQUE, "
-          + "path VARCHAR(1024), "
-          + "store_type CHAR(16), "
-          + "CONSTRAINT TABLES_PK PRIMARY KEY (TID)" +
-          ")";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(tables_ddl);
+      if (!baseTableMaps.get(TB_TABLES)) {
+        String tables_ddl = "CREATE TABLE "
+            + TB_TABLES + " ("
+            + "TID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), "
+            + C_TABLE_ID + " VARCHAR(255) NOT NULL CONSTRAINT TABLE_ID_UNIQ UNIQUE, "
+            + "path VARCHAR(1024), "
+            + "store_type CHAR(16), "
+            + "CONSTRAINT TABLES_PK PRIMARY KEY (TID)" +
+            ")";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(tables_ddl);
+        }
+        stmt.addBatch(tables_ddl);
+
+        String idx_tables_tid =
+            "CREATE UNIQUE INDEX idx_tables_tid on " + TB_TABLES + " (TID)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_tables_tid);
+        }
+        stmt.addBatch(idx_tables_tid);
+
+        String idx_tables_name = "CREATE UNIQUE INDEX idx_tables_name on "
+            + TB_TABLES + "(" + C_TABLE_ID + ")";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_tables_name);
+        }
+        stmt.addBatch(idx_tables_name);
+        stmt.executeBatch();
+        LOG.info("Table '" + TB_TABLES + "' is created.");
       }
-      stmt.addBatch(tables_ddl);
-      String idx_tables_tid = 
-          "CREATE UNIQUE INDEX idx_tables_tid on " + TB_TABLES + " (TID)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_tables_tid);
-      }
-      stmt.addBatch(idx_tables_tid);
-      
-      String idx_tables_name = "CREATE UNIQUE INDEX idx_tables_name on " 
-          + TB_TABLES + "(" + C_TABLE_ID + ")";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_tables_name);
-      }
-      stmt.addBatch(idx_tables_name);
-      stmt.executeBatch();
-      LOG.info("Table '" + TB_TABLES + "' is created.");
 
       // COLUMNS
-      String columns_ddl = 
-          "CREATE TABLE " + TB_COLUMNS + " ("
-          + "TID INT NOT NULL REFERENCES " + TB_TABLES + " (TID) ON DELETE CASCADE, "
-          + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES " + TB_TABLES + "("
-          + C_TABLE_ID + ") ON DELETE CASCADE, "
-          + "column_id INT NOT NULL,"
-          + "column_name VARCHAR(255) NOT NULL, " + "data_type CHAR(16), " + "type_length INTEGER, "
-          + "CONSTRAINT C_COLUMN_ID UNIQUE (" + C_TABLE_ID + ", column_name))";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(columns_ddl);
-      }
-      stmt.addBatch(columns_ddl);
+      if (!baseTableMaps.get(TB_COLUMNS)) {
+        String columns_ddl =
+            "CREATE TABLE " + TB_COLUMNS + " ("
+                + "TID INT NOT NULL REFERENCES " + TB_TABLES + " (TID) ON DELETE CASCADE, "
+                + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES " + TB_TABLES + "("
+                + C_TABLE_ID + ") ON DELETE CASCADE, "
+                + "column_id INT NOT NULL,"
+                + "column_name VARCHAR(255) NOT NULL, " + "data_type CHAR(16), " + "type_length INTEGER, "
+                + "CONSTRAINT C_COLUMN_ID UNIQUE (" + C_TABLE_ID + ", column_name))";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(columns_ddl);
+        }
+        stmt.addBatch(columns_ddl);
 
-      String idx_fk_columns_table_name = 
-          "CREATE UNIQUE INDEX idx_fk_columns_table_name on "
-          + TB_COLUMNS + "(" + C_TABLE_ID + ", column_name)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_fk_columns_table_name);
+        String idx_fk_columns_table_name =
+            "CREATE UNIQUE INDEX idx_fk_columns_table_name on "
+                + TB_COLUMNS + "(" + C_TABLE_ID + ", column_name)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_fk_columns_table_name);
+        }
+        stmt.addBatch(idx_fk_columns_table_name);
+        stmt.executeBatch();
+        LOG.info("Table '" + TB_COLUMNS + " is created.");
       }
-      stmt.addBatch(idx_fk_columns_table_name);
-      stmt.executeBatch();
-      LOG.info("Table '" + TB_COLUMNS + " is created.");
 
       // OPTIONS
-      String options_ddl = 
-          "CREATE TABLE " + TB_OPTIONS +" ("
-          + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID +") "
-          + "ON DELETE CASCADE, "
-          + "key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(options_ddl);
+      if (!baseTableMaps.get(TB_OPTIONS)) {
+        String options_ddl =
+            "CREATE TABLE " + TB_OPTIONS +" ("
+                + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID +") "
+                + "ON DELETE CASCADE, "
+                + "key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(options_ddl);
+        }
+        stmt.addBatch(options_ddl);
+
+        String idx_options_key =
+            "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_options_key);
+        }
+        stmt.addBatch(idx_options_key);
+        String idx_options_table_name =
+            "CREATE INDEX idx_options_table_name on " + TB_OPTIONS
+                + "(" + C_TABLE_ID + ")";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_options_table_name);
+        }
+        stmt.addBatch(idx_options_table_name);
+        stmt.executeBatch();
+        LOG.info("Table '" + TB_OPTIONS + " is created.");
       }
-      stmt.addBatch(options_ddl);
-      
-      String idx_options_key = 
-          "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_options_key);
-      }
-      stmt.addBatch(idx_options_key);
-      String idx_options_table_name = 
-          "CREATE INDEX idx_options_table_name on " + TB_OPTIONS 
-          + "(" + C_TABLE_ID + ")";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_options_table_name);
-      }
-      stmt.addBatch(idx_options_table_name);
-      stmt.executeBatch();
-      LOG.info("Table '" + TB_OPTIONS + " is created.");
-      
+
       // INDEXES
-      String indexes_ddl = "CREATE TABLE " + TB_INDEXES +"("
-          + "index_name VARCHAR(255) NOT NULL PRIMARY KEY, "
-          + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
-          + "ON DELETE CASCADE, "
-          + "column_name VARCHAR(255) NOT NULL, "
-          + "data_type VARCHAR(255) NOT NULL, "
-          + "index_type CHAR(32) NOT NULL, "
-          + "is_unique BOOLEAN NOT NULL, "
-          + "is_clustered BOOLEAN NOT NULL, "
-          + "is_ascending BOOLEAN NOT NULL)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(indexes_ddl);
-      }
-      stmt.addBatch(indexes_ddl);
-      
-      String idx_indexes_key = "CREATE UNIQUE INDEX idx_indexes_key ON " 
-          + TB_INDEXES + " (index_name)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_indexes_key);
-      }      
-      stmt.addBatch(idx_indexes_key);
-      
-      String idx_indexes_columns = "CREATE INDEX idx_indexes_columns ON " 
-          + TB_INDEXES + " (" + C_TABLE_ID + ", column_name)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_indexes_columns);
-      } 
-      stmt.addBatch(idx_indexes_columns);
-      stmt.executeBatch();
-      LOG.info("Table '" + TB_INDEXES + "' is created.");
+      if (!baseTableMaps.get(TB_INDEXES)) {
+        String indexes_ddl = "CREATE TABLE " + TB_INDEXES +"("
+            + "index_name VARCHAR(255) NOT NULL PRIMARY KEY, "
+            + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
+            + "ON DELETE CASCADE, "
+            + "column_name VARCHAR(255) NOT NULL, "
+            + "data_type VARCHAR(255) NOT NULL, "
+            + "index_type CHAR(32) NOT NULL, "
+            + "is_unique BOOLEAN NOT NULL, "
+            + "is_clustered BOOLEAN NOT NULL, "
+            + "is_ascending BOOLEAN NOT NULL)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(indexes_ddl);
+        }
+        stmt.addBatch(indexes_ddl);
 
-      String stats_ddl = "CREATE TABLE " + TB_STATISTICS + "("
-          + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
-          + "ON DELETE CASCADE, "
-          + "num_rows BIGINT, "
-          + "num_bytes BIGINT)";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(stats_ddl);
-      }
-      stmt.addBatch(stats_ddl);
+        String idx_indexes_key = "CREATE UNIQUE INDEX idx_indexes_key ON "
+            + TB_INDEXES + " (index_name)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_indexes_key);
+        }
+        stmt.addBatch(idx_indexes_key);
 
-      String idx_stats_fk_table_name = "CREATE INDEX idx_stats_table_name ON "
-          + TB_STATISTICS + " (" + C_TABLE_ID + ")";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(idx_stats_fk_table_name);
+        String idx_indexes_columns = "CREATE INDEX idx_indexes_columns ON "
+            + TB_INDEXES + " (" + C_TABLE_ID + ", column_name)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_indexes_columns);
+        }
+        stmt.addBatch(idx_indexes_columns);
+        stmt.executeBatch();
+        LOG.info("Table '" + TB_INDEXES + "' is created.");
       }
-      stmt.addBatch(idx_stats_fk_table_name);
-      stmt.executeBatch();
-      LOG.info("Table '" + TB_STATISTICS + "' is created.");
+
+      if (!baseTableMaps.get(TB_STATISTICS)) {
+        String stats_ddl = "CREATE TABLE " + TB_STATISTICS + "("
+            + C_TABLE_ID + " VARCHAR(255) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
+            + "ON DELETE CASCADE, "
+            + "num_rows BIGINT, "
+            + "num_bytes BIGINT)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(stats_ddl);
+        }
+        stmt.addBatch(stats_ddl);
+
+        String idx_stats_fk_table_name = "CREATE INDEX idx_stats_table_name ON "
+            + TB_STATISTICS + " (" + C_TABLE_ID + ")";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(idx_stats_fk_table_name);
+        }
+        stmt.addBatch(idx_stats_fk_table_name);
+        LOG.info("Table '" + TB_STATISTICS + "' is created.");
+      }
+
+      // PARTITION
+      if (!baseTableMaps.get(TB_PARTTIONS)) {
+        String partition_ddl = "CREATE TABLE " + TB_PARTTIONS + " ("
+            + "PID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), "
+            + "name VARCHAR(255), "
+            + "TID INT NOT NULL REFERENCES " + TB_TABLES + " (TID) ON DELETE CASCADE, "
+            + "type VARCHAR(10) NOT NULL,"
+            + "quantity INT ,"
+            + "columns VARCHAR(255),"
+            + "expressions VARCHAR(1024)"
+            + ", CONSTRAINT PARTITION_PK PRIMARY KEY (PID)"
+            + "   )";
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(partition_ddl);
+        }
+        stmt.addBatch(partition_ddl);
+        LOG.info("Table '" + TB_PARTTIONS + "' is created.");
+        stmt.executeBatch();
+      }
 
     } finally {
       wlock.unlock();
@@ -220,26 +258,34 @@ public class DerbyStore extends AbstractDBStore {
 
     wlock.lock();
     ResultSet res = null;
+    int foundCount = 0;
     try {
-      boolean found = false;
       res = getConnection().getMetaData().getTables(null, null, null,
           new String [] {"TABLE"});
-      
-      String resName;
-      while (res.next() && !found) {
-        resName = res.getString("TABLE_NAME");
-        if (TB_META.equals(resName)
-            || TB_TABLES.equals(resName)
-            || TB_COLUMNS.equals(resName)
-            || TB_OPTIONS.equals(resName)) {
-            return true;
-        }
+
+      baseTableMaps.put(TB_META, false);
+      baseTableMaps.put(TB_TABLES, false);
+      baseTableMaps.put(TB_COLUMNS, false);
+      baseTableMaps.put(TB_OPTIONS, false);
+      baseTableMaps.put(TB_STATISTICS, false);
+      baseTableMaps.put(TB_INDEXES, false);
+      baseTableMaps.put(TB_PARTTIONS, false);
+
+      while (res.next()) {
+        baseTableMaps.put(res.getString("TABLE_NAME"), true);
       }
     } finally {
       wlock.unlock();
       CatalogUtil.closeSQLWrapper(res);
-    }    
-    return false;
+    }
+
+    for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
+      if (!entry.getValue()) {
+        return false;
+      }
+    }
+
+    return true;
   }
   
   final boolean checkInternalTable(final String tableName) throws SQLException {
@@ -263,6 +309,7 @@ public class DerbyStore extends AbstractDBStore {
   
   @Override
   public final void addTable(final TableDesc table) throws IOException {
+    PreparedStatement pstmt = null;
     Statement stmt = null;
     ResultSet res = null;
 
@@ -324,10 +371,95 @@ public class DerbyStore extends AbstractDBStore {
         }
         stmt.executeUpdate(sql);
       }
+
+      //Partition
+      if (table.getPartitions() != null && !table.getPartitions().toString().isEmpty()) {
+        try {
+          Partitions partitions = table.getPartitions();
+          List<Column> columnList = partitions.getColumns();
+
+          // Find columns which used for a partitioned table.
+          StringBuffer columns = new StringBuffer();
+          for(Column eachColumn : columnList) {
+            sql = "SELECT column_id from " + TB_COLUMNS + " WHERE TID "
+                + " = " + tid + " AND column_name = '" + eachColumn.getColumnName() + "'";
+
+            if (LOG.isDebugEnabled()) {
+              LOG.debug(sql);
+            }
+            res = stmt.executeQuery(sql);
+            if (!res.next()) {
+              throw new IOException("ERROR: there is no columnId matched to "
+                  + table.getName());
+            }
+            columnId = res.getInt("column_id");
+
+            if(columns.length() > 0) {
+              columns.append(",");
+            }
+            columns.append(columnId);
+          }
+
+          // Set default partition name. But if user named to subpartition, it would be updated.
+//          String partitionName = partitions.getPartitionsType().name() + "_" + table.getName();
+
+          sql = "INSERT INTO " + TB_PARTTIONS + " (name, TID, "
+              + " type, quantity, columns, expressions) VALUES (?, ?, ?, ?, ?, ?) ";
+          pstmt = getConnection().prepareStatement(sql);
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(sql);
+          }
+
+          // Find information for subpartitions
+          if (partitions.getSpecifiers() != null) {
+            int count = 1;
+            if (partitions.getSpecifiers().size() == 0) {
+              pstmt.clearParameters();
+              pstmt.setString(1, null);
+              pstmt.setInt(2, tid);
+              pstmt.setString(3, partitions.getPartitionsType().name());
+              pstmt.setInt(4, partitions.getNumPartitions());
+              pstmt.setString(5, columns.toString());
+              pstmt.setString(6, null);
+              pstmt.addBatch();
+            } else {
+              for(Specifier eachValue: partitions.getSpecifiers()) {
+                pstmt.clearParameters();
+                if (eachValue.getName() != null && !eachValue.getName().equals("")) {
+                  pstmt.setString(1, eachValue.getName());
+                } else {
+                  pstmt.setString(1, null);
+                }
+                pstmt.setInt(2, tid);
+                pstmt.setString(3, partitions.getPartitionsType().name());
+                pstmt.setInt(4, partitions.getNumPartitions());
+                pstmt.setString(5, columns.toString());
+                pstmt.setString(6, eachValue.getExpressions());
+                pstmt.addBatch();
+                count++;
+              }
+            }
+          } else {
+            pstmt.clearParameters();
+            pstmt.setString(1, null);
+            pstmt.setInt(2, tid);
+            pstmt.setString(3, partitions.getPartitionsType().name());
+            pstmt.setInt(4, partitions.getNumPartitions());
+            pstmt.setString(5, columns.toString());
+            pstmt.setString(6, null);
+            pstmt.addBatch();
+          }
+          pstmt.executeBatch();
+        } finally {
+          CatalogUtil.closeSQLWrapper(pstmt);
+        }
+      }
+
     } catch (SQLException se) {
       throw new IOException(se.getMessage(), se);
     } finally {
       wlock.unlock();
+      CatalogUtil.closeSQLWrapper(res, pstmt);
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
   }
@@ -428,6 +560,17 @@ public class DerbyStore extends AbstractDBStore {
       }
 
       try {
+        sql = "DELETE FROM " + TB_PARTTIONS + " WHERE TID IN ("
+            + " SELECT TID FROM " + TB_TABLES
+            + " WHERE " + C_TABLE_ID + " = '" + name + "' )";
+        LOG.info(sql);
+        stmt = getConnection().createStatement();
+        stmt.execute(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      }
+
+      try {
         sql = "DELETE FROM " + TB_TABLES +
             " WHERE " + C_TABLE_ID +" = '" + name + "'";
         LOG.info(sql);
@@ -435,7 +578,6 @@ public class DerbyStore extends AbstractDBStore {
       } catch (SQLException se) {
         throw new IOException(se);
       }
-
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
@@ -454,6 +596,8 @@ public class DerbyStore extends AbstractDBStore {
     StoreType storeType = null;
     Options options;
     TableStats stat = null;
+    Partitions partitions = null;
+    int tid = 0;
 
     try {
       rlock.lock();
@@ -461,7 +605,7 @@ public class DerbyStore extends AbstractDBStore {
 
       try {
         String sql = 
-            "SELECT " + C_TABLE_ID + ", path, store_type from " + TB_TABLES
+            "SELECT " + C_TABLE_ID + ", path, store_type, TID from " + TB_TABLES
             + " WHERE " + C_TABLE_ID + "='" + name + "'";
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql);
@@ -474,6 +618,7 @@ public class DerbyStore extends AbstractDBStore {
         tableName = res.getString(C_TABLE_ID).trim();
         path = new Path(res.getString("path").trim());
         storeType = CatalogUtil.getStoreType(res.getString("store_type").trim());
+        tid = res.getInt("TID");
       } catch (SQLException se) { 
         throw new IOException(se);
       } finally {
@@ -550,10 +695,46 @@ public class DerbyStore extends AbstractDBStore {
         CatalogUtil.closeSQLWrapper(res);
       }
 
+
+      try {
+        String sql = "SELECT name, type, quantity, columns, expressions from " + TB_PARTTIONS
+            + " WHERE TID =" + tid + "";
+        stmt = getConnection().createStatement();
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+        res = stmt.executeQuery(sql);
+
+        while (res.next()) {
+          if (partitions == null) {
+            partitions = new Partitions();
+            String[] columns = res.getString("columns").split(",");
+            for(String eachColumn: columns) {
+              partitions.addColumn(getColumn(tableName, tid, eachColumn));
+            }
+            partitions.setPartitionsType(CatalogProtos.PartitionsType.valueOf(res.getString
+                ("type")));
+            partitions.setNumPartitions(res.getInt("quantity"));
+          }
+
+          Specifier specifier = new Specifier(res.getString("name"), res.getString("expressions"));
+          partitions.addSpecifier(specifier);
+        }
+
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        CatalogUtil.closeSQLWrapper(res, stmt);
+      }
+
       TableMeta meta = new TableMeta(storeType, options);
       TableDesc table = new TableDesc(tableName, schema, meta, path);
       if (stat != null) {
         table.setStats(stat);
+      }
+
+      if (partitions != null) {
+        table.setPartitions(partitions);
       }
 
       return table;
@@ -564,7 +745,42 @@ public class DerbyStore extends AbstractDBStore {
       CatalogUtil.closeSQLWrapper(stmt);
     }
   }
-  
+
+  private Column getColumn(String tableName, int tid, String columnId) throws IOException {
+    ResultSet res = null;
+    Column column = null;
+    Statement stmt = null;
+
+    try {
+      String sql = "SELECT column_name, data_type, type_length from "
+          + TB_COLUMNS + " WHERE TID = " + tid + " AND column_id = " + columnId;
+
+      stmt = getConnection().createStatement();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      res = stmt.executeQuery(sql);
+
+      if (res.next()) {
+        String columnName = tableName + "."
+            + res.getString("column_name").trim();
+        Type dataType = getDataType(res.getString("data_type")
+            .trim());
+        int typeLength = res.getInt("type_length");
+        if (typeLength > 0) {
+          column = new Column(columnName, dataType, typeLength);
+        } else {
+          column = new Column(columnName, dataType);
+        }
+      }
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(res, stmt);
+    }
+    return column;
+  }
+
   private Type getDataType(final String typeStr) {
     try {
     return Enum.valueOf(Type.class, typeStr);

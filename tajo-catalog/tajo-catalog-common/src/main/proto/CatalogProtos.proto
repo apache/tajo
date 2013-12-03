@@ -50,6 +50,13 @@ enum CompressType {
     LZ = 6;
 }
 
+enum PartitionsType {
+    RANGE = 0;
+    HASH = 1;
+    LIST = 2;
+    COLUMN = 3;
+}
+
 message ColumnMetaProto {
     required DataType dataType = 1;
     required bool compressed = 2;
@@ -106,6 +113,7 @@ message TableDescProto {
 	required TableProto meta = 3;
 	required SchemaProto schema = 4;
 	optional TableStatsProto stats = 5;
+	optional PartitionsProto partitions = 6;
 }
 
 enum FunctionType {
@@ -224,4 +232,16 @@ message SortSpecProto {
   required ColumnProto column = 1;
   optional bool ascending = 2 [default = true];
   optional bool nullFirst = 3 [default = false];
+}
+
+message PartitionsProto {
+  required PartitionsType partitionsType = 1;
+  repeated ColumnProto columns = 2;
+  optional int32 numPartitions = 3;
+  repeated SpecifierProto specifiers = 4;
+}
+
+message SpecifierProto {
+	optional string name = 1;
+	optional string expressions = 2;
 }

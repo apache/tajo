@@ -279,7 +279,6 @@ public class CreateTable extends Expr {
   }
 
   public static class RangePartitionSpecifier extends PartitionSpecifier {
-    String name;
     Expr end;
     boolean maxValue;
 
@@ -291,10 +290,6 @@ public class CreateTable extends Expr {
     public RangePartitionSpecifier(String name) {
       super(name);
       maxValue = true;
-    }
-
-    public String getName() {
-      return name;
     }
 
     public Expr getEnd() {
@@ -320,10 +315,14 @@ public class CreateTable extends Expr {
   }
 
   public static class PartitionSpecifier {
-    String name;
+    private String name;
 
     public PartitionSpecifier(String name) {
       this.name = name;
+    }
+
+    public String getName() {
+      return this.name;
     }
   }
 }

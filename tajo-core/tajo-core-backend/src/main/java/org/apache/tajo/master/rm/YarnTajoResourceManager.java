@@ -36,10 +36,13 @@ import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
+import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.hadoop.yarn.util.BuilderUtils;
 import org.apache.hadoop.yarn.util.Records;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.YarnContainerProxy;
@@ -83,33 +86,38 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
     return new ArrayList<String>();
   }
 
-  public int getNumClusterSlots() {
-    return 0;
+  public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary() {
+    return TajoMasterProtocol.ClusterResourceSummary.newBuilder()
+        .setNumWorkers(0)
+        .setTotalCpuCoreSlots(0)
+        .setTotalDiskSlots(0)
+        .setTotalMemoryMB(0)
+        .setTotalAvailableCpuCoreSlots(0)
+        .setTotalAvailableDiskSlots(0)
+        .setTotalAvailableMemoryMB(0)
+        .build();
   }
 
   @Override
   public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request) {
-    //nothing to do
-    //yarn manages worker membership.
+    throw new UnimplementedException("workerHeartbeat");
   }
 
   @Override
-  public void releaseWorkerResource(QueryId queryId, WorkerResource workerResource) {
-    //nothing to do
+  public void releaseWorkerResource(ExecutionBlockId ebId, YarnProtos.ContainerIdProto containerId) {
+    throw new UnimplementedException("releaseWorkerResource");
   }
 
   @Override
   public WorkerResource allocateQueryMaster(QueryInProgress queryInProgress) {
-    //nothing to do
-    //allocateAndLaunchQueryMaster in startQueryMaster()
-    return null;
+    throw new UnimplementedException("allocateQueryMaster");
   }
 
   @Override
   public void allocateWorkerResources(
       TajoMasterProtocol.WorkerResourceAllocationRequest request,
       RpcCallback<TajoMasterProtocol.WorkerResourceAllocationResponse> rpcCallBack) {
-    //nothing to do
+    throw new UnimplementedException("allocateWorkerResources");
   }
 
   @Override

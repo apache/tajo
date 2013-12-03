@@ -191,4 +191,126 @@ public class TestTajoClient {
     assertEquals(tableName1, desc.getName());
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
+
+  @Test
+  public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndDropTablePartitionedHash1";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += " PARTITION BY HASH (deptname)";
+    sql += " (PARTITION sub_part1, PARTITION sub_part2, PARTITION sub_part3)";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    assertFalse(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndDropTablePartitionedHash2ByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndDropTablePartitionedHash2";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += "PARTITION BY HASH (deptname)";
+    sql += "PARTITIONS 2";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    assertFalse(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndDropTablePartitionedListByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndDropTablePartitionedList";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += "PARTITION BY LIST (deptname)";
+    sql += "( PARTITION sub_part1 VALUES('r&d', 'design'),";
+    sql += "PARTITION sub_part2 VALUES('sales', 'hr') )";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    assertFalse(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndDropTablePartitionedRangeByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndDropTablePartitionedRange";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += "PARTITION BY RANGE (score)";
+    sql += "( PARTITION sub_part1 VALUES LESS THAN (2),";
+    sql += "PARTITION sub_part2 VALUES LESS THAN (5),";
+    sql += "PARTITION sub_part2 VALUES LESS THAN (MAXVALUE) )";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    assertFalse(hdfs.exists(tablePath));
+  }
+  @Test
+  public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndDropTablePartitionedColumn";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += "PARTITION BY COLUMN (deptname)";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    assertFalse(hdfs.exists(tablePath));
+  }
+
 }

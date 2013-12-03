@@ -740,7 +740,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public LiteralValue visitUnsigned_numeric_literal(@NotNull SQLParser.Unsigned_numeric_literalContext ctx) {
     if (ctx.NUMBER() != null) {
-      return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Integer);
+      long lValue = Long.parseLong(ctx.getText());
+      if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
+        return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Integer);
+      } else {
+        return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Large_Integer);
+      } 
     } else {
       return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Float);
     }
@@ -764,7 +769,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public FunctionExpr visitRoutine_invocation(SQLParser.Routine_invocationContext ctx) {
-    String signature = ctx.Identifier().getText();
+    String signature = ctx.function_name().getText();
     FunctionExpr function = new FunctionExpr(signature);
     if (ctx.sql_argument_list() != null) {
       int numArgs = ctx.sql_argument_list().value_expression().size();

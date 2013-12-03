@@ -41,6 +41,9 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.v2.DiskDeviceInfo;
+import org.apache.tajo.storage.v2.DiskMountInfo;
+import org.apache.tajo.storage.v2.DiskUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
@@ -103,7 +106,7 @@ public class TajoWorker extends CompositeService {
 
   private AtomicInteger numClusterNodes = new AtomicInteger();
 
-  private AtomicInteger numClusterSlots = new AtomicInteger();
+  private TajoMasterProtocol.ClusterResourceSummary clusterResource;
 
   private int httpPort;
 
@@ -350,12 +353,16 @@ public class TajoWorker extends CompositeService {
       return TajoWorker.this.numClusterNodes.get();
     }
 
-    public void setNumClusterSlots(int numClusterSlots) {
-      TajoWorker.this.numClusterSlots.set(numClusterSlots);
+    public void setClusterResource(TajoMasterProtocol.ClusterResourceSummary clusterResource) {
+      synchronized(numClusterNodes) {
+        TajoWorker.this.clusterResource = clusterResource;
+      }
     }
 
-    public int getNumClusterSlots() {
-      return TajoWorker.this.numClusterSlots.get();
+    public TajoMasterProtocol.ClusterResourceSummary getClusterResource() {
+      synchronized(numClusterNodes) {
+        return TajoWorker.this.clusterResource;
+      }
     }
 
     public InetSocketAddress getTajoMasterAddress() {
@@ -391,17 +398,18 @@ public class TajoWorker extends CompositeService {
     TajoMasterProtocol.ServerStatusProto.System systemInfo;
     List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos =
         new ArrayList<TajoMasterProtocol.ServerStatusProto.Disk>();
-    int workerDisksNum;
-    List<File> mountPaths;
+    float workerDiskSlots;
+    int workerMemoryMB;
+    List<DiskDeviceInfo> diskDeviceInfos;
 
     public WorkerHeartbeatThread() {
-      int workerMemoryMB;
       int workerCpuCoreNum;
 
       boolean dedicatedResource = systemConf.getBoolVar(ConfVars.WORKER_RESOURCE_DEDICATED);
-      
+      int workerCpuCoreSlots = Runtime.getRuntime().availableProcessors();
+
       try {
-        mountPaths = getMountPath();
+        diskDeviceInfos = DiskUtil.getDiskDeviceInfos();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
       }
@@ -411,24 +419,23 @@ public class TajoWorker extends CompositeService {
         int totalMemory = getTotalMemoryMB();
         workerMemoryMB = (int) ((float) (totalMemory) * dedicatedMemoryRatio);
         workerCpuCoreNum = Runtime.getRuntime().availableProcessors();
-        if(mountPaths == null) {
-          workerDisksNum = ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.defaultIntVal;
+
+        if(diskDeviceInfos == null) {
+          workerDiskSlots = ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.defaultIntVal;
         } else {
-          workerDisksNum = mountPaths.size();
+          workerDiskSlots = diskDeviceInfos.size();
         }
       } else {
-        // TODO - it's a hack and it must be fixed
-        //workerMemoryMB = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
-        workerMemoryMB = 512 * systemConf.getIntVar(ConfVars.WORKER_EXECUTION_MAX_SLOTS);
-        workerDisksNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
+        workerMemoryMB = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
         workerCpuCoreNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
+        workerDiskSlots = systemConf.getFloatVar(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
       }
 
       systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
           .setAvailableProcessors(workerCpuCoreNum)
           .setFreeMemoryMB(0)
           .setMaxMemoryMB(0)
-          .setTotalMemoryMB(workerMemoryMB)
+          .setTotalMemoryMB(getTotalMemoryMB())
           .build();
     }
 
@@ -472,16 +479,8 @@ public class TajoWorker extends CompositeService {
       }
 
       while(true) {
-        if(sendDiskInfoCount == 0 && mountPaths != null) {
-          for(File eachFile: mountPaths) {
-            diskInfos.clear();
-            diskInfos.add(TajoMasterProtocol.ServerStatusProto.Disk.newBuilder()
-                .setAbsolutePath(eachFile.getAbsolutePath())
-                .setTotalSpace(eachFile.getTotalSpace())
-                .setFreeSpace(eachFile.getFreeSpace())
-                .setUsableSpace(eachFile.getUsableSpace())
-                .build());
-          }
+        if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
+          getDiskUsageInfos();
         }
         TajoMasterProtocol.ServerStatusProto.JvmHeap jvmHeap =
           TajoMasterProtocol.ServerStatusProto.JvmHeap.newBuilder()
@@ -494,7 +493,8 @@ public class TajoWorker extends CompositeService {
             .addAllDisk(diskInfos)
             .setRunningTaskNum(taskRunnerManager == null ? 1 : taskRunnerManager.getNumTasks())   //TODO
             .setSystem(systemInfo)
-            .setDiskSlots(workerDisksNum)
+            .setDiskSlots(workerDiskSlots)
+            .setMemoryResourceMB(workerMemoryMB)
             .setJvmHeap(jvmHeap)
             .setQueryMasterMode(PrimitiveProtos.BoolProto.newBuilder().setValue(queryMasterMode))
             .setTaskRunnerMode(PrimitiveProtos.BoolProto.newBuilder().setValue(taskRunnerMode))
@@ -521,13 +521,11 @@ public class TajoWorker extends CompositeService {
 
           TajoMasterProtocol.TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
           if(response != null) {
-            if(response.getNumClusterNodes() > 0) {
-              workerContext.setNumClusterNodes(response.getNumClusterNodes());
+            TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
+            if(clusterResourceSummary.getNumWorkers() > 0) {
+              workerContext.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
             }
-
-            if(response.getNumClusterSlots() > 0) {
-              workerContext.setNumClusterSlots(response.getNumClusterSlots());
-            }
+            workerContext.setClusterResource(clusterResourceSummary);
           } else {
             if(callBack.getController().failed()) {
               throw new ServiceException(callBack.getController().errorText());
@@ -556,6 +554,24 @@ public class TajoWorker extends CompositeService {
       }
 
       LOG.info("Worker Resource Heartbeat Thread stopped.");
+    }
+
+    private void getDiskUsageInfos() {
+      diskInfos.clear();
+      for(DiskDeviceInfo eachDevice: diskDeviceInfos) {
+        List<DiskMountInfo> mountInfos = eachDevice.getMountInfos();
+        if(mountInfos != null) {
+          for(DiskMountInfo eachMount: mountInfos) {
+            File eachFile = new File(eachMount.getMountPath());
+            diskInfos.add(TajoMasterProtocol.ServerStatusProto.Disk.newBuilder()
+                .setAbsolutePath(eachFile.getAbsolutePath())
+                .setTotalSpace(eachFile.getTotalSpace())
+                .setFreeSpace(eachFile.getFreeSpace())
+                .setUsableSpace(eachFile.getUsableSpace())
+                .build());
+          }
+        }
+      }
     }
   }
 
