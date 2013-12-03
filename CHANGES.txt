@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-354: Fix invalid type to valid type for udfs(bit_length/char_length).
+    (DaeMyung Kang via hyunsik)
+
     TAJO-366: Implement trigonometric functions. (Jae Young Lee via jihoon)
 
     TAJO-358: Implement initcap(string) function. (Seungun Choe via hyunsik)
