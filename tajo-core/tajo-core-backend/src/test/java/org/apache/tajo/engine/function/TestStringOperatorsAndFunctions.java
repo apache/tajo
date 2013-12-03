@@ -218,6 +218,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testRepeat() throws IOException {
+    testSimpleEval("select repeat('ab',4) as col1 ", new String[]{"abababab"});
+    testSimpleEval("select repeat('가',3) as col1 ", new String[]{"가가가"});
+    testSimpleEval("select repeat('a',2) as col1 ", new String[]{"aa"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "abc,efg,3.14", "select repeat(col1,2) from table1", new String[]{"abcabc"});
+  }
+
+
+  @Test
   public void testUpper() throws IOException {
     testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
 
