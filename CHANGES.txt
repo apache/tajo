@@ -54,6 +54,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-371: Increase the default value of worker memory. (jihoon)
+
     TAJO-284: Add table partitioning entry to Catalog. (jaehwa)
 
     TAJO-317: Improve TajoResourceManager to support more elaborate resource 
