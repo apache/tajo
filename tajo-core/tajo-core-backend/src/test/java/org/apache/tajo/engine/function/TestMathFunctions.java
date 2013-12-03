@@ -26,7 +26,7 @@ import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 
-public class TestMethFunction extends ExprTestBase {
+public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testRound() throws IOException {
     testSimpleEval("select round(5.1) as col1 ", new String[]{"5"});
