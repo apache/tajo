@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-366: Implement trigonometric functions. (Jae Young Lee via jihoon)
+
     TAJO-358: Implement initcap(string) function. (Seungun Choe via hyunsik)
 
     TAJO-355: Implement repeat(text,int) function. (DaeMyung Kang via jaehwa)

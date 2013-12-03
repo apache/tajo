@@ -494,6 +494,68 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
 
     sqlFuncs.add(
+        new FunctionDesc("cos", Cos.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("cos", Cos.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("tan", Tan.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("tan", Tan.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("asin", Asin.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("asin", Asin.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("acos", Acos.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("acos", Acos.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("atan", Atan.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("atan", Atan.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("atan2", Atan2.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("atan2", Atan2.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT4)));
+
+
+
+    sqlFuncs.add(
         new FunctionDesc("initcap", InitCap.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));

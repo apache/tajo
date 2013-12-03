@@ -29,10 +29,10 @@ import org.apache.tajo.storage.Tuple;
 /**
  * Function definition
  *
- * Float8 sin(value FLOAT8)
+ * Float8 atan(value FLOAT8)
  */
-public class Sin extends GeneralFunction {
-  public Sin() {
+public class Atan extends GeneralFunction {
+  public Atan() {
     super(new Column[] {
         new Column("value", TajoDataTypes.Type.FLOAT8)
     });
@@ -45,6 +45,6 @@ public class Sin extends GeneralFunction {
       return NullDatum.get();
     }
 
-    return DatumFactory.createFloat8(Math.sin(valueDatum.asFloat8()));
+    return DatumFactory.createFloat8(Math.atan(valueDatum.asFloat8()));
   }
 }
