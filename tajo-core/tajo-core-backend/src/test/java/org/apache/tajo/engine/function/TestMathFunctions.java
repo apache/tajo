@@ -80,4 +80,21 @@ public class TestMathFunctions extends ExprTestBase {
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select ceil(col1 + col2 + col3) from table1",
         new String[]{"2"});
   }
+
+  @Test
+  public void testSin() throws IOException {
+    testSimpleEval("select sin(0.0) as col1 ", new String[]{"0.0"});
+    testSimpleEval("select sin(0.7) as col1 ", new String[]{"0.6442176781200616"});
+    testSimpleEval("select sin(1.2) as col1 ", new String[]{"0.9320391032457895"});
+//    testSimpleEval("select sin(-0.5) as col1 ", new String[]{"-0.479425538604203"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT8);
+    schema.addColumn("col2", FLOAT8);
+    schema.addColumn("col3", FLOAT8);
+
+    testEval(schema, "table1", "1.0, 0.2, 0.1", "select sin(col1 + col2 + col3) from table1",
+       new String[]{"0.963558185417193"});
+}
+
 }
