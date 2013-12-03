@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Options;
+import org.apache.tajo.catalog.partition.Partitions;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
@@ -38,10 +39,17 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private Options options;
   @Expose private boolean isCreatedTable = false;
   @Expose private boolean isOverwritten = false;
+  @Expose private Partitions partitions;
 
   public StoreTableNode(int pid, String tableName) {
     super(pid, NodeType.STORE);
     this.tableName = tableName;
+  }
+
+  public StoreTableNode(int pid, String tableName, Partitions partitions) {
+    super(pid, NodeType.STORE);
+    this.tableName = tableName;
+    this.partitions = partitions;
   }
 
   public final String getTableName() {
@@ -101,6 +109,13 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     return this.options;
   }
 
+  public Partitions getPartitions() {
+    return partitions;
+  }
+
+  public void setPartitions(Partitions partitions) {
+    this.partitions = partitions;
+  }
 
   @Override
   public PlanString getPlanString() {
@@ -131,6 +146,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
       eq = eq && TUtil.checkEquals(options, other.options);
       eq = eq && isCreatedTable == other.isCreatedTable;
       eq = eq && isOverwritten == other.isOverwritten;
+      eq = eq && TUtil.checkEquals(partitions, other.partitions);
       return eq;
     } else {
       return false;
@@ -147,6 +163,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     store.options = options != null ? (Options) options.clone() : null;
     store.isCreatedTable = isCreatedTable;
     store.isOverwritten = isOverwritten;
+    store.partitions = partitions;
     return store;
   }
 
@@ -169,8 +186,13 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     }
     
     sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInSchema())
-    .append("}");
+    .append("\n  \"in schema\": ").append(getInSchema());
+
+    if(partitions != null) {
+      sb.append(partitions.toString());
+    }
+
+    sb.append("}");
     
     return sb.toString() + "\n"
         + getChild().toString();

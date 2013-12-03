@@ -27,6 +27,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.sql.Wrapper;
 import java.util.Collection;
 
@@ -148,6 +149,8 @@ public class CatalogUtil {
       try{
         if(w instanceof Statement){
           ((Statement)w).close();
+        } else if(w instanceof PreparedStatement){
+            ((PreparedStatement)w).close();
         } else if(w instanceof ResultSet){
           ((ResultSet)w).close();
         } else if(w instanceof Connection){

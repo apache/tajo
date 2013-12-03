@@ -222,6 +222,18 @@ public class LogicalPlan {
         return ensureUniqueColumn(candidates);
       }
 
+      // Trying to find columns from schema in current block.
+      if (block.getSchema() != null) {
+        Column found = block.getSchema().getColumnByName(columnRef.getName());
+        if (found != null) {
+          candidates.add(found);
+        }
+      }
+
+      if (!candidates.isEmpty()) {
+        return ensureUniqueColumn(candidates);
+      }
+
       throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
     }
   }
@@ -724,7 +736,6 @@ public class LogicalPlan {
         // add target to list if a target can be evaluated at this node
         List<Integer> newEvaluatedTargetIds = new ArrayList<Integer>();
         for (int i = 0; i < getTargetListNum(); i++) {
-
           if (getTarget(i) != null && !isTargetResolved(i)) {
             EvalNode expr = getTarget(i).getEvalTree();
 

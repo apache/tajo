@@ -22,6 +22,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.catalog.store.AbstractDBStore;
@@ -219,4 +222,175 @@ public class TestDBStore {
           s2.getColumn(i).getColumnName());
     }
   }
+
+  @Test
+  public final void testAddAndDeleteTablePartitionByHash1() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+        .addColumn("name", Type.TEXT)
+        .addColumn("age", Type.INT4)
+        .addColumn("score", Type.FLOAT8);
+
+    String tableName = "addedtable";
+    Options opts = new Options();
+    opts.put("file.delimiter", ",");
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+
+    Partitions partitions = new Partitions();
+    partitions.addColumn(new Column("id", Type.INT4));
+    partitions.setPartitionsType(CatalogProtos.PartitionsType.HASH);
+    partitions.setNumPartitions(2);
+
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    desc.setPartitions(partitions);
+    assertFalse(store.existTable(tableName));
+    store.addTable(desc);
+    assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+
+    // Schema order check
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
+    store.deleteTable(tableName);
+    assertFalse(store.existTable(tableName));
+  }
+
+  @Test
+  public final void testAddAndDeleteTablePartitionByHash2() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+        .addColumn("name", Type.TEXT)
+        .addColumn("age", Type.INT4)
+        .addColumn("score", Type.FLOAT8);
+
+    String tableName = "addedtable";
+    Options opts = new Options();
+    opts.put("file.delimiter", ",");
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+
+    Partitions partitions = new Partitions();
+    partitions.addColumn(new Column("id", Type.INT4));
+    partitions.setPartitionsType(CatalogProtos.PartitionsType.HASH);
+    partitions.setNumPartitions(2);
+
+    partitions.addSpecifier(new Specifier("sub_part1"));
+    partitions.addSpecifier(new Specifier("sub_part2"));
+    partitions.addSpecifier(new Specifier("sub_part3"));
+
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    desc.setPartitions(partitions);
+    assertFalse(store.existTable(tableName));
+    store.addTable(desc);
+    assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+
+    // Schema order check
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
+    store.deleteTable(tableName);
+    assertFalse(store.existTable(tableName));
+  }
+
+  @Test
+  public final void testAddAndDeleteTablePartitionByList() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+        .addColumn("name", Type.TEXT)
+        .addColumn("age", Type.INT4)
+        .addColumn("score", Type.FLOAT8);
+
+    String tableName = "addedtable";
+    Options opts = new Options();
+    opts.put("file.delimiter", ",");
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+
+    Partitions partitions = new Partitions();
+    partitions.addColumn(new Column("id", Type.INT4));
+    partitions.setPartitionsType(CatalogProtos.PartitionsType.LIST);
+
+    partitions.addSpecifier(new Specifier("sub_part1", "Seoul,서울"));
+    partitions.addSpecifier(new Specifier("sub_part2", "Busan,부산"));
+
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    desc.setPartitions(partitions);
+    assertFalse(store.existTable(tableName));
+    store.addTable(desc);
+    assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+
+    // Schema order check
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
+    store.deleteTable(tableName);
+    assertFalse(store.existTable(tableName));
+  }
+
+  @Test
+  public final void testAddAndDeleteTablePartitionByRange() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+        .addColumn("name", Type.TEXT)
+        .addColumn("age", Type.INT4)
+        .addColumn("score", Type.FLOAT8);
+
+    String tableName = "addedtable";
+    Options opts = new Options();
+    opts.put("file.delimiter", ",");
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+
+    Partitions partitions = new Partitions();
+    partitions.addColumn(new Column("id", Type.INT4));
+    partitions.setPartitionsType(CatalogProtos.PartitionsType.RANGE);
+
+    partitions.addSpecifier(new Specifier("sub_part1", "2"));
+    partitions.addSpecifier(new Specifier("sub_part2", "5"));
+    partitions.addSpecifier(new Specifier("sub_part3"));
+
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    desc.setPartitions(partitions);
+    assertFalse(store.existTable(tableName));
+    store.addTable(desc);
+    assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+
+    // Schema order check
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
+    store.deleteTable(tableName);
+    assertFalse(store.existTable(tableName));
+  }
+
+  @Test
+  public final void testAddAndDeleteTablePartitionByColumn() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+        .addColumn("name", Type.TEXT)
+        .addColumn("age", Type.INT4)
+        .addColumn("score", Type.FLOAT8);
+
+    String tableName = "addedtable";
+    Options opts = new Options();
+    opts.put("file.delimiter", ",");
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+
+    Partitions partitions = new Partitions();
+    partitions.addColumn(new Column("id", Type.INT4));
+    partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
+
+    TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
+    desc.setPartitions(partitions);
+    assertFalse(store.existTable(tableName));
+    store.addTable(desc);
+    assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+
+    // Schema order check
+    assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
+    store.deleteTable(tableName);
+    assertFalse(store.existTable(tableName));
+  }
+
+
+
 }

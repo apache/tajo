@@ -253,9 +253,12 @@ public class CatalogServer extends AbstractService {
         descBuilder.setMeta(tableDesc.getMeta());
         descBuilder.setSchema(tableDesc.getSchema());
 
+        if( tableDesc.getPartitions() != null
+            && !tableDesc.getPartitions().toString().isEmpty()) {
+          descBuilder.setPartitions(tableDesc.getPartitions());
+        }
 
         store.addTable(new TableDesc(descBuilder.build()));
-
       } catch (IOException ioe) {
         LOG.error(ioe.getMessage(), ioe);
         return BOOL_FALSE;

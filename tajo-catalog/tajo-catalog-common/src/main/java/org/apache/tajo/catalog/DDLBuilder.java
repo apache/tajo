@@ -18,6 +18,9 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 
 import java.util.Map;
@@ -37,6 +40,10 @@ public class DDLBuilder {
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
     buildLocationClause(sb, desc);
+
+    if (desc.getPartitions() != null) {
+      buildPartitionClause(sb, desc);
+    }
 
     sb.append(";");
     return sb.toString();
@@ -86,5 +93,68 @@ public class DDLBuilder {
 
   private static void buildLocationClause(StringBuilder sb, TableDesc desc) {
     sb.append(" LOCATION '").append(desc.getPath()).append("'");
+  }
+
+  private static void buildPartitionClause(StringBuilder sb, TableDesc desc) {
+    Partitions partitions = desc.getPartitions();
+
+    sb.append(" PARTITION BY ");
+    sb.append(partitions.getPartitionsType().name());
+
+    // columns
+    sb.append("(");
+    int columnCount = 0;
+    for(Column column: partitions.getColumns()) {
+      for(Column targetColumn: desc.getSchema().getColumns()) {
+        if (column.getColumnName().equals(targetColumn.getColumnName()))  {
+          if (columnCount > 0)
+            sb.append(",");
+
+          sb.append(column.getColumnName());
+          columnCount++;
+        }
+      }
+    }
+    sb.append(")");
+
+    // specifier
+    if (partitions.getSpecifiers() != null
+        && !partitions.getPartitionsType().equals(CatalogProtos.PartitionsType.COLUMN)) {
+
+      sb.append(" (");
+      for(int i = 0; i < partitions.getSpecifiers().size(); i++) {
+        Specifier specifier = partitions.getSpecifiers().get(i);
+        if (i > 0)
+          sb.append(",");
+
+        sb.append(" PARTITION");
+
+        if (!specifier.getName().isEmpty())
+          sb.append(" ").append(specifier.getName());
+
+        if (partitions.getPartitionsType().equals(CatalogProtos.PartitionsType.LIST)) {
+          if (!specifier.getExpressions().isEmpty()) {
+            sb.append(" VALUES (");
+            String[] expressions = specifier.getExpressions().split("\\,");
+            for(int j = 0; j < expressions.length; j++) {
+              if (j > 0)
+                sb.append(",");
+              sb.append("'").append(expressions[j]).append("'");
+            }
+            sb.append(")");
+
+          }
+        } else if (partitions.getPartitionsType().equals(CatalogProtos.PartitionsType.RANGE))  {
+          sb.append(" VALUES LESS THAN (");
+          if (!specifier.getExpressions().isEmpty()) {
+            sb.append(specifier.getExpressions());
+          } else {
+            sb.append("MAXVALUE");
+          }
+          sb.append(")");
+        }
+      }
+      sb.append(")");
+    }
   }
 }
