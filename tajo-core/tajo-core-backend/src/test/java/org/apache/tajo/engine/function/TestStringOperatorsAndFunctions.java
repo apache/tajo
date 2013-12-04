@@ -403,4 +403,17 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select initcap('hi bro') ", new String[]{"Hi Bro"});
     testSimpleEval("select initcap('HI BRO') ", new String[]{"Hi Bro"});
   }
+
+  @Test
+  public void testAscii() throws IOException {
+    testSimpleEval("select ascii('abc') as col1 ", new String[]{"97"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    testEval(schema, "table1", "abc", "select ascii(col1) from table1",
+            new String[]{"97"});
+    testEval(schema, "table1", "12", "select ascii(col1) from table1",
+            new String[]{"49"});
+
+  }
 }

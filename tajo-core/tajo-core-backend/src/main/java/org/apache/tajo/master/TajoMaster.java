@@ -429,6 +429,10 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("regexp_replace", RegexpReplace.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT, Type.TEXT)));
+    sqlFuncs.add(
+        new FunctionDesc("ascii", Ascii.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT4),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
 
     sqlFuncs.add(
         new FunctionDesc("length", Length.class, FunctionType.GENERAL,
