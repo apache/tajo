@@ -28,6 +28,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.algebra.CreateTable;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.Specifier;
@@ -37,6 +38,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
@@ -363,7 +365,16 @@ public class TajoCli {
               + ", response time: " + (((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0)
               + " sec"));
           if (status.hasResult()) {
-            ResultSet res = client.getQueryResult(queryId);
+            ResultSet res = null;
+            TableDesc desc = null;
+            if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+              res = client.createNullResultSet(queryId);
+            } else {
+              ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
+              desc = CatalogUtil.newTableDesc(response.getTableDesc());
+              conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
+              res = new TajoResultSet(client, queryId, conf, desc);
+            }
             try {
               if (res == null) {
                 sout.println("OK");
@@ -371,7 +382,7 @@ public class TajoCli {
               }
 
               ResultSetMetaData rsmd = res.getMetaData();
-              TableDesc desc = client.getResultDesc(queryId);
+
               TableStats stat = desc.getStats();
               String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
               long resultRows = stat.getNumRows();

@@ -63,6 +63,7 @@ message GetQueryResultRequest {
 message GetQueryResultResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
+  required string tajoUserName = 3;
 }
 
 message GetQueryListRequest {

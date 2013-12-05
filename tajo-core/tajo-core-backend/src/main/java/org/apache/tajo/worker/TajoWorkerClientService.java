@@ -23,6 +23,7 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
@@ -37,6 +38,7 @@ import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 public class TajoWorkerClientService extends AbstractService {
@@ -128,6 +130,11 @@ public class TajoWorkerClientService extends AbstractService {
       Query query = workerContext.getQueryMaster().getQuery(queryId);
 
       ClientProtos.GetQueryResultResponse.Builder builder = ClientProtos.GetQueryResultResponse.newBuilder();
+      try {
+        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
+      } catch (IOException e) {
+        LOG.warn("Can't get current user name");
+      }
 
       if(query == null) {
         builder.setErrorMessage("No Query for " + queryId);

@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
@@ -166,13 +167,17 @@ public class TajoMasterClientService extends AbstractService {
                                                  GetQueryResultRequest request)
         throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-
-      }
       QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
       GetQueryResultResponse.Builder builder
           = GetQueryResultResponse.newBuilder();
+
+      try {
+        //TODO After implementation Tajo's user security feature, Should be modified.
+        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
+      } catch (IOException e) {
+        LOG.warn("Can't get current user name");
+      }
       switch (queryInfo.getQueryState()) {
         case QUERY_SUCCEEDED:
           // TODO check this logic needed

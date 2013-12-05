@@ -92,7 +92,10 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-347: Fix bug when to call function with insensitive function name. 
+    TAJO-375: TajoClient can't get result data when different os user
+    (hyoungjunkim via hyunsik)
+
+    TAJO-347: Fix bug when to call function with insensitive function name.
     (DaeMyung Kang via hyunsik)
 
     TAJO-345: MergeScanner should support projectable storages. (jihoon)

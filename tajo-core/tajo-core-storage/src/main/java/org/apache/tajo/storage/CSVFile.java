@@ -31,6 +31,7 @@ import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
@@ -275,7 +276,9 @@ public class CSVFile {
     public void init() throws IOException {
 
       // FileFragment information
-      if(fs == null) fs = fragment.getPath().getFileSystem(conf);
+      if(fs == null) {
+        fs = FileScanner.getFileSystem((TajoConf)conf, fragment.getPath());
+      }
       if(fis == null) fis = fs.open(fragment.getPath());
 
       pos = startOffset = fragment.getStartKey();
