@@ -108,8 +108,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
           String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getTableId();
           String rightTableName = ((FieldEval) joinQual.getRightExpr()).getTableId();
           List<String> nullSuppliers = Lists.newArrayList();
-          String [] leftLineage = PlannerUtil.getLineage(joinNode.getLeftChild());
-          String [] rightLineage = PlannerUtil.getLineage(joinNode.getRightChild());
+          String [] leftLineage = PlannerUtil.getRelationLineage(joinNode.getLeftChild());
+          String [] rightLineage = PlannerUtil.getRelationLineage(joinNode.getRightChild());
           Set<String> leftTableSet = Sets.newHashSet(leftLineage);
           Set<String> rightTableSet = Sets.newHashSet(rightLineage);
 

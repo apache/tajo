@@ -19,21 +19,20 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.util.FileUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestJoinQuery {
@@ -123,6 +122,63 @@ public class TestJoinQuery {
       }
 
       assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoin1() throws Exception {
+    ResultSet res = tpch.execute(
+        "select c_custkey, orders.o_orderkey from customer left outer join orders on c_custkey = o_orderkey;");
+    try {
+      Map<Integer, Integer> result = Maps.newHashMap();
+      result.put(1, 1);
+      result.put(2, 2);
+      result.put(3, 3);
+      result.put(4, 0);
+      result.put(5, 0);
+      while(res.next()) {
+        assertTrue(result.get(res.getInt(1)) == res.getInt(2));
+      }
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoin1() throws Exception {
+    ResultSet res = tpch.execute(
+        "select c_custkey, orders.o_orderkey from orders right outer join customer on c_custkey = o_orderkey;");
+    try {
+      Map<Integer, Integer> result = Maps.newHashMap();
+      result.put(1, 1);
+      result.put(2, 2);
+      result.put(3, 3);
+      result.put(4, 0);
+      result.put(5, 0);
+      while(res.next()) {
+        assertTrue(result.get(res.getInt(1)) == res.getInt(2));
+      }
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testFullOuterJoin1() throws Exception {
+    ResultSet res = tpch.execute(
+        "select c_custkey, orders.o_orderkey, from orders full outer join customer on c_custkey = o_orderkey;");
+    try {
+      Map<Integer, Integer> result = Maps.newHashMap();
+      result.put(1, 1);
+      result.put(2, 2);
+      result.put(3, 3);
+      result.put(4, 0);
+      result.put(5, 0);
+      while(res.next()) {
+        assertTrue(result.get(res.getInt(1)) == res.getInt(2));
+      }
     } finally {
       res.close();
     }

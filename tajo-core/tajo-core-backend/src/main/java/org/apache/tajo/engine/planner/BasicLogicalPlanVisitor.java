@@ -40,12 +40,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block) throws PlanningException {
-    RESULT result = visitChild(context, plan, block.getRoot(), new Stack<LogicalNode>());
+    visitChild(context, plan, block.getRoot(), new Stack<LogicalNode>());
     return context;
   }
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalNode node) throws PlanningException {
-    RESULT result = visitChild(context, plan, node, new Stack<LogicalNode>());
+    visitChild(context, plan, node, new Stack<LogicalNode>());
     return context;
   }
 

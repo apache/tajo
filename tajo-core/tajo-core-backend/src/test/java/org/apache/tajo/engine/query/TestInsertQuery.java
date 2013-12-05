@@ -53,7 +53,7 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwrite() throws Exception {
     String tableName ="InsertOverwrite";
-    ResultSet res = tpch.execute("create table " + tableName +" (col1 int8, col2 int4, col3 float4)");
+    ResultSet res = tpch.execute("create table " + tableName +" (col1 int4, col2 int4, col3 float4)");
     res.close();
     TajoTestingCluster cluster = tpch.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
@@ -70,7 +70,7 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteSmallerColumns() throws Exception {
     String tableName = "insertoverwritesmallercolumns";
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int8, col2 int4, col3 float4)");
+    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float4)");
     res.close();
     TajoTestingCluster cluster = tpch.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
@@ -87,7 +87,7 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteWithTargetColumns() throws Exception {
     String tableName = "InsertOverwriteWithTargetColumns";
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int8, col2 int4, col3 float4)");
+    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float4)");
     res.close();
     TajoTestingCluster cluster = tpch.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
@@ -204,7 +204,7 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteWithCompression() throws Exception {
     String tableName = "testInsertOverwriteWithCompression";
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int8, col2 int4, col3 float4) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')");
+    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float4) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')");
     res.close();
     TajoTestingCluster cluster = tpch.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();

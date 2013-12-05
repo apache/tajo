@@ -119,6 +119,6 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   public String toString() {
-    return "Table Subquery (alias = " + tableName + ")\n" + subQuery.toString();
+    return "(" + getPID() + ") Table Subquery (alias = " + tableName + ")\n" + subQuery.toString();
   }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.benchmark;
 
+import com.google.common.collect.Maps;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +32,7 @@ import org.apache.tajo.storage.CSVFile;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
   private final Log LOG = LogFactory.getLog(TPCH.class);
@@ -45,10 +47,23 @@ public class TPCH extends BenchmarkSet {
   public static String PARTSUPP = "partsupp";
   public static String SUPPLIER = "supplier";
 
+  public static final Map<String, Long> tableVolumes = Maps.newHashMap();
+
+  static {
+    tableVolumes.put(LINEITEM, 759863287L);
+    tableVolumes.put(CUSTOMER, 24346144L);
+    tableVolumes.put(NATION, 2224L);
+    tableVolumes.put(PART, 24135125L);
+    tableVolumes.put(REGION, 389L);
+    tableVolumes.put(ORDERS, 171952161L);
+    tableVolumes.put(PARTSUPP, 118984616L);
+    tableVolumes.put(SUPPLIER, 1409184L);
+  }
+
   @Override
   public void loadSchemas() {
     Schema lineitem = new Schema()
-        .addColumn("l_orderkey", Type.INT8) // 0
+        .addColumn("l_orderkey", Type.INT4) // 0
         .addColumn("l_partkey", Type.INT4) // 1
         .addColumn("l_suppkey", Type.INT4) // 2
         .addColumn("l_linenumber", Type.INT4) // 3
@@ -105,7 +120,7 @@ public class TPCH extends BenchmarkSet {
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
-        .addColumn("o_orderkey", Type.INT8) // 0
+        .addColumn("o_orderkey", Type.INT4) // 0
         .addColumn("o_custkey", Type.INT4) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
         .addColumn("o_totalprice", Type.FLOAT4) // 3
@@ -167,6 +182,7 @@ public class TPCH extends BenchmarkSet {
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     meta.putOption(CSVFile.DELIMITER, "|");
+
     try {
       tajo.createExternalTable(tableName, getSchema(tableName), new Path(dataDir, tableName), meta);
     } catch (SQLException s) {

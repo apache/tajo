@@ -170,7 +170,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // 3. build scan plan
     Relation relation = expr;
     TableDesc desc = catalog.getTableDesc(relation.getName());
-    updatePhysicalInfo(desc);
+    if (!desc.hasStats()) {
+      updatePhysicalInfo(desc);
+    }
 
     ScanNode scanNode;
     if (relation.hasAlias()) {

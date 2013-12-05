@@ -83,6 +83,7 @@ public class MasterPlan {
   
   public void setTerminal(ExecutionBlock root) {
     this.root = root;
+    this.terminalBlock = root;
   }
   
   public ExecutionBlock getRoot() {

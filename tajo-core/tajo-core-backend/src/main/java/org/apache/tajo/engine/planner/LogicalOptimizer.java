@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
@@ -33,7 +34,6 @@ import org.apache.tajo.engine.planner.rewrite.BasicQueryRewriteEngine;
 import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
 
@@ -83,7 +83,7 @@ public class LogicalOptimizer {
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
-          joinGraphContext.joinGraph, joinGraphContext.quals, joinGraphContext.relationsWithoutQual);
+          joinGraphContext.joinGraph, joinGraphContext.relationsForProduct);
       block.setJoinNode(order.getOrderedJoin());
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
@@ -94,9 +94,18 @@ public class LogicalOptimizer {
   }
 
   private static class JoinGraphContext {
+    LogicalPlan.QueryBlock block;
     JoinGraph joinGraph = new JoinGraph();
     Set<EvalNode> quals = Sets.newHashSet();
-    Set<String> relationsWithoutQual = Sets.newHashSet();
+    Set<String> relationsForProduct = Sets.newHashSet();
+
+    public JoinGraphContext(LogicalPlan.QueryBlock block) {
+      this.block = block;
+    }
+
+    public LogicalPlan.QueryBlock getBlock() {
+      return block;
+    }
   }
 
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
@@ -106,9 +115,14 @@ public class LogicalOptimizer {
       instance = new JoinGraphBuilder();
     }
 
+    /**
+     * This is based on the assumtion that all join and filter conditions are placed on the right join and
+     * scan operators. In other words, filter push down must be performed before this method.
+     * Otherwise, this method may build incorrectly a join graph.
+     */
     public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
         throws PlanningException {
-      JoinGraphContext joinGraphContext = new JoinGraphContext();
+      JoinGraphContext joinGraphContext = new JoinGraphContext(block);
       instance.visit(joinGraphContext, plan, block);
       return joinGraphContext;
     }
@@ -126,14 +140,17 @@ public class LogicalOptimizer {
         throws PlanningException {
       super.visitJoin(joinGraphContext, plan, joinNode, stack);
       if (joinNode.hasJoinQual()) {
-        Collection<EvalNode> nonJoinQual =
-            joinGraphContext.joinGraph.addJoin(joinNode.getJoinType(), joinNode.getJoinQual());
-        joinGraphContext.quals.addAll(nonJoinQual);
+        joinGraphContext.joinGraph.addJoin(plan, joinGraphContext.block, joinNode);
       } else {
         LogicalNode leftChild = joinNode.getLeftChild();
+        LogicalNode rightChild = joinNode.getRightChild();
         if (leftChild instanceof RelationNode) {
           RelationNode rel = (RelationNode) leftChild;
-          joinGraphContext.relationsWithoutQual.add(rel.getCanonicalName());
+          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
+        }
+        if (rightChild instanceof RelationNode) {
+          RelationNode rel = (RelationNode) rightChild;
+          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
         }
       }
       return joinNode;
@@ -163,11 +180,25 @@ public class LogicalOptimizer {
       stack.push(joinNode);
       sb.append("(");
       visitChild(sb, plan, joinNode.getLeftChild(), stack);
-      sb.append(",");
+      sb.append(" ").append(getJoinNotation(joinNode.getJoinType())).append(" ");
       visitChild(sb, plan, joinNode.getRightChild(), stack);
       sb.append(")");
       stack.pop();
       return joinNode;
+    }
+
+    private static String getJoinNotation(JoinType joinType) {
+      switch (joinType) {
+      case CROSS: return "⋈";
+      case INNER: return "⋈θ";
+      case LEFT_OUTER: return "⟕";
+      case RIGHT_OUTER: return "⟖";
+      case FULL_OUTER: return "⟗";
+      case LEFT_SEMI: return "⋉";
+      case RIGHT_SEMI: return "⋊";
+      case LEFT_ANTI: return "▷";
+      }
+      return ",";
     }
 
     @Override

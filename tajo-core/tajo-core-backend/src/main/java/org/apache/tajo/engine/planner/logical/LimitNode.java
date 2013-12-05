@@ -35,7 +35,7 @@ public final class LimitNode extends UnaryNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    return new PlanString("Limit");
+    return new PlanString("Limit " + fetchFirstNum);
   }
   
   @Override 

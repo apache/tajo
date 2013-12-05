@@ -425,7 +425,7 @@ public class TestSelectQuery {
       for (;res.next();) {
         count++;
       }
-      assertEquals(6, count);
+      assertEquals(8, count);
     } finally {
       res.close();
     }
