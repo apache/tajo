@@ -564,6 +564,11 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
 
+    sqlFuncs.add(
+        new FunctionDesc("lpad", Lpad.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.TEXT)));
+
     return sqlFuncs;
   }
 

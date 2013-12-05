@@ -416,4 +416,14 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
             new String[]{"49"});
 
   }
+
+  @Test
+  public void testLpad() throws IOException {
+    testSimpleEval("select lpad('hi', 5, 'xy') ", new String[]{"xyxhi"});
+    testSimpleEval("select LPAD('hello', 7, 'xy') ", new String[]{"xyhello"});
+    testSimpleEval("select LPAD('hello', 3, 'xy') ", new String[]{"hel"});
+    testSimpleEval("select lPAD('hello', 7) ", new String[]{"  hello"});
+    testSimpleEval("select lPAD('가나다라', 3) ", new String[]{"가나다"});
+
+  }
 }

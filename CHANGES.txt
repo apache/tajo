@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-359: Implement lpad function. (Seungun Choe via jaehwa)
+
     TAJO-306: Implement ascii(string) function. (SeongHwa Ahn via jaehwa)
 
     TAJO-354: Fix invalid type to valid type for udfs(bit_length/char_length).
