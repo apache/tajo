@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
+import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
 
 public class TestMathFunctions extends ExprTestBase {
   @Test
@@ -195,5 +196,52 @@ public class TestMathFunctions extends ExprTestBase {
         new String[]{"1.4876550949064553"});
   }
 
+  @Test
+  public void testMod() throws IOException {
+    testSimpleEval("select mod(9,4) as col1 ", new String[]{"1"});
+    testSimpleEval("select mod(200000000001,200000000000) as col1 ", new String[]{"1"});
+    testSimpleEval("select mod(200000000000,2) as col1 ", new String[]{"0"});
+    testSimpleEval("select mod(2,200000000000) as col1 ", new String[]{"2"});
 
+    Schema schema = new Schema();
+    schema.addColumn("col1", INT8);
+    schema.addColumn("col2", INT8);
+    schema.addColumn("col3", INT8);
+
+    testEval(schema, "table1", "9,2,3", "select mod(col1 + col2, col3) from table1", 
+        new String[]{"2"});
+  }
+
+  @Test
+  public void testDiv() throws IOException {
+    testSimpleEval("select div(9,4) as col1 ", new String[]{"2"});
+    testSimpleEval("select div(200000000001,200000000000) as col1 ", new String[]{"1"});
+    testSimpleEval("select div(200000000000,2) as col1 ", new String[]{"100000000000"});
+    testSimpleEval("select div(2,200000000000) as col1 ", new String[]{"0"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", INT8);
+    schema.addColumn("col2", INT8);
+    schema.addColumn("col3", INT8);
+
+    testEval(schema, "table1", "9,2,3", "select div(col1 + col2, col3) from table1", 
+        new String[]{"3"});
+  }
+/*
+  @Test
+  public void testDiv() throws IOException {
+    testSimpleEval("select mod(9,4) as col1 ", new String[]{"1"});
+    testSimpleEval("select mod(200000000001,200000000000) as col1 ", new String[]{"1"});
+    testSimpleEval("select mod(200000000000,2) as col1 ", new String[]{"0"});
+    testSimpleEval("select mod(2,200000000000) as col1 ", new String[]{"2"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", INT8);
+    schema.addColumn("col2", INT8);
+    schema.addColumn("col3", INT8);
+
+    testEval(schema, "table1", "9,2,3", "select mod(col1 + col2, col3) from table1", 
+        new String[]{"2"});
+  }
+*/
 }

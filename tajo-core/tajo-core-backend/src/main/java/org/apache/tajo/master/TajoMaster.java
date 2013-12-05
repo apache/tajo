@@ -557,7 +557,39 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataType(Type.FLOAT8),
             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT4)));
 
+    sqlFuncs.add(
+        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
 
+    sqlFuncs.add(
+        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
 
     sqlFuncs.add(
         new FunctionDesc("initcap", InitCap.class, FunctionType.GENERAL,
