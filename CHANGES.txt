@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-361: Implement rpad function. (Seungun Choe via jaehwa)
+
     TAJO-359: Implement lpad function. (Seungun Choe via jaehwa)
 
     TAJO-306: Implement ascii(string) function. (SeongHwa Ahn via jaehwa)
