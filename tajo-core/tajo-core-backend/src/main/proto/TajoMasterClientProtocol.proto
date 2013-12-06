@@ -42,8 +42,7 @@ service TajoMasterClientProtocolService {
   rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
   rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
   rpc createExternalTable(CreateTableRequest) returns (TableResponse);
-  rpc dropTable(StringProto) returns (BoolProto);
-  rpc detachTable(StringProto) returns (BoolProto);
+  rpc dropTable(DropTableRequest) returns (BoolProto);
 
 
   // TODO - to be implemented

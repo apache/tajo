@@ -339,25 +339,8 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto dropTable(RpcController controller,
-                               StringProto tableNameProto)
-        throws ServiceException {
-      context.getGlobalEngine().dropTable(tableNameProto.getValue());
-      return BOOL_TRUE;
-    }
-
-    @Override
-    public BoolProto detachTable(RpcController controller,
-                                 StringProto tableNameProto)
-        throws ServiceException {
-      String tableName = tableNameProto.getValue();
-      if (!catalog.existsTable(tableName)) {
-        throw new NoSuchTableException(tableName);
-      }
-
-      catalog.deleteTable(tableName);
-
-      LOG.info("Table " + tableName + " is detached");
+    public BoolProto dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
+      context.getGlobalEngine().dropTable(dropTable.getName(), dropTable.getPurge());
       return BOOL_TRUE;
     }
   }

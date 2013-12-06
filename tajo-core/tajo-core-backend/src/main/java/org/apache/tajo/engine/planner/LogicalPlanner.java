@@ -1030,7 +1030,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   @Override
   public LogicalNode visitDropTable(PlanContext context, Stack<OpType> stack, DropTable dropTable) {
-    DropTableNode dropTableNode = new DropTableNode(context.plan.newPID(), dropTable.getTableName());
+    DropTableNode dropTableNode = new DropTableNode(context.plan.newPID(), dropTable.getTableName(),
+        dropTable.isPurge());
     return dropTableNode;
   }
 

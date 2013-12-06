@@ -166,7 +166,7 @@ partition_name
 */
 
 drop_table_statement
-  : DROP TABLE table_name
+  : DROP TABLE table_name (PURGE)?
   ;
 
 /*

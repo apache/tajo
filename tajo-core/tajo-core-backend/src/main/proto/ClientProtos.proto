@@ -127,9 +127,9 @@ message CreateTableRequest {
   optional PartitionsProto partitions = 5;
 }
 
-message AttachTableRequest {
+message DropTableRequest {
   required string name = 1;
-  required string path = 2;
+  optional bool purge = 2 [default = false];
 }
 
 message TableResponse {

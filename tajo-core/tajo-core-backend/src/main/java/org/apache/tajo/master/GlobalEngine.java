@@ -206,8 +206,8 @@ public class GlobalEngine extends AbstractService {
         createTable(createTable);
         return true;
       case DROP_TABLE:
-        DropTableNode stmt = (DropTableNode) root;
-        dropTable(stmt.getTableName());
+        DropTableNode dropTable = (DropTableNode) root;
+        dropTable(dropTable.getTableName(), dropTable.isPurge());
         return true;
 
       default:
@@ -298,8 +298,9 @@ public class GlobalEngine extends AbstractService {
    * Drop a given named table
    *
    * @param tableName to be dropped
+   * @param purge Remove all data if purge is true.
    */
-  public void dropTable(String tableName) {
+  public void dropTable(String tableName, boolean purge) {
     CatalogService catalog = context.getCatalog();
 
     if (!catalog.existsTable(tableName)) {
@@ -309,15 +310,16 @@ public class GlobalEngine extends AbstractService {
     Path path = catalog.getTableDesc(tableName).getPath();
     catalog.deleteTable(tableName);
 
-    try {
-
-      FileSystem fs = path.getFileSystem(context.getConf());
-      fs.delete(path, true);
-    } catch (IOException e) {
-      throw new InternalError(e.getMessage());
+    if (purge) {
+      try {
+        FileSystem fs = path.getFileSystem(context.getConf());
+        fs.delete(path, true);
+      } catch (IOException e) {
+        throw new InternalError(e.getMessage());
+      }
     }
 
-    LOG.info("Table \"" + tableName + "\" is dropped.");
+    LOG.info("Table \"" + tableName + "\" is " + (purge ? " purged." : " dropped."));
   }
 
   public interface DistributedQueryHook {

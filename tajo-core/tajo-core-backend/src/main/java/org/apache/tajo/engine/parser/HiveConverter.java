@@ -1563,7 +1563,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDropTableStatement(HiveParser.DropTableStatementContext ctx) {
-    DropTable dropTable = new DropTable(ctx.tableName().getText());
+    DropTable dropTable = new DropTable(ctx.tableName().getText(), false);
     return dropTable;
   }
 

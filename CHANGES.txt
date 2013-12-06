@@ -62,6 +62,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-304: drop table command should not remove data files in default.
+    (hyunsik)
+
     TAJO-316: Improve GreedyHeuristicJoinOrderAlgorithm to deal with
     non-commutative joins. (hyunsik)
 

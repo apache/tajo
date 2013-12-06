@@ -1154,7 +1154,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDrop_table_statement(SQLParser.Drop_table_statementContext ctx) {
-    return new DropTable(ctx.table_name().getText());
+    return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.PURGE()));
   }
 
 
