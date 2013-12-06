@@ -104,6 +104,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-388: limit clause does not work properly. (hyunsik)
+
     TAJO-389: The LazyTuple does not work when number format exception occurs 
     in text deserializer. (jinho)
 

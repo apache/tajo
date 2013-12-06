@@ -444,7 +444,6 @@ public class TestSelectQuery {
     } finally {
       res.close();
     }
-
   }
 
   @Test
@@ -461,13 +460,21 @@ public class TestSelectQuery {
 
   @Test
   public final void testLimit() throws Exception {
-    ResultSet res = tpch.execute("select l_orderkey from lineitem limit 3");
+    ResultSet res = tpch.execute("select l_orderkey, l_suppkey from lineitem limit 3");
+
+    int result [][] = {
+        new int [] {1,7706},
+        new int [] {1,7311},
+        new int [] {2,1191},
+    };
+
     try {
-      int count = 0;
-      for (;res.next();) {
-        count++;
+      for (int i = 0; i < 3; i++) {
+        res.next();
+        assertTrue(res.getInt(1) == result[i][0]);
+        assertTrue(res.getInt(2) == result[i][1]);
       }
-      assertEquals(3, count);
+      assertFalse(res.next());
     } finally {
       res.close();
     }

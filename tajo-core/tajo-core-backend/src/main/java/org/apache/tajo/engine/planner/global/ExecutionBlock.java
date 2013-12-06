@@ -15,7 +15,6 @@
 package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.*;
 
@@ -95,10 +94,6 @@ public class ExecutionBlock {
 
   public ScanNode [] getScanNodes() {
     return this.scanlist.toArray(new ScanNode[scanlist.size()]);
-  }
-
-  public Schema getOutputSchema() {
-    return store.getOutSchema();
   }
 
   public boolean hasJoin() {
