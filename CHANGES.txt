@@ -101,6 +101,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-387: Query is hanging when errors occurs in Query or SubQuery class.
+    (hyunsik)
+
     TAJO-268: Temporal files should be removed after query is finished. (jinho)
 
     TAJO-292: Too many intermediate partition files. (jinho)
