@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.exception.InvalidCastException;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -122,7 +121,7 @@ public class LazyTuple implements Tuple {
       try {
         values[fieldId] = serializeDeserialize.deserialize(schema.getColumn(fieldId),
             textBytes[fieldId], 0, textBytes[fieldId].length, nullBytes);
-      } catch (IOException e) {
+      } catch (Exception e) {
         values[fieldId] = NullDatum.get();
       }
       textBytes[fieldId] = null;

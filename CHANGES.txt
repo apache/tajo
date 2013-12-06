@@ -101,6 +101,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-389: The LazyTuple does not work when number format exception occurs 
+    in text deserializer. (jinho)
+
     TAJO-387: Query is hanging when errors occurs in Query or SubQuery class.
     (hyunsik)
 
