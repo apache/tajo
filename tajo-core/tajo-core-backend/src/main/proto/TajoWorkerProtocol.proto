@@ -159,6 +159,8 @@ service TajoWorkerProtocolService {
 
   //from QueryMaster(Worker)
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+
+  rpc cleanup(QueryIdProto) returns (BoolProto);
 }
 
 message EnforceProperty {

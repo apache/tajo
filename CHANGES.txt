@@ -101,6 +101,10 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-268: Temporal files should be removed after query is finished. (jinho)
+
+    TAJO-292: Too many intermediate partition files. (jinho)
+
     TAJO-375: TajoClient can't get result data when different os user
     (hyoungjunkim via hyunsik)
 

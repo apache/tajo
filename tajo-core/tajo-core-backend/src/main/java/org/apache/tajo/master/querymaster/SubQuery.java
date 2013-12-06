@@ -47,6 +47,7 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.AbstractTaskScheduler;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
@@ -478,6 +479,22 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     /**
+     * Getting the total memory of cluster
+     *
+     * @param subQuery
+     * @return mega bytes
+     */
+    private static int getClusterTotalMemory(SubQuery subQuery) {
+      List<TajoMasterProtocol.WorkerResourceProto> workers =
+          subQuery.context.getQueryMasterContext().getQueryMaster().getAllWorker();
+
+      int totalMem = 0;
+      for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
+        totalMem += worker.getMemoryMB();
+      }
+      return totalMem;
+    }
+    /**
      * Getting the desire number of partitions according to the volume of input data.
      * This method is only used to determine the partition key number of hash join or aggregation.
      *
@@ -505,16 +522,23 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         // for inner
         ExecutionBlock inner = childs.get(1);
         long innerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, inner);
-        LOG.info("Outer volume: " + Math.ceil((double)outerVolume / 1048576));
-        LOG.info("Inner volume: " + Math.ceil((double)innerVolume / 1048576));
+        LOG.info("Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
+            + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
 
-        long smaller = Math.min(outerVolume, innerVolume);
+        long bigger = Math.max(outerVolume, innerVolume);
 
-        int mb = (int) Math.ceil((double)smaller / 1048576);
-        LOG.info("Smaller Table's volume is approximately " + mb + " MB");
-        // determine the number of task
-        int taskNum = (int) Math.ceil((double)mb /
+        int mb = (int) Math.ceil((double) bigger / 1048576);
+        LOG.info("Bigger Table's volume is approximately " + mb + " MB");
+
+        int taskNum = (int) Math.ceil((double) mb /
             conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
+
+        int totalMem = getClusterTotalMemory(subQuery);
+        LOG.info("Total memory of cluster is " + totalMem + " MB");
+        int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
+
+        // determine the number of task
+        taskNum = Math.min(taskNum, slots);
         LOG.info("The determined number of join partitions is " + taskNum);
         return taskNum;
 
@@ -526,11 +550,17 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         } else {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
 
-          int mb = (int) Math.ceil((double)volume / 1048576);
+          int mb = (int) Math.ceil((double) volume / 1048576);
           LOG.info("Table's volume is approximately " + mb + " MB");
           // determine the number of task
-          int taskNum = (int) Math.ceil((double)mb /
+          int taskNumBySize = (int) Math.ceil((double) mb /
               conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
+
+          int totalMem = getClusterTotalMemory(subQuery);
+
+          LOG.info("Total memory of cluster is " + totalMem + " MB");
+          int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
+          int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
           LOG.info("The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }

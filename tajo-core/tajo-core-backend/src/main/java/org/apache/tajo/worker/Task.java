@@ -204,7 +204,7 @@ public class Task {
     if (request.getFetches().size() > 0) {
       inputTableBaseDir = localFS.makeQualified(
           lDirAllocator.getLocalPathForWrite(
-              getTaskAttemptDir(context.getTaskId()).toString() + "/in", systemConf));
+              getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
       localFS.mkdirs(inputTableBaseDir);
       Path tableDir;
       for (String inputTable : context.getInputTables()) {
@@ -505,7 +505,7 @@ public class Task {
     if (fetches.size() > 0) {
       Path inputDir = lDirAllocator.
           getLocalPathToRead(
-              getTaskAttemptDir(ctx.getTaskId()).toString() + "/in", systemConf);
+              getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
       File storeDir;
 
       int i = 0;
@@ -615,6 +615,8 @@ public class Task {
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
         StorageUtil.concatPath(
+            quid.getQueryUnitId().getExecutionBlockId().getQueryId().toString(),
+            "in",
             quid.getQueryUnitId().getExecutionBlockId().toString(),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));

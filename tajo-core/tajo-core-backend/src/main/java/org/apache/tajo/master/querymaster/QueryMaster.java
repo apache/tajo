@@ -33,19 +33,25 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
@@ -161,6 +167,55 @@ public class QueryMaster extends CompositeService implements EventHandler {
     if(queryMasterContext.getWorkerContext().isYarnContainerMode()) {
       queryMasterContext.getWorkerContext().stopWorker(true);
     }
+  }
+
+  private void cleanup(QueryId queryId) {
+    LOG.info("cleanup query resources : " + queryId);
+    NettyClientBase rpc = null;
+    List<TajoMasterProtocol.WorkerResourceProto> workers = getAllWorker();
+
+    for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
+      try {
+        if (worker.getPeerRpcPort() == 0) continue;
+
+        rpc = connPool.getConnection(NetUtils.createSocketAddr(worker.getHost(), worker.getPeerRpcPort()),
+            TajoWorkerProtocol.class, true);
+        TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+
+        tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
+      } catch (Exception e) {
+        connPool.closeConnection(rpc);
+        rpc = null;
+        LOG.error(e.getMessage());
+      } finally {
+        connPool.releaseConnection(rpc);
+      }
+    }
+  }
+
+  public List<TajoMasterProtocol.WorkerResourceProto> getAllWorker() {
+
+    NettyClientBase rpc = null;
+    try {
+      rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+          TajoMasterProtocol.class, true);
+      TajoMasterProtocol.TajoMasterProtocolService masterService = rpc.getStub();
+
+      CallFuture<TajoMasterProtocol.WorkerResourcesRequest> callBack =
+          new CallFuture<TajoMasterProtocol.WorkerResourcesRequest>();
+      masterService.getAllWorkerResource(callBack.getController(),
+          PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
+
+      TajoMasterProtocol.WorkerResourcesRequest workerResourcesRequest = callBack.get(2, TimeUnit.SECONDS);
+      return workerResourcesRequest.getWorkerResourcesList();
+    } catch (Exception e) {
+      connPool.closeConnection(rpc);
+      rpc = null;
+      LOG.error(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(rpc);
+    }
+    return new ArrayList<TajoMasterProtocol.WorkerResourceProto>();
   }
 
   public void reportQueryStatusToQueryMaster(QueryId queryId, TajoProtos.QueryState state) {
@@ -300,6 +355,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         try {
           queryMasterTask.stop();
+          if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")
+              && !workerContext.isYarnContainerMode()) {
+            cleanup(queryId);       // TODO We will support yarn mode
+          }
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }

@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.CompositeService;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -128,5 +129,12 @@ public class TajoWorkerManagerService extends CompositeService
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
+  }
+
+  @Override
+  public void cleanup(RpcController controller, TajoIdProtos.QueryIdProto request,
+                      RpcCallback<PrimitiveProtos.BoolProto> done) {
+    workerContext.cleanup(new QueryId(request).toString());
+    done.run(TajoWorker.TRUE_PROTO);
   }
 }
