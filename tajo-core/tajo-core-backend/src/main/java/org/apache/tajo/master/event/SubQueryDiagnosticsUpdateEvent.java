@@ -18,24 +18,17 @@
 
 package org.apache.tajo.master.event;
 
-/**
- * Event Types handled by SubQuery
- */
-public enum SubQueryEventType {
+import org.apache.tajo.ExecutionBlockId;
 
-  // Producer: Query
-  SQ_INIT,
-  SQ_START,
-  SQ_CONTAINER_ALLOCATED,
+public class SubQueryDiagnosticsUpdateEvent extends SubQueryEvent {
+  private final String msg;
 
-  // Producer: QueryUnit
-  SQ_TASK_COMPLETED,
-  SQ_FAILED,
+  public SubQueryDiagnosticsUpdateEvent(final ExecutionBlockId id, String diagnostic) {
+    super(id, SubQueryEventType.SQ_DIAGNOSTIC_UPDATE);
+    this.msg = diagnostic;
+  }
 
-  // Producer: Completed
-  SQ_SUBQUERY_COMPLETED,
-
-  // Producer: Any component
-  SQ_DIAGNOSTIC_UPDATE,
-  SQ_INTERNAL_ERROR
+  public String getDiagnosticUpdate() {
+    return msg;
+  }
 }

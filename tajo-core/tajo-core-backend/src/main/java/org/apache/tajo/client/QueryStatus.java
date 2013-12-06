@@ -27,7 +27,6 @@ public class QueryStatus {
   private QueryState state;
   private float progress;
   private long submitTime;
-  private long initTime;
   private long finishTime;
   private boolean hasResult;
   private String errorText;
@@ -39,7 +38,6 @@ public class QueryStatus {
     state = proto.getState();
     progress = proto.getProgress();
     submitTime = proto.getSubmitTime();
-    initTime = proto.getInitTime();
     finishTime = proto.getFinishTime();
     hasResult = proto.getHasResult();
     if (proto.hasErrorMessage()) {
@@ -72,10 +70,6 @@ public class QueryStatus {
 
   public long getSubmitTime() {
     return this.submitTime;
-  }
-
-  public long getInitTime() {
-    return this.initTime;
   }
 
   public long getFinishTime() {

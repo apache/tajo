@@ -31,7 +31,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.partition.Partitions;
 import org.apache.tajo.conf.TajoConf;
@@ -317,7 +320,7 @@ public class TajoMasterClientService extends AbstractService {
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), schema,
+          desc = context.getGlobalEngine().createTableOnPath(request.getName(), schema,
               meta, path, false, partitions);
         } catch (Exception e) {
           return TableResponse.newBuilder()

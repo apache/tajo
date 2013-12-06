@@ -246,19 +246,19 @@ public class GlobalEngine extends AbstractService {
       meta = CatalogUtil.newTableMeta(createTable.getStorageType());
     }
 
-    if(!createTable.isExternal()){
+    if(createTable.isExternal()){
+      Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
+    } else {
       Path tablePath = new Path(sm.getWarehouseDir(), createTable.getTableName().toLowerCase());
       createTable.setPath(tablePath);
-    } else {
-      Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
-    return createTableOnDirectory(createTable.getTableName(), createTable.getSchema(), meta,
-        createTable.getPath(), true, createTable.getPartitions());
+    return createTableOnPath(createTable.getTableName(), createTable.getSchema(), meta,
+        createTable.getPath(), !createTable.isExternal(), createTable.getPartitions());
   }
 
-  public TableDesc createTableOnDirectory(String tableName, Schema schema, TableMeta meta,
-                                          Path path, boolean isCreated, Partitions partitions)
+  public TableDesc createTableOnPath(String tableName, Schema schema, TableMeta meta,
+                                     Path path, boolean isCreated, Partitions partitions)
       throws IOException {
     if (catalog.existsTable(tableName)) {
       throw new AlreadyExistsTableException(tableName);
@@ -270,8 +270,8 @@ public class GlobalEngine extends AbstractService {
       fs.mkdirs(path);
     }
 
-    if(fs.exists(path) && fs.isFile(path)) {
-      throw new IOException("ERROR: LOCATION must be a directory.");
+    if(!fs.exists(path)) {
+      throw new IOException("ERROR: " + path.toUri() + " does not exist");
     }
 
     long totalSize = 0;

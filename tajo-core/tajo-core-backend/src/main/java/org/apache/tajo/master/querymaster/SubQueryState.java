@@ -24,5 +24,6 @@ public enum SubQueryState {
   INIT,
   RUNNING,
   SUCCEEDED,
-  FAILED
+  FAILED,
+  ERROR
 }

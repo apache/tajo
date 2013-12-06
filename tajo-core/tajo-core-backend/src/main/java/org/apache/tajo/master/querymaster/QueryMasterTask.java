@@ -299,8 +299,7 @@ public class QueryMasterTask extends CompositeService {
 
       dispatcher.register(QueryEventType.class, query);
 
-      queryTaskContext.getEventHandler().handle(new QueryEvent(queryId,
-          QueryEventType.START));
+      queryTaskContext.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.START));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       //TODO how set query failed(???)

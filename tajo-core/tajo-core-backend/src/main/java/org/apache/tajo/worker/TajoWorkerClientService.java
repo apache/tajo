@@ -29,7 +29,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.master.querymaster.Query;
@@ -141,7 +140,7 @@ public class TajoWorkerClientService extends AbstractService {
       } else {
         switch (query.getState()) {
           case QUERY_SUCCEEDED:
-            builder.setTableDesc((CatalogProtos.TableDescProto)query.getResultDesc().getProto());
+            builder.setTableDesc(query.getResultDesc().getProto());
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
@@ -179,7 +178,6 @@ public class TajoWorkerClientService extends AbstractService {
           builder.setState(query.getState());
           builder.setProgress(query.getProgress());
           builder.setSubmitTime(query.getAppSubmitTime());
-          builder.setInitTime(query.getInitializationTime());
           builder.setHasResult(
               !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
                   queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())

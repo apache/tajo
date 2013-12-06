@@ -27,8 +27,6 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.event.QueryEvent;
-import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
@@ -61,8 +59,6 @@ public class TajoContainerProxy extends ContainerProxy {
         container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
 
     assignExecutionBlock(executionBlockId, container);
-
-    context.getEventHandler().handle(new QueryEvent(context.getQueryId(), QueryEventType.INIT_COMPLETED));
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, Container container) {

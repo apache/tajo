@@ -24,7 +24,7 @@ public class QueryDiagnosticsUpdateEvent extends QueryEvent {
   private final String msg;
 
   public QueryDiagnosticsUpdateEvent(final QueryId id, String diagnostic) {
-    super(id, QueryEventType.SUBQUERY_COMPLETED);
+    super(id, QueryEventType.DIAGNOSTIC_UPDATE);
     this.msg = diagnostic;
   }
 
