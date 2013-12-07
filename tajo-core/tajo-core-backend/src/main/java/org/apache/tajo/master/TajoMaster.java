@@ -448,6 +448,15 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("substr", Substr.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.INT4)));
+    
+    sqlFuncs.add(
+        new FunctionDesc("locate", Locate.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT4),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
+    sqlFuncs.add(
+        new FunctionDesc("locate", Locate.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT4),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT, Type.INT4)));
 
     sqlFuncs.add(
         new FunctionDesc("round", Round.class, FunctionType.GENERAL,

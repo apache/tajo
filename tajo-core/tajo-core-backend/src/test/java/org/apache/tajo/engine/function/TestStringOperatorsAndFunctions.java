@@ -353,6 +353,57 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
         new String[]{"bcd"});
   }
+  
+  @Test
+  public void testLocate() throws IOException {
+    // normal case
+    testSimpleEval("select locate('abcdef', 'a') as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'a', 0) as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'a', 1) as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'z') as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('abcdef', 'z', 1) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('foobarbar', 'bar') as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 0) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 1) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 5) as col1 ", new String[]{"7"});
+    testSimpleEval("select locate('foobarbar', 'bar', 9) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('가나다라마라마', '라마') as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('가나다라마라마', '라마', 5) as col1 ", new String[]{"6"});
+    // empty string
+    testSimpleEval("select locate('abcdef', '') as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', '', 2) as col1 ", new String[]{"2"});
+    testSimpleEval("select locate('abcdef', '', 6) as col1 ", new String[]{"6"}); // pos = last index of string (expected value(6) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 7) as col1 ", new String[]{"7"}); // pos = last index + 1 (expected value(7) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 8) as col1 ", new String[]{"0"}); // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 9) as col1 ", new String[]{"0"}); // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('가나다라', '', 2) as col1 ", new String[]{"2"});
+    testSimpleEval("select locate('가나다라', '', 4) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('가나다라', '', 5) as col1 ", new String[]{"5"});
+    testSimpleEval("select locate('가나다라', '', 6) as col1 ", new String[]{"0"});
+    
+    //TODO If there is a minus value in function argument, next error occurred.
+    //org.apache.tajo.engine.parser.SQLSyntaxError: ERROR: syntax error at or near 'locate'
+    //LINE 1:7 select locate('abcdef', 'a', -1) as col1 
+    //                ^^^^^^
+    //at org.apache.tajo.engine.parser.SQLAnalyzer.parse(SQLAnalyzer.java:64)
+    
+    // negative pos    
+    //testSimpleEval("select locate('abcdef', 'a', -1) as col1 ", new String[]{"0"});
+    //testSimpleEval("select locate('abcdef', 'a', -5) as col1 ", new String[]{"0"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd') from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 1) from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 4) from table1", new String[]{"0"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'xy') from table1", new String[]{"0"});
+    // null string
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
+    // nul substring
+    testEval(schema, "table1", ",abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
+  }
 
   @Test
   public void testBitLength() throws IOException {
