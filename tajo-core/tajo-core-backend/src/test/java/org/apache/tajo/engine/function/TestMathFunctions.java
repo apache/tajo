@@ -85,8 +85,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testSin() throws IOException {
     testSimpleEval("select sin(0.0) as col1 ", new String[]{"0.0"});
-    testSimpleEval("select sin(0.7) as col1 ", new String[]{"0.6442176781200616"});
-    testSimpleEval("select sin(1.2) as col1 ", new String[]{"0.9320391032457895"});
+    testSimpleEval("select sin(0.7) as col1 ", new String[]{"0.644217687237691"});
+    testSimpleEval("select sin(1.2) as col1 ", new String[]{"0.9320390859672263"});
 //    testSimpleEval("select sin(-0.5) as col1 ", new String[]{"-0.479425538604203"});
 
     Schema schema = new Schema();
@@ -102,8 +102,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testCos() throws IOException {
     testSimpleEval("select cos(0.0) as col1 ", new String[]{"1.0"});
-    testSimpleEval("select cos(0.7) as col1 ", new String[]{"0.7648421949641616"});
-    testSimpleEval("select cos(1.2) as col1 ", new String[]{"0.36235771003358624"});
+    testSimpleEval("select cos(0.7) as col1 ", new String[]{"0.7648421872844885"});
+    testSimpleEval("select cos(1.2) as col1 ", new String[]{"0.3623577544766736"});
 //    testSimpleEval("select cos(-0.5) as col1 ", new String[]{"0.8775825618903728"});
 
     Schema schema = new Schema();
@@ -118,8 +118,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testTan() throws IOException {
     testSimpleEval("select tan(0.0) as col1 ", new String[]{"0.0"});
-    testSimpleEval("select tan(0.3) as col1 ", new String[]{"0.30933626267125297"});
-    testSimpleEval("select tan(0.8) as col1 ", new String[]{"1.0296385816093323"});
+    testSimpleEval("select tan(0.3) as col1 ", new String[]{"0.30933624960962325"});
+    testSimpleEval("select tan(0.8) as col1 ", new String[]{"1.0296385570503641"});
 //    testSimpleEval("select tan(-0.5) as col1 ", new String[]{"-0.5463024898437905"});
 
     Schema schema = new Schema();
@@ -134,8 +134,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testAsin() throws IOException {
     testSimpleEval("select asin(0.0) as col1 ", new String[]{"0.0"});
-    testSimpleEval("select asin(0.3) as col1 ", new String[]{"0.3046926665119266"});
-    testSimpleEval("select asin(0.8) as col1 ", new String[]{"0.9272952378698274"});
+    testSimpleEval("select asin(0.3) as col1 ", new String[]{"0.3046926540153975"});
+    testSimpleEval("select asin(0.8) as col1 ", new String[]{"0.9272952180016123"});
 //    testSimpleEval("select asin(-0.5) as col1 ", new String[]{"-0.5235987755982989"});
 
     Schema schema = new Schema();
@@ -150,8 +150,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testAcos() throws IOException {
     testSimpleEval("select acos(0.0) as col1 ", new String[]{"1.5707963267948966"});
-    testSimpleEval("select acos(0.3) as col1 ", new String[]{"1.26610366028297"});
-    testSimpleEval("select acos(0.8) as col1 ", new String[]{"0.6435010889250692"});
+    testSimpleEval("select acos(0.3) as col1 ", new String[]{"1.2661036727794992"});
+    testSimpleEval("select acos(0.8) as col1 ", new String[]{"0.6435011087932843"});
 //    testSimpleEval("select acos(-0.5) as col1 ", new String[]{"2.0943951023931957"});
 
     Schema schema = new Schema();
@@ -166,8 +166,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testAtan() throws IOException {
     testSimpleEval("select atan(0.0) as col1 ", new String[]{"0.0"});
-    testSimpleEval("select atan(0.8) as col1 ", new String[]{"0.6747409494924117"});
-    testSimpleEval("select atan(1.2) as col1 ", new String[]{"0.8760580701406995"});
+    testSimpleEval("select atan(0.8) as col1 ", new String[]{"0.6747409422235527"});
+    testSimpleEval("select atan(1.2) as col1 ", new String[]{"0.8760580505981934"});
 //    testSimpleEval("select atan(-0.5) as col1 ", new String[]{"-0.4636476090008061"});
 
     Schema schema = new Schema();
@@ -182,8 +182,8 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testAtan2() throws IOException {
     testSimpleEval("select atan2(0.8, 0.0) as col1 ", new String[]{"1.5707963267948966"});
-    testSimpleEval("select atan2(0.8, 1.1) as col1 ", new String[]{"0.6287962831935603"});
-    testSimpleEval("select atan2(2.7, 0.3) as col1 ", new String[]{"1.460139103198048"});
+    testSimpleEval("select atan2(0.8, 1.1) as col1 ", new String[]{"0.628796286415433"});
+    testSimpleEval("select atan2(2.7, 0.3) as col1 ", new String[]{"1.460139105621001"});
 //    testSimpleEval("select atan(-0.5, 0.3) as col1 ", new String[]{"-1.0303768265243125"});
 //    testSimpleEval("select atan(-0.2, -1.3) as col1 ", new String[]{"-2.988943325194528"});
 

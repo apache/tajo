@@ -1060,7 +1060,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           case Unsigned_Large_Integer:
             return new ConstEval(DatumFactory.createInt8(literal.getValue()));
           case Unsigned_Float:
-            return new ConstEval(DatumFactory.createFloat4(literal.getValue()));
+            return new ConstEval(DatumFactory.createFloat8(literal.getValue()));
           default:
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
