@@ -320,4 +320,26 @@ public class TestMathFunctions extends ExprTestBase {
     testEval(schema2, "table1", "0.033312347,-0.033312347", "select abs(col1), abs(col2) from table1",
         new String[]{"0.033312347", "0.033312347"});
   }
+
+  @Test
+  public void testCbrt() throws IOException {
+    testSimpleEval("select cbrt(27.0) as col1 ", new String[]{"3.0"});
+    testSimpleEval("select cbrt(64.0) as col1 ", new String[]{"4.0"});
+    testSimpleEval("select cbrt(8.0) as col1 ", new String[]{"2.0"});
+
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT4);
+    schema.addColumn("col3", FLOAT4);
+    testEval(schema, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
+        new String[]{"1.0913928968221236"});
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", FLOAT8);
+    schema2.addColumn("col2", FLOAT8);
+    schema2.addColumn("col3", FLOAT8);
+    testEval(schema2, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
+        new String[]{"1.091392883061106"});
+  }
 }

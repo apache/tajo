@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-392: Implement cbrt function. (DaeMyung Kang via hyunsik)
+
     TAJO-394: Implement abs function. (DaeMyung Kang via hyunsik)
 
     TAJO-395: Implement exp function. (DaeMyung Kang via hyunsik)
