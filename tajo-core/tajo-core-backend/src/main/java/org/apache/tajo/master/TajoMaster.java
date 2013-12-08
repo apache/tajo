@@ -615,6 +615,26 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.TEXT)));
 
+    sqlFuncs.add(
+        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
+
+    sqlFuncs.add(
+        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
     return sqlFuncs;
   }
 

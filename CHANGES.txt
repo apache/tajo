@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-397: Implement sign function. (DaeMyung Kang via hyunsik)
+
     TAJO-343: Implement locate function. (KyoungBok Lee via hyunsik)
 
     TAJO-364: Implement mod/div function. (DaeMyung Kang via jaehwa)

@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestMathFunctions extends ExprTestBase {
   @Test
@@ -228,5 +227,30 @@ public class TestMathFunctions extends ExprTestBase {
 
     testEval(schema, "table1", "9,2,3", "select div(col1 + col2, col3) from table1", 
         new String[]{"3"});
+  }
+
+  @Test
+  public void testSign() throws IOException {
+    testSimpleEval("select sign(2) as col1 ", new String[]{"1.0"});
+    testSimpleEval("select sign(2.345) as col1 ", new String[]{"1.0"});
+    testSimpleEval("select sign(0.3) as col1 ", new String[]{"1.0"});
+
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT4);
+    schema.addColumn("col3", FLOAT4);
+
+    testEval(schema, "table1", "1.0, 0.2, 0.1", "select sign(col1 + col2 + col3) from table1",
+        new String[]{"1.0"});
+
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", FLOAT8);
+    schema2.addColumn("col2", FLOAT8);
+    schema2.addColumn("col3", FLOAT8);
+
+    testEval(schema2, "table1", "1.0, 0.2, 0.1", "select sign(col1 + col2 + col3) from table1",
+        new String[]{"1.0"});
   }
 }
