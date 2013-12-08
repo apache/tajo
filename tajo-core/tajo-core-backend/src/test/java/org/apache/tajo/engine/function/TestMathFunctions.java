@@ -278,4 +278,24 @@ public class TestMathFunctions extends ExprTestBase {
     testEval(schema2, "table1", "1.0, 0.2, 0.1", "select sqrt(col1 + col2 + col3) from table1",
         new String[]{"1.140175425099138"});
   }
+
+  @Test
+  public void testExp() throws IOException {
+    testSimpleEval("select exp(1.0) as col1 ", new String[]{"2.718281828459045"});
+    testSimpleEval("select exp(1.1) as col1 ", new String[]{"3.0041660239464334"});
+    testSimpleEval("select exp(1.2) as col1 ", new String[]{"3.3201169227365472"});
+
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+
+    testEval(schema, "table1", "1.123", "select exp(col1) from table1",
+        new String[]{"3.074062650703663"});
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", FLOAT8);
+
+    testEval(schema2, "table1", "1.123", "select exp(col1) from table1",
+        new String[]{"3.07406257154899"});
+  }
 }

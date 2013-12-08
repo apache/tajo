@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-395: Implement exp function. (DaeMyung Kang via hyunsik)
+
     TAJO-396: Implement sqrt function. (DaeMyung Kang via hyunsik)
 
     TAJO-397: Implement sign function. (DaeMyung Kang via hyunsik)
