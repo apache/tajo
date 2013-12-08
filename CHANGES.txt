@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-368: Implement quote_ident function. (Seungun Choe via hyunsik)
+
     TAJO-392: Implement cbrt function. (DaeMyung Kang via hyunsik)
 
     TAJO-394: Implement abs function. (DaeMyung Kang via hyunsik)

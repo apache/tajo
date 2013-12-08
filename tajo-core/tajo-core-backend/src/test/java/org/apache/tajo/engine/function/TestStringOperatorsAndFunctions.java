@@ -483,4 +483,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select rPAD('가나다라', 3) ", new String[]{"가나다"});
 
   }
+
+  @Test
+  public void testQuote_ident() throws IOException {
+    testSimpleEval("select quote_ident('Foo bar') ", new String[]{"\"Foo bar\""});
+    testSimpleEval("select QUOTE_IDENT('Tajo Function') ", new String[]{"\"Tajo Function\""});
+  }
 }
