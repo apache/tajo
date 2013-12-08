@@ -1065,6 +1065,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
 
+      case Sign:
+        SignedExpr signedExpr = (SignedExpr) expr;
+        EvalNode numericExpr = createEvalTree(plan, block, signedExpr.getChild());
+        if (signedExpr.isNegative()) {
+          return new SignedEval(signedExpr.isNegative(), numericExpr);
+        } else {
+          return numericExpr;
+        }
+
       case Cast:
         CastExpr cast = (CastExpr) expr;
         return new CastEval(createEvalTree(plan, block, cast.getOperand()),

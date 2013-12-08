@@ -27,7 +27,7 @@ import org.apache.tajo.util.NumberUtil;
 import java.nio.ByteBuffer;
 
 
-public class Int8Datum extends Datum implements NumericDatum {
+public class Int8Datum extends NumericDatum {
   private static final int size = 8;
   @Expose private long val;
 

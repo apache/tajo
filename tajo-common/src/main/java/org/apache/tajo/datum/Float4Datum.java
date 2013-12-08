@@ -26,7 +26,7 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
 
-public class Float4Datum extends Datum implements NumericDatum {
+public class Float4Datum extends NumericDatum {
   private static final int size = 4;
   @Expose float val;
 

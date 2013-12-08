@@ -592,14 +592,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitTerm(SQLParser.TermContext ctx) {
-    Expr current = visitNumeric_primary(ctx.numeric_primary(0));
+    Expr current = visitFactor(ctx.factor(0));
 
     Expr left;
     Expr right;
     for (int i = 1; i < ctx.getChildCount(); i++) {
       left = current;
       TerminalNode operator = (TerminalNode) ctx.getChild(i++);
-      right = visitNumeric_primary((Numeric_primaryContext) ctx.getChild(i));
+      right = visitFactor((FactorContext) ctx.getChild(i));
 
       if (operator.getSymbol().getType() == MULTIPLY) {
         current = new BinaryOperator(OpType.Multiply, left, right);
@@ -610,6 +610,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
+    return current;
+  }
+
+  @Override public Expr visitFactor(SQLParser.FactorContext ctx) {
+    Expr current = visitNumeric_primary(ctx.numeric_primary());
+    if (checkIfExist(ctx.sign()) && checkIfExist(ctx.sign().MINUS())) {
+      current = new SignedExpr(true, current);
+    }
     return current;
   }
 
@@ -761,7 +769,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
-    boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT()) ? true : false;
+    boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT());
     Expr param = visitValue_expression(ctx.value_expression());
 
     return new GeneralSetFunctionExpr(signature, distinct, param);

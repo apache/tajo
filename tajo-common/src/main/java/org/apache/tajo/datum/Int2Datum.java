@@ -19,8 +19,6 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
@@ -28,11 +26,9 @@ import org.apache.tajo.util.NumberUtil;
 import java.nio.ByteBuffer;
 
 
-public class Int2Datum extends Datum implements NumericDatum {
+public class Int2Datum extends NumericDatum {
   private static final int size = 2;  
   @Expose private short val;
-
-  private static final Log LOG = LogFactory.getLog(Int2Datum.class);
 
   public Int2Datum() {
     super(TajoDataTypes.Type.INT2);

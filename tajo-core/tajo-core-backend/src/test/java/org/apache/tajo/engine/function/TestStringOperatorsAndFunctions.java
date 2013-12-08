@@ -158,12 +158,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select left('abcdef',5) as col1 ", new String[]{"abcde"});
     testSimpleEval("select left('abcdef',6) as col1 ", new String[]{"abcdef"});
     testSimpleEval("select left('abcdef',7) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select from_left('abcdef',-1) as col1 ", new String[]{"abcde"});
-//    testSimpleEval("select from_left('abcdef',-2) as col1 ", new String[]{"abcd"});
-//    testSimpleEval("select from_left('abcdef',-3) as col1 ", new String[]{"abc"});
-//    testSimpleEval("select from_left('abcdef',-4) as col1 ", new String[]{"ab"});
-//    testSimpleEval("select from_left('abcdef',-5) as col1 ", new String[]{"a"});
-//    testSimpleEval("select from_left('abcdef',-6) as col1 ", new String[]{""});
+
+    testSimpleEval("select left('abcdef',-1) as col1 ", new String[]{"abcde"});
+    testSimpleEval("select left('abcdef',-2) as col1 ", new String[]{"abcd"});
+    testSimpleEval("select left('abcdef',-3) as col1 ", new String[]{"abc"});
+    testSimpleEval("select left('abcdef',-4) as col1 ", new String[]{"ab"});
+    testSimpleEval("select left('abcdef',-5) as col1 ", new String[]{"a"});
+    testSimpleEval("select left('abcdef',-6) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -186,12 +187,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select right('abcdef',5) as col1 ", new String[]{"bcdef"});
     testSimpleEval("select right('abcdef',6) as col1 ", new String[]{"abcdef"});
     testSimpleEval("select right('abcdef',7) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select from_right('abcdef',-1) as col1 ", new String[]{"bcdef"});
-//    testSimpleEval("select from_right('abcdef',-2) as col1 ", new String[]{"cdef"});
-//    testSimpleEval("select from_right('abcdef',-3) as col1 ", new String[]{"def"});
-//    testSimpleEval("select from_right('abcdef',-4) as col1 ", new String[]{"ef"});
-//    testSimpleEval("select from_right('abcdef',-5) as col1 ", new String[]{"f"});
-//    testSimpleEval("select from_right('abcdef',-6) as col1 ", new String[]{""});
+
+    testSimpleEval("select right('abcdef',-1) as col1 ", new String[]{"bcdef"});
+    testSimpleEval("select right('abcdef',-2) as col1 ", new String[]{"cdef"});
+    testSimpleEval("select right('abcdef',-3) as col1 ", new String[]{"def"});
+    testSimpleEval("select right('abcdef',-4) as col1 ", new String[]{"ef"});
+    testSimpleEval("select right('abcdef',-5) as col1 ", new String[]{"f"});
+    testSimpleEval("select right('abcdef',-6) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -335,16 +337,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select substr('일이삼사오', 2, 2) as col1 ", new String[]{"이삼"});
     testSimpleEval("select substr('일이삼사오', 3) as col1 ", new String[]{"삼사오"});
 
-    //TODO If there is a minus value in function argument, next error occurred.
-    //org.apache.tajo.engine.parser.SQLSyntaxError: ERROR: syntax error at or near 'substr'
-    //LINE 1:7 select substr('abcdef', -1, 100) as col1
-    //               ^^^^^^
-    //at org.apache.tajo.engine.parser.SQLAnalyzer.parse(SQLAnalyzer.java:64)
-
-//    testSimpleEval("select substr('abcdef', -1) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select substr('abcdef', -1, 100) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
-//    testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
+    testSimpleEval("select substr('abcdef', -1) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', -1, 100) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
+    testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);

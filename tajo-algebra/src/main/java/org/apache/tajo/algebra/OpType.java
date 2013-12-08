@@ -84,6 +84,7 @@ public enum OpType {
   Modular(BinaryOperator.class),
 
   // other expressions
+  Sign(SignedExpr.class),
   Column(ColumnReferenceExpr.class),
   Target(Target.class),
   Function(FunctionExpr.class),

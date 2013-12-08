@@ -441,7 +441,11 @@ numeric_value_expression
   ;
 
 term
-  : left=numeric_primary ((MULTIPLY|DIVIDE|MODULAR) right=numeric_primary)*
+  : left=factor ((MULTIPLY|DIVIDE|MODULAR) right=factor)*
+  ;
+
+factor
+  : (sign)? numeric_primary
   ;
 
 array

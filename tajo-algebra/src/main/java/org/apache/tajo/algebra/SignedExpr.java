@@ -18,37 +18,21 @@
 
 package org.apache.tajo.algebra;
 
-public class LiteralValue extends Expr {
-  private LiteralType valueType;
-  private String value;
+public class SignedExpr extends UnaryOperator {
+  private boolean negative;
 
-  public static enum LiteralType {
-    Boolean,
-    String,
-    Unsigned_Integer,
-    Unsigned_Float,
-    Unsigned_Large_Integer,
+  public SignedExpr(boolean negative, Expr operand) {
+    super(OpType.Sign);
+    this.negative = negative;
+    setChild(operand);
   }
 
-  public LiteralValue(String value, LiteralType valueType) {
-    super(OpType.Literal);
-    this.value = value;
-    this.valueType = valueType;
+  public boolean isNegative() {
+    return negative;
   }
 
-  public LiteralType getValueType() {
-    return this.valueType;
-  }
-
-  public String getValue() {
-    return this.value;
-  }
-
-  public boolean equalsTo(Expr expr) {
-    LiteralValue another = (LiteralValue) expr;
-    boolean a = valueType.equals(another.valueType);
-    boolean b =  value.equals(another.value);
-
-    return a && b;
+  @Override
+  boolean equalsTo(Expr expr) {
+    return negative == ((SignedExpr)expr).negative;
   }
 }

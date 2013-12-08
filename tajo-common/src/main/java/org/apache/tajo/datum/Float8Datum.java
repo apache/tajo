@@ -32,11 +32,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 
-public class Float8Datum extends Datum implements NumericDatum {
+public class Float8Datum extends NumericDatum {
   private static final int size = 8;
   @Expose private double val;
-
-  private static final Log LOG = LogFactory.getLog(Float8Datum.class);
 
 	public Float8Datum() {
 		super(TajoDataTypes.Type.FLOAT8);
