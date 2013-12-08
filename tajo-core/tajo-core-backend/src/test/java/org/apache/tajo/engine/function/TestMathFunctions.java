@@ -342,4 +342,44 @@ public class TestMathFunctions extends ExprTestBase {
     testEval(schema2, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
         new String[]{"1.091392883061106"});
   }
+
+  @Test
+  public void testDegrees() throws IOException {
+    testSimpleEval("select degrees(0.0) as col1 ", new String[]{String.valueOf(Math.toDegrees(0.0))});
+    testSimpleEval("select degrees(0.8) as col1 ", new String[]{String.valueOf(Math.toDegrees(0.8))});
+    testSimpleEval("select degrees(2.7) as col1 ", new String[]{String.valueOf(Math.toDegrees(2.7))});
+    testSimpleEval("select degrees(-0.8) as col1 ", new String[]{String.valueOf(Math.toDegrees(-0.8))});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT8);
+    schema.addColumn("col3", FLOAT8);
+
+    testEval(schema, "table1", "0.8,2.7,-0.8", "select degrees(col1), degrees(col2), degrees(col3) from table1",
+        new String[]{
+            String.valueOf(Math.toDegrees((float)0.8)),
+            String.valueOf(Math.toDegrees(2.7)),
+            String.valueOf(Math.toDegrees(-0.8))
+        });
+  }
+
+  @Test
+  public void testRadians() throws IOException {
+    testSimpleEval("select radians(0.0) as col1 ", new String[]{String.valueOf(Math.toRadians(0.0))});
+    testSimpleEval("select radians(0.8) as col1 ", new String[]{String.valueOf(Math.toRadians(0.8))});
+    testSimpleEval("select radians(2.7) as col1 ", new String[]{String.valueOf(Math.toRadians(2.7))});
+    testSimpleEval("select radians(-0.8) as col1 ", new String[]{String.valueOf(Math.toRadians(-0.8))});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT8);
+    schema.addColumn("col3", FLOAT8);
+
+    testEval(schema, "table1", "0.8,2.7,-0.8", "select radians(col1), radians(col2), radians(col3) from table1",
+        new String[]{
+            String.valueOf(Math.toRadians((float)0.8)),
+            String.valueOf(Math.toRadians(2.7)),
+            String.valueOf(Math.toRadians(-0.8))
+        });
+  }
 }
