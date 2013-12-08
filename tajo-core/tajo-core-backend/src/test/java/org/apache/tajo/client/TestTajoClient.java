@@ -199,14 +199,13 @@ public class TestTajoClient {
 
   @Test
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
-    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
-    BackendTestingUtil.writeTmpTable(conf, CommonTestingUtil.getTestDir());
+    Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
     String sql =
         "create external table " + tableName + " (deptname text, score int4) "
-            + "using csv location 'file:///tmp/" + tableName + "'";
+            + "using csv location '" + tablePath + "'";
     client.executeQueryAndGetResult(sql);
     assertTrue(client.existTable(tableName));
   }
