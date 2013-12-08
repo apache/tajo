@@ -281,21 +281,43 @@ public class TestMathFunctions extends ExprTestBase {
 
   @Test
   public void testExp() throws IOException {
-    testSimpleEval("select exp(1.0) as col1 ", new String[]{"2.718281828459045"});
-    testSimpleEval("select exp(1.1) as col1 ", new String[]{"3.0041660239464334"});
-    testSimpleEval("select exp(1.2) as col1 ", new String[]{"3.3201169227365472"});
+    testSimpleEval("select exp(1.0) as col1 ", new String[]{String.valueOf(Math.exp(1.0d))});
+    testSimpleEval("select exp(1.1) as col1 ", new String[]{String.valueOf(Math.exp(1.1d))});
+    testSimpleEval("select exp(1.2) as col1 ", new String[]{String.valueOf(Math.exp(1.2d))});
 
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT4);
 
     testEval(schema, "table1", "1.123", "select exp(col1) from table1",
-        new String[]{"3.074062650703663"});
+        new String[]{String.valueOf(Math.exp(1.123f))});
 
     Schema schema2 = new Schema();
     schema2.addColumn("col1", FLOAT8);
 
     testEval(schema2, "table1", "1.123", "select exp(col1) from table1",
-        new String[]{"3.07406257154899"});
+        new String[]{String.valueOf(Math.exp(1.123d))});
+  }
+
+
+  @Test
+  public void testAbs() throws IOException {
+    testSimpleEval("select abs(9) as col1 ", new String[]{"9"});
+    testSimpleEval("select abs(-9) as col1 ", new String[]{"9"});
+    testSimpleEval("select abs(200000000000) as col1 ", new String[]{"200000000000"});
+    testSimpleEval("select abs(-200000000000) as col1 ", new String[]{"200000000000"});
+    testSimpleEval("select abs(2.0) as col1 ", new String[]{"2.0"});
+    testSimpleEval("select abs(-2.0) as col1 ", new String[]{"2.0"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT4);
+    testEval(schema, "table1", "0.39,-0.39", "select abs(col1), abs(col2) from table1", new String[]{"0.39", "0.39"});
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", FLOAT8);
+    schema2.addColumn("col2", FLOAT8);
+    testEval(schema2, "table1", "0.033312347,-0.033312347", "select abs(col1), abs(col2) from table1",
+        new String[]{"0.033312347", "0.033312347"});
   }
 }
