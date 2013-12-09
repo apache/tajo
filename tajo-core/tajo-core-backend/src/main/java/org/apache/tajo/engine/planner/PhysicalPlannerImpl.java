@@ -73,7 +73,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       execPlan = createPlanRecursive(context, logicalPlan);
       if (execPlan instanceof StoreTableExec
           || execPlan instanceof IndexedStoreExec
-          || execPlan instanceof PartitionedStoreExec) {
+          || execPlan instanceof PartitionedStoreExec
+          || execPlan instanceof ColumnPartitionedTableStoreExec) {
         return execPlan;
       } else if (context.getDataChannel() != null) {
         return buildOutputOperator(context, logicalPlan, execPlan);
@@ -631,6 +632,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
     if (plan instanceof StoreIndexNode) {
       return new TunnelExec(ctx, plan.getOutSchema(), subOp);
+    }
+
+    // Find partitioned table
+    if (plan.getPartitions() != null) {
+      if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.COLUMN)) {
+        return new ColumnPartitionedTableStoreExec(ctx, plan, subOp);
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.HASH)) {
+        // TODO
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.RANGE)) {
+        // TODO
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.LIST)) {
+        // TODO
+      }
     }
 
     return new StoreTableExec(ctx, plan, subOp);

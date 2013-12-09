@@ -482,6 +482,13 @@ public class GlobalEngine extends AbstractService {
         storeNode.setChild(childBlocks.get(0).getRoot());
       }
 
+      // If InsertNode contains table partition information, StoreNode must has it.
+      if (insertNode.hasTargetTable()) {
+        if (insertNode.getTargetTable().getPartitions() != null) {
+          storeNode.setPartitions(insertNode.getTargetTable().getPartitions());
+        }
+      }
+
       // find a subquery query of insert node and merge root block and subquery into one query block.
       PlannerUtil.replaceNode(plan.getRootBlock().getRoot(), storeNode, NodeType.INSERT);
       plan.getRootBlock().refresh();

@@ -78,6 +78,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-329: Implement physical operator to store in column-partitioned table. (jaehwa)
+
     TAJO-391: Change the default type of real values from FLOAT4 to FLOAT8 
     when parsing the user queries. (DaeMyung Kang via jihoon)
 
