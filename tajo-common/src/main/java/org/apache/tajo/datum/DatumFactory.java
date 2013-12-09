@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.Bytes;
+import org.joda.time.DateTime;
 
 public class DatumFactory {
 
@@ -166,6 +167,14 @@ public class DatumFactory {
 
   public static TextDatum createText(String val) {
     return new TextDatum(val);
+  }
+
+  public static TimestampDatum createTimeStamp(long instance) {
+    return new TimestampDatum(instance);
+  }
+
+  public static TimestampDatum createTimeStamp(String val) {
+    return new TimestampDatum(DateTime.parse(val));
   }
 
   public static TextDatum createText(byte[] val) {

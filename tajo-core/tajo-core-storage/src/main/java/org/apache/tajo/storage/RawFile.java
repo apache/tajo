@@ -203,6 +203,10 @@ public class RawFile {
             tuple.put(i, DatumFactory.createText(new String(strBytes2)));
             break;
 
+          case TIMESTAMP:
+            tuple.put(i, DatumFactory.createTimeStamp(buffer.getLong()));
+            break;
+
           case BLOB : {
             //byte [] rawBytes = getColumnBytes();
             int byteSize = buffer.getInt();
@@ -445,6 +449,10 @@ public class RawFile {
             }
             buffer.putInt(strBytes2.length);
             buffer.put(strBytes2);
+            break;
+
+          case TIMESTAMP:
+            buffer.putLong(t.get(i).asInt8());
             break;
 
           case BLOB : {

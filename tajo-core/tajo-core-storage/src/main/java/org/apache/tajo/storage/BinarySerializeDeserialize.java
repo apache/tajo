@@ -87,8 +87,9 @@ public class BinarySerializeDeserialize implements SerializeDeserialize {
         out.write(bytes, 0, length);
         break;
       case NULL_TYPE:
-      default:
         break;
+      default:
+        throw new IOException("Does not support type");
     }
     return length;
   }

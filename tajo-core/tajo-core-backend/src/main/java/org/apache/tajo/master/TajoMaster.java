@@ -46,6 +46,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
+import org.apache.tajo.engine.function.datetime.ToCharTimestamp;
+import org.apache.tajo.engine.function.datetime.ToTimestamp;
 import org.apache.tajo.engine.function.math.*;
 import org.apache.tajo.engine.function.string.*;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -706,6 +708,20 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("cbrt", Cbrt.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.FLOAT8),
             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
+
+    // Date Time
+    sqlFuncs.add(
+        new FunctionDesc("to_timestamp", ToTimestamp.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TIMESTAMP),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("to_timestamp", ToTimestamp.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TIMESTAMP),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("to_char", ToCharTimestamp.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TIMESTAMP, Type.TEXT)));
 
     return sqlFuncs;
   }

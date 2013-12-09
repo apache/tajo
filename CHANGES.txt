@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-62: Implement Timestamp Datum type. (hyunsik)
+
     TAJO-307: Implement chr(int) function. (DaeMyung Kang via hyunsik)
 
     TAJO-365: Implement degrees/radians function. (DaeMyung Kang via hyunsik)
