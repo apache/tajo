@@ -433,6 +433,10 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("ascii", Ascii.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.INT4),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
+    sqlFuncs.add(
+        new FunctionDesc("chr", Chr.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.CHAR),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
 
     sqlFuncs.add(
         new FunctionDesc("length", Length.class, FunctionType.GENERAL,

@@ -25,9 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
@@ -462,6 +460,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "12", "select ascii(col1) from table1",
             new String[]{"49"});
 
+  }
+
+  @Test
+  public void testChr() throws IOException {
+    testSimpleEval("select chr(48) as col1 ", new String[]{"0"});
+    testSimpleEval("select chr(49) as col1 ", new String[]{"1"});
+    testSimpleEval("select chr(50) as col1 ", new String[]{"2"});
+    testSimpleEval("select chr(64) as col1 ", new String[]{"@"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", INT4);
+    testEval(schema, "table1", "65", "select chr(col1) from table1", new String[]{"A"});
+    testEval(schema, "table1", "66", "select chr(col1) from table1", new String[]{"B"});
+    testEval(schema, "table1", "52512", "select chr(col1) from table1", new String[]{"촠"});
   }
 
   @Test
