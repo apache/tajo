@@ -309,6 +309,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testBin() throws IOException {
+    testSimpleEval("select to_bin(1) as col1 ", new String[]{"1"});
+    testSimpleEval("select to_bin(10) as col1 ", new String[]{"1010"});
+    testSimpleEval("select to_bin(1234) as col1 ", new String[]{"10011010010"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select to_bin(20) from table1",
+        new String[]{"10100"});
+  }
+
+  @Test
   public void testOctetLength() throws IOException {
     testSimpleEval("select octet_length('123456') as col1 ", new String[]{"6"});
     testSimpleEval("select octet_length('1') as col1 ", new String[]{"1"});
