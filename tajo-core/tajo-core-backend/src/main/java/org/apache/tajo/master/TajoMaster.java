@@ -732,6 +732,71 @@ public class TajoMaster extends CompositeService {
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TIMESTAMP, Type.TEXT)));
 
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.FLOAT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.FLOAT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.FLOAT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT8)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.FLOAT8),
+            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT8)));
+
     return sqlFuncs;
   }
 

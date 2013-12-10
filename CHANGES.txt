@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-400: Implement pow(float8, float8) function. (DaeMyung Kang via jaehwa)
+
     TAJO-384: to_bin(). (Jae Young Lee via jaehwa)
    
     TAJO-62: Implement Timestamp Datum type. (hyunsik)

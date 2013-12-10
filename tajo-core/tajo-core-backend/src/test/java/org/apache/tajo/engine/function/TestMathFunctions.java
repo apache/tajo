@@ -364,6 +364,25 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testPow() throws IOException {
+    testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9,3))});
+    testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0,3))});
+    testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1,3.1))});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT4);
+    schema.addColumn("col2", FLOAT8);
+    schema.addColumn("col3", INT4);
+    schema.addColumn("col4", INT8);
+
+    testEval(schema, "table1", "0.4,2.7,3,2", "select pow(col1, col2), pow(col3, col4) from table1",
+        new String[]{
+            String.valueOf(Math.pow((float)0.4, 2.7)),
+            String.valueOf(Math.pow(3,2))
+        });
+  }
+
+  @Test
   public void testRadians() throws IOException {
     testSimpleEval("select radians(0.0) as col1 ", new String[]{String.valueOf(Math.toRadians(0.0))});
     testSimpleEval("select radians(0.8) as col1 ", new String[]{String.valueOf(Math.toRadians(0.8))});
@@ -382,4 +401,5 @@ public class TestMathFunctions extends ExprTestBase {
             String.valueOf(Math.toRadians(-0.8))
         });
   }
+
 }
