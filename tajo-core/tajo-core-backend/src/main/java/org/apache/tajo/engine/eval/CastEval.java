@@ -36,6 +36,10 @@ public class CastEval extends EvalNode {
     this.target = target;
   }
 
+  public EvalNode getOperand() {
+    return operand;
+  }
+
   @Override
   public EvalContext newContext() {
     CastContext castContext = new CastContext();

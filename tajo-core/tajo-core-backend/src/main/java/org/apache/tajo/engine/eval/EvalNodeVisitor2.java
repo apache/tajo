@@ -62,4 +62,8 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
   // Functions
   RESULT visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack);
   RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack);
+
+  RESULT visitSigned(CONTEXT context, SignedEval signedEval, Stack<EvalNode> stack);
+
+  RESULT visitCast(CONTEXT context, CastEval signedEval, Stack<EvalNode> stack);
 }

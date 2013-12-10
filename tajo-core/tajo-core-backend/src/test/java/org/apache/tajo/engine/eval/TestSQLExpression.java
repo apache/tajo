@@ -70,4 +70,15 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
         new String[]{"123.0", "234.0"});
   }
+
+  @Test
+  public void testBooleanLiteral() throws IOException {
+    testSimpleEval("select true", new String[] {"t"});
+    testSimpleEval("select false", new String[] {"f"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    testEval(schema, "table1", "123,234", "select col1, col2 from table1 where true", new String[]{"123", "234"});
+  }
 }

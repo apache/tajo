@@ -493,7 +493,9 @@ public class GlobalEngine extends AbstractService {
       PlannerUtil.replaceNode(plan.getRootBlock().getRoot(), storeNode, NodeType.INSERT);
       plan.getRootBlock().refresh();
       LogicalPlan.QueryBlock subBlock = plan.getBlock(insertNode.getSubQuery());
+      // remove the sub block and connection from a block graph.
       plan.removeBlock(subBlock);
+      plan.getQueryBlockGraph().removeEdge(subBlock.getName(), LogicalPlan.ROOT_BLOCK);
     }
   }
 }

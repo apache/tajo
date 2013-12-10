@@ -118,6 +118,13 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         result = visitAggrFuncCall(context, (AggregationFunctionCallEval) evalNode, stack);
         break;
 
+      case SIGNED:
+        result = visitSigned(context, (SignedEval) evalNode, stack);
+        break;
+      case CAST:
+        result = visitCast(context, (CastEval) evalNode, stack);
+        break;
+
       default:
         throw new InvalidEvalException("Unknown EvalNode: " + evalNode);
     }
@@ -290,5 +297,23 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   @Override
   public RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
+  }
+
+  @Override
+  public RESULT visitSigned(CONTEXT context, SignedEval signedEval, Stack<EvalNode> stack) {
+    RESULT result;
+    stack.push(signedEval);
+    result = visitChild(context, signedEval.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitCast(CONTEXT context, CastEval signedEval, Stack<EvalNode> stack) {
+    RESULT result;
+    stack.push(signedEval);
+    result = visitChild(context, signedEval.getOperand(), stack);
+    stack.pop();
+    return result;
   }
 }

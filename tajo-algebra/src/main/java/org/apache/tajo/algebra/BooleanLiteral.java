@@ -18,37 +18,15 @@
 
 package org.apache.tajo.algebra;
 
-public class LiteralValue extends Expr {
-  protected LiteralType valueType;
-  protected String value;
+public class BooleanLiteral extends LiteralValue {
+  public static final String TRUE = "TRUE";
+  public static final String FALSE = "FALSE";
 
-  public static enum LiteralType {
-    Boolean,
-    String,
-    Unsigned_Integer,
-    Unsigned_Float,
-    Unsigned_Large_Integer,
+  public BooleanLiteral(boolean value) {
+    super(value ? TRUE : FALSE, LiteralType.Boolean);
   }
 
-  public LiteralValue(String value, LiteralType valueType) {
-    super(OpType.Literal);
-    this.value = value;
-    this.valueType = valueType;
-  }
-
-  public LiteralType getValueType() {
-    return this.valueType;
-  }
-
-  public String getValue() {
-    return this.value;
-  }
-
-  public boolean equalsTo(Expr expr) {
-    LiteralValue another = (LiteralValue) expr;
-    boolean a = valueType.equals(another.valueType);
-    boolean b =  value.equals(another.value);
-
-    return a && b;
+  public boolean isTrue() {
+    return value.equals(TRUE);
   }
 }

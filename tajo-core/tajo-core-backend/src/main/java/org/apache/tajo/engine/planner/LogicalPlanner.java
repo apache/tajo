@@ -1051,8 +1051,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         LiteralValue literal = (LiteralValue) expr;
         switch (literal.getValueType()) {
           case Boolean:
-            char val = literal.getValue().charAt(0);
-            return new ConstEval(DatumFactory.createBool(val == 't' || val == 'T'));
+            return new ConstEval(DatumFactory.createBool(((BooleanLiteral)literal).isTrue()));
           case String:
             return new ConstEval(DatumFactory.createText(literal.getValue()));
           case Unsigned_Integer:

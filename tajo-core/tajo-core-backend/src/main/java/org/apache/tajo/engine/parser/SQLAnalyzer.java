@@ -430,7 +430,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (int i = 0; i < ctx.simple_when_clause().size(); i++) {
       Simple_when_clauseContext simpleWhenCtx = ctx.simple_when_clause(i);
       BinaryOperator bin = new BinaryOperator(OpType.Equals, leftTerm,
-          visitNumeric_value_expression(simpleWhenCtx.numeric_value_expression()));
+          visitValue_expression(simpleWhenCtx.search_condition().value_expression()));
       caseWhen.addWhen(bin, buildCaseResult(simpleWhenCtx.result()));
     }
     if (ctx.else_clause() != null) {
@@ -443,7 +443,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (result.NULL() != null) {
       return new NullValue();
     } else {
-      return visitNumeric_value_expression(result.numeric_value_expression());
+      return visitValue_expression(result.value_expression());
     }
   }
 
@@ -1216,8 +1216,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.unsigned_numeric_literal())) {
       return visitUnsigned_numeric_literal(ctx.unsigned_numeric_literal());
     } else {
-      return new LiteralValue(stripQuote(ctx.general_literal().Character_String_Literal().getText()),
-          LiteralType.String);
+      return visitGeneral_literal(ctx.general_literal());
+    }
+  }
+
+  @Override
+  public Expr visitGeneral_literal(SQLParser.General_literalContext ctx) {
+    if (checkIfExist(ctx.Character_String_Literal())) {
+      return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
+    } else {
+      return new BooleanLiteral(checkIfExist(ctx.boolean_literal().TRUE()));
     }
   }
 }

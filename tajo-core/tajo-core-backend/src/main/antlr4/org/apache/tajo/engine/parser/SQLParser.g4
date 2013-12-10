@@ -171,6 +171,26 @@ drop_table_statement
 
 /*
 ===============================================================================
+  5.3 <literal>
+===============================================================================
+*/
+
+unsigned_literal
+  : unsigned_numeric_literal
+  | general_literal
+  ;
+
+general_literal
+  : Character_String_Literal
+  | boolean_literal
+  ;
+
+boolean_literal
+  : TRUE | FALSE | UNKNOWN
+  ;
+
+/*
+===============================================================================
   6.1 <data types>
 ===============================================================================
 */
@@ -288,15 +308,6 @@ unsigned_value_specification
   : unsigned_literal
   ;
 
-unsigned_literal
-  : unsigned_numeric_literal
-  | general_literal
-  ;
-
-general_literal
-  : Character_String_Literal
-  ;
-
 unsigned_numeric_literal
   : NUMBER
   | REAL_NUMBER
@@ -380,7 +391,7 @@ searched_case
   : CASE (searched_when_clause)+ (else_clause)? END
   ;
 
-simple_when_clause : WHEN numeric_value_expression THEN result ;
+simple_when_clause : WHEN search_condition THEN result ;
 
 searched_when_clause
   : WHEN c=search_condition THEN r=result
@@ -391,7 +402,7 @@ else_clause
   ;
 
 result
-  : numeric_value_expression | NULL
+  : value_expression | NULL
   ;
 
 /*

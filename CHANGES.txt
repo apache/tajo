@@ -129,6 +129,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-404: TAJO-404: Tajo does not recognize boolean literal. (hyunsik)
+
     TAJO-344: Tajo cannot recognize negative numeric expressions. (hyunsik)
 
     TAJO-393: Unit tests must use test-data directory. (hyunsik)

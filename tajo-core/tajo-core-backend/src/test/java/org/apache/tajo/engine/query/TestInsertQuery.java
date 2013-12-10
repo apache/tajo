@@ -441,5 +441,4 @@ public class TestInsertQuery {
       }
     }
   }
-
 }
