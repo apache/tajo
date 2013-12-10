@@ -65,3 +65,6 @@
 
 # Tajo cluster mode. the default mode is standby mode.
 export TAJO_WORKER_STANDBY_MODE=true
+
+# It must be required to use HCatalogStore
+# export HIVE_HOME=

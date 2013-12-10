@@ -106,8 +106,6 @@
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}/* .
                       run cp -r ${project.basedir}/src/main/bin .
                       run cp -r ${project.basedir}/src/main/conf .
-                      run rm -rf lib/hive-*.jar
-                      run cp -r $ROOT/tajo-catalog/tajo-catalog-server/target/lib/hive-*.jar  lib/
                       run rm -rf lib/tajo-*-${project.version}.jar
                       echo
                       echo "Tajo dist layout available at: ${project.build.directory}/tajo-${project.version}"

@@ -232,6 +232,30 @@ export TAJO_BASE_CLASSPATH
 CLASSPATH="${CLASSPATH}:${TAJO_BASE_CLASSPATH}"
 
 ##############################################################################
+# Find and Set Hive CLASSPATH
+##############################################################################
+
+HIVE_LIB=$HIVE_HOME/lib
+
+if [ -d ${HIVE_LIB} ]; then
+  for f in ${HIVE_LIB}/*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in $HIVE_HOME/hcatalog/share/hcatalog/*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in $HADOOP_HOME/hadoop-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+fi
+
+##############################################################################
 # Find and Set Hadoop CLASSPATH
 ##############################################################################
 
