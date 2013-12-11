@@ -498,7 +498,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       synchronized(finishedQueryMasterTasks) {
         List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
         for(Map.Entry<QueryId, QueryMasterTask> entry: finishedQueryMasterTasks.entrySet()) {
-          if(entry.getValue().getStartTime() > expireTime) {
+          if(entry.getValue().getStartTime() < expireTime) {
             expiredQueryIds.add(entry.getKey());
           }
         }

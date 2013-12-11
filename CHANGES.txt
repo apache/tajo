@@ -92,7 +92,8 @@ Release 0.8.0 - unreleased
 
     TAJO-336: Separate catalog stores into separate modules. (jaehwa)
 
-    TAJO-329: Implement physical operator to store in column-partitioned table. (jaehwa)
+    TAJO-329: Implement physical operator to store in column-partitioned table.
+    (jaehwa)
 
     TAJO-391: Change the default type of real values from FLOAT4 to FLOAT8 
     when parsing the user queries. (DaeMyung Kang via jihoon)
@@ -138,6 +139,9 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-390: Queries on history are expired ealier than a given expiry time.
+    (hyoungjunkim via hyunsik)
 
     TAJO-410: A query with a combination of general and distinct aggregation
     functions fails. (hyunsik)
