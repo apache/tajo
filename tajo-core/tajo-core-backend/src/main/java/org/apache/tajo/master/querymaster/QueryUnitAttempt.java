@@ -268,31 +268,28 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     }
   }
 
-  private static class SucceededTransition
-      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+  private static class SucceededTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
     @Override
     public void transition(QueryUnitAttempt taskAttempt,
                            TaskAttemptEvent event) {
       TaskCompletionReport report = ((TaskCompletionEvent)event).getReport();
 
-      taskAttempt.fillTaskStatistics(report);
-      taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(),
-          TaskEventType.T_ATTEMPT_SUCCEEDED));
+      try {
+        taskAttempt.fillTaskStatistics(report);
+        taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
+      } catch (Throwable t) {
+        taskAttempt.eventHandler.handle(new TaskFatalErrorEvent(taskAttempt.getId(), t.getMessage()));
+      }
     }
   }
 
-  private static class FailedTransition
-      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+  private static class FailedTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
     @Override
-    public void transition(QueryUnitAttempt taskAttempt,
-                           TaskAttemptEvent event) {
+    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent event) {
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
-      taskAttempt.eventHandler.handle(
-          new TaskTAttemptEvent(taskAttempt.getId(),
-              TaskEventType.T_ATTEMPT_FAILED));
-      LOG.error("FROM " + taskAttempt.getHost() + " >> "
-          + errorEvent.errorMessage());
+      taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
+      LOG.error("FROM " + taskAttempt.getHost() + " >> " + errorEvent.errorMessage());
     }
   }
 

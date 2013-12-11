@@ -69,7 +69,6 @@ public class Query implements EventHandler<QueryEvent> {
   private final QueryId id;
   private long appSubmitTime;
   private long startTime;
-  private long initializationTime;
   private long finishTime;
   private TableDesc resultDesc;
   private int completedSubQueryCount = 0;

@@ -21,93 +21,91 @@ package org.apache.tajo.datum;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class TestTimestampDatum {
-
-  private static long timestamp;
-
-  @BeforeClass
-  public static void setUp() {
-    timestamp = System.currentTimeMillis();
-  }
+public class TestDateDatum {
+  private static String DATE = "1980-04-01";
 
 	@Test
 	public final void testType() {
-		Datum d = DatumFactory.createTimeStamp(timestamp);
-    assertEquals(Type.TIMESTAMP, d.type());
+		Datum d = DatumFactory.createDate(DATE);
+    assertEquals(Type.DATE, d.type());
 	}
-	
-	@Test(expected = InvalidCastException.class)
+
+  @Test
 	public final void testAsInt4() {
-    Datum d = DatumFactory.createTimeStamp(timestamp);
-    d.asInt4();
+    Datum d = DatumFactory.createDate(DATE);
+    Datum copy = DatumFactory.createDate(d.asInt4());
+    assertEquals(d, copy);
 	}
 
 	@Test
 	public final void testAsInt8() {
-    Datum d = DatumFactory.createTimeStamp(timestamp);
-    assertEquals(timestamp, d.asInt8());
+    Datum d = DatumFactory.createDate(DATE);
+    Datum copy = DatumFactory.createDate((int) d.asInt8());
+    assertEquals(d, copy);
 	}
 
   @Test(expected = InvalidCastException.class)
 	public final void testAsFloat4() {
-    Datum d = DatumFactory.createTimeStamp(timestamp);
+    Datum d = DatumFactory.createDate(DATE);
     d.asFloat4();
 	}
 
   @Test(expected = InvalidCastException.class)
 	public final void testAsFloat8() {
-    long instance = 1386577582;
-    Datum d = DatumFactory.createTimeStamp(instance);
+    Datum d = DatumFactory.createDate(DATE);
     d.asFloat8();
 	}
 
 	@Test
 	public final void testAsText() {
-    Datum d = DatumFactory.createTimeStamp("1980-04-01 01:50:01");
-    Datum copy = DatumFactory.createTimeStamp(d.asChars());
+    Datum d = DatumFactory.createDate(DATE);
+    Datum copy = DatumFactory.createDate(d.asChars());
     assertEquals(d, copy);
 	}
 
   @Test
   public final void testAsByteArray() {
-    TimestampDatum d = DatumFactory.createTimeStamp(timestamp);
-    TimestampDatum copy = new TimestampDatum(d.asByteArray());
+    DateDatum d = DatumFactory.createDate(DATE);
+    DateDatum copy = new DateDatum(d.asByteArray());
     assertEquals(d.asInt8(), copy.asInt8());
   }
 
 	@Test
   public final void testSize() {
-    Datum d = DatumFactory.createTimeStamp(timestamp);
-    assertEquals(TimestampDatum.SIZE, d.asByteArray().length);
+    Datum d = DatumFactory.createDate(DATE);
+    assertEquals(DateDatum.SIZE, d.asByteArray().length);
   }
 
   @Test
   public final void testAsTextBytes() {
-    Datum d = DatumFactory.createTimeStamp("1980-04-01 01:50:01");
+    Datum d = DatumFactory.createDate(DATE);
     assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
   }
 
   @Test
   public final void testToJson() {
-    Datum d = DatumFactory.createTimeStamp(timestamp);
+    Datum d = DatumFactory.createDate(DATE);
     Datum copy = CommonGsonHelper.fromJson(d.toJson(), Datum.class);
     assertEquals(d, copy);
   }
 
   @Test
+  public final void testInstance() {
+    DateDatum d = DatumFactory.createDate(DATE);
+    DateDatum copy = new DateDatum(d.asInt4());
+    assertEquals(d, copy);
+  }
+
+  @Test
   public final void testGetFields() {
-    TimestampDatum d = DatumFactory.createTimeStamp("1980-04-01 01:50:01");
+    DateDatum d = DatumFactory.createDate(DATE);
     assertEquals(1980, d.getYear());
     assertEquals(4, d.getMonthOfYear());
     assertEquals(1, d.getDayOfMonth());
-    assertEquals(1, d.getHourOfDay());
-    assertEquals(50, d.getMinuteOfHour());
-    assertEquals(01, d.getSecondOfMinute());
   }
 }

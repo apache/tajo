@@ -22,14 +22,20 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskFatalErrorReport;
 
 public class TaskFatalErrorEvent extends TaskAttemptEvent {
-  private TaskFatalErrorReport report;
+  private final String message;
+
   public TaskFatalErrorEvent(TaskFatalErrorReport report) {
     super(new QueryUnitAttemptId(report.getId()),
         TaskAttemptEventType.TA_FATAL_ERROR);
-    this.report = report;
+    this.message = report.getErrorMessage();
+  }
+
+  public TaskFatalErrorEvent(QueryUnitAttemptId attemptId, String message) {
+    super(attemptId, TaskAttemptEventType.TA_FATAL_ERROR);
+    this.message = message;
   }
 
   public String errorMessage() {
-    return report.getErrorMessage();
+    return message;
   }
 }

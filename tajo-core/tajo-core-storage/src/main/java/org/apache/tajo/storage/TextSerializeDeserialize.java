@@ -76,6 +76,7 @@ public class TextSerializeDeserialize implements SerializeDeserialize {
       case FLOAT4:
       case FLOAT8:
       case INET4:
+      case DATE:
       case TIMESTAMP:
         bytes = datum.asTextBytes();
         length = bytes.length;
@@ -144,6 +145,10 @@ public class TextSerializeDeserialize implements SerializeDeserialize {
             : DatumFactory.createText(chars);
         break;
       }
+      case DATE:
+        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
+            : DatumFactory.createDate(new String(bytes, offset, length));
+        break;
       case TIMESTAMP:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createTimeStamp(new String(bytes, offset, length));

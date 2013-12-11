@@ -19,23 +19,23 @@
 package org.apache.tajo.json;
 
 import com.google.gson.*;
-import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.datum.DateDatum;
 
 import java.lang.reflect.Type;
 
-public class TimestampDatumAdapter implements GsonSerDerAdapter<TimestampDatum> {
+public class DateDatumAdapter implements GsonSerDerAdapter<DateDatum> {
 
 	@Override
-	public TimestampDatum deserialize(JsonElement json, Type typeOfT,
+	public DateDatum deserialize(JsonElement json, Type typeOfT,
                                     JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
-		return new TimestampDatum(jsonObject.get("val").getAsLong());
+		return new DateDatum(jsonObject.get("val").getAsInt());
 	}
 
 	@Override
-	public JsonElement serialize(TimestampDatum src, Type typeOfSrc, JsonSerializationContext context) {
+	public JsonElement serialize(DateDatum src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("val", src.asInt8());
+		jsonObj.addProperty("val", src.asInt4());
 		return jsonObj;
 	}
 }

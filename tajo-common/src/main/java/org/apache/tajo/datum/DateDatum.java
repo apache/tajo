@@ -22,71 +22,45 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class TimestampDatum extends Datum {
-  public static final int SIZE = 8;
-  /** ISO 8601/SQL standard format - ex) 1997-12-17 07:37:16-08 */
-  public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss";
+public class DateDatum extends Datum {
+  public static final int SIZE = 4;
+  /** ISO 8601/SQL standard format - ex) 1997-12-17 */
+  public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd";
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private DateTime dateTime;
+  private LocalDate date;
 
-  public TimestampDatum(long instant) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    dateTime = new DateTime(instant);
+  public DateDatum(int value) {
+    super(TajoDataTypes.Type.DATE);
+    date = decode(value);
   }
 
-  public TimestampDatum(DateTime dateTime) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = dateTime;
+  public DateDatum(LocalDate date) {
+    super(TajoDataTypes.Type.DATE);
+    this.date = date;
   }
 
-  public TimestampDatum(byte [] bytes) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = new DateTime(Bytes.toLong(bytes));
-  }
-
-  public TimestampDatum(String datetime) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
+  public DateDatum(byte [] bytes) {
+    this(Bytes.toInt(bytes));
   }
 
   public int getYear() {
-    return dateTime.getYear();
+    return date.getYear();
   }
 
   public int getMonthOfYear() {
-    return dateTime.getMonthOfYear();
+    return date.getMonthOfYear();
   }
 
   public int getDayOfWeek() {
-    return dateTime.getDayOfWeek();
+    return date.getDayOfWeek();
   }
 
   public int getDayOfMonth() {
-    return dateTime.getDayOfMonth();
-  }
-
-  public int getHourOfDay() {
-    return dateTime.getHourOfDay();
-  }
-
-  public int getMinuteOfHour() {
-    return dateTime.getMinuteOfHour();
-  }
-
-  public int getSecondOfDay() {
-    return dateTime.getSecondOfDay();
-  }
-
-  public int getSecondOfMinute() {
-    return dateTime.getSecondOfMinute();
-  }
-
-  public int getMillisOfSecond() {
-    return dateTime.getMillisOfSecond();
+    return date.getDayOfMonth();
   }
 
   public String toString() {
@@ -95,12 +69,33 @@ public class TimestampDatum extends Datum {
 
   @Override
   public int asInt4() {
-    throw new InvalidCastException();
+    return encode();
+  }
+
+  private static LocalDate decode(int val) {
+    int year = (val >> 16);
+    int monthOfYear = (0x0FFF & val) >> 8;
+    int dayOfMonth = (0xF0FF & val);
+    return new LocalDate(year, monthOfYear, dayOfMonth);
+  }
+
+  /**
+   *   Year     MonthOfYear   DayOfMonth
+   *  31-16       15-8          7 - 0
+   *
+   * 0xFF 0xFF    0xFF          0xFF
+   */
+  private int encode() {
+    int instance = 0;
+    instance |= (date.getYear() << 16); // 1970 ~ : 2 bytes
+    instance |= (date.getMonthOfYear() << 8); // 1 - 12 : 1 byte
+    instance |= (date.getDayOfMonth()); // 0 - 31 : 1 byte
+    return instance;
   }
 
   @Override
   public long asInt8() {
-    return dateTime.getMillis();
+    return encode();
   }
 
   @Override
@@ -115,38 +110,43 @@ public class TimestampDatum extends Datum {
 
   @Override
   public String asChars() {
-    return dateTime.toString(DEFAULT_FORMATTER);
+    return date.toString(DEFAULT_FORMATTER);
   }
 
   public String toChars(String format) {
-    return dateTime.toString(format);
+    return date.toString(format);
   }
 
   @Override
   public int size() {
-    return 8;
+    return SIZE;
   }
 
   @Override
   public byte [] asByteArray() {
-    return Bytes.toBytes(dateTime.getMillis());
+    return Bytes.toBytes(encode());
   }
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-      return dateTime.compareTo(((TimestampDatum)datum).dateTime);
+    if (datum.type() == TajoDataTypes.Type.DATE) {
+      return date.compareTo(((DateDatum)datum).date);
     } else {
       throw new InvalidOperationException();
     }
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof TimestampDatum) {
-      TimestampDatum another = (TimestampDatum) obj;
-      return dateTime.isEqual(another.dateTime);
+    if (obj instanceof DateDatum) {
+      DateDatum another = (DateDatum) obj;
+      return date.isEqual(another.date);
     } else {
       throw new InvalidOperationException();
     }
+  }
+
+  @Override
+  public int hashCode() {
+    return date.hashCode();
   }
 }

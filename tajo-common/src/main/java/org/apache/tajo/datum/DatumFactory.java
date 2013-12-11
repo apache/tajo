@@ -18,16 +18,15 @@
 
 package org.apache.tajo.datum;
 
+import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+
+import java.io.IOException;
 
 public class DatumFactory {
-
-  public static Datum create(DataType type, byte[] val) {
-    return create(type.getType(), val);
-  }
 
   public static Class<? extends Datum> getDatumClass(Type type) {
     switch (type) {
@@ -47,6 +46,10 @@ public class DatumFactory {
         return CharDatum.class;
       case TEXT:
         return TextDatum.class;
+      case TIMESTAMP:
+        return TimestampDatum.class;
+      case DATE:
+        return DateDatum.class;
       case BIT:
         return BitDatum.class;
       case BLOB:
@@ -62,33 +65,69 @@ public class DatumFactory {
     }
   }
 
-  public static Datum create(Type type, byte[] val) {
-    switch (type) {
+  public static Datum createFromBytes(DataType dataType, byte[] bytes) {
+    switch (dataType.getType()) {
 
       case BOOLEAN:
-        return createBool(val[0]);
+        return createBool(bytes[0]);
       case INT2:
-        return createInt2(Bytes.toShort(val));
+        return createInt2(Bytes.toShort(bytes));
       case INT4:
-        return createInt4(Bytes.toInt(val));
+        return createInt4(Bytes.toInt(bytes));
       case INT8:
-        return createInt8(Bytes.toLong(val));
+        return createInt8(Bytes.toLong(bytes));
       case FLOAT4:
-        return createFloat4(Bytes.toFloat(val));
+        return createFloat4(Bytes.toFloat(bytes));
       case FLOAT8:
-        return createFloat8(Bytes.toDouble(val));
+        return createFloat8(Bytes.toDouble(bytes));
       case CHAR:
-        return createChar(val);
+        return createChar(bytes);
       case TEXT:
-        return createText(val);
+        return createText(bytes);
+      case DATE:
+        return new DateDatum(bytes);
+      case TIMESTAMP:
+        return new TimestampDatum(bytes);
       case BIT:
-        return createBit(val[0]);
+        return createBit(bytes[0]);
       case BLOB:
-        return createBlob(val);
+        return createBlob(bytes);
       case INET4:
-        return createInet4(val);
+        return createInet4(bytes);
+      case PROTOBUF:
+        ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
+        Message.Builder builder = factory.newBuilder();
+        try {
+          builder.mergeFrom(bytes);
+          return factory.createDatum(builder.build());
+        } catch (IOException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
       default:
-        throw new UnsupportedOperationException(type.toString());
+        throw new UnsupportedOperationException(dataType.toString());
+    }
+  }
+
+  public static Datum createFromInt4(DataType type, int val) {
+    switch (type.getType()) {
+    case INT4:
+      return new Int4Datum(val);
+    case DATE:
+      return new DateDatum(val);
+    default:
+      throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT4");
+    }
+  }
+
+  public static Datum createFromInt8(DataType type, long val) {
+    switch (type.getType()) {
+    case INT8:
+      return new Int8Datum(val);
+    case DATE:
+      return new TimestampDatum(val);
+    default:
+      throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT8");
     }
   }
 
@@ -169,12 +208,20 @@ public class DatumFactory {
     return new TextDatum(val);
   }
 
+  public static DateDatum createDate(int instance) {
+    return new DateDatum(instance);
+  }
+
+  public static DateDatum createDate(String dateStr) {
+    return new DateDatum(LocalDate.parse(dateStr));
+  }
+
   public static TimestampDatum createTimeStamp(long instance) {
     return new TimestampDatum(instance);
   }
 
-  public static TimestampDatum createTimeStamp(String val) {
-    return new TimestampDatum(DateTime.parse(val));
+  public static TimestampDatum createTimeStamp(String timeStamp) {
+    return new TimestampDatum(timeStamp);
   }
 
   public static TextDatum createText(byte[] val) {
