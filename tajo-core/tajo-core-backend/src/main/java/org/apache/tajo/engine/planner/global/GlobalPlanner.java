@@ -173,6 +173,13 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
+  /**
+   * If a query contains a distinct aggregation function, the query does not
+   * perform pre-aggregation in the first phase. Instead, in the fist phase,
+   * the query performs only hash shuffle. Then, the query performs the
+   * sort aggregation in the second phase. At that time, the aggregation
+   * function should be executed as the first phase.
+   */
   private ExecutionBlock buildDistinctGroupBy(GlobalPlanContext context, ExecutionBlock childBlock,
                                               GroupbyNode groupbyNode) {
     // setup child block
@@ -187,6 +194,9 @@ public class GlobalPlanner {
       for (AggregationFunctionCallEval function : functions) {
         if (function.isDistinct()) {
           columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
+        } else {
+          // See the comment of this method. the aggregation function should be executed as the first phase.
+          function.setFirstPhase();
         }
       }
     }

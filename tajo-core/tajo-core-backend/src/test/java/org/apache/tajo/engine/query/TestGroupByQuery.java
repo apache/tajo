@@ -138,6 +138,34 @@ public class TestGroupByQuery {
   }
 
   @Test
+  /**
+   * This is an unit test for a combination of aggregation and distinct aggregation functions.
+   */
+  public final void testCountDistinct2() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey, count(*) as cnt, count(distinct l_linenumber) as unique_key from lineitem " +
+            "group by l_orderkey");
+
+    long [][] expectedRows = new long[3][];
+    expectedRows[0] = new long [] {1,2,2};
+    expectedRows[1] = new long [] {2,1,1};
+    expectedRows[2] = new long [] {3,2,2};
+
+    Map<Long, long []> expected = Maps.newHashMap();
+    for (long [] expectedRow : expectedRows) {
+      expected.put(expectedRow[0], expectedRow);
+    }
+    for (int i = 0; i < expectedRows.length; i++) {
+      assertTrue(res.next());
+      long [] expectedRow = expected.get(res.getLong(1));
+      assertEquals(expectedRow[1], res.getLong(2));
+      assertEquals(expectedRow[2], res.getLong(3));
+    }
+    assertFalse(res.next());
+    res.close();
+  }
+
+  @Test
   public final void testComplexParameter() throws Exception {
     ResultSet res = tpch.execute(
         "select sum(l_extendedprice*l_discount) as revenue from lineitem");
