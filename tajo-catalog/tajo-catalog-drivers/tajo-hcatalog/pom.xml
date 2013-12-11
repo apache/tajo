@@ -94,10 +94,7 @@
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-rpc</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-algebra</artifactId>
-    </dependency>
+
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
@@ -120,7 +117,6 @@
       <version>10.8.2.2</version>
     </dependency>
   </dependencies>
-
 
   <profiles>
     <profile>
@@ -366,6 +362,33 @@
           <scope>provided</scope>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>docs</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <!-- build javadoc jars per jar for publishing to maven -->
+                <id>module-javadocs</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <destDir>${project.build.directory}</destDir>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>src</id>

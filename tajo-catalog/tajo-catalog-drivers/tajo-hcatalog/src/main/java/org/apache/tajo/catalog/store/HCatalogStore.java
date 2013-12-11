@@ -30,7 +30,7 @@ import org.apache.hcatalog.data.Pair;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.partition.Partitions;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -103,9 +103,10 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     HiveMetaStoreClient client = null;
     Path path = null;
     CatalogProtos.StoreType storeType = null;
-    Schema schema = null;
+    org.apache.tajo.catalog.Schema schema = null;
     Options options = null;
     TableStats stats = null;
+    Partitions partitions = null;
 
     // get db name and table name.
     try {
@@ -132,7 +133,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       // convert hcatalog field schema into tajo field schema.
-      schema = new Schema();
+      schema = new org.apache.tajo.catalog.Schema();
       HCatSchema tableSchema = HCatUtil.getTableSchemaWithPtnCols(table);
       List<HCatFieldSchema> fieldSchemaList = tableSchema.getFields();
       for (HCatFieldSchema eachField : fieldSchemaList) {
@@ -174,6 +175,18 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
       }
 
+      if (table.getPartitionKeys() != null) {
+        partitions = new Partitions();
+        List<FieldSchema> partitionKeys = table.getPartitionKeys();
+        for(int i = 0; i < partitionKeys.size(); i++) {
+          FieldSchema fieldSchema = partitionKeys.get(i);
+          TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+          partitions.addColumn(new Column(fieldSchema.getName(), dataType));
+        }
+        partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
+      }
+
+
     } finally {
       HCatUtil.closeHiveClientQuietly(client);
     }
@@ -183,9 +196,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     if (stats != null) {
       tableDesc.setStats(stats);
     }
+    if (partitions != null) {
+      tableDesc.setPartitions(partitions);
+    }
 
     return tableDesc;
   }
+
 
   private TajoDataTypes.Type getDataType(final String typeStr) {
     try {
