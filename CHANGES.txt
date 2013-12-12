@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-61: Implement Time Datum Type. (DaeMyung Kang via hyunsik)
+
     TAJO-60: Implement Date Datum Type. (hyunsik)
 
     TAJO-400: Implement pow(float8, float8) function. (DaeMyung Kang via jaehwa)

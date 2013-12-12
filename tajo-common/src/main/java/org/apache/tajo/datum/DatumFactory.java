@@ -23,6 +23,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 
 import java.io.IOException;
 
@@ -50,6 +51,8 @@ public class DatumFactory {
         return TimestampDatum.class;
       case DATE:
         return DateDatum.class;
+      case TIME:
+        return TimeDatum.class;
       case BIT:
         return BitDatum.class;
       case BLOB:
@@ -86,6 +89,8 @@ public class DatumFactory {
         return createText(bytes);
       case DATE:
         return new DateDatum(bytes);
+      case TIME:
+        return new TimeDatum(bytes);
       case TIMESTAMP:
         return new TimestampDatum(bytes);
       case BIT:
@@ -214,6 +219,14 @@ public class DatumFactory {
 
   public static DateDatum createDate(String dateStr) {
     return new DateDatum(LocalDate.parse(dateStr));
+  }
+
+  public static TimeDatum createTime(long instance) {
+    return new TimeDatum(instance);
+  }
+
+  public static TimeDatum createTime(String dateStr) {
+    return new TimeDatum(LocalTime.parse(dateStr));
   }
 
   public static TimestampDatum createTimeStamp(long instance) {
