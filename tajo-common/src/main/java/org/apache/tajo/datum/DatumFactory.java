@@ -129,7 +129,7 @@ public class DatumFactory {
     switch (type.getType()) {
     case INT8:
       return new Int8Datum(val);
-    case DATE:
+    case TIMESTAMP:
       return new TimestampDatum(val);
     default:
       throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT8");
