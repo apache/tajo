@@ -300,6 +300,30 @@ binary_type
 
 /*
 ===============================================================================
+  6.3 <value_expression_primary>
+===============================================================================
+*/
+value_expression_primary
+  : parenthesized_value_expression
+  | nonparenthesized_value_expression_primary
+  ;
+
+parenthesized_value_expression
+  : LEFT_PAREN value_expression RIGHT_PAREN
+  ;
+
+nonparenthesized_value_expression_primary
+  : unsigned_value_specification
+  | column_reference
+  | set_function_specification
+  | scalar_subquery
+  | case_expression
+  | cast_specification
+  | routine_invocation
+  ;
+
+/*
+===============================================================================
   6.4 <unsigned value specification>
 ===============================================================================
 */
@@ -416,7 +440,7 @@ cast_specification
   ;
 
 cast_operand
-  : boolean_value_expression
+  : value_expression
   ;
 
 cast_target
@@ -430,8 +454,8 @@ cast_target
 */
 value_expression
   : common_value_expression
-  | boolean_value_expression
   | row_value_expression
+  | boolean_value_expression
   ;
 
 common_value_expression
@@ -464,16 +488,7 @@ array
   ;
 
 numeric_primary
-  : value_expression_primary
-  ;
-
-value_expression_primary
-  : parenthesized_value_expression
-  | nonparenthesized_value_expression_primary
-  ;
-
-parenthesized_value_expression
-  : LEFT_PAREN value_expression RIGHT_PAREN
+  : value_expression_primary (CAST_EXPRESSION cast_target)*
   ;
 
 sign
@@ -533,15 +548,15 @@ trim_specification
 */
 
 boolean_value_expression
-  : or_predicate (CAST_EXPRESSION data_type)?
+  : or_predicate
   ;
 
 or_predicate
-  : and_predicate (OR and_predicate)*
+  : and_predicate (OR boolean_value_expression)*
   ;
 
 and_predicate
-  : boolean_factor (AND boolean_factor)*
+  : boolean_factor (AND boolean_value_expression)*
   ;
 
 boolean_factor
@@ -567,22 +582,12 @@ boolean_primary
   ;
 
 boolean_predicand
-  : parenthesized_boolean_value_expression
+  : parenthesized_boolean_value_expression 
   | nonparenthesized_value_expression_primary
   ;
 
 parenthesized_boolean_value_expression
   : LEFT_PAREN boolean_value_expression RIGHT_PAREN
-  ;
-
-nonparenthesized_value_expression_primary
-  : unsigned_value_specification
-  | column_reference
-  | set_function_specification
-  | scalar_subquery
-  | case_expression
-  | cast_specification
-  | routine_invocation
   ;
 
 /*
@@ -897,8 +902,8 @@ table_subquery
   ;
 
 subquery
-	:  LEFT_PAREN query_expression RIGHT_PAREN
-	;
+  :  LEFT_PAREN query_expression RIGHT_PAREN
+  ;
 
 /*
 ===============================================================================

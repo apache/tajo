@@ -28,8 +28,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testToTimestamp() throws IOException {
-    testSimpleEval("select to_timestamp(cast (1386577582 as int8));", new String[]{"1970-01-17 10:09:37"});
-    testSimpleEval("select to_timestamp(cast ('1386577582' as int8));", new String[]{"1970-01-17 10:09:37"});
+    testSimpleEval("select to_timestamp('1970-01-17 10:09:37'::timestamp::int8);", new String[]{"1970-01-17 10:09:37"});
     testSimpleEval("select to_timestamp(cast (1386577582 as int8)) < to_timestamp(cast (1386577583 as int8));",
         new String[]{"t"});
   }

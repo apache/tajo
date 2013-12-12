@@ -83,6 +83,8 @@ public class CastEval extends EvalNode {
         return DatumFactory.createFloat8(operand.terminate(castContext.childCtx).asFloat8());
       case TEXT:
         return DatumFactory.createText(operand.terminate(castContext.childCtx).asTextBytes());
+      case TIMESTAMP:
+        return DatumFactory.createTimestamp(operand.terminate(castContext.childCtx));
       case BLOB:
         return DatumFactory.createBlob(operand.terminate(castContext.childCtx).asByteArray());
       default:

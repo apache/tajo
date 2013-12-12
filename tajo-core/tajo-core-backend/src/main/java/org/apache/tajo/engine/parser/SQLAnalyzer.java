@@ -470,21 +470,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitBoolean_value_expression(SQLParser.Boolean_value_expressionContext ctx) {
     Expr current = visitOr_predicate(ctx.or_predicate());
-    if (checkIfExist(ctx.CAST_EXPRESSION())) {
-      current = new CastExpr(current, visitData_type(ctx.data_type()));
-    }
     return current;
   }
 
   @Override
   public Expr visitOr_predicate(SQLParser.Or_predicateContext ctx) {
-    Expr current = visitAnd_predicate(ctx.and_predicate(0));
+    Expr current = visitAnd_predicate(ctx.and_predicate());
 
     Expr left;
     Expr right;
-    for (int i = 1; i < ctx.and_predicate().size(); i++) {
+    for (int i = 0; i < ctx.boolean_value_expression().size(); i++) {
       left = current;
-      right = visitAnd_predicate(ctx.and_predicate(i));
+      right = visitBoolean_value_expression(ctx.boolean_value_expression(i));
       current = new BinaryOperator(OpType.Or, left, right);
     }
 
@@ -493,13 +490,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitAnd_predicate(SQLParser.And_predicateContext ctx) {
-    Expr current = visitBoolean_factor(ctx.boolean_factor(0));
+    Expr current = visitBoolean_factor(ctx.boolean_factor());
 
     Expr left;
     Expr right;
-    for (int i = 1; i < ctx.boolean_factor().size(); i++) {
+    for (int i = 0; i < ctx.boolean_value_expression().size(); i++) {
       left = current;
-      right = visitBoolean_factor(ctx.boolean_factor(i));
+      right = visitBoolean_value_expression(ctx.boolean_value_expression(i));
       current = new BinaryOperator(OpType.And, left, right);
     }
 
@@ -559,6 +556,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitNonparenthesized_value_expression_primary(
       SQLParser.Nonparenthesized_value_expression_primaryContext ctx) {
     return visitChildren(ctx);
+  }
+
+  @Override
+  public Expr visitRow_value_predicand(@NotNull SQLParser.Row_value_predicandContext ctx) {
+    if (checkIfExist(ctx.row_value_special_case())) {
+      return visitRow_value_special_case(ctx.row_value_special_case());
+    } else {
+      return visitRow_value_constructor_predicand(ctx.row_value_constructor_predicand());
+    }
   }
 
   @Override
@@ -623,11 +629,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitNumeric_primary(SQLParser.Numeric_primaryContext ctx) {
-    if (ctx.value_expression_primary() != null) {
-      return visitValue_expression_primary(ctx.value_expression_primary());
-    } else {
-      return visitChildren(ctx);
+    Expr current = visitValue_expression_primary(ctx.value_expression_primary());
+
+    for (int i = 0; i < ctx.CAST_EXPRESSION().size(); i++) {
+      current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
     }
+
+    return current;
   }
 
   public static OpType tokenToExprType(int tokenId) {

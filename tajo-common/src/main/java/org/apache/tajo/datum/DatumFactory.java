@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
@@ -213,6 +214,10 @@ public class DatumFactory {
     return new TextDatum(val);
   }
 
+  public static TextDatum createText(byte[] val) {
+    return new TextDatum(val);
+  }
+
   public static DateDatum createDate(int instance) {
     return new DateDatum(instance);
   }
@@ -237,8 +242,17 @@ public class DatumFactory {
     return new TimestampDatum(timeStamp);
   }
 
-  public static TextDatum createText(byte[] val) {
-    return new TextDatum(val);
+  public static TimestampDatum createTimestamp(Datum datum) {
+    switch (datum.type()) {
+      case INT8:
+        return new TimestampDatum(datum.asInt8());
+      case TEXT:
+        return new TimestampDatum(datum.asChars());
+      case TIMESTAMP:
+        return (TimestampDatum) datum;
+      default:
+        throw new InvalidCastException(datum.type() + " cannot be casted to TIMESTAMP type");
+    }
   }
 
   public static BlobDatum createBlob(byte[] val) {
