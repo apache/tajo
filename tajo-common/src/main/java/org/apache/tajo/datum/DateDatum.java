@@ -74,8 +74,8 @@ public class DateDatum extends Datum {
 
   private static LocalDate decode(int val) {
     int year = (val >> 16);
-    int monthOfYear = (0x0FFF & val) >> 8;
-    int dayOfMonth = (0xF0FF & val);
+    int monthOfYear = (0xFFFF & val) >> 8;
+    int dayOfMonth = (0x00FF & val);
     return new LocalDate(year, monthOfYear, dayOfMonth);
   }
 
