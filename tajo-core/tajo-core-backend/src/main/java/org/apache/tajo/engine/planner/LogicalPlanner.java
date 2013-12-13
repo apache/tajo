@@ -1205,6 +1205,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         FunctionExpr function = (FunctionExpr) expr;
         // Given parameters
         Expr[] params = function.getParams();
+        if (params == null) {
+            params = new Expr[1];
+            params[0] = new NullValue();
+        }
+
         EvalNode[] givenArgs = new EvalNode[params.length];
         DataType[] paramTypes = new DataType[params.length];
 

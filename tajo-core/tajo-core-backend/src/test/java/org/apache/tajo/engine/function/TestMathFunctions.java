@@ -402,4 +402,8 @@ public class TestMathFunctions extends ExprTestBase {
         });
   }
 
+  @Test
+  public void testPi() throws IOException {
+    testSimpleEval("select pi() as col1 ", new String[]{String.valueOf(Math.PI)});
+  }
 }
