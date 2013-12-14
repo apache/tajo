@@ -92,7 +92,6 @@ public class GlobalEngine extends AbstractService {
       hookManager = new DistributedQueryHookManager();
       hookManager.addHook(new CreateTableHook());
       hookManager.addHook(new InsertHook());
-
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
@@ -128,8 +127,11 @@ public class GlobalEngine extends AbstractService {
       LOG.info("hive.query.mode:" + hiveQueryMode);
 
       if (hiveQueryMode) {
+        context.getSystemMetrics().counter("Query", "numHiveMode").inc();
         queryContext.setHiveQueryMode();
       }
+
+      context.getSystemMetrics().counter("Query", "totalQuery").inc();
 
       Expr planningContext = hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
 
@@ -138,11 +140,13 @@ public class GlobalEngine extends AbstractService {
 
       GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
       if (PlannerUtil.checkIfDDLPlan(rootNode)) {
+        context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
         updateQuery(rootNode.getChild());
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
         responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
+        context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
         hookManager.doHooks(queryContext, plan);
 
         QueryJobManager queryJobManager = this.context.getQueryJobManager();
@@ -169,6 +173,7 @@ public class GlobalEngine extends AbstractService {
 
       return response;
     } catch (Throwable t) {
+      context.getSystemMetrics().counter("Query", "errorQuery").inc();
       LOG.error("\nStack Trace:\n" + StringUtils.stringifyException(t));
       GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());

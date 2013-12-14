@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.codahale.metrics.Gauge;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,6 +51,7 @@ import org.apache.tajo.storage.v2.DiskUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
 import java.io.*;
@@ -120,6 +122,8 @@ public class TajoWorker extends CompositeService {
   private String[] cmdArgs;
 
   private DeletionService deletionService;
+
+  private TajoSystemMetrics workerSystemMetrics;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -261,6 +265,33 @@ public class TajoWorker extends CompositeService {
 
   }
 
+  private void initWorkerMetrics() {
+    workerSystemMetrics = new TajoSystemMetrics(systemConf, "worker", workerContext.getWorkerName());
+    workerSystemMetrics.start();
+
+    workerSystemMetrics.register("querymaster", "runningQueries", new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        if(queryMasterManagerService != null) {
+          return queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size();
+        } else {
+          return 0;
+        }
+      }
+    });
+
+    workerSystemMetrics.register("task", "runningTasks", new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        if(taskRunnerManager != null) {
+          return taskRunnerManager.getNumTasks();
+        } else {
+          return 0;
+        }
+      }
+    });
+  }
+
   public WorkerContext getWorkerContext() {
     return workerContext;
   }
@@ -268,6 +299,7 @@ public class TajoWorker extends CompositeService {
   @Override
   public void start() {
     super.start();
+    initWorkerMetrics();
   }
 
   @Override
@@ -300,6 +332,10 @@ public class TajoWorker extends CompositeService {
         webServer.stop();
       } catch (Exception e) {
       }
+    }
+
+    if(workerSystemMetrics != null) {
+      workerSystemMetrics.stop();
     }
 
     if(deletionService != null) deletionService.stop();
@@ -431,6 +467,10 @@ public class TajoWorker extends CompositeService {
 
     public boolean isTaskRunnerMode() {
       return taskRunnerMode;
+    }
+
+    public TajoSystemMetrics getWorkerSystemMetrics() {
+      return workerSystemMetrics;
     }
   }
 

@@ -50,6 +50,8 @@ import org.apache.tajo.engine.function.datetime.ToCharTimestamp;
 import org.apache.tajo.engine.function.datetime.ToTimestamp;
 import org.apache.tajo.engine.function.math.*;
 import org.apache.tajo.engine.function.string.*;
+import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
+import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
@@ -57,6 +59,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -70,6 +73,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TajoMaster extends CompositeService {
+  private static final String METRICS_GROUP_NAME = "tajomaster";
 
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
@@ -118,6 +122,8 @@ public class TajoMaster extends CompositeService {
   private QueryJobManager queryJobManager;
 
   private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
+  private TajoSystemMetrics systemMetrics;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -178,6 +184,14 @@ public class TajoMaster extends CompositeService {
     super.init(systemConf);
 
     LOG.info("Tajo Master is initialized.");
+  }
+
+  private void initSystemMetrics() {
+    systemMetrics = new TajoSystemMetrics(systemConf, METRICS_GROUP_NAME, getMasterName());
+    systemMetrics.start();
+
+    systemMetrics.register("resource", new WorkerResourceMetricsGaugeSet(context));
+    systemMetrics.register("catalog", new CatalogMetricsGaugeSet(context));
   }
 
   private void initResourceManager() throws Exception {
@@ -826,8 +840,10 @@ public class TajoMaster extends CompositeService {
     try {
       writeSystemConf();
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
     }
+
+    initSystemMetrics();
   }
 
   private void writeSystemConf() throws IOException {
@@ -860,6 +876,10 @@ public class TajoMaster extends CompositeService {
       } catch (Exception e) {
         LOG.error(e);
       }
+    }
+
+    if(systemMetrics != null) {
+      systemMetrics.stop();
     }
 
     super.stop();
@@ -927,6 +947,10 @@ public class TajoMaster extends CompositeService {
 
     public TajoMasterService getTajoMasterService() {
       return tajoMasterService;
+    }
+
+    public TajoSystemMetrics getSystemMetrics() {
+      return systemMetrics;
     }
   }
 

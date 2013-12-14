@@ -43,6 +43,10 @@ public class TaskRunnerManager extends CompositeService {
     this.workerContext = workerContext;
   }
 
+  public TajoWorker.WorkerContext getWorkerContext() {
+    return workerContext;
+  }
+
   @Override
   public void init(Configuration conf) {
     tajoConf = (TajoConf)conf;

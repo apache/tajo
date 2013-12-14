@@ -352,7 +352,7 @@ public class TaskRunner extends AbstractService {
                     taskRunnerManager.stopTask(getId());
                   }
                 } else {
-
+                  taskRunnerManager.getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
                   LOG.info("Accumulated Received Task: " + (++receivedNum));
 
                   QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());

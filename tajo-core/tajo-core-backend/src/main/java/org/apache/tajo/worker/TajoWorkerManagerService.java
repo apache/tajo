@@ -111,6 +111,7 @@ public class TajoWorkerManagerService extends CompositeService
   public void executeExecutionBlock(RpcController controller,
                                     TajoWorkerProtocol.RunExecutionBlockRequestProto request,
                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
+    workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
     try {
       String[] params = new String[7];
       params[0] = "standby";  //mode(never used)

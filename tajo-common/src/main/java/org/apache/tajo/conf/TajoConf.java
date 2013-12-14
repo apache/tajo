@@ -195,8 +195,11 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
-    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f)
+    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f),
     //////////////////////////////////
+
+    // Metrics
+    METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties")
     ;
 
     public final String varname;

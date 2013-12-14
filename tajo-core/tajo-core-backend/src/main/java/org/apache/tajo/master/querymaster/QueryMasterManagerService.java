@@ -194,6 +194,8 @@ public class QueryMasterManagerService extends CompositeService
                            TajoWorkerProtocol.QueryExecutionRequestProto request,
                            RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
+      workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
+
       QueryId queryId = new QueryId(request.getQueryId());
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
@@ -201,6 +203,7 @@ public class QueryMasterManagerService extends CompositeService
           request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
+      workerContext.getWorkerSystemMetrics().counter("querymaster", "errorQuery").inc();
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }

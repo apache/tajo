@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-333: Add metric system to Tajo. (hyoungjunkim via jihoon)
+
     TAJO-413: Implement pi function. (DaeMyung Kang via jihoon)
 
     TAJO-61: Implement Time Datum Type. (DaeMyung Kang via hyunsik)

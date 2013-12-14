@@ -51,6 +51,8 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.util.metrics.TajoMetrics;
+import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 import org.apache.tajo.worker.YarnResourceAllocator;
@@ -99,6 +101,8 @@ public class QueryMasterTask extends CompositeService {
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
+  private TajoMetrics queryMetrics;
+
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
                          QueryId queryId, QueryContext queryContext, String sql, String logicalPlanJson) {
     super(QueryMasterTask.class.getName());
@@ -135,6 +139,8 @@ public class QueryMasterTask extends CompositeService {
       dispatcher.register(TaskSchedulerEvent.EventType.class, new TaskSchedulerDispatcher());
 
       initStagingDir();
+
+      queryMetrics = new TajoMetrics(queryId.toString());
 
       super.init(systemConf);
     } catch (IOException e) {
@@ -185,6 +191,9 @@ public class QueryMasterTask extends CompositeService {
     }
 
     super.stop();
+
+    //TODO change report to tajo master
+    queryMetrics.report(new MetricsConsoleReporter());
 
     LOG.info("Stopped QueryMasterTask:" + queryId);
   }
@@ -492,6 +501,10 @@ public class QueryMasterTask extends CompositeService {
 
     public AbstractResourceAllocator getResourceAllocator() {
       return resourceAllocator;
+    }
+
+    public TajoMetrics getQueryMetrics() {
+      return queryMetrics;
     }
   }
 
