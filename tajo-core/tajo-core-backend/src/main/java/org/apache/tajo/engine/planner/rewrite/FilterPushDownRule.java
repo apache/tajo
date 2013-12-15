@@ -105,13 +105,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
       // if both are fields
        if (joinQual.getLeftExpr().getType() == EvalType.FIELD && joinQual.getRightExpr().getType() == EvalType.FIELD) {
 
-          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getTableId();
-          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getTableId();
+          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getQualifier();
+          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getQualifier();
           List<String> nullSuppliers = Lists.newArrayList();
-          String [] leftLineage = PlannerUtil.getRelationLineage(joinNode.getLeftChild());
-          String [] rightLineage = PlannerUtil.getRelationLineage(joinNode.getRightChild());
-          Set<String> leftTableSet = Sets.newHashSet(leftLineage);
-          Set<String> rightTableSet = Sets.newHashSet(rightLineage);
+          Set<String> leftTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
+              joinNode.getLeftChild()));
+          Set<String> rightTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
+              joinNode.getRightChild()));
 
           // some verification
           if (joinType == JoinType.FULL_OUTER) {
@@ -127,13 +127,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
              }
 
           } else if (joinType == JoinType.LEFT_OUTER) {
-             nullSuppliers.add(((ScanNode)joinNode.getRightChild()).getTableName()); 
+             nullSuppliers.add(((RelationNode)joinNode.getRightChild()).getCanonicalName());
              //verify that this null supplier is indeed in the right sub-tree
              if (!rightTableSet.contains(nullSuppliers.get(0))) {
                  throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
              }
           } else if (joinType == JoinType.RIGHT_OUTER) {
-            if (((ScanNode)joinNode.getRightChild()).getTableName().equals(rightTableName)) {
+            if (((RelationNode)joinNode.getRightChild()).getCanonicalName().equals(rightTableName)) {
               nullSuppliers.add(leftTableName);
             } else {
               nullSuppliers.add(rightTableName);
@@ -144,12 +144,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
               throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
             }
           }
-         
+
          // retain in this outer join node's JoinQual those selection predicates
          // related to the outer join's null supplier(s)
          List<EvalNode> matched2 = Lists.newArrayList();
          for (EvalNode eval : cnf) {
-            
+
             Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
             Set<String> tableNames = Sets.newHashSet();
             // getting distinct table references
@@ -158,20 +158,20 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
                 tableNames.add(col.getQualifier());
               }
             }
-            
+
             //if the predicate involves any of the null suppliers
             boolean shouldKeep=false;
             Iterator<String> it2 = nullSuppliers.iterator();
             while(it2.hasNext()){
               if(tableNames.contains(it2.next()) == true) {
-                   shouldKeep = true; 
+                   shouldKeep = true;
               }
             }
 
             if(shouldKeep == true) {
                 matched2.add(eval);
             }
-            
+
           }
 
           //merge the retained predicates and establish them in the current outer join node. Then remove them from the cnf

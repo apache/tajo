@@ -695,7 +695,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return maxTaskNum;
     }
 
-    public static long getInputVolume(MasterPlan masterPlan, QueryMasterTask.QueryMasterTaskContext context, ExecutionBlock execBlock) {
+    public static long getInputVolume(MasterPlan masterPlan, QueryMasterTask.QueryMasterTaskContext context,
+                                      ExecutionBlock execBlock) {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
         ScanNode outerScan = execBlock.getScanNodes()[0];
@@ -705,7 +706,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         long aggregatedVolume = 0;
         for (ExecutionBlock childBlock : masterPlan.getChilds(execBlock)) {
           SubQuery subquery = context.getSubQuery(childBlock.getId());
-          aggregatedVolume += subquery.getTableStat().getNumBytes();
+          if (subquery == null || subquery.getState() != SubQueryState.SUCCEEDED) {
+            aggregatedVolume += getInputVolume(masterPlan, context, childBlock);
+          } else {
+            aggregatedVolume += subquery.getTableStat().getNumBytes();
+          }
         }
 
         return aggregatedVolume;

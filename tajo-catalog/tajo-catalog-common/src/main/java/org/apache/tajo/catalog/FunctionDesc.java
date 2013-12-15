@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.function.Function;
@@ -99,8 +100,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return this.returnType;
   }
 
-  public static DataType [] newNoNameSchema(DataType ... types) {
-    return types.clone();
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(signature, params);
   }
   
   @Override

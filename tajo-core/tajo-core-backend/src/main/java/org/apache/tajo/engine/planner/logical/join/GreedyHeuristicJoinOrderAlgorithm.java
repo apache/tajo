@@ -193,6 +193,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     }
   }
 
+  // TODO - costs of other operator operators (e.g., group-by and sort) should be computed in proper manners.
   public static double getCost(LogicalNode node) {
     switch (node.getType()) {
 
@@ -229,8 +230,18 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         return Long.MAX_VALUE;
       }
 
+    case UNION:
+      UnionNode unionNode = (UnionNode) node;
+      return getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
+
+    case EXCEPT:
+    case INTERSECT:
+      throw new UnsupportedOperationException("getCost() does not support EXCEPT or INTERSECT yet");
+
     default:
-      return getCost(node);
+      // all binary operators (join, union, except, and intersect) are handled in the above cases.
+      // So, we need to handle only unary nodes in default.
+      return getCost(((UnaryNode) node).getChild());
     }
   }
 }

@@ -177,7 +177,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	      s.add(s.size(), binary.getRightChild());
 	    } else if (node instanceof ScanNode) {
 	      scan.add((ScanNode)node);
-	    }
+	    } else if (node instanceof TableSubQueryNode) {
+        s.add(((TableSubQueryNode) node).getSubQuery());
+      }
 	  }
 	}
 

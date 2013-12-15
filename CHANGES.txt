@@ -146,11 +146,17 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-414: Fix bug of bit operations in decode() method of DateDatum class. (Keuntae Park via jihoon)
+    TAJO-415: Some complex queries causes NPE and unlimited recursions.
+    (hyunsik)
 
-    TAJO-407: PostgreSQL-style cast should be higher operator priority. (hyunsik)
+    TAJO-414: Fix bug of bit operations in decode() method of DateDatum class.
+    (Keuntae Park via jihoon)
 
-    TAJO-411: Fix Bug: createFromInt8's DATE type should be TIMESTAMP. (DaeMyung Kang via jihoon)
+    TAJO-407: PostgreSQL-style cast should be higher operator priority.
+    (hyunsik)
+
+    TAJO-411: Fix Bug: createFromInt8's DATE type should be TIMESTAMP.
+    (DaeMyung Kang via jihoon)
 
     TAJO-390: Queries on history are expired ealier than a given expiry time.
     (hyoungjunkim via hyunsik)
