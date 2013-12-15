@@ -74,8 +74,9 @@ public class TestSQLExpression extends ExprTestBase {
         new String[]{"1980-04-01 01:50:01", "234.0"});
 
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {"1980-04-01 01:50:01"});
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp::bigint;", new String [] {"323369401000"});
-    testSimpleEval("select ('1980-04-01 01:50:01'::timestamp)::bigint;", new String [] {"323369401000"});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp::bigint::timestamp", new String [] {"1980-04-01 01:50:01"});
+    testSimpleEval("select cast (('1980-04-01 01:50:01'::timestamp)::bigint as timestamp)",
+        new String [] {"1980-04-01 01:50:01"});
     testSimpleEval("select to_timestamp(cast ('1970-01-17 10:09:37'::timestamp as int8));",
         new String [] {"1970-01-17 10:09:37"});
   }

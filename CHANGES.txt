@@ -146,6 +146,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-417: TestSQLExpression.testCastFromTable causes unit test failure.
+    (hyunsik)
+
     TAJO-415: Some complex queries causes NPE and unlimited recursions.
     (hyunsik)
 
