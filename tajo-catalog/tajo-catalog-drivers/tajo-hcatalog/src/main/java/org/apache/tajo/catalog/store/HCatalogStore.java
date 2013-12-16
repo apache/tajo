@@ -333,7 +333,6 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (IOException ioe) {
       throw new InternalException("Table name is wrong.", ioe);
     }
-    catalogUri = "thrift://localhost:10001";
 
     try {
       client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
