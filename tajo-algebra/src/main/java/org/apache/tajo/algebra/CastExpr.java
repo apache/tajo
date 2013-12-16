@@ -20,9 +20,9 @@ package org.apache.tajo.algebra;
 
 public class CastExpr extends Expr {
   private Expr operand;
-  private DataType target;
+  private DataTypeExpr target;
 
-  public CastExpr(Expr operand, DataType target) {
+  public CastExpr(Expr operand, DataTypeExpr target) {
     super(OpType.Cast);
     this.operand = operand;
     this.target = target;
@@ -32,7 +32,7 @@ public class CastExpr extends Expr {
     return operand;
   }
 
-  public DataType getTarget() {
+  public DataTypeExpr getTarget() {
     return target;
   }
 

@@ -102,8 +102,8 @@ public class TestExpr {
     selection.setChild(relation);
 
     Aggregation aggregation = new Aggregation();
-    aggregation.setTargets(new Target[]{
-          new Target(new ColumnReferenceExpr("col1"))
+    aggregation.setTargets(new TargetExpr[]{
+          new TargetExpr(new ColumnReferenceExpr("col1"))
         }
     );
 
@@ -129,8 +129,8 @@ public class TestExpr {
     selection.setChild(relation);
 
     Aggregation aggregation = new Aggregation();
-    aggregation.setTargets(new Target[]{
-        new Target(new ColumnReferenceExpr("col1"))
+    aggregation.setTargets(new TargetExpr[]{
+        new TargetExpr(new ColumnReferenceExpr("col1"))
     });
 
     aggregation.setChild(selection);

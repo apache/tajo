@@ -24,7 +24,7 @@ public class Projection extends UnaryOperator implements Cloneable {
   private boolean all;
   private boolean distinct = false;
 
-  private Target[] targets;
+  private TargetExpr [] targets;
 
   public Projection() {
     super(OpType.Projection);
@@ -50,11 +50,11 @@ public class Projection extends UnaryOperator implements Cloneable {
     return all;
   }
 	
-	public Target[] getTargets() {
+	public TargetExpr[] getTargets() {
 	  return this.targets;
 	}
 
-  public void setTargets(Target[] targets) {
+  public void setTargets(TargetExpr[] targets) {
     this.targets = targets;
   }
 

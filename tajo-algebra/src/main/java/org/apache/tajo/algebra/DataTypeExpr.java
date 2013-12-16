@@ -20,12 +20,12 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
-public class DataType extends Expr {
+public class DataTypeExpr extends Expr {
   String typeName;
   Integer lengthOrPrecision;
   Integer scale;
 
-  public DataType(String typeName) {
+  public DataTypeExpr(String typeName) {
     super(OpType.DataType);
     this.typeName = typeName;
   }
@@ -60,7 +60,7 @@ public class DataType extends Expr {
 
   @Override
   boolean equalsTo(Expr expr) {
-    DataType another = (DataType) expr;
+    DataTypeExpr another = (DataTypeExpr) expr;
     return typeName.equals(another.typeName) &&
         TUtil.checkEquals(lengthOrPrecision, another.lengthOrPrecision) &&
         TUtil.checkEquals(scale, another.scale);

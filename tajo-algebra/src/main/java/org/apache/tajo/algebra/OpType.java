@@ -25,21 +25,20 @@ import java.lang.reflect.Type;
 public enum OpType {
 
   // relational operators
-  Relation(Relation.class),
-  RelationList(RelationList.class),
-  Rename,
-  SimpleTableSubQuery(SimpleTableSubQuery.class),
-  TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
-  Except(SetOperation.class),
-  Having(Having.class),
-	Aggregation(Aggregation.class),
-  Intersect(SetOperation.class),
-  Join(Join.class),
-  Projection(Projection.class),
-  Filter(Selection.class),
-  Sort(Sort.class),
-  Union(SetOperation.class),
-  Limit(Limit.class),
+  Projection(Projection.class), // 0
+  Limit(Limit.class), // 1
+  Sort(Sort.class), // 2
+  Having(Having.class), // 3
+  Aggregation(Aggregation.class), // 4
+  Join(Join.class), // 5
+  Filter(Selection.class), // 6
+  Union(SetOperation.class), // 7
+  Except(SetOperation.class), // 8
+  Intersect(SetOperation.class), // 9
+  SimpleTableSubQuery(SimpleTableSubQuery.class), // 10
+  TablePrimaryTableSubQuery(TablePrimarySubQuery.class), // 11
+  RelationList(RelationList.class), // 12
+  Relation(Relation.class), // 13
 
   // Data definition language
   CreateTable(CreateTable.class),
@@ -48,12 +47,12 @@ public enum OpType {
   // Insert or Update
   Insert(Insert.class),
 
-  // logical operators
+  // Logical Operators
   And(BinaryOperator.class),
   Or(BinaryOperator.class),
   Not(NotExpr.class),
 
-  // comparison predicates
+  // Comparison Predicates
   Equals(BinaryOperator.class),
   NotEquals(BinaryOperator.class),
   LessThan(BinaryOperator.class),
@@ -61,43 +60,43 @@ public enum OpType {
   GreaterThan(BinaryOperator.class),
   GreaterThanOrEquals(BinaryOperator.class),
 
-  // other predicates
+  // Other predicates
   Between(BetweenPredicate.class),
   CaseWhen(CaseWhenPredicate.class),
   IsNullPredicate(IsNullPredicate.class),
   InPredicate(InPredicate.class),
   ValueList(ValueListExpr.class),
-  Is,
   ExistsPredicate(ExistsPredicate.class),
 
-  // string operator or pattern matching predicates
+  // String Operator or Pattern Matching Predicates
   LikePredicate(PatternMatchPredicate.class),
   SimilarToPredicate(PatternMatchPredicate.class),
   Regexp(PatternMatchPredicate.class),
   Concatenate(BinaryOperator.class),
 
-  // arithmetic operators
+  // Arithmetic Operators
   Plus(BinaryOperator.class),
   Minus(BinaryOperator.class),
   Multiply(BinaryOperator.class),
   Divide(BinaryOperator.class),
   Modular(BinaryOperator.class),
 
-  // other expressions
+  // Other Expressions
   Sign(SignedExpr.class),
   Column(ColumnReferenceExpr.class),
-  Target(Target.class),
+  Target(TargetExpr.class),
   Function(FunctionExpr.class),
 
-  // set functions
+  // Set Functions
   CountRowsFunction(CountRowsFunctionExpr.class),
   GeneralSetFunction(GeneralSetFunctionExpr.class),
 
+  // Literal
   Cast(CastExpr.class),
   ScalarSubQuery(ScalarSubQuery.class),
   Literal(LiteralValue.class),
   Null(NullValue.class),
-  DataType(org.apache.tajo.algebra.DataType.class);
+  DataType(DataTypeExpr.class);
 
   private Class baseClass;
 

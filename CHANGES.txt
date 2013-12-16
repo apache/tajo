@@ -94,6 +94,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-419: Add missing visitor methods of AlgebraVisitor and
+    BaseAlgebraVisitor. (hyunsik)
+
     TAJO-421: Improve split for compression file. (jinho)
 
     TAJO-327: Add testcase to verify TAJO-16. (jaehwa)

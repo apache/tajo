@@ -20,16 +20,16 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
-public class Target extends Expr {
+public class TargetExpr extends Expr {
   private Expr expr;
   private String alias;
 
-  public Target(Expr expr) {
+  public TargetExpr(Expr expr) {
     super(OpType.Target);
     this.expr = expr;
   }
 
-  public Target(Expr expr, String alias) {
+  public TargetExpr(Expr expr, String alias) {
     this(expr);
     setAlias(alias);
   }
@@ -52,8 +52,8 @@ public class Target extends Expr {
 
   @Override
   public boolean equalsTo(Expr obj) {
-    if (obj instanceof Target) {
-      Target another = (Target) obj;
+    if (obj instanceof TargetExpr) {
+      TargetExpr another = (TargetExpr) obj;
       return expr.equals(another.expr) && TUtil.checkEquals(alias, another.alias);
     }
 

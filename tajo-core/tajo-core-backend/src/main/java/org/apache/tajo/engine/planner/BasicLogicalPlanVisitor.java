@@ -50,7 +50,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   /**
-   * visitChild visits each logicalNode recursively.
+   * visit visits each logicalNode recursively.
    */
   public RESULT visitChild(CONTEXT context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
       throws PlanningException {

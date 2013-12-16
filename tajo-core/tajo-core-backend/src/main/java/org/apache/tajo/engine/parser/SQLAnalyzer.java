@@ -226,7 +226,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (ctx.MULTIPLY() != null) {
       projection.setAll();
     } else {
-      Target [] targets = new Target[ctx.select_sublist().size()];
+      TargetExpr[] targets = new TargetExpr[ctx.select_sublist().size()];
       for (int i = 0; i < targets.length; i++) {
         targets[i] = visitSelect_sublist(ctx.select_sublist(i));
       }
@@ -247,9 +247,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Target visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
+  public TargetExpr visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
     if (ctx.asterisked_qualifier != null) {
-      return new Target(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
+      return new TargetExpr(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
     } else {
       return visitDerived_column(ctx.derived_column());
     }
@@ -801,8 +801,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Target visitDerived_column(SQLParser.Derived_columnContext ctx) {
-    Target target = new Target(visitValue_expression(ctx.value_expression()));
+  public TargetExpr visitDerived_column(SQLParser.Derived_columnContext ctx) {
+    TargetExpr target = new TargetExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
       target.setAlias(ctx.as_clause().Identifier().getText());
     }
@@ -918,7 +918,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     CreateTable.ColumnDefinition [] elements = new CreateTable.ColumnDefinition[size];
     for (int i = 0; i < size; i++) {
       String name = ctx.field_element(i).name.getText();
-      DataType typeDef = visitData_type(ctx.field_element(i).field_type().data_type());
+      DataTypeExpr typeDef = visitData_type(ctx.field_element(i).field_type().data_type());
       elements[i] = new CreateTable.ColumnDefinition(name, typeDef);
     }
 
@@ -985,10 +985,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public DataType visitData_type(SQLParser.Data_typeContext ctx) {
+  public DataTypeExpr visitData_type(SQLParser.Data_typeContext ctx) {
     SQLParser.Predefined_typeContext predefined_type = ctx.predefined_type();
 
-    DataType typeDefinition = null;
+    DataTypeExpr typeDefinition = null;
     if (predefined_type.character_string_type() != null) {
       SQLParser.Character_string_typeContext character_string_type =
           predefined_type.character_string_type();
@@ -996,7 +996,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if ((character_string_type.CHARACTER() != null || character_string_type.CHAR() != null) &&
           character_string_type.VARYING() == null) {
 
-        typeDefinition = new DataType(Type.CHAR.name());
+        typeDefinition = new DataTypeExpr(Type.CHAR.name());
 
         if (character_string_type.type_length() != null) {
           typeDefinition.setLengthOrPrecision(
@@ -1006,7 +1006,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else if (character_string_type.VARCHAR() != null
           || character_string_type.VARYING() != null) {
 
-        typeDefinition = new DataType(Type.VARCHAR.name());
+        typeDefinition = new DataTypeExpr(Type.VARCHAR.name());
 
         if (character_string_type.type_length() != null) {
           typeDefinition.setLengthOrPrecision(
@@ -1014,7 +1014,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         }
 
       } else if (character_string_type.TEXT() != null) {
-        typeDefinition =  new DataType(Type.TEXT.name());
+        typeDefinition =  new DataTypeExpr(Type.TEXT.name());
       }
 
     } else if (predefined_type.national_character_string_type() != null) {
@@ -1022,9 +1022,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           predefined_type.national_character_string_type();
       if ((nchar_type.CHAR() != null || nchar_type.CHARACTER() != null
           || nchar_type.NCHAR() != null) && nchar_type.VARYING() == null) {
-        typeDefinition = new DataType(Type.NCHAR.name());
+        typeDefinition = new DataTypeExpr(Type.NCHAR.name());
       } else if (nchar_type.NVARCHAR() != null || nchar_type.VARYING() != null) {
-        typeDefinition = new DataType(Type.NVARCHAR.name());
+        typeDefinition = new DataTypeExpr(Type.NVARCHAR.name());
       }
 
       if (nchar_type.type_length() != null) {
@@ -1035,7 +1035,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (predefined_type.binary_large_object_string_type() != null) {
       SQLParser.Binary_large_object_string_typeContext blob_type =
           predefined_type.binary_large_object_string_type();
-      typeDefinition = new DataType(Type.BLOB.name());
+      typeDefinition = new DataTypeExpr(Type.BLOB.name());
       if (blob_type.type_length() != null) {
         typeDefinition.setLengthOrPrecision(
             Integer.parseInt(blob_type.type_length().NUMBER().getText()));
@@ -1046,18 +1046,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         SQLParser.Exact_numeric_typeContext exactType =
             predefined_type.numeric_type().exact_numeric_type();
         if (exactType.TINYINT() != null || exactType.INT1() != null) {
-          typeDefinition = new DataType(Type.INT1.name());
+          typeDefinition = new DataTypeExpr(Type.INT1.name());
         } else if (exactType.INT2() != null || exactType.SMALLINT() != null) {
-          typeDefinition = new DataType(Type.INT2.name());
+          typeDefinition = new DataTypeExpr(Type.INT2.name());
         } else if (exactType.INT4() != null || exactType.INTEGER() != null ||
             exactType.INT() != null) {
-          typeDefinition = new DataType(Type.INT4.name());
+          typeDefinition = new DataTypeExpr(Type.INT4.name());
         } else if (exactType.INT8() != null || exactType.BIGINT() != null) {
-          typeDefinition = new DataType(Type.INT8.name());
+          typeDefinition = new DataTypeExpr(Type.INT8.name());
         } else if (exactType.NUMERIC() != null) {
-          typeDefinition = new DataType(Type.NUMERIC.name());
+          typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
         } else if (exactType.DECIMAL() != null || exactType.DEC() != null) {
-          typeDefinition = new DataType(Type.DECIMAL.name());
+          typeDefinition = new DataTypeExpr(Type.DECIMAL.name());
         }
 
         if (typeDefinition.getTypeName().equals(Type.NUMERIC.name()) ||
@@ -1076,34 +1076,34 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             predefined_type.numeric_type().approximate_numeric_type();
         if (approximateType.FLOAT() != null || approximateType.FLOAT4() != null
             || approximateType.REAL() != null) {
-          typeDefinition = new DataType(Type.FLOAT4.name());
+          typeDefinition = new DataTypeExpr(Type.FLOAT4.name());
         } else if (approximateType.FLOAT8() != null || approximateType.DOUBLE() != null) {
-          typeDefinition = new DataType(Type.FLOAT8.name());
+          typeDefinition = new DataTypeExpr(Type.FLOAT8.name());
         }
       }
     } else if (predefined_type.boolean_type() != null)  {
-      typeDefinition = new DataType(Type.BOOLEAN.name());
+      typeDefinition = new DataTypeExpr(Type.BOOLEAN.name());
     } else if (predefined_type.datetime_type() != null) {
       SQLParser.Datetime_typeContext dateTimeType = predefined_type.datetime_type();
       if (dateTimeType.DATE() != null) {
-        typeDefinition = new DataType(Type.DATE.name());
+        typeDefinition = new DataTypeExpr(Type.DATE.name());
       } else if (dateTimeType.TIME(0) != null && dateTimeType.ZONE() == null) {
-        typeDefinition = new DataType(Type.TIME.name());
+        typeDefinition = new DataTypeExpr(Type.TIME.name());
       } else if ((dateTimeType.TIME(0) != null && dateTimeType.ZONE() != null) ||
           dateTimeType.TIMETZ() != null) {
-        typeDefinition = new DataType(Type.TIMEZ.name());
+        typeDefinition = new DataTypeExpr(Type.TIMEZ.name());
       } else if (dateTimeType.TIMESTAMP() != null && dateTimeType.ZONE() == null) {
-        typeDefinition = new DataType(Type.TIMESTAMP.name());
+        typeDefinition = new DataTypeExpr(Type.TIMESTAMP.name());
       } else if ((dateTimeType.TIMESTAMP() != null && dateTimeType.ZONE() != null) ||
           dateTimeType.TIMESTAMPTZ() != null) {
-        typeDefinition = new DataType(Type.TIMESTAMPZ.name());
+        typeDefinition = new DataTypeExpr(Type.TIMESTAMPZ.name());
       }
     } else if (predefined_type.bit_type() != null) {
       SQLParser.Bit_typeContext bitType = predefined_type.bit_type();
       if (bitType.VARBIT() != null || bitType.VARYING() != null) {
-        typeDefinition = new DataType(Type.VARBIT.name());
+        typeDefinition = new DataTypeExpr(Type.VARBIT.name());
       } else {
-        typeDefinition = new DataType(Type.BIT.name());
+        typeDefinition = new DataTypeExpr(Type.BIT.name());
       }
       if (bitType.type_length() != null) {
         typeDefinition.setLengthOrPrecision(
@@ -1112,9 +1112,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (predefined_type.binary_type() != null) {
       SQLParser.Binary_typeContext binaryType = predefined_type.binary_type();
       if (binaryType.VARBINARY() != null || binaryType.VARYING() != null) {
-        typeDefinition = new DataType(Type.VARBINARY.name());
+        typeDefinition = new DataTypeExpr(Type.VARBINARY.name());
       } else {
-        typeDefinition = new DataType(Type.BINARY.name());
+        typeDefinition = new DataTypeExpr(Type.BINARY.name());
       }
 
       if (binaryType.type_length() != null) {
@@ -1211,7 +1211,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override public Expr visitCast_specification(SQLParser.Cast_specificationContext ctx) {
     Expr operand = visitChildren(ctx.cast_operand());
-    DataType castTarget = visitData_type(ctx.cast_target().data_type());
+    DataTypeExpr castTarget = visitData_type(ctx.cast_target().data_type());
     return new CastExpr(operand, castTarget);
   }
 

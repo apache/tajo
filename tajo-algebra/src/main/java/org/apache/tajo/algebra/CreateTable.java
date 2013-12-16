@@ -138,7 +138,7 @@ public class CreateTable extends Expr {
         TUtil.checkEquals(params, another.params);
   }
 
-  public static class ColumnDefinition extends DataType {
+  public static class ColumnDefinition extends DataTypeExpr {
     String col_name;
 
     public ColumnDefinition(String columnName, String dataType) {
@@ -146,7 +146,7 @@ public class CreateTable extends Expr {
       this.col_name = columnName;
     }
 
-    public ColumnDefinition(String columnName, DataType dataType) {
+    public ColumnDefinition(String columnName, DataTypeExpr dataType) {
       super(dataType.getTypeName());
       if (dataType.hasLengthOrPrecision()) {
         setLengthOrPrecision(dataType.lengthOrPrecision);

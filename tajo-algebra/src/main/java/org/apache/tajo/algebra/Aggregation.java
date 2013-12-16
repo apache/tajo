@@ -21,7 +21,7 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class Aggregation extends UnaryOperator {
-  private Target[] targets;
+  private TargetExpr[] targets;
   private GroupElement [] groups;
   private Expr havingCondition;
 
@@ -29,11 +29,11 @@ public class Aggregation extends UnaryOperator {
     super(OpType.Aggregation);
   }
 
-  public Target[] getTargets() {
+  public TargetExpr[] getTargets() {
     return this.targets;
   }
 
-  public void setTargets(Target[] targets) {
+  public void setTargets(TargetExpr[] targets) {
     this.targets = targets;
   }
 
