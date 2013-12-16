@@ -583,7 +583,15 @@ public abstract class AbstractStorageManager {
                   .getVolumeIds())));
             }
           } else { // Non splittable
-            splits.add(makeNonSplit(tableName, meta, path, 0, length, blockStorageLocations));
+            long blockSize = blockStorageLocations[0].getLength();
+            if (blockSize >= length) {
+              for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
+                splits.add(makeSplit(tableName, meta, path, blockStorageLocation, getDiskIds(blockStorageLocation
+                    .getVolumeIds())));
+              }
+            } else {
+              splits.add(makeNonSplit(tableName, meta, path, 0, length, blockStorageLocations));
+            }
           }
 
         } else {

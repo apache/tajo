@@ -94,6 +94,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-421: Improve split for compression file. (jinho)
+
     TAJO-327: Add testcase to verify TAJO-16. (jaehwa)
 
     TAJO-405: Improve HCatalogStore to support partitioned table. (jaehwa)
