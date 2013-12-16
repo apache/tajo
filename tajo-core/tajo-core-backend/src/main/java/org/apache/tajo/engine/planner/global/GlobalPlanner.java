@@ -288,12 +288,17 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     SortNode firstSortNode = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
+    LogicalNode childBlockPlan = childBlock.getPlan();
+    firstSortNode.setChild(childBlockPlan);
+    // sort is a non-projectable operator. So, in/out schemas are the same to its child operator.
+    firstSortNode.setInSchema(childBlockPlan.getOutSchema());
+    firstSortNode.setOutSchema(childBlockPlan.getOutSchema());
     childBlock.setPlan(firstSortNode);
 
     currentBlock = masterPlan.newExecutionBlock();
     DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_PARTITION, 32);
     channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
-    channel.setSchema(currentNode.getOutSchema());
+    channel.setSchema(firstSortNode.getOutSchema());
 
     ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
     currentNode.setChild(secondScan);

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +32,8 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestCaseByCases {
@@ -59,6 +62,19 @@ public class TestCaseByCases {
         assertTrue(result.get(res.getInt(1)).get(0) == res.getInt(2));
         assertTrue(result.get(res.getInt(1)).get(1) == res.getInt(3));
       }
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testTAJO418Case() throws Exception {
+    ResultSet res = tpch.execute(FileUtil.readTextFile(new File("src/test/queries/tajo418_case.sql")));
+    try {
+      assertTrue(res.next());
+      assertEquals("R", res.getString(1));
+      assertEquals("F", res.getString(2));
+      assertFalse(res.next());
     } finally {
       res.close();
     }
