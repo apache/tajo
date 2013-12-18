@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 //Compatibility with Apache Hive
-public class TextSerializeDeserialize implements SerializeDeserialize {
+public class TextSerializerDeserializer implements SerializerDeserializer {
   public static byte[] trueBytes = "true".getBytes();
   public static byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();

@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 
-public interface SerializeDeserialize {
+public interface SerializerDeserializer {
 
   public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
 

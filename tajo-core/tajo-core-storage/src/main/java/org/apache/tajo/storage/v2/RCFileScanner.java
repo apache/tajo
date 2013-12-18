@@ -30,13 +30,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.BinarySerializeDeserialize;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
-import org.apache.tajo.storage.SerializeDeserialize;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -57,7 +54,7 @@ public class RCFileScanner extends FileScannerV2 {
   private ScheduledInputStream sin;
   private boolean first = true;
   private int maxBytesPerSchedule;
-  SerializeDeserialize serde;
+  SerializerDeserializer serde;
   byte[] nullChars;
 
   public RCFileScanner(final Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
@@ -206,9 +203,9 @@ public class RCFileScanner extends FileScannerV2 {
           if(text != null && !text.toString().isEmpty()){
             serdeClass = text.toString();
           } else{
-            serdeClass = this.meta.getOption(SERDE, BinarySerializeDeserialize.class.getName());
+            serdeClass = this.meta.getOption(SERDE, BinarySerializerDeserializer.class.getName());
           }
-          serde = (SerializeDeserialize) Class.forName(serdeClass).newInstance();
+          serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
           throw new IOException(e);

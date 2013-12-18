@@ -94,6 +94,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-424: Make serializer/deserializer configurable in CSVFile. (jinho)
+
     TAJO-419: Add missing visitor methods of AlgebraVisitor and
     BaseAlgebraVisitor. (hyunsik)
 

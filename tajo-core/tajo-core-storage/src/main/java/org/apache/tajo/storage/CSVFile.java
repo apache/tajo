@@ -49,6 +49,7 @@ public class CSVFile {
 
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String NULL = "csvfile.null";     //read only
+  public static final String SERDE = "csvfile.serde";
   public static final String DELIMITER_DEFAULT = "|";
   public static final byte LF = '\n';
   public static int EOF = -1;
@@ -75,7 +76,7 @@ public class CSVFile {
     private long pos = 0;
 
     private NonSyncByteArrayOutputStream os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
-    private TextSerializeDeserialize serializeDeserialize = new TextSerializeDeserialize();
+    private SerializerDeserializer serde;
 
     public CSVAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path) throws IOException {
       super(conf, schema, meta, path);
@@ -114,7 +115,7 @@ public class CSVFile {
 
         fos = fs.create(compressedPath);
         deflateFilter = codec.createOutputStream(fos, compressor);
-        outputStream = new DataOutputStream(new BufferedOutputStream(deflateFilter));
+        outputStream = new DataOutputStream(deflateFilter);
 
       } else {
         if (fs.exists(path)) {
@@ -126,6 +127,14 @@ public class CSVFile {
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
+      }
+
+      try {
+        String serdeClass = this.meta.getOption(SERDE, TextSerializerDeserializer.class.getName());
+        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        throw new IOException(e);
       }
 
       os.reset();
@@ -142,7 +151,7 @@ public class CSVFile {
 
       for (int i = 0; i < columnNum; i++) {
         datum = tuple.get(i);
-        rowBytes += serializeDeserialize.serialize(schema.getColumn(i), datum, os, nullChars);
+        rowBytes += serde.serialize(schema.getColumn(i), datum, os, nullChars);
 
         if(columnNum - 1 > i){
           os.write((byte) delimiter);
@@ -251,7 +260,7 @@ public class CSVFile {
       }
     }
 
-    private final static int DEFAULT_BUFFER_SIZE = 128 * 1024;
+    private final static int DEFAULT_PAGE_SIZE = 256 * 1024;
     private char delimiter;
     private FileSystem fs;
     private FSDataInputStream fis;
@@ -261,16 +270,17 @@ public class CSVFile {
     private Decompressor decompressor;
     private Seekable filePosition;
     private boolean splittable = false;
-    private long startOffset, length, end, pos;
-    private int currentIdx = 0, validIdx = 0;
+    private long startOffset, end, pos;
+    private int currentIdx = 0, validIdx = 0, recordCount = 0;
     private int[] targetColumnIndexes;
     private boolean eof = false;
     private final byte[] nullChars;
-    private LineReader reader;
+    private SplitLineReader reader;
     private ArrayList<Long> fileOffsets = new ArrayList<Long>();
     private ArrayList<Integer> rowLengthList = new ArrayList<Integer>();
     private ArrayList<Integer> startOffsets = new ArrayList<Integer>();
-    private NonSyncByteArrayOutputStream buffer = new NonSyncByteArrayOutputStream(DEFAULT_BUFFER_SIZE);
+    private NonSyncByteArrayOutputStream buffer = new NonSyncByteArrayOutputStream(DEFAULT_PAGE_SIZE);
+    private SerializerDeserializer serde;
 
     @Override
     public void init() throws IOException {
@@ -281,32 +291,34 @@ public class CSVFile {
       }
       if(fis == null) fis = fs.open(fragment.getPath());
 
+      recordCount = 0;
       pos = startOffset = fragment.getStartKey();
-      length = fragment.getEndKey();
-      end = startOffset + length;
-      fis.seek(startOffset);
+      end = startOffset + fragment.getEndKey();
 
       if (codec != null) {
         decompressor = CodecPool.getDecompressor(codec);
         if (codec instanceof SplittableCompressionCodec) {
           SplitCompressionInputStream cIn = ((SplittableCompressionCodec) codec).createInputStream(
-              fis, decompressor, startOffset, startOffset + length,
+              fis, decompressor, startOffset, end,
               SplittableCompressionCodec.READ_MODE.BYBLOCK);
 
+          reader = new CompressedSplitLineReader(cIn, conf, null);
           startOffset = cIn.getAdjustedStart();
-          length = cIn.getAdjustedEnd() - startOffset;
+          end = cIn.getAdjustedEnd();
           filePosition = cIn;
           is = cIn;
         } else {
           is = new DataInputStream(codec.createInputStream(fis, decompressor));
+          reader = new SplitLineReader(is, null);
           filePosition = fis;
         }
       } else {
+        fis.seek(startOffset);
         filePosition = fis;
         is = fis;
+        reader = new SplitLineReader(is, null);
       }
 
-      reader = new LineReader(is, DEFAULT_BUFFER_SIZE);
       if (targets == null) {
         targets = schema.toArray();
       }
@@ -316,15 +328,24 @@ public class CSVFile {
         targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getColumnName());
       }
 
+      try {
+        String serdeClass = this.meta.getOption(SERDE, TextSerializerDeserializer.class.getName());
+        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        throw new IOException(e);
+      }
+
       super.init();
       Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
-        LOG.debug("CSVScanner open:" + fragment.getPath() + "," + startOffset + "," + length +
+        LOG.debug("CSVScanner open:" + fragment.getPath() + "," + startOffset + "," + end +
             "," + fs.getFileStatus(fragment.getPath()).getLen());
       }
 
       if (startOffset != 0) {
-        pos += reader.readLine(new Text(), 0, maxBytesToConsume(pos));
+        startOffset += reader.readLine(new Text(), 0, maxBytesToConsume(startOffset));
+        pos = startOffset;
       }
       eof = false;
       page();
@@ -362,12 +383,11 @@ public class CSVFile {
 
       if(eof) return;
 
-      while (DEFAULT_BUFFER_SIZE > bufferedSize){
+      while (DEFAULT_PAGE_SIZE >= bufferedSize){
 
         int ret = reader.readDefaultLine(buffer, rowLengthList, Integer.MAX_VALUE, Integer.MAX_VALUE);
 
-        if(ret <= 0){
-          eof = true;
+        if(ret == 0){
           break;
         } else {
           fileOffsets.add(pos);
@@ -376,9 +396,13 @@ public class CSVFile {
           currentBufferPos += rowLengthList.get(rowLengthList.size() - 1);
           bufferedSize += ret;
           validIdx++;
+          recordCount++;
         }
 
-        if(isSplittable() && getFilePosition() > end) break;
+        if(getFilePosition() > end && !reader.needAdditionalRecordAfterSplit()){
+          eof = true;
+          break;
+        }
       }
     }
 
@@ -386,7 +410,7 @@ public class CSVFile {
     public Tuple next() throws IOException {
       try {
         if (currentIdx == validIdx) {
-          if (isSplittable() && fragmentable() <= 0) {
+          if (eof) {
             return null;
           } else {
             page();
@@ -405,7 +429,7 @@ public class CSVFile {
         byte[][] cells = Bytes.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
             rowLengthList.get(currentIdx),  delimiter, targetColumnIndexes);
         currentIdx++;
-        return new LazyTuple(schema, cells, offset, nullChars);
+        return new LazyTuple(schema, cells, offset, nullChars, serde);
       } catch (Throwable t) {
         LOG.error("Tuple list length: " + (fileOffsets != null ? fileOffsets.size() : 0), t);
         LOG.error("Tuple list current index: " + currentIdx, t);
@@ -420,7 +444,6 @@ public class CSVFile {
     @Override
     public void reset() throws IOException {
       if (decompressor != null) {
-        decompressor.reset();
         CodecPool.returnDecompressor(decompressor);
         decompressor = null;
       }
@@ -431,11 +454,15 @@ public class CSVFile {
     @Override
     public void close() throws IOException {
       try {
-        IOUtils.cleanup(LOG, is, fis);
+        IOUtils.cleanup(LOG, reader, is, fis);
         fs = null;
+        is = null;
+        fis = null;
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("CSVScanner processed record:" + recordCount);
+        }
       } finally {
         if (decompressor != null) {
-          decompressor.reset();
           CodecPool.returnDecompressor(decompressor);
           decompressor = null;
         }

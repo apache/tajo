@@ -31,18 +31,19 @@ public class LazyTuple implements Tuple {
   private byte[][] textBytes;
   private Schema schema;
   private byte[] nullBytes;
-  private static TextSerializeDeserialize serializeDeserialize = new TextSerializeDeserialize();
+  private SerializerDeserializer serializeDeserialize;
 
   public LazyTuple(Schema schema, byte[][] textBytes, long offset) {
-    this(schema, textBytes, offset, NullDatum.get().asTextBytes());
+    this(schema, textBytes, offset, NullDatum.get().asTextBytes(), new TextSerializerDeserializer());
   }
 
-  public LazyTuple(Schema schema, byte[][] textBytes, long offset, byte[] nullBytes) {
+  public LazyTuple(Schema schema, byte[][] textBytes, long offset, byte[] nullBytes, SerializerDeserializer serde) {
     this.schema = schema;
     this.textBytes = textBytes;
     this.values = new Datum[schema.getColumnNum()];
     this.offset = offset;
     this.nullBytes = nullBytes;
+    this.serializeDeserialize = serde;
   }
 
   public LazyTuple(LazyTuple tuple) {

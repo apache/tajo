@@ -34,6 +34,7 @@ public class TestLazyTuple {
   Schema schema;
   byte[][] textRow;
   byte[] nullbytes;
+  SerializerDeserializer serde;
 
   @Before
   public void setUp() {
@@ -69,12 +70,13 @@ public class TestLazyTuple {
     sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
     textRow = Bytes.splitPreserveAllTokens(sb.toString().getBytes(), '|');
+    serde = new TextSerializerDeserializer();
   }
 
   @Test
   public void testGetDatum() {
 
-    LazyTuple t1 = new LazyTuple(schema, textRow, -1, nullbytes);
+    LazyTuple t1 = new LazyTuple(schema, textRow, -1, nullbytes, serde);
     assertEquals(DatumFactory.createBool(true), t1.get(0));
     assertEquals(DatumFactory.createBit((byte) 0x99), t1.get(1));
     assertEquals(DatumFactory.createChar("str"), t1.get(2));

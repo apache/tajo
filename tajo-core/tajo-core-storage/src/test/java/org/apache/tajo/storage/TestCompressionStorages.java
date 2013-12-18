@@ -178,7 +178,7 @@ public class TestCompressionStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.putOption("compression.codec", codec.getCanonicalName());
-    meta.putOption("rcfile.serde", "org.apache.tajo.storage.TextSerializeDeserialize");
+    meta.putOption("rcfile.serde", TextSerializerDeserializer.class.getName());
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
