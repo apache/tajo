@@ -97,7 +97,7 @@ public class ExprTestBase {
     Schema inputSchema = null;
     if (schema != null) {
       inputSchema = (Schema) schema.clone();
-      inputSchema.setQualifier(tableName, true);
+      inputSchema.setQualifier(tableName);
 
       int targetIdx [] = new int[inputSchema.getColumnNum()];
       for (int i = 0; i < targetIdx.length; i++) {

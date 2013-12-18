@@ -906,9 +906,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (checkIfExist(ctx.table_partitioning_clauses())) {
-      CreateTable.PartitionOption partitionOption =
+      PartitionDescExpr partitionDesc =
           parseTablePartitioningClause(ctx.table_partitioning_clauses());
-      createTable.setPartition(partitionOption);
+      createTable.setPartition(partitionDesc);
     }
     return createTable;
   }
@@ -925,7 +925,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return elements;
   }
 
-  public CreateTable.PartitionOption parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
+  public PartitionDescExpr parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
 
     if (checkIfExist(ctx.range_partitions())) { // For Range Partition
       Range_partitionsContext rangePartitionsContext = ctx.range_partitions();
@@ -978,9 +978,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return new ListPartition(getColumnReferences(ctx.list_partitions().column_reference_list()), specifiers);
 
     } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
-      return new CreateTable.ColumnPartition(getColumnReferences(ctx.column_partitions().column_reference_list()));
+      return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()), true);
     } else {
-      throw new SQLSyntaxError("Wrong partition option");
+      throw new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree());
     }
   }
 

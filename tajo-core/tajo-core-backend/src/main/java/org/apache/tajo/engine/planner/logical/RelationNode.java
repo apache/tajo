@@ -24,7 +24,7 @@ public abstract class RelationNode extends LogicalNode {
 
   public RelationNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
-    assert(nodeType == NodeType.SCAN || nodeType == NodeType.TABLE_SUBQUERY);
+    assert(nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.TABLE_SUBQUERY);
   }
 
   public abstract String getTableName();

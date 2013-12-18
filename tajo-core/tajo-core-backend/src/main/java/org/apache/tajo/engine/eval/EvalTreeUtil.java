@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -31,8 +30,8 @@ import org.apache.tajo.exception.InternalException;
 import java.util.*;
 
 public class EvalTreeUtil {
-  public static void changeColumnRef(EvalNode node, String oldName,
-      String newName) {
+
+  public static void changeColumnRef(EvalNode node, String oldName, String newName) {
     node.postOrder(new ChangeColumnRefVisitor(oldName, newName));
   }
 
@@ -80,50 +79,9 @@ public class EvalTreeUtil {
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
-  
-  /**
-   * Convert a list of conjunctive normal forms into a singleton expression.
-   *  
-   * @param cnfExprs
-   * @return The EvalNode object that merges all CNF-formed expressions.
-   */
-  public static EvalNode transformCNF2Singleton(EvalNode...cnfExprs) {
-    if (cnfExprs.length == 1) {
-      return cnfExprs[0];
-    }
-    
-    return transformCNF2Singleton_(cnfExprs, 0);
-  }
-  
-  private static EvalNode transformCNF2Singleton_(EvalNode [] evalNode, int idx) {
-    if (idx == evalNode.length - 2) {
-      return new BinaryEval(EvalType.AND, evalNode[idx], evalNode[idx + 1]);
-    } else {
-      return new BinaryEval(EvalType.AND, evalNode[idx],
-          transformCNF2Singleton_(evalNode, idx + 1));
-    }
-  }
-  
-  /**
-   * Get a list of exprs similar to CNF
-   * 
-   * @param expr The expression to be transformed to an array of CNF-formed expressions.
-   * @return An array of CNF-formed expressions
-   */
-  public static EvalNode [] getConjNormalForm(EvalNode expr) {
-    List<EvalNode> list = new ArrayList<EvalNode>();    
-    getConjNormalForm(expr, list);
-    return list.toArray(new EvalNode[list.size()]);
-  }
-  
-  private static void getConjNormalForm(EvalNode node, List<EvalNode> found) {
-    if (node.getType() == EvalType.AND) {
-      getConjNormalForm(node.getLeftExpr(), found);
-      getConjNormalForm(node.getRightExpr(), found);
-    } else {
-      found.add(node);
-    }
-  }
+
+
+
   
   public static Schema getSchemaByTargets(Schema inputSchema, Target [] targets) 
       throws InternalException {
@@ -234,16 +192,8 @@ public class EvalTreeUtil {
     }    
   }
 
-  public static boolean isComparisonOperator(EvalNode expr) {
-    return expr.getType() == EvalType.EQUAL ||
-        expr.getType() == EvalType.LEQ ||
-        expr.getType() == EvalType.LTH ||
-        expr.getType() == EvalType.GEQ ||
-        expr.getType() == EvalType.GTH;
-  }
-
   public static boolean isJoinQual(EvalNode expr) {
-    return isComparisonOperator(expr) &&
+    return AlgebraicUtil.isComparisonOperator(expr) &&
         expr.getLeftExpr().getType() == EvalType.FIELD &&
         expr.getRightExpr().getType() == EvalType.FIELD;
   }

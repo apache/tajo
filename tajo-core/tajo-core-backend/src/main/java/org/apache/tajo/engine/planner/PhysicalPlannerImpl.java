@@ -138,7 +138,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, subQueryNode.getSubQuery());
         return leftExec;
 
-      } case SCAN:
+      }
+      case PARTITIONS_SCAN:
+      case SCAN:
         leftExec = createScanPlan(ctx, (ScanNode) logicalNode);
         return leftExec;
 

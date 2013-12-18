@@ -380,8 +380,8 @@ public class TestTajoClient {
 
     assertFalse(client.existTable(tableName));
 
-    String sql = "create table " + tableName + " (deptname text, score int4)";
-    sql += "PARTITION BY COLUMN (deptname)";
+    String sql = "create table " + tableName + " (score int4)";
+    sql += "PARTITION BY COLUMN (deptname text)";
 
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));

@@ -53,6 +53,10 @@ public class ExecutionBlock {
     this.scanlist.clear();
     this.plan = plan;
 
+    if (plan == null) {
+      return;
+    }
+
     LogicalNode node = plan;
     ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
     s.add(node);

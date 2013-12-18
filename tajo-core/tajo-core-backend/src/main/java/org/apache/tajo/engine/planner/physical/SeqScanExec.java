@@ -18,15 +18,16 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.EvalContext;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
@@ -34,7 +35,10 @@ import org.apache.tajo.storage.*;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionsType;
 
 public class SeqScanExec extends PhysicalExec {
   private final ScanNode plan;
@@ -63,8 +67,67 @@ public class SeqScanExec extends PhysicalExec {
     }
   }
 
+  /**
+   * This method rewrites an input schema of column-partitioned table because
+   * there are no actual field values in data file in a column-partitioned table.
+   * So, this method removes partition key columns from the input schema.
+   *
+   * TODO - This implementation assumes that a fragment is always FileFragment.
+   * In the column partitioned table, a path has an important role to
+   * indicate partition keys. In this time, it is right. Later, we have to fix it.
+   */
+  private void rewriteColumnPartitionedTableSchema() throws IOException {
+    PartitionDesc partitionDesc = plan.getTableDesc().getPartitions();
+    Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
+    List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
+
+    // Get a partition key value from a given path
+    Tuple partitionRow =
+        TupleUtil.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(), false);
+
+    // Remove partition key columns from an input schema.
+    columnPartitionSchema.setQualifier(inSchema.getColumn(0).getQualifier());
+    Schema modifiedInputSchema = new Schema();
+    for (Column column : inSchema.toArray()) {
+      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
+        modifiedInputSchema.addColumn(column);
+      }
+    }
+    this.inSchema = modifiedInputSchema;
+
+    // Targets or search conditions may contain column references.
+    // However, actual values absent in tuples. So, Replace all column references by constant datum.
+    for (Column column : columnPartitionSchema.toArray()) {
+      FieldEval targetExpr = new FieldEval(column);
+      EvalContext evalContext = targetExpr.newContext();
+      targetExpr.eval(evalContext, columnPartitionSchema, partitionRow);
+      Datum datum = targetExpr.terminate(evalContext);
+      ConstEval constExpr = new ConstEval(datum);
+      for (Target target : plan.getTargets()) {
+        if (target.getEvalTree().equals(targetExpr)) {
+          if (!target.hasAlias()) {
+            target.setAlias(target.getEvalTree().getName());
+          }
+          target.setExpr(constExpr);
+        } else {
+          EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr);
+        }
+      }
+
+      if (plan.hasQual()) {
+        EvalTreeUtil.replace(plan.getQual(), targetExpr, constExpr);
+      }
+    }
+  }
+
   public void init() throws IOException {
     Schema projected;
+
+    if (plan.getTableDesc().hasPartitions()
+        && plan.getTableDesc().getPartitions().getPartitionsType() == PartitionsType.COLUMN) {
+      rewriteColumnPartitionedTableSchema();
+    }
+
     if (plan.hasTargets()) {
       projected = new Schema();
       Set<Column> columnSet = new HashSet<Column>();

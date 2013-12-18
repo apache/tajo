@@ -290,7 +290,6 @@ Nonreserved_keywords
 
   | MAXVALUE
 
-  | VALUES
   | PARTITION
   | PARTITIONS
   | ROLLUP
@@ -305,6 +304,8 @@ Nonreserved_keywords
   | THAN
   | TRIM
   | TO
+
+  | VALUES
   ;
 
 /*

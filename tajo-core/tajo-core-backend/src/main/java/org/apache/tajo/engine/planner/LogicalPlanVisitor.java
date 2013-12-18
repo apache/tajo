@@ -47,6 +47,8 @@ public interface LogicalPlanVisitor <CONTEXT, RESULT> {
       throws PlanningException;
   RESULT visitScan(CONTEXT context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
       throws PlanningException;
+  RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, PartitionedTableScanNode node,
+                                   Stack<LogicalNode> stack) throws PlanningException;
   RESULT visitStoreTable(CONTEXT context, LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack)
       throws PlanningException;
   RESULT visitInsert(CONTEXT context, LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack)

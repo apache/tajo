@@ -24,6 +24,8 @@ import org.apache.tajo.datum.exception.InvalidOperationException;
 
 public class BooleanDatum extends Datum {
 	@Expose private boolean val;
+  public static final String TRUE="t";
+  public static final String FALSE="f";
 
   public BooleanDatum() {
     super(TajoDataTypes.Type.BOOLEAN);

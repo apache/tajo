@@ -150,7 +150,7 @@ public class TestPhysicalPlanner {
     catalog.addTable(score);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(conf);
 
     masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
   }

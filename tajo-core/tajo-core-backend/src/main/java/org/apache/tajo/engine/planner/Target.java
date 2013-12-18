@@ -48,6 +48,10 @@ public class Target implements Cloneable, GsonObject {
     return !hasAlias() ? column.getQualifiedName() : alias;
   }
 
+  public final void setExpr(EvalNode expr) {
+    this.expr = expr;
+  }
+
   public final void setAlias(String alias) {
     this.alias = alias;
     this.column = new Column(alias, expr.getValueType());

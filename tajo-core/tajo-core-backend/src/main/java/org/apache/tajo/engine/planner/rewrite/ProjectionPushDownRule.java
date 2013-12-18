@@ -304,7 +304,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     LogicalNode child = visitChild(newContext, plan, subRoot, newStack);
     newStack.pop();
     Schema inSchema = (Schema) child.getOutSchema().clone();
-    inSchema.setQualifier(node.getCanonicalName(), true);
+    inSchema.setQualifier(node.getCanonicalName());
     node.setInSchema(inSchema);
     return pushDownProjectablePost(context, node, isTopmostProjectable(stack));
   }

@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-338 - Add Query Optimization Part for Column-Partitioned Tables.
+    (hyunsik)
+
     TAJO-333: Add metric system to Tajo. (hyoungjunkim via jihoon)
 
     TAJO-413: Implement pi function. (DaeMyung Kang via jihoon)

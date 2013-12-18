@@ -30,7 +30,7 @@ import org.apache.hcatalog.data.Pair;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -106,7 +106,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     org.apache.tajo.catalog.Schema schema = null;
     Options options = null;
     TableStats stats = null;
-    Partitions partitions = null;
+    PartitionDesc partitions = null;
 
     // get db name and table name.
     try {
@@ -178,7 +178,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // set partition keys
       if (table.getPartitionKeys() != null) {
         if (table.getPartitionKeys().size() > 0) {
-          partitions = new Partitions();
+          partitions = new PartitionDesc();
           List<FieldSchema> partitionKeys = table.getPartitionKeys();
           for(int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);

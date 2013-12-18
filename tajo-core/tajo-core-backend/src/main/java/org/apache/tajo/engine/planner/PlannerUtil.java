@@ -545,7 +545,7 @@ public class PlannerUtil {
    * @return true if two operands refers to columns and the operator is comparison,
    */
   public static boolean isJoinQual(EvalNode qual) {
-    if (EvalTreeUtil.isComparisonOperator(qual)) {
+    if (AlgebraicUtil.isComparisonOperator(qual)) {
       List<Column> left = EvalTreeUtil.findAllColumnRefs(qual.getLeftExpr());
       List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
 

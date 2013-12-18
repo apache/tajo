@@ -152,7 +152,7 @@ list_value_partition
   ;
 
 column_partitions
-  : PARTITION BY COLUMN LEFT_PAREN column_reference_list RIGHT_PAREN
+  : PARTITION BY COLUMN table_elements
   ;
 
 partition_name

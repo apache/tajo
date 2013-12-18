@@ -24,7 +24,6 @@ import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.LiteralValue;
 import org.apache.tajo.algebra.OpType;
-import org.apache.tajo.engine.parser.SQLParser.Boolean_value_expressionContext;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
@@ -321,9 +320,9 @@ public class TestSQLAnalyzer {
     assertEquals(CreateTable.PartitionType.COLUMN, createTable.getPartition().getPartitionType());
     CreateTable.ColumnPartition columnPartition = createTable.getPartition();
     assertEquals(3, columnPartition.getColumns().length);
-    assertEquals("col1", columnPartition.getColumns()[0].getCanonicalName());
-    assertEquals("col2", columnPartition.getColumns()[1].getCanonicalName());
-    assertEquals("col3", columnPartition.getColumns()[2].getCanonicalName());
+    assertEquals("col3", columnPartition.getColumns()[0].getColumnName());
+    assertEquals("col4", columnPartition.getColumns()[1].getColumnName());
+    assertEquals("col5", columnPartition.getColumns()[2].getColumnName());
   }
 
   @Test

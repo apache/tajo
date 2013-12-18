@@ -124,7 +124,7 @@ message CreateTableRequest {
   required SchemaProto schema = 2;
   required TableProto meta = 3;
   required string path = 4;
-  optional PartitionsProto partitions = 5;
+  optional PartitionDescProto partitions = 5;
 }
 
 message DropTableRequest {

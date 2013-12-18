@@ -26,7 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.Specifier;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -284,8 +284,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       //Partition
       if (table.getPartitions() != null && !table.getPartitions().toString().isEmpty()) {
         try {
-          Partitions partitions = table.getPartitions();
-          List<Column> columnList = partitions.getColumns();
+          PartitionDesc partitionDesc = table.getPartitions();
+          List<Column> columnList = partitionDesc.getColumns();
 
           // Find columns which used for a partitioned table.
           StringBuffer columns = new StringBuffer();
@@ -320,19 +320,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           }
 
           // Find information for subpartitions
-          if (partitions.getSpecifiers() != null) {
+          if (partitionDesc.getSpecifiers() != null) {
             int count = 1;
-            if (partitions.getSpecifiers().size() == 0) {
+            if (partitionDesc.getSpecifiers().size() == 0) {
               pstmt.clearParameters();
               pstmt.setString(1, null);
               pstmt.setInt(2, tid);
-              pstmt.setString(3, partitions.getPartitionsType().name());
-              pstmt.setInt(4, partitions.getNumPartitions());
+              pstmt.setString(3, partitionDesc.getPartitionsType().name());
+              pstmt.setInt(4, partitionDesc.getNumPartitions());
               pstmt.setString(5, columns.toString());
               pstmt.setString(6, null);
               pstmt.addBatch();
             } else {
-              for(Specifier specifier: partitions.getSpecifiers()) {
+              for(Specifier specifier: partitionDesc.getSpecifiers()) {
                 pstmt.clearParameters();
                 if (specifier.getName() != null && !specifier.getName().equals("")) {
                   pstmt.setString(1, specifier.getName());
@@ -340,8 +340,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
                   pstmt.setString(1, null);
                 }
                 pstmt.setInt(2, tid);
-                pstmt.setString(3, partitions.getPartitionsType().name());
-                pstmt.setInt(4, partitions.getNumPartitions());
+                pstmt.setString(3, partitionDesc.getPartitionsType().name());
+                pstmt.setInt(4, partitionDesc.getNumPartitions());
                 pstmt.setString(5, columns.toString());
                 pstmt.setString(6, specifier.getExpressions());
                 pstmt.addBatch();
@@ -352,8 +352,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             pstmt.clearParameters();
             pstmt.setString(1, null);
             pstmt.setInt(2, tid);
-            pstmt.setString(3, partitions.getPartitionsType().name());
-            pstmt.setInt(4, partitions.getNumPartitions());
+            pstmt.setString(3, partitionDesc.getPartitionsType().name());
+            pstmt.setInt(4, partitionDesc.getNumPartitions());
             pstmt.setString(5, columns.toString());
             pstmt.setString(6, null);
             pstmt.addBatch();
@@ -496,7 +496,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     StoreType storeType = null;
     Options options;
     TableStats stat = null;
-    Partitions partitions = null;
+    PartitionDesc partitionDesc = null;
     int tid = 0;
 
     try {
@@ -602,18 +602,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = stmt.executeQuery(sql);
 
       while (res.next()) {
-        if (partitions == null) {
-          partitions = new Partitions();
+        if (partitionDesc == null) {
+          partitionDesc = new PartitionDesc();
           String[] columns = res.getString("columns").split(",");
           for(String eachColumn: columns) {
-            partitions.addColumn(getColumn(tableName, tid, eachColumn));
+            partitionDesc.addColumn(getColumn(tableName, tid, eachColumn));
           }
-          partitions.setPartitionsType(CatalogProtos.PartitionsType.valueOf(res.getString("type")));
-          partitions.setNumPartitions(res.getInt("quantity"));
+          partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.valueOf(res.getString("type")));
+          partitionDesc.setNumPartitions(res.getInt("quantity"));
         }
 
         Specifier specifier = new Specifier(res.getString("name"), res.getString("expressions"));
-        partitions.addSpecifier(specifier);
+        partitionDesc.addSpecifier(specifier);
       }
 
     } catch (SQLException se) {
@@ -628,8 +628,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       table.setStats(stat);
     }
 
-    if (partitions != null) {
-      table.setPartitions(partitions);
+    if (partitionDesc != null) {
+      table.setPartitions(partitionDesc);
     }
 
     return table;

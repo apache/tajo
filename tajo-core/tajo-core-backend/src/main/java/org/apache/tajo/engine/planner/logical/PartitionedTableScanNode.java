@@ -20,90 +20,38 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Schema;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
-public class ScanNode extends RelationNode implements Projectable {
-	@Expose protected TableDesc tableDesc;
-  @Expose protected String alias;
-  @Expose protected Schema renamedSchema;
-	@Expose protected EvalNode qual;
-	@Expose protected Target[] targets;
+public class PartitionedTableScanNode extends ScanNode {
+  @Expose Path [] inputPaths;
 
-  protected ScanNode(int pid, NodeType nodeType, TableDesc desc) {
-    super(pid, nodeType);
-    this.tableDesc = desc;
+  public PartitionedTableScanNode(int pid, ScanNode scanNode, Path[] inputPaths) {
+    super(pid, NodeType.PARTITIONS_SCAN, scanNode.getTableDesc());
+    this.setInSchema(scanNode.getInSchema());
+    this.setOutSchema(scanNode.getOutSchema());
+    this.alias = scanNode.alias;
+    this.renamedSchema = scanNode.renamedSchema;
+    this.qual = scanNode.qual;
+    this.targets = scanNode.targets;
+    this.inputPaths = inputPaths;
   }
 
-  public ScanNode(int pid, TableDesc desc) {
-    super(pid, NodeType.SCAN);
-    this.tableDesc = desc;
-    this.setInSchema(tableDesc.getSchema());
-    this.setOutSchema(tableDesc.getSchema());
-  }
-  
-	public ScanNode(int pid, TableDesc desc, String alias) {
-    this(pid, desc);
-    this.alias = PlannerUtil.normalizeTableName(alias);
-    renamedSchema = getOutSchema();
-    renamedSchema.setQualifier(this.alias);
-	}
-	
-	public String getTableName() {
-	  return tableDesc.getName();
-	}
-	
-	public boolean hasAlias() {
-	  return alias != null;
-	}
-
-  public String getCanonicalName() {
-    return hasAlias() ? alias : tableDesc.getName();
+  public void setInputPaths(Path [] paths) {
+    this.inputPaths = paths;
   }
 
-  public Schema getTableSchema() {
-    return hasAlias() ? renamedSchema : tableDesc.getSchema();
-  }
-	
-	public boolean hasQual() {
-	  return qual != null;
-	}
-	
-	public EvalNode getQual() {
-	  return this.qual;
-	}
-	
-	public void setQual(EvalNode evalTree) {
-	  this.qual = evalTree;
-	}
-
-  @Override
-	public boolean hasTargets() {
-	  return this.targets != null;
-	}
-
-  @Override
-	public void setTargets(Target [] targets) {
-	  this.targets = targets;
-	}
-
-  @Override
-	public Target [] getTargets() {
-	  return this.targets;
-	}
-
-  public TableDesc getTableDesc() {
-    return tableDesc;
+  public Path [] getInputPaths() {
+    return inputPaths;
   }
 	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();	  
-	  sb.append("\"Scan\" : {\"table\":\"")
+	  sb.append("\"Partitions Scan\" : {\"table\":\"")
 	  .append(getTableName()).append("\"");
 	  if (hasAlias()) {
 	    sb.append(",\"alias\": \"").append(alias);
@@ -125,6 +73,15 @@ public class ScanNode extends RelationNode implements Projectable {
       }
 	  }
 
+    if (inputPaths != null) {
+      sb.append(", \"Partition paths\": ");
+      for (Path path : inputPaths) {
+        sb.append("\n ");
+        sb.append(path);
+      }
+      sb.append("\n");
+    }
+
 	  sb.append(",");
 	  sb.append("\n  \"out schema\": ").append(getOutSchema());
 	  sb.append("\n  \"in schema\": ").append(getInSchema());
@@ -138,13 +95,14 @@ public class ScanNode extends RelationNode implements Projectable {
 	
 	@Override
 	public boolean equals(Object obj) {
-	  if (obj instanceof ScanNode) {
-	    ScanNode other = (ScanNode) obj;
+	  if (obj instanceof PartitionedTableScanNode) {
+	    PartitionedTableScanNode other = (PartitionedTableScanNode) obj;
 	    
 	    boolean eq = super.equals(other); 
 	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
 	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
+      eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
 	    
 	    return eq;
 	  }	  
@@ -154,22 +112,24 @@ public class ScanNode extends RelationNode implements Projectable {
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
-	  ScanNode scanNode = (ScanNode) super.clone();
+	  PartitionedTableScanNode unionScan = (PartitionedTableScanNode) super.clone();
 	  
-	  scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
+	  unionScan.tableDesc = (TableDesc) this.tableDesc.clone();
 	  
 	  if (hasQual()) {
-	    scanNode.qual = (EvalNode) this.qual.clone();
+	    unionScan.qual = (EvalNode) this.qual.clone();
 	  }
 	  
 	  if (hasTargets()) {
-	    scanNode.targets = new Target[targets.length];
+	    unionScan.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
-        scanNode.targets[i] = (Target) targets[i].clone();
+        unionScan.targets[i] = (Target) targets[i].clone();
       }
 	  }
-	  
-	  return scanNode;
+
+    unionScan.inputPaths = inputPaths;
+
+    return unionScan;
 	}
 	
   @Override
@@ -201,6 +161,14 @@ public class ScanNode extends RelationNode implements Projectable {
         }
         planStr.appendExplain(target.toString());
         first = false;
+      }
+    }
+
+    if (inputPaths != null) {
+      planStr.addExplan("Path list: ");
+      int i = 0;
+      for (Path path : inputPaths) {
+        planStr.addExplan((i++) + ": ").appendExplain(path.toString());
       }
     }
 

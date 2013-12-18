@@ -32,7 +32,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -86,7 +86,7 @@ public class GlobalEngine extends AbstractService {
       analyzer = new SQLAnalyzer();
       converter = new HiveConverter();
       planner = new LogicalPlanner(context.getCatalog());
-      optimizer = new LogicalOptimizer();
+      optimizer = new LogicalOptimizer(context.getConf());
       verifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
 
       hookManager = new DistributedQueryHookManager();
@@ -234,7 +234,7 @@ public class GlobalEngine extends AbstractService {
     if (!state.verified()) {
       StringBuilder sb = new StringBuilder();
       for (String error : state.getErrorMessages()) {
-        sb.append("ERROR: ").append(error).append("\n");
+        sb.append(error).append("\n");
       }
       throw new VerifyException(sb.toString());
     }
@@ -263,7 +263,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   public TableDesc createTableOnPath(String tableName, Schema schema, TableMeta meta,
-                                     Path path, boolean isCreated, Partitions partitions)
+                                     Path path, boolean isCreated, PartitionDesc partitionDesc)
       throws IOException {
     if (catalog.existsTable(tableName)) {
       throw new AlreadyExistsTableException(tableName);
@@ -291,7 +291,9 @@ public class GlobalEngine extends AbstractService {
     stats.setNumBytes(totalSize);
     TableDesc desc = CatalogUtil.newTableDesc(tableName, schema, meta, path);
     desc.setStats(stats);
-    desc.setPartitions(partitions);
+    if (partitionDesc != null) {
+      desc.setPartitions(partitionDesc);
+    }
     catalog.addTable(desc);
 
     LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");

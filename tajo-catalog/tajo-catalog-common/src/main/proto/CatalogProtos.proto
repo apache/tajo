@@ -113,7 +113,7 @@ message TableDescProto {
 	required TableProto meta = 3;
 	required SchemaProto schema = 4;
 	optional TableStatsProto stats = 5;
-	optional PartitionsProto partitions = 6;
+	optional PartitionDescProto partitions = 6;
 }
 
 enum FunctionType {
@@ -234,11 +234,12 @@ message SortSpecProto {
   optional bool nullFirst = 3 [default = false];
 }
 
-message PartitionsProto {
+message PartitionDescProto {
   required PartitionsType partitionsType = 1;
-  repeated ColumnProto columns = 2;
+  optional SchemaProto schema = 2;
   optional int32 numPartitions = 3;
   repeated SpecifierProto specifiers = 4;
+  optional bool isOmitValues = 5;
 }
 
 message SpecifierProto {

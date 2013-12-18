@@ -266,7 +266,7 @@ public class QueryMasterTask extends CompositeService {
 
     CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer();
+    LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
     Expr expr;
     if (queryContext.isHiveQueryMode()) {
       HiveConverter hiveConverter = new HiveConverter();
@@ -291,6 +291,14 @@ public class QueryMasterTask extends CompositeService {
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
+        if(scanNodes != null) {
+          for(LogicalNode eachScanNode: scanNodes) {
+            ScanNode scanNode = (ScanNode)eachScanNode;
+            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+          }
+        }
+
+        scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.PARTITIONS_SCAN);
         if(scanNodes != null) {
           for(LogicalNode eachScanNode: scanNodes) {
             ScanNode scanNode = (ScanNode)eachScanNode;

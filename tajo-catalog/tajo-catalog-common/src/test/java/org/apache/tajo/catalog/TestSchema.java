@@ -140,7 +140,33 @@ public class TestSchema {
     Schema schema2 = new Schema(schema.getProto());
     schema2.setQualifier("test1");
     Column column = schema2.getColumn(1);
+    assertEquals(1, schema2.getColumnIdByName("age"));
     assertEquals(column, schema2.getColumnByName("age"));
     assertEquals(column, schema2.getColumnByFQN("test1.age"));
+
+    Schema schema3 = new Schema();
+    schema3.addColumn("tb1.col1", Type.INT4);
+    schema3.addColumn("col2", Type.INT4);
+    assertEquals("tb1", schema3.getColumn(0).getQualifier());
+    assertEquals("tb1.col1", schema3.getColumn(0).getQualifiedName());
+    assertEquals("col1", schema3.getColumn(0).getColumnName());
+    assertEquals("col2", schema3.getColumn(1).getQualifiedName());
+
+    assertEquals(schema3.getColumn(0), schema3.getColumnByName("col1"));
+    assertEquals(schema3.getColumn(0), schema3.getColumnByFQN("tb1.col1"));
+    assertEquals(schema3.getColumn(1), schema3.getColumnByName("col2"));
+    assertEquals(schema3.getColumn(1), schema3.getColumnByFQN("col2"));
+
+    schema3.setQualifier("tb2");
+    assertEquals("tb2", schema3.getColumn(0).getQualifier());
+    assertEquals("tb2.col1", schema3.getColumn(0).getQualifiedName());
+    assertEquals("col1", schema3.getColumn(0).getColumnName());
+    assertEquals("tb2.col2", schema3.getColumn(1).getQualifiedName());
+
+    assertEquals(schema3.getColumn(0), schema3.getColumnByName("col1"));
+    assertEquals(schema3.getColumn(0), schema3.getColumnByFQN("tb2.col1"));
+    assertEquals(schema3.getColumn(1), schema3.getColumnByName("col2"));
+    assertEquals(schema3.getColumn(1), schema3.getColumnByFQN("tb2.col2"));
+
   }
 }

@@ -22,8 +22,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.eval.AlgebraicUtil;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.logical.join.FoundJoinOrder;
@@ -32,6 +33,7 @@ import org.apache.tajo.engine.planner.logical.join.JoinGraph;
 import org.apache.tajo.engine.planner.logical.join.JoinOrderAlgorithm;
 import org.apache.tajo.engine.planner.rewrite.BasicQueryRewriteEngine;
 import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule;
+import org.apache.tajo.engine.planner.rewrite.PartitionedTableRewriter;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 
 import java.util.Set;
@@ -49,12 +51,13 @@ public class LogicalOptimizer {
   private BasicQueryRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
 
-  public LogicalOptimizer() {
+  public LogicalOptimizer(TajoConf systemConf) {
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
     rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
 
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
+    rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
   }
 
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
@@ -130,7 +133,7 @@ public class LogicalOptimizer {
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, SelectionNode node,
                                    Stack<LogicalNode> stack) throws PlanningException {
       super.visitFilter(context, plan, node, stack);
-      context.quals.addAll(Lists.newArrayList(EvalTreeUtil.getConjNormalForm(node.getQual())));
+      context.quals.addAll(Lists.newArrayList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
       return node;
     }
 
@@ -239,7 +242,7 @@ public class LogicalOptimizer {
 
       double filterFactor = 1;
       if (joinNode.hasJoinQual()) {
-        EvalNode [] quals = EvalTreeUtil.getConjNormalForm(joinNode.getJoinQual());
+        EvalNode [] quals = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
         filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, quals.length);
       }
 

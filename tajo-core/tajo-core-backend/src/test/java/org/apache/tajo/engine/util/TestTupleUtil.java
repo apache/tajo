@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.util;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -33,8 +34,7 @@ import org.apache.tajo.worker.dataserver.HttpUtil;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestTupleUtil {
   @Test
@@ -227,5 +227,53 @@ public class TestTupleUtil {
       TupleRange result = TupleUtil.queryToRange(schema, query);
       assertEquals(range, result);
     }
+  }
+
+  @Test
+  public void testBuildTupleFromPartitionPath() {
+
+    Schema schema = new Schema();
+    schema.addColumn("key1", Type.INT8);
+    schema.addColumn("key2", Type.TEXT);
+
+    Path path = new Path("hdfs://tajo/warehouse/partition_test/");
+    Tuple tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, true);
+    assertNull(tuple);
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, false);
+    assertNull(tuple);
+
+    path = new Path("hdfs://tajo/warehouse/partition_test/key1=123");
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, true);
+    assertNotNull(tuple);
+    assertEquals(DatumFactory.createInt8(123), tuple.get(0));
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, false);
+    assertNotNull(tuple);
+    assertEquals(DatumFactory.createInt8(123), tuple.get(0));
+
+    path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/part-0000"); // wrong cases;
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, true);
+    assertNull(tuple);
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, false);
+    assertNull(tuple);
+
+    path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc");
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, true);
+    assertNotNull(tuple);
+    assertEquals(DatumFactory.createInt8(123), tuple.get(0));
+    assertEquals(DatumFactory.createText("abc"), tuple.get(1));
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, false);
+    assertNotNull(tuple);
+    assertEquals(DatumFactory.createInt8(123), tuple.get(0));
+    assertEquals(DatumFactory.createText("abc"), tuple.get(1));
+
+
+    path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc/part-0001");
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, true);
+    assertNull(tuple);
+
+    tuple = TupleUtil.buildTupleFromPartitionPath(schema, path, false);
+    assertNotNull(tuple);
+    assertEquals(DatumFactory.createInt8(123), tuple.get(0));
+    assertEquals(DatumFactory.createText("abc"), tuple.get(1));
   }
 }

@@ -43,10 +43,7 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.AbstractTaskScheduler;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
@@ -745,21 +742,42 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       subQuery.eventHandler.handle(event);
     }
 
+    /**
+     * It creates a number of fragments for all partitions.
+     */
+    private static Collection<FileFragment> getFragmentsFromPartitionedTable(SubQuery subQuery,
+                                                                      ScanNode scan,
+                                                                      TableDesc table) throws IOException {
+      List<FileFragment> fragments = Lists.newArrayList();
+      PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
+      for (Path path : partitionsScan.getInputPaths()) {
+        fragments.addAll(subQuery.getStorageManager().getSplits(
+            scan.getCanonicalName(), table.getMeta(), table.getSchema(), path));
+      }
+      partitionsScan.setInputPaths(null);
+      return fragments;
+    }
+
     private static QueryUnit [] createLeafTasks(SubQuery subQuery) throws IOException {
       ExecutionBlock execBlock = subQuery.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
-      TableMeta meta;
-      Path inputPath;
-
       ScanNode scan = scans[0];
-      TableDesc desc = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
-      inputPath = desc.getPath();
-      meta = desc.getMeta();
+      TableDesc table = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
 
-      // TODO - should be change the inner directory
-      List<FileFragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
-          inputPath);
+      Collection<FileFragment> fragments;
+      TableMeta meta = table.getMeta();
+
+      // Depending on scanner node's type, it creates fragments. If scan is for
+      // a partitioned table, It will creates lots fragments for all partitions.
+      // Otherwise, it creates at least one fragments for a table, which may
+      // span a number of blocks or possibly consists of a number of files.
+      if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        fragments = getFragmentsFromPartitionedTable(subQuery, scan, table);
+      } else {
+        Path inputPath = table.getPath();
+        fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, table.getSchema(), inputPath);
+      }
 
       QueryUnit queryUnit;
       List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();

@@ -22,7 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.Specifier;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -236,13 +236,13 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    Partitions partitions = new Partitions();
-    partitions.addColumn(new Column("id", Type.INT4));
-    partitions.setPartitionsType(CatalogProtos.PartitionsType.HASH);
-    partitions.setNumPartitions(2);
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.addColumn(new Column("id", Type.INT4));
+    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.HASH);
+    partitionDesc.setNumPartitions(2);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitions);
+    desc.setPartitions(partitionDesc);
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -268,17 +268,17 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    Partitions partitions = new Partitions();
-    partitions.addColumn(new Column("id", Type.INT4));
-    partitions.setPartitionsType(CatalogProtos.PartitionsType.HASH);
-    partitions.setNumPartitions(2);
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.addColumn(new Column("id", Type.INT4));
+    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.HASH);
+    partitionDesc.setNumPartitions(2);
 
-    partitions.addSpecifier(new Specifier("sub_part1"));
-    partitions.addSpecifier(new Specifier("sub_part2"));
-    partitions.addSpecifier(new Specifier("sub_part3"));
+    partitionDesc.addSpecifier(new Specifier("sub_part1"));
+    partitionDesc.addSpecifier(new Specifier("sub_part2"));
+    partitionDesc.addSpecifier(new Specifier("sub_part3"));
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitions);
+    desc.setPartitions(partitionDesc);
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -304,15 +304,15 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    Partitions partitions = new Partitions();
-    partitions.addColumn(new Column("id", Type.INT4));
-    partitions.setPartitionsType(CatalogProtos.PartitionsType.LIST);
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.addColumn(new Column("id", Type.INT4));
+    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.LIST);
 
-    partitions.addSpecifier(new Specifier("sub_part1", "Seoul,서울"));
-    partitions.addSpecifier(new Specifier("sub_part2", "Busan,부산"));
+    partitionDesc.addSpecifier(new Specifier("sub_part1", "Seoul,서울"));
+    partitionDesc.addSpecifier(new Specifier("sub_part2", "Busan,부산"));
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitions);
+    desc.setPartitions(partitionDesc);
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -338,16 +338,16 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    Partitions partitions = new Partitions();
-    partitions.addColumn(new Column("id", Type.INT4));
-    partitions.setPartitionsType(CatalogProtos.PartitionsType.RANGE);
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.addColumn(new Column("id", Type.INT4));
+    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.RANGE);
 
-    partitions.addSpecifier(new Specifier("sub_part1", "2"));
-    partitions.addSpecifier(new Specifier("sub_part2", "5"));
-    partitions.addSpecifier(new Specifier("sub_part3"));
+    partitionDesc.addSpecifier(new Specifier("sub_part1", "2"));
+    partitionDesc.addSpecifier(new Specifier("sub_part2", "5"));
+    partitionDesc.addSpecifier(new Specifier("sub_part3"));
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitions);
+    desc.setPartitions(partitionDesc);
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -373,12 +373,12 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    Partitions partitions = new Partitions();
-    partitions.addColumn(new Column("id", Type.INT4));
-    partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.addColumn(new Column("id", Type.INT4));
+    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitions);
+    desc.setPartitions(partitionDesc);
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));

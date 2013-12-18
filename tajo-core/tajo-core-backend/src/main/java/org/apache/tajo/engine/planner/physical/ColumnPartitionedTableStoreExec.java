@@ -28,7 +28,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
@@ -45,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionsType;
+
 /**
  * This class is a physical operator to store at column partitioned table.
  */
@@ -56,15 +60,11 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
   private Tuple tuple;
   private Path storeTablePath;
   private final Map<String, Appender> appenderMap = new HashMap<String, Appender>();
-  private int[] columnIndexes;
-  private String[] columnNames;
+  private int[] partitionColumnIndices;
+  private String[] partitionColumnNames;
 
-
-  /**
-   * @throws java.io.IOException
-   *
-   */
-  public ColumnPartitionedTableStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child) throws IOException {
+  public ColumnPartitionedTableStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
+      throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
 
@@ -75,23 +75,49 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
+    // Rewrite a output schema because we don't have to store field values
+    // corresponding to partition key columns.
+    if (plan.getPartitions() != null && plan.getPartitions().getPartitionsType() == PartitionsType.COLUMN) {
+      rewriteColumnPartitionedTableSchema();
+    }
+
     // Find column index to name subpartition directory path
     if (this.plan.getPartitions() != null) {
       if (this.plan.getPartitions().getColumns() != null) {
-        columnIndexes = new int[plan.getPartitions().getColumns().size()];
-        columnNames = new String[columnIndexes.length];
-        for(int i = 0; i < plan.getPartitions().getColumns().size(); i++)  {
-          Column targetColumn = plan.getPartitions().getColumn(i);
+        partitionColumnIndices = new int[plan.getPartitions().getColumns().size()];
+        partitionColumnNames = new String[partitionColumnIndices.length];
+        Schema columnPartitionSchema = plan.getPartitions().getSchema();
+        for(int i = 0; i < columnPartitionSchema.getColumnNum(); i++)  {
+          Column targetColumn = columnPartitionSchema.getColumn(i);
           for(int j = 0; j < plan.getInSchema().getColumns().size();j++) {
             Column inputColumn = plan.getInSchema().getColumn(j);
             if (inputColumn.getColumnName().equals(targetColumn.getColumnName())) {
-              columnIndexes[i] = j;
-              columnNames[i] = targetColumn.getColumnName();
+              partitionColumnIndices[i] = j;
+              partitionColumnNames[i] = targetColumn.getColumnName();
             }
           }
         }
       }
     }
+  }
+
+  /**
+   * This method rewrites an input schema of column-partitioned table because
+   * there are no actual field values in data file in a column-partitioned table.
+   * So, this method removes partition key columns from the input schema.
+   */
+  private void rewriteColumnPartitionedTableSchema() {
+    PartitionDesc partitionDesc = plan.getPartitions();
+    Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
+    columnPartitionSchema.setQualifier(plan.getTableName());
+
+    Schema modifiedOutputSchema = new Schema();
+    for (Column column : outSchema.toArray()) {
+      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
+        modifiedOutputSchema.addColumn(column);
+      }
+    }
+    outSchema = modifiedOutputSchema;
   }
 
   public void init() throws IOException {
@@ -124,8 +150,7 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
         LOG.info("File size: " + status.getLen());
       }
 
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-          outSchema, dataFile);
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
       appender.enableStats();
       appender.init();
       appenderMap.put(partition, appender);
@@ -148,12 +173,12 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
     while((tuple = child.next()) != null) {
       // set subpartition directory name
       sb.delete(0, sb.length());
-      if (columnIndexes != null) {
-        for(int i = 0; i < columnIndexes.length; i++) {
-          Datum datum = (Datum) tuple.get(columnIndexes[i]);
+      if (partitionColumnIndices != null) {
+        for(int i = 0; i < partitionColumnIndices.length; i++) {
+          Datum datum = tuple.get(partitionColumnIndices[i]);
           if(i > 0)
             sb.append("/");
-          sb.append(columnNames[i]).append("=");
+          sb.append(partitionColumnNames[i]).append("=");
           sb.append(datum.asChars());
         }
       }

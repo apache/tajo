@@ -265,7 +265,7 @@ public class TestHCatalogStore {
     assertEquals("type", columns.get(4).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(4).getDataType().getType());
     assertNotNull(table.getPartitions());
-    assertEquals("type", table.getPartitions().getColumn(0).getColumnName());
+    assertEquals("type", table.getPartitions().getSchema().getColumn(0).getColumnName());
     assertEquals(CatalogProtos.PartitionsType.COLUMN, table.getPartitions().getPartitionsType());
   }
 

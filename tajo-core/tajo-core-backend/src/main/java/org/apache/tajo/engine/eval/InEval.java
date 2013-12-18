@@ -71,7 +71,7 @@ public class InEval extends BinaryEval {
 
     Datum value = tuple.get(fieldId);
     for (Datum datum : values) {
-      if (value.equals(datum)) {
+      if (value.equalsTo(datum).asBool()) {
         isIncluded = true;
         break;
       }

@@ -74,7 +74,7 @@ public class TestLogicalPlan {
       catalog.addTable(d);
     }
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(util.getConfiguration());
   }
 
   public static void tearDown() {

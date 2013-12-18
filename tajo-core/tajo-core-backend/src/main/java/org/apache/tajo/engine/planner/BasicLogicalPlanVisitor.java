@@ -92,6 +92,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case SCAN:
         current = visitScan(context, plan, (ScanNode) node, stack);
         break;
+      case PARTITIONS_SCAN:
+        current = visitScan(context, plan, (ScanNode) node, stack);
+        break;
       case STORE:
         current = visitStoreTable(context, plan, (StoreTableNode) node, stack);
         break;
@@ -217,6 +220,11 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   @Override
   public RESULT visitScan(CONTEXT context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
       throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, PartitionedTableScanNode node, Stack<LogicalNode> stack) throws PlanningException {
     return null;
   }
 

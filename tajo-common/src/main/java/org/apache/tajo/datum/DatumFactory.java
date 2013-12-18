@@ -69,6 +69,40 @@ public class DatumFactory {
     }
   }
 
+  public static Datum createFromString(DataType dataType, String value) {
+    switch (dataType.getType()) {
+
+    case BOOLEAN:
+      return createBool(value.equals(BooleanDatum.TRUE));
+    case INT2:
+      return createInt2(value);
+    case INT4:
+      return createInt4(value);
+    case INT8:
+      return createInt8(value);
+    case FLOAT4:
+      return createFloat4(value);
+    case FLOAT8:
+      return createFloat8(value);
+    case CHAR:
+      return createChar(value);
+    case TEXT:
+      return createText(value);
+    case DATE:
+      return createDate(value);
+    case TIME:
+      return createTime(value);
+    case TIMESTAMP:
+      return createTimeStamp(value);
+    case BLOB:
+      return createBlob(value);
+    case INET4:
+      return createInet4(value);
+    default:
+      throw new UnsupportedOperationException(dataType.toString());
+    }
+  }
+
   public static Datum createFromBytes(DataType dataType, byte[] bytes) {
     switch (dataType.getType()) {
 

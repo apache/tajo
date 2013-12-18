@@ -25,12 +25,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.TUtil;
 
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
   private final Log LOG = LogFactory.getLog(TableDesc.class);
@@ -42,7 +43,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   @Expose protected TableMeta meta; // required
   @Expose protected Path uri; // required
   @Expose	protected TableStats stats; // optional
-  @Expose protected Partitions partitions; //optional
+  @Expose protected PartitionDesc partitionDesc; //optional
   
 	public TableDesc() {
 		builder = TableDescProto.newBuilder();
@@ -65,7 +66,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	  this(proto.getId(), new Schema(proto.getSchema()), new TableMeta(proto.getMeta()), new Path(proto.getPath()));
     this.stats = new TableStats(proto.getStats());
     if (proto.getPartitions() != null && !proto.getPartitions().toString().isEmpty()) {
-      this.partitions = new Partitions(proto.getPartitions());
+      this.partitionDesc = new PartitionDesc(proto.getPartitions());
     }
 	}
 	
@@ -115,22 +116,27 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   }
 
   public boolean hasPartitions() {
-    return this.partitions != null;
+    return this.partitionDesc != null;
   }
 
-  public Partitions getPartitions() {
-    return partitions;
+  public PartitionDesc getPartitions() {
+    return partitionDesc;
   }
 
-  public void setPartitions(Partitions partitions) {
-    this.partitions = partitions;
+  public void setPartitions(PartitionDesc partitionDesc) {
+    this.partitionDesc = partitionDesc;
   }
 
   public boolean equals(Object object) {
     if(object instanceof TableDesc) {
       TableDesc other = (TableDesc) object;
       
-      return this.getProto().equals(other.getProto());
+      boolean eq = tableName.equals(other.tableName);
+      eq = eq && schema.equals(other.schema);
+      eq = eq && meta.equals(other.meta);
+      eq = eq && uri.equals(other.uri);
+      eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
+      return eq && TUtil.checkEquals(stats, other.stats);
     }
     
     return false;   
@@ -144,7 +150,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
     desc.meta = (TableMeta) meta.clone();
     desc.uri = uri;
     desc.stats = stats != null ? (TableStats) stats.clone() : null;
-    desc.partitions = partitions != null ? (Partitions) partitions.clone() : null;
+    desc.partitionDesc = partitionDesc != null ? (PartitionDesc) partitionDesc.clone() : null;
 	  
 	  return desc;
 	}
@@ -178,8 +184,8 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
     if (this.stats != null) {
       builder.setStats(this.stats.getProto());
     }
-    if (this.partitions != null) {
-      builder.setPartitions(this.partitions.getProto());
+    if (this.partitionDesc != null) {
+      builder.setPartitions(this.partitionDesc.getProto());
     }
     return builder.build();
   }

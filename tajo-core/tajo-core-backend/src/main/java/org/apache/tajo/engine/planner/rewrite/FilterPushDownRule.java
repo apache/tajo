@@ -22,10 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -65,7 +62,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   @Override
   public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack)
       throws PlanningException {
-    cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(selNode.getQual())));
+    cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
     visitChild(cnf, plan, selNode.getChild(), stack);
@@ -178,15 +175,15 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
           EvalNode qual2 = null;
           if (matched2.size() > 1) {
              // merged into one eval tree
-             qual2 = EvalTreeUtil.transformCNF2Singleton(
-                        matched2.toArray(new EvalNode [matched2.size()]));
+             qual2 = AlgebraicUtil.createSingletonExprFromCNF(
+                 matched2.toArray(new EvalNode[matched2.size()]));
           } else if (matched2.size() == 1) {
              // if the number of matched expr is one
              qual2 = matched2.get(0);
           }
 
           if (qual2 != null) {
-             EvalNode conjQual2 = EvalTreeUtil.transformCNF2Singleton(joinNode.getJoinQual(), qual2);
+             EvalNode conjQual2 = AlgebraicUtil.createSingletonExprFromCNF(joinNode.getJoinQual(), qual2);
              joinNode.setJoinQual(conjQual2);
              cnf.removeAll(matched2);
           } // for the remaining cnf, push it as usual
@@ -194,7 +191,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     }
 
     if (joinNode.hasJoinQual()) {
-      cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(joinNode.getJoinQual())));
+      cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
 
     visitChild(cnf, plan, left, stack);
@@ -210,7 +207,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     EvalNode qual = null;
     if (matched.size() > 1) {
       // merged into one eval tree
-      qual = EvalTreeUtil.transformCNF2Singleton(
+      qual = AlgebraicUtil.createSingletonExprFromCNF(
           matched.toArray(new EvalNode[matched.size()]));
     } else if (matched.size() == 1) {
       // if the number of matched expr is one
@@ -243,8 +240,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     EvalNode qual = null;
     if (matched.size() > 1) {
       // merged into one eval tree
-      qual = EvalTreeUtil.transformCNF2Singleton(
-          matched.toArray(new EvalNode [matched.size()]));
+      qual = AlgebraicUtil.createSingletonExprFromCNF(
+          matched.toArray(new EvalNode[matched.size()]));
     } else if (matched.size() == 1) {
       // if the number of matched expr is one
       qual = matched.get(0);

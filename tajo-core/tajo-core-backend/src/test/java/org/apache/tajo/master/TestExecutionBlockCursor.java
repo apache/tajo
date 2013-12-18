@@ -74,7 +74,7 @@ public class TestExecutionBlockCursor {
 
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(conf);
 
     AbstractStorageManager sm  = StorageManagerFactory.getStorageManager(conf);
     dispatcher = new AsyncDispatcher();

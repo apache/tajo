@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.CreateTable.ColumnDefinition;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.Specifier;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -50,10 +50,13 @@ import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Stack;
 
 import static org.apache.tajo.algebra.Aggregation.GroupType;
+import static org.apache.tajo.algebra.CreateTable.ColumnPartition;
+import static org.apache.tajo.algebra.CreateTable.PartitionType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 
@@ -407,7 +410,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // 3. build this plan:
     EvalNode searchCondition = createEvalTree(plan, block, selection.getQual());
-    SelectionNode selectionNode = new SelectionNode(plan.newPID(), searchCondition);
+    EvalNode simplified = AlgebraicUtil.eliminateConstantExprs(searchCondition);
+    SelectionNode selectionNode = new SelectionNode(plan.newPID(), simplified);
 
     // 4. set child plan, update input/output schemas:
     selectionNode.setChild(child);
@@ -772,8 +776,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       return storeNode;
     } else {
-      CreateTableNode createTableNode = new CreateTableNode(context.plan.newPID(), expr.getTableName(),
-          convertTableElementsSchema(expr.getTableElements()));
+
+      Schema tableSchema;
+      if (expr.hasPartition() && expr.getPartition().getPartitionType() == PartitionType.COLUMN &&
+          ((ColumnPartition)expr.getPartition()).isOmitValues()) {
+        ColumnDefinition [] merged = TUtil.concat(expr.getTableElements(),
+            ((ColumnPartition)expr.getPartition()).getColumns());
+        tableSchema = convertTableElementsSchema(merged);
+      } else {
+        tableSchema = convertTableElementsSchema(expr.getTableElements());
+      }
+
+      CreateTableNode createTableNode = new CreateTableNode(
+          context.plan.newPID(),
+          expr.getTableName(),
+          tableSchema);
 
       if (expr.isExternal()) {
         createTableNode.setExternal(true);
@@ -811,28 +828,28 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return
    * @throws PlanningException
    */
-  private Partitions convertTableElementsPartition(PlanContext context,
+  private PartitionDesc convertTableElementsPartition(PlanContext context,
                                                    CreateTable expr) throws PlanningException {
     Schema schema = convertTableElementsSchema(expr.getTableElements());
-    Partitions partitions = null;
+    PartitionDesc partitionDesc = null;
     List<Specifier> specifiers = null;
     if (expr.hasPartition()) {
-      partitions = new Partitions();
+      partitionDesc = new PartitionDesc();
       specifiers = TUtil.newList();
 
-      partitions.setPartitionsType(CatalogProtos.PartitionsType.valueOf(expr.getPartition()
+      partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.valueOf(expr.getPartition()
           .getPartitionType().name()));
 
-      if (expr.getPartition().getPartitionType().equals(CreateTable.PartitionType.HASH)) {
+      if (expr.getPartition().getPartitionType().equals(PartitionType.HASH)) {
         CreateTable.HashPartition hashPartition = expr.getPartition();
 
-        partitions.setColumns(convertTableElementsColumns(expr.getTableElements()
+        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
             , hashPartition.getColumns()));
 
         if (hashPartition.getColumns() != null) {
           if (hashPartition.getQuantifier() != null) {
             String quantity = ((LiteralValue)hashPartition.getQuantifier()).getValue();
-            partitions.setNumPartitions(Integer.parseInt(quantity));
+            partitionDesc.setNumPartitions(Integer.parseInt(quantity));
           }
 
           if (hashPartition.getSpecifiers() != null) {
@@ -841,21 +858,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             }
           }
 
-          if (specifiers.isEmpty() && partitions.getNumPartitions() > 0) {
-            for (int i = 0; i < partitions.getNumPartitions(); i++) {
-              String partitionName = partitions.getPartitionsType().name() + "_" + expr
+          if (specifiers.isEmpty() && partitionDesc.getNumPartitions() > 0) {
+            for (int i = 0; i < partitionDesc.getNumPartitions(); i++) {
+              String partitionName = partitionDesc.getPartitionsType().name() + "_" + expr
                   .getTableName() + "_" + i;
               specifiers.add(new Specifier(partitionName));
             }
           }
 
           if (!specifiers.isEmpty())
-            partitions.setSpecifiers(specifiers);
+            partitionDesc.setSpecifiers(specifiers);
         }
-      } else if (expr.getPartition().getPartitionType().equals(CreateTable.PartitionType.LIST)) {
+      } else if (expr.getPartition().getPartitionType().equals(PartitionType.LIST)) {
         CreateTable.ListPartition listPartition = expr.getPartition();
 
-        partitions.setColumns(convertTableElementsColumns(expr.getTableElements()
+        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
             , listPartition.getColumns()));
 
         if (listPartition.getSpecifiers() != null) {
@@ -876,12 +893,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             specifiers.add(specifier);
           }
           if (!specifiers.isEmpty())
-            partitions.setSpecifiers(specifiers);
+            partitionDesc.setSpecifiers(specifiers);
         }
-      } else if (expr.getPartition().getPartitionType().equals(CreateTable.PartitionType.RANGE)) {
+      } else if (expr.getPartition().getPartitionType().equals(PartitionType.RANGE)) {
         CreateTable.RangePartition rangePartition = expr.getPartition();
 
-        partitions.setColumns(convertTableElementsColumns(expr.getTableElements()
+        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
             , rangePartition.getColumns()));
 
         if (rangePartition.getSpecifiers() != null) {
@@ -903,17 +920,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             specifiers.add(specifier);
           }
           if (!specifiers.isEmpty())
-            partitions.setSpecifiers(specifiers);
+            partitionDesc.setSpecifiers(specifiers);
         }
-      } else if (expr.getPartition().getPartitionType().equals(CreateTable.PartitionType.COLUMN)) {
-        CreateTable.ColumnPartition columnPartition = expr.getPartition();
-
-        partitions.setColumns(convertTableElementsColumns(expr.getTableElements()
-            , columnPartition.getColumns()));
+      } else if (expr.getPartition().getPartitionType() == PartitionType.COLUMN) {
+        ColumnPartition columnPartition = expr.getPartition();
+        partitionDesc.setColumns(convertTableElementsSchema(columnPartition.getColumns()).getColumns());
+        partitionDesc.setOmitValues(columnPartition.isOmitValues());
       }
     }
 
-    return partitions;
+    return partitionDesc;
   }
 
 
@@ -933,7 +949,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return schema;
   }
 
-  private List<Column> convertTableElementsColumns(CreateTable.ColumnDefinition [] elements,
+  private Collection<Column> convertTableElementsColumns(CreateTable.ColumnDefinition [] elements,
                                                    ColumnReferenceExpr[] references) {
     List<Column> columnList = TUtil.newList();
 
