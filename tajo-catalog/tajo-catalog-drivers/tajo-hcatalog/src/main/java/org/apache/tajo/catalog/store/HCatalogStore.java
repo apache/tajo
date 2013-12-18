@@ -175,18 +175,19 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
       }
 
+      // set partition keys
       if (table.getPartitionKeys() != null) {
-        partitions = new Partitions();
-        List<FieldSchema> partitionKeys = table.getPartitionKeys();
-        for(int i = 0; i < partitionKeys.size(); i++) {
-          FieldSchema fieldSchema = partitionKeys.get(i);
-          TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
-          partitions.addColumn(new Column(fieldSchema.getName(), dataType));
+        if (table.getPartitionKeys().size() > 0) {
+          partitions = new Partitions();
+          List<FieldSchema> partitionKeys = table.getPartitionKeys();
+          for(int i = 0; i < partitionKeys.size(); i++) {
+            FieldSchema fieldSchema = partitionKeys.get(i);
+            TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            partitions.addColumn(new Column(fieldSchema.getName(), dataType));
+          }
+          partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
         }
-        partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
       }
-
-
     } finally {
       HCatUtil.closeHiveClientQuietly(client);
     }
@@ -199,7 +200,6 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     if (partitions != null) {
       tableDesc.setPartitions(partitions);
     }
-
     return tableDesc;
   }
 

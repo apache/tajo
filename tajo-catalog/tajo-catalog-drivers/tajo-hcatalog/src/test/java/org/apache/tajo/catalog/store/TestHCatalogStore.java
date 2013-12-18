@@ -44,8 +44,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * TestHCatalogStore. Test case for
@@ -249,6 +248,7 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(6).getDataType().getType());
     assertEquals("c_comment", columns.get(7).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(7).getDataType().getType());
+    assertNull(table.getPartitions());
 
     table = store.getTable(DB_NAME + "." + NATION);
     columns = table.getSchema().getColumns();
@@ -264,6 +264,7 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(3).getDataType().getType());
     assertEquals("type", columns.get(4).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(4).getDataType().getType());
+    assertNotNull(table.getPartitions());
     assertEquals("type", table.getPartitions().getColumn(0).getColumnName());
     assertEquals(CatalogProtos.PartitionsType.COLUMN, table.getPartitions().getPartitionsType());
   }

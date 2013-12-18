@@ -155,6 +155,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-426: HCatalogStore created partitions automatically. (jaehwa)
+
     TAJO-418: sort operator after inline views consisting of unions can cause 
     an incorrect distributed plan. (hyunsik)
 
