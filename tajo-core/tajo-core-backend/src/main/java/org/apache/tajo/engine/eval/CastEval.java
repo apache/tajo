@@ -111,11 +111,11 @@ public class CastEval extends EvalNode {
   @Override
   public void preOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
-    visitor.visit(operand);
+    operand.preOrder(visitor);
   }
 
   public void postOrder(EvalNodeVisitor visitor) {
-    visitor.visit(operand);
+    operand.postOrder(visitor);
     visitor.visit(this);
   }
 
