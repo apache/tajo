@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.Message;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,6 +34,7 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URI;
@@ -58,6 +58,7 @@ public class RawFile {
     private static final int RECORD_SIZE = 4;
     private boolean eof = false;
     private long fileSize;
+    private FileInputStream fis;
 
     public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
       super(conf, schema, meta, null);
@@ -74,15 +75,15 @@ public class RawFile {
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       // TODO - to make it unified one.
       URI uri = path.toUri();
-      RandomAccessFile raf = new RandomAccessFile(new File(uri), "r");
-      channel = raf.getChannel();
+      fis = new FileInputStream(new File(uri));
+      channel = fis.getChannel();
       fileSize = channel.size();
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + path + "," + channel.position() + ", size :" + channel.size());
       }
 
-      buffer = ByteBuffer.allocateDirect(65535 * 4);
+      buffer = ByteBuffer.allocateDirect(128 * 1024);
 
       columnTypes = new DataType[schema.getColumnNum()];
       for (int i = 0; i < schema.getColumnNum(); i++) {
@@ -103,17 +104,27 @@ public class RawFile {
 
     @Override
     public long getNextOffset() throws IOException {
-      return channel.position();
+      return channel.position() - buffer.remaining();
     }
 
     @Override
     public void seek(long offset) throws IOException {
-      channel.position(offset);
+      long currentPos = channel.position();
+      if(currentPos < offset &&  offset < currentPos + buffer.limit()){
+        buffer.position((int)(offset - currentPos));
+      } else {
+        buffer.clear();
+        channel.position(offset);
+        channel.read(buffer);
+        buffer.flip();
+        eof = false;
+      }
     }
 
     private boolean fillBuffer() throws IOException {
       buffer.compact();
       if (channel.read(buffer) == -1) {
+        eof = true;
         return false;
       } else {
         buffer.flip();
@@ -132,18 +143,15 @@ public class RawFile {
       }
 
       // backup the buffer state
-      int recordOffset = buffer.position();
       int bufferLimit = buffer.limit();
-
       int recordSize = buffer.getInt();
       int nullFlagSize = buffer.getShort();
+
       buffer.limit(buffer.position() + nullFlagSize);
       nullFlags.fromByteBuffer(buffer);
-
       // restore the start of record contents
       buffer.limit(bufferLimit);
-      buffer.position(recordOffset + headerSize);
-
+      //buffer.position(recordOffset + headerSize);
       if (buffer.remaining() < (recordSize - headerSize)) {
         if (!fillBuffer()) {
           return null;
@@ -249,26 +257,6 @@ public class RawFile {
       return tuple;
     }
 
-    /**
-     * It reads a variable byte array whose length is represented as a variable unsigned integer.
-     *
-     * @return A byte array read
-     */
-    private byte [] getColumnBytes() throws IOException {
-      byte [] lenBytesLen = new byte[4];
-      buffer.mark();
-      buffer.get(lenBytesLen);
-      CodedInputStream ins = CodedInputStream.newInstance(lenBytesLen);
-      int bytesLen = ins.readUInt32(); // get a variable unsigned integer length to be read
-      int read = ins.getTotalBytesRead();
-      buffer.reset();
-      buffer.position(buffer.position() + read);
-
-      byte [] rawBytes = new byte[bytesLen];
-      buffer.get(rawBytes);
-      return rawBytes;
-    }
-
     @Override
     public void reset() throws IOException {
       // clear the buffer
@@ -284,6 +272,7 @@ public class RawFile {
     public void close() throws IOException {
       buffer.clear();
       channel.close();
+      fis.close();
     }
 
     @Override
@@ -311,6 +300,7 @@ public class RawFile {
     private BitArray nullFlags;
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
+    private long pos;
 
     private TableStatistics stats;
 
@@ -324,13 +314,14 @@ public class RawFile {
       File file = new File(path.toUri());
       randomAccessFile = new RandomAccessFile(file, "rw");
       channel = randomAccessFile.getChannel();
+      pos = 0;
 
       columnTypes = new DataType[schema.getColumnNum()];
       for (int i = 0; i < schema.getColumnNum(); i++) {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buffer = ByteBuffer.allocateDirect(65535);
+      buffer = ByteBuffer.allocateDirect(64 * 1024);
 
       // comput the number of bytes, representing the null flags
 
@@ -346,7 +337,7 @@ public class RawFile {
 
     @Override
     public long getOffset() throws IOException {
-      return channel.position();
+      return pos;
     }
 
     private void flushBuffer() throws IOException {
@@ -386,8 +377,7 @@ public class RawFile {
 
       // skip the row header
       int recordOffset = buffer.position();
-      buffer.position(buffer.position() + headerSize);
-
+      buffer.position(recordOffset + headerSize);
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.getColumnNum(); i++) {
@@ -496,13 +486,15 @@ public class RawFile {
       }
 
       // write a record header
-      int pos = buffer.position();
+      int bufferPos = buffer.position();
       buffer.position(recordOffset);
-      buffer.putInt(pos - recordOffset);
+      buffer.putInt(bufferPos - recordOffset);
       byte [] flags = nullFlags.toArray();
       buffer.putShort((short) flags.length);
       buffer.put(flags);
-      buffer.position(pos);
+
+      pos += bufferPos - recordOffset;
+      buffer.position(bufferPos);
 
       if (enabledStats) {
         stats.incrementRow();
@@ -512,12 +504,18 @@ public class RawFile {
     @Override
     public void flush() throws IOException {
       flushBuffer();
-      channel.force(true);
     }
 
     @Override
     public void close() throws IOException {
       flush();
+      if (enabledStats) {
+        stats.setNumBytes(getOffset());
+      }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
+      }
+      channel.close();
       randomAccessFile.close();
     }
 

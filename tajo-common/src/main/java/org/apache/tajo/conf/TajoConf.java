@@ -136,6 +136,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     PULLSERVER_PORT("tajo.pullserver.port", 0),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
+    SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
 
     //////////////////////////////////
     // Storage Configuration

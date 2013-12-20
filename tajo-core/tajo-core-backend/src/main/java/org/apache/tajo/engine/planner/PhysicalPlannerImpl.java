@@ -90,7 +90,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                            PhysicalExec execPlan) throws IOException {
     DataChannel channel = context.getDataChannel();
     StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
-    storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
+    if(context.isInterQuery()) storeTableNode.setStorageType(context.getDataChannel().getStoreType());
     storeTableNode.setInSchema(plan.getOutSchema());
     storeTableNode.setOutSchema(plan.getOutSchema());
     if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
@@ -773,7 +773,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
     List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), CatalogProtos.StoreType.CSV, fragmentProtos);
+        FragmentConvertor.convert(ctx.getConf(), ctx.getDataChannel().getStoreType(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");

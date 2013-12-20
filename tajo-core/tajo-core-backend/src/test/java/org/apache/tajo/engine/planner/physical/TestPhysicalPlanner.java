@@ -455,7 +455,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
     FileSystem fs = sm.getFileSystem();
 
@@ -513,7 +513,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -597,7 +597,7 @@ public class TestPhysicalPlanner {
     System.out.println(rootNode.toString());
 
     // Set all aggregation functions to the first phase mode
-    GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
+    GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
     for (Target target : groupbyNode.getTargets()) {
       for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
         if (eval instanceof AggregationFunctionCallEval) {
@@ -795,12 +795,13 @@ public class TestPhysicalPlanner {
         keySchema, comp);
     reader.open();
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, new Options());
+    TableMeta meta = CatalogUtil.newTableMeta(channel.getStoreType(), new Options());
     SeekableScanner scanner =
-        StorageManagerFactory.getSeekableScanner(conf, meta, employee.getSchema(), outputPath);
+        StorageManagerFactory.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);
     scanner.init();
 
     int cnt = 0;
+
     while(scanner.next() != null) {
       cnt++;
     }
@@ -814,7 +815,8 @@ public class TestPhysicalPlanner {
       long offsets = reader.find(keytuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]" , ("name_" + i).equals(tuple.get(0).asChars()));
+
+      assertTrue("[seek check " + (i) + " ]", ("name_" + i).equals(tuple.get(0).asChars()));
       assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt4());
     }
 

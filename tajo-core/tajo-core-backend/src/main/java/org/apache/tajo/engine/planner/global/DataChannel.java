@@ -36,7 +36,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private StoreType storeType = StoreType.CSV;
+  private StoreType storeType = StoreType.RAW;
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;
@@ -76,6 +76,10 @@ public class DataChannel {
     }
     if (proto.hasPartitionNum()) {
       this.partitionNum = proto.getPartitionNum();
+    }
+
+    if (proto.hasStoreType()) {
+      this.storeType = proto.getStoreType();
     }
   }
 
@@ -162,6 +166,10 @@ public class DataChannel {
     }
     if (partitionNum != null) {
       builder.setPartitionNum(partitionNum);
+    }
+
+    if(storeType != null){
+      builder.setStoreType(storeType);
     }
     return builder.build();
   }

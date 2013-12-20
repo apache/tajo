@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
@@ -66,8 +65,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasPartitionKey());
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    
+    this.meta = CatalogUtil.newTableMeta(context.getDataChannel().getStoreType());
     // about the partitions
     this.numPartitions = this.plan.getNumPartitions();
     int i = 0;
