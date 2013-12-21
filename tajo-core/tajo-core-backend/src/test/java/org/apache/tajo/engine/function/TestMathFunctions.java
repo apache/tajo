@@ -84,6 +84,25 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testCeiling() throws IOException {
+    testSimpleEval("select ceiling(5.0) as col1 ", new String[]{"5"});
+    testSimpleEval("select ceiling(5.1) as col1 ", new String[]{"6"});
+    testSimpleEval("select ceiling(5.5) as col1 ", new String[]{"6"});
+    testSimpleEval("select ceiling(5.6) as col1 ", new String[]{"6"});
+
+    testSimpleEval("select ceiling(-5.1) as col1 ", new String[]{"-5"});
+    testSimpleEval("select ceiling(-5.6) as col1 ", new String[]{"-5"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT8);
+    schema.addColumn("col2", FLOAT8);
+    schema.addColumn("col3", FLOAT8);
+
+    testEval(schema, "table1", "1.0, 0.2, 0.1", "select ceiling(col1 + col2 + col3) from table1",
+        new String[]{"2"});
+  }
+
+  @Test
   public void testSin() throws IOException {
     testSimpleEval("select sin(0.0) as col1 ", new String[]{"0.0"});
     testSimpleEval("select sin(0.7) as col1 ", new String[]{"0.644217687237691"});
