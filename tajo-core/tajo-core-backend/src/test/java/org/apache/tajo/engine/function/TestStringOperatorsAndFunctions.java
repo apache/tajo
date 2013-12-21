@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
@@ -519,5 +520,27 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testQuote_ident() throws IOException {
     testSimpleEval("select quote_ident('Foo bar') ", new String[]{"\"Foo bar\""});
     testSimpleEval("select QUOTE_IDENT('Tajo Function') ", new String[]{"\"Tajo Function\""});
+  }
+
+  @Test
+  public void testEncode() throws IOException {
+    testSimpleEval("select encode('Hello\nworld', 'base64') ", new String[]{"SGVsbG8Kd29ybGQ="});
+    testSimpleEval("select encode('Hello\nworld', 'hex') ", new String[]{"0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64"});
+    testSimpleEval("select encode('한글', 'base64') ", new String[]{"7ZWc6riA"});
+    testSimpleEval("select encode('한글', 'hex') ", new String[]{"0xd55c0xae00"});
+    testSimpleEval("select encode('한글\n테스트\t입니다.', 'hex') ",
+        new String[]{"0xd55c0xae000x0a0xd14c0xc2a40xd2b80x090xc7850xb2c80xb2e40x2e"});
+  }
+
+
+  @Test
+  public void testDecode() throws IOException {
+    testSimpleEval("select decode('SGVsbG8Kd29ybGQ=', 'base64') ", new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
+    testSimpleEval("select decode('0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64', 'hex') ",
+        new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
+    testSimpleEval("select decode('7ZWc6riA', 'base64') ", new String[]{StringEscapeUtils.escapeJava("한글")});
+    testSimpleEval("select decode('0xd55c0xae00', 'hex') ", new String[]{StringEscapeUtils.escapeJava("한글")});
+    testSimpleEval("select decode('0xd55c0xae000x0a0xd14c0xc2a40xd2b80x090xc7850xb2c80xb2e40x2e', 'hex') ",
+        new String[]{StringEscapeUtils.escapeJava("한글\n" + "테스트\t입니다.")});
   }
 }

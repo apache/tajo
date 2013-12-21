@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-382: Implement encode/decode functions. (Seungun Choe via jihoon)
+
     TAJO-436: Implement ceiling(FLOAT8) function. (DaeMyung Kang via hyunsik)
 
     TAJO-338 : Add Query Optimization Part for Column-Partitioned Tables.
