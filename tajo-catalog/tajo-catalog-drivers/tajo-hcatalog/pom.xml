@@ -129,14 +129,15 @@
       </properties>
       <dependencies>
         <dependency>
+          <groupId>javax.jdo</groupId>
+          <artifactId>jdo2-api</artifactId>
+          <version>2.3-eb</version>
+        </dependency>
+        <dependency>
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-exec</artifactId>
           <version>${hive.version}</version>
           <exclusions>
-            <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
@@ -169,10 +170,6 @@
           <version>${hive.version}</version>
           <exclusions>
             <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
-            <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
             </exclusion>
@@ -204,10 +201,6 @@
           <version>${hive.version}</version>
           <exclusions>
             <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
-            <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
             </exclusion>
@@ -238,10 +231,6 @@
           <artifactId>hcatalog-core</artifactId>
           <version>${hive.version}</version>
           <exclusions>
-            <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
@@ -286,14 +275,15 @@
       </properties>
       <dependencies>
         <dependency>
+          <groupId>javax.jdo</groupId>
+          <artifactId>jdo2-api</artifactId>
+          <version>2.3-eb</version>
+        </dependency>
+        <dependency>
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-exec</artifactId>
           <version>${hive.version}</version>
           <exclusions>
-            <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
@@ -326,10 +316,6 @@
           <version>${hive.version}</version>
           <exclusions>
             <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
-            <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
             </exclusion>
@@ -361,10 +347,6 @@
           <version>${hive.version}</version>
           <exclusions>
             <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
-            <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>
             </exclusion>
@@ -395,10 +377,6 @@
           <artifactId>hcatalog-core</artifactId>
           <version>${hive.version}</version>
           <exclusions>
-            <exclusion>
-              <groupId>javax.jdo</groupId>
-              <artifactId>jdo2-api</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-builtins</artifactId>

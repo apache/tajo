@@ -170,6 +170,7 @@ public class TestHCatalogStore {
       if(fs.exists(path)) {
         fs.delete(path, true);
       }
+      fs.close();
     } catch (NoSuchObjectException e) {
     } catch (InvalidOperationException e) {
     } catch (Exception e) {
@@ -279,7 +280,18 @@ public class TestHCatalogStore {
 
   @Test
   public void testDeleteTable() throws Exception {
+    TableDesc table = store.getTable(DB_NAME + "." + CUSTOMER);
+    Path customerPath = table.getPath();
+
+    table = store.getTable(DB_NAME + "." + NATION);
+    Path nationPath = table.getPath();
+
     store.deleteTable(DB_NAME + "." + CUSTOMER);
     store.deleteTable(DB_NAME + "." + NATION);
+
+    FileSystem fs = FileSystem.getLocal(new Configuration());
+    assertTrue(fs.exists(customerPath));
+    assertTrue(fs.exists(nationPath));
+    fs.close();
   }
 }

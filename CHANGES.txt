@@ -164,6 +164,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-431: HCatalogStore can't write any data using INSERT OVERWRITE clause. (jaehwa)
+
     TAJO-442: Cast operator with nested functions causes NPE. (hyunsik)
 
     TAJO-426: HCatalogStore created partitions automatically. (jaehwa)

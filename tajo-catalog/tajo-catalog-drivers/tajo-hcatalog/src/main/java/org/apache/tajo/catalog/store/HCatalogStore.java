@@ -336,7 +336,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
     try {
       client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
-      client.dropTable(dbName, tableName);
+      client.dropTable(dbName, tableName, false, false);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new IOException(e);
