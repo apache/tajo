@@ -38,6 +38,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TablePrimarySubQuery expr) throws PlanningException;
   RESULT visitRelationList(CONTEXT ctx, Stack<OpType> stack, RelationList expr) throws PlanningException;
   RESULT visitRelation(CONTEXT ctx, Stack<OpType> stack, Relation expr) throws PlanningException;
+  RESULT visitScalarSubQuery(CONTEXT ctx, Stack<OpType> stack, ScalarSubQuery expr) throws PlanningException;
 
   // Data definition language
   RESULT visitCreateTable(CONTEXT ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException;
@@ -93,8 +94,10 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
 
   // Literal
   RESULT visitCastExpr(CONTEXT ctx, Stack<OpType> stack, CastExpr expr) throws PlanningException;
-  RESULT visitScalarSubQuery(CONTEXT ctx, Stack<OpType> stack, ScalarSubQuery expr) throws PlanningException;
-  RESULT visitLiteral(CONTEXT ctx, Stack<OpType> stack, LiteralValue expr) throws PlanningException;
-  RESULT visitNullValue(CONTEXT ctx, Stack<OpType> stack, NullValue expr) throws PlanningException;
+
   RESULT visitDataType(CONTEXT ctx, Stack<OpType> stack, DataTypeExpr expr) throws PlanningException;
+  RESULT visitLiteral(CONTEXT ctx, Stack<OpType> stack, LiteralValue expr) throws PlanningException;
+  RESULT visitNullLiteral(CONTEXT ctx, Stack<OpType> stack, NullLiteral expr) throws PlanningException;
+  RESULT visitTimestampLiteral(CONTEXT ctx, Stack<OpType> stack, TimestampLiteral expr) throws PlanningException;
+
 }

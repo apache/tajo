@@ -216,8 +216,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case Literal:
       current = visitLiteral(ctx, stack, (LiteralValue) expr);
       break;
-    case Null:
-      current = visitNullValue(ctx, stack, (NullValue) expr);
+    case NullLiteral:
+      current = visitNullLiteral(ctx, stack, (NullLiteral) expr);
       break;
     case DataType:
       current = visitDataType(ctx, stack, (DataTypeExpr) expr);
@@ -330,6 +330,14 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   @Override
   public RESULT visitRelation(CONTEXT ctx, Stack<OpType> stack, Relation expr) throws PlanningException {
     return null;
+  }
+
+  @Override
+  public RESULT visitScalarSubQuery(CONTEXT ctx, Stack<OpType> stack, ScalarSubQuery expr) throws PlanningException {
+    stack.push(OpType.ScalarSubQuery);
+    RESULT result = visit(ctx, stack, expr.getSubQuery());
+    stack.pop();
+    return result;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,6 +520,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Arithmetic Operators
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   @Override
   public RESULT visitPlus(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
@@ -536,6 +548,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitModular(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Other Expressions
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
   public RESULT visitSign(CONTEXT ctx, Stack<OpType> stack, SignedExpr expr) throws PlanningException {
@@ -567,6 +583,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     return result;
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // General Set Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   @Override
   public RESULT visitCountRowsFunction(CONTEXT ctx, Stack<OpType> stack, CountRowsFunctionExpr expr)
       throws PlanningException {
@@ -585,18 +605,19 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     return result;
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Literal Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public RESULT visitDataType(CONTEXT ctx, Stack<OpType> stack, DataTypeExpr expr) throws PlanningException {
+    return null;
+  }
+
   @Override
   public RESULT visitCastExpr(CONTEXT ctx, Stack<OpType> stack, CastExpr expr) throws PlanningException {
     stack.push(OpType.Cast);
     RESULT result = visit(ctx, stack, expr.getOperand());
-    stack.pop();
-    return result;
-  }
-
-  @Override
-  public RESULT visitScalarSubQuery(CONTEXT ctx, Stack<OpType> stack, ScalarSubQuery expr) throws PlanningException {
-    stack.push(OpType.ScalarSubQuery);
-    RESULT result = visit(ctx, stack, expr.getSubQuery());
     stack.pop();
     return result;
   }
@@ -607,12 +628,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitNullValue(CONTEXT ctx, Stack<OpType> stack, NullValue expr) throws PlanningException {
+  public RESULT visitNullLiteral(CONTEXT ctx, Stack<OpType> stack, NullLiteral expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitDataType(CONTEXT ctx, Stack<OpType> stack, DataTypeExpr expr) throws PlanningException {
+  public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<OpType> stack, TimestampLiteral expr) throws PlanningException {
     return null;
   }
 }

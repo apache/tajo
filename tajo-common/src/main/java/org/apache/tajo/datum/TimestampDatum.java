@@ -53,6 +53,10 @@ public class TimestampDatum extends Datum {
     this.dateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
   }
 
+  public DateTime getDateTime() {
+    return dateTime;
+  }
+
   public int getYear() {
     return dateTime.getYear();
   }

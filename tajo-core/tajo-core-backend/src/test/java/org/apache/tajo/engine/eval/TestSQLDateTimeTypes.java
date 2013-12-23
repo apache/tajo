@@ -16,26 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.engine.eval;
 
-import com.google.gson.*;
-import org.apache.tajo.datum.TimestampDatum;
+import org.junit.Test;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
 
-public class TimestampDatumAdapter implements GsonSerDerAdapter<TimestampDatum> {
+public class TestSQLDateTimeTypes extends ExprTestBase {
 
-	@Override
-	public TimestampDatum deserialize(JsonElement json, Type typeOfT,
-                                    JsonDeserializationContext context) throws JsonParseException {
-		JsonObject jsonObject = json.getAsJsonObject();
-		return new TimestampDatum(jsonObject.get("val").getAsLong());
-	}
-
-	@Override
-	public JsonElement serialize(TimestampDatum src, Type typeOfSrc, JsonSerializationContext context) {
-		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("val", src.asInt8());
-		return jsonObj;
-	}
+  @Test
+  public void testToTimestamp() throws IOException {
+    testSimpleEval("select to_char(TIMESTAMP '1970-01-17 10:09:37', 'yyyy-MM-dd HH:mm:ss');",
+        new String[]{"1970-01-17 10:09:37"});
+  }
 }

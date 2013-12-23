@@ -1048,7 +1048,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitNullCondition(HiveParser.NullConditionContext ctx) {
-    return new NullValue();
+    return new NullLiteral();
   }
 
   @Override
@@ -1069,7 +1069,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     Expr current = null;
 
     if (ctx.KW_NULL() != null) {
-      current = new NullValue();
+      current = new NullLiteral();
     }
     if (ctx.constant() != null) {
       current = visitConstant(ctx.constant());

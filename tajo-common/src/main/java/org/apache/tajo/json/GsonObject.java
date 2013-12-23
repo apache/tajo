@@ -19,5 +19,5 @@
 package org.apache.tajo.json;
 
 public interface GsonObject {
-  String toJson();
+  public String toJson();
 }

@@ -9,7 +9,7 @@ FROM
   SELECT
     l_orderkey,
     l_partkey,
-    "abc" as query
+    'abc' as query
   FROM
     lineitem
   WHERE
@@ -20,7 +20,7 @@ FROM
   SELECT
     l_orderkey,
     l_partkey,
-    "bbc" as query
+    'bbc' as query
   FROM
     lineitem
   WHERE

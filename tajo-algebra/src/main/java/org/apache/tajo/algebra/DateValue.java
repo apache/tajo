@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,14 +18,46 @@
 
 package org.apache.tajo.algebra;
 
-public class NullValue extends Expr {
+import com.google.common.base.Objects;
 
-  public NullValue() {
-    super(OpType.Null);
+public class DateValue {
+  private String years;
+  private String months;
+  private String days;
+
+  public DateValue(String years, String months, String days) {
+
+    this.years = years;
+    this.months = months;
+    this.days = days;
+  }
+
+  public String getYears() {
+    return years;
+  }
+
+  public String getMonths() {
+    return months;
+  }
+
+  public String getDays() {
+    return days;
+  }
+
+  public String toString() {
+    return String.format("%s-%s-%s", years, months, days);
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(years, months, days);
   }
 
   @Override
-  boolean equalsTo(Expr expr) {
-    return expr instanceof NullValue;
+  public boolean equals(Object object) {
+    if (object instanceof DateValue) {
+      DateValue another = (DateValue) object;
+      return years.equals(another.years) && months.equals(another.months) && days.equals(another.days);
+    }
+    return false;
   }
 }

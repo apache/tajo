@@ -42,7 +42,7 @@ import org.junit.BeforeClass;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class ExprTestBase {
   private static TajoTestingCluster util;
@@ -69,7 +69,7 @@ public class ExprTestBase {
   }
 
   private static void assertJsonSerDer(EvalNode expr) {
-    String json = expr.toJson();
+    String json = CoreGsonHelper.toJson(expr, EvalNode.class);
     EvalNode fromJson = CoreGsonHelper.fromJson(json, EvalNode.class);
     assertEquals(expr, fromJson);
   }
@@ -122,7 +122,7 @@ public class ExprTestBase {
     try {
       targets = getRawTargets(query);
     } catch (PlanningException e) {
-      assertTrue("Wrong query statement: " + query, false);
+      assertFalse(e.getMessage(), true);
     }
 
     EvalContext [] evalContexts = new EvalContext[targets.length];

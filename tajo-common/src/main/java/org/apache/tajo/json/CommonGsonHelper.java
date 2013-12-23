@@ -20,10 +20,7 @@ package org.apache.tajo.json;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.tajo.datum.DateDatum;
-import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;
@@ -39,9 +36,6 @@ public class CommonGsonHelper {
 	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
     Map<Type, GsonSerDerAdapter> adapters = TUtil.newHashMap();
     adapters.put(Datum.class, new DatumAdapter());
-    adapters.put(TimestampDatum.class, new TimestampDatumAdapter());
-    adapters.put(DateDatum.class, new DateDatumAdapter());
-    adapters.put(TimeDatum.class, new TimeDatumAdapter());
 
     return adapters;
 	}

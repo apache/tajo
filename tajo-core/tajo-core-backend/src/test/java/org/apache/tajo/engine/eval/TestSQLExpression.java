@@ -62,8 +62,8 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testCastWithNestedFunction() throws IOException {
-    testSimpleEval("select to_timestamp(CAST(split_part('1386577650.123', '.', 1) as INT8));",
-        new String[] {"1970-01-17 10:09:37"});
+    testSimpleEval("select to_char(to_timestamp(CAST(split_part('1386577650.123', '.', 1) as INT8)), " +
+        "'yyyy-MM-dd HH:mm:ss');", new String[] {"1970-01-17 10:09:37"});
   }
 
   @Test

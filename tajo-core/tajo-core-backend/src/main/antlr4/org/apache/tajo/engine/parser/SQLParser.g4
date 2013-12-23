@@ -182,7 +182,16 @@ unsigned_literal
 
 general_literal
   : Character_String_Literal
+  | datetime_literal
   | boolean_literal
+  ;
+
+datetime_literal
+  : timestamp_literal
+  ;
+
+timestamp_literal
+  : TIMESTAMP timestamp_string=Character_String_Literal
   ;
 
 boolean_literal

@@ -16,26 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.algebra;
 
-import com.google.gson.*;
-import org.apache.tajo.datum.TimeDatum;
+public class NullLiteral extends Expr {
 
-import java.lang.reflect.Type;
+  public NullLiteral() {
+    super(OpType.NullLiteral);
+  }
 
-public class TimeDatumAdapter implements GsonSerDerAdapter<TimeDatum> {
-
-	@Override
-	public TimeDatum deserialize(JsonElement json, Type typeOfT,
-                                    JsonDeserializationContext context) throws JsonParseException {
-		JsonObject jsonObject = json.getAsJsonObject();
-		return new TimeDatum(jsonObject.get("val").getAsLong());
-	}
-
-	@Override
-	public JsonElement serialize(TimeDatum src, Type typeOfSrc, JsonSerializationContext context) {
-		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("val", src.asInt8());
-		return jsonObj;
-	}
+  @Override
+  boolean equalsTo(Expr expr) {
+    return expr instanceof NullLiteral;
+  }
 }

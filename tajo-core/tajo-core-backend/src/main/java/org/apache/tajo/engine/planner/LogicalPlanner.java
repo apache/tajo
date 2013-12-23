@@ -38,6 +38,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.exception.UndefinedFunctionException;
@@ -49,6 +50,7 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.TUtil;
+import org.joda.time.DateTime;
 
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +59,8 @@ import java.util.Stack;
 import static org.apache.tajo.algebra.Aggregation.GroupType;
 import static org.apache.tajo.algebra.CreateTable.ColumnPartition;
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
+
+import org.apache.tajo.algebra.DateValue;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 
@@ -1040,12 +1044,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Expression SECTION
    ===============================================================================================*/
 
-  public EvalNode createEvalTree(LogicalPlan plan, QueryBlock block, final Expr expr)
-      throws PlanningException {
+  public EvalNode createEvalTree(LogicalPlan plan, QueryBlock block, final Expr expr)throws PlanningException {
 
     switch(expr.getType()) {
       // constants
-      case Null:
+      case NullLiteral:
         return new ConstEval(NullDatum.get());
 
       case Literal:
@@ -1064,6 +1067,56 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           default:
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
+
+      case TimestampLiteral: {
+        TimestampLiteral timestampLiteral = (TimestampLiteral) expr;
+        DateValue dateValue = timestampLiteral.getDate();
+        TimeValue timeValue = timestampLiteral.getTime();
+        int years;
+        int months;
+        int days;
+        int hours;
+        int minutes;
+        int seconds;
+
+        years = Integer.valueOf(dateValue.getYears());
+        if (!(1 <= years && years <= 9999)) {
+          throw new PlanningException(String.format("Years (%d) must be between 1 and 9999 integer value", years));
+        }
+        months = Integer.valueOf(dateValue.getMonths());
+        if (!(1 <= months && months <= 12)) {
+          throw new PlanningException(String.format("Months (%d) must be between 1 and 12 integer value", months));
+        }
+        days = Integer.valueOf(dateValue.getDays());
+        if (!(1<= days && days <= 31)) {
+          throw new PlanningException(String.format("Days (%d) must be between 1 and 31 integer value", days));
+        }
+
+        hours = Integer.valueOf(timeValue.getHours());
+        if (!(0 <= hours && hours <= 23)) {
+          throw new PlanningException(String.format("Hours (%d) must be between 0 and 24 integer value", hours));
+        }
+        minutes = Integer.valueOf(timeValue.getMinutes());
+        if (!(0 <= minutes && minutes <= 59)) {
+          throw new PlanningException(String.format("Minutes (%d) must be between 0 and 59 integer value", minutes));
+        }
+        seconds = Integer.valueOf(timeValue.getSeconds());
+        if (!(0 <= seconds && seconds <= 59)) {
+          throw new PlanningException(String.format("Seconds (%d) must be between 0 and 59 integer value", seconds));
+        }
+
+        DateTime dateTime;
+        if (timeValue.hasSecondsFraction()) {
+          int secondsFraction = Integer.valueOf(timeValue.getSecondsFraction());
+          if (!(0 <= secondsFraction && secondsFraction <= 999))
+          throw new PlanningException(String.format("Seconds (%d) must be between 0 and 999 integer value", seconds));
+          dateTime = new DateTime(years, months, days, hours, minutes, seconds, secondsFraction);
+        } else {
+          dateTime = new DateTime(years, months, days, hours, minutes, seconds);
+        }
+
+        return new ConstEval(new TimestampDatum(dateTime));
+      }
 
       case Sign:
         SignedExpr signedExpr = (SignedExpr) expr;
@@ -1205,7 +1258,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         Expr[] params = function.getParams();
         if (params == null) {
             params = new Expr[1];
-            params[0] = new NullValue();
+            params[0] = new NullLiteral();
         }
 
         EvalNode[] givenArgs = new EvalNode[params.length];

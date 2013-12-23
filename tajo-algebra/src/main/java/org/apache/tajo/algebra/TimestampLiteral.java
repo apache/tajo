@@ -16,26 +16,42 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.algebra;
 
-import com.google.gson.*;
-import org.apache.tajo.datum.DateDatum;
+import com.google.common.base.Objects;
 
-import java.lang.reflect.Type;
+public class TimestampLiteral extends Expr {
+  private DateValue date;
+  private TimeValue time;
 
-public class DateDatumAdapter implements GsonSerDerAdapter<DateDatum> {
+  public TimestampLiteral(DateValue date, TimeValue time) {
+    super(OpType.TimestampLiteral);
+    this.date = date;
+    this.time = time;
+  }
 
-	@Override
-	public DateDatum deserialize(JsonElement json, Type typeOfT,
-                                    JsonDeserializationContext context) throws JsonParseException {
-		JsonObject jsonObject = json.getAsJsonObject();
-		return new DateDatum(jsonObject.get("val").getAsInt());
-	}
+  public DateValue getDate() {
+    return date;
+  }
 
-	@Override
-	public JsonElement serialize(DateDatum src, Type typeOfSrc, JsonSerializationContext context) {
-		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("val", src.asInt4());
-		return jsonObj;
-	}
+  public TimeValue getTime() {
+    return time;
+  }
+
+  public String toString() {
+    return date + " " + time;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(date, time);
+  }
+
+  @Override
+  boolean equalsTo(Expr expr) {
+    if (expr instanceof TimestampLiteral) {
+      TimestampLiteral another = (TimestampLiteral) expr;
+      return date.equals(another.date) && time.equals(another.time);
+    }
+    return false;
+  }
 }

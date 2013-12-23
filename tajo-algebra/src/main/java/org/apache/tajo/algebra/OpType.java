@@ -25,20 +25,21 @@ import java.lang.reflect.Type;
 public enum OpType {
 
   // relational operators
-  Projection(Projection.class), // 0
-  Limit(Limit.class), // 1
-  Sort(Sort.class), // 2
-  Having(Having.class), // 3
-  Aggregation(Aggregation.class), // 4
-  Join(Join.class), // 5
-  Filter(Selection.class), // 6
-  Union(SetOperation.class), // 7
-  Except(SetOperation.class), // 8
-  Intersect(SetOperation.class), // 9
-  SimpleTableSubQuery(SimpleTableSubQuery.class), // 10
-  TablePrimaryTableSubQuery(TablePrimarySubQuery.class), // 11
-  RelationList(RelationList.class), // 12
-  Relation(Relation.class), // 13
+  Projection(Projection.class),
+  Limit(Limit.class),
+  Sort(Sort.class),
+  Having(Having.class),
+  Aggregation(Aggregation.class),
+  Join(Join.class),
+  Filter(Selection.class),
+  Union(SetOperation.class),
+  Except(SetOperation.class),
+  Intersect(SetOperation.class),
+  SimpleTableSubQuery(SimpleTableSubQuery.class),
+  TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
+  RelationList(RelationList.class),
+  Relation(Relation.class),
+  ScalarSubQuery(ScalarSubQuery.class),
 
   // Data definition language
   CreateTable(CreateTable.class),
@@ -92,11 +93,11 @@ public enum OpType {
   GeneralSetFunction(GeneralSetFunctionExpr.class),
 
   // Literal
+  DataType(DataTypeExpr.class),
   Cast(CastExpr.class),
-  ScalarSubQuery(ScalarSubQuery.class),
   Literal(LiteralValue.class),
-  Null(NullValue.class),
-  DataType(DataTypeExpr.class);
+  NullLiteral(NullLiteral.class),
+  TimestampLiteral(TimestampLiteral.class);
 
   private Class baseClass;
 

@@ -37,6 +37,9 @@ import java.util.Map;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
+
+import org.apache.tajo.algebra.DateValue;
+import org.apache.tajo.algebra.TimeValue;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -441,7 +444,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   private Expr buildCaseResult(ResultContext result) {
     if (result.NULL() != null) {
-      return new NullValue();
+      return new NullLiteral();
     } else {
       return visitValue_expression(result.value_expression());
     }
@@ -464,7 +467,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
     if (checkIfExist(ctx.NULL())) {
-      return new NullValue();
+      return new NullLiteral();
     } else {
       return visitChildren(ctx);
     }
@@ -825,6 +828,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
     return target;
   }
+
+
 
   @Override
   public Expr visitCharacter_string_type(SQLParser.Character_string_typeContext ctx) {
@@ -1249,8 +1254,48 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitGeneral_literal(SQLParser.General_literalContext ctx) {
     if (checkIfExist(ctx.Character_String_Literal())) {
       return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
+    } else if (checkIfExist(ctx.datetime_literal())) {
+      return visitDatetime_literal(ctx.datetime_literal());
     } else {
       return new BooleanLiteral(checkIfExist(ctx.boolean_literal().TRUE()));
     }
+  }
+
+  @Override
+  public Expr visitDatetime_literal(@NotNull SQLParser.Datetime_literalContext ctx) {
+    return visitTimestamp_literal(ctx.timestamp_literal());
+  }
+
+  @Override
+  public Expr visitTimestamp_literal(SQLParser.Timestamp_literalContext ctx) {
+    String timestampStr = stripQuote(ctx.timestamp_string.getText());
+    String [] parts = timestampStr.split(" ");
+    String datePart = parts[0];
+    String timePart = parts[1];
+    return new TimestampLiteral(parseDate(datePart), parseTime(timePart));
+  }
+
+  private DateValue parseDate(String datePart) {
+    // e.g., 1980-04-01
+    String [] parts = datePart.split("-");
+    return new DateValue(parts[0], parts[1], parts[2]);
+  }
+
+  private TimeValue parseTime(String timePart) {
+    // e.g., 12:01:50.399
+    String [] parts = timePart.split(":");
+
+    TimeValue time;
+    boolean hasFractionOfSeconds = parts[2].indexOf('.') > 0;
+    if (hasFractionOfSeconds) {
+      String [] secondsParts = parts[2].split(".");
+      time = new TimeValue(parts[0], parts[1], secondsParts[0]);
+      if (secondsParts.length == 2) {
+        time.setSecondsFraction(secondsParts[1]);
+      }
+    } else {
+      time = new TimeValue(parts[0], parts[1], parts[2]);
+    }
+    return time;
   }
 }

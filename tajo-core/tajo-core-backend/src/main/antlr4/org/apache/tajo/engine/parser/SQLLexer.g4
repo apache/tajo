@@ -391,6 +391,8 @@ MODULAR : '%';
 DOT : '.';
 UNDERLINE : '_';
 VERTICAL_BAR : '|';
+QUOTE : '\'';
+DOUBLE_QUOTE : '"';
 
 NUMBER : Digit+;
 
@@ -422,6 +424,7 @@ Identifier
   | Regular_Identifier
   ;
 
+fragment
 Regular_Identifier
   : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_')*
   ;
@@ -439,8 +442,7 @@ fragment
 Extended_Control_Characters         :   '\u0080' .. '\u009F';
 
 Character_String_Literal
-  : '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\''
-  | '"' ( ESC_SEQ | ~('\\'|'"') )* '"'
+  : QUOTE ( ESC_SEQ | ~('\\'|'\'') )* QUOTE
   ;
 
 fragment
