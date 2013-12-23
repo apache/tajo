@@ -21,7 +21,7 @@ package org.apache.tajo.worker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.service.CompositeService;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.conf.TajoConf;
 
 import java.util.*;

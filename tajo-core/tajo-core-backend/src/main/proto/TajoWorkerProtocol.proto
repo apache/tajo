@@ -113,7 +113,7 @@ message QueryExecutionRequestProto {
 }
 
 message GetTaskRequestProto {
-    required ContainerIdProto containerId = 1;
+    required hadoop.yarn.ContainerIdProto containerId = 1;
     required ExecutionBlockIdProto executionBlockId = 2;
 }
 

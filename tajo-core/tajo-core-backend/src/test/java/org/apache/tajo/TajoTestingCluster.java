@@ -184,6 +184,7 @@ public class TajoTestingCluster {
         this.clusterTestBuildDir.toString());
 
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
+    conf.setBoolean(DFSConfigKeys.DFS_CLIENT_READ_SHORTCIRCUIT_KEY, false);
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
     builder.hosts(hosts);
     builder.numDataNodes(servers);
@@ -411,7 +412,7 @@ public class TajoTestingCluster {
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 384);
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_MB, 3000);
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_VCORES, 1);
-    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_CORES, 2);
+    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_VCORES, 2);
 
     if (yarnCluster == null) {
       yarnCluster = new MiniTajoYarnCluster(TajoTestingCluster.class.getName(), 3);

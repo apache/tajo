@@ -103,6 +103,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-135: Bump up hadoop to 2.2.0. (jihoon)
+
     TAJO-435: Improve intermediate file. (jinho)
 
     TAJO-424: Make serializer/deserializer configurable in CSVFile. (jinho)

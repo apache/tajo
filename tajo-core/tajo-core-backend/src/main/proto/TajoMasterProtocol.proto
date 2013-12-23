@@ -127,11 +127,11 @@ message WorkerResourcesRequest {
 
 message WorkerResourceReleaseRequest {
     required ExecutionBlockIdProto executionBlockId = 1;
-    repeated ContainerIdProto containerIds = 2;
+    repeated hadoop.yarn.ContainerIdProto containerIds = 2;
 }
 
 message WorkerAllocatedResource {
-    required ContainerIdProto containerId = 1;
+    required hadoop.yarn.ContainerIdProto containerId = 1;
     required string nodeId = 2;
     required string workerHost = 3;
     required int32 peerRpcPort = 4;

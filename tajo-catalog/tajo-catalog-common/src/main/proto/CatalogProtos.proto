@@ -203,8 +203,8 @@ enum StatType {
   TABLE_AVG_ROWS = 3;
   TABLE_NUM_BYTES = 4;
 
-  COLUMN_NUM_NDV = 4;
-  COLUMN_NUM_NULLS = 5;
+  COLUMN_NUM_NDV = 5;
+  COLUMN_NUM_NULLS = 6;
 }
 
 message StatSetProto {

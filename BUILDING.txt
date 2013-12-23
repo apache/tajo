@@ -6,7 +6,7 @@ Requirements:
 * Unix System
 * JDK 1.6 or higher
 * Maven 3.0 or higher
-* Protocol Buffers 2.4.1
+* Protocol Buffers 2.5.0
 * Internet connection for first build (to fetch all Maven and Tajo dependencies)
 
 --------------------------------------------------------------------------------

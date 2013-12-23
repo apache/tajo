@@ -22,16 +22,15 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.YarnException;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.AMResponse;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.client.AMRMClientImpl;
+import org.apache.hadoop.yarn.client.api.impl.AMRMClientImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
@@ -43,6 +42,7 @@ import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.master.querymaster.SubQueryState;
 import org.apache.tajo.util.ApplicationIdUtils;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +58,13 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
       class.getName());
 
   private QueryMasterTask.QueryMasterTaskContext context;
+  private ApplicationAttemptId appAttemptId;
   private final EventHandler eventHandler;
 
   public YarnRMContainerAllocator(QueryMasterTask.QueryMasterTaskContext context) {
-    super(ApplicationIdUtils.createApplicationAttemptId(context.getQueryId()));
+    super();
     this.context = context;
+    this.appAttemptId = ApplicationIdUtils.createApplicationAttemptId(context.getQueryId());
     this.eventHandler = context.getDispatcher().getEventHandler();
   }
 
@@ -90,7 +92,9 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
         }
       }
       context.getQueryMasterContext().getWorkerContext().setNumClusterNodes(allocateResponse.getNumClusterNodes());
-    } catch (YarnRemoteException e) {
+    } catch (IOException e) {
+      LOG.error(e);
+    } catch (YarnException e) {
       LOG.error(e);
     }
 
@@ -173,28 +177,23 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
 
   public void heartbeat() throws Exception {
     AllocateResponse allocateResponse = allocate(context.getProgress());
-    AMResponse response = allocateResponse.getAMResponse();
-    if(response == null) {
-      LOG.warn("AM Response is null");
-      return;
-    }
-    List<Container> allocatedContainers = response.getAllocatedContainers();
+
+    List<Container> allocatedContainers = allocateResponse.getAllocatedContainers();
 
     long currentTime = System.currentTimeMillis();
     if ((currentTime - prevReportTime.longValue()) >= reportInterval) {
       LOG.debug("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
       LOG.debug("Num of Allocated Containers: " + allocatedContainers.size());
-      LOG.info("Available Resource: " + response.getAvailableResources());
+      LOG.info("Available Resource: " + allocateResponse.getAvailableResources());
       prevReportTime.set(currentTime);
     }
 
     if (allocatedContainers.size() > 0) {
       LOG.info("================================================================");
-      for (Container container : response.getAllocatedContainers()) {
+      for (Container container : allocateResponse.getAllocatedContainers()) {
         LOG.info("> Container Id: " + container.getId());
         LOG.info("> Node Id: " + container.getNodeId());
         LOG.info("> Resource (Mem): " + container.getResource().getMemory());
-        LOG.info("> State : " + container.getState());
         LOG.info("> Priority: " + container.getPriority());
       }
       LOG.info("================================================================");
@@ -227,7 +226,7 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
       LOG.info(event);
       subQueryMap.put(event.getPriority(), event.getExecutionBlockId());
       addContainerRequest(new ContainerRequest(event.getCapability(), null, null,
-          event.getPriority(), event.getRequiredNum()));
+          event.getPriority()));
 
     } else if (event.getType() == ContainerAllocatorEventType.CONTAINER_DEALLOCATE) {
       LOG.info(event);

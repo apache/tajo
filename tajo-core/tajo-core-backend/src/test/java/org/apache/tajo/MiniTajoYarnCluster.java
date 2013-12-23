@@ -29,14 +29,14 @@ import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.v2.jobhistory.JHAdminConfig;
 import org.apache.hadoop.mapreduce.v2.jobhistory.JobHistoryUtils;
+import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.service.Service;
 import org.apache.hadoop.util.JarFinder;
-import org.apache.hadoop.yarn.YarnException;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
 import org.apache.hadoop.yarn.server.nodemanager.ContainerExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor;
-import org.apache.hadoop.yarn.service.AbstractService;
-import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.PullServerAuxService;
 
@@ -93,7 +93,7 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
       Path doneDirPath = fc.makeQualified(new Path(doneDir));
       fc.mkdir(doneDirPath, null, true);
     } catch (IOException e) {
-      throw new YarnException("Could not create staging directory. ", e);
+      throw new YarnRuntimeException("Could not create staging directory. ", e);
     }
     conf.set(MRConfig.MASTER_ADDRESS, "test"); // The default is local because of
     // which shuffle doesn't happen
@@ -147,7 +147,7 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
         }
         super.start();
       } catch (Throwable t) {
-        throw new YarnException(t);
+        throw new YarnRuntimeException(t);
       }
 
       LOG.info("MiniMRYARN ResourceManager address: " +
