@@ -27,25 +27,29 @@ import org.apache.tajo.json.GsonObject;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public abstract class Datum implements Comparable<Datum>, GsonObject {
-	@Expose	private Type type;
-	
-	@SuppressWarnings("unused")
+  @Expose	private Type type;
+
+  @SuppressWarnings("unused")
   private Datum() {
-	}
-	
-	public Datum(Type type) {
-		this.type = type;
-	}
-	
-	public Type type() {
-		return this.type;
-	}
+  }
+
+  public Datum(Type type) {
+    this.type = type;
+  }
+
+  public Type type() {
+    return this.type;
+  }
+
+  public boolean isTrue() {
+    return type == Type.BOOLEAN && asBool();
+  }
 
   public boolean isNull() {
     return false;
   }
-	
-	public boolean asBool() {
+
+  public boolean asBool() {
     throw new InvalidCastException(type + " cannot be casted to BOOL type");
   }
 
@@ -57,10 +61,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     throw new InvalidCastException(type + " cannot be casted to CHAR type");
   }
 
-	public short asInt2() {
+  public short asInt2() {
     throw new InvalidCastException(type + " cannot be casted to SHORT type");
   }
-	public int asInt4() {
+  public int asInt4() {
     throw new InvalidCastException(type + " cannot be casted to INT type");
   }
 
@@ -68,90 +72,117 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     throw new InvalidCastException(type + " cannot be casted to LONG type");
   }
 
-	public byte [] asByteArray() {
+  public byte [] asByteArray() {
     throw new InvalidCastException(type + " cannot be casted to BYTES type");
   }
 
-	public float asFloat4() {
+  public float asFloat4() {
     throw new InvalidCastException(type + " cannot be casted to FLOAT type");
   }
 
-	public double asFloat8() {
+  public double asFloat8() {
     throw new InvalidCastException(type + " cannot be casted to DOUBLE type");
   }
 
-	public String asChars() {
+  public String asChars() {
     throw new InvalidCastException(type + " cannot be casted to STRING type");
   }
 
   public byte[] asTextBytes() {
     return toString().getBytes();
   }
-	
-	public boolean isNumeric() {
-	  return isNumber() || isReal();
-	}
-	
-	public boolean isNumber() {
-	  return 
-	      this.type == Type.INT2 ||
-	      this.type == Type.INT4 ||
-	      this.type == Type.INT8;
-	}
-	
-	public boolean isReal() {
-    return 
-        this.type == Type.FLOAT4||
-        this.type == Type.FLOAT8;
+
+  public boolean isNumeric() {
+    return isNumber() || isReal();
   }
-	
-	public abstract int size();
-	
-	public Datum plus(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
-	}
-	
-	public Datum minus(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
-	}
-	
-	public Datum multiply(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
-	}
-	
-	public Datum divide(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
-	}
+
+  public boolean isNumber() {
+    return
+        this.type == Type.INT2 ||
+            this.type == Type.INT4 ||
+            this.type == Type.INT8;
+  }
+
+  public boolean isReal() {
+    return
+        this.type == Type.FLOAT4||
+            this.type == Type.FLOAT8;
+  }
+
+  public abstract int size();
+
+  public Datum and(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
+
+  public Datum or(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
+
+  public Datum plus(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
+
+  public Datum minus(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
+
+  public Datum multiply(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
+
+  public Datum divide(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
 
   public Datum modular(Datum datum) {
     throw new InvalidOperationException(datum.type);
   }
-	
-	public BooleanDatum equalsTo(Datum datum) {
-    if (this instanceof NullDatum || datum instanceof NullDatum) {
-    // TODO - comparing any value against null will be always unknown
-      return DatumFactory.createBool(false);
-    } else {
-	    return DatumFactory.createBool(compareTo(datum) == 0);
-    }
-	}
 
-	public BooleanDatum lessThan(Datum datum) {
+  public Datum equalsTo(Datum datum) {
+    if (this instanceof NullDatum || datum instanceof NullDatum) {
+      return NullDatum.get();
+    } else {
+      return DatumFactory.createBool(compareTo(datum) == 0);
+    }
+  }
+
+  public Datum notEqualsTo(Datum datum) {
+    if (this instanceof NullDatum || datum instanceof NullDatum) {
+      return NullDatum.get();
+    } else {
+      return DatumFactory.createBool(compareTo(datum) != 0);
+    }
+  }
+
+  public Datum lessThan(Datum datum) {
+    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+      return NullDatum.get();
+    }
     return DatumFactory.createBool(compareTo(datum) < 0);
-	}
-	
-	public BooleanDatum lessThanEqual(Datum datum) {
+  }
+
+  public Datum lessThanEqual(Datum datum) {
+    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+      return NullDatum.get();
+    }
     return DatumFactory.createBool(compareTo(datum) <= 0);
-	}	
-	
-	public BooleanDatum greaterThan(Datum datum) {
+  }
+
+  public Datum greaterThan(Datum datum) {
+    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+      return NullDatum.get();
+    }
     return DatumFactory.createBool(compareTo(datum) > 0);
-	}
-	
-	public BooleanDatum greaterThanEqual(Datum datum) {
+  }
+
+  public Datum greaterThanEqual(Datum datum) {
+    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+      return NullDatum.get();
+    }
     return DatumFactory.createBool(compareTo(datum) >= 0);
-	}
-	
+  }
+
   public abstract int compareTo(Datum datum);
 
   @Override

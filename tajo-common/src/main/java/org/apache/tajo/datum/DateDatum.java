@@ -38,6 +38,11 @@ public class DateDatum extends Datum {
     date = decode(value);
   }
 
+  public DateDatum(String dateStr) {
+    super(TajoDataTypes.Type.DATE);
+    this.date = LocalDate.parse(dateStr, DEFAULT_FORMATTER);
+  }
+
   public DateDatum(LocalDate date) {
     super(TajoDataTypes.Type.DATE);
     this.date = date;
@@ -128,9 +133,22 @@ public class DateDatum extends Datum {
   }
 
   @Override
+  public Datum equalsTo(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.TIME) {
+      return DatumFactory.createBool(date.equals(((DateDatum) datum).date));
+    } else if (datum.isNull()) {
+      return datum;
+    } else {
+      throw new InvalidOperationException();
+    }
+  }
+
+  @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.DATE) {
       return date.compareTo(((DateDatum)datum).date);
+    } else if (datum.type() == TajoDataTypes.Type.NULL_TYPE) {
+      return -1;
     } else {
       throw new InvalidOperationException();
     }

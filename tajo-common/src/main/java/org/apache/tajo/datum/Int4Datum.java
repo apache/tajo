@@ -29,11 +29,11 @@ import java.nio.ByteBuffer;
 public class Int4Datum extends NumericDatum {
   private static final int size = 4;
   @Expose private int val;
-	
+
 	public Int4Datum() {
 		super(Type.INT4);
 	}
-	
+
 	public Int4Datum(int val) {
 		this();
 		this.val = val;
@@ -101,23 +101,23 @@ public class Int4Datum extends NumericDatum {
   public int size() {
     return size;
   }
-  
+
   @Override
   public int hashCode() {
     return val;
   }
-  
+
   public boolean equals(Object obj) {
     if (obj instanceof Int4Datum) {
       Int4Datum other = (Int4Datum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case INT2:
       return DatumFactory.createBool(val == datum.asInt2());
@@ -130,7 +130,7 @@ public class Int4Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createBool(val == datum.asFloat8());
     case NULL_TYPE:
-      return DatumFactory.createBool(false);
+      return datum;
     default:
       throw new InvalidOperationException();
     }

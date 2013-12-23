@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -42,7 +41,6 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   // transient variables
   private EvalContext leftContext;
   private boolean isNullResult = false;
-  private BooleanDatum result;
   protected Pattern compiled;
 
   public PatternMatchPredicateEval(EvalType evalType, boolean not, EvalNode predicand, ConstEval pattern,
@@ -73,7 +71,6 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     if (leftContext == null) {
       leftContext = leftExpr.newContext();
-      result = DatumFactory.createBool(false);
       compile(this.pattern);
     }
 
@@ -81,10 +78,19 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
     Datum predicand = leftExpr.terminate(leftContext);
     isNullResult = predicand instanceof NullDatum;
     boolean matched = compiled.matcher(predicand.asChars()).matches();
-    result.setValue(matched ^ not);
+    ((PatternMatchPredicateContext)ctx).result = matched ^ not;
   }
 
   public Datum terminate(EvalContext ctx) {
-    return !isNullResult ? result : NullDatum.get();
+    return !isNullResult ?
+        DatumFactory.createBool(((PatternMatchPredicateContext)ctx).result) : NullDatum.get();
+  }
+
+  public EvalContext newContext() {
+    return new PatternMatchPredicateContext();
+  }
+
+  private class PatternMatchPredicateContext implements EvalContext {
+    public boolean result = false;
   }
 }

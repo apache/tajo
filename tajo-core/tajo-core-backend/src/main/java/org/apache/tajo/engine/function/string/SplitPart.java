@@ -30,27 +30,32 @@ import org.apache.tajo.storage.Tuple;
 /**
  * Function definition
  *
- * text split_part(string text, delimiter text, field int)
+ * text split_part(string text, delimiter text, part int)
  */
 public class SplitPart extends GeneralFunction {
   public SplitPart() {
     super(new Column[] {
         new Column("text", TajoDataTypes.Type.TEXT),
         new Column("delimiter", TajoDataTypes.Type.TEXT),
-        new Column("field", TajoDataTypes.Type.INT4),
+        new Column("part", TajoDataTypes.Type.INT4),
     });
   }
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    Datum text = params.get(0);
+    Datum part = params.get(2);
 
-    String [] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(datum.asChars(), params.get(1).asChars(), -1);
+    if (text.isNull() || part.isNull()) {
+      return NullDatum.get();
+    }
+
+    String [] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(text.asChars(), params.get(1).asChars(), -1);
     int idx = params.get(2).asInt4() - 1;
     if (split.length > idx) {
       return DatumFactory.createText(split[idx]);
     } else {
+      // If part is larger than the number of string portions, it will returns NULL.
       return NullDatum.get();
     }
   }

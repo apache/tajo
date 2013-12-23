@@ -18,10 +18,13 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.datum.exception.InvalidCastException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class NullDatum extends Datum {
   private static NullDatum instance;
+  private static final byte [] EMPTY_BYTES = new byte[0];
 
   static {
     instance = new NullDatum();
@@ -34,10 +37,15 @@ public class NullDatum extends Datum {
   public static NullDatum get() {
     return instance;
   }
-  
+
+  @Override
+  public boolean isNull() {
+    return true;
+  }
+
   @Override
   public boolean asBool() {
-    return false;
+    throw new InvalidCastException("NULL cannot be casted as a bool type value.");
   }
 
   @Override
@@ -62,7 +70,7 @@ public class NullDatum extends Datum {
 
   @Override
   public byte[] asByteArray() {
-    return new byte[0];
+    return EMPTY_BYTES;
   }
 
   @Override
@@ -82,7 +90,7 @@ public class NullDatum extends Datum {
 
   @Override
   public byte[] asTextBytes() {
-    return new byte[0];
+    return EMPTY_BYTES;
   }
 
   @Override
@@ -97,11 +105,70 @@ public class NullDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    return 0;
+    if (datum.type() == Type.NULL_TYPE) {
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+
+  @Override
+  public Datum and(Datum datum) {
+    return BooleanDatum.AND_LOGIC[BooleanDatum.UNKNOWN_INT][datum.asInt4()];
+  }
+
+  @Override
+  public Datum or(Datum datum) {
+    return BooleanDatum.OR_LOGIC[BooleanDatum.UNKNOWN_INT][datum.asInt4()];
+  }
+
+  public NullDatum plus(Datum datum) {
+    return this;
+  }
+
+  public NullDatum minus(Datum datum) {
+    return this;
+  }
+
+  public NullDatum multiply(Datum datum) {
+    return this;
+  }
+
+  public NullDatum divide(Datum datum) {
+    return this;
+  }
+
+  public NullDatum modular(Datum datum) {
+    return this;
+  }
+
+  public NullDatum equalsTo(Datum datum) {
+    return this;
+  }
+
+  public NullDatum lessThan(Datum datum) {
+    return this;
+  }
+
+  public NullDatum lessThanEqual(Datum datum) {
+    return this;
+  }
+
+  public NullDatum greaterThan(Datum datum) {
+    return this;
+  }
+
+  public NullDatum greaterThanEqual(Datum datum) {
+    return this;
   }
 
   @Override
   public int hashCode() {
-    return 0; // one of the prime number
+    return 0;
+  }
+
+  @Override
+  public String toString() {
+    return "NULL";
   }
 }

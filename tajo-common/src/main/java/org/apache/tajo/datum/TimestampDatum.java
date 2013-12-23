@@ -133,9 +133,22 @@ public class TimestampDatum extends Datum {
   }
 
   @Override
+  public Datum equalsTo(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.TIME) {
+      return DatumFactory.createBool(dateTime.equals(((TimestampDatum) datum).dateTime));
+    } else if (datum.isNull()) {
+      return datum;
+    } else {
+      throw new InvalidOperationException();
+    }
+  }
+
+  @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       return dateTime.compareTo(((TimestampDatum)datum).dateTime);
+    } else if (datum.isNull()) {
+      return -1;
     } else {
       throw new InvalidOperationException();
     }

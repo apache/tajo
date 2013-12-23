@@ -23,137 +23,146 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
 public class BooleanDatum extends Datum {
-	@Expose private boolean val;
-  public static final String TRUE="t";
-  public static final String FALSE="f";
+  @Expose private boolean val;
+  public static final String TRUE_STRING ="t";
+  public static final String FALSE_STRING ="f";
+  public static final BooleanDatum TRUE = new BooleanDatum(true);
+  public static final BooleanDatum FALSE = new BooleanDatum(false);
 
-  public BooleanDatum() {
+  public static final int UNKNOWN_INT = 0;
+  public static final int TRUE_INT = 1;
+  public static final int FALSE_INT = 2;
+  public static final byte [] TRUE_BYTES = new byte[] {TRUE_INT};
+  public static final byte [] FALSE_BYTES = new byte[] {FALSE_INT};
+
+  /** 0 - UNKNOWN, 1 - TRUE, 2 - FALSE */
+  public static final Datum [] THREE_VALUES = new Datum [] {
+      NullDatum.get(), TRUE, FALSE
+  };
+
+  public static final Datum [][] AND_LOGIC = new Datum [][] {
+      //               unknown       true            false
+      new Datum [] {NullDatum.get(), NullDatum.get(), FALSE}, // unknown
+      new Datum [] {NullDatum.get(), TRUE,            FALSE}, // true
+      new Datum [] {FALSE,           FALSE,           FALSE}  // false
+  };
+
+  public static final Datum [][] OR_LOGIC = new Datum [][] {
+      //               unknown       true       false
+      new Datum [] {NullDatum.get(), TRUE, NullDatum.get()}, // unknown
+      new Datum [] {TRUE,            TRUE, TRUE           }, // true
+      new Datum [] {NullDatum.get(), TRUE, FALSE          }  // false
+  };
+
+  protected BooleanDatum() {
     super(TajoDataTypes.Type.BOOLEAN);
   }
 
-	public BooleanDatum(boolean val) {
-		this();
-		this.val = val;
-	}
-
-  public BooleanDatum(byte byteVal) {
-    this();
-    this.val = byteVal == 1;
-  }
-
-  public BooleanDatum(int byteVal) {
-    this();
-    this.val = byteVal == 1;
-  }
-
-
-  public BooleanDatum(byte[] bytes) {
-    this(bytes[0]);
-  }
-
-	public boolean asBool() {
-		return val;
-	}
-
-  public void setValue(boolean val) {
+  protected BooleanDatum(boolean val) {
+    super(TajoDataTypes.Type.BOOLEAN);
     this.val = val;
+  }
+
+  protected BooleanDatum(byte byteVal) {
+    super(TajoDataTypes.Type.BOOLEAN);
+    this.val = byteVal == TRUE_INT;
+  }
+
+  protected BooleanDatum(int byteVal) {
+    this();
+    this.val = byteVal == TRUE_INT;
+  }
+
+
+  protected BooleanDatum(byte[] bytes) {
+    this(bytes[0]); // get the first byte
+  }
+
+  public boolean asBool() {
+    return val;
   }
 
   @Override
   public char asChar() {
     return val ? 't' : 'f';
   }
-	
-	@Override
-	public short asInt2() {
-		return (short) (val ? 1 : 0);
-	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
-	@Override
-	public int asInt4() {
-		return val ? 1 : 0;
-	}
+  @Override
+  public short asInt2() {
+    return (short) (val ? TRUE_INT : FALSE_INT);
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
-	@Override
-	public long asInt8() {
-		return val ? 1 : 0;
-	}
+  @Override
+  public int asInt4() {
+    return val ? TRUE_INT : FALSE_INT;
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
-	@Override
-	public byte asByte() {
-		return (byte) (val ? 0x01 : 0x00);
-	}
+  @Override
+  public long asInt8() {
+    return val ? TRUE_INT : FALSE_INT;
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
-	@Override
-	public byte[] asByteArray() {
-	  byte [] bytes = new byte[1];
-    bytes[0] = asByte();
-	  return bytes;
-	}
+  @Override
+  public byte asByte() {
+    return (byte) (val ? TRUE_INT : FALSE_INT);
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
-	@Override
-	public float asFloat4() {
-		return val ? 1 : 0;
-	}
+  @Override
+  public byte[] asByteArray() {
+    return val ? TRUE_BYTES : FALSE_BYTES;
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
-	@Override
-	public double asFloat8() {
-		return val ? 1 : 0;
-	}
+  @Override
+  public float asFloat4() {
+    return val ? TRUE_INT : FALSE_INT;
+  }
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
-	@Override
-	public String asChars() {
-		return val ? "t" : "f";
-	}
+  @Override
+  public double asFloat8() {
+    return val ? TRUE_INT : FALSE_INT;
+  }
+
+  @Override
+  public String asChars() {
+    return val ? TRUE_STRING : FALSE_STRING;
+  }
+
+  @Override
+  public Datum and(Datum datum) {
+    return AND_LOGIC[asInt4()][datum.asInt4()];
+  }
+
+  @Override
+  public Datum or(Datum datum) {
+    return OR_LOGIC[asInt4()][datum.asInt4()];
+  }
 
   @Override
   public int size() {
     return 1;
   }
-  
+
   @Override
   public int hashCode() {
     return val ? 7907 : 0; // 7907 is one of the prime numbers
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof BooleanDatum) {
       BooleanDatum other = (BooleanDatum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
-  
+
   // Datum Comparator
   public BooleanDatum equalsTo(Datum datum) {
     switch(datum.type()) {
-      case BOOLEAN: return DatumFactory.createBool(this.val == 
-          ((BooleanDatum)datum).val);
-      default:
-        throw new InvalidOperationException(datum.type());
+    case BOOLEAN: return DatumFactory.createBool(this.val == ((BooleanDatum)datum).val);
+    default:
+      throw new InvalidOperationException(datum.type());
     }
   }
 

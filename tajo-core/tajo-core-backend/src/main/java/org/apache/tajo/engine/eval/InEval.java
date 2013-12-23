@@ -23,7 +23,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -76,17 +75,12 @@ public class InEval extends BinaryEval {
         break;
       }
     }
-
-    if (not) {
-      isNullCtx.result.setValue(!isIncluded);
-    } else {
-      isNullCtx.result.setValue(isIncluded);
-    }
+    isNullCtx.result = isIncluded;
   }
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return ((InEvalCtx)ctx).result;
+    return DatumFactory.createBool(not ^ ((InEvalCtx)ctx).result);
   }
 
   @Override
@@ -103,10 +97,6 @@ public class InEval extends BinaryEval {
   }
 
   private class InEvalCtx implements EvalContext {
-    BooleanDatum result;
-
-    InEvalCtx() {
-      this.result = DatumFactory.createBool(false);
-    }
+    boolean result;
   }
 }

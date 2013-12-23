@@ -65,28 +65,37 @@ public class CastEval extends EvalNode {
   @Override
   public Datum terminate(EvalContext ctx) {
     CastContext castContext = (CastContext) ctx;
+    Datum operandDatum = operand.terminate(castContext.childCtx);
+    if (operandDatum.isNull()) {
+      return operandDatum;
+    }
+
     switch (target.getType()) {
       case BOOLEAN:
-        return DatumFactory.createBool(operand.terminate(castContext.childCtx).asBool());
+        return DatumFactory.createBool(operandDatum.asBool());
       case CHAR:
-        return DatumFactory.createChar(operand.terminate(castContext.childCtx).asChar());
+        return DatumFactory.createChar(operandDatum.asChar());
       case INT1:
       case INT2:
-        return DatumFactory.createInt2(operand.terminate(castContext.childCtx).asInt2());
+        return DatumFactory.createInt2(operandDatum.asInt2());
       case INT4:
-        return DatumFactory.createInt4(operand.terminate(castContext.childCtx).asInt4());
+        return DatumFactory.createInt4(operandDatum.asInt4());
       case INT8:
-        return DatumFactory.createInt8(operand.terminate(castContext.childCtx).asInt8());
+        return DatumFactory.createInt8(operandDatum.asInt8());
       case FLOAT4:
-        return DatumFactory.createFloat4(operand.terminate(castContext.childCtx).asFloat4());
+        return DatumFactory.createFloat4(operandDatum.asFloat4());
       case FLOAT8:
-        return DatumFactory.createFloat8(operand.terminate(castContext.childCtx).asFloat8());
+        return DatumFactory.createFloat8(operandDatum.asFloat8());
       case TEXT:
-        return DatumFactory.createText(operand.terminate(castContext.childCtx).asTextBytes());
+        return DatumFactory.createText(operandDatum.asTextBytes());
+      case DATE:
+        return DatumFactory.createDate(operandDatum);
+      case TIME:
+        return DatumFactory.createTime(operandDatum);
       case TIMESTAMP:
-        return DatumFactory.createTimestamp(operand.terminate(castContext.childCtx));
+        return DatumFactory.createTimestamp(operandDatum);
       case BLOB:
-        return DatumFactory.createBlob(operand.terminate(castContext.childCtx).asByteArray());
+        return DatumFactory.createBlob(operandDatum.asByteArray());
       default:
         throw new InvalidCastException("Cannot cast " + operand.getValueType().getType() + " to "
             + target.getType());

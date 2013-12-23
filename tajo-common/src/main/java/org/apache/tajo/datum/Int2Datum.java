@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 
 
 public class Int2Datum extends NumericDatum {
-  private static final int size = 2;  
+  private static final int size = 2;
   @Expose private short val;
 
   public Int2Datum() {
@@ -36,7 +36,7 @@ public class Int2Datum extends NumericDatum {
 
 	public Int2Datum(short val) {
 		this();
-		this.val = val;		
+		this.val = val;
 	}
 
   public Int2Datum(byte[] bytes) {
@@ -49,7 +49,7 @@ public class Int2Datum extends NumericDatum {
   public char asChar() {
     return asChars().charAt(0);
   }
-	
+
 	@Override
 	public short asInt2() {
 		return val;
@@ -108,12 +108,12 @@ public class Int2Datum extends NumericDatum {
       Int2Datum other = (Int2Datum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case INT2:
       return DatumFactory.createBool(val == datum.asInt2());
@@ -126,7 +126,7 @@ public class Int2Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createBool(val == datum.asFloat8());
     case NULL_TYPE:
-      return DatumFactory.createBool(false);
+      return datum;
     default:
       throw new InvalidOperationException();
     }

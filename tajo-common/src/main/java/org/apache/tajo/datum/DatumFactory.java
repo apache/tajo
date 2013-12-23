@@ -73,7 +73,7 @@ public class DatumFactory {
     switch (dataType.getType()) {
 
     case BOOLEAN:
-      return createBool(value.equals(BooleanDatum.TRUE));
+      return createBool(value.equals(BooleanDatum.TRUE_STRING));
     case INT2:
       return createInt2(value);
     case INT4:
@@ -175,13 +175,12 @@ public class DatumFactory {
     return NullDatum.get();
   }
 
-  public static BooleanDatum createBool(byte val) {
-    boolean boolVal = val == 0x01;
-    return new BooleanDatum(boolVal);
+  public static Datum createBool(byte val) {
+    return BooleanDatum.THREE_VALUES[(int)val];
   }
 
   public static BooleanDatum createBool(boolean val) {
-    return new BooleanDatum(val);
+    return val ? BooleanDatum.TRUE : BooleanDatum.FALSE;
   }
 
   public static BitDatum createBit(byte val) {
@@ -274,6 +273,30 @@ public class DatumFactory {
 
   public static TimestampDatum createTimeStamp(String timeStamp) {
     return new TimestampDatum(timeStamp);
+  }
+
+  public static DateDatum createDate(Datum datum) {
+    switch (datum.type()) {
+    case INT4:
+      return new DateDatum(datum.asInt4());
+    case INT8:
+      return new DateDatum(datum.asInt4());
+    case TEXT:
+      return new DateDatum(datum.asChars());
+    default:
+      throw new InvalidCastException(datum.type() + " cannot be casted to TIMESTAMP type");
+    }
+  }
+
+  public static TimeDatum createTime(Datum datum) {
+    switch (datum.type()) {
+    case INT8:
+      return new TimeDatum(datum.asInt8());
+    case TEXT:
+      return new TimeDatum(datum.asChars());
+    default:
+      throw new InvalidCastException(datum.type() + " cannot be casted to TIMESTAMP type");
+    }
   }
 
   public static TimestampDatum createTimestamp(Datum datum) {

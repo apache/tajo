@@ -462,6 +462,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return caseWhen;
   }
 
+  @Override public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
+    if (checkIfExist(ctx.NULL())) {
+      return new NullValue();
+    } else {
+      return visitChildren(ctx);
+    }
+  }
+
   @Override
   public Expr visitParenthesized_value_expression(SQLParser.Parenthesized_value_expressionContext ctx) {
     return visitValue_expression(ctx.value_expression());
@@ -559,7 +567,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitRow_value_predicand(@NotNull SQLParser.Row_value_predicandContext ctx) {
+  public Expr visitRow_value_predicand(SQLParser.Row_value_predicandContext ctx) {
     if (checkIfExist(ctx.row_value_special_case())) {
       return visitRow_value_special_case(ctx.row_value_special_case());
     } else {
@@ -568,11 +576,20 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public Expr visitRow_value_constructor_predicand(SQLParser.Row_value_constructor_predicandContext ctx) {
+    if (checkIfExist(ctx.boolean_predicand())) {
+      return visitBoolean_predicand(ctx.boolean_predicand());
+    } else {
+      return visitCommon_value_expression(ctx.common_value_expression());
+    }
+  }
+
+  @Override
   public BinaryOperator visitComparison_predicate(SQLParser.Comparison_predicateContext ctx) {
     TerminalNode operator = (TerminalNode) ctx.comp_op().getChild(0);
     return new BinaryOperator(tokenToExprType(operator.getSymbol().getType()),
-        visitNumeric_value_expression(ctx.left),
-        visitNumeric_value_expression(ctx.right));
+        visitRow_value_predicand(ctx.left),
+        visitRow_value_predicand(ctx.right));
   }
 
   @Override
@@ -734,7 +751,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
-    Expr predicand = visit(ctx.numeric_value_expression());
+    Expr predicand = visitRow_value_predicand(ctx.row_value_predicand());
     return new IsNullPredicate(ctx.NOT() != null, predicand);
   }
 
@@ -761,7 +778,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Integer);
       } else {
         return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Large_Integer);
-      } 
+      }
     } else {
       return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Float);
     }

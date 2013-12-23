@@ -38,6 +38,11 @@ public class TimeDatum extends Datum {
     time = new LocalTime(value);
   }
 
+  public TimeDatum(String timeStr) {
+    super(TajoDataTypes.Type.TIME);
+    time = LocalTime.parse(timeStr, DEFAULT_FORMATTER);
+  }
+
   public TimeDatum(LocalTime time) {
     super(TajoDataTypes.Type.TIME);
     this.time = time;
@@ -111,9 +116,22 @@ public class TimeDatum extends Datum {
   }
 
   @Override
+  public Datum equalsTo(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.TIME) {
+      return DatumFactory.createBool(time.equals(((TimeDatum) datum).time));
+    } else if (datum.isNull()) {
+      return datum;
+    } else {
+      throw new InvalidOperationException();
+    }
+  }
+
+  @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       return time.compareTo(((TimeDatum)datum).time);
+    } else if (datum.isNull()) {
+      return -1;
     } else {
       throw new InvalidOperationException();
     }

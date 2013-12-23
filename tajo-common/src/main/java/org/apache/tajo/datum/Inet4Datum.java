@@ -105,10 +105,12 @@ public class Inet4Datum extends Datum {
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case INET4:
     	return DatumFactory.createBool(this.address == ((Inet4Datum)datum).address);
+    case NULL_TYPE:
+      return datum;
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -126,8 +128,12 @@ public class Inet4Datum extends Datum {
           return 1;
         } else if (bytes[i] < other[i]) {
           return -1;
+        } else {
+          return 0;
         }
       }
+    case NULL_TYPE:
+        return -1;
       
     default:
       throw new InvalidOperationException(datum.type());

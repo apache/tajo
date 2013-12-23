@@ -164,7 +164,11 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-431: HCatalogStore can't write any data using INSERT OVERWRITE clause. (jaehwa)
+    TAJO-182: Comparison of primitive values including null value should
+    return NULL. (hyunsik)
+
+    TAJO-431: HCatalogStore can't write any data using INSERT OVERWRITE clause.
+    (jaehwa)
 
     TAJO-442: Cast operator with nested functions causes NPE. (hyunsik)
 

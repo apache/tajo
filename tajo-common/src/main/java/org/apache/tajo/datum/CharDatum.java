@@ -134,13 +134,15 @@ public class CharDatum extends Datum {
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
       case CHAR:
-        return DatumFactory.createBool(this.equals(datum));
+      case VARCHAR:
+      case TEXT:
+        return DatumFactory.createBool(TextDatum.COMPARATOR.compare(bytes, datum.asTextBytes()) == 0);
 
       case NULL_TYPE:
-        return DatumFactory.createBool(false);
+        return datum;
 
       default:
         throw new InvalidOperationException();

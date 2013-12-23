@@ -461,6 +461,7 @@ value_expression
 common_value_expression
   : numeric_value_expression
   | string_value_expression
+  | NULL
   ;
 
 /*
@@ -928,7 +929,7 @@ predicate
 ===============================================================================
 */
 comparison_predicate
-  : left=numeric_value_expression c=comp_op right=numeric_value_expression
+  : left=row_value_predicand c=comp_op right=row_value_predicand
   ;
 
 comp_op
@@ -1015,7 +1016,7 @@ regex_matcher
 */
 
 null_predicate
-  : predicand=numeric_value_expression IS (n=NOT)? NULL
+  : predicand=row_value_predicand IS (n=NOT)? NULL
   ;
 
 /*

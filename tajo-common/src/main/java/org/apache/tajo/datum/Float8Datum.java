@@ -17,7 +17,7 @@
  */
 
 /**
- * 
+ *
  */
 package org.apache.tajo.datum;
 
@@ -28,9 +28,6 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 public class Float8Datum extends NumericDatum {
   private static final int size = 8;
@@ -39,7 +36,7 @@ public class Float8Datum extends NumericDatum {
 	public Float8Datum() {
 		super(TajoDataTypes.Type.FLOAT8);
 	}
-	
+
 	public Float8Datum(double val) {
 		this();
 		this.val = val;
@@ -55,7 +52,7 @@ public class Float8Datum extends NumericDatum {
   public char asChar() {
     return asChars().charAt(0);
   }
-	
+
 	@Override
 	public short asInt2() {
 		return (short) val;
@@ -102,23 +99,23 @@ public class Float8Datum extends NumericDatum {
   public int size() {
     return size;
   }
-  
+
   @Override
   public int hashCode() {
     return (int) val;
   }
-  
+
   public boolean equals(Object obj) {
     if (obj instanceof Float8Datum) {
       Float8Datum other = (Float8Datum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case INT2:
       return DatumFactory.createBool(val == datum.asInt2());
@@ -131,7 +128,7 @@ public class Float8Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createBool(val == datum.asFloat8());
     case NULL_TYPE:
-      return DatumFactory.createBool(false);
+      return datum;
     default:
       throw new InvalidOperationException();
     }
@@ -296,9 +293,9 @@ public class Float8Datum extends NumericDatum {
         throw new InvalidOperationException(datum.type());
     }
   }
-  
+
   @Override
-  public void inverseSign() {   
+  public void inverseSign() {
     this.val = -val;
   }
 }

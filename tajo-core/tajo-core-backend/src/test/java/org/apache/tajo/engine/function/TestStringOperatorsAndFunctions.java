@@ -215,7 +215,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1", new String[]{"cbagfe"});
+    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1",
+        new String[]{"cbagfe"});
   }
 
   @Test
@@ -291,7 +292,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1", new String[]{"900150983cd24fb0d6963f7d28e17f72"});
+    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1",
+        new String[]{"900150983cd24fb0d6963f7d28e17f72"});
   }
 
   @Test
@@ -340,6 +342,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   @Test
   public void testSplitPart() throws IOException {
     testSimpleEval("select split_part('1386577650.123', '.', 1) as col1 ", new String[]{"1386577650"});
+    testSimpleEval("select split_part('1386577650.123', '.', 2) as col1 ", new String[]{"123"});
+    // If part is larger than the number of string portions, it will returns NULL.
+    testSimpleEval("select split_part('1386577650.123', '.', 3) is null", new String[]{"t"});
+
+    // null handling tests
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "t1", ",.,1", "select split_part(col1, col2, col3::int) is null from t1", new String[]{"t"});
+    testEval(schema, "t1", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from t1",
+        new String[]{"1386577650.123"});
+    testEval(schema, "t1", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from t1",
+        new String[]{"t"});
   }
 
   @Test
@@ -386,24 +402,22 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     // empty string
     testSimpleEval("select locate('abcdef', '') as col1 ", new String[]{"1"});
     testSimpleEval("select locate('abcdef', '', 2) as col1 ", new String[]{"2"});
-    testSimpleEval("select locate('abcdef', '', 6) as col1 ", new String[]{"6"}); // pos = last index of string (expected value(6) is tested on mysql)
-    testSimpleEval("select locate('abcdef', '', 7) as col1 ", new String[]{"7"}); // pos = last index + 1 (expected value(7) is tested on mysql)
-    testSimpleEval("select locate('abcdef', '', 8) as col1 ", new String[]{"0"}); // pos = greater then last index + 1 (expected value(0) is tested on mysql)
-    testSimpleEval("select locate('abcdef', '', 9) as col1 ", new String[]{"0"}); // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    // pos = last index of string (expected value(6) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 6) as col1 ", new String[]{"6"});
+    // pos = last index + 1 (expected value(7) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 7) as col1 ", new String[]{"7"});
+    // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 8) as col1 ", new String[]{"0"});
+    // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 9) as col1 ", new String[]{"0"});
     testSimpleEval("select locate('가나다라', '', 2) as col1 ", new String[]{"2"});
     testSimpleEval("select locate('가나다라', '', 4) as col1 ", new String[]{"4"});
     testSimpleEval("select locate('가나다라', '', 5) as col1 ", new String[]{"5"});
     testSimpleEval("select locate('가나다라', '', 6) as col1 ", new String[]{"0"});
     
-    //TODO If there is a minus value in function argument, next error occurred.
-    //org.apache.tajo.engine.parser.SQLSyntaxError: ERROR: syntax error at or near 'locate'
-    //LINE 1:7 select locate('abcdef', 'a', -1) as col1 
-    //                ^^^^^^
-    //at org.apache.tajo.engine.parser.SQLAnalyzer.parse(SQLAnalyzer.java:64)
-    
     // negative pos    
-    //testSimpleEval("select locate('abcdef', 'a', -1) as col1 ", new String[]{"0"});
-    //testSimpleEval("select locate('abcdef', 'a', -5) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('abcdef', 'a', -1) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('abcdef', 'a', -5) as col1 ", new String[]{"0"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);

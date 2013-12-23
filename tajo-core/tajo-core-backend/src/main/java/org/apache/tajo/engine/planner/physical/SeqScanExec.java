@@ -181,7 +181,7 @@ public class SeqScanExec extends PhysicalExec {
     } else {
       while ((tuple = scanner.next()) != null) {
         qual.eval(qualCtx, inSchema, tuple);
-        if (qual.terminate(qualCtx).asBool()) {
+        if (qual.terminate(qualCtx).isTrue()) {
           projector.eval(evalContexts, tuple);
           projector.terminate(evalContexts, outTuple);
           return outTuple;
