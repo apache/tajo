@@ -34,8 +34,8 @@ public class TestBoolDatum {
 
   @Test
   public final void testAsBool() {
-    Datum trueDatum = DatumFactory.createBool(false);
-    assertEquals(false, trueDatum.asBool());
+    Datum trueDatum = DatumFactory.createBool(true);
+    assertEquals(true, trueDatum.asBool());
     Datum falseDatum = DatumFactory.createBool(false);
     assertEquals(false, falseDatum.asBool());
   }

@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.util.Bytes;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -31,7 +32,7 @@ public class Inet4Datum extends Datum {
 	public Inet4Datum() {
 		super(Type.INET4);
 	}
-	
+
 	public Inet4Datum(String addr) {
 		this();
 		String [] elems = addr.split("\\.");
@@ -40,7 +41,7 @@ public class Inet4Datum extends Datum {
     address |= ((Integer.valueOf(elems[1]) << 16) & 0xFF0000);
     address |= ((Integer.valueOf(elems[0]) << 24) & 0xFF000000);
 	}
-	
+
 	public Inet4Datum(byte[] addr) {
 		this();
 		Preconditions.checkArgument(addr.length == size);
@@ -88,7 +89,7 @@ public class Inet4Datum extends Datum {
   public int size() {
     return size;
   }
-  
+
   @Override
   public int hashCode() {
     return address;
@@ -100,43 +101,33 @@ public class Inet4Datum extends Datum {
       Inet4Datum other = (Inet4Datum) obj;
       return this.address == other.address;
     }
-    
+
     return false;
   }
 
   @Override
   public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case INET4:
-    	return DatumFactory.createBool(this.address == ((Inet4Datum)datum).address);
-    case NULL_TYPE:
-      return datum;
-    default:
-      throw new InvalidOperationException(datum.type());
+      case INET4:
+        return DatumFactory.createBool(this.address == ((Inet4Datum) datum).address);
+      case NULL_TYPE:
+        return datum;
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
-  
+
   @Override
   public int compareTo(Datum datum) {
     switch (datum.type()) {
-    case INET4:
-      byte [] bytes = asByteArray();
-      byte [] other = datum.asByteArray();
-      
-      for (int i = 0; i < 4; i++) {
-        if (bytes[i] > other[i]) {
-          return 1;
-        } else if (bytes[i] < other[i]) {
-          return -1;
-        } else {
-          return 0;
-        }
-      }
-    case NULL_TYPE:
+      case INET4:
+        byte[] bytes = asByteArray();
+        byte[] other = datum.asByteArray();
+        return Bytes.compareTo(bytes, 0, size, other, 0, size);
+      case NULL_TYPE:
         return -1;
-      
-    default:
-      throw new InvalidOperationException(datum.type());
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
   

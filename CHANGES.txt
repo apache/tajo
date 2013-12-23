@@ -166,6 +166,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-450: Incorrect inet4datum comparison. (jinho)
+
     TAJO-182: Comparison of primitive values including null value should
     return NULL. (hyunsik)
 
