@@ -25,11 +25,11 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
+import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 
 public class ToTimestamp extends GeneralFunction {
   public ToTimestamp() {
-    super(new Column[] {new Column("timestamp", INT8)});
+    super(new Column[] {new Column("timestamp", INT4)});
   }
 
 
@@ -39,6 +39,6 @@ public class ToTimestamp extends GeneralFunction {
     if (value instanceof NullDatum) {
       return NullDatum.get();
     }
-    return DatumFactory.createTimeStamp(value.asInt8());
+    return DatumFactory.createTimeStamp(value.asInt4());
   }
 }

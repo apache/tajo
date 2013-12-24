@@ -23,6 +23,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.util.Bytes;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 
@@ -165,7 +166,7 @@ public class DatumFactory {
     case INT8:
       return new Int8Datum(val);
     case TIMESTAMP:
-      return new TimestampDatum(val);
+      return createTimeStampFromMillis(val);
     default:
       throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT8");
     }
@@ -267,8 +268,12 @@ public class DatumFactory {
     return new TimeDatum(LocalTime.parse(dateStr));
   }
 
-  public static TimestampDatum createTimeStamp(long instance) {
-    return new TimestampDatum(instance);
+  public static TimestampDatum createTimeStamp(int unixTime) {
+    return new TimestampDatum(unixTime);
+  }
+
+  public static TimestampDatum createTimeStampFromMillis(long millis) {
+    return new TimestampDatum(new DateTime(millis));
   }
 
   public static TimestampDatum createTimeStamp(String timeStamp) {
@@ -301,8 +306,6 @@ public class DatumFactory {
 
   public static TimestampDatum createTimestamp(Datum datum) {
     switch (datum.type()) {
-      case INT8:
-        return new TimestampDatum(datum.asInt8());
       case TEXT:
         return new TimestampDatum(datum.asChars());
       case TIMESTAMP:

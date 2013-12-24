@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
@@ -52,15 +53,16 @@ public class ToCharTimestamp extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    Datum pattern = params.get(1);
-    if(valueDatum instanceof NullDatum || params instanceof NullDatum) {
+    if(params.isNull(0) || params.isNull(1)) {
       return NullDatum.get();
     }
+
+    TimestampDatum valueDatum = (TimestampDatum) params.get(0);
+    Datum pattern = params.get(1);
 
     if (formatter == null || !constantFormat) {
       formatter = DateTimeFormat.forPattern(pattern.asChars());
     }
-    return DatumFactory.createText(formatter.print(valueDatum.asInt8()));
+    return DatumFactory.createText(valueDatum.toChars(formatter));
   }
 }

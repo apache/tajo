@@ -19,7 +19,9 @@
 package org.apache.tajo.engine.function;
 
 
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,13 +30,21 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testToTimestamp() throws IOException {
-    testSimpleEval("select to_timestamp('1970-01-17 10:09:37'::timestamp::int8);", new String[]{"1970-01-17 10:09:37"});
-    testSimpleEval("select to_timestamp(cast (1386577582 as int8)) < to_timestamp(cast (1386577583 as int8));",
-        new String[]{"t"});
+    long expectedTimestamp = System.currentTimeMillis();
+    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+
+    // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
+    String q1 = String.format("select to_timestamp(%d);", (expectedTimestamp / 1000));
+    testSimpleEval(q1, new String[]{expectedDateTime.toString(TimestampDatum.DEFAULT_FORMAT_STRING)});
   }
 
   @Test
   public void testToChar() throws IOException {
-    testSimpleEval("select to_char(to_timestamp(1386577582), 'yyyy-MM');", new String[]{"1970-01"});
+    long expectedTimestamp = System.currentTimeMillis();
+    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+    String dateFormatStr = "yyyy-MM";
+    // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
+    String q = String.format("select to_char(to_timestamp(%d), 'yyyy-MM');", (expectedTimestamp / 1000));
+    testSimpleEval(q, new String[]{expectedDateTime.toString(dateFormatStr)});
   }
 }

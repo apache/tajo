@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.TimestampDatum;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -62,8 +63,10 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testCastWithNestedFunction() throws IOException {
-    testSimpleEval("select to_char(to_timestamp(CAST(split_part('1386577650.123', '.', 1) as INT8)), " +
-        "'yyyy-MM-dd HH:mm:ss');", new String[] {"1970-01-17 10:09:37"});
+    int timestamp = (int) (System.currentTimeMillis() / 1000);
+    TimestampDatum expected = new TimestampDatum(timestamp);
+    testSimpleEval(String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", timestamp),
+        new String[] {expected.asChars()});
   }
 
   @Test
@@ -80,17 +83,15 @@ public class TestSQLExpression extends ExprTestBase {
         new String[]{"1980-04-01 01:50:01", "234.0"});
 
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {"1980-04-01 01:50:01"});
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp::bigint::timestamp", new String [] {"1980-04-01 01:50:01"});
-    testSimpleEval("select cast (('1980-04-01 01:50:01'::timestamp)::bigint as timestamp)",
-        new String [] {"1980-04-01 01:50:01"});
-    testSimpleEval("select to_timestamp(cast ('1970-01-17 10:09:37'::timestamp as int8));",
-        new String [] {"1970-01-17 10:09:37"});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String [] {"1980-04-01 01:50:01"});
+
+    testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String [] {"100000"});
   }
 
   @Test
   public void testBooleanLiteral() throws IOException {
     testSimpleEval("select true", new String[] {"t"});
-    testSimpleEval("select false", new String[] {"f"});
+    testSimpleEval("select false", new String[]{"f"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);

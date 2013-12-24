@@ -29,11 +29,11 @@ import static org.junit.Assert.assertEquals;
 
 public class TestTimestampDatum {
 
-  private static long timestamp;
+  private static int timestamp;
 
   @BeforeClass
   public static void setUp() {
-    timestamp = System.currentTimeMillis();
+    timestamp = (int) (System.currentTimeMillis() / 1000);
   }
 
 	@Test
@@ -48,7 +48,7 @@ public class TestTimestampDatum {
     d.asInt4();
 	}
 
-	@Test
+  @Test(expected = InvalidCastException.class)
 	public final void testAsInt8() {
     Datum d = DatumFactory.createTimeStamp(timestamp);
     assertEquals(timestamp, d.asInt8());
@@ -62,7 +62,7 @@ public class TestTimestampDatum {
 
   @Test(expected = InvalidCastException.class)
 	public final void testAsFloat8() {
-    long instance = 1386577582;
+    int instance = 1386577582;
     Datum d = DatumFactory.createTimeStamp(instance);
     d.asFloat8();
 	}
@@ -78,7 +78,7 @@ public class TestTimestampDatum {
   public final void testAsByteArray() {
     TimestampDatum d = DatumFactory.createTimeStamp(timestamp);
     TimestampDatum copy = new TimestampDatum(d.asByteArray());
-    assertEquals(d.asInt8(), copy.asInt8());
+    assertEquals(d, copy);
   }
 
 	@Test

@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.DateTime;
@@ -33,9 +32,9 @@ public class TimestampDatum extends Datum {
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
   private DateTime dateTime;
 
-  public TimestampDatum(long instant) {
+  public TimestampDatum(int timestamp) {
     super(TajoDataTypes.Type.TIMESTAMP);
-    dateTime = new DateTime(instant);
+    dateTime = new DateTime((long)timestamp * 1000);
   }
 
   public TimestampDatum(DateTime dateTime) {
@@ -43,7 +42,7 @@ public class TimestampDatum extends Datum {
     this.dateTime = dateTime;
   }
 
-  public TimestampDatum(byte [] bytes) {
+  TimestampDatum(byte [] bytes) {
     super(TajoDataTypes.Type.TIMESTAMP);
     this.dateTime = new DateTime(Bytes.toLong(bytes));
   }
@@ -51,6 +50,14 @@ public class TimestampDatum extends Datum {
   public TimestampDatum(String datetime) {
     super(TajoDataTypes.Type.TIMESTAMP);
     this.dateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
+  }
+
+  public int getUnixTime() {
+    return (int) (dateTime.getMillis() / 1000);
+  }
+
+  public long getMillis() {
+    return dateTime.getMillis();
   }
 
   public DateTime getDateTime() {
@@ -98,37 +105,17 @@ public class TimestampDatum extends Datum {
   }
 
   @Override
-  public int asInt4() {
-    throw new InvalidCastException();
-  }
-
-  @Override
-  public long asInt8() {
-    return dateTime.getMillis();
-  }
-
-  @Override
-  public float asFloat4() {
-    throw new InvalidCastException();
-  }
-
-  @Override
-  public double asFloat8() {
-    throw new InvalidCastException();
-  }
-
-  @Override
   public String asChars() {
     return dateTime.toString(DEFAULT_FORMATTER);
   }
 
-  public String toChars(String format) {
+  public String toChars(DateTimeFormatter format) {
     return dateTime.toString(format);
   }
 
   @Override
   public int size() {
-    return 8;
+    return SIZE;
   }
 
   @Override

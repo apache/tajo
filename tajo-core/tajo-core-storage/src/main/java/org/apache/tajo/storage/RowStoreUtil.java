@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.util.Bytes;
 
 import java.nio.ByteBuffer;
@@ -180,7 +181,7 @@ public class RowStoreUtil {
             bb.put(_string);
             break;
           case DATE: bb.putInt(tuple.get(i).asInt4()); break;
-          case TIMESTAMP: bb.putLong(tuple.get(i).asInt8()); break;
+          case TIMESTAMP: bb.putLong(((TimestampDatum)tuple.get(i)).getMillis()); break;
           case BLOB:
             byte [] bytes = tuple.get(i).asByteArray();
             bb.putInt(bytes.length);

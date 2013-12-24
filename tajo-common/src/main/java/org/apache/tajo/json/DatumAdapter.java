@@ -38,7 +38,7 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
     case TIME:
       return new TimeDatum(jsonObject.get("value").getAsLong());
     case TIMESTAMP:
-      return new TimestampDatum(jsonObject.get("value").getAsLong());
+      return new TimestampDatum(jsonObject.get("value").getAsString());
     default:
       return context.deserialize(jsonObject.get("body"),
           DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
@@ -54,8 +54,10 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
       jsonObj.addProperty("value", src.asInt4());
       break;
     case TIME:
-    case TIMESTAMP:
       jsonObj.addProperty("value", src.asInt8());
+      break;
+    case TIMESTAMP:
+      jsonObj.addProperty("value", src.asChars());
       break;
     default:
       jsonObj.add("body", context.serialize(src));

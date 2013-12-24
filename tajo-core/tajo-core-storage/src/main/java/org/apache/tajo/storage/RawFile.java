@@ -30,6 +30,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
@@ -212,7 +213,7 @@ public class RawFile {
             break;
 
           case TIMESTAMP:
-            tuple.put(i, DatumFactory.createTimeStamp(buffer.getLong()));
+            tuple.put(i, DatumFactory.createTimeStampFromMillis(buffer.getLong()));
             break;
 
           case BLOB : {
@@ -442,7 +443,7 @@ public class RawFile {
             break;
 
           case TIMESTAMP:
-            buffer.putLong(t.get(i).asInt8());
+            buffer.putLong(((TimestampDatum)t.get(i)).getMillis());
             break;
 
           case BLOB : {
