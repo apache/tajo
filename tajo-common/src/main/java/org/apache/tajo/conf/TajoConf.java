@@ -171,7 +171,7 @@ public class TajoConf extends YarnConfiguration {
     EXECUTOR_INNER_JOIN_INMEMORY_HASH_TABLE_SIZE("tajo.executor.join.inner.in-memory-table-num", (long)1000000),
     EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.inner.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
-    EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.eecutor.join.outer.in-memory-hash-threshold-bytes",
+    EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),

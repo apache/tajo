@@ -85,9 +85,9 @@ Tajo is _**a big daga warehouse system on Hadoop**_ that provides low-latency an
 
 ## <a name="Prerequisite"></a>Prerequisite
 
- * Hadoop 2.0.3-alpha or 2.0.5-alpha
+ * Hadoop 2.2.0
  * Java 1.6 or higher
- * Protocol buffer 2.4.1 
+ * Protocol buffer 2.5.0
     
 ## <a name="Download"></a>Download
 
