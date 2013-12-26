@@ -42,7 +42,8 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.*;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.HASH_PARTITION;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.NONE_PARTITION;
 
 /**
  * Build DAG
@@ -298,14 +299,16 @@ public class GlobalPlanner {
         currentBlock = masterPlan.newExecutionBlock();
 
         DataChannel channel;
+        int srcPID = childBlock.getPlan().getTopNodePid(0);
+        int targetPID = currentBlock.getInputContext().getScanNodes()[0].getPID();
         if (firstPhaseGroupBy.isEmptyGrouping()) {
-          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 1);
+          channel = new DataChannel(childBlock, currentBlock, srcPID, targetPID, HASH_PARTITION, 1, firstPhaseGroupBy.getOutSchema());
           channel.setPartitionKey(firstPhaseGroupBy.getGroupingColumns());
         } else {
-          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+          channel = new DataChannel(childBlock, currentBlock, srcPID, targetPID, HASH_PARTITION, 32, firstPhaseGroupBy.getOutSchema());
           channel.setPartitionKey(firstPhaseGroupBy.getGroupingColumns());
         }
-        channel.setSchema(firstPhaseGroupBy.getOutSchema());
+//        channel.setSchema(firstPhaseGroupBy.getOutSchema());
         channel.setStoreType(storeType);
 
         ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
@@ -323,18 +326,23 @@ public class GlobalPlanner {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
-    SortNode firstSortNode = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
-    LogicalNode childBlockPlan = childBlock.getPlan();
-    firstSortNode.setChild(childBlockPlan);
+    SortNode firstSortNode = PlannerUtil.clone(context.plan.getLogicalPlan().getPidFactory(), currentNode);
+//    LogicalNode childBlockPlan = childBlock.getPlan();
+    ExecutionPlan childBlockPlan = childBlock.getPlan();
+    childBlockPlan.add(childBlockPlan.getTopNode(0), firstSortNode, Tag.SINGLE);
+//    firstSortNode.setChild(childBlockPlan.getTopNode(0));
     // sort is a non-projectable operator. So, in/out schemas are the same to its child operator.
-    firstSortNode.setInSchema(childBlockPlan.getOutSchema());
-    firstSortNode.setOutSchema(childBlockPlan.getOutSchema());
-    childBlock.setPlan(firstSortNode);
+    firstSortNode.setInSchema(childBlockPlan.getOutSchema(0));
+    firstSortNode.setOutSchema(childBlockPlan.getOutSchema(0));
+//    childBlock.setPlan(firstSortNode);
 
     currentBlock = masterPlan.newExecutionBlock();
-    DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_PARTITION, 32);
+    int srcPID = childBlock.getPlan().getTopNodePid(0);
+    int targetPID = currentBlock.getInputContext().getScanNodes()[0].getPID();
+    DataChannel channel = new DataChannel(childBlock, currentBlock, srcPID, targetPID, HASH_PARTITION, 32,
+        firstSortNode.getOutSchema());
     channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
-    channel.setSchema(firstSortNode.getOutSchema());
+//    channel.setSchema(firstSortNode.getOutSchema());
     channel.setStoreType(storeType);
 
     ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
@@ -354,9 +362,11 @@ public class GlobalPlanner {
 
     // if result table is not a partitioned table, directly store it
     if(partitionDesc == null) {
-      currentNode.setChild(childBlock.getPlan());
-      currentNode.setInSchema(childBlock.getPlan().getOutSchema());
-      childBlock.setPlan(currentNode);
+//      currentNode.setChild(childBlock.getPlan().getTopNode(0));
+      ExecutionPlan executionPlan = childBlock.getPlan();
+      executionPlan.add(executionPlan.getTopNode(0), currentNode, Tag.SINGLE);
+      currentNode.setInSchema(childBlock.getPlan().getOutSchema(0));
+//      childBlock.setPlan(currentNode);
       return childBlock;
     }
 
@@ -371,18 +381,20 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
     DataChannel channel = null;
     CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
+    int srcPID = childBlock.getPlan().getTopNodePid(0);
+    int targetPID = currentBlock.getInputContext().getScanNodes()[0].getPID();
     if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
-      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+      channel = new DataChannel(childBlock, currentBlock, srcPID, targetPID, HASH_PARTITION, 32, childNode.getOutSchema());
       Column[] columns = new Column[partitionDesc.getColumns().size()];
       channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
-      channel.setSchema(childNode.getOutSchema());
+//      channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);
     } else if (partitionsType == CatalogProtos.PartitionsType.HASH) {
-      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION,
-          partitionDesc.getNumPartitions());
+      channel = new DataChannel(childBlock, currentBlock, srcPID, targetPID, HASH_PARTITION,
+          partitionDesc.getNumPartitions(), childNode.getOutSchema());
       Column[] columns = new Column[partitionDesc.getColumns().size()];
       channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
-      channel.setSchema(childNode.getOutSchema());
+//      channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);
     } else if(partitionsType == CatalogProtos.PartitionsType.RANGE) {
       // TODO
@@ -418,9 +430,11 @@ public class GlobalPlanner {
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
 
-      node.setChild(execBlock.getPlan());
-      node.setInSchema(execBlock.getPlan().getOutSchema());
-      execBlock.setPlan(node);
+//      node.setChild(execBlock.getPlan().getTopNode(0));
+      ExecutionPlan executionPlan = execBlock.getPlan();
+      executionPlan.add(executionPlan.getTopNode(0), node, Tag.SINGLE);
+      node.setInSchema(execBlock.getPlan().getOutSchema(0));
+//      execBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), execBlock);
       return node;
     }
@@ -433,31 +447,40 @@ public class GlobalPlanner {
       ExecutionBlock block;
       block = context.execBlockMap.remove(child.getPID());
       if (child.getType() == NodeType.SORT) {
-        node.setChild(block.getPlan());
-        block.setPlan(node);
+//        node.setChild(block.getPlan());
+//        block.setPlan(node);
+        ExecutionPlan blockPlan = block.getPlan();
+        blockPlan.add(blockPlan.getTopNode(0), node, Tag.SINGLE);
 
         ExecutionBlock childBlock = context.plan.getChild(block, 0);
-        LimitNode childLimit = PlannerUtil.clone(context.plan.getLogicalPlan(), node);
-        childLimit.setChild(childBlock.getPlan());
-        childBlock.setPlan(childLimit);
+        LimitNode childLimit = PlannerUtil.clone(context.plan.getLogicalPlan().getPidFactory(), node);
+//        childLimit.setChild(childBlock.getPlan());
+//        childBlock.setPlan(childLimit);
+        ExecutionPlan childPlan = childBlock.getPlan();
+        childPlan.add(childPlan.getTopNode(0), childLimit, Tag.SINGLE);
 
         DataChannel channel = context.plan.getChannel(childBlock, block);
         channel.setPartitionNum(1);
         context.execBlockMap.put(node.getPID(), block);
       } else {
-        node.setChild(block.getPlan());
-        block.setPlan(node);
+//        node.setChild(block.getPlan());
+//        block.setPlan(node);
+        ExecutionPlan blockPlan = block.getPlan();
+        blockPlan.add(blockPlan.getTopNode(0), node, Tag.SINGLE);
 
         ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
-        DataChannel newChannel = new DataChannel(block, newExecBlock, HASH_PARTITION, 1);
-        newChannel.setPartitionKey(new Column[]{});
-        newChannel.setSchema(node.getOutSchema());
-        newChannel.setStoreType(storeType);
-
-        ScanNode scanNode = buildInputExecutor(plan, newChannel);
-        LimitNode parentLimit = PlannerUtil.clone(context.plan.getLogicalPlan(), node);
+        ScanNode scanNode = buildInputExecutor(plan, node.getOutSchema(), block.getId(), newExecBlock.getId(), storeType);
+        LimitNode parentLimit = PlannerUtil.clone(context.plan.getLogicalPlan().getPidFactory(), node);
         parentLimit.setChild(scanNode);
         newExecBlock.setPlan(parentLimit);
+
+        int srcPID = block.getPlan().getTopNodePid(0);
+        int targetPID = newExecBlock.getInputContext().getScanNodes()[0].getPID();
+        DataChannel newChannel = new DataChannel(block, newExecBlock, srcPID, targetPID, HASH_PARTITION, 1, node.getOutSchema());
+        newChannel.setPartitionKey(new Column[]{});
+//        newChannel.setSchema(node.getOutSchema());
+        newChannel.setStoreType(storeType);
+
         context.plan.addConnect(newChannel);
         context.execBlockMap.put(parentLimit.getPID(), newExecBlock);
         node = parentLimit;
@@ -497,9 +520,11 @@ public class GlobalPlanner {
       LogicalNode child = super.visitFilter(context, plan, node, stack);
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
-      node.setChild(execBlock.getPlan());
-      node.setInSchema(execBlock.getPlan().getOutSchema());
-      execBlock.setPlan(node);
+//      node.setChild(execBlock.getPlan());
+      node.setInSchema(execBlock.getPlan().getOutSchema(0));
+//      execBlock.setPlan(node);
+      ExecutionPlan executionPlan = execBlock.getPlan();
+      executionPlan.add(executionPlan.getTopNode(0), node, Tag.SINGLE);
       context.execBlockMap.put(node.getPID(), execBlock);
 
       return node;
@@ -552,13 +577,17 @@ public class GlobalPlanner {
       }
 
       for (ExecutionBlock childBlocks : unionBlocks) {
-        UnionNode union = (UnionNode) childBlocks.getPlan();
-        queryBlockBlocks.add(context.execBlockMap.get(union.getLeftChild().getPID()));
-        queryBlockBlocks.add(context.execBlockMap.get(union.getRightChild().getPID()));
+        ExecutionPlan executionPlan = childBlocks.getPlan();
+        LogicalNode unionCandidate = executionPlan.getTopNode(0);
+        queryBlockBlocks.add(context.execBlockMap.get(executionPlan.getChild(unionCandidate, Tag.LEFT).getPID()));
+        queryBlockBlocks.add(context.execBlockMap.get(executionPlan.getChild(unionCandidate, Tag.RIGHT).getPID()));
       }
 
+      int targetPID = execBlock.getInputContext().getScanNodes()[0].getPID();
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
-        DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_PARTITION, 1);
+        LogicalNode topNode = childBlocks.getPlan().getTopNode(0);
+        int srcPID = topNode.getPID();
+        DataChannel channel = new DataChannel(childBlocks, execBlock, srcPID, targetPID, NONE_PARTITION, 1, topNode.getOutSchema());
         channel.setStoreType(storeType);
         context.plan.addConnect(channel);
       }

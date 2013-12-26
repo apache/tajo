@@ -93,7 +93,7 @@ public class MasterPlan {
   }
 
   public ExecutionBlock newExecutionBlock() {
-    ExecutionBlock newExecBlock = new ExecutionBlock(newExecutionBlockId(),
+    ExecutionBlock newExecBlock = new ExecutionBlock(newExecutionBlockId(), plan.getPidFactory(),
         (LogicalRootNode) plan.getRootBlock().getRoot());
     execBlockMap.put(newExecBlock.getId(), newExecBlock);
     return newExecBlock;

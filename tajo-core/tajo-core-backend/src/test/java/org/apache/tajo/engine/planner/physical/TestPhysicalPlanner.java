@@ -194,7 +194,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode =plan.getRootBlock().getRoot();
     optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -225,7 +225,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode =plan.getRootBlock().getRoot();
     optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -255,7 +255,7 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -288,7 +288,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -320,7 +320,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(plan.getRootBlock().getRoot());
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -386,7 +386,7 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -429,7 +429,7 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RCFILE);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -483,7 +483,7 @@ public class TestPhysicalPlanner {
 
     FileSystem fs = sm.getFileSystem();
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
@@ -543,7 +543,7 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
@@ -601,7 +601,7 @@ public class TestPhysicalPlanner {
       }
     }
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -639,7 +639,7 @@ public class TestPhysicalPlanner {
       }
     }
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -663,7 +663,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -692,7 +692,7 @@ public class TestPhysicalPlanner {
     UnionNode union = new UnionNode(plan.newPID(), root.getChild(), clonePlan(plan, root.getChild()));
     root.setChild(union);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(root);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -741,7 +741,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -757,7 +757,7 @@ public class TestPhysicalPlanner {
     plan = planner.createPlan(expr);
     rootNode = optimizer.optimize(plan);
 
-    execPlan = new ExecutionPlan();
+    execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf, sm);
     exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -783,7 +783,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -814,7 +814,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -859,7 +859,7 @@ public class TestPhysicalPlanner {
     channels.add(channel);
     ctx.setOutgoingChannels(channels);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
@@ -952,7 +952,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -976,7 +976,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    execPlan = new ExecutionPlan();
+    execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf,sm);
     exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -1006,7 +1006,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -1030,7 +1030,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    execPlan = new ExecutionPlan();
+    execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf,sm);
     exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);

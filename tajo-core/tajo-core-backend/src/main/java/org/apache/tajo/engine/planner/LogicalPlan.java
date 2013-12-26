@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
@@ -62,7 +63,7 @@ public class LogicalPlan {
   private PIDFactory pidFactory = new PIDFactory();
 
   public static class PIDFactory {
-    private int nextPid = 0;
+    @Expose private int nextPid = 0;
 
     public int newPID() {
       return nextPid++;

@@ -57,6 +57,10 @@ public class ExecutionBlock {
     executionPlan.setPlan(plan);
   }
 
+  public void setPlan(ExecutionPlan plan) {
+    this.executionPlan = plan;
+  }
+
   public ExecutionPlan getPlan() {
     return executionPlan;
   }

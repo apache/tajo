@@ -119,7 +119,7 @@ public class TestSortExec {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);

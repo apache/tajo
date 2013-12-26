@@ -163,7 +163,7 @@ public class TestHashSemiJoinExec {
     System.out.println(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);

@@ -43,6 +43,7 @@ import org.apache.tajo.util.TUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import sun.util.logging.resources.logging_it;
 
 import java.io.IOException;
 
@@ -293,7 +294,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin0() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -307,7 +309,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -331,7 +333,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin1() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -345,7 +348,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -369,7 +372,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin2() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[2]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -383,7 +387,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -407,7 +411,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin3() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[3]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -421,7 +426,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -448,7 +453,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin4() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[4]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -463,7 +469,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
@@ -488,7 +494,8 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin5() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[5]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -503,7 +510,7 @@ public class TestFullOuterMergeJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);

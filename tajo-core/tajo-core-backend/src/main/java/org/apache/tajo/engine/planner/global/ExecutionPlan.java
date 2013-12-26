@@ -56,7 +56,7 @@ public class ExecutionPlan implements GsonObject {
 
   public ExecutionPlan(PIDFactory pidFactory, LogicalRootNode terminalNode) {
     this(pidFactory);
-    this.terminalNode = PlannerUtil.clone(pidFactory, terminalNode);
+    this.terminalNode = terminalNode;
   }
 
   public void setPlan(LogicalNode plan) {
@@ -203,25 +203,27 @@ public class ExecutionPlan implements GsonObject {
     this.graph.removeEdge(child.getPID(), parent.getPID());
   }
 
-  private static class LogicalNodeIdAndTag {
+  private static class PIDAndTag {
     @Expose int id;
     @Expose Tag tag;
 
-    public LogicalNodeIdAndTag(int id, Tag tag) {
+    public PIDAndTag(int id, Tag tag) {
       this.id = id;
       this.tag = tag;
     }
   }
 
   public static class ExecutionPlanJsonHelper implements GsonObject {
+    @Expose private final PIDFactory pidFactory;
     @Expose private final boolean hasJoinPlan;
     @Expose private final boolean hasUnionPlan;
     @Expose private final InputContext inputContext;
     @Expose private final LogicalRootNode terminalNode;
     @Expose Map<Integer, LogicalNode> vertices = new HashMap<Integer, LogicalNode>();
-    @Expose Map<Integer, List<LogicalNodeIdAndTag>> adjacentList = new HashMap<Integer, List<LogicalNodeIdAndTag>>();
+    @Expose Map<Integer, List<PIDAndTag>> adjacentList = new HashMap<Integer, List<PIDAndTag>>();
 
     public ExecutionPlanJsonHelper(ExecutionPlan plan) {
+      this.pidFactory = plan.pidFactory;
       this.hasJoinPlan = plan.hasJoinPlan;
       this.hasUnionPlan = plan.hasUnionPlan;
       this.inputContext = plan.getInputContext();
@@ -229,7 +231,7 @@ public class ExecutionPlan implements GsonObject {
       this.vertices.putAll(plan.vertices);
       Collection<ExecutionPlanEdge> edges = plan.graph.getEdgesAll();
       int parentId, childId;
-      List<LogicalNodeIdAndTag> adjacents;
+      List<PIDAndTag> adjacents;
 
       // convert the graph to an adjacent list
       for (ExecutionPlanEdge edge : edges) {
@@ -239,10 +241,10 @@ public class ExecutionPlan implements GsonObject {
         if (adjacentList.containsKey(childId)) {
           adjacents = adjacentList.get(childId);
         } else {
-          adjacents = new ArrayList<LogicalNodeIdAndTag>();
+          adjacents = new ArrayList<PIDAndTag>();
           adjacentList.put(childId, adjacents);
         }
-        adjacents.add(new LogicalNodeIdAndTag(parentId, edge.getTag()));
+        adjacents.add(new PIDAndTag(parentId, edge.getTag()));
       }
     }
 
@@ -253,15 +255,15 @@ public class ExecutionPlan implements GsonObject {
 
     public ExecutionPlan toExecutionPlan() {
       // TODO: check that it works
-      ExecutionPlan plan = new ExecutionPlan(null, this.terminalNode);
+      ExecutionPlan plan = new ExecutionPlan(this.pidFactory, this.terminalNode);
       plan.hasJoinPlan = this.hasJoinPlan;
       plan.hasUnionPlan = this.hasUnionPlan;
       plan.setInputContext(this.inputContext);
       plan.vertices.putAll(this.vertices);
 
-      for (Entry<Integer, List<LogicalNodeIdAndTag>> e : this.adjacentList.entrySet()) {
+      for (Entry<Integer, List<PIDAndTag>> e : this.adjacentList.entrySet()) {
         LogicalNode child = this.vertices.get(e.getKey());
-        for (LogicalNodeIdAndTag idAndTag : e.getValue()) {
+        for (PIDAndTag idAndTag : e.getValue()) {
           plan.add(child, this.vertices.get(idAndTag.id), idAndTag.tag);
         }
       }
@@ -283,8 +285,8 @@ public class ExecutionPlan implements GsonObject {
     public boolean compare() {
       Stack<Integer> s1 = new Stack<Integer>();
       Stack<Integer> s2 = new Stack<Integer>();
-      s1.push(plan1.terminalNode.getPID());
-      s2.push(plan2.terminalNode.getPID());
+      s1.push(plan1.getTopNode(0).getPID());
+      s2.push(plan2.getTopNode(0).getPID());
       return recursiveCompare(s1, s2);
     }
 
@@ -302,9 +304,9 @@ public class ExecutionPlan implements GsonObject {
             for (Integer child : plan2.graph.getChilds(l2)) {
               s2.push(child);
             }
+            return recursiveCompare(s1, s2);
           } else {
             equal &= true;
-            return recursiveCompare(s1, s2);
           }
         } else {
           equal = false;

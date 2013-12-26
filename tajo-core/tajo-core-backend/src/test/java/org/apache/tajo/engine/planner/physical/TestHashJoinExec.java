@@ -136,7 +136,8 @@ public class TestHashJoinExec {
   @Test
   public final void testHashInnerJoin() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan logicalPlan = planner.createPlan(expr);
+    LogicalNode plan = logicalPlan.getRootBlock().getRoot();
 
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
@@ -151,7 +152,7 @@ public class TestHashJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);

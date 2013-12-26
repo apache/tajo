@@ -169,7 +169,7 @@ public class TestBSTIndexExec {
     LogicalNode rootNode = optimizer.optimize(plan);
 
     TmpPlanner phyPlanner = new TmpPlanner(conf, sm);
-    ExecutionPlan execPlan = new ExecutionPlan();
+    ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
     exec = ((PhysicalRootExec)exec).getChild(0);

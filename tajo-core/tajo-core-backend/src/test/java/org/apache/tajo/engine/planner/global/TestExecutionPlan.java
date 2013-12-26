@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
 import org.apache.tajo.engine.planner.logical.*;
 import org.junit.Test;
 
@@ -47,7 +48,7 @@ public class TestExecutionPlan {
 
     groupbyNode.setChild(scanNode);
 
-    ExecutionPlan plan = new ExecutionPlan(new LogicalRootNode(4));
+    ExecutionPlan plan = new ExecutionPlan(new PIDFactory(), new LogicalRootNode(4));
     plan.addPlan(groupbyNode);
 
     String json = plan.toJson();
@@ -82,7 +83,7 @@ public class TestExecutionPlan {
     joinNode.setLeftChild(scanNode);
     joinNode.setRightChild(scanNode2);
 
-    ExecutionPlan plan = new ExecutionPlan(new LogicalRootNode(5));
+    ExecutionPlan plan = new ExecutionPlan(new PIDFactory(), new LogicalRootNode(5));
     plan.addPlan(root1);
     plan.addPlan(root2);
     assertEquals(1, plan.getInputContext().size());

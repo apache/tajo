@@ -65,7 +65,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasPartitionKey());
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(context.getDataChannel().getStoreType());
+    this.meta = CatalogUtil.newTableMeta(context.getOutgoingChannels().get(0).getStoreType());
     // about the partitions
     this.numPartitions = this.plan.getNumPartitions();
     int i = 0;
