@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.global.ExecutionPlanEdge.Tag;
@@ -39,6 +40,7 @@ import java.util.Map.Entry;
  * The terminalNode is used as the start position of the traversal, because there are multiple output destinations.
  */
 public class ExecutionPlan implements GsonObject {
+  @Expose private PIDFactory pidFactory;
   @Expose private InputContext inputContext;
   @Expose private boolean hasUnionPlan;
   @Expose private boolean hasJoinPlan;
@@ -48,12 +50,13 @@ public class ExecutionPlan implements GsonObject {
       = new SimpleDirectedGraph<Integer, ExecutionPlanEdge>();
 
   @VisibleForTesting
-  public ExecutionPlan() {
-
+  public ExecutionPlan(PIDFactory pidFactory) {
+    this.pidFactory = pidFactory;
   }
 
-  public ExecutionPlan(LogicalRootNode terminalNode) {
-    this.terminalNode = PlannerUtil.clone(terminalNode);
+  public ExecutionPlan(PIDFactory pidFactory, LogicalRootNode terminalNode) {
+    this(pidFactory);
+    this.terminalNode = PlannerUtil.clone(pidFactory, terminalNode);
   }
 
   public void setPlan(LogicalNode plan) {
@@ -72,7 +75,7 @@ public class ExecutionPlan implements GsonObject {
   }
 
   public void addPlan(LogicalNode plan) {
-    LogicalNode current = PlannerUtil.clone(plan);
+    LogicalNode current = PlannerUtil.clone(pidFactory, plan);
     if (current.getType() == NodeType.ROOT) {
       terminalNode = (LogicalRootNode) current;
     } else {
@@ -155,7 +158,15 @@ public class ExecutionPlan implements GsonObject {
     return false;
   }
 
-  public LogicalNode getRootChild(int pid) {
+  public LogicalNode getTopNode(int index) {
+    return vertices.get(getTopNodePid(index));
+  }
+
+  public int getTopNodePid(int index) {
+    return graph.getChild(terminalNode.getPID(), index);
+  }
+
+  public LogicalNode getTopNodeFromPID(int pid) {
     for (Integer childId : graph.getChilds(terminalNode.getPID())) {
       if (childId == pid) {
         return vertices.get(childId);
@@ -241,7 +252,8 @@ public class ExecutionPlan implements GsonObject {
     }
 
     public ExecutionPlan toExecutionPlan() {
-      ExecutionPlan plan = new ExecutionPlan(this.terminalNode);
+      // TODO: check that it works
+      ExecutionPlan plan = new ExecutionPlan(null, this.terminalNode);
       plan.hasJoinPlan = this.hasJoinPlan;
       plan.hasUnionPlan = this.hasUnionPlan;
       plan.setInputContext(this.inputContext);
@@ -342,7 +354,7 @@ public class ExecutionPlan implements GsonObject {
 
     private void visitUnary(UnaryNode node, Tag tag) throws PlanningException {
       if (node.getChild() != null) {
-        LogicalNode child = PlannerUtil.clone(node.getChild());
+        LogicalNode child = PlannerUtil.clone(plan.pidFactory, node.getChild());
         plan.add(child, node, tag);
         node.setChild(null);
         visit(child, tag);
@@ -359,13 +371,13 @@ public class ExecutionPlan implements GsonObject {
         plan.hasUnionPlan = true;
       }
       if (node.getLeftChild() != null) {
-        child = PlannerUtil.clone(node.getLeftChild());
+        child = PlannerUtil.clone(plan.pidFactory, node.getLeftChild());
         plan.add(child, node, Tag.LEFT);
         node.setLeftChild(null);
         visit(child, Tag.LEFT);
       }
       if (node.getRightChild() != null) {
-        child = PlannerUtil.clone(node.getRightChild());
+        child = PlannerUtil.clone(plan.pidFactory, node.getRightChild());
         plan.add(child, node, Tag.RIGHT);
         node.setRightChild(null);
         visit(child, Tag.RIGHT);
@@ -373,7 +385,7 @@ public class ExecutionPlan implements GsonObject {
     }
 
     private void visitTableSubQuery(TableSubQueryNode node, Tag tag) throws PlanningException {
-      LogicalNode child = PlannerUtil.clone(node.getSubQuery());
+      LogicalNode child = PlannerUtil.clone(plan.pidFactory, node.getSubQuery());
       plan.add(child, node, tag);
       visit(child, tag);
     }

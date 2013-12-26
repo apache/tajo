@@ -127,7 +127,7 @@ public class TestHashSemiJoinExec {
     catalog.addTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(conf);
   }
 
   @After

@@ -28,8 +28,8 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
-import org.apache.hadoop.yarn.api.records.impl.pb.NodeIdPBImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
@@ -286,10 +286,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         List<Container> containers = new ArrayList<Container>();
         for(TajoMasterProtocol.WorkerAllocatedResource eachAllocatedResource: allocatedResources) {
           TajoWorkerContainer container = new TajoWorkerContainer();
-          NodeIdPBImpl nodeId = new NodeIdPBImpl();
-
-          nodeId.setHost(eachAllocatedResource.getWorkerHost());
-          nodeId.setPort(eachAllocatedResource.getPeerRpcPort());
+          NodeId nodeId = NodeId.newInstance(eachAllocatedResource.getWorkerHost(),
+              eachAllocatedResource.getPeerRpcPort());
 
           TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 

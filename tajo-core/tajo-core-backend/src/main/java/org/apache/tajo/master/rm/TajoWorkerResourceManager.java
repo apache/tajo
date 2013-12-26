@@ -22,7 +22,7 @@ import com.google.protobuf.RpcCallback;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.api.records.impl.pb.NodeIdPBImpl;
+import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
@@ -375,10 +375,8 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
                   new ArrayList<TajoMasterProtocol.WorkerAllocatedResource>();
 
               for(AllocatedWorkerResource eachWorker: allocatedWorkerResources) {
-                NodeIdPBImpl nodeId = new NodeIdPBImpl();
-
-                nodeId.setHost(eachWorker.workerResource.getAllocatedHost());
-                nodeId.setPort(eachWorker.workerResource.getPeerRpcPort());
+                NodeId nodeId = NodeId.newInstance(eachWorker.workerResource.getAllocatedHost(),
+                    eachWorker.workerResource.getPeerRpcPort());
 
                 TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 

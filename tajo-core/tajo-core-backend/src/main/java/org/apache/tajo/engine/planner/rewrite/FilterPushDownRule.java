@@ -22,10 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -65,7 +62,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   @Override
   public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack)
       throws PlanningException {
-    cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(selNode.getQual())));
+    cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
     visitChild(cnf, plan, selNode.getChild(), stack);
@@ -105,13 +102,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
       // if both are fields
        if (joinQual.getLeftExpr().getType() == EvalType.FIELD && joinQual.getRightExpr().getType() == EvalType.FIELD) {
 
-          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getTableId();
-          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getTableId();
+          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getQualifier();
+          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getQualifier();
           List<String> nullSuppliers = Lists.newArrayList();
-          String [] leftLineage = PlannerUtil.getLineage(joinNode.getLeftChild());
-          String [] rightLineage = PlannerUtil.getLineage(joinNode.getRightChild());
-          Set<String> leftTableSet = Sets.newHashSet(leftLineage);
-          Set<String> rightTableSet = Sets.newHashSet(rightLineage);
+          Set<String> leftTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
+              joinNode.getLeftChild()));
+          Set<String> rightTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
+              joinNode.getRightChild()));
 
           // some verification
           if (joinType == JoinType.FULL_OUTER) {
@@ -127,13 +124,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
              }
 
           } else if (joinType == JoinType.LEFT_OUTER) {
-             nullSuppliers.add(((ScanNode)joinNode.getRightChild()).getTableName()); 
+             nullSuppliers.add(((RelationNode)joinNode.getRightChild()).getCanonicalName());
              //verify that this null supplier is indeed in the right sub-tree
              if (!rightTableSet.contains(nullSuppliers.get(0))) {
                  throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
              }
           } else if (joinType == JoinType.RIGHT_OUTER) {
-            if (((ScanNode)joinNode.getRightChild()).getTableName().equals(rightTableName)) {
+            if (((RelationNode)joinNode.getRightChild()).getCanonicalName().equals(rightTableName)) {
               nullSuppliers.add(leftTableName);
             } else {
               nullSuppliers.add(rightTableName);
@@ -144,12 +141,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
               throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
             }
           }
-         
+
          // retain in this outer join node's JoinQual those selection predicates
          // related to the outer join's null supplier(s)
          List<EvalNode> matched2 = Lists.newArrayList();
          for (EvalNode eval : cnf) {
-            
+
             Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
             Set<String> tableNames = Sets.newHashSet();
             // getting distinct table references
@@ -158,35 +155,35 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
                 tableNames.add(col.getQualifier());
               }
             }
-            
+
             //if the predicate involves any of the null suppliers
             boolean shouldKeep=false;
             Iterator<String> it2 = nullSuppliers.iterator();
             while(it2.hasNext()){
               if(tableNames.contains(it2.next()) == true) {
-                   shouldKeep = true; 
+                   shouldKeep = true;
               }
             }
 
             if(shouldKeep == true) {
                 matched2.add(eval);
             }
-            
+
           }
 
           //merge the retained predicates and establish them in the current outer join node. Then remove them from the cnf
           EvalNode qual2 = null;
           if (matched2.size() > 1) {
              // merged into one eval tree
-             qual2 = EvalTreeUtil.transformCNF2Singleton(
-                        matched2.toArray(new EvalNode [matched2.size()]));
+             qual2 = AlgebraicUtil.createSingletonExprFromCNF(
+                 matched2.toArray(new EvalNode[matched2.size()]));
           } else if (matched2.size() == 1) {
              // if the number of matched expr is one
              qual2 = matched2.get(0);
           }
 
           if (qual2 != null) {
-             EvalNode conjQual2 = EvalTreeUtil.transformCNF2Singleton(joinNode.getJoinQual(), qual2);
+             EvalNode conjQual2 = AlgebraicUtil.createSingletonExprFromCNF(joinNode.getJoinQual(), qual2);
              joinNode.setJoinQual(conjQual2);
              cnf.removeAll(matched2);
           } // for the remaining cnf, push it as usual
@@ -194,7 +191,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     }
 
     if (joinNode.hasJoinQual()) {
-      cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(joinNode.getJoinQual())));
+      cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
 
     visitChild(cnf, plan, left, stack);
@@ -210,7 +207,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     EvalNode qual = null;
     if (matched.size() > 1) {
       // merged into one eval tree
-      qual = EvalTreeUtil.transformCNF2Singleton(
+      qual = AlgebraicUtil.createSingletonExprFromCNF(
           matched.toArray(new EvalNode[matched.size()]));
     } else if (matched.size() == 1) {
       // if the number of matched expr is one
@@ -243,8 +240,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     EvalNode qual = null;
     if (matched.size() > 1) {
       // merged into one eval tree
-      qual = EvalTreeUtil.transformCNF2Singleton(
-          matched.toArray(new EvalNode [matched.size()]));
+      qual = AlgebraicUtil.createSingletonExprFromCNF(
+          matched.toArray(new EvalNode[matched.size()]));
     } else if (matched.size() == 1) {
       // if the number of matched expr is one
       qual = matched.get(0);

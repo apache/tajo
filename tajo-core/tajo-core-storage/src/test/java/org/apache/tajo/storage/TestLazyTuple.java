@@ -34,6 +34,7 @@ public class TestLazyTuple {
   Schema schema;
   byte[][] textRow;
   byte[] nullbytes;
+  SerializerDeserializer serde;
 
   @Before
   public void setUp() {
@@ -69,12 +70,13 @@ public class TestLazyTuple {
     sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
     textRow = Bytes.splitPreserveAllTokens(sb.toString().getBytes(), '|');
+    serde = new TextSerializerDeserializer();
   }
 
   @Test
   public void testGetDatum() {
 
-    LazyTuple t1 = new LazyTuple(schema, textRow, -1, nullbytes);
+    LazyTuple t1 = new LazyTuple(schema, textRow, -1, nullbytes, serde);
     assertEquals(DatumFactory.createBool(true), t1.get(0));
     assertEquals(DatumFactory.createBit((byte) 0x99), t1.get(1));
     assertEquals(DatumFactory.createChar("str"), t1.get(2));
@@ -213,6 +215,24 @@ public class TestLazyTuple {
 
     for (int i = 0; i < 5; i++) {
       assertEquals(i + 1, t1.get(i).asInt4());
+    }
+  }
+
+  @Test
+  public void testInvalidNumber() {
+    byte[][] bytes = Bytes.splitPreserveAllTokens(" 1| |2 ||".getBytes(), '|');
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT2);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT8);
+    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+
+    LazyTuple tuple = new LazyTuple(schema, bytes, 0);
+    assertEquals(bytes.length, tuple.size());
+
+    for (int i = 0; i < tuple.size(); i++){
+      assertEquals(NullDatum.get(), tuple.get(i));
     }
   }
 }

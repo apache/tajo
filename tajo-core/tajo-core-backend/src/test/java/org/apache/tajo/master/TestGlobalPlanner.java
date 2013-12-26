@@ -82,7 +82,7 @@ public class TestGlobalPlanner {
 
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(util.getConfiguration());
     globalPlanner = new GlobalPlanner(util.getConfiguration(),
         StorageManagerFactory.getStorageManager(util.getConfiguration()));
   }

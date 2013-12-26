@@ -227,7 +227,9 @@ public class TajoClient {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
-    TableDesc tableDesc = getResultDesc(queryId);
+    GetQueryResultResponse response = getResultResponse(queryId);
+    TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
+    conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
     return new TajoResultSet(this, queryId, conf, tableDesc);
   }
 
@@ -267,7 +269,7 @@ public class TajoClient {
     return new TajoResultSet(this, queryId);
   }
 
-  public TableDesc getResultDesc(QueryId queryId) throws ServiceException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) throws ServiceException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
@@ -286,7 +288,7 @@ public class TajoClient {
       GetQueryResultResponse response = queryMasterService.getQueryResult(null,
           builder.build());
 
-      return CatalogUtil.newTableDesc(response.getTableDesc());
+      return response;
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     } finally {
@@ -330,25 +332,6 @@ public class TajoClient {
     }.withRetries();
   }
 
-  /**
-   * Deletes table schema from catalog data, but doesn't delete data file in hdfs.
-   * @param tableName
-   * @return
-   * @throws ServiceException
-   */
-  public boolean detachTable(final String tableName) throws ServiceException {
-    return new ServerCallable<Boolean>(conf, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false, true) {
-      public Boolean call(NettyClientBase client) throws ServiceException {
-        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-
-        StringProto.Builder builder = StringProto.newBuilder();
-        builder.setValue(tableName);
-        return tajoMasterService.detachTable(null, builder.build()).getValue();
-      }
-    }.withRetries();
-  }
-
   public TableDesc createExternalTable(final String name, final Schema schema, final Path path, final TableMeta meta)
       throws SQLException, ServiceException {
     return new ServerCallable<TableDesc>(conf, tajoMasterAddr,
@@ -371,20 +354,25 @@ public class TajoClient {
     }.withRetries();
   }
 
+  public boolean dropTable(final String tableName) throws ServiceException {
+    return dropTable(tableName, false);
+  }
+
   /**
    * Deletes table schema from catalog data and deletes data file in hdfs
    * @param tableName
    * @return
    * @throws ServiceException
    */
-  public boolean dropTable(final String tableName) throws ServiceException {
+  public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
     return new ServerCallable<Boolean>(conf, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-        StringProto.Builder builder = StringProto.newBuilder();
-        builder.setValue(tableName);
+        DropTableRequest.Builder builder = DropTableRequest.newBuilder();
+        builder.setName(tableName);
+        builder.setPurge(purge);
         return tajoMasterService.dropTable(null, builder.build()).getValue();
       }
     }.withRetries();

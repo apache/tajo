@@ -32,6 +32,7 @@
         * [Launch a Tajo Cluster](#LaunchATajoCluster)
     * [First Query Execution](#FirstQueryExecution)
     * [Distributed mode on HDFS cluster](#DistributedMode)
+    * [Note] (#TutorialNote)
 * [Configuration](#Configuration)
     * [Preliminary](#Preliminary)
         * [catalog-site.xml and tajo-site.xml](#catalog-site_and_tajo-site)
@@ -42,6 +43,7 @@
         * [TajoMaster Heap Memory Size](#TajoMasterHeap) 
         * [Temporary Data Directory](#TemporaryDataDir) 
         * [Maximum number of parallel running tasks for each worker](#MaximumParallelRunningTasks) 
+        * [Worker Resource] (#ResourceConfiguration)
     * [Catalog Configuration](#CatalogConfiguration)
     * [RPC/Http Service Configuration and Default Addresses](#DefaultPorts)
         * [Tajo Master](#TajoMasterDefaultPorts)            
@@ -83,9 +85,9 @@ Tajo is _**a big daga warehouse system on Hadoop**_ that provides low-latency an
 
 ## <a name="Prerequisite"></a>Prerequisite
 
- * Hadoop 2.0.3-alpha or 2.0.5-alpha
+ * Hadoop 2.2.0
  * Java 1.6 or higher
- * Protocol buffer 2.4.1 
+ * Protocol buffer 2.5.0
     
 ## <a name="Download"></a>Download
 
@@ -249,6 +251,11 @@ Then, execute start-tajo.sh
 $ $TAJO_HOME/bin/start-tajo.sh
 ```
 
+## <a name="TutorialNote"></a>Note
+ * In default, each worker is set to very little resource capacity. In order to increase parallel degree, see [this section] (#MaximumParallelRunningTasks).
+ * In default, TajoMaster listens on 127.0.0.1 for clients. To allow remote clients to access TajoMaster, please set **tajo.master.client-rpc.address** config to tajo-site.xml. You can get more information from [RPC/Http Service Configuration and Default Addresses](#DefaultPorts) section.
+ 
+
 Enjoy Apache Tajo!
 
 # <a name="Configuration"></a>Configuration
@@ -342,19 +349,64 @@ TajoWorker stores temporary data on local file system due to out-of-core algorit
 
 ### <a name="MaximumParallelRunningTasks"></a>Maximum number of parallel running tasks for each worker
 
-Each worker can execute multiple tasks at a time. Tajo allows users to specify the maximum number of parallel running tasks for each worker.
+In Tajo, the capacity of running tasks in parallel are determined by available resources and workload of running queries. In order to specify it, please see [Worker Resources] (#ResourceConfiguration) section.
+
+### <a name="ResourceConfiguration"></a>Worker Resources
+
+Each worker can execute multiple tasks simultaneously.
+In Tajo, users can specify the total size of memory and the number of disks for each worker. Available resources affect how many tasks are executed simultaneously.
+
+In order to specify the resource capacity of each worker, you should add the following configs to *tajo-site.xml* :
+
+| property name                   | description              | value type          | default value           |
+| ------------------------------- | ------------------------ | ------------------- | ----------------------- |
+| tajo.worker.resource.cpu-cores  | the number of cpu cores  | integer             | 1                       |
+| tajo.worker.resource.memory-mb  | memory size (MB)         | integer             | 1024                    |
+| tajo.worker.resource.disks      | the number of disks      | integer             | 1                       |
+
+_NOTE: Currently, QueryMaster requests 512MB memory and 1.0 disk per task for the backward compatibility._
+
+#### Example
+
+Assume that you want to give 5120 MB memory, 6.0 disks, and 24 cores on each worker. The example configuration is as follows:
 
 *tajo-site.xml*
 
 ```
   <property>
-    <name>tajo.worker.parallel-execution.max-num</name>
-    <value>12</value>
+    <name>tajo.worker.resource.tajo.worker.resource.cpu-cores</name>
+    <value>24</value>
+  </property>
+  
+   <property>
+    <name>tajo.worker.resource.memory-mb</name>
+    <value>5120</value>
+  </property>
+  
+  <property>
+    <name>tajo.worker.resource.tajo.worker.resource.disks</name>
+    <value>6.0</value>
+  </property>  
+```
+
+#### Dedicated Mode
+Tajo provides a dedicated mode that allows each worker in a Tajo cluster to use whole available system resources including cpu-cores, memory, and disks. For this mode, a user should add the following config to *tajo-site.xml* :
+
+```xml
+  <property>
+    <name>tajo.worker.resource.dedicated</name>
+    <value>true</value>
   </property>
 ```
 
+In addition, it can limit the memory capacity used for Tajo worker as follows:
+
+| property name                                | description                                      | value type          | default value           |
+| ---------------------------------------------| ------------------------------------------------ | ------------------- | ----------------------- |
+| tajo.worker.resource.dedicated-memory-ratio  | how much memory to be used in whole memory          | float               | 0.8                     |
+
 ## <a name="CatalogConfiguration"></a>Catalog Configuration
-If you want to customize the catalog service, copy $TAJO_HOME/conf/catalog-site.xml.templete to catalog-site.xml. Then, add the following configs to catalog-site.xml. Note that the default configs are enough to launch Tajo cluster in most cases.
+If you want to customize the catalog service, copy $TAJO_HOME/conf/catalog-site.xml.template to catalog-site.xml. Then, add the following configs to catalog-site.xml. Note that the default configs are enough to launch Tajo cluster in most cases.
 
 * tajo.catalog.master.addr - If you want to launch a Tajo cluster in distributed mode, you must specify this address. For more detail information, see [Default Ports](#DefaultPorts).
 * tajo.catalog.store.class - If you want to change the persistent storage of the catalog server, specify the class name. Its default value is tajo.catalog.store.DerbyStore. In the current version, Tajo provides three persistent storage classes as follows:
@@ -743,7 +795,7 @@ But, they do not support case-insensitive operators.
 INSERT OVERWRITE statement overwrites a table data of an existing table or a data in a given directory. Tajo's INSERT OVERWRITE statement follows 'INSERT INTO SELECT' statement of SQL. The examples are as follows:
 
 ```
-create table t1 (col1 int8, col2 int4, col3 float4);
+create table t1 (col1 int8, col2 int4, col3 float8);
 
 -- when a target table schema and output schema are equivalent to each other
 INSERT OVERWRITE INTO t1 SELECT l_orderkey, l_partkey, l_quantity FROM lineitem;

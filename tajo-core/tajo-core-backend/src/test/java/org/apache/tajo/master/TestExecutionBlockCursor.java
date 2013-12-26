@@ -66,13 +66,15 @@ public class TestExecutionBlockCursor {
     for (String table : tpch.getTableNames()) {
       TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
       TableDesc d = CatalogUtil.newTableDesc(table, tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
-      d.setStats(new TableStats());
+      TableStats stats = new TableStats();
+      stats.setNumBytes(TPCH.tableVolumes.get(table));
+      d.setStats(stats);
       catalog.addTable(d);
     }
 
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(conf);
 
     AbstractStorageManager sm  = StorageManagerFactory.getStorageManager(conf);
     dispatcher = new AsyncDispatcher();
@@ -110,7 +112,7 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    // 4 input relations, 1 broadcast join and 2 symmetric repartition joins and 1 terminal = 8 execution blocks
+    // 5 input relations, 1 broadcast join and 2 symmetric repartition joins and 1 terminal = 8 execution blocks
     assertEquals(8, count);
   }
 }

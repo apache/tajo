@@ -22,23 +22,21 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.exception.InvalidQueryException;
+import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
 import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.storage.TupleComparator;
 
 import java.util.*;
 
 public class PlannerUtil {
-  private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
-
   public static String normalizeTableName(String tableName) {
     return tableName.toLowerCase();
   }
@@ -51,8 +49,14 @@ public class PlannerUtil {
 
     return baseNode.getType() == NodeType.CREATE_TABLE || baseNode.getType() == NodeType.DROP_TABLE;
   }
-  
-  public static String [] getLineage(LogicalNode node) {
+
+  /**
+   * Get all scan nodes from a logical operator tree.
+   *
+   * @param node a start node
+   * @return an array of relation names
+   */
+  public static String [] getRelationLineage(LogicalNode node) {
     LogicalNode [] scans =  PlannerUtil.findAllNodes(node, NodeType.SCAN);
     String [] tableNames = new String[scans.length];
     ScanNode scan;
@@ -63,7 +67,7 @@ public class PlannerUtil {
     return tableNames;
   }
 
-  public static String [] getLineage(ExecutionPlan plan, LogicalNode node) {
+  public static String [] getRelationLineage(ExecutionPlan plan, LogicalNode node) {
     LogicalNode [] scans =  PlannerUtil.findAllNodes(plan, node, NodeType.SCAN);
     String [] tableNames = new String[scans.length];
     ScanNode scan;
@@ -72,6 +76,41 @@ public class PlannerUtil {
       tableNames[i] = scan.getCanonicalName();
     }
     return tableNames;
+  }
+
+  /**
+   * Get all scan nodes from a logical operator tree within a query block
+   *
+   * @param node a start node
+   * @return an array of relation names
+   */
+  public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode node)
+      throws PlanningException {
+    RelationFinderVisitor visitor = new RelationFinderVisitor();
+    visitor.visit(null, plan, node);
+    return visitor.getFoundRelations();
+  }
+
+  public static class RelationFinderVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
+    private Set<String> foundRelNameSet = Sets.newHashSet();
+
+    public Set<String> getFoundRelations() {
+      return foundRelNameSet;
+    }
+
+    @Override
+    public LogicalNode visitChild(Object context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
+        throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visitChild(context, plan, node, stack);
+      }
+
+      if (node instanceof RelationNode) {
+        foundRelNameSet.add(((RelationNode) node).getCanonicalName());
+      }
+
+      return node;
+    }
   }
   
   /**
@@ -352,7 +391,7 @@ public class PlannerUtil {
       child = (SortNode) sort.clone();
       child.setPid(plan.newPID());
     } catch (CloneNotSupportedException e) {
-      LOG.warn(e);
+      throw new RuntimeException(e);
     }
 
     parent.setInSchema(child.getOutSchema());
@@ -549,8 +588,8 @@ public class PlannerUtil {
         return false;
       }
 
-      String [] outer = getLineage(joinNode.getLeftChild());
-      String [] inner = getLineage(joinNode.getRightChild());
+      String [] outer = getRelationLineage(joinNode.getLeftChild());
+      String [] inner = getRelationLineage(joinNode.getRightChild());
 
       Set<String> o = Sets.newHashSet(outer);
       Set<String> i = Sets.newHashSet(inner);
@@ -734,7 +773,7 @@ public class PlannerUtil {
    * @return true if two operands refers to columns and the operator is comparison,
    */
   public static boolean isJoinQual(EvalNode qual) {
-    if (EvalTreeUtil.isComparisonOperator(qual)) {
+    if (AlgebraicUtil.isComparisonOperator(qual)) {
       List<Column> left = EvalTreeUtil.findAllColumnRefs(qual.getLeftExpr());
       List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
 
@@ -866,11 +905,17 @@ public class PlannerUtil {
     return copy;
   }
 
-  public static <T extends LogicalNode> T clone(LogicalNode node) {
+  public static <T extends LogicalNode> T clone(PIDFactory pidFactory, LogicalNode node) {
     try {
-      return (T) node.clone();
+      T copy = (T) node.clone();
+      copy.setPID(pidFactory.newPID());
+      return copy;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static boolean isCommutativeJoin(JoinType joinType) {
+    return joinType == JoinType.INNER;
   }
 }

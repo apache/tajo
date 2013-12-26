@@ -23,8 +23,8 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
@@ -194,6 +194,8 @@ public class QueryMasterManagerService extends CompositeService
                            TajoWorkerProtocol.QueryExecutionRequestProto request,
                            RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
+      workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
+
       QueryId queryId = new QueryId(request.getQueryId());
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
@@ -201,6 +203,7 @@ public class QueryMasterManagerService extends CompositeService
           request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
+      workerContext.getWorkerSystemMetrics().counter("querymaster", "errorQuery").inc();
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }

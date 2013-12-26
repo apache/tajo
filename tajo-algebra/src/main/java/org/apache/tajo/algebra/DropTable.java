@@ -20,14 +20,20 @@ package org.apache.tajo.algebra;
 
 public class DropTable extends Expr {
   private final String tableName;
+  private final boolean purge;
 
-  public DropTable(String tableName) {
+  public DropTable(String tableName, boolean purge) {
     super(OpType.DropTable);
     this.tableName = tableName;
+    this.purge = purge;
   }
 
   public String getTableName() {
     return this.tableName;
+  }
+
+  public boolean isPurge() {
+    return purge;
   }
 
   @Override

@@ -25,12 +25,14 @@ import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class TextDatum extends Datum {
   @Expose private int size;
   @Expose private byte [] bytes;
 
   public static final TextDatum EMPTY_TEXT = new TextDatum("");
+  public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 
   public TextDatum() {
     super(TajoDataTypes.Type.TEXT);
@@ -106,10 +108,11 @@ public class TextDatum extends Datum {
       case TEXT:
       case CHAR:
       case BLOB:
-        return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());
+        return COMPARATOR.compare(bytes, datum.asByteArray());
 
       case NULL_TYPE:
         return -1;
+
       default:
         throw new InvalidOperationException();
     }
@@ -119,22 +122,21 @@ public class TextDatum extends Datum {
   public boolean equals(Object obj) {
     if (obj instanceof TextDatum) {
       TextDatum o = (TextDatum) obj;
-      return UnsignedBytes.lexicographicalComparator().compare(this.bytes, o.bytes) == 0;
+      return COMPARATOR.compare(this.bytes, o.bytes) == 0;
     }
 
     return false;
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
       case TEXT:
       case CHAR:
       case BLOB:
-        return DatumFactory.createBool(UnsignedBytes.lexicographicalComparator()
-            .compare(bytes, datum.asByteArray()) == 0);
+        return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
       case NULL_TYPE:
-        return DatumFactory.createBool(false);
+        return datum;
       default:
         throw new InvalidOperationException();
     }

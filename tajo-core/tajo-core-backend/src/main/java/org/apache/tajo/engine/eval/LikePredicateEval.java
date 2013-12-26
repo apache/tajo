@@ -42,6 +42,10 @@ public class LikePredicateEval extends PatternMatchPredicateEval {
     this.compiled = Pattern.compile(regex, flags);
   }
 
+  public boolean isLeadingWildCard() {
+    return pattern.indexOf(".*") == 0;
+  }
+
   @Override
   public String toString() {
     return leftExpr.toString() + (caseInsensitive ? "ILIKE" : "LIKE") + "'" + pattern +"'";

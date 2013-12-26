@@ -19,40 +19,51 @@
 package org.apache.tajo.engine.planner.logical.join;
 
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.eval.AlgebraicUtil;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
+import org.apache.tajo.engine.planner.logical.JoinNode;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
-  public Collection<JoinEdge> getJoinsWith(String relation) {
-    return getEdges(relation);
-  }
-
-  public Collection<EvalNode> addJoin(JoinType joinType, EvalNode joinQual) {
-    Set<EvalNode> cnf = Sets.newHashSet(EvalTreeUtil.getConjNormalForm(joinQual));
+  public Collection<EvalNode> addJoin(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      JoinNode joinNode) throws PlanningException {
+    Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
     Set<EvalNode> nonJoinQuals = Sets.newHashSet();
     for (EvalNode singleQual : cnf) {
       if (PlannerUtil.isJoinQual(singleQual)) {
-        List<Column> left = EvalTreeUtil.findAllColumnRefs(singleQual.getLeftExpr());
-        List<Column> right = EvalTreeUtil.findAllColumnRefs(singleQual.getRightExpr());
+        List<Column> leftExpr = EvalTreeUtil.findAllColumnRefs(singleQual.getLeftExpr());
+        List<Column> rightExpr = EvalTreeUtil.findAllColumnRefs(singleQual.getRightExpr());
 
-        String leftRelName = left.get(0).getQualifier();
-        String rightRelName = right.get(0).getQualifier();
+        String leftExprRelation = leftExpr.get(0).getQualifier();
+        String rightExprRelName = rightExpr.get(0).getQualifier();
 
-        JoinEdge edge = getEdge(leftRelName, rightRelName);
+        Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
+
+        boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelation);
+        JoinEdge edge;
+        edge = getEdge(leftExprRelation, rightExprRelName);
 
         if (edge != null) {
           edge.addJoinQual(singleQual);
         } else {
-          edge = new JoinEdge(joinType, leftRelName, rightRelName, singleQual);
-          addEdge(leftRelName, rightRelName, edge);
+          if (isLeftExprForLeftTable) {
+            edge = new JoinEdge(joinNode.getJoinType(),
+                block.getRelation(leftExprRelation), block.getRelation(rightExprRelName), singleQual);
+            addEdge(leftExprRelation, rightExprRelName, edge);
+          } else {
+            edge = new JoinEdge(joinNode.getJoinType(),
+                block.getRelation(rightExprRelName), block.getRelation(leftExprRelation), singleQual);
+            addEdge(rightExprRelName, leftExprRelation, edge);
+          }
         }
       } else {
         nonJoinQuals.add(singleQual);

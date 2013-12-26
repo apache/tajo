@@ -28,6 +28,8 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.MergeScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
@@ -58,7 +60,7 @@ public class TajoResultSet extends TajoResultSetBase {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     if(desc != null) {
-      fs = desc.getPath().getFileSystem(conf);
+      fs = FileScanner.getFileSystem((TajoConf)conf, desc.getPath());
       this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
 
       Collection<FileFragment> frags = getFragments(desc.getMeta(), desc.getPath());

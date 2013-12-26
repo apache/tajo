@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.net.util.Base64;
@@ -559,8 +560,13 @@ public abstract class AbstractStorageManager {
     // generate splits'
 
     List<FileFragment> splits = new ArrayList<FileFragment>();
-    List<FileStatus> files = listStatus(inputPath);
     FileSystem fs = inputPath.getFileSystem(conf);
+    List<FileStatus> files;
+    if (fs.isFile(inputPath)) {
+      files = Lists.newArrayList(fs.getFileStatus(inputPath));
+    } else {
+      files = listStatus(inputPath);
+    }
     for (FileStatus file : files) {
       Path path = file.getPath();
       long length = file.getLen();
@@ -577,7 +583,15 @@ public abstract class AbstractStorageManager {
                   .getVolumeIds())));
             }
           } else { // Non splittable
-            splits.add(makeNonSplit(tableName, meta, path, 0, length, blockStorageLocations));
+            long blockSize = blockStorageLocations[0].getLength();
+            if (blockSize >= length) {
+              for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
+                splits.add(makeSplit(tableName, meta, path, blockStorageLocation, getDiskIds(blockStorageLocation
+                    .getVolumeIds())));
+              }
+            } else {
+              splits.add(makeNonSplit(tableName, meta, path, 0, length, blockStorageLocations));
+            }
           }
 
         } else {

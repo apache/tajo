@@ -183,7 +183,7 @@ public class TUtil {
   }
 
   public static String arrayToString(Object [] objects) {
-    boolean first = false;
+    boolean first = true;
     StringBuilder sb = new StringBuilder();
     for(Object object : objects) {
       if (first) {

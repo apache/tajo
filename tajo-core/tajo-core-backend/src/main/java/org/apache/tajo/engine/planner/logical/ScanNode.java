@@ -29,11 +29,16 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 public class ScanNode extends RelationNode implements Projectable {
-	@Expose private TableDesc tableDesc;
-  @Expose private String alias;
-  @Expose private Schema renamedSchema;
-	@Expose private EvalNode qual;
-	@Expose private Target[] targets;
+	@Expose protected TableDesc tableDesc;
+  @Expose protected String alias;
+  @Expose protected Schema renamedSchema;
+	@Expose protected EvalNode qual;
+	@Expose protected Target[] targets;
+
+  protected ScanNode(int pid, NodeType nodeType, TableDesc desc) {
+    super(pid, nodeType);
+    this.tableDesc = desc;
+  }
 
   public ScanNode(int pid, TableDesc desc) {
     super(pid, NodeType.SCAN);
@@ -46,7 +51,7 @@ public class ScanNode extends RelationNode implements Projectable {
     this(pid, desc);
     this.alias = PlannerUtil.normalizeTableName(alias);
     renamedSchema = getOutSchema();
-    renamedSchema.setQualifier(this.alias, true);
+    renamedSchema.setQualifier(this.alias);
 	}
 	
 	public String getTableName() {
@@ -119,7 +124,7 @@ public class ScanNode extends RelationNode implements Projectable {
         first = false;
       }
 	  }
-	  
+
 	  sb.append(",");
 	  sb.append("\n  \"out schema\": ").append(getOutSchema());
 	  sb.append("\n  \"in schema\": ").append(getInSchema());

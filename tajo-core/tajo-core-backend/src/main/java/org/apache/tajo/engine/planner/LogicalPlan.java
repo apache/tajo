@@ -47,7 +47,6 @@ public class LogicalPlan {
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "NONAME_";
-  private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
 
@@ -59,6 +58,16 @@ public class LogicalPlan {
 
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
+
+  private PIDFactory pidFactory = new PIDFactory();
+
+  public static class PIDFactory {
+    private int nextPid = 0;
+
+    public int newPID() {
+      return nextPid++;
+    }
+  }
 
   public LogicalPlan(LogicalPlanner planner) {
     this.planner = planner;
@@ -76,8 +85,12 @@ public class LogicalPlan {
     return block;
   }
 
+  public PIDFactory getPidFactory() {
+    return pidFactory;
+  }
+
   public int newPID() {
-    return nextPid++;
+    return pidFactory.newPID();
   }
 
   public QueryBlock newNoNameBlock() {

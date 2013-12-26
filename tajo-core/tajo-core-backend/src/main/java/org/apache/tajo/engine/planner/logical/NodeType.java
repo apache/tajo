@@ -37,6 +37,7 @@ public enum NodeType {
   INTERSECT(IntersectNode.class),
   LIMIT(LimitNode.class),
   JOIN(JoinNode.class),
+  PARTITIONS_SCAN(PartitionedTableScanNode.class),
   PROJECTION(ProjectionNode.class),
   ROOT(LogicalRootNode.class),
   SCAN(ScanNode.class),

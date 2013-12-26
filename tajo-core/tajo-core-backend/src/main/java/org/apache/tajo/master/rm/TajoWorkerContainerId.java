@@ -85,4 +85,9 @@ public class TajoWorkerContainerId extends ContainerId {
           .build();
     }
   }
+
+  @Override
+  protected void build() {
+
+  }
 }

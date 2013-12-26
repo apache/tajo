@@ -590,7 +590,7 @@ public class RCFile {
     private ColumnBuffer[] columnBuffers = null;
     boolean useNewMagic = true;
     private byte[] nullChars;
-    SerializeDeserialize serde;
+    SerializerDeserializer serde;
 
     // Insert a globally unique 16-byte value every few entries, so that one
     // can seek into the middle of a file and then synchronize with record
@@ -742,9 +742,9 @@ public class RCFile {
 
       metadata.set(new Text(COLUMN_NUMBER_METADATA_STR), new Text("" + columnNumber));
 
-      String serdeClass = this.meta.getOption(SERDE, BinarySerializeDeserialize.class.getName());
+      String serdeClass = this.meta.getOption(SERDE, BinarySerializerDeserializer.class.getName());
       try {
-        serde = (SerializeDeserialize) Class.forName(serdeClass).newInstance();
+        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -1152,7 +1152,7 @@ public class RCFile {
 
     private LongWritable rowId;
     private byte[] nullChars;
-    private SerializeDeserialize serde;
+    private SerializerDeserializer serde;
 
     public RCFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                          final FileFragment fragment) throws IOException {
@@ -1347,9 +1347,9 @@ public class RCFile {
         if(text != null && !text.toString().isEmpty()){
           serdeClass = text.toString();
         } else{
-          serdeClass = this.meta.getOption(SERDE, BinarySerializeDeserialize.class.getName());
+          serdeClass = this.meta.getOption(SERDE, BinarySerializerDeserializer.class.getName());
         }
-        serde = (SerializeDeserialize) Class.forName(serdeClass).newInstance();
+        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);

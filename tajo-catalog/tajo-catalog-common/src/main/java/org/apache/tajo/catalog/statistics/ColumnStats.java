@@ -25,6 +25,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -57,10 +58,10 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
       this.numNulls = proto.getNumNulls();
     }
     if (proto.hasMinValue()) {
-      this.minValue = TupleUtil.createFromBytes(getColumn().getDataType(), proto.getMinValue().toByteArray());
+      this.minValue = DatumFactory.createFromBytes(getColumn().getDataType(), proto.getMinValue().toByteArray());
     }
     if (proto.hasMaxValue()) {
-      this.maxValue = TupleUtil.createFromBytes(getColumn().getDataType(), proto.getMaxValue().toByteArray());
+      this.maxValue = DatumFactory.createFromBytes(getColumn().getDataType(), proto.getMaxValue().toByteArray());
     }
   }
 

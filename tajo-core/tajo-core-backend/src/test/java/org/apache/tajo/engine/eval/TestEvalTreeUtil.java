@@ -169,6 +169,7 @@ public class TestEvalTreeUtil {
     "select score from people where 10 * 2 > score * 10", // 4
     "select score from people where score < 10 and 4 < score", // 5
     "select score from people where score < 10 and 4 < score and age > 5", // 6
+    "select score from people where (score > 1 and score < 3) or (7 < score and score < 10)", // 7
   };
   
   @Test
@@ -208,7 +209,7 @@ public class TestEvalTreeUtil {
   public final void testGetCNF() {
     // "select score from people where score < 10 and 4 < score "
     EvalNode node = getRootSelection(QUERIES[5]);
-    EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(node);
+    EvalNode [] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(node);
     
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     
@@ -235,26 +236,37 @@ public class TestEvalTreeUtil {
   public final void testTransformCNF2Singleton() {
     // "select score from people where score < 10 and 4 < score "
     EvalNode node = getRootSelection(QUERIES[6]);
-    EvalNode [] cnf1 = EvalTreeUtil.getConjNormalForm(node);
+    EvalNode [] cnf1 = AlgebraicUtil.toConjunctiveNormalFormArray(node);
     assertEquals(3, cnf1.length);
     
-    EvalNode conj = EvalTreeUtil.transformCNF2Singleton(cnf1);
-    EvalNode [] cnf2 = EvalTreeUtil.getConjNormalForm(conj);
+    EvalNode conj = AlgebraicUtil.createSingletonExprFromCNF(cnf1);
+    EvalNode [] cnf2 = AlgebraicUtil.toConjunctiveNormalFormArray(conj);
     
     Set<EvalNode> set1 = Sets.newHashSet(cnf1);
     Set<EvalNode> set2 = Sets.newHashSet(cnf2);
     assertEquals(set1, set2);
   }
+
+  @Test
+  public final void testGetDNF() {
+    // "select score from people where score > 1 and score < 3 or score > 7 and score < 10", // 7
+    EvalNode node = getRootSelection(QUERIES[7]);
+    EvalNode [] cnf = AlgebraicUtil.toDisjunctiveNormalFormArray(node);
+    assertEquals(2, cnf.length);
+
+    assertEquals("people.score (INT4(0)) > 1 AND people.score (INT4(0)) < 3", cnf[0].toString());
+    assertEquals("7 < people.score (INT4(0)) AND people.score (INT4(0)) < 10", cnf[1].toString());
+  }
   
   @Test
   public final void testSimplify() throws PlanningException {
     Target [] targets = getRawTargets(QUERIES[0]);
-    EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
+    EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets[0].getEvalTree());
     EvalContext nodeCtx = node.newContext();
     assertEquals(EvalType.CONST, node.getType());
     node.eval(nodeCtx, null, null);
     assertEquals(7, node.terminate(nodeCtx).asInt4());
-    node = AlgebraicUtil.simplify(targets[1].getEvalTree());
+    node = AlgebraicUtil.eliminateConstantExprs(targets[1].getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
     nodeCtx = node.newContext();
     node.eval(nodeCtx, null, null);

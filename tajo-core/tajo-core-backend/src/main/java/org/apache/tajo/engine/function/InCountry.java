@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.BooleanDatum;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.GeoUtil;
 
@@ -37,6 +38,6 @@ public class InCountry extends GeneralFunction {
     String otherCode = params.get(1).asChars();
     String thisCode = GeoUtil.getCountryCode(addr);
 
-    return new BooleanDatum(thisCode.equals(otherCode));
+    return DatumFactory.createBool(thisCode.equals(otherCode));
   }
 }

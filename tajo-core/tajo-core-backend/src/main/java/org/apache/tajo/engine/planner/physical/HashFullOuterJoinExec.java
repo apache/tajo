@@ -185,7 +185,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
       joinQual.eval(qualCtx, inSchema, frameTuple); //?? isn't it always true if hash function is identity function??
-      if (joinQual.terminate(qualCtx).asBool()) { // if both tuples are joinable
+      if (joinQual.terminate(qualCtx).isTrue()) { // if both tuples are joinable
         projector.eval(evalContexts, frameTuple);
         projector.terminate(evalContexts, outTuple);
         found = true;

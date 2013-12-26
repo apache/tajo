@@ -15,6 +15,7 @@
 package org.apache.tajo.engine.planner.global;
 
 import java.util.ArrayList;
+import java.util.Stack;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
@@ -35,15 +36,19 @@ public class ExecutionBlockCursor {
     return orderedBlocks.size();
   }
 
+  // Add all execution blocks in a depth first and postfix order
   private void buildOrder(ExecutionBlock current) {
+    Stack<ExecutionBlock> stack = new Stack<ExecutionBlock>();
     if (!masterPlan.isLeaf(current.getId())) {
-      if (masterPlan.getChildCount(current.getId()) == 1) {
-        ExecutionBlock block = masterPlan.getChild(current, 0);
-        buildOrder(block);
-      } else {
-        for (ExecutionBlock exec : masterPlan.getChilds(current)) {
-          buildOrder(exec);
+      for (ExecutionBlock execBlock : masterPlan.getChilds(current)) {
+        if (!masterPlan.isLeaf(execBlock)) {
+          buildOrder(execBlock);
+        } else {
+          stack.push(execBlock);
         }
+      }
+      for (ExecutionBlock execBlock : stack) {
+        buildOrder(execBlock);
       }
     }
     orderedBlocks.add(current);
@@ -67,5 +72,22 @@ public class ExecutionBlockCursor {
 
   public void reset() {
     cursor = 0;
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < orderedBlocks.size(); i++) {
+      if (i == (cursor == 0 ? 0 : cursor - 1)) {
+        sb.append("(").append(orderedBlocks.get(i).getId().getId()).append(")");
+      } else {
+        sb.append(orderedBlocks.get(i).getId().getId());
+      }
+
+      if (i < orderedBlocks.size() - 1) {
+        sb.append(",");
+      }
+    }
+
+    return sb.toString();
   }
 }

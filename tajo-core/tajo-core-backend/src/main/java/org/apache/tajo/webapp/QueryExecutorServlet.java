@@ -5,12 +5,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.JSPUtil;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -58,7 +59,7 @@ public class QueryExecutorServlet extends HttpServlet {
   ObjectMapper om = new ObjectMapper();
 
   //queryRunnerId -> QueryRunner
-  private Map<String, QueryRunner> queryRunners = new HashMap<String, QueryRunner>();
+  private final Map<String, QueryRunner> queryRunners = new HashMap<String, QueryRunner>();
 
   private TajoClient tajoClient;
 
@@ -318,10 +319,14 @@ public class QueryExecutorServlet extends HttpServlet {
         } else {
           if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
             if (status.hasResult()) {
-              ResultSet res = tajoClient.getQueryResult(tajoQueryId);
+              ResultSet res = null;
               try {
+                ClientProtos.GetQueryResultResponse response = tajoClient.getResultResponse(tajoQueryId);
+                TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
+                tajoClient.getConf().setVar(TajoConf.ConfVars.USERNAME, response.getTajoUserName());
+                res = new TajoResultSet(tajoClient, queryId, tajoClient.getConf(), desc);
+
                 ResultSetMetaData rsmd = res.getMetaData();
-                TableDesc desc = tajoClient.getResultDesc(tajoQueryId);
                 resultSize = desc.getStats().getNumBytes();
                 LOG.info("Tajo Query Result: " + desc.getPath() + "\n");
 
@@ -367,9 +372,5 @@ public class QueryExecutorServlet extends HttpServlet {
         error = e;
       }
     }
-  }
-
-  static class QueryResult {
-    String queryId;
   }
 }

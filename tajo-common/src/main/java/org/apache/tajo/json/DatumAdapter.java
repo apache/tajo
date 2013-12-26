@@ -20,8 +20,7 @@ package org.apache.tajo.json;
 
 import com.google.gson.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.*;
 
 import java.lang.reflect.Type;
 
@@ -32,16 +31,38 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
 			JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
 		String typeName = jsonObject.get("type").getAsString();
-		return context.deserialize(jsonObject.get("body"),
-        DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
+    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(jsonObject.get("type").getAsString());
+    switch (type) {
+    case DATE:
+      return new DateDatum(jsonObject.get("value").getAsInt());
+    case TIME:
+      return new TimeDatum(jsonObject.get("value").getAsLong());
+    case TIMESTAMP:
+      return new TimestampDatum(jsonObject.get("value").getAsString());
+    default:
+      return context.deserialize(jsonObject.get("body"),
+          DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
+    }
 	}
 
 	@Override
 	public JsonElement serialize(Datum src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
 		jsonObj.addProperty("type", src.type().name());
-		JsonElement jsonElem = context.serialize(src);
-		jsonObj.add("body", jsonElem);
+    switch (src.type()) {
+    case DATE:
+      jsonObj.addProperty("value", src.asInt4());
+      break;
+    case TIME:
+      jsonObj.addProperty("value", src.asInt8());
+      break;
+    case TIMESTAMP:
+      jsonObj.addProperty("value", src.asChars());
+      break;
+    default:
+      jsonObj.add("body", context.serialize(src));
+    }
+
 		return jsonObj;
 	}
 }

@@ -112,7 +112,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
 
       frameTuple.set(leftTuple, rightTuple);
       joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).asBool()) {
+      if (joinQual.terminate(qualCtx).isTrue()) {
         projector.eval(evalContexts, frameTuple);
         projector.terminate(evalContexts, outTuple);
         foundAtLeastOneMatch = true;

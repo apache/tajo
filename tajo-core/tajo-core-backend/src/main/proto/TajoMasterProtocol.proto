@@ -117,18 +117,21 @@ message WorkerResourceProto {
     required string host = 1;
     required int32 peerRpcPort = 2;
     required int32 queryMasterPort = 3;
-    required ExecutionBlockIdProto executionBlockId = 4;
     required int32 memoryMB = 5 ;
-    required int32 diskSlots = 6;
+    required float diskSlots = 6;
+}
+
+message WorkerResourcesRequest {
+    repeated WorkerResourceProto workerResources = 1;
 }
 
 message WorkerResourceReleaseRequest {
     required ExecutionBlockIdProto executionBlockId = 1;
-    repeated ContainerIdProto containerIds = 2;
+    repeated hadoop.yarn.ContainerIdProto containerIds = 2;
 }
 
 message WorkerAllocatedResource {
-    required ContainerIdProto containerId = 1;
+    required hadoop.yarn.ContainerIdProto containerId = 1;
     required string nodeId = 2;
     required string workerHost = 3;
     required int32 peerRpcPort = 4;
@@ -149,4 +152,5 @@ service TajoMasterProtocolService {
   rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
   rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
+  rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
 }

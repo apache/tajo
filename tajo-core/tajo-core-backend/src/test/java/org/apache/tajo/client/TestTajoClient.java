@@ -74,14 +74,14 @@ public class TestTajoClient {
             + "using csv location '" + tablePath + "'";
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
-    client.detachTable(tableName);
+    client.dropTable(tableName);
     assertFalse(client.existTable(tableName));
   }
 
   @Test
-  public final void testCreateAndDropTable()
+  public final void testCreateAndDropExternalTable()
       throws IOException, ServiceException, SQLException {
-    final String tableName = "testCreateAndDropTable";
+    final String tableName = "testCreateAndDropExternalTable";
     Path tablePath = writeTmpTable(tableName);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
     FileSystem fs = tablePath.getFileSystem(conf);
@@ -94,7 +94,25 @@ public class TestTajoClient {
     client.dropTable(tableName);
     assertFalse(client.existTable(tableName));
     fs = tablePath.getFileSystem(conf);
-    assertFalse(fs.exists(tablePath));
+    assertTrue(fs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndPurgeExternalTable() throws IOException, ServiceException, SQLException {
+    final String tableName = "testCreateAndPurgeExternalTable";
+    Path tablePath = writeTmpTable(tableName);
+    LOG.error("Full path:" + tablePath.toUri().getRawPath());
+    FileSystem fs = tablePath.getFileSystem(conf);
+    assertTrue(fs.exists(tablePath));
+
+    assertFalse(client.existTable(tableName));
+
+    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
+    assertTrue(client.existTable(tableName));
+    client.dropTable(tableName, true);
+    assertFalse(client.existTable(tableName));
+    fs = tablePath.getFileSystem(conf);
+    assertFalse("Checking if table data exists", fs.exists(tablePath));
   }
 
   @Test
@@ -112,6 +130,26 @@ public class TestTajoClient {
     assertTrue(client.existTable(tableName));
 
     client.updateQuery("drop table " + tableName);
+    assertFalse(client.existTable(tableName));
+    FileSystem localFS = FileSystem.getLocal(conf);
+    assertTrue(localFS.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndPurgeExternalTableByExecuteQuery() throws IOException, ServiceException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndPurgeExternalTableByExecuteQuery";
+
+    Path tablePath = writeTmpTable(tableName);
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
+        + tablePath + "'";
+
+    client.executeQueryAndGetResult(sql);
+    assertTrue(client.existTable(tableName));
+
+    client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     FileSystem localFS = FileSystem.getLocal(conf);
     assertFalse(localFS.exists(tablePath));
@@ -135,19 +173,39 @@ public class TestTajoClient {
 
     client.updateQuery("drop table " + tableName);
     assertFalse(client.existTable(tableName));
+    assertTrue(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndPurgeTableByExecuteQuery() throws IOException, ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndPurgeTableByExecuteQuery";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName + " purge");
+    assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
 
   @Test
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
-    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
-    BackendTestingUtil.writeTmpTable(conf, CommonTestingUtil.getTestDir());
+    Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
     String sql =
         "create external table " + tableName + " (deptname text, score int4) "
-            + "using csv location 'file:///tmp/" + tableName + "'";
+            + "using csv location '" + tablePath + "'";
     client.executeQueryAndGetResult(sql);
     assertTrue(client.existTable(tableName));
   }
@@ -196,7 +254,7 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedHash1";
+    final String tableName = "testCreateAndDropTablePartitionedHash1ByExecuteQuery";
 
     assertFalse(client.existTable(tableName));
 
@@ -213,6 +271,30 @@ public class TestTajoClient {
 
     client.updateQuery("drop table " + tableName);
     assertFalse(client.existTable(tableName));
+    assertTrue(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testCreateAndPurgeTablePartitionedHash1ByExecuteQuery() throws IOException,
+      ServiceException, SQLException {
+    TajoConf conf = cluster.getConfiguration();
+    final String tableName = "testCreateAndPurgeTablePartitionedHash1ByExecuteQuery";
+
+    assertFalse(client.existTable(tableName));
+
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+    sql += " PARTITION BY HASH (deptname)";
+    sql += " (PARTITION sub_part1, PARTITION sub_part2, PARTITION sub_part3)";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    Path tablePath = client.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
+    assertTrue(hdfs.exists(tablePath));
+
+    client.updateQuery("drop table " + tableName + " purge");
+    assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
 
@@ -220,7 +302,7 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedHash2ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedHash2";
+    final String tableName = "testCreateAndDropTablePartitionedHash2ByExecuteQuery";
 
     assertFalse(client.existTable(tableName));
 
@@ -235,7 +317,7 @@ public class TestTajoClient {
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
-    client.updateQuery("drop table " + tableName);
+    client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
@@ -244,7 +326,7 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedListByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedList";
+    final String tableName = "testCreateAndDropTablePartitionedListByExecuteQuery";
 
     assertFalse(client.existTable(tableName));
 
@@ -260,7 +342,7 @@ public class TestTajoClient {
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
-    client.updateQuery("drop table " + tableName);
+    client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
@@ -269,7 +351,7 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedRangeByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedRange";
+    final String tableName = "testCreateAndDropTablePartitionedRangeByExecuteQuery";
 
     assertFalse(client.existTable(tableName));
 
@@ -286,7 +368,7 @@ public class TestTajoClient {
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
-    client.updateQuery("drop table " + tableName);
+    client.updateQuery("drop table " + tableName +" purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
@@ -294,12 +376,12 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedColumn";
+    final String tableName = "testCreateAndDropTablePartitionedColumnByExecuteQuery";
 
     assertFalse(client.existTable(tableName));
 
-    String sql = "create table " + tableName + " (deptname text, score int4)";
-    sql += "PARTITION BY COLUMN (deptname)";
+    String sql = "create table " + tableName + " (score int4)";
+    sql += "PARTITION BY COLUMN (deptname text)";
 
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
@@ -308,9 +390,8 @@ public class TestTajoClient {
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
-    client.updateQuery("drop table " + tableName);
+    client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
-
 }

@@ -19,7 +19,7 @@
 package org.apache.tajo;
 
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.util.BuilderUtils;
+import org.apache.hadoop.yarn.server.utils.BuilderUtils;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.util.TajoIdUtils;
 import org.junit.Test;

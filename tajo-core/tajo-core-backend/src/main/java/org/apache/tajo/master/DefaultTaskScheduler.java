@@ -28,6 +28,8 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
@@ -472,7 +474,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               subQuery.getIncomingChannels(),
               subQuery.getOutgoingChannels(),
               subQuery.getBlock().getEnforcer());
-          if (!subQuery.getMasterPlan().isRoot(subQuery.getBlock())) {
+          if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
 
@@ -490,6 +492,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       LOG.debug("HostLocalAssigned / Total: " + hostLocalAssigned + " / " + totalAssigned);
       LOG.debug("RackLocalAssigned: " + rackLocalAssigned + " / " + totalAssigned);
+    }
+
+    private boolean checkIfInterQuery(MasterPlan masterPlan, ExecutionBlock block) {
+      if (masterPlan.isRoot(block)) {
+        return false;
+      }
+
+      ExecutionBlock parent = masterPlan.getParent(block);
+      if (masterPlan.isRoot(parent) && parent.hasUnion()) {
+        return false;
+      }
+
+      return true;
     }
 
     public void assignToNonLeafTasks(List<TaskRequestEvent> taskRequests) {
@@ -522,7 +537,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               subQuery.getIncomingChannels(),
               subQuery.getOutgoingChannels(),
               subQuery.getBlock().getEnforcer());
-          if (!subQuery.getMasterPlan().isRoot(subQuery.getBlock())) {
+          if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
           for (ScanNode scan : task.getScanNodes()) {

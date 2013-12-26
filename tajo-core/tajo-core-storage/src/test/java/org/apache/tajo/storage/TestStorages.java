@@ -268,7 +268,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(RCFile.SERDE, TextSerializeDeserialize.class.getName());
+    meta.putOption(RCFile.SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -331,7 +331,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(RCFile.SERDE, BinarySerializeDeserialize.class.getName());
+    meta.putOption(RCFile.SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);

@@ -18,13 +18,17 @@
 
 package org.apache.tajo.worker;
 
+import com.codahale.metrics.Gauge;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.shell.PathData;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
@@ -47,6 +51,7 @@ import org.apache.tajo.storage.v2.DiskUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
 import java.io.*;
@@ -115,6 +120,10 @@ public class TajoWorker extends CompositeService {
   private RpcConnectionPool connPool;
 
   private String[] cmdArgs;
+
+  private DeletionService deletionService;
+
+  private TajoSystemMetrics workerSystemMetrics;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -225,6 +234,11 @@ public class TajoWorker extends CompositeService {
           webServer.start();
           httpPort = webServer.getPort();
           LOG.info("Worker info server started:" + httpPort);
+
+          deletionService = new DeletionService(getMountPath().size(), 0);
+          if(systemConf.getBoolVar(ConfVars.WORKER_TEMPORAL_DIR_CLEANUP)){
+            getWorkerContext().cleanupTemporalDirectories();
+          }
         } catch (IOException e) {
           LOG.error(e.getMessage(), e);
         }
@@ -251,6 +265,33 @@ public class TajoWorker extends CompositeService {
 
   }
 
+  private void initWorkerMetrics() {
+    workerSystemMetrics = new TajoSystemMetrics(systemConf, "worker", workerContext.getWorkerName());
+    workerSystemMetrics.start();
+
+    workerSystemMetrics.register("querymaster", "runningQueries", new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        if(queryMasterManagerService != null) {
+          return queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size();
+        } else {
+          return 0;
+        }
+      }
+    });
+
+    workerSystemMetrics.register("task", "runningTasks", new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        if(taskRunnerManager != null) {
+          return taskRunnerManager.getNumTasks();
+        } else {
+          return 0;
+        }
+      }
+    });
+  }
+
   public WorkerContext getWorkerContext() {
     return workerContext;
   }
@@ -258,6 +299,7 @@ public class TajoWorker extends CompositeService {
   @Override
   public void start() {
     super.start();
+    initWorkerMetrics();
   }
 
   @Override
@@ -291,6 +333,12 @@ public class TajoWorker extends CompositeService {
       } catch (Exception e) {
       }
     }
+
+    if(workerSystemMetrics != null) {
+      workerSystemMetrics.stop();
+    }
+
+    if(deletionService != null) deletionService.stop();
     super.stop();
     LOG.info("TajoWorker main thread exiting");
   }
@@ -341,6 +389,46 @@ public class TajoWorker extends CompositeService {
       }
     }
 
+    protected void cleanup(String strPath) {
+      if(deletionService == null) return;
+
+      LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
+
+      try {
+        Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(strPath, systemConf);
+        FileSystem localFS = FileSystem.getLocal(systemConf);
+        for (Path path : iter){
+          deletionService.delete(localFS.makeQualified(path));
+        }
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+
+    protected void cleanupTemporalDirectories() {
+      if(deletionService == null) return;
+
+      LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
+
+      try {
+        Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
+        FileSystem localFS = FileSystem.getLocal(systemConf);
+        for (Path path : iter){
+          PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
+
+          ArrayList<Path> paths = new ArrayList<Path>();
+          for (PathData pd : items){
+            paths.add(pd.path);
+          }
+          if(paths.size() == 0) continue;
+
+          deletionService.delete(null, paths.toArray(new Path[paths.size()]));
+        }
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+
     public boolean isYarnContainerMode() {
       return yarnContainerMode;
     }
@@ -379,6 +467,10 @@ public class TajoWorker extends CompositeService {
 
     public boolean isTaskRunnerMode() {
       return taskRunnerMode;
+    }
+
+    public TajoSystemMetrics getWorkerSystemMetrics() {
+      return workerSystemMetrics;
     }
   }
 
@@ -628,7 +720,7 @@ public class TajoWorker extends CompositeService {
     }
   }
 
-  public static List<File> getMountPath() throws Exception {
+  public static List<File> getMountPath() throws IOException {
     BufferedReader mountOutput = null;
     try {
       Process mountProcess = Runtime.getRuntime ().exec("mount");
@@ -646,7 +738,7 @@ public class TajoWorker extends CompositeService {
         mountPaths.add(new File(line.substring (indexStart + 4, indexEnd)));
       }
       return mountPaths;
-    } catch (Exception e) {
+    } catch (IOException e) {
       e.printStackTrace();
       throw e;
     } finally {

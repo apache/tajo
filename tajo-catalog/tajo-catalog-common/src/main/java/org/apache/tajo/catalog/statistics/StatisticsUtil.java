@@ -45,9 +45,10 @@ public class StatisticsUtil {
   }
 
   public static TableStats aggregateTableStat(List<TableStats> tableStatses) {
-    if(tableStatses == null || tableStatses.size() == 0 || tableStatses.get(0) == null)
-      return null;
     TableStats aggregated = new TableStats();
+
+    if(tableStatses == null || tableStatses.size() == 0 || tableStatses.get(0) == null)
+      return aggregated;
 
     ColumnStats[] css = null;
     if (tableStatses.size() > 0) {

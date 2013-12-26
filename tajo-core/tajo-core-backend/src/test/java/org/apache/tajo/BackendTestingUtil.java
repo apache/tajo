@@ -21,8 +21,6 @@
  */
 package org.apache.tajo;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -39,7 +37,6 @@ import java.io.IOException;
 public class BackendTestingUtil {
 	public final static Schema mockupSchema;
 	public final static TableMeta mockupMeta;
-  private static final Log LOG = LogFactory.getLog(BackendTestingUtil.class);
 
 	static {
     mockupSchema = new Schema();

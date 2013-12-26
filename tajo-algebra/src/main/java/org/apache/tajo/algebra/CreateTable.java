@@ -31,7 +31,7 @@ public class CreateTable extends Expr {
   private String location;
   private Expr subquery;
   private Map<String, String> params;
-  private PartitionOption partition;
+  private PartitionDescExpr partition;
 
   public CreateTable(final String tableName) {
     super(OpType.CreateTable);
@@ -107,11 +107,11 @@ public class CreateTable extends Expr {
     return partition != null;
   }
 
-  public void setPartition(PartitionOption partition) {
+  public void setPartition(PartitionDescExpr partition) {
     this.partition = partition;
   }
 
-  public <T extends PartitionOption> T getPartition() {
+  public <T extends PartitionDescExpr> T getPartition() {
     return (T) this.partition;
   }
 
@@ -138,7 +138,7 @@ public class CreateTable extends Expr {
         TUtil.checkEquals(params, another.params);
   }
 
-  public static class ColumnDefinition extends DataType {
+  public static class ColumnDefinition extends DataTypeExpr {
     String col_name;
 
     public ColumnDefinition(String columnName, String dataType) {
@@ -146,7 +146,7 @@ public class CreateTable extends Expr {
       this.col_name = columnName;
     }
 
-    public ColumnDefinition(String columnName, DataType dataType) {
+    public ColumnDefinition(String columnName, DataTypeExpr dataType) {
       super(dataType.getTypeName());
       if (dataType.hasLengthOrPrecision()) {
         setLengthOrPrecision(dataType.lengthOrPrecision);
@@ -178,10 +178,10 @@ public class CreateTable extends Expr {
     COLUMN
   }
 
-  public static abstract class PartitionOption {
+  public static abstract class PartitionDescExpr {
     PartitionType type;
 
-    public PartitionOption(PartitionType type) {
+    public PartitionDescExpr(PartitionType type) {
       this.type = type;
     }
 
@@ -190,7 +190,7 @@ public class CreateTable extends Expr {
     }
   }
 
-  public static class RangePartition extends PartitionOption {
+  public static class RangePartition extends PartitionDescExpr {
     ColumnReferenceExpr [] columns;
     List<RangePartitionSpecifier> specifiers;
 
@@ -209,7 +209,7 @@ public class CreateTable extends Expr {
     }
   }
 
-  public static class HashPartition extends PartitionOption {
+  public static class HashPartition extends PartitionDescExpr {
     ColumnReferenceExpr [] columns;
     Expr quantity;
     List<PartitionSpecifier> specifiers;
@@ -246,7 +246,7 @@ public class CreateTable extends Expr {
     }
   }
 
-  public static class ListPartition extends PartitionOption {
+  public static class ListPartition extends PartitionDescExpr {
     ColumnReferenceExpr [] columns;
     List<ListPartitionSpecifier> specifiers;
 
@@ -265,16 +265,22 @@ public class CreateTable extends Expr {
     }
   }
 
-  public static class ColumnPartition extends PartitionOption {
-    ColumnReferenceExpr [] columns;
+  public static class ColumnPartition extends PartitionDescExpr {
+    private ColumnDefinition [] columns;
+    private boolean isOmitValues;
 
-    public ColumnPartition(ColumnReferenceExpr [] columns) {
+    public ColumnPartition(ColumnDefinition [] columns, boolean isOmitValues) {
       super(PartitionType.COLUMN);
       this.columns = columns;
+      this.isOmitValues = isOmitValues;
     }
 
-    public ColumnReferenceExpr [] getColumns() {
+    public ColumnDefinition [] getColumns() {
       return columns;
+    }
+
+    public boolean isOmitValues() {
+      return isOmitValues;
     }
   }
 

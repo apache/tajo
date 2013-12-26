@@ -19,15 +19,14 @@
 package org.apache.tajo.engine.function;
 
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
@@ -158,12 +157,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select left('abcdef',5) as col1 ", new String[]{"abcde"});
     testSimpleEval("select left('abcdef',6) as col1 ", new String[]{"abcdef"});
     testSimpleEval("select left('abcdef',7) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select from_left('abcdef',-1) as col1 ", new String[]{"abcde"});
-//    testSimpleEval("select from_left('abcdef',-2) as col1 ", new String[]{"abcd"});
-//    testSimpleEval("select from_left('abcdef',-3) as col1 ", new String[]{"abc"});
-//    testSimpleEval("select from_left('abcdef',-4) as col1 ", new String[]{"ab"});
-//    testSimpleEval("select from_left('abcdef',-5) as col1 ", new String[]{"a"});
-//    testSimpleEval("select from_left('abcdef',-6) as col1 ", new String[]{""});
+
+    testSimpleEval("select left('abcdef',-1) as col1 ", new String[]{"abcde"});
+    testSimpleEval("select left('abcdef',-2) as col1 ", new String[]{"abcd"});
+    testSimpleEval("select left('abcdef',-3) as col1 ", new String[]{"abc"});
+    testSimpleEval("select left('abcdef',-4) as col1 ", new String[]{"ab"});
+    testSimpleEval("select left('abcdef',-5) as col1 ", new String[]{"a"});
+    testSimpleEval("select left('abcdef',-6) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -186,12 +186,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select right('abcdef',5) as col1 ", new String[]{"bcdef"});
     testSimpleEval("select right('abcdef',6) as col1 ", new String[]{"abcdef"});
     testSimpleEval("select right('abcdef',7) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select from_right('abcdef',-1) as col1 ", new String[]{"bcdef"});
-//    testSimpleEval("select from_right('abcdef',-2) as col1 ", new String[]{"cdef"});
-//    testSimpleEval("select from_right('abcdef',-3) as col1 ", new String[]{"def"});
-//    testSimpleEval("select from_right('abcdef',-4) as col1 ", new String[]{"ef"});
-//    testSimpleEval("select from_right('abcdef',-5) as col1 ", new String[]{"f"});
-//    testSimpleEval("select from_right('abcdef',-6) as col1 ", new String[]{""});
+
+    testSimpleEval("select right('abcdef',-1) as col1 ", new String[]{"bcdef"});
+    testSimpleEval("select right('abcdef',-2) as col1 ", new String[]{"cdef"});
+    testSimpleEval("select right('abcdef',-3) as col1 ", new String[]{"def"});
+    testSimpleEval("select right('abcdef',-4) as col1 ", new String[]{"ef"});
+    testSimpleEval("select right('abcdef',-5) as col1 ", new String[]{"f"});
+    testSimpleEval("select right('abcdef',-6) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -214,7 +215,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1", new String[]{"cbagfe"});
+    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1",
+        new String[]{"cbagfe"});
   }
 
   @Test
@@ -290,7 +292,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1", new String[]{"900150983cd24fb0d6963f7d28e17f72"});
+    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1",
+        new String[]{"900150983cd24fb0d6963f7d28e17f72"});
   }
 
   @Test
@@ -309,6 +312,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testBin() throws IOException {
+    testSimpleEval("select to_bin(1) as col1 ", new String[]{"1"});
+    testSimpleEval("select to_bin(10) as col1 ", new String[]{"1010"});
+    testSimpleEval("select to_bin(1234) as col1 ", new String[]{"10011010010"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select to_bin(20) from table1",
+        new String[]{"10100"});
+  }
+
+  @Test
   public void testOctetLength() throws IOException {
     testSimpleEval("select octet_length('123456') as col1 ", new String[]{"6"});
     testSimpleEval("select octet_length('1') as col1 ", new String[]{"1"});
@@ -320,6 +337,25 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
     testEval(schema, "table1", "ABC,DEF,3.14", "select octet_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
+  }
+
+  @Test
+  public void testSplitPart() throws IOException {
+    testSimpleEval("select split_part('1386577650.123', '.', 1) as col1 ", new String[]{"1386577650"});
+    testSimpleEval("select split_part('1386577650.123', '.', 2) as col1 ", new String[]{"123"});
+    // If part is larger than the number of string portions, it will returns NULL.
+    testSimpleEval("select split_part('1386577650.123', '.', 3) is null", new String[]{"t"});
+
+    // null handling tests
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "t1", ",.,1", "select split_part(col1, col2, col3::int) is null from t1", new String[]{"t"});
+    testEval(schema, "t1", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from t1",
+        new String[]{"1386577650.123"});
+    testEval(schema, "t1", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from t1",
+        new String[]{"t"});
   }
 
   @Test
@@ -335,16 +371,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select substr('일이삼사오', 2, 2) as col1 ", new String[]{"이삼"});
     testSimpleEval("select substr('일이삼사오', 3) as col1 ", new String[]{"삼사오"});
 
-    //TODO If there is a minus value in function argument, next error occurred.
-    //org.apache.tajo.engine.parser.SQLSyntaxError: ERROR: syntax error at or near 'substr'
-    //LINE 1:7 select substr('abcdef', -1, 100) as col1
-    //               ^^^^^^
-    //at org.apache.tajo.engine.parser.SQLAnalyzer.parse(SQLAnalyzer.java:64)
-
-//    testSimpleEval("select substr('abcdef', -1) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select substr('abcdef', -1, 100) as col1 ", new String[]{"abcdef"});
-//    testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
-//    testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
+    testSimpleEval("select substr('abcdef', -1) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', -1, 100) as col1 ", new String[]{"abcdef"});
+    testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
+    testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -352,6 +382,55 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
     testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
         new String[]{"bcd"});
+  }
+  
+  @Test
+  public void testLocate() throws IOException {
+    // normal case
+    testSimpleEval("select locate('abcdef', 'a') as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'a', 0) as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'a', 1) as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', 'z') as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('abcdef', 'z', 1) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('foobarbar', 'bar') as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 0) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 1) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('foobarbar', 'bar', 5) as col1 ", new String[]{"7"});
+    testSimpleEval("select locate('foobarbar', 'bar', 9) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('가나다라마라마', '라마') as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('가나다라마라마', '라마', 5) as col1 ", new String[]{"6"});
+    // empty string
+    testSimpleEval("select locate('abcdef', '') as col1 ", new String[]{"1"});
+    testSimpleEval("select locate('abcdef', '', 2) as col1 ", new String[]{"2"});
+    // pos = last index of string (expected value(6) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 6) as col1 ", new String[]{"6"});
+    // pos = last index + 1 (expected value(7) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 7) as col1 ", new String[]{"7"});
+    // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 8) as col1 ", new String[]{"0"});
+    // pos = greater then last index + 1 (expected value(0) is tested on mysql)
+    testSimpleEval("select locate('abcdef', '', 9) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('가나다라', '', 2) as col1 ", new String[]{"2"});
+    testSimpleEval("select locate('가나다라', '', 4) as col1 ", new String[]{"4"});
+    testSimpleEval("select locate('가나다라', '', 5) as col1 ", new String[]{"5"});
+    testSimpleEval("select locate('가나다라', '', 6) as col1 ", new String[]{"0"});
+    
+    // negative pos    
+    testSimpleEval("select locate('abcdef', 'a', -1) as col1 ", new String[]{"0"});
+    testSimpleEval("select locate('abcdef', 'a', -5) as col1 ", new String[]{"0"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd') from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 1) from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 4) from table1", new String[]{"0"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'xy') from table1", new String[]{"0"});
+    // null string
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
+    // nul substring
+    testEval(schema, "table1", ",abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
   }
 
   @Test
@@ -402,5 +481,80 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testInitcap() throws IOException {
     testSimpleEval("select initcap('hi bro') ", new String[]{"Hi Bro"});
     testSimpleEval("select initcap('HI BRO') ", new String[]{"Hi Bro"});
+  }
+
+  @Test
+  public void testAscii() throws IOException {
+    testSimpleEval("select ascii('abc') as col1 ", new String[]{"97"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    testEval(schema, "table1", "abc", "select ascii(col1) from table1",
+            new String[]{"97"});
+    testEval(schema, "table1", "12", "select ascii(col1) from table1",
+            new String[]{"49"});
+
+  }
+
+  @Test
+  public void testChr() throws IOException {
+    testSimpleEval("select chr(48) as col1 ", new String[]{"0"});
+    testSimpleEval("select chr(49) as col1 ", new String[]{"1"});
+    testSimpleEval("select chr(50) as col1 ", new String[]{"2"});
+    testSimpleEval("select chr(64) as col1 ", new String[]{"@"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", INT4);
+    testEval(schema, "table1", "65", "select chr(col1) from table1", new String[]{"A"});
+    testEval(schema, "table1", "66", "select chr(col1) from table1", new String[]{"B"});
+    testEval(schema, "table1", "52512", "select chr(col1) from table1", new String[]{"촠"});
+  }
+
+  @Test
+  public void testLpad() throws IOException {
+    testSimpleEval("select lpad('hi', 5, 'xy') ", new String[]{"xyxhi"});
+    testSimpleEval("select LPAD('hello', 7, 'xy') ", new String[]{"xyhello"});
+    testSimpleEval("select LPAD('hello', 3, 'xy') ", new String[]{"hel"});
+    testSimpleEval("select lPAD('hello', 7) ", new String[]{"  hello"});
+    testSimpleEval("select lPAD('가나다라', 3) ", new String[]{"가나다"});
+
+  }
+
+  @Test
+  public void testRpad() throws IOException {
+    testSimpleEval("select rpad('hi', 5, 'xy') ", new String[]{"hixyx"});
+    testSimpleEval("select RPAD('hello', 7, 'xy') ", new String[]{"helloxy"});
+    testSimpleEval("select RPAD('hello', 3, 'xy') ", new String[]{"hel"});
+    testSimpleEval("select rPAD('hello', 7) ", new String[]{"hello  "});
+    testSimpleEval("select rPAD('가나다라', 3) ", new String[]{"가나다"});
+
+  }
+
+  @Test
+  public void testQuote_ident() throws IOException {
+    testSimpleEval("select quote_ident('Foo bar') ", new String[]{"\"Foo bar\""});
+    testSimpleEval("select QUOTE_IDENT('Tajo Function') ", new String[]{"\"Tajo Function\""});
+  }
+
+  @Test
+  public void testEncode() throws IOException {
+    testSimpleEval("select encode('Hello\nworld', 'base64') ", new String[]{"SGVsbG8Kd29ybGQ="});
+    testSimpleEval("select encode('Hello\nworld', 'hex') ", new String[]{"0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64"});
+    testSimpleEval("select encode('한글', 'base64') ", new String[]{"7ZWc6riA"});
+    testSimpleEval("select encode('한글', 'hex') ", new String[]{"0xd55c0xae00"});
+    testSimpleEval("select encode('한글\n테스트\t입니다.', 'hex') ",
+        new String[]{"0xd55c0xae000x0a0xd14c0xc2a40xd2b80x090xc7850xb2c80xb2e40x2e"});
+  }
+
+
+  @Test
+  public void testDecode() throws IOException {
+    testSimpleEval("select decode('SGVsbG8Kd29ybGQ=', 'base64') ", new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
+    testSimpleEval("select decode('0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64', 'hex') ",
+        new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
+    testSimpleEval("select decode('7ZWc6riA', 'base64') ", new String[]{StringEscapeUtils.escapeJava("한글")});
+    testSimpleEval("select decode('0xd55c0xae00', 'hex') ", new String[]{StringEscapeUtils.escapeJava("한글")});
+    testSimpleEval("select decode('0xd55c0xae000x0a0xd14c0xc2a40xd2b80x090xc7850xb2c80xb2e40x2e', 'hex') ",
+        new String[]{StringEscapeUtils.escapeJava("한글\n" + "테스트\t입니다.")});
   }
 }

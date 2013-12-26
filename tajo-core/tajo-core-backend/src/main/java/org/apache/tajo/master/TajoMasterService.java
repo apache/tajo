@@ -22,20 +22,22 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.proto.YarnProtos;
-import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TajoMasterService extends AbstractService {
@@ -149,6 +151,32 @@ public class TajoMasterService extends AbstractService {
                                 RpcCallback<BoolProto> done) {
       context.getQueryJobManager().stopQuery(new QueryId(request));
       done.run(BOOL_TRUE);
+    }
+
+    @Override
+    public void getAllWorkerResource(RpcController controller, PrimitiveProtos.NullProto request,
+                                     RpcCallback<TajoMasterProtocol.WorkerResourcesRequest> done) {
+
+      TajoMasterProtocol.WorkerResourcesRequest.Builder builder =
+          TajoMasterProtocol.WorkerResourcesRequest.newBuilder();
+      List<WorkerResource> workerResources =
+          new ArrayList<WorkerResource>(context.getResourceManager().getWorkers().values());
+
+      for(WorkerResource worker: workerResources) {
+
+        TajoMasterProtocol.WorkerResourceProto.Builder workerResource =
+            TajoMasterProtocol.WorkerResourceProto.newBuilder();
+
+        workerResource.setHost(worker.getAllocatedHost());
+        workerResource.setPeerRpcPort(worker.getPeerRpcPort());
+        workerResource.setQueryMasterPort(worker.getQueryMasterPort());
+        workerResource.setMemoryMB(worker.getMemoryMB());
+        workerResource.setDiskSlots(worker.getDiskSlots());
+        workerResource.setQueryMasterPort(worker.getQueryMasterPort());
+
+        builder.addWorkerResources(workerResource);
+      }
+      done.run(builder.build());
     }
   }
 }

@@ -20,7 +20,7 @@ package org.apache.tajo.master.rm;
 
 import org.apache.hadoop.yarn.api.records.*;
 
-public class TajoWorkerContainer implements Container {
+public class TajoWorkerContainer extends Container {
   ContainerId id;
   NodeId nodeId;
   WorkerResource workerResource;
@@ -84,32 +84,12 @@ public class TajoWorkerContainer implements Container {
   }
 
   @Override
-  public ContainerState getState() {
+  public Token getContainerToken() {
     return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
 
   @Override
-  public void setState(ContainerState state) {
-    //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public ContainerToken getContainerToken() {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public void setContainerToken(ContainerToken containerToken) {
-    //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public ContainerStatus getContainerStatus() {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public void setContainerStatus(ContainerStatus containerStatus) {
+  public void setContainerToken(Token containerToken) {
     //To change body of implemented methods use File | Settings | File Templates.
   }
 

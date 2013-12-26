@@ -28,6 +28,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.algebra.CreateTable;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.Specifier;
@@ -37,6 +38,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
@@ -66,7 +68,6 @@ public class TajoCli {
   private static final Class [] registeredCommands = {
       DescTableCommand.class,
       HelpCommand.class,
-      DetachCommand.class,
       ExitCommand.class,
       Copyright.class,
       Version.class
@@ -352,18 +353,28 @@ public class TajoCli {
         }
       }
 
-      if (isFailed(status.getState())) {
-        sout.println(status.getErrorMessage());
+      if (status.getState() == QueryState.QUERY_ERROR) {
+        sout.println("Internal error!");
+      } else if (status.getState() == QueryState.QUERY_FAILED) {
+        sout.println("Query failed!");
       } else if (status.getState() == QueryState.QUERY_KILLED) {
         sout.println(queryId + " is killed.");
       } else {
         if (status.getState() == QueryState.QUERY_SUCCEEDED) {
           sout.println("final state: " + status.getState()
-              + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime()) / 1000.0) + " sec")
               + ", response time: " + (((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0)
               + " sec"));
           if (status.hasResult()) {
-            ResultSet res = client.getQueryResult(queryId);
+            ResultSet res = null;
+            TableDesc desc = null;
+            if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+              res = client.createNullResultSet(queryId);
+            } else {
+              ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
+              desc = CatalogUtil.newTableDesc(response.getTableDesc());
+              conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
+              res = new TajoResultSet(client, queryId, conf, desc);
+            }
             try {
               if (res == null) {
                 sout.println("OK");
@@ -371,7 +382,7 @@ public class TajoCli {
               }
 
               ResultSetMetaData rsmd = res.getMetaData();
-              TableDesc desc = client.getResultDesc(queryId);
+
               TableStats stat = desc.getStats();
               String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
               long resultRows = stat.getNumRows();
@@ -585,38 +596,6 @@ public class TajoCli {
     @Override
     public String getDescription() {
       return "show command lists and their usages";
-    }
-  }
-
-  // TODO - This should be dealt as a DDL statement instead of a command
-  public class DetachCommand extends Command {
-    @Override
-    public String getCommand() {
-      return "detach";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      if (cmd.length != 3) {
-        throw new IllegalArgumentException("usage: detach table [tb_name]");
-      } else {
-        if (client.existTable(cmd[2])) {
-          client.detachTable(cmd[2]);
-          sout.println("Table \"" + cmd[2] + "\" is detached.");
-        } else {
-          sout.println("ERROR:  table \"" + cmd[1] + "\" does not exist");
-        }
-      }
-    }
-
-    @Override
-    public String getUsage() {
-      return "table [table_name]";
-    }
-
-    @Override
-    public String getDescription() {
-      return "detach a table, but it does not remove the table directory.";
     }
   }
 

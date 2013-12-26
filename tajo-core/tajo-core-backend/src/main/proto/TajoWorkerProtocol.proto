@@ -114,7 +114,7 @@ message QueryExecutionRequestProto {
 }
 
 message GetTaskRequestProto {
-    required ContainerIdProto containerId = 1;
+    required hadoop.yarn.ContainerIdProto containerId = 1;
     required ExecutionBlockIdProto executionBlockId = 2;
 }
 
@@ -163,6 +163,8 @@ service TajoWorkerProtocolService {
 
   //from QueryMaster(Worker)
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+
+  rpc cleanup(QueryIdProto) returns (BoolProto);
 }
 
 message EnforceProperty {

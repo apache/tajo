@@ -1,5 +1,5 @@
 create table customer (
-	c_custkey long, /* primary key */
+	c_custkey long,
 	c_name string,
 	c_nationkey long,
 	c_phone string,

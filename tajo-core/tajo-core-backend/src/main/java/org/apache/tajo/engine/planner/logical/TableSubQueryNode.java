@@ -35,7 +35,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     this.tableName = PlannerUtil.normalizeTableName(tableName);
     this.subQuery = subQuery;
     setOutSchema((Schema) this.subQuery.getOutSchema().clone());
-    getOutSchema().setQualifier(this.tableName, true);
+    getOutSchema().setQualifier(this.tableName);
     setInSchema((Schema) this.subQuery.getInSchema().clone());
   }
 
@@ -119,6 +119,6 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   public String toString() {
-    return "Table Subquery (alias = " + tableName + ")\n" + subQuery.toString();
+    return "(" + getPID() + ") Table Subquery (alias = " + tableName + ")\n" + subQuery.toString();
   }
 }

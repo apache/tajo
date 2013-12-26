@@ -25,14 +25,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.service.AbstractService;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.NoSuchTableException;
-import org.apache.tajo.catalog.partition.Partitions;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -166,13 +169,17 @@ public class TajoMasterClientService extends AbstractService {
                                                  GetQueryResultRequest request)
         throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-
-      }
       QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
       GetQueryResultResponse.Builder builder
           = GetQueryResultResponse.newBuilder();
+
+      try {
+        //TODO After implementation Tajo's user security feature, Should be modified.
+        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
+      } catch (IOException e) {
+        LOG.warn("Can't get current user name");
+      }
       switch (queryInfo.getQueryState()) {
         case QUERY_SUCCEEDED:
           // TODO check this logic needed
@@ -308,12 +315,15 @@ public class TajoMasterClientService extends AbstractService {
 
         Schema schema = new Schema(request.getSchema());
         TableMeta meta = new TableMeta(request.getMeta());
-        Partitions partitions = new Partitions(request.getPartitions());
+        PartitionDesc partitionDesc = null;
+        if (request.hasPartitions()) {
+          partitionDesc = new PartitionDesc(request.getPartitions());
+        }
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), schema,
-              meta, path, false, partitions);
+          desc = context.getGlobalEngine().createTableOnPath(request.getName(), schema,
+              meta, path, false, partitionDesc);
         } catch (Exception e) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)
@@ -331,25 +341,8 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto dropTable(RpcController controller,
-                               StringProto tableNameProto)
-        throws ServiceException {
-      context.getGlobalEngine().dropTable(tableNameProto.getValue());
-      return BOOL_TRUE;
-    }
-
-    @Override
-    public BoolProto detachTable(RpcController controller,
-                                 StringProto tableNameProto)
-        throws ServiceException {
-      String tableName = tableNameProto.getValue();
-      if (!catalog.existsTable(tableName)) {
-        throw new NoSuchTableException(tableName);
-      }
-
-      catalog.deleteTable(tableName);
-
-      LOG.info("Table " + tableName + " is detached");
+    public BoolProto dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
+      context.getGlobalEngine().dropTable(dropTable.getName(), dropTable.getPurge());
       return BOOL_TRUE;
     }
   }

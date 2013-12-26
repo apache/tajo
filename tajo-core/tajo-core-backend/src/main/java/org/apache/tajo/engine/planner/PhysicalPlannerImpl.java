@@ -77,6 +77,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       execPlan = createPlanRecursive(context, plan, plan.getTerminalNode());
 
       return execPlan;
+//=======
+//      execPlan = createPlanRecursive(context, logicalPlan);
+//      if (execPlan instanceof StoreTableExec
+//          || execPlan instanceof IndexedStoreExec
+//          || execPlan instanceof PartitionedStoreExec
+//          || execPlan instanceof ColumnPartitionedTableStoreExec) {
+//        return execPlan;
+//      } else if (context.getDataChannel() != null) {
+//        return buildOutputOperator(context, logicalPlan, execPlan);
+//      } else {
+//        return execPlan;
+//      }
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     } catch (IOException ioe) {
       throw new InternalException(ioe);
     }
@@ -95,12 +108,27 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       throw new InternalException(ioe);
     }
   }
+//=======
+//  private PhysicalExec buildOutputOperator(TaskAttemptContext context, LogicalNode plan,
+//                                           PhysicalExec execPlan) throws IOException {
+//    DataChannel channel = context.getDataChannel();
+//    StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
+//    if(context.isInterQuery()) storeTableNode.setStorageType(context.getDataChannel().getStoreType());
+//    storeTableNode.setInSchema(plan.getOutSchema());
+//    storeTableNode.setOutSchema(plan.getOutSchema());
+//    if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
+//      storeTableNode.setPartitions(channel.getPartitionType(), channel.getPartitionKey(), channel.getPartitionNum());
+//    } else {
+//      storeTableNode.setDefaultParition();
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
+//    }
+//  }
 
   private ExecutionPlan checkOutputOperator(TaskAttemptContext context, ExecutionPlan plan) {
     LogicalNode root = plan.getTerminalNode();
     List<DataChannel> channels = context.getOutgoingChannels();
     for (DataChannel channel : channels) {
-      LogicalNode node = plan.getRootChild(channel.getSrcPID());
+      LogicalNode node = plan.getTopNodeFromPID(channel.getSrcPID());
       if (node.getType() != NodeType.STORE) {
         StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
         storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
@@ -174,7 +202,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return leftExec;
         }
 
-      } case SCAN:
+      }
+      case PARTITIONS_SCAN:
+      case SCAN:
         leftExec = createScanPlan(ctx, (ScanNode) logicalNode);
         if (plan.getParentCount(logicalNode) > 1) {
           return new MultiOutputExec(ctx, leftExec.getSchema(), leftExec, plan.getParentCount(logicalNode));
@@ -364,8 +394,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, ExecutionPlan plan, JoinNode node,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     List<LogicalNode> childs = plan.getChilds(node);
-    String [] leftLineage = PlannerUtil.getLineage(plan, childs.get(0));
-    String [] rightLineage = PlannerUtil.getLineage(plan, childs.get(1));
+    String [] leftLineage = PlannerUtil.getRelationLineage(plan, childs.get(0));
+    String [] rightLineage = PlannerUtil.getRelationLineage(plan, childs.get(1));
+//=======
+//    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
+//    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long leftSize = estimateSizeRecursive(context, leftLineage);
     long rightSize = estimateSizeRecursive(context, rightLineage);
 
@@ -437,7 +471,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   private PhysicalExec createBestLeftOuterJoinPlan(TaskAttemptContext context, ExecutionPlan plan, JoinNode join,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    String [] rightLineage = PlannerUtil.getLineage(plan.getChild(join, 1));
+    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getChild(join, 1));
+//=======
+//    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
 
     if (rightTableVolume < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
@@ -456,7 +493,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     //if the left operand is small enough => implement it as a left outer hash join with exchanged operators (note:
     // blocking, but merge join is blocking as well)
-    String [] outerLineage4 = PlannerUtil.getLineage(plan.getChild(join, 0));
+    String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getChild(join, 0));
+//=======
+//    String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getLeftChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long outerSize = estimateSizeRecursive(context, outerLineage4);
     if (outerSize < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
       LOG.info("Right Outer Join (" + join.getPID() +") chooses [Hash Join].");
@@ -527,8 +567,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private HashFullOuterJoinExec createFullOuterHashJoinPlan(TaskAttemptContext context, ExecutionPlan plan, JoinNode join,
                                                             PhysicalExec leftExec, PhysicalExec rightExec)
       throws IOException {
-    String [] leftLineage = PlannerUtil.getLineage(plan.getChild(join, 0));
-    String [] rightLineage = PlannerUtil.getLineage(plan.getChild(join, 1));
+    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getChild(join, 0));
+    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getChild(join, 1));
+//=======
+//    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
+//    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long outerSize2 = estimateSizeRecursive(context, leftLineage);
     long innerSize2 = estimateSizeRecursive(context, rightLineage);
 
@@ -564,8 +608,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   private PhysicalExec createBestFullOuterJoinPlan(TaskAttemptContext context, ExecutionPlan plan, JoinNode join,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    String [] leftLineage = PlannerUtil.getLineage(plan.getChild(join, 0));
-    String [] rightLineage = PlannerUtil.getLineage(plan.getChild(join, 1));
+    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getChild(join, 0));
+    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getChild(join, 1));
+//=======
+//    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
+//    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long outerSize2 = estimateSizeRecursive(context, leftLineage);
     long innerSize2 = estimateSizeRecursive(context, rightLineage);
     final long threshold = 1048576 * 128;
@@ -712,6 +760,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new TunnelExec(ctx, plan.getOutSchema(), subOp);
     }
 
+    // Find partitioned table
+    if (plan.getPartitions() != null) {
+      if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.COLUMN)) {
+        return new ColumnPartitionedTableStoreExec(ctx, plan, subOp);
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.HASH)) {
+        // TODO
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.RANGE)) {
+        // TODO
+      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.LIST)) {
+        // TODO
+      }
+    }
+
     return new StoreTableExec(ctx, plan, subOp);
   }
 
@@ -782,7 +843,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return createInMemoryHashAggregation(context, groupbyNode, subOp);
     }
 
-    String [] outerLineage = PlannerUtil.getLineage(plan, plan.getChilds(groupbyNode).get(0));
+    String [] outerLineage = PlannerUtil.getRelationLineage(plan, plan.getChilds(groupbyNode).get(0));
+//=======
+//    String [] outerLineage = PlannerUtil.getRelationLineage(groupbyNode.getChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
     final long threshold = conf.getLongVar(TajoConf.ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
 
@@ -814,7 +878,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public SortExec createBestSortPlan(TaskAttemptContext context, ExecutionPlan plan, SortNode sortNode,
                                      PhysicalExec child) throws IOException {
-    String [] outerLineage = PlannerUtil.getLineage(plan, plan.getChilds(sortNode).get(0));
+    String [] outerLineage = PlannerUtil.getRelationLineage(plan, plan.getChilds(sortNode).get(0));
+//=======
+//    String [] outerLineage = PlannerUtil.getRelationLineage(sortNode.getChild());
+//>>>>>>> 3a5a617c6bb1dd10d026ab0735f9031623a66d30
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
     final long threshold = 1048576 * 2000;
 
@@ -836,7 +903,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     FragmentProto[] fragmentProtos = ctx.getTables(annotation.getTableName());
     List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), CatalogProtos.StoreType.CSV, fragmentProtos);
+        FragmentConvertor.convert(ctx.getConf(), ctx.getIncomingChannels().get(0).getStoreType(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0),
         annotation.getSortKeys());

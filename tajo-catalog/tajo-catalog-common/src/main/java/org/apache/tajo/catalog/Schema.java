@@ -39,26 +39,24 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	private	SchemaProto.Builder builder = SchemaProto.newBuilder();
 
 	@Expose protected List<Column> fields = null;
-	@Expose protected Map<String, Integer> fieldsByQialifiedName = null;
+	@Expose protected Map<String, Integer> fieldsByQualifiedName = null;
   @Expose protected Map<String, List<Integer>> fieldsByName = null;
 
 	public Schema() {
-    this.fields = new ArrayList<Column>();
-    this.fieldsByQialifiedName = new TreeMap<String, Integer>();
-    this.fieldsByName = new HashMap<String, List<Integer>>();
+    init();
 	}
 	
 	public Schema(SchemaProto proto) {
     this.fields = new ArrayList<Column>();
-    this.fieldsByQialifiedName = new HashMap<String, Integer>();
+    this.fieldsByQualifiedName = new HashMap<String, Integer>();
     this.fieldsByName = new HashMap<String, List<Integer>>();
     for(ColumnProto colProto : proto.getFieldsList()) {
       Column tobeAdded = new Column(colProto);
       fields.add(tobeAdded);
       if (tobeAdded.hasQualifier()) {
-        fieldsByQialifiedName.put(tobeAdded.getQualifier() + "." + tobeAdded.getColumnName(), fields.size() - 1);
+        fieldsByQualifiedName.put(tobeAdded.getQualifier() + "." + tobeAdded.getColumnName(), fields.size() - 1);
       } else {
-        fieldsByQialifiedName.put(tobeAdded.getColumnName(), fields.size() - 1);
+        fieldsByQualifiedName.put(tobeAdded.getColumnName(), fields.size() - 1);
       }
       if (fieldsByName.containsKey(tobeAdded.getColumnName())) {
         fieldsByName.get(tobeAdded.getColumnName()).add(fields.size() - 1);
@@ -71,15 +69,21 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	public Schema(Schema schema) {
 	  this();
 		this.fields.addAll(schema.fields);
-		this.fieldsByQialifiedName.putAll(schema.fieldsByQialifiedName);
+		this.fieldsByQualifiedName.putAll(schema.fieldsByQualifiedName);
     this.fieldsByName.putAll(schema.fieldsByName);
 	}
-	
+
 	public Schema(Column [] columns) {
-    this();
+    init();
     for(Column c : columns) {
       addColumn(c);
     }
+  }
+
+  private void init() {
+    this.fields = new ArrayList<Column>();
+    this.fieldsByQualifiedName = new HashMap<String, Integer>();
+    this.fieldsByName = new HashMap<String, List<Integer>>();
   }
 
   /**
@@ -89,26 +93,10 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @param qualifier The qualifier
    */
   public void setQualifier(String qualifier) {
-    setQualifier(qualifier, false);
-  }
-
-  /**
-   * Set a qualifier to this schema. This changes the qualifier of all columns if force is true.
-   * Otherwise, it changes the qualifier of all columns except for non-qualified columns
-   *
-   * @param qualifier The qualifier
-   * @param force If true, all columns' qualifiers will be changed. Otherwise, only qualified columns' qualifiers will
-   *              be changed.
-   */
-  public void setQualifier(String qualifier, boolean force) {
-    fieldsByQialifiedName.clear();
-
+    fieldsByQualifiedName.clear();
     for (int i = 0; i < getColumnNum(); i++) {
-      if (!force && fields.get(i).hasQualifier()) {
-        continue;
-      }
       fields.get(i).setQualifier(qualifier);
-      fieldsByQialifiedName.put(fields.get(i).getQualifiedName(), i);
+      fieldsByQualifiedName.put(fields.get(i).getQualifiedName(), i);
     }
   }
 	
@@ -121,7 +109,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
 	public Column getColumnByFQN(String qualifiedName) {
-		Integer cid = fieldsByQialifiedName.get(qualifiedName.toLowerCase());
+		Integer cid = fieldsByQualifiedName.get(qualifiedName.toLowerCase());
 		return cid != null ? fields.get(cid) : null;
 	}
 	
@@ -151,13 +139,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
 	public int getColumnId(String qualifiedName) {
-	  return fieldsByQialifiedName.get(qualifiedName.toLowerCase());
+	  return fieldsByQualifiedName.get(qualifiedName.toLowerCase());
 	}
 
   public int getColumnIdByName(String colName) {
     for (Column col : fields) {
       if (col.getColumnName().equals(colName.toLowerCase())) {
-        return fieldsByQialifiedName.get(col.getQualifiedName());
+        String qualifiedName = col.getQualifiedName();
+        return fieldsByQualifiedName.get(qualifiedName);
       }
     }
     return -1;
@@ -168,7 +157,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
 	public boolean contains(String colName) {
-		return fieldsByQialifiedName.containsKey(colName.toLowerCase());
+		return fieldsByQualifiedName.containsKey(colName.toLowerCase());
 
 	}
 
@@ -189,14 +178,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
   public synchronized Schema addColumn(String name, DataType dataType) {
 		String normalized = name.toLowerCase();
-		if(fieldsByQialifiedName.containsKey(normalized)) {
+		if(fieldsByQualifiedName.containsKey(normalized)) {
 		  LOG.error("Already exists column " + normalized);
 			throw new AlreadyExistsFieldException(normalized);
 		}
 			
 		Column newCol = new Column(normalized, dataType);
 		fields.add(newCol);
-		fieldsByQialifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
+		fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
     fieldsByName.put(newCol.getColumnName(), TUtil.newList(fields.size() - 1));
 		
 		return this;

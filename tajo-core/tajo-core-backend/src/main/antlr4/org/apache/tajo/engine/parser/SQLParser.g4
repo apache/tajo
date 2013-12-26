@@ -152,7 +152,7 @@ list_value_partition
   ;
 
 column_partitions
-  : PARTITION BY COLUMN LEFT_PAREN column_reference_list RIGHT_PAREN
+  : PARTITION BY COLUMN table_elements
   ;
 
 partition_name
@@ -166,7 +166,41 @@ partition_name
 */
 
 drop_table_statement
-  : DROP TABLE table_name
+  : DROP TABLE table_name (PURGE)?
+  ;
+
+/*
+===============================================================================
+  5.3 <literal>
+===============================================================================
+*/
+
+unsigned_literal
+  : unsigned_numeric_literal
+  | general_literal
+  ;
+
+general_literal
+  : Character_String_Literal
+  | datetime_literal
+  | boolean_literal
+  ;
+
+datetime_literal
+  : timestamp_literal
+  | time_literal
+  ;
+
+time_literal
+  : TIME time_string=Character_String_Literal
+  ;
+
+timestamp_literal
+  : TIMESTAMP timestamp_string=Character_String_Literal
+  ;
+
+boolean_literal
+  : TRUE | FALSE | UNKNOWN
   ;
 
 /*
@@ -280,21 +314,36 @@ binary_type
 
 /*
 ===============================================================================
+  6.3 <value_expression_primary>
+===============================================================================
+*/
+value_expression_primary
+  : parenthesized_value_expression
+  | nonparenthesized_value_expression_primary
+  ;
+
+parenthesized_value_expression
+  : LEFT_PAREN value_expression RIGHT_PAREN
+  ;
+
+nonparenthesized_value_expression_primary
+  : unsigned_value_specification
+  | column_reference
+  | set_function_specification
+  | scalar_subquery
+  | case_expression
+  | cast_specification
+  | routine_invocation
+  ;
+
+/*
+===============================================================================
   6.4 <unsigned value specification>
 ===============================================================================
 */
 
 unsigned_value_specification
   : unsigned_literal
-  ;
-
-unsigned_literal
-  : unsigned_numeric_literal
-  | general_literal
-  ;
-
-general_literal
-  : Character_String_Literal
   ;
 
 unsigned_numeric_literal
@@ -380,7 +429,7 @@ searched_case
   : CASE (searched_when_clause)+ (else_clause)? END
   ;
 
-simple_when_clause : WHEN numeric_value_expression THEN result ;
+simple_when_clause : WHEN search_condition THEN result ;
 
 searched_when_clause
   : WHEN c=search_condition THEN r=result
@@ -391,7 +440,7 @@ else_clause
   ;
 
 result
-  : numeric_value_expression | NULL
+  : value_expression | NULL
   ;
 
 /*
@@ -405,7 +454,7 @@ cast_specification
   ;
 
 cast_operand
-  : boolean_value_expression
+  : value_expression
   ;
 
 cast_target
@@ -419,13 +468,14 @@ cast_target
 */
 value_expression
   : common_value_expression
-  | boolean_value_expression
   | row_value_expression
+  | boolean_value_expression
   ;
 
 common_value_expression
   : numeric_value_expression
   | string_value_expression
+  | NULL
   ;
 
 /*
@@ -441,7 +491,11 @@ numeric_value_expression
   ;
 
 term
-  : left=numeric_primary ((MULTIPLY|DIVIDE|MODULAR) right=numeric_primary)*
+  : left=factor ((MULTIPLY|DIVIDE|MODULAR) right=factor)*
+  ;
+
+factor
+  : (sign)? numeric_primary
   ;
 
 array
@@ -449,16 +503,7 @@ array
   ;
 
 numeric_primary
-  : value_expression_primary
-  ;
-
-value_expression_primary
-  : parenthesized_value_expression
-  | nonparenthesized_value_expression_primary
-  ;
-
-parenthesized_value_expression
-  : LEFT_PAREN value_expression RIGHT_PAREN
+  : value_expression_primary (CAST_EXPRESSION cast_target)*
   ;
 
 sign
@@ -518,15 +563,15 @@ trim_specification
 */
 
 boolean_value_expression
-  : or_predicate (CAST_EXPRESSION data_type)?
+  : or_predicate
   ;
 
 or_predicate
-  : and_predicate (OR and_predicate)*
+  : and_predicate (OR boolean_value_expression)*
   ;
 
 and_predicate
-  : boolean_factor (AND boolean_factor)*
+  : boolean_factor (AND boolean_value_expression)*
   ;
 
 boolean_factor
@@ -552,22 +597,12 @@ boolean_primary
   ;
 
 boolean_predicand
-  : parenthesized_boolean_value_expression
+  : parenthesized_boolean_value_expression 
   | nonparenthesized_value_expression_primary
   ;
 
 parenthesized_boolean_value_expression
   : LEFT_PAREN boolean_value_expression RIGHT_PAREN
-  ;
-
-nonparenthesized_value_expression_primary
-  : unsigned_value_specification
-  | column_reference
-  | set_function_specification
-  | scalar_subquery
-  | case_expression
-  | cast_specification
-  | routine_invocation
   ;
 
 /*
@@ -882,8 +917,8 @@ table_subquery
   ;
 
 subquery
-	:  LEFT_PAREN query_expression RIGHT_PAREN
-	;
+  :  LEFT_PAREN query_expression RIGHT_PAREN
+  ;
 
 /*
 ===============================================================================
@@ -908,7 +943,7 @@ predicate
 ===============================================================================
 */
 comparison_predicate
-  : left=numeric_value_expression c=comp_op right=numeric_value_expression
+  : left=row_value_predicand c=comp_op right=row_value_predicand
   ;
 
 comp_op
@@ -995,7 +1030,7 @@ regex_matcher
 */
 
 null_predicate
-  : predicand=numeric_value_expression IS (n=NOT)? NULL
+  : predicand=row_value_predicand IS (n=NOT)? NULL
   ;
 
 /*

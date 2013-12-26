@@ -45,6 +45,16 @@ public class Round extends GeneralFunction {
       return NullDatum.get();
     }
 
-    return DatumFactory.createInt8(Math.round(valueDatum.asFloat8()));
+    double value = valueDatum.asFloat8();
+
+    // Note: there are various round up/down approaches (https://en.wikipedia.org/wiki/Rounding#Tie-breaking).
+    //       Math.round uses an approach different from other programming languages, so the results of round function
+    //       can be different from other DBMSs. For example, Math.round(-5.5) returns -5. In contrast,
+    //       round function in MySQL and PostgreSQL returns -6. The below code is a workaround code for this.
+    if (value < 0) {
+      return DatumFactory.createInt8((long) Math.ceil(value - 0.5d));
+    } else {
+      return DatumFactory.createInt8((long) Math.floor(value + 0.5d));
+    }
   }
 }

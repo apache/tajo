@@ -19,8 +19,8 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Maps;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.tajo.master.ContainerProxy;
 
 import java.util.Map;

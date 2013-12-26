@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.logical.join;
 
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 
 /**
@@ -28,12 +27,10 @@ import org.apache.tajo.engine.planner.logical.JoinNode;
 @InterfaceStability.Evolving
 public class FoundJoinOrder {
   private JoinNode joinNode;
-  private EvalNode[] quals;
   private double cost;
 
-  public FoundJoinOrder(JoinNode joinNode, EvalNode[] quals, double cost) {
+  public FoundJoinOrder(JoinNode joinNode, double cost) {
     this.joinNode = joinNode;
-    this.quals = quals;
     this.cost = cost;
   }
 
@@ -46,15 +43,5 @@ public class FoundJoinOrder {
 
   public double getCost() {
     return cost;
-  }
-
-  /**
-   * The search conditions contained in where clause are pushed down into join operators.
-   * This method returns the remain search conditions except for pushed down condition.
-   *
-   * @return the remain search conditions
-   */
-  public EvalNode [] getRemainConditions() {
-    return this.quals;
   }
 }

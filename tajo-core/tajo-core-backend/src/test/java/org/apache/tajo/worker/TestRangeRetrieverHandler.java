@@ -36,7 +36,10 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.*;
+import org.apache.tajo.engine.planner.physical.IndexedStoreExec;
+import org.apache.tajo.engine.planner.physical.MemSortExec;
+import org.apache.tajo.engine.planner.physical.PhysicalExec;
+import org.apache.tajo.engine.planner.physical.ProjectionExec;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -80,7 +83,7 @@ public class TestRangeRetrieverHandler {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
+    optimizer = new LogicalOptimizer(conf);
 
     schema = new Schema();
     schema.addColumn("empId", Type.INT4);
@@ -132,9 +135,9 @@ public class TestRangeRetrieverHandler {
 
     FileFragment[] frags = StorageManager.splitNG(conf, "employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
-    TaskAttemptContext
-        ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new FileFragment[] {frags[0]}, testDir);
+
     Expr expr = analyzer.parse(SORT_QUERY[0]);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -163,7 +166,8 @@ public class TestRangeRetrieverHandler {
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
 
-    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, employeeMeta, schema,
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW, new Options());
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
 
     scanner.init();
@@ -276,7 +280,8 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema,
+    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RAW, new Options());
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, outputMeta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
     scanner.init();
     int cnt = 0;

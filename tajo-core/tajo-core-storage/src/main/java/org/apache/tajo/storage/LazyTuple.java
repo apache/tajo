@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.exception.InvalidCastException;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -32,18 +31,19 @@ public class LazyTuple implements Tuple {
   private byte[][] textBytes;
   private Schema schema;
   private byte[] nullBytes;
-  private static TextSerializeDeserialize serializeDeserialize = new TextSerializeDeserialize();
+  private SerializerDeserializer serializeDeserialize;
 
   public LazyTuple(Schema schema, byte[][] textBytes, long offset) {
-    this(schema, textBytes, offset, NullDatum.get().asTextBytes());
+    this(schema, textBytes, offset, NullDatum.get().asTextBytes(), new TextSerializerDeserializer());
   }
 
-  public LazyTuple(Schema schema, byte[][] textBytes, long offset, byte[] nullBytes) {
+  public LazyTuple(Schema schema, byte[][] textBytes, long offset, byte[] nullBytes, SerializerDeserializer serde) {
     this.schema = schema;
     this.textBytes = textBytes;
     this.values = new Datum[schema.getColumnNum()];
     this.offset = offset;
     this.nullBytes = nullBytes;
+    this.serializeDeserialize = serde;
   }
 
   public LazyTuple(LazyTuple tuple) {
@@ -122,7 +122,7 @@ public class LazyTuple implements Tuple {
       try {
         values[fieldId] = serializeDeserialize.deserialize(schema.getColumn(fieldId),
             textBytes[fieldId], 0, textBytes[fieldId].length, nullBytes);
-      } catch (IOException e) {
+      } catch (Exception e) {
         values[fieldId] = NullDatum.get();
       }
       textBytes[fieldId] = null;

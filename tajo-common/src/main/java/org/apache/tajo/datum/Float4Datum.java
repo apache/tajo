@@ -26,7 +26,7 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
 
-public class Float4Datum extends Datum implements NumericDatum {
+public class Float4Datum extends NumericDatum {
   private static final int size = 4;
   @Expose float val;
 
@@ -122,7 +122,7 @@ public class Float4Datum extends Datum implements NumericDatum {
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
       case INT2:
         return DatumFactory.createBool(val == datum.asInt2());
@@ -135,7 +135,7 @@ public class Float4Datum extends Datum implements NumericDatum {
       case FLOAT8:
         return DatumFactory.createBool(val == datum.asFloat8());
       case NULL_TYPE:
-        return DatumFactory.createBool(false);
+        return datum;
       default:
         throw new InvalidOperationException();
     }

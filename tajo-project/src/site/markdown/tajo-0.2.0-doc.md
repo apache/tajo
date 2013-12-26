@@ -743,7 +743,7 @@ But, they do not support case-insensitive operators.
 INSERT OVERWRITE statement overwrites a table data of an existing table or a data in a given directory. Tajo's INSERT OVERWRITE statement follows 'INSERT INTO SELECT' statement of SQL. The examples are as follows:
 
 ```
-create table t1 (col1 int8, col2 int4, col3 float4);
+create table t1 (col1 int8, col2 int4, col3 float8);
 
 -- when a target table schema and output schema are equivalent to each other
 INSERT OVERWRITE INTO t1 SELECT l_orderkey, l_partkey, l_quantity FROM lineitem;

@@ -84,7 +84,7 @@ public class FieldEval extends EvalNode implements Cloneable {
     return column;
   }
 	
-	public String getTableId() {	  
+	public String getQualifier() {
 	  return column.getQualifier();
 	}
 	

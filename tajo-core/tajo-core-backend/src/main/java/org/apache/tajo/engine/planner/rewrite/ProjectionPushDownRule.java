@@ -271,32 +271,40 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     Stack<LogicalNode> newStack = new Stack<LogicalNode>();
     newStack.push(node);
     PushDownContext newContext = new PushDownContext(subBlock);
+
+    newContext.upperRequired = new HashSet<Column>();
+
     if (subBlock.hasProjection() && subBlock.getProjection().isAllProjected()
         && context.upperRequired.size() == 0) {
       newContext.targetListManager = new TargetListManager(plan, subBlock.getProjectionNode().getTargets());
     } else {
-     List<Target> projectedTarget = new ArrayList<Target>();
-      for (Target target : subBlock.getTargetListManager().getUnresolvedTargets()) {
-        for (Column column : context.upperRequired) {
-          if (column.hasQualifier() && !node.getTableName().equals(column.getQualifier())) {
-            continue;
-          }
-          if (target.getColumnSchema().getColumnName().equalsIgnoreCase(column.getColumnName())) {
-            projectedTarget.add(target);
+      if (!subBlock.hasGrouping()) {
+        List<Target> projectedTarget = new ArrayList<Target>();
+        for (Target target : subBlock.getTargetListManager().getUnresolvedTargets()) {
+          for (Column column : context.upperRequired) {
+            if (column.hasQualifier() && !node.getTableName().equals(column.getQualifier())) {
+              continue;
+            }
+            if (target.getColumnSchema().getColumnName().equalsIgnoreCase(column.getColumnName())) {
+              projectedTarget.add(target);
+            }
           }
         }
+        newContext.targetListManager = new TargetListManager(plan,
+            projectedTarget.toArray(new Target[projectedTarget.size()]));
+
+      } else {
+        newContext.targetListManager = new TargetListManager(plan,
+            subBlock.getTargetListManager().getUnresolvedTargets());
       }
-      newContext.targetListManager = new TargetListManager(plan,
-          projectedTarget.toArray(new Target[projectedTarget.size()]));
     }
 
-    newContext.upperRequired = new HashSet<Column>();
     newContext.upperRequired.addAll(PlannerUtil.targetToSchema(newContext.targetListManager.getTargets()).getColumns());
 
     LogicalNode child = visitChild(newContext, plan, subRoot, newStack);
     newStack.pop();
     Schema inSchema = (Schema) child.getOutSchema().clone();
-    inSchema.setQualifier(node.getCanonicalName(), true);
+    inSchema.setQualifier(node.getCanonicalName());
     node.setInSchema(inSchema);
     return pushDownProjectablePost(context, node, isTopmostProjectable(stack));
   }

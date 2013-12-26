@@ -4,6 +4,60 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-439: Time literal support. (DaeMyung Kang via jihoon)
+
+    TAJO-437: Timestamp literal support. (hyunsik)
+
+    TAJO-382: Implement encode/decode functions. (Seungun Choe via jihoon)
+
+    TAJO-436: Implement ceiling(FLOAT8) function. (DaeMyung Kang via hyunsik)
+
+    TAJO-338 : Add Query Optimization Part for Column-Partitioned Tables.
+    (hyunsik)
+
+    TAJO-333: Add metric system to Tajo. (hyoungjunkim via jihoon)
+
+    TAJO-413: Implement pi function. (DaeMyung Kang via jihoon)
+
+    TAJO-61: Implement Time Datum Type. (DaeMyung Kang via hyunsik)
+
+    TAJO-60: Implement Date Datum Type. (hyunsik)
+
+    TAJO-400: Implement pow(float8, float8) function. (DaeMyung Kang via jaehwa)
+
+    TAJO-384: to_bin(). (Jae Young Lee via jaehwa)
+   
+    TAJO-62: Implement Timestamp Datum type. (hyunsik)
+
+    TAJO-307: Implement chr(int) function. (DaeMyung Kang via hyunsik)
+
+    TAJO-365: Implement degrees/radians function. (DaeMyung Kang via hyunsik)
+
+    TAJO-368: Implement quote_ident function. (Seungun Choe via hyunsik)
+
+    TAJO-392: Implement cbrt function. (DaeMyung Kang via hyunsik)
+
+    TAJO-394: Implement abs function. (DaeMyung Kang via hyunsik)
+
+    TAJO-395: Implement exp function. (DaeMyung Kang via hyunsik)
+
+    TAJO-396: Implement sqrt function. (DaeMyung Kang via hyunsik)
+
+    TAJO-397: Implement sign function. (DaeMyung Kang via hyunsik)
+
+    TAJO-343: Implement locate function. (KyoungBok Lee via hyunsik)
+
+    TAJO-364: Implement mod/div function. (DaeMyung Kang via jaehwa)
+
+    TAJO-361: Implement rpad function. (Seungun Choe via jaehwa)
+
+    TAJO-359: Implement lpad function. (Seungun Choe via jaehwa)
+
+    TAJO-306: Implement ascii(string) function. (SeongHwa Ahn via jaehwa)
+
+    TAJO-354: Fix invalid type to valid type for udfs(bit_length/char_length).
+    (DaeMyung Kang via hyunsik)
+
     TAJO-366: Implement trigonometric functions. (Jae Young Lee via jihoon)
 
     TAJO-358: Implement initcap(string) function. (Seungun Choe via hyunsik)
@@ -51,6 +105,37 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-135: Bump up hadoop to 2.2.0. (jihoon)
+
+    TAJO-435: Improve intermediate file. (jinho)
+
+    TAJO-424: Make serializer/deserializer configurable in CSVFile. (jinho)
+
+    TAJO-419: Add missing visitor methods of AlgebraVisitor and
+    BaseAlgebraVisitor. (hyunsik)
+
+    TAJO-421: Improve split for compression file. (jinho)
+
+    TAJO-327: Add testcase to verify TAJO-16. (jaehwa)
+
+    TAJO-405: Improve HCatalogStore to support partitioned table. (jaehwa)
+
+    TAJO-336: Separate catalog stores into separate modules. (jaehwa)
+
+    TAJO-329: Implement physical operator to store in column-partitioned table.
+    (jaehwa)
+
+    TAJO-391: Change the default type of real values from FLOAT4 to FLOAT8 
+    when parsing the user queries. (DaeMyung Kang via jihoon)
+
+    TAJO-304: drop table command should not remove data files in default.
+    (hyunsik)
+
+    TAJO-316: Improve GreedyHeuristicJoinOrderAlgorithm to deal with
+    non-commutative joins. (hyunsik)
+
+    TAJO-371: Increase the default value of worker memory. (jihoon)
+
     TAJO-284: Add table partitioning entry to Catalog. (jaehwa)
 
     TAJO-317: Improve TajoResourceManager to support more elaborate resource 
@@ -85,7 +170,69 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-347: Fix bug when to call function with insensitive function name. 
+    TAJO-451: Update documentation and version constant for Tajo 0.8.
+    (hyunsik)
+
+    TAJO-448: Timestamp should be based on unixtime. (hyunsik)
+    
+    TAJO-450: Incorrect inet4datum comparison. (jinho)
+
+    TAJO-182: Comparison of primitive values including null value should
+    return NULL. (hyunsik)
+
+    TAJO-431: HCatalogStore can't write any data using INSERT OVERWRITE clause.
+    (jaehwa)
+
+    TAJO-442: Cast operator with nested functions causes NPE. (hyunsik)
+
+    TAJO-426: HCatalogStore created partitions automatically. (jaehwa)
+
+    TAJO-418: sort operator after inline views consisting of unions can cause 
+    an incorrect distributed plan. (hyunsik)
+
+    TAJO-417: TestSQLExpression.testCastFromTable causes unit test failure.
+    (hyunsik)
+
+    TAJO-415: Some complex queries causes NPE and unlimited recursions.
+    (hyunsik)
+
+    TAJO-414: Fix bug of bit operations in decode() method of DateDatum class.
+    (Keuntae Park via jihoon)
+
+    TAJO-407: PostgreSQL-style cast should be higher operator priority.
+    (hyunsik)
+
+    TAJO-411: Fix Bug: createFromInt8's DATE type should be TIMESTAMP.
+    (DaeMyung Kang via jihoon)
+
+    TAJO-390: Queries on history are expired ealier than a given expiry time.
+    (hyoungjunkim via hyunsik)
+
+    TAJO-410: A query with a combination of general and distinct aggregation
+    functions fails. (hyunsik)
+
+    TAJO-404: Tajo does not recognize boolean literal. (hyunsik)
+
+    TAJO-344: Tajo cannot recognize negative numeric expressions. (hyunsik)
+
+    TAJO-393: Unit tests must use test-data directory. (hyunsik)
+
+    TAJO-388: limit clause does not work properly. (hyunsik)
+
+    TAJO-389: The LazyTuple does not work when number format exception occurs 
+    in text deserializer. (jinho)
+
+    TAJO-387: Query is hanging when errors occurs in Query or SubQuery class.
+    (hyunsik)
+
+    TAJO-268: Temporal files should be removed after query is finished. (jinho)
+
+    TAJO-292: Too many intermediate partition files. (jinho)
+
+    TAJO-375: TajoClient can't get result data when different os user
+    (hyoungjunkim via hyunsik)
+
+    TAJO-347: Fix bug when to call function with insensitive function name.
     (DaeMyung Kang via hyunsik)
 
     TAJO-345: MergeScanner should support projectable storages. (jihoon)

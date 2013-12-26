@@ -94,10 +94,11 @@ public class TajoConf extends YarnConfiguration {
 
     // Tajo Worker Temporal Directories
     WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir"),
+    WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false),
 
     // Tajo Worker Resources
     WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores", 1),
-    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 512),
+    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024),
     WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
     WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
 
@@ -135,6 +136,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     PULLSERVER_PORT("tajo.pullserver.port", 0),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
+    SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
 
     //////////////////////////////////
     // Storage Configuration
@@ -169,7 +171,7 @@ public class TajoConf extends YarnConfiguration {
     EXECUTOR_INNER_JOIN_INMEMORY_HASH_TABLE_SIZE("tajo.executor.join.inner.in-memory-table-num", (long)1000000),
     EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.inner.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
-    EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.eecutor.join.outer.in-memory-hash-threshold-bytes",
+    EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
@@ -194,8 +196,11 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
-    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f)
+    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f),
     //////////////////////////////////
+
+    // Metrics
+    METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties")
     ;
 
     public final String varname;

@@ -36,40 +36,45 @@ public class Substr extends GeneralFunction {
     super(new Column[] {
         new Column("text", TajoDataTypes.Type.TEXT),
         new Column("from", TajoDataTypes.Type.INT4),
-        new Column("length", TajoDataTypes.Type.INT4)    //optional
+        new Column("count", TajoDataTypes.Type.INT4)    //optional
     });
   }
 
   @Override
   public Datum eval(Tuple params) {
     Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    Datum fromDatum = params.get(1);
+    Datum countDatum = params.size() > 2 ? params.get(2) : null;
+
+    if(valueDatum instanceof NullDatum || fromDatum instanceof NullDatum || countDatum instanceof NullDatum) {
       return NullDatum.get();
     }
-    Datum fromDatum = params.get(1);
-    Datum lengthDatum = params.size() > 2 ? params.get(2) : null;
 
     String value = valueDatum.asChars();
-    int valueLength = value.length();
+    int from = fromDatum.asInt4();
+    int strLength = value.length();
+    int count;
 
-    int from = fromDatum.asInt4() - 1;
-    if (from >= valueLength) {
+    if (countDatum == null) {
+      count = strLength;
+    } else {
+      count = (countDatum.asInt4() + from) - 1;
+    }
+
+    if (count > strLength) {
+      count = strLength;
+    }
+
+    if (from < 1) {
+      from = 0;
+    } else {
+      from --;
+    }
+
+    if (from >= count) {
       return DatumFactory.createText("");
     }
 
-    int length = (lengthDatum == null) ? valueLength : lengthDatum.asInt4();
-
-    if (from < 0) {
-      from = 0;
-      length = (lengthDatum == null) ? value.length() : length - 1;
-    }
-
-    int to = from + length;
-
-    if (to > valueLength) {
-      to = valueLength;
-    }
-
-    return DatumFactory.createText(value.substring(from, to));
+    return DatumFactory.createText(value.substring(from, count));
   }
 }

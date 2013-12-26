@@ -20,6 +20,8 @@ package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.Column;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class AlgebraicUtil {
@@ -51,7 +53,7 @@ public class AlgebraicUtil {
   }
   
   private static EvalNode _transpose(EvalNode _expr, Column target) {
-     EvalNode expr = simplify(_expr);
+     EvalNode expr = eliminateConstantExprs(_expr);
      
      if (isSingleVar(expr.getLeftExpr())) {
        return expr;
@@ -128,7 +130,7 @@ public class AlgebraicUtil {
    * @param expr to be simplified
    * @return the simplified expr
    */
-  public static EvalNode simplify(EvalNode expr) {
+  public static EvalNode eliminateConstantExprs(EvalNode expr) {
     EvalNode left = expr.getLeftExpr();
     EvalNode right = expr.getRightExpr();
     
@@ -136,31 +138,27 @@ public class AlgebraicUtil {
     case AND:
     case OR:
     case EQUAL:
+    case NOT_EQUAL:
     case LTH:
     case LEQ:
     case GTH:
     case GEQ:
-      left = simplify(left);
-      right = simplify(right);      
-      return new BinaryEval(expr.getType(), left, right);    
-    
     case PLUS:
     case MINUS:
     case MULTIPLY:
     case DIVIDE:
-      left = simplify(left);
-      right = simplify(right);
-      
-      // If both are constants, they can be evaluated immediately.
-      if (left.getType() == EvalType.CONST
-          && right.getType() == EvalType.CONST) {
+    case MODULAR:
+      left = eliminateConstantExprs(left);
+      right = eliminateConstantExprs(right);
+
+      if (left.getType() == EvalType.CONST && right.getType() == EvalType.CONST) {
         EvalContext exprCtx = expr.newContext();
         expr.eval(exprCtx, null, null);
         return new ConstEval(expr.terminate(exprCtx));
       } else {
-        return new BinaryEval(expr.getType(), left, right);            
+        return new BinaryEval(expr.getType(), left, right);
       }
-      
+
     case CONST:
       return expr;
       
@@ -285,5 +283,113 @@ public class AlgebraicUtil {
     }
     
     return expr;
+  }
+
+  public static boolean isComparisonOperator(EvalNode expr) {
+    return expr.getType() == EvalType.EQUAL ||
+        expr.getType() == EvalType.LEQ ||
+        expr.getType() == EvalType.LTH ||
+        expr.getType() == EvalType.GEQ ||
+        expr.getType() == EvalType.GTH ||
+        expr.getType() == EvalType.BETWEEN;
+  }
+
+  public static boolean isIndexableOperator(EvalNode expr) {
+    return expr.getType() == EvalType.EQUAL ||
+        expr.getType() == EvalType.LEQ ||
+        expr.getType() == EvalType.LTH ||
+        expr.getType() == EvalType.GEQ ||
+        expr.getType() == EvalType.GTH ||
+        expr.getType() == EvalType.BETWEEN ||
+        expr.getType() == EvalType.IN ||
+        (expr.getType() == EvalType.LIKE && !((LikePredicateEval)expr).isLeadingWildCard());
+  }
+
+  /**
+   * Convert a list of conjunctive normal forms into a singleton expression.
+   *
+   * @param cnfExprs
+   * @return The EvalNode object that merges all CNF-formed expressions.
+   */
+  public static EvalNode createSingletonExprFromCNF(EvalNode... cnfExprs) {
+    if (cnfExprs.length == 1) {
+      return cnfExprs[0];
+    }
+
+    return createSingletonExprFromCNFRecursive(cnfExprs, 0);
+  }
+
+  private static EvalNode createSingletonExprFromCNFRecursive(EvalNode[] evalNode, int idx) {
+    if (idx == evalNode.length - 2) {
+      return new BinaryEval(EvalType.AND, evalNode[idx], evalNode[idx + 1]);
+    } else {
+      return new BinaryEval(EvalType.AND, evalNode[idx], createSingletonExprFromCNFRecursive(evalNode, idx + 1));
+    }
+  }
+
+  /**
+   * Transforms a expression to an array of conjunctive normal formed expressions.
+   *
+   * @param expr The expression to be transformed to an array of CNF-formed expressions.
+   * @return An array of CNF-formed expressions
+   */
+  public static EvalNode [] toConjunctiveNormalFormArray(EvalNode expr) {
+    List<EvalNode> list = new ArrayList<EvalNode>();
+    toConjunctiveNormalFormArrayRecursive(expr, list);
+    return list.toArray(new EvalNode[list.size()]);
+  }
+
+  private static void toConjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
+    if (node.getType() == EvalType.AND) {
+      toConjunctiveNormalFormArrayRecursive(node.getLeftExpr(), found);
+      toConjunctiveNormalFormArrayRecursive(node.getRightExpr(), found);
+    } else {
+      found.add(node);
+    }
+  }
+
+  /**
+   * Convert a list of conjunctive normal forms into a singleton expression.
+   *
+   * @param cnfExprs
+   * @return The EvalNode object that merges all CNF-formed expressions.
+   */
+  public static EvalNode createSingletonExprFromDNF(EvalNode... cnfExprs) {
+    if (cnfExprs.length == 1) {
+      return cnfExprs[0];
+    }
+
+    return createSingletonExprFromDNFRecursive(cnfExprs, 0);
+  }
+
+  private static EvalNode createSingletonExprFromDNFRecursive(EvalNode[] evalNode, int idx) {
+    if (idx == evalNode.length - 2) {
+      return new BinaryEval(EvalType.OR, evalNode[idx], evalNode[idx + 1]);
+    } else {
+      return new BinaryEval(EvalType.OR, evalNode[idx], createSingletonExprFromDNFRecursive(evalNode, idx + 1));
+    }
+  }
+
+  /**
+   * Transforms a expression to an array of disjunctive normal formed expressions.
+   *
+   * @param exprs The expressions to be transformed to an array of CNF-formed expressions.
+   * @return An array of CNF-formed expressions
+   */
+  public static EvalNode [] toDisjunctiveNormalFormArray(EvalNode...exprs) {
+    List<EvalNode> list = new ArrayList<EvalNode>();
+    for (EvalNode expr : exprs) {
+      toDisjunctiveNormalFormArrayRecursive(expr, list);
+    }
+    return list.toArray(new EvalNode[list.size()]);
+  }
+
+  private static void toDisjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
+    if (node.getType() == EvalType.OR) {
+      toDisjunctiveNormalFormArrayRecursive(node.getLeftExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(node.getRightExpr(), found);
+    } else {
+      found.add(node);
+    }
   }
 }

@@ -63,6 +63,7 @@ message GetQueryResultRequest {
 message GetQueryResultResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
+  required string tajoUserName = 3;
 }
 
 message GetQueryListRequest {
@@ -90,7 +91,6 @@ message GetQueryStatusResponse {
   optional QueryState state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
-  optional int64 initTime = 6;
   optional int64 finishTime = 7;
   optional bool hasResult = 8;
   optional string errorMessage = 9;
@@ -124,12 +124,12 @@ message CreateTableRequest {
   required SchemaProto schema = 2;
   required TableProto meta = 3;
   required string path = 4;
-  optional PartitionsProto partitions = 5;
+  optional PartitionDescProto partitions = 5;
 }
 
-message AttachTableRequest {
+message DropTableRequest {
   required string name = 1;
-  required string path = 2;
+  optional bool purge = 2 [default = false];
 }
 
 message TableResponse {

@@ -542,7 +542,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   public Expr visitSelectList(HiveParser.SelectListContext ctx) {
     Expr current = null;
     Projection projection = new Projection();
-    Target[] targets = new Target[ctx.selectItem().size()];
+    TargetExpr[] targets = new TargetExpr[ctx.selectItem().size()];
     for (int i = 0; i < targets.length; i++) {
       targets[i] = visitSelectItem(ctx.selectItem(i));
     }
@@ -564,9 +564,9 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Target visitSelectItem(HiveParser.SelectItemContext ctx) {
+  public TargetExpr visitSelectItem(HiveParser.SelectItemContext ctx) {
     ColumnReferenceExpr columnReference;
-    Target target = null;
+    TargetExpr target = null;
 
     String tableName = "", itemName = "", alias = "";
 
@@ -587,9 +587,9 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
     if (ctx.selectExpression() != null) {
       if (ctx.selectExpression().expression() != null) {
-        target = new Target(visitSelectExpression(ctx.selectExpression()));
+        target = new TargetExpr(visitSelectExpression(ctx.selectExpression()));
       } else {
-        target = new Target(columnReference);
+        target = new TargetExpr(columnReference);
       }
     }
 
@@ -1048,7 +1048,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitNullCondition(HiveParser.NullConditionContext ctx) {
-    return new NullValue();
+    return new NullLiteral();
   }
 
   @Override
@@ -1069,7 +1069,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     Expr current = null;
 
     if (ctx.KW_NULL() != null) {
-      current = new NullValue();
+      current = new NullLiteral();
     }
     if (ctx.constant() != null) {
       current = visitConstant(ctx.constant());
@@ -1563,7 +1563,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDropTableStatement(HiveParser.DropTableStatementContext ctx) {
-    DropTable dropTable = new DropTable(ctx.tableName().getText());
+    DropTable dropTable = new DropTable(ctx.tableName().getText(), false);
     return dropTable;
   }
 

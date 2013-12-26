@@ -139,12 +139,14 @@ public class BlobDatum extends Datum {
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case BLOB:
     	initFromBytes();
     	((BlobDatum)datum).initFromBytes();
       return DatumFactory.createBool(Arrays.equals(this.val, ((BlobDatum)datum).val));
+    case NULL_TYPE:
+      return datum;
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -157,6 +159,8 @@ public class BlobDatum extends Datum {
     	initFromBytes();
     	((BlobDatum)datum).initFromBytes();
       return bb.compareTo(((BlobDatum) datum).bb);
+    case NULL_TYPE:
+      return -1;
     default:
       throw new InvalidOperationException(datum.type());
     }

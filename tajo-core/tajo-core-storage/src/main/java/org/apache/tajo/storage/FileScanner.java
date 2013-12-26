@@ -18,15 +18,22 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
 
 public abstract class FileScanner implements Scanner {
+  private static final Log LOG = LogFactory.getLog(FileScanner.class);
+
   protected boolean inited = false;
   protected final Configuration conf;
   protected final TableMeta meta;
@@ -65,5 +72,22 @@ public abstract class FileScanner implements Scanner {
     if (inited) {
       throw new IllegalStateException("Should be called before init()");
     }
+  }
+
+  public static FileSystem getFileSystem(TajoConf tajoConf, Path path) throws IOException {
+    String tajoUser = tajoConf.getVar(TajoConf.ConfVars.USERNAME);
+    FileSystem fs;
+    if(tajoUser != null) {
+      try {
+        fs = FileSystem.get(path.toUri(), tajoConf, tajoUser);
+      } catch (InterruptedException e) {
+        LOG.warn("Occur InterruptedException while FileSystem initiating with user[" + tajoUser + "]");
+        fs = FileSystem.get(path.toUri(), tajoConf);
+      }
+    } else {
+      fs = FileSystem.get(path.toUri(), tajoConf);
+    }
+
+    return fs;
   }
 }

@@ -21,6 +21,8 @@ package org.apache.tajo.engine.planner.logical.join;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collections;
@@ -28,17 +30,18 @@ import java.util.Set;
 
 public class JoinEdge {
   private final JoinType joinType;
-  private final String leftRelation;
-  private final String rightRelation;
+  private final LogicalNode leftRelation;
+  private final LogicalNode rightRelation;
   private final Set<EvalNode> joinQual = Sets.newHashSet();
 
-  public JoinEdge(JoinType joinType, String leftRelation, String rightRelation) {
+  public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation) {
     this.joinType = joinType;
     this.leftRelation = leftRelation;
     this.rightRelation = rightRelation;
   }
 
-  public JoinEdge(JoinType joinType, String leftRelation, String rightRelation, EvalNode ... condition) {
+  public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation,
+                  EvalNode ... condition) {
     this(joinType, leftRelation, rightRelation);
     Collections.addAll(joinQual, condition);
   }
@@ -47,16 +50,16 @@ public class JoinEdge {
     return joinType;
   }
 
-  public String getLeftRelation() {
+  public LogicalNode getLeftRelation() {
     return leftRelation;
   }
 
-  public String getRightRelation() {
+  public LogicalNode getRightRelation() {
     return rightRelation;
   }
 
   public boolean hasJoinQual() {
-    return joinQual != null;
+    return joinQual.size() > 0;
   }
 
   public void addJoinQual(EvalNode joinQual) {

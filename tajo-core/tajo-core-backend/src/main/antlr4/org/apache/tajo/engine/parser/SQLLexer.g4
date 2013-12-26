@@ -248,6 +248,7 @@ MAXVALUE : M A X V A L U E;
 
 PARTITION : P A R T I T I O N;
 PARTITIONS : P A R T I T I O N S;
+PURGE : P U R G E;
 
 ROLLUP : R O L L U P;
 
@@ -289,7 +290,6 @@ Nonreserved_keywords
 
   | MAXVALUE
 
-  | VALUES
   | PARTITION
   | PARTITIONS
   | ROLLUP
@@ -304,6 +304,8 @@ Nonreserved_keywords
   | THAN
   | TRIM
   | TO
+
+  | VALUES
   ;
 
 /*
@@ -389,6 +391,8 @@ MODULAR : '%';
 DOT : '.';
 UNDERLINE : '_';
 VERTICAL_BAR : '|';
+QUOTE : '\'';
+DOUBLE_QUOTE : '"';
 
 NUMBER : Digit+;
 
@@ -420,6 +424,7 @@ Identifier
   | Regular_Identifier
   ;
 
+fragment
 Regular_Identifier
   : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_')*
   ;
@@ -437,8 +442,7 @@ fragment
 Extended_Control_Characters         :   '\u0080' .. '\u009F';
 
 Character_String_Literal
-  : '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\''
-  | '"' ( ESC_SEQ | ~('\\'|'"') )* '"'
+  : QUOTE ( ESC_SEQ | ~('\\'|'\'') )* QUOTE
   ;
 
 fragment

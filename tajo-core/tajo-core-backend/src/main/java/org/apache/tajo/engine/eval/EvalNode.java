@@ -88,7 +88,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	
 	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {}
 
-  public abstract Datum terminate(EvalContext ctx);
+  public abstract <T extends Datum> T terminate(EvalContext ctx);
 
   @Deprecated
 	public void preOrder(EvalNodeVisitor visitor) {

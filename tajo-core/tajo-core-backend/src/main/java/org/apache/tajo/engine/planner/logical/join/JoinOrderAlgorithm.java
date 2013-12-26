@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.planner.logical.join;
 
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.PlanningException;
 
 import java.util.Set;
 
@@ -29,6 +29,18 @@ import java.util.Set;
  */
 @InterfaceStability.Evolving
 public interface JoinOrderAlgorithm {
+
+  /**
+   *
+   * @param plan
+   * @param block
+   * @param joinGraph A join graph represents join conditions and their connections among relations.
+   *                  Given a graph, each vertex represents a relation, and each edge contains a join condition.
+   *                  A join graph does not contain relations that do not have any corresponding join condition.
+   * @param relationsWithoutQual The names of relations that do not have any corresponding join condition.
+   * @return
+   * @throws PlanningException
+   */
   FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph,
-                               Set<EvalNode> joinQuals, Set<String> relationsWithoutQual);
+                               Set<String> relationsWithoutQual) throws PlanningException;
 }

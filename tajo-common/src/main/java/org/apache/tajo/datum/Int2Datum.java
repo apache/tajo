@@ -19,8 +19,6 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
@@ -28,11 +26,9 @@ import org.apache.tajo.util.NumberUtil;
 import java.nio.ByteBuffer;
 
 
-public class Int2Datum extends Datum implements NumericDatum {
-  private static final int size = 2;  
+public class Int2Datum extends NumericDatum {
+  private static final int size = 2;
   @Expose private short val;
-
-  private static final Log LOG = LogFactory.getLog(Int2Datum.class);
 
   public Int2Datum() {
     super(TajoDataTypes.Type.INT2);
@@ -40,7 +36,7 @@ public class Int2Datum extends Datum implements NumericDatum {
 
 	public Int2Datum(short val) {
 		this();
-		this.val = val;		
+		this.val = val;
 	}
 
   public Int2Datum(byte[] bytes) {
@@ -53,7 +49,7 @@ public class Int2Datum extends Datum implements NumericDatum {
   public char asChar() {
     return asChars().charAt(0);
   }
-	
+
 	@Override
 	public short asInt2() {
 		return val;
@@ -112,12 +108,12 @@ public class Int2Datum extends Datum implements NumericDatum {
       Int2Datum other = (Int2Datum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
 
   @Override
-  public BooleanDatum equalsTo(Datum datum) {
+  public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case INT2:
       return DatumFactory.createBool(val == datum.asInt2());
@@ -130,7 +126,7 @@ public class Int2Datum extends Datum implements NumericDatum {
     case FLOAT8:
       return DatumFactory.createBool(val == datum.asFloat8());
     case NULL_TYPE:
-      return DatumFactory.createBool(false);
+      return datum;
     default:
       throw new InvalidOperationException();
     }

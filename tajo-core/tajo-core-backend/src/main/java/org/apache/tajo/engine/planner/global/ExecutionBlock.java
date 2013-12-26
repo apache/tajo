@@ -16,6 +16,7 @@ package org.apache.tajo.engine.planner.global;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
@@ -38,9 +39,9 @@ public class ExecutionBlock {
 
   private Set<String> broadcasted = new HashSet<String>();
 
-  public ExecutionBlock(ExecutionBlockId executionBlockId, LogicalRootNode rootNode) {
+  public ExecutionBlock(ExecutionBlockId executionBlockId, PIDFactory pidFactory, LogicalRootNode rootNode) {
     this.executionBlockId = executionBlockId;
-    this.executionPlan = new ExecutionPlan(rootNode);
+    this.executionPlan = new ExecutionPlan(pidFactory, rootNode);
   }
 
   @VisibleForTesting

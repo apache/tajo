@@ -55,6 +55,7 @@ public enum EvalType {
   IN(InEval.class),
 
   // Value or Reference
+  SIGNED(SignedEval.class),
   CAST(CastEval.class),
   ROW_CONSTANT(RowConstantEval.class),
   FIELD(FieldEval.class),

@@ -19,8 +19,8 @@
 package org.apache.tajo.algebra;
 
 public class LiteralValue extends Expr {
-  private String value;
-  private LiteralType valueType;
+  protected LiteralType valueType;
+  protected String value;
 
   public static enum LiteralType {
     Boolean,
@@ -36,12 +36,12 @@ public class LiteralValue extends Expr {
     this.valueType = valueType;
   }
 
-  public String getValue() {
-    return this.value;
-  }
-
   public LiteralType getValueType() {
     return this.valueType;
+  }
+
+  public String getValue() {
+    return this.value;
   }
 
   public boolean equalsTo(Expr expr) {

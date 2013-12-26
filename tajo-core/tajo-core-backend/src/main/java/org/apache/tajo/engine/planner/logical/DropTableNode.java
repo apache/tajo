@@ -22,25 +22,31 @@ import org.apache.tajo.engine.planner.PlanString;
 
 public class DropTableNode extends LogicalNode {
   private String tableName;
+  private boolean purge;
 
-  public DropTableNode(int pid, String tableName) {
+  public DropTableNode(int pid, String tableName, boolean purge) {
     super(pid, NodeType.DROP_TABLE);
     this.tableName = tableName;
+    this.purge = purge;
   }
 
   public String getTableName() {
     return this.tableName;
   }
 
+  public boolean isPurge() {
+    return this.purge;
+  }
+
   @Override
   public PlanString getPlanString() {
-    return new PlanString("DropTable");
+    return new PlanString("DropTable " + (purge ? " (PURGE)" : ""));
   }
 
   public boolean equals(Object obj) {
     if (obj instanceof DropTableNode) {
       DropTableNode other = (DropTableNode) obj;
-      return super.equals(other) && this.tableName.equals(other.tableName);
+      return super.equals(other) && this.tableName.equals(other.tableName) && this.purge == other.purge;
     } else {
       return false;
     }
@@ -50,12 +56,13 @@ public class DropTableNode extends LogicalNode {
   public Object clone() throws CloneNotSupportedException {
     DropTableNode dropTableNode = (DropTableNode) super.clone();
     dropTableNode.tableName = tableName;
+    dropTableNode.purge = purge;
     return dropTableNode;
   }
 
   @Override
   public String toString() {
-    return "DROP TABLE " + tableName;
+    return "DROP TABLE " + tableName + (purge ? " PURGE" : "");
   }
 
   @Override

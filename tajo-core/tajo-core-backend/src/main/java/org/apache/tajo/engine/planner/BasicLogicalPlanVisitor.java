@@ -40,17 +40,17 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block) throws PlanningException {
-    RESULT result = visitChild(context, plan, block.getRoot(), new Stack<LogicalNode>());
+    visitChild(context, plan, block.getRoot(), new Stack<LogicalNode>());
     return context;
   }
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalNode node) throws PlanningException {
-    RESULT result = visitChild(context, plan, node, new Stack<LogicalNode>());
+    visitChild(context, plan, node, new Stack<LogicalNode>());
     return context;
   }
 
   /**
-   * visitChild visits each logicalNode recursively.
+   * visit visits each logicalNode recursively.
    */
   public RESULT visitChild(CONTEXT context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
       throws PlanningException {
@@ -90,6 +90,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         current = visitTableSubQuery(context, plan, (TableSubQueryNode) node, stack);
         break;
       case SCAN:
+        current = visitScan(context, plan, (ScanNode) node, stack);
+        break;
+      case PARTITIONS_SCAN:
         current = visitScan(context, plan, (ScanNode) node, stack);
         break;
       case STORE:
@@ -217,6 +220,11 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   @Override
   public RESULT visitScan(CONTEXT context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
       throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, PartitionedTableScanNode node, Stack<LogicalNode> stack) throws PlanningException {
     return null;
   }
 

@@ -47,6 +47,22 @@ public class TestInet4Datum {
 	  assertEquals(ip1, ip4);
 	}
 
+  @Test
+  public final void testGreaterThan() {
+    Inet4Datum ip1 = new Inet4Datum("193.168.0.1");
+    Inet4Datum ip2 = new Inet4Datum("192.168.100.1");
+
+    assertEquals(ip1.compareTo(ip2), 1);
+  }
+
+  @Test
+  public final void testLessThan() {
+    Inet4Datum ip1 = new Inet4Datum("192.168.100.1");
+    Inet4Datum ip2 = new Inet4Datum("193.168.0.1");
+
+    assertEquals(ip1.compareTo(ip2), -1);
+  }
+
 	@Test
 	public final void testAsByteArray() {
 		byte[] bytes = {(byte) 0xA3, (byte) 0x98, 0x17, (byte) 0xDE};

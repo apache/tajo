@@ -18,6 +18,7 @@
 
 package org.apache.tajo.benchmark;
 
+import com.google.common.collect.Maps;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +32,7 @@ import org.apache.tajo.storage.CSVFile;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
   private final Log LOG = LogFactory.getLog(TPCH.class);
@@ -45,17 +47,30 @@ public class TPCH extends BenchmarkSet {
   public static String PARTSUPP = "partsupp";
   public static String SUPPLIER = "supplier";
 
+  public static final Map<String, Long> tableVolumes = Maps.newHashMap();
+
+  static {
+    tableVolumes.put(LINEITEM, 759863287L);
+    tableVolumes.put(CUSTOMER, 24346144L);
+    tableVolumes.put(NATION, 2224L);
+    tableVolumes.put(PART, 24135125L);
+    tableVolumes.put(REGION, 389L);
+    tableVolumes.put(ORDERS, 171952161L);
+    tableVolumes.put(PARTSUPP, 118984616L);
+    tableVolumes.put(SUPPLIER, 1409184L);
+  }
+
   @Override
   public void loadSchemas() {
     Schema lineitem = new Schema()
-        .addColumn("l_orderkey", Type.INT8) // 0
+        .addColumn("l_orderkey", Type.INT4) // 0
         .addColumn("l_partkey", Type.INT4) // 1
         .addColumn("l_suppkey", Type.INT4) // 2
         .addColumn("l_linenumber", Type.INT4) // 3
-        .addColumn("l_quantity", Type.FLOAT4) // 4
-        .addColumn("l_extendedprice", Type.FLOAT4) // 5
-        .addColumn("l_discount", Type.FLOAT4) // 6
-        .addColumn("l_tax", Type.FLOAT4) // 7
+        .addColumn("l_quantity", Type.FLOAT8) // 4
+        .addColumn("l_extendedprice", Type.FLOAT8) // 5
+        .addColumn("l_discount", Type.FLOAT8) // 6
+        .addColumn("l_tax", Type.FLOAT8) // 7
             // TODO - This is temporal solution. 8 and 9 are actually Char type.
         .addColumn("l_returnflag", Type.TEXT) // 8
         .addColumn("l_linestatus", Type.TEXT) // 9
@@ -74,7 +89,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("c_address", Type.TEXT) // 2
         .addColumn("c_nationkey", Type.INT4) // 3
         .addColumn("c_phone", Type.TEXT) // 4
-        .addColumn("c_acctbal", Type.FLOAT4) // 5
+        .addColumn("c_acctbal", Type.FLOAT8) // 5
         .addColumn("c_mktsegment", Type.TEXT) // 6
         .addColumn("c_comment", Type.TEXT); // 7
     schemas.put(CUSTOMER, customer);
@@ -94,7 +109,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("p_type", Type.TEXT) // 4
         .addColumn("p_size", Type.INT4) // 5
         .addColumn("p_container", Type.TEXT) // 6
-        .addColumn("p_retailprice", Type.FLOAT4) // 7
+        .addColumn("p_retailprice", Type.FLOAT8) // 7
         .addColumn("p_comment", Type.TEXT); // 8
     schemas.put(PART, part);
 
@@ -105,10 +120,10 @@ public class TPCH extends BenchmarkSet {
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
-        .addColumn("o_orderkey", Type.INT8) // 0
+        .addColumn("o_orderkey", Type.INT4) // 0
         .addColumn("o_custkey", Type.INT4) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
-        .addColumn("o_totalprice", Type.FLOAT4) // 3
+        .addColumn("o_totalprice", Type.FLOAT8) // 3
             // TODO - This is temporal solution. o_orderdate is actually Date type.
         .addColumn("o_orderdate", Type.TEXT) // 4
         .addColumn("o_orderpriority", Type.TEXT) // 5
@@ -121,7 +136,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("ps_partkey", Type.INT4) // 0
         .addColumn("ps_suppkey", Type.INT4) // 1
         .addColumn("ps_availqty", Type.INT4) // 2
-        .addColumn("ps_supplycost", Type.FLOAT4) // 3
+        .addColumn("ps_supplycost", Type.FLOAT8) // 3
         .addColumn("ps_comment", Type.TEXT); // 4
     schemas.put(PARTSUPP, partsupp);
 
@@ -131,14 +146,14 @@ public class TPCH extends BenchmarkSet {
         .addColumn("s_address", Type.TEXT) // 2
         .addColumn("s_nationkey", Type.INT4) // 3
         .addColumn("s_phone", Type.TEXT) // 4
-        .addColumn("s_acctbal", Type.FLOAT4) // 5
+        .addColumn("s_acctbal", Type.FLOAT8) // 5
         .addColumn("s_comment", Type.TEXT); // 6
     schemas.put(SUPPLIER, supplier);
   }
 
   public void loadOutSchema() {
     Schema q2 = new Schema()
-        .addColumn("s_acctbal", Type.FLOAT4)
+        .addColumn("s_acctbal", Type.FLOAT8)
         .addColumn("s_name", Type.TEXT)
         .addColumn("n_name", Type.TEXT)
         .addColumn("p_partkey", Type.INT4)
@@ -167,6 +182,7 @@ public class TPCH extends BenchmarkSet {
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     meta.putOption(CSVFile.DELIMITER, "|");
+
     try {
       tajo.createExternalTable(tableName, getSchema(tableName), new Path(dataDir, tableName), meta);
     } catch (SQLException s) {

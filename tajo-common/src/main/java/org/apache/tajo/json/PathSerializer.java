@@ -35,8 +35,7 @@ public class PathSerializer implements GsonSerDerAdapter<Path> {
 	}
 
   @Override
-  public Path deserialize(JsonElement arg0, Type arg1,
-                          JsonDeserializationContext context) throws JsonParseException {
+  public Path deserialize(JsonElement arg0, Type arg1, JsonDeserializationContext context) throws JsonParseException {
     return new Path(arg0.getAsJsonPrimitive().getAsString());
   }
 }

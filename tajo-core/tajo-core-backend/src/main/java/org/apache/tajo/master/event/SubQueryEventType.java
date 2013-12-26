@@ -35,5 +35,7 @@ public enum SubQueryEventType {
   // Producer: Completed
   SQ_SUBQUERY_COMPLETED,
 
+  // Producer: Any component
+  SQ_DIAGNOSTIC_UPDATE,
   SQ_INTERNAL_ERROR
 }

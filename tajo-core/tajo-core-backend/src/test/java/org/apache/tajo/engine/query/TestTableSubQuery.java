@@ -91,4 +91,27 @@ public class TestTableSubQuery {
       res.close();
     }
   }
+
+  @Test
+  public final void testJoinSubQuery2() throws Exception {
+    ResultSet res = tpch.execute(
+        "SELECT A.n_regionkey, B.r_regionkey, A.n_name, B.r_name " +
+            "FROM\n" +
+            "(SELECT * FROM nation WHERE n_name LIKE 'A%') A " +
+            ", region B WHERE A.n_regionkey=B.r_regionkey");
+
+    Map<String,String> expected = new HashMap<String, String>();
+    expected.put("ARGENTINA", "AMERICA");
+    expected.put("ALGERIA", "AFRICA");
+    try {
+      assertNotNull(res);
+      assertTrue(res.next());
+      assertTrue(expected.get(res.getString("n_name")).equals(res.getString("r_name")));
+      assertTrue(res.next());
+      assertTrue(expected.get(res.getString("n_name")).equals(res.getString("r_name")));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
 }

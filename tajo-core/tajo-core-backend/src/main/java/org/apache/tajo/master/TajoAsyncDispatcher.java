@@ -21,12 +21,12 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.ShutdownHookManager;
-import org.apache.hadoop.yarn.YarnException;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.service.AbstractService;
+import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -201,7 +201,7 @@ public class TajoAsyncDispatcher extends AbstractService  implements Dispatcher 
         if (!stopped) {
           LOG.warn("AsyncDispatcher thread interrupted", e);
         }
-        throw new YarnException(e);
+        throw new YarnRuntimeException(e);
       }
     }
   }

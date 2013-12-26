@@ -20,7 +20,9 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.util.Bytes;
 
 import java.nio.ByteBuffer;
@@ -51,10 +53,11 @@ public class RowStoreUtil {
       ByteBuffer bb = ByteBuffer.wrap(bytes);
       Tuple tuple = new VTuple(schema.getColumnNum());
       Column col;
+      TajoDataTypes.DataType type;
       for (int i =0; i < schema.getColumnNum(); i++) {
         col = schema.getColumn(i);
-
-        switch (col.getDataType().getType()) {
+        type = col.getDataType();
+        switch (type.getType()) {
           case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
           case BIT:
             byte b = bb.get();
@@ -84,18 +87,22 @@ public class RowStoreUtil {
             break;
 
           case INT4:
+          case DATE:
             int i_ = bb.getInt();
             if ( i_ < Integer.MIN_VALUE + 1) {
               tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-            tuple.put(i, DatumFactory.createInt4(i_));
-            }break;
+            } else {
+              tuple.put(i, DatumFactory.createFromInt4(type, i_));
+            }
+            break;
+
           case INT8:
+          case TIMESTAMP:
             long l = bb.getLong();
             if ( l < Long.MIN_VALUE + 1) {
               tuple.put(i, DatumFactory.createNullDatum());
             }else {
-              tuple.put(i, DatumFactory.createInt8(l));
+              tuple.put(i, DatumFactory.createFromInt8(type, l));
             }
             break;
 
@@ -114,7 +121,9 @@ public class RowStoreUtil {
               tuple.put(i, DatumFactory.createNullDatum());
             }else {
               tuple.put(i, DatumFactory.createFloat8(d));
-            }break;
+            }
+            break;
+
           case TEXT:
             byte [] _string = new byte[bb.getInt()];
             bb.get(_string);
@@ -131,9 +140,11 @@ public class RowStoreUtil {
             bb.get(_bytes);
             if(Bytes.compareTo(bytes, Bytes.toBytes("NULL")) == 0) {
               tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-            tuple.put(i, DatumFactory.createBlob(_bytes));
-            }break;
+            } else {
+              tuple.put(i, DatumFactory.createBlob(_bytes));
+            }
+            break;
+
           case INET4:
             byte [] _ipv4 = new byte[4];
             bb.get(_ipv4);
@@ -169,6 +180,8 @@ public class RowStoreUtil {
             bb.putInt(_string.length);
             bb.put(_string);
             break;
+          case DATE: bb.putInt(tuple.get(i).asInt4()); break;
+          case TIMESTAMP: bb.putLong(((TimestampDatum)tuple.get(i)).getMillis()); break;
           case BLOB:
             byte [] bytes = tuple.get(i).asByteArray();
             bb.putInt(bytes.length);

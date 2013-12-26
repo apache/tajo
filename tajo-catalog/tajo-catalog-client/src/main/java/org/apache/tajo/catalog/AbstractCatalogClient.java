@@ -122,7 +122,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.addTable(null, (TableDescProto) desc.getProto()).getValue();
+          return stub.addTable(null, desc.getProto()).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {
