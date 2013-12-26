@@ -172,6 +172,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-452: pass invalid argument to DateTime constructor in LogicalPlanner.
+    (DaeMyung Kang via hyunsik)
+
     TAJO-451: Update documentation and version constant for Tajo 0.8.
     (hyunsik)
 
