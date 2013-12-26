@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-439: Time literal support. (DaeMyung Kang via jihoon)
+
     TAJO-437: Timestamp literal support. (hyunsik)
 
     TAJO-382: Implement encode/decode functions. (Seungun Choe via jihoon)

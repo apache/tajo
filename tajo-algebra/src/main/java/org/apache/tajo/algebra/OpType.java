@@ -97,6 +97,7 @@ public enum OpType {
   Cast(CastExpr.class),
   Literal(LiteralValue.class),
   NullLiteral(NullLiteral.class),
+  TimeLiteral(TimeLiteral.class),
   TimestampLiteral(TimestampLiteral.class);
 
   private Class baseClass;

@@ -636,4 +636,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<OpType> stack, TimestampLiteral expr) throws PlanningException {
     return null;
   }
+
+  @Override
+  public RESULT visitTimeLiteral(CONTEXT ctx, Stack<OpType> stack, TimeLiteral expr) throws PlanningException {
+    return null;
+  }
 }

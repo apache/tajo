@@ -39,6 +39,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.exception.UndefinedFunctionException;
@@ -1040,6 +1041,69 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return dropTableNode;
   }
 
+  public static int [] dateToIntArray(String years, String months, String days) 
+    throws PlanningException { 
+    int year = Integer.valueOf(years);
+    int month = Integer.valueOf(months);
+    int day = Integer.valueOf(days);
+
+    if (!(1 <= year && year <= 9999)) {
+      throw new PlanningException(String.format("Years (%d) must be between 1 and 9999 integer value", year));
+    }
+
+    if (!(1 <= month && month <= 12)) {
+      throw new PlanningException(String.format("Months (%d) must be between 1 and 12 integer value", month));
+    }
+
+    if (!(1<= day && day <= 31)) {
+      throw new PlanningException(String.format("Days (%d) must be between 1 and 31 integer value", day));
+    }
+
+    int [] results = new int[3];
+    results[0] = year;
+    results[1] = month;
+    results[2] = day;
+
+    return results;
+  }
+
+  public static int [] timeToIntArray(String hours, String minutes, String seconds, String fractionOfSecond) 
+    throws PlanningException { 
+    int hour = Integer.valueOf(hours);
+    int minute = Integer.valueOf(minutes);
+    int second = Integer.valueOf(seconds);
+    int fraction = 0;
+    if (fractionOfSecond != null) {
+      fraction = Integer.valueOf(fractionOfSecond);
+    }
+
+    if (!(0 <= hour && hour <= 23)) {
+      throw new PlanningException(String.format("Hours (%d) must be between 0 and 24 integer value", hour));
+    }
+
+    if (!(0 <= minute && minute <= 59)) {
+      throw new PlanningException(String.format("Minutes (%d) must be between 0 and 59 integer value", minute));
+    }
+
+    if (!(0 <= second && second <= 59)) {
+      throw new PlanningException(String.format("Seconds (%d) must be between 0 and 59 integer value", second));
+    }
+
+    if (fraction != 0) {
+      if (!(0 <= fraction && fraction <= 999)) {
+        throw new PlanningException(String.format("Seconds (%d) must be between 0 and 999 integer value", fraction));
+      }
+    }
+
+    int [] results = new int[4];
+    results[0] = hour;
+    results[1] = minute;
+    results[2] = second;
+    results[3] = fraction;
+
+    return results;
+  }
+    
   /*===============================================================================================
     Expression SECTION
    ===============================================================================================*/
@@ -1068,51 +1132,40 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
 
+      case TimeLiteral: {
+        TimeLiteral timeLiteral = (TimeLiteral) expr;
+        TimeValue timeValue = timeLiteral.getTime();
+        int [] times = LogicalPlanner.timeToIntArray(timeValue.getHours(),
+                                         timeValue.getMinutes(),
+                                         timeValue.getSeconds(),
+                                         timeValue.getSecondsFraction());
+
+        TimeDatum datum;
+        if (times[3] == 0) {
+          datum = new TimeDatum(times[0], times[1], times[2]);
+        } else {
+          datum = new TimeDatum(times[0], times[1], times[2], times[3]);
+        }
+        return new ConstEval(datum);
+      }
+
       case TimestampLiteral: {
         TimestampLiteral timestampLiteral = (TimestampLiteral) expr;
         DateValue dateValue = timestampLiteral.getDate();
         TimeValue timeValue = timestampLiteral.getTime();
-        int years;
-        int months;
-        int days;
-        int hours;
-        int minutes;
-        int seconds;
 
-        years = Integer.valueOf(dateValue.getYears());
-        if (!(1 <= years && years <= 9999)) {
-          throw new PlanningException(String.format("Years (%d) must be between 1 and 9999 integer value", years));
-        }
-        months = Integer.valueOf(dateValue.getMonths());
-        if (!(1 <= months && months <= 12)) {
-          throw new PlanningException(String.format("Months (%d) must be between 1 and 12 integer value", months));
-        }
-        days = Integer.valueOf(dateValue.getDays());
-        if (!(1<= days && days <= 31)) {
-          throw new PlanningException(String.format("Days (%d) must be between 1 and 31 integer value", days));
-        }
-
-        hours = Integer.valueOf(timeValue.getHours());
-        if (!(0 <= hours && hours <= 23)) {
-          throw new PlanningException(String.format("Hours (%d) must be between 0 and 24 integer value", hours));
-        }
-        minutes = Integer.valueOf(timeValue.getMinutes());
-        if (!(0 <= minutes && minutes <= 59)) {
-          throw new PlanningException(String.format("Minutes (%d) must be between 0 and 59 integer value", minutes));
-        }
-        seconds = Integer.valueOf(timeValue.getSeconds());
-        if (!(0 <= seconds && seconds <= 59)) {
-          throw new PlanningException(String.format("Seconds (%d) must be between 0 and 59 integer value", seconds));
-        }
-
+        int [] dates = LogicalPlanner.dateToIntArray(dateValue.getYears(),
+                                        dateValue.getMonths(),
+                                        dateValue.getDays());
+        int [] times = LogicalPlanner.timeToIntArray(timeValue.getHours(),
+                                        timeValue.getMinutes(),
+                                        timeValue.getSeconds(),
+                                        timeValue.getSecondsFraction());
         DateTime dateTime;
-        if (timeValue.hasSecondsFraction()) {
-          int secondsFraction = Integer.valueOf(timeValue.getSecondsFraction());
-          if (!(0 <= secondsFraction && secondsFraction <= 999))
-          throw new PlanningException(String.format("Seconds (%d) must be between 0 and 999 integer value", seconds));
-          dateTime = new DateTime(years, months, days, hours, minutes, seconds, secondsFraction);
+        if (times[3] == 0) {
+          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2]);
         } else {
-          dateTime = new DateTime(years, months, days, hours, minutes, seconds);
+          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[3]);
         }
 
         return new ConstEval(new TimestampDatum(dateTime));

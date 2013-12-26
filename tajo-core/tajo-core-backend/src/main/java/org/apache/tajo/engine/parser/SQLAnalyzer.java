@@ -1263,7 +1263,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDatetime_literal(@NotNull SQLParser.Datetime_literalContext ctx) {
-    return visitTimestamp_literal(ctx.timestamp_literal());
+    if (checkIfExist(ctx.time_literal())) {
+      return visitTime_literal(ctx.time_literal());
+    } else { 
+      return visitTimestamp_literal(ctx.timestamp_literal());
+    }
+  }
+
+  @Override
+  public Expr visitTime_literal(SQLParser.Time_literalContext ctx) {
+    String timePart = stripQuote(ctx.time_string.getText());
+    return new TimeLiteral(parseTime(timePart));
   }
 
   @Override

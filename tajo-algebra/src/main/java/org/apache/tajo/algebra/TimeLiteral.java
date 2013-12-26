@@ -16,23 +16,36 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.eval;
+package org.apache.tajo.algebra;
 
-import org.junit.Test;
+import com.google.common.base.Objects;
 
-import java.io.IOException;
+public class TimeLiteral extends Expr {
+  private TimeValue time;
 
-public class TestSQLDateTimeTypes extends ExprTestBase {
-
-  @Test
-  public void testToTimestamp() throws IOException {
-    testSimpleEval("select to_char(TIMESTAMP '1970-01-17 10:09:37', 'yyyy-MM-dd HH:mm:ss');",
-        new String[]{"1970-01-17 10:09:37"});
+  public TimeLiteral(TimeValue time) {
+    super(OpType.TimeLiteral);
+    this.time = time;
   }
 
-  @Test
-  public void testTimeLiteral() throws IOException {
-    testSimpleEval("select TIME '10:09:37';",
-        new String[]{"10:09:37"});
+  public TimeValue getTime() {
+    return time;
+  }
+
+  public String toString() {
+    return time.toString();
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(time);
+  }
+
+  @Override
+  boolean equalsTo(Expr expr) {
+    if (expr instanceof TimeLiteral) {
+      TimeLiteral another = (TimeLiteral) expr;
+      return time.equals(another.time);
+    }
+    return false;
   }
 }

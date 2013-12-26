@@ -188,6 +188,11 @@ general_literal
 
 datetime_literal
   : timestamp_literal
+  | time_literal
+  ;
+
+time_literal
+  : TIME time_string=Character_String_Literal
   ;
 
 timestamp_literal

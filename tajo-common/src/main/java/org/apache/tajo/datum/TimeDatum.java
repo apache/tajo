@@ -38,6 +38,16 @@ public class TimeDatum extends Datum {
     time = new LocalTime(value);
   }
 
+  public TimeDatum(int hour, int minute, int second) {
+    super(TajoDataTypes.Type.TIME);
+    time = new LocalTime(hour, minute, second);
+  }
+
+  public TimeDatum(int hour, int minute, int second, int millis) {
+    super(TajoDataTypes.Type.TIME);
+    time = new LocalTime(hour, minute, second, millis);
+  }
+
   public TimeDatum(String timeStr) {
     super(TajoDataTypes.Type.TIME);
     time = LocalTime.parse(timeStr, DEFAULT_FORMATTER);
