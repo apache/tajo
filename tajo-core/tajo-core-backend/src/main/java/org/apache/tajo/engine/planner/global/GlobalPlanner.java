@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
@@ -40,6 +41,9 @@ import java.util.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.*;
 
+/**
+ * Build DAG
+ */
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
@@ -316,6 +320,62 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
+
+  private ExecutionBlock buildStorePlan(GlobalPlanContext context,
+                                        ExecutionBlock childBlock,
+                                        StoreTableNode currentNode) {
+    PartitionDesc partitionDesc = currentNode.getPartitions();
+
+    // if result table is not a partitioned table, directly store it
+    if(partitionDesc == null) {
+      currentNode.setChild(childBlock.getPlan());
+      currentNode.setInSchema(childBlock.getPlan().getOutSchema());
+      childBlock.setPlan(currentNode);
+      return childBlock;
+    }
+
+    // if result table is a partitioned table
+    // 1. replace StoreTableNode with its child node,
+    //    old execution block ends at the child node
+    LogicalNode childNode = currentNode.getChild();
+    childBlock.setPlan(childNode);
+
+    // 2. create a new execution block, pipeline 2 exec blocks through a DataChannel
+    MasterPlan masterPlan = context.plan;
+    ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
+    DataChannel channel = null;
+    CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
+    if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
+      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+      Column[] columns = new Column[partitionDesc.getColumns().size()];
+      channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
+      channel.setSchema(childNode.getOutSchema());
+      channel.setStoreType(storeType);
+    } else if (partitionsType == CatalogProtos.PartitionsType.HASH) {
+      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION,
+          partitionDesc.getNumPartitions());
+      Column[] columns = new Column[partitionDesc.getColumns().size()];
+      channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
+      channel.setSchema(childNode.getOutSchema());
+      channel.setStoreType(storeType);
+    } else if(partitionsType == CatalogProtos.PartitionsType.RANGE) {
+      // TODO
+    } else if(partitionsType == CatalogProtos.PartitionsType.LIST) {
+      // TODO
+    }
+
+    // 3. create a ScanNode for scanning shuffle data
+    //    StoreTableNode as the root node of the new execution block
+    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+    currentNode.setChild(scanNode);
+    currentNode.setInSchema(scanNode.getOutSchema());
+    currentBlock.setPlan(currentNode);
+
+    masterPlan.addConnect(channel);
+
+    return currentBlock;
+  }
+
   public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext, LogicalNode> {
 
     @Override
@@ -525,11 +585,9 @@ public class GlobalPlanner {
                                        Stack<LogicalNode> stack) throws PlanningException {
       LogicalNode child = super.visitStoreTable(context, plan, node, stack);
 
-      ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
-      node.setChild(execBlock.getPlan());
-      node.setInSchema(execBlock.getPlan().getOutSchema());
-      execBlock.setPlan(node);
-      context.execBlockMap.put(node.getPID(), execBlock);
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
+      context.execBlockMap.put(node.getPID(), newExecBlock);
 
       return node;
     }

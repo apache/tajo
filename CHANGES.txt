@@ -105,6 +105,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-432: Add shuffle phase for column-partitioned table store. (Min Zhou via jihoon)
+
     TAJO-135: Bump up hadoop to 2.2.0. (jihoon)
 
     TAJO-435: Improve intermediate file. (jinho)
