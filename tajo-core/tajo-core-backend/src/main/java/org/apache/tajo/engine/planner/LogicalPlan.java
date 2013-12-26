@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
@@ -46,7 +47,6 @@ public class LogicalPlan {
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "NONAME_";
-  private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
 
@@ -58,6 +58,16 @@ public class LogicalPlan {
 
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
+
+  private PIDFactory pidFactory = new PIDFactory();
+
+  public static class PIDFactory {
+    private int nextPid = 0;
+
+    public int newPID() {
+      return nextPid++;
+    }
+  }
 
   public LogicalPlan(LogicalPlanner planner) {
     this.planner = planner;
@@ -75,8 +85,12 @@ public class LogicalPlan {
     return block;
   }
 
+  public PIDFactory getPidFactory() {
+    return pidFactory;
+  }
+
   public int newPID() {
-    return nextPid++;
+    return pidFactory.newPID();
   }
 
   public QueryBlock newNoNameBlock() {
@@ -122,11 +136,13 @@ public class LogicalPlan {
   }
 
   public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
+    Preconditions.checkState(queryBlockGraph.getParentCount(srcBlock.getName()) <= 0,
+        "There should be only one parent block.");
     queryBlockGraph.addEdge(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
   }
 
   public QueryBlock getParentBlock(QueryBlock block) {
-    return queryBlocks.get(queryBlockGraph.getParent(block.getName()));
+    return queryBlocks.get(queryBlockGraph.getParent(block.getName(), 0));
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {

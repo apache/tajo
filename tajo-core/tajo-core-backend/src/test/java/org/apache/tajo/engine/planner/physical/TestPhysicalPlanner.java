@@ -25,7 +25,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -40,11 +42,13 @@ import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -58,9 +62,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce.SortAlgorithm;
@@ -192,9 +194,11 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode =plan.getRootBlock().getRoot();
     optimizer.optimize(plan);
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     Tuple tuple;
     int i = 0;
@@ -221,9 +225,11 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode =plan.getRootBlock().getRoot();
     optimizer.optimize(plan);
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     Tuple tuple;
     int i = 0;
@@ -249,8 +255,11 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     int i = 0;
     Tuple tuple;
@@ -279,8 +288,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     int i = 0;
     Tuple tuple;
@@ -308,8 +320,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan.getRootBlock().getRoot());
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan.getRootBlock().getRoot());
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     /*HashAggregateExec hashAgg = (HashAggregateExec) exec;
 
@@ -371,10 +386,13 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
@@ -411,10 +429,13 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RCFILE);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
@@ -445,24 +466,29 @@ public class TestPhysicalPlanner {
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", Type.TEXT);
     Column key2 = new Column("score.class", Type.TEXT);
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.HASH_PARTITION, numPartitions);
+        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.HASH_PARTITION, numPartitions);
+    dataChannel.setSchema(rootNode.getOutSchema());
     dataChannel.setPartitionKey(new Column[]{key1, key2});
-    ctx.setDataChannel(dataChannel);
-    LogicalNode rootNode = optimizer.optimize(plan);
+    List<DataChannel> channels = new ArrayList<DataChannel>();
+    channels.add(dataChannel);
+    ctx.setOutgoingChannels(channels);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
     FileSystem fs = sm.getFileSystem();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Path path = new Path(workDir, "output");
@@ -505,20 +531,24 @@ public class TestPhysicalPlanner {
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[14]);
     LogicalPlan plan = planner.createPlan(expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode rootNode = optimizer.optimize(plan);
     int numPartitions = 1;
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.HASH_PARTITION, numPartitions);
+        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.HASH_PARTITION, numPartitions);
+    dataChannel.setSchema(rootNode.getOutSchema());
     dataChannel.setPartitionKey(new Column[]{});
-    ctx.setDataChannel(dataChannel);
-    optimizer.optimize(plan);
+    List<DataChannel> channels = new ArrayList<DataChannel>();
+    channels.add(dataChannel);
+    ctx.setOutgoingChannels(channels);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Path path = new Path(workDir, "output");
@@ -571,8 +601,11 @@ public class TestPhysicalPlanner {
       }
     }
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     exec.init();
     Tuple tuple = exec.next();
@@ -606,8 +639,11 @@ public class TestPhysicalPlanner {
       }
     }
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asInt8());
@@ -627,8 +663,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     int count = 0;
     exec.init();
@@ -650,11 +689,14 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
-    UnionNode union = new UnionNode(plan.newPID(), root.getChild(), root.getChild());
+    UnionNode union = new UnionNode(plan.newPID(), root.getChild(), clonePlan(plan, root.getChild()));
     root.setChild(union);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, root);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(root);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
 
     int count = 0;
     exec.init();
@@ -663,6 +705,31 @@ public class TestPhysicalPlanner {
     }
     exec.close();
     assertEquals(200, count);
+  }
+
+  private LogicalNode clonePlan(LogicalPlan plan, LogicalNode node) {
+    try {
+      LogicalNode clone = (LogicalNode) node.clone();
+      Stack<LogicalNode> stack = new Stack<LogicalNode>();
+      stack.push(clone);
+      LogicalNode current;
+
+      while (!stack.isEmpty()) {
+        current = stack.pop();
+        current.setPid(plan.newPID());
+        if (current instanceof UnaryNode) {
+          stack.push(((UnaryNode) current).getChild());
+        } else if (current instanceof BinaryNode) {
+          stack.push(((BinaryNode) current).getLeftChild());
+          stack.push(((BinaryNode) current).getRightChild());
+        }
+      }
+
+      return clone;
+    } catch (CloneNotSupportedException e) {
+
+    }
+    return null;
   }
 
   @Test
@@ -674,8 +741,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     Tuple tuple;
     exec.init();
     tuple = exec.next();
@@ -687,8 +757,11 @@ public class TestPhysicalPlanner {
     plan = planner.createPlan(expr);
     rootNode = optimizer.optimize(plan);
 
+    execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    exec = phyPlanner.createPlan(ctx, rootNode);
+    exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     tuple = exec.next();
     exec.close();
@@ -710,8 +783,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     while (exec.next() != null) {
     }
@@ -738,8 +814,11 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     Tuple tuple;
 
     int cnt = 0;
@@ -773,16 +852,21 @@ public class TestPhysicalPlanner {
 
     SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
     DataChannel channel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.RANGE_PARTITION);
+        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.RANGE_PARTITION);
+    channel.setSchema(rootNode.getOutSchema());
     channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
-    ctx.setDataChannel(channel);
+    List<DataChannel> channels = new ArrayList<DataChannel>();
+    channels.add(channel);
+    ctx.setOutgoingChannels(channels);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
 
     Tuple tuple;
     exec.init();
-    exec.next();
+    while (exec.next() != null);
     exec.close();
 
     Schema keySchema = new Schema();
@@ -868,8 +952,11 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     exec.next();
     exec.close();
@@ -889,8 +976,11 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
+    execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    exec = phyPlanner.createPlan(ctx, rootNode);
+    exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     exec.next();
     exec.close();
@@ -916,8 +1006,11 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     exec.next();
     exec.close();
@@ -937,8 +1030,11 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
+    execPlan = new ExecutionPlan();
+    execPlan.addPlan(rootNode);
     phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    exec = phyPlanner.createPlan(ctx, rootNode);
+    exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
+    exec = ((PhysicalRootExec)exec).getChild(0);
     exec.init();
     exec.next();
     exec.close();

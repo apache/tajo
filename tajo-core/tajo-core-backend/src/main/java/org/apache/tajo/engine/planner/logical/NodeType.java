@@ -47,7 +47,6 @@ public enum NodeType {
   UNION(UnionNode.class),
   TABLE_SUBQUERY(TableSubQueryNode.class);
 
-
   private final Class<? extends LogicalNode> baseClass;
 
   NodeType(Class<? extends LogicalNode> baseClass) {

@@ -105,7 +105,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       if(i < columns.length - 1)
         sb.append(",");
     }
-    
+
     if(hasHavingCondition()) {
       sb.append("], \"having qual\": \"").append(havingCondition).append("\"");
     }
@@ -122,8 +122,12 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
     sb.append("\n  \"in schema\": ").append(getInSchema());
     sb.append("}");
-    
-    return sb.toString() + "\n" + getChild().toString();
+
+    if (child != null) {
+      return sb.toString() + "\n" + getChild().toString();
+    } else {
+      return sb.toString();
+    }
   }
   
   @Override
@@ -139,7 +143,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       return false;  
     }
   }
-  
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     GroupbyNode grp = (GroupbyNode) super.clone();

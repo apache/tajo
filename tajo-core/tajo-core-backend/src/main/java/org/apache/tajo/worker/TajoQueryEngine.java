@@ -19,9 +19,8 @@
 package org.apache.tajo.worker;
 
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -32,14 +31,14 @@ import java.io.IOException;
 public class TajoQueryEngine {
 
   private final AbstractStorageManager storageManager;
-  private final PhysicalPlanner phyPlanner;
+  private final PhysicalPlannerImpl phyPlanner;
 
   public TajoQueryEngine(TajoConf conf) throws IOException {
     this.storageManager = StorageManagerFactory.getStorageManager(conf);
     this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
   
-  public PhysicalExec createPlan(TaskAttemptContext ctx, LogicalNode plan)
+  public PhysicalExec createPlan(TaskAttemptContext ctx, ExecutionPlan plan)
       throws InternalException {
     return phyPlanner.createPlan(ctx, plan);
   }

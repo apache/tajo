@@ -116,12 +116,26 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     Tuple tuple;
     Appender appender;
     int partition;
-    while ((tuple = child.next()) != null) {
+
+    tuple = child.next();
+    if (tuple != null) {
       partition = partitioner.getPartition(tuple);
       appender = getAppender(partition);
       appender.addTuple(tuple);
     }
-    
+
+    return tuple;
+  }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do   
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+
     List<TableStats> statSet = new ArrayList<TableStats>();
     for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
       int partNum = entry.getKey();
@@ -133,16 +147,9 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
         context.addRepartition(partNum, getDataFile(partNum).getName());
       }
     }
-    
+
     // Collect and aggregated statistics data
     TableStats aggregated = StatisticsUtil.aggregateTableStat(statSet);
     context.setResultStats(aggregated);
-    
-    return null;
-  }
-
-  @Override
-  public void rescan() throws IOException {
-    // nothing to do   
   }
 }

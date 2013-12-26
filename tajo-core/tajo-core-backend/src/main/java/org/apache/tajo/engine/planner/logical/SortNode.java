@@ -93,7 +93,11 @@ public final class SortNode extends UnaryNode implements Cloneable {
 
     sb.append("\n\"out schema: " + getOutSchema()
         + "\n\"in schema: " + getInSchema());
-    return sb.toString()+"\n"
+    if (child != null) {
+      return sb.toString()+"\n"
         + getChild().toString();
+    } else {
+      return sb.toString();
+    }
   }
 }

@@ -40,6 +40,18 @@ public class IntersectNode extends BinaryNode {
   }
 
   public String toString() {
-    return getLeftChild().toString() + "\n INTERSECT \n" + getRightChild().toString();
+    StringBuffer sb = new StringBuffer();
+    if (leftChild != null) {
+      sb.append(getLeftChild().toString());
+    } else {
+      sb.append("null left child");
+    }
+    sb.append("\n INTERSECT \n");
+    if (rightChild != null) {
+      sb.append(getRightChild().toString());
+    } else {
+      sb.append("null right child");
+    }
+    return sb.toString();
   }
 }

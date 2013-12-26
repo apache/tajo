@@ -45,6 +45,7 @@ public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUn
   public boolean shouldDie();
   public void setShouldDie();
   public QueryContext getQueryContext();
-  public DataChannel getDataChannel();
+  public List<DataChannel> getIncomingChannels();
+  public List<DataChannel> getOutgoingChannels();
   public Enforcer getEnforcer();
 }

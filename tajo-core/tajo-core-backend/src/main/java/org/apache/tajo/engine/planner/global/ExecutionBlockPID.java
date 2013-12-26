@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.logical;
+package org.apache.tajo.engine.planner.global;
 
-import org.apache.tajo.engine.planner.PlanString;
+import org.apache.tajo.ExecutionBlockId;
 
-public class LogicalRootNode extends UnaryNode implements Cloneable {
-  public LogicalRootNode(int pid) {
-    super(pid, NodeType.ROOT);
-  }
-  
-  public String toString() {
-    if (child != null) {
-      return "Logical Plan Root\n\n" + getChild().toString();
-    } else {
-      return "Logical Plan Root\n\n";
-    }
-  }
-  
-  @Override
-  public Object clone() throws CloneNotSupportedException {
-    return super.clone();
+public class ExecutionBlockPID {
+  private ExecutionBlockId executionBlockId;
+  private Integer pid;
+
+  public ExecutionBlockPID(ExecutionBlockId executionBlockId, Integer pid) {
+    this.executionBlockId = executionBlockId;
+    this.pid = pid;
   }
 
-  @Override
-  public PlanString getPlanString() {
-    return new PlanString("Root");
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
+  }
+
+  public void updatePid(Integer pid) {
+    this.pid = pid;
+  }
+
+  public Integer getPid() {
+    return pid;
   }
 }

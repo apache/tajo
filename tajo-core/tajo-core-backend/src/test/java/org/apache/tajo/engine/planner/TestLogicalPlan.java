@@ -96,8 +96,8 @@ public class TestLogicalPlan {
     SimpleDirectedGraph<String, LogicalPlan.BlockEdge> graph = plan.getQueryBlockGraph();
     assertEquals(2, graph.getChildCount(root.getName()));
 
-    assertEquals(root.getName(), graph.getParent(new1.getName()));
-    assertEquals(root.getName(), graph.getParent(new2.getName()));
+    assertEquals(root.getName(), graph.getParent(new1.getName(), 0));
+    assertEquals(root.getName(), graph.getParent(new2.getName(), 0));
 
     assertTrue(graph.isRoot(root.getName()));
     assertFalse(graph.isRoot(new1.getName()));

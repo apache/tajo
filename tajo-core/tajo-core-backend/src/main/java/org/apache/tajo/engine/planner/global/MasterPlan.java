@@ -21,10 +21,12 @@
  */
 package org.apache.tajo.engine.planner.global;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
+import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 
 import java.util.ArrayList;
@@ -91,6 +93,14 @@ public class MasterPlan {
   }
 
   public ExecutionBlock newExecutionBlock() {
+    ExecutionBlock newExecBlock = new ExecutionBlock(newExecutionBlockId(),
+        (LogicalRootNode) plan.getRootBlock().getRoot());
+    execBlockMap.put(newExecBlock.getId(), newExecBlock);
+    return newExecBlock;
+  }
+
+  @VisibleForTesting
+  public ExecutionBlock newExecutionBlockForTest() {
     ExecutionBlock newExecBlock = new ExecutionBlock(newExecutionBlockId());
     execBlockMap.put(newExecBlock.getId(), newExecBlock);
     return newExecBlock;
@@ -108,12 +118,14 @@ public class MasterPlan {
     execBlockGraph.addEdge(dataChannel.getSrcId(), dataChannel.getTargetId(), dataChannel);
   }
 
+  @VisibleForTesting
   public void addConnect(ExecutionBlock src, ExecutionBlock target, PartitionType type) {
     addConnect(src.getId(), target.getId(), type);
   }
 
+  @VisibleForTesting
   public void addConnect(ExecutionBlockId src, ExecutionBlockId target, PartitionType type) {
-    addConnect(new DataChannel(src, target, type));
+    addConnect(new DataChannel(src, target, null, null, type));
   }
 
   public boolean isConnected(ExecutionBlock src, ExecutionBlock target) {
@@ -146,7 +158,8 @@ public class MasterPlan {
 
   public boolean isRoot(ExecutionBlock execBlock) {
     if (!execBlock.getId().equals(terminalBlock.getId())) {
-      return execBlockGraph.getParent(execBlock.getId()).equals(terminalBlock.getId());
+      return execBlockGraph.getParentCount(execBlock.getId()) == 1 &&
+          execBlockGraph.getParent(execBlock.getId(), 0).equals(terminalBlock.getId());
     } else {
       return false;
     }
@@ -173,7 +186,7 @@ public class MasterPlan {
   }
 
   public ExecutionBlock getParent(ExecutionBlock executionBlock) {
-    return execBlockMap.get(execBlockGraph.getParent(executionBlock.getId()));
+    return execBlockMap.get(execBlockGraph.getParent(executionBlock.getId(), 0));
   }
 
   public List<ExecutionBlock> getChilds(ExecutionBlock execBlock) {
@@ -202,7 +215,7 @@ public class MasterPlan {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder("\n");
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(this);
     sb.append("-------------------------------------------------------------------------------\n");
     sb.append("Execution Block Graph (TERMINAL - " + getTerminalBlock() + ")\n");

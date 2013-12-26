@@ -28,9 +28,9 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
+import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
@@ -55,10 +55,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private final Configuration systemConf;
 	private QueryUnitId taskId;
   private EventHandler eventHandler;
-	private StoreTableNode store = null;
-	private LogicalNode plan = null;
-	private List<ScanNode> scan;
-	
+  private ExecutionPlan plan = null;
+
 	private Map<String, FragmentProto> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
@@ -118,7 +116,6 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		this.taskId = id;
     this.eventHandler = eventHandler;
     this.isLeafTask = isLeafTask;
-		scan = new ArrayList<ScanNode>();
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
     partitions = new ArrayList<Partition>();
@@ -160,28 +157,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 	
-	public void setLogicalPlan(LogicalNode plan) {
-	  this.plan = plan;
-
-	  LogicalNode node = plan;
-	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
-	  s.add(node);
-	  while (!s.isEmpty()) {
-	    node = s.remove(s.size()-1);
-	    if (node instanceof UnaryNode) {
-	      UnaryNode unary = (UnaryNode) node;
-	      s.add(s.size(), unary.getChild());
-	    } else if (node instanceof BinaryNode) {
-	      BinaryNode binary = (BinaryNode) node;
-	      s.add(s.size(), binary.getLeftChild());
-	      s.add(s.size(), binary.getRightChild());
-	    } else if (node instanceof ScanNode) {
-	      scan.add((ScanNode)node);
-	    } else if (node instanceof TableSubQueryNode) {
-        s.add(((TableSubQueryNode) node).getSubQuery());
-      }
-	  }
-	}
+  public void setExecutionPlan(ExecutionPlan plan) {
+    this.plan = plan;
+  }
 
   @Deprecated
   public void setFragment(String tableId, FileFragment fragment) {
@@ -233,9 +211,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return fragMap.values();
   }
 	
-	public LogicalNode getLogicalPlan() {
-	  return this.plan;
-	}
+  public ExecutionPlan getPlan() {
+    return this.plan;
+  }
 	
 	public QueryUnitId getId() {
 		return taskId;
@@ -253,25 +231,17 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  return this.fetchMap.get(scan.getTableName());
 	}
 
-	public String getOutputName() {
-		return this.store.getTableName();
-	}
-	
-	public Schema getOutputSchema() {
-	  return this.store.getOutSchema();
-	}
-	
-	public StoreTableNode getStoreTableNode() {
-	  return this.store;
-	}
-	
+  public Collection<URI> getFetch(String sourceName) {
+    return this.fetchMap.get(sourceName);
+  }
+
 	public ScanNode[] getScanNodes() {
-	  return this.scan.toArray(new ScanNode[scan.size()]);
+    return this.plan.getInputContext().getScanNodes();
 	}
 	
 	@Override
 	public String toString() {
-		String str = new String(plan.getType() + " \n");
+    String str = new String(plan.getTerminalNode().getChild().getType() + " \n");
 		for (Entry<String, FragmentProto> e : fragMap.entrySet()) {
 		  str += e.getKey() + " : ";
       str += e.getValue() + " ";

@@ -228,8 +228,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return masterPlan;
   }
 
-  public DataChannel getDataChannel() {
-    return masterPlan.getOutgoingChannels(getId()).iterator().next();
+  public List<DataChannel> getIncomingChannels() {
+    return masterPlan.getIncomingChannels(getId());
+  }
+
+  public List<DataChannel> getOutgoingChannels() {
+    return masterPlan.getOutgoingChannels(getId());
   }
 
   public EventHandler getEventHandler() {
@@ -584,7 +588,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
 
       // Is this subquery the first step of join?
-      if (parent != null && parent.getScanNodes().length == 2) {
+      if (parent != null && masterPlan.getChildCount(parent.getId()) == 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for inner
@@ -653,10 +657,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit [] tasks;
-      if (subQuery.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
+      if (subQuery.getMasterPlan().isLeaf(execBlock.getId()) &&
+          execBlock.getInputContext().size() == 1) {
         tasks = createLeafTasks(subQuery);
 
-      } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
+      } else if (execBlock.getInputContext().size() > 1) { // Case 2: Join
         tasks = Repartitioner.createJoinTasks(subQuery);
 
       } else { // Case 3: Others (Sort or Aggregation)
@@ -696,7 +701,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                                       ExecutionBlock execBlock) {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
-        ScanNode outerScan = execBlock.getScanNodes()[0];
+        ScanNode outerScan = execBlock.getInputContext().getScanNodes()[0];
         TableStats stat = tableMap.get(outerScan.getCanonicalName()).getStats();
         return stat.getNumBytes();
       } else {
@@ -760,9 +765,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     private static QueryUnit [] createLeafTasks(SubQuery subQuery) throws IOException {
       ExecutionBlock execBlock = subQuery.getBlock();
-      ScanNode[] scans = execBlock.getScanNodes();
-      Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
-      ScanNode scan = scans[0];
+      Preconditions.checkState(execBlock.getInputContext().size() == 1);
+      ScanNode scan = execBlock.getInputContext().getScanNodes()[0];
       TableDesc table = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
 
       Collection<FileFragment> fragments;
@@ -796,7 +800,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       QueryUnit unit = new QueryUnit(subQuery.context.getConf(),
           QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.masterPlan.isLeaf(execBlock),
           subQuery.eventHandler);
-      unit.setLogicalPlan(execBlock.getPlan());
+      unit.setExecutionPlan(execBlock.getPlan());
       unit.setFragment2(fragment);
       return unit;
     }

@@ -469,9 +469,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               new ArrayList<FragmentProto>(task.getAllFragments()),
               "",
               false,
-              task.getLogicalPlan().toJson(),
+              task.getPlan().toJson(),
               context.getQueryContext(),
-              subQuery.getDataChannel(), subQuery.getBlock().getEnforcer());
+              subQuery.getIncomingChannels(),
+              subQuery.getOutgoingChannels(),
+              subQuery.getBlock().getEnforcer());
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
@@ -530,9 +532,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               Lists.newArrayList(task.getAllFragments()),
               "",
               false,
-              task.getLogicalPlan().toJson(),
+              task.getPlan().toJson(),
               context.getQueryContext(),
-              subQuery.getDataChannel(),
+              subQuery.getIncomingChannels(),
+              subQuery.getOutgoingChannels(),
               subQuery.getBlock().getEnforcer());
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();

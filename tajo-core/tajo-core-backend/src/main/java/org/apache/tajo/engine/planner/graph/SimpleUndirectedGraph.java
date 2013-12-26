@@ -76,8 +76,18 @@ public class SimpleUndirectedGraph<V, E> extends SimpleDirectedGraph<V, E> imple
   }
 
   @Override
-  public V getParent(V v) {
+  public V getParent(V v, int idx) {
     throw new UnsupportedOperationException("Cannot support getParent(V v) in UndirectedGraph");
+  }
+
+  @Override
+  public int getParentCount(V v) {
+    throw new UnsupportedOperationException("Cannot support getParentCount(V v) in UndirectedGraph");
+  }
+
+  @Override
+  public List<V> getParents(V v) {
+    throw new UnsupportedOperationException("Cannot support getParents(V v) in UndirectedGraph");
   }
 
   @Override

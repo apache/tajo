@@ -19,9 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -31,23 +30,23 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.global.ExecutionPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.LocalTajoTestingUtility;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class TestLeftOuterNLJoinExec {
   private TajoConf conf;
@@ -254,18 +253,19 @@ public class TestLeftOuterNLJoinExec {
     Expr context =  analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
       HashLeftOuterJoinExec join = proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
-      exec = proj;
     }
+    exec = proj;
 
     int count = 0;
     exec.init();
@@ -295,20 +295,19 @@ public class TestLeftOuterNLJoinExec {
     Expr context =  analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
     
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
       HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
-      exec = proj;
-     
     }
-
+    exec = proj;
 
     Tuple tuple;
     int i = 1;
@@ -338,19 +337,20 @@ public class TestLeftOuterNLJoinExec {
     Expr context =  analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
     
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
       HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
-      exec = proj;
-     
+
     }
+    exec = proj;
 
 
     Tuple tuple;
@@ -382,19 +382,20 @@ public class TestLeftOuterNLJoinExec {
     Expr context =  analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
     
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
       HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
-      exec = proj;
-     
+
     }
+    exec = proj;
 
 
     Tuple tuple;
@@ -425,19 +426,20 @@ public class TestLeftOuterNLJoinExec {
     Expr context =  analyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    ExecutionPlan execPlan = new ExecutionPlan();
+    execPlan.addPlan(plan);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
     
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
-    ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) ((PhysicalRootExec)exec).getChild(0);
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
       HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
-      exec = proj;
-     
+
     }
+    exec = proj;
 
 
     Tuple tuple;

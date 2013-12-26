@@ -44,6 +44,8 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
+  private Tuple prevKeyTuple;
+
   public IndexedStoreExec(final TaskAttemptContext context, final AbstractStorageManager sm,
       final PhysicalExec child, final Schema inSchema, final Schema outSchema,
       final SortSpec[] sortSpecs) throws IOException {
@@ -79,17 +81,17 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     this.indexWriter.setLoadNum(100);
     this.indexWriter.open();
+    this.prevKeyTuple = null;
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    Tuple prevKeyTuple = null;
     long offset;
 
-
-    while((tuple = child.next()) != null) {
+    tuple = child.next();
+    if (tuple != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.getColumnNum());
@@ -100,7 +102,7 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
       }
     }
 
-    return null;
+    return tuple;
   }
 
   @Override

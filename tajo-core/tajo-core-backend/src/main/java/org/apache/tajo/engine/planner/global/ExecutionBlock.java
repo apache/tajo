@@ -14,11 +14,16 @@
 
 package org.apache.tajo.engine.planner.global;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
@@ -29,16 +34,17 @@ import java.util.*;
  */
 public class ExecutionBlock {
   private ExecutionBlockId executionBlockId;
-  private LogicalNode plan = null;
-  private StoreTableNode store = null;
-  private List<ScanNode> scanlist = new ArrayList<ScanNode>();
+  private ExecutionPlan executionPlan;
   private Enforcer enforcer = new Enforcer();
-
-  private boolean hasJoinPlan;
-  private boolean hasUnionPlan;
 
   private Set<String> broadcasted = new HashSet<String>();
 
+  public ExecutionBlock(ExecutionBlockId executionBlockId, PIDFactory pidFactory, LogicalRootNode rootNode) {
+    this.executionBlockId = executionBlockId;
+    this.executionPlan = new ExecutionPlan(pidFactory, rootNode);
+  }
+
+  @VisibleForTesting
   public ExecutionBlock(ExecutionBlockId executionBlockId) {
     this.executionBlockId = executionBlockId;
   }
@@ -48,64 +54,27 @@ public class ExecutionBlock {
   }
 
   public void setPlan(LogicalNode plan) {
-    hasJoinPlan = false;
-    hasUnionPlan = false;
-    this.scanlist.clear();
-    this.plan = plan;
-
-    if (plan == null) {
-      return;
-    }
-
-    LogicalNode node = plan;
-    ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
-    s.add(node);
-    while (!s.isEmpty()) {
-      node = s.remove(s.size()-1);
-      if (node instanceof UnaryNode) {
-        UnaryNode unary = (UnaryNode) node;
-        s.add(s.size(), unary.getChild());
-      } else if (node instanceof BinaryNode) {
-        BinaryNode binary = (BinaryNode) node;
-        if (binary.getType() == NodeType.JOIN) {
-          hasJoinPlan = true;
-        } else if (binary.getType() == NodeType.UNION) {
-          hasUnionPlan = true;
-        }
-        s.add(s.size(), binary.getLeftChild());
-        s.add(s.size(), binary.getRightChild());
-      } else if (node instanceof ScanNode) {
-        scanlist.add((ScanNode)node);
-      } else if (node instanceof TableSubQueryNode) {
-        TableSubQueryNode subQuery = (TableSubQueryNode) node;
-        s.add(s.size(), subQuery.getSubQuery());
-      }
-    }
+    executionPlan.setPlan(plan);
   }
 
-
-  public LogicalNode getPlan() {
-    return plan;
+  public ExecutionPlan getPlan() {
+    return executionPlan;
   }
 
   public Enforcer getEnforcer() {
     return enforcer;
   }
 
-  public StoreTableNode getStoreTableNode() {
-    return store;
-  }
-
-  public ScanNode [] getScanNodes() {
-    return this.scanlist.toArray(new ScanNode[scanlist.size()]);
+  public InputContext getInputContext() {
+    return executionPlan.getInputContext();
   }
 
   public boolean hasJoin() {
-    return hasJoinPlan;
+    return executionPlan.hasJoinPlan();
   }
 
   public boolean hasUnion() {
-    return hasUnionPlan;
+    return executionPlan.hasUnionPlan();
   }
 
   public void addBroadcastTables(Collection<String> tableNames) {
