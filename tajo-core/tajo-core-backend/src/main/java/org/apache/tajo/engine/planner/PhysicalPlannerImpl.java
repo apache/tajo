@@ -143,6 +143,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         LogicalNode topNode = plan.getFirstPlanGroup().toLinkedLogicalNode();
         storeTableNode.setChild(topNode);
         plan.setPlan(storeTableNode);
+        plan.build();
 
         channel.updateSrcPID(storeTableNode.getPID());
       }

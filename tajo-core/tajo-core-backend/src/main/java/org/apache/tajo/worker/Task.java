@@ -159,6 +159,7 @@ public class Task {
     this.context.setEnforcer(request.getEnforcer());
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), ExecutionPlan.class);
+    plan.build();
     // TODO: add meta information to regenerate a table desc
     InputContext srcContext = plan.getInputContext();
 

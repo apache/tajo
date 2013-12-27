@@ -111,11 +111,13 @@ public class GlobalPlanner {
     ExecutionBlock childBlock = leftTable ? leftBlock : rightBlock;
 
     DataChannel channel = new DataChannel(childBlock, parent, HASH_PARTITION, 32);
+    channel.setSchema(childBlock.getPlan().getFirstPlanGroup().getRootNode().getOutSchema());
     channel.setStoreType(storeType);
     if (join.getJoinType() != JoinType.CROSS) {
       // Each block should have the only one output schema
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
-          leftBlock.getPlan().getOutSchema(0), rightBlock.getPlan().getOutSchema(0));
+          leftBlock.getPlan().getFirstPlanGroup().getRootNode().getOutSchema(),
+          rightBlock.getPlan().getFirstPlanGroup().getRootNode().getOutSchema());
       if (leftTable) {
         channel.setPartitionKey(joinColumns[0]);
       } else {
@@ -350,7 +352,7 @@ public class GlobalPlanner {
     // if result table is not a partitioned table, directly store it
     if(partitionDesc == null) {
       currentNode.setChild(childBlock.getPlan().getFirstPlanGroup().toLinkedLogicalNode());
-      currentNode.setInSchema(childBlock.getPlan().getOutSchema(0));
+      currentNode.setInSchema(childBlock.getPlan().getFirstPlanGroup().getRootNode().getOutSchema());
       childBlock.setPlan(currentNode);
       return childBlock;
     }
@@ -563,6 +565,7 @@ public class GlobalPlanner {
 
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
         DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_PARTITION, 1);
+        channel.setSchema(childBlocks.getPlan().getFirstPlanGroup().getRootNode().getOutSchema());
         channel.setStoreType(storeType);
         if (childBlocks.getPlan().hasPlanGroup()) {
           DataChannel.linkChannelAndPlanGroups(childBlocks.getPlan().getFirstPlanGroup(),

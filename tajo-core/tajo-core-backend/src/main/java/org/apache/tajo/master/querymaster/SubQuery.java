@@ -595,10 +595,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
         // for inner
         ExecutionBlock outer = childs.get(0);
+        outer.getPlan().build();
         long outerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, outer);
 
         // for inner
         ExecutionBlock inner = childs.get(1);
+        inner.getPlan().build();
         long innerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, inner);
         LOG.info("Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
             + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
