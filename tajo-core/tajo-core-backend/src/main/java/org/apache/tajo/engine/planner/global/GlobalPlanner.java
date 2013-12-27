@@ -80,7 +80,7 @@ public class GlobalPlanner {
 
     ExecutionBlock childExecBlock = globalPlanContext.execBlockMap.get(lastNode.getPID());
 
-    if (childExecBlock.getPlan() != null) {
+    if (childExecBlock.getPlan().hasPlanGroup()) {
       ExecutionBlock terminalBlock = masterPlan.createTerminalBlock();
       DataChannel dataChannel = new DataChannel(childExecBlock, terminalBlock, NONE_PARTITION, 1);
       dataChannel.setStoreType(CatalogProtos.StoreType.CSV);

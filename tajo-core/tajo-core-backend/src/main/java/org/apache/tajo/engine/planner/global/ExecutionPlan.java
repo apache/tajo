@@ -91,8 +91,9 @@ public class ExecutionPlan implements GsonObject {
         if (nodes[i] instanceof UnaryNode) {
           ((UnaryNode)nodes[i]).setChild(nodes[++i]);
         } else if (nodes[i] instanceof BinaryNode) {
-          ((BinaryNode)nodes[i]).setLeftChild(nodes[++i]);
-          ((BinaryNode)nodes[i]).setRightChild(nodes[++i]);
+          ((BinaryNode)nodes[i]).setLeftChild(nodes[i+1]);
+          ((BinaryNode)nodes[i]).setRightChild(nodes[i+2]);
+          i += 2;
         } else if (nodes[i] instanceof TableSubQueryNode) {
           ((TableSubQueryNode)nodes[i]).setSubQuery(nodes[++i]);
         } else {
