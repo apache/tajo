@@ -1298,7 +1298,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     TimeValue time;
     boolean hasFractionOfSeconds = parts[2].indexOf('.') > 0;
     if (hasFractionOfSeconds) {
-      String [] secondsParts = parts[2].split(".");
+      String [] secondsParts = parts[2].split("\\.");
       time = new TimeValue(parts[0], parts[1], secondsParts[0]);
       if (secondsParts.length == 2) {
         time.setSecondsFraction(secondsParts[1]);

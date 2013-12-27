@@ -29,7 +29,9 @@ public class TimestampDatum extends Datum {
   public static final int SIZE = 8;
   /** ISO 8601/SQL standard format - ex) 1997-12-17 07:37:16-08 */
   public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss";
+  public static final String FRACTION_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss.SSS";
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
+  private static final DateTimeFormatter FRACTION_FORMATTER = DateTimeFormat.forPattern(FRACTION_FORMAT_STRING);
   private DateTime dateTime;
 
   public TimestampDatum(int timestamp) {
@@ -106,7 +108,11 @@ public class TimestampDatum extends Datum {
 
   @Override
   public String asChars() {
-    return dateTime.toString(DEFAULT_FORMATTER);
+    if (getMillisOfSecond() > 0) {
+      return dateTime.toString(FRACTION_FORMATTER);
+    } else {
+      return dateTime.toString(DEFAULT_FORMATTER);
+    }
   }
 
   public String toChars(DateTimeFormatter format) {
