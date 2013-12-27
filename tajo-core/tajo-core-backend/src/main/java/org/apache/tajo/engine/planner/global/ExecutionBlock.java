@@ -39,9 +39,9 @@ public class ExecutionBlock {
 
   private Set<String> broadcasted = new HashSet<String>();
 
-  public ExecutionBlock(ExecutionBlockId executionBlockId, PIDFactory pidFactory, LogicalRootNode rootNode) {
+  public ExecutionBlock(ExecutionBlockId executionBlockId, PIDFactory pidFactory) {
     this.executionBlockId = executionBlockId;
-    this.executionPlan = new ExecutionPlan(pidFactory, rootNode);
+    this.executionPlan = new ExecutionPlan(pidFactory);
   }
 
   @VisibleForTesting

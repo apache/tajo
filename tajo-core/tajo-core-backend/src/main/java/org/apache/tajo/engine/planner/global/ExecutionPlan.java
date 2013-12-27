@@ -18,15 +18,15 @@
 
 package org.apache.tajo.engine.planner.global;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.LogicalPlan.PIDFactory;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.engine.planner.global.ExecutionPlanEdge.Tag;
+import org.apache.tajo.engine.planner.global.ExecutionPlanEdge.EdgeType;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.json.GsonObject;
@@ -49,14 +49,77 @@ public class ExecutionPlan implements GsonObject {
   @Expose private SimpleDirectedGraph<Integer, ExecutionPlanEdge> graph
       = new SimpleDirectedGraph<Integer, ExecutionPlanEdge>();
 
-  @VisibleForTesting
-  public ExecutionPlan(PIDFactory pidFactory) {
-    this.pidFactory = pidFactory;
+  private NavigableMap<Integer, LogicalNodeGroup> logicalNodeGroups = Maps.newTreeMap();
+  private boolean built = false;
+
+  public static class LogicalNodeGroup {
+    private int rootPID;
+    private List<LogicalNode> nodes = Lists.newArrayList();  // order: root -> leaf
+
+    public LogicalNodeGroup(int rootPID) {
+      setId(rootPID);
+    }
+
+    public void setId(int rootPID) {
+      this.rootPID = rootPID;
+    }
+
+    public int getId() {
+      return rootPID;
+    }
+
+    public void addNodeAndDescendants(LogicalNode logicalNode) {
+      add(logicalNode);
+      if (logicalNode instanceof UnaryNode) {
+        add(((UnaryNode) logicalNode).getChild());
+      } else if (logicalNode instanceof BinaryNode) {
+        add(((BinaryNode) logicalNode).getLeftChild());
+        add(((BinaryNode) logicalNode).getRightChild());
+      } else if (logicalNode instanceof TableSubQueryNode) {
+        add(((TableSubQueryNode) logicalNode).getSubQuery());
+      }
+    }
+
+    public void add(LogicalNode logicalNode) {
+      nodes.add(logicalNode);
+    }
+
+    public LogicalNode toLinkedLogicalNode() {
+      LogicalNode[] nodes = this.nodes.toArray(new LogicalNode[this.nodes.size()]);
+
+      for (int i = 0; i < nodes.length; i++) {
+        if (nodes[i] instanceof UnaryNode) {
+          ((UnaryNode)nodes[i]).setChild(nodes[++i]);
+        } else if (nodes[i] instanceof BinaryNode) {
+          ((BinaryNode)nodes[i]).setLeftChild(nodes[++i]);
+          ((BinaryNode)nodes[i]).setRightChild(nodes[++i]);
+        } else if (nodes[i] instanceof TableSubQueryNode) {
+          ((TableSubQueryNode)nodes[i]).setSubQuery(nodes[++i]);
+        }
+      }
+      return nodes[0];
+    }
+
+    public LogicalNode getRootNode() {
+      return nodes.get(0);
+    }
+
+    public LogicalNode getLeafNode() {
+      return nodes.get(nodes.size()-1);
+    }
+
+    public void clear() {
+      nodes.clear();
+    }
   }
 
-  public ExecutionPlan(PIDFactory pidFactory, LogicalRootNode terminalNode) {
-    this(pidFactory);
+  private ExecutionPlan(PIDFactory pidFactory, LogicalRootNode terminalNode) {
+    this.pidFactory = pidFactory;
     this.terminalNode = terminalNode;
+  }
+
+  public ExecutionPlan(PIDFactory pidFactory) {
+    this(pidFactory, new LogicalRootNode(pidFactory.newPID()));
   }
 
   public void setPlan(LogicalNode plan) {
@@ -64,32 +127,68 @@ public class ExecutionPlan implements GsonObject {
     this.addPlan(plan);
   }
 
-  private void clear() {
+  public void clear() {
     for (ExecutionPlanEdge edge : graph.getEdgesAll()) {
       graph.removeEdge(edge.getChildId(), edge.getParentId());
     }
+    for (LogicalNodeGroup eachGroup : logicalNodeGroups.values()) {
+      eachGroup.clear();
+    }
+    logicalNodeGroups.clear();
     vertices.clear();
     this.inputContext = null;
     this.hasUnionPlan = false;
     this.hasJoinPlan = false;
+    this.built = false;
   }
 
   public void addPlan(LogicalNode plan) {
-    LogicalNode current = PlannerUtil.clone(pidFactory, plan);
-    if (current.getType() == NodeType.ROOT) {
-      terminalNode = (LogicalRootNode) current;
-    } else {
-      this.add(current, terminalNode, Tag.SINGLE);
-      terminalNode.setChild(current);
+//    Preconditions.checkState(built==false, "Execution plan is already built.");
+    built = false;
+
+    LogicalNode topNode = plan;
+    if (topNode.getType() == NodeType.ROOT) {
+      topNode = ((LogicalRootNode)topNode).getChild();
     }
-    ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
-    builder.visit(terminalNode);
+
+    // add group
+    LogicalNodeGroup nodeGroup = new LogicalNodeGroup(topNode.getPID());
+    nodeGroup.addNodeAndDescendants(topNode);
+    logicalNodeGroups.put(nodeGroup.rootPID, nodeGroup);
   }
 
-  public void add(LogicalNode child, LogicalNode parent, Tag tag) {
+  public LogicalNodeGroup getLogicalNodeGroupWithPID(int pid) {
+    return logicalNodeGroups.get(pid);
+  }
+
+  public LogicalNodeGroup getFirstLogicalNodeGroup() {
+    return logicalNodeGroups.firstEntry().getValue();
+  }
+
+  public void build() {
+//    Preconditions.checkState(built==false, "Execution plan is already built.");
+    if (built) {
+      return;
+    }
+
+    ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
+
+    for (LogicalNodeGroup logicalNodeGroup : logicalNodeGroups.values()) {
+      LogicalNode topNode = logicalNodeGroup.nodes.iterator().next();
+      builder.visit(topNode);
+      this.add(topNode, terminalNode, EdgeType.SINGLE);
+    }
+    this.built = true;
+  }
+
+  public boolean isBuilt() {
+    return built;
+  }
+
+  public void add(LogicalNode child, LogicalNode parent, EdgeType edgeType) {
     vertices.put(child.getPID(), child);
     vertices.put(parent.getPID(), parent);
-    graph.addEdge(child.getPID(), parent.getPID(), new ExecutionPlanEdge(child, parent, tag));
+    graph.addEdge(child.getPID(), parent.getPID(), new ExecutionPlanEdge(child, parent, edgeType));
   }
 
   public void setInputContext(InputContext contexts) {
@@ -116,14 +215,14 @@ public class ExecutionPlan implements GsonObject {
     return graph.toStringGraph(terminalNode.getPID());
   }
 
-  public Tag getTag(LogicalNode child, LogicalNode parent) {
-    return graph.getEdge(child.getPID(), parent.getPID()).getTag();
+  public EdgeType getEdgeType(LogicalNode child, LogicalNode parent) {
+    return graph.getEdge(child.getPID(), parent.getPID()).getEdgeType();
   }
 
-  public LogicalNode getChild(LogicalNode parent, Tag tag) {
+  public LogicalNode getChild(LogicalNode parent, EdgeType edgeType) {
     List<ExecutionPlanEdge> incomingEdges = graph.getIncomingEdges(parent.getPID());
     for (ExecutionPlanEdge inEdge : incomingEdges) {
-      if (inEdge.getTag() == tag) {
+      if (inEdge.getEdgeType() == edgeType) {
         return vertices.get(inEdge.getChildId());
       }
     }
@@ -203,13 +302,13 @@ public class ExecutionPlan implements GsonObject {
     this.graph.removeEdge(child.getPID(), parent.getPID());
   }
 
-  private static class PIDAndTag {
+  private static class PIDAndEdgeType {
     @Expose int id;
-    @Expose Tag tag;
+    @Expose EdgeType edgeType;
 
-    public PIDAndTag(int id, Tag tag) {
+    public PIDAndEdgeType(int id, EdgeType edgeType) {
       this.id = id;
-      this.tag = tag;
+      this.edgeType = edgeType;
     }
   }
 
@@ -220,7 +319,7 @@ public class ExecutionPlan implements GsonObject {
     @Expose private final InputContext inputContext;
     @Expose private final LogicalRootNode terminalNode;
     @Expose Map<Integer, LogicalNode> vertices = new HashMap<Integer, LogicalNode>();
-    @Expose Map<Integer, List<PIDAndTag>> adjacentList = new HashMap<Integer, List<PIDAndTag>>();
+    @Expose Map<Integer, List<PIDAndEdgeType>> adjacentList = new HashMap<Integer, List<PIDAndEdgeType>>();
 
     public ExecutionPlanJsonHelper(ExecutionPlan plan) {
       this.pidFactory = plan.pidFactory;
@@ -231,7 +330,7 @@ public class ExecutionPlan implements GsonObject {
       this.vertices.putAll(plan.vertices);
       Collection<ExecutionPlanEdge> edges = plan.graph.getEdgesAll();
       int parentId, childId;
-      List<PIDAndTag> adjacents;
+      List<PIDAndEdgeType> adjacents;
 
       // convert the graph to an adjacent list
       for (ExecutionPlanEdge edge : edges) {
@@ -241,10 +340,10 @@ public class ExecutionPlan implements GsonObject {
         if (adjacentList.containsKey(childId)) {
           adjacents = adjacentList.get(childId);
         } else {
-          adjacents = new ArrayList<PIDAndTag>();
+          adjacents = new ArrayList<PIDAndEdgeType>();
           adjacentList.put(childId, adjacents);
         }
-        adjacents.add(new PIDAndTag(parentId, edge.getTag()));
+        adjacents.add(new PIDAndEdgeType(parentId, edge.getEdgeType()));
       }
     }
 
@@ -261,10 +360,10 @@ public class ExecutionPlan implements GsonObject {
       plan.setInputContext(this.inputContext);
       plan.vertices.putAll(this.vertices);
 
-      for (Entry<Integer, List<PIDAndTag>> e : this.adjacentList.entrySet()) {
+      for (Entry<Integer, List<PIDAndEdgeType>> e : this.adjacentList.entrySet()) {
         LogicalNode child = this.vertices.get(e.getKey());
-        for (PIDAndTag idAndTag : e.getValue()) {
-          plan.add(child, this.vertices.get(idAndTag.id), idAndTag.tag);
+        for (PIDAndEdgeType pidAndEdgeType : e.getValue()) {
+          plan.add(child, this.vertices.get(pidAndEdgeType.id), pidAndEdgeType.edgeType);
         }
       }
 
@@ -283,11 +382,19 @@ public class ExecutionPlan implements GsonObject {
     }
 
     public boolean compare() {
-      Stack<Integer> s1 = new Stack<Integer>();
-      Stack<Integer> s2 = new Stack<Integer>();
-      s1.push(plan1.getTopNode(0).getPID());
-      s2.push(plan2.getTopNode(0).getPID());
-      return recursiveCompare(s1, s2);
+      if (plan1.getChildCount(plan1.terminalNode)
+          == plan2.getChildCount(plan2.terminalNode)) {
+        Stack<Integer> s1 = new Stack<Integer>();
+        Stack<Integer> s2 = new Stack<Integer>();
+        int childCount = plan1.getChildCount(plan1.terminalNode);
+        for (int i = 0; i < childCount; i++) {
+          s1.push(plan1.getTopNode(i).getPID());
+          s2.push(plan2.getTopNode(i).getPID());
+        }
+        return recursiveCompare(s1, s2);
+      } else {
+        return false;
+      }
     }
 
     private boolean recursiveCompare(Stack<Integer> s1, Stack<Integer> s2) {
@@ -328,43 +435,42 @@ public class ExecutionPlan implements GsonObject {
     @Override
     public void visit(LogicalNode current) {
       try {
-        Preconditions.checkArgument(current instanceof UnaryNode, "The current node should be an unary node");
-        visit(current, Tag.SINGLE);
+        visit(current, EdgeType.SINGLE);
       } catch (PlanningException e) {
         throw new RuntimeException(e);
       }
     }
 
-    private void visit(LogicalNode current, Tag tag) throws PlanningException {
+    private void visit(LogicalNode current, EdgeType edgeType) throws PlanningException {
       if (current instanceof UnaryNode) {
-        visitUnary((UnaryNode) current, tag);
+        visitUnary((UnaryNode) current, edgeType);
       } else if (current instanceof BinaryNode) {
-        visitBinary((BinaryNode) current, tag);
+        visitBinary((BinaryNode) current, edgeType);
       } else if (current instanceof ScanNode) {
-        visitScan((ScanNode) current, tag);
+        visitScan((ScanNode) current, edgeType);
       } else if (current instanceof TableSubQueryNode) {
-        visitTableSubQuery((TableSubQueryNode) current, tag);
+        visitTableSubQuery((TableSubQueryNode) current, edgeType);
       }
     }
 
-    private void visitScan(ScanNode node, Tag tag) throws PlanningException {
+    private void visitScan(ScanNode node, EdgeType edgeType) throws PlanningException {
       if (plan.inputContext == null) {
         plan.inputContext = new InputContext();
       }
       plan.inputContext.addScanNode(node);
     }
 
-    private void visitUnary(UnaryNode node, Tag tag) throws PlanningException {
+    private void visitUnary(UnaryNode node, EdgeType edgeType) throws PlanningException {
       if (node.getChild() != null) {
-        LogicalNode child = PlannerUtil.clone(plan.pidFactory, node.getChild());
-        plan.add(child, node, tag);
+        LogicalNode child = node.getChild();
+        plan.add(child, node, edgeType);
         node.setChild(null);
-        visit(child, tag);
+        visit(child, edgeType);
       }
     }
 
-    private void visitBinary(BinaryNode node, Tag tag) throws PlanningException {
-      Preconditions.checkArgument(tag == Tag.SINGLE);
+    private void visitBinary(BinaryNode node, EdgeType edgeType) throws PlanningException {
+      Preconditions.checkArgument(edgeType == EdgeType.SINGLE);
 
       LogicalNode child;
       if (node.getType() == NodeType.JOIN) {
@@ -373,23 +479,23 @@ public class ExecutionPlan implements GsonObject {
         plan.hasUnionPlan = true;
       }
       if (node.getLeftChild() != null) {
-        child = PlannerUtil.clone(plan.pidFactory, node.getLeftChild());
-        plan.add(child, node, Tag.LEFT);
+        child = node.getLeftChild();
+        plan.add(child, node, EdgeType.LEFT);
         node.setLeftChild(null);
-        visit(child, Tag.LEFT);
+        visit(child, EdgeType.LEFT);
       }
       if (node.getRightChild() != null) {
-        child = PlannerUtil.clone(plan.pidFactory, node.getRightChild());
-        plan.add(child, node, Tag.RIGHT);
+        child = node.getRightChild();
+        plan.add(child, node, EdgeType.RIGHT);
         node.setRightChild(null);
-        visit(child, Tag.RIGHT);
+        visit(child, EdgeType.RIGHT);
       }
     }
 
-    private void visitTableSubQuery(TableSubQueryNode node, Tag tag) throws PlanningException {
-      LogicalNode child = PlannerUtil.clone(plan.pidFactory, node.getSubQuery());
-      plan.add(child, node, tag);
-      visit(child, tag);
+    private void visitTableSubQuery(TableSubQueryNode node, EdgeType edgeType) throws PlanningException {
+      LogicalNode child = node.getSubQuery();
+      plan.add(child, node, edgeType);
+      visit(child, edgeType);
     }
   }
 }

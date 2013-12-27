@@ -656,7 +656,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     private static void createTasks(SubQuery subQuery) throws IOException {
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock execBlock = subQuery.getBlock();
+//      execBlock.getPlan().build();
       QueryUnit [] tasks;
+      if (execBlock.getInputContext() == null) {
+        return;
+      }
       if (subQuery.getMasterPlan().isLeaf(execBlock.getId()) &&
           execBlock.getInputContext().size() == 1) {
         tasks = createLeafTasks(subQuery);

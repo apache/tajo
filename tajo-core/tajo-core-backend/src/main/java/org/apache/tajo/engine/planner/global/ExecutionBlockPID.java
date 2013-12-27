@@ -24,8 +24,16 @@ public class ExecutionBlockPID {
   private ExecutionBlockId executionBlockId;
   private Integer pid;
 
+  public ExecutionBlockPID(ExecutionBlockId executionBlockId) {
+    this.executionBlockId = executionBlockId;
+  }
+
   public ExecutionBlockPID(ExecutionBlockId executionBlockId, Integer pid) {
     this.executionBlockId = executionBlockId;
+    this.pid = pid;
+  }
+
+  public void setPID(int pid) {
     this.pid = pid;
   }
 

@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 
 public class ExecutionPlanEdge {
-  public static enum Tag {
+  public static enum EdgeType {
     LEFT,
     RIGHT,
     SINGLE
@@ -29,12 +29,12 @@ public class ExecutionPlanEdge {
 
   private final Integer parentId;
   private final Integer childId;
-  private final Tag tag;
+  private final EdgeType edgeType;
 
-  public ExecutionPlanEdge(LogicalNode child, LogicalNode parent, Tag tag) {
+  public ExecutionPlanEdge(LogicalNode child, LogicalNode parent, EdgeType edgeType) {
     this.parentId = parent.getPID();
     this.childId = child.getPID();
-    this.tag = tag;
+    this.edgeType = edgeType;
   }
 
   public Integer getParentId() {
@@ -45,7 +45,7 @@ public class ExecutionPlanEdge {
     return childId;
   }
 
-  public Tag getTag() {
-    return tag;
+  public EdgeType getEdgeType() {
+    return edgeType;
   }
 }

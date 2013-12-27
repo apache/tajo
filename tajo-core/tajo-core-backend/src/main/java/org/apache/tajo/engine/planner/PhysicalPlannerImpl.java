@@ -33,7 +33,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionPlan;
-import org.apache.tajo.engine.planner.global.ExecutionPlanEdge.Tag;
+import org.apache.tajo.engine.planner.global.ExecutionPlanEdge.EdgeType;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
@@ -141,8 +141,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
 
         plan.remove(node, root);
-        plan.add(node, storeTableNode, Tag.SINGLE);
-        plan.add(storeTableNode, root, Tag.SINGLE);
+        plan.add(node, storeTableNode, EdgeType.SINGLE);
+        plan.add(storeTableNode, root, EdgeType.SINGLE);
         channel.updateSrcPID(storeTableNode.getPID());
       }
     }
@@ -732,6 +732,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       for (DataChannel outChannel : ctx.getOutgoingChannels()) {
         if (outChannel.getSrcPID() == plan.getPID()) {
           channel = outChannel;
+          break;
         }
       }
       switch (channel.getPartitionType()) {
