@@ -472,7 +472,7 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", Type.TEXT);
     Column key2 = new Column("score.class", Type.TEXT);
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.HASH_PARTITION, numPartitions);
+        PartitionType.HASH_PARTITION, numPartitions);
     dataChannel.setSchema(rootNode.getOutSchema());
     dataChannel.setPartitionKey(new Column[]{key1, key2});
     List<DataChannel> channels = new ArrayList<DataChannel>();
@@ -534,7 +534,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
     int numPartitions = 1;
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.HASH_PARTITION, numPartitions);
+        PartitionType.HASH_PARTITION, numPartitions);
     dataChannel.setSchema(rootNode.getOutSchema());
     dataChannel.setPartitionKey(new Column[]{});
     List<DataChannel> channels = new ArrayList<DataChannel>();
@@ -852,7 +852,7 @@ public class TestPhysicalPlanner {
 
     SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
     DataChannel channel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        ((LogicalRootNode)rootNode).getChild().getPID(), null, PartitionType.RANGE_PARTITION);
+        PartitionType.RANGE_PARTITION);
     channel.setSchema(rootNode.getOutSchema());
     channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
     List<DataChannel> channels = new ArrayList<DataChannel>();

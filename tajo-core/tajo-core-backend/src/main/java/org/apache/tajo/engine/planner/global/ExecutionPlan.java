@@ -45,18 +45,18 @@ public class ExecutionPlan implements GsonObject {
   @Expose private boolean hasUnionPlan;
   @Expose private boolean hasJoinPlan;
   @Expose private LogicalRootNode terminalNode;
-  @Expose private Map<Integer, LogicalNode> vertices = new HashMap<Integer, LogicalNode>();
-  @Expose private SimpleDirectedGraph<Integer, ExecutionPlanEdge> graph
+  private Map<Integer, LogicalNode> vertices = new HashMap<Integer, LogicalNode>();
+  private SimpleDirectedGraph<Integer, ExecutionPlanEdge> graph
       = new SimpleDirectedGraph<Integer, ExecutionPlanEdge>();
 
-  private NavigableMap<Integer, LogicalNodeGroup> logicalNodeGroups = Maps.newTreeMap();
+  @Expose private NavigableMap<Integer, PlanGroup> planGroups = Maps.newTreeMap();
   private boolean built = false;
 
-  public static class LogicalNodeGroup {
-    private int rootPID;
-    private List<LogicalNode> nodes = Lists.newArrayList();  // order: root -> leaf
+  public static class PlanGroup {
+    @Expose private int rootPID;
+    @Expose private List<LogicalNode> nodes = Lists.newArrayList();  // order: root -> leaf
 
-    public LogicalNodeGroup(int rootPID) {
+    public PlanGroup(int rootPID) {
       setId(rootPID);
     }
 
@@ -71,12 +71,12 @@ public class ExecutionPlan implements GsonObject {
     public void addNodeAndDescendants(LogicalNode logicalNode) {
       add(logicalNode);
       if (logicalNode instanceof UnaryNode) {
-        add(((UnaryNode) logicalNode).getChild());
+        addNodeAndDescendants(((UnaryNode) logicalNode).getChild());
       } else if (logicalNode instanceof BinaryNode) {
-        add(((BinaryNode) logicalNode).getLeftChild());
-        add(((BinaryNode) logicalNode).getRightChild());
+        addNodeAndDescendants(((BinaryNode) logicalNode).getLeftChild());
+        addNodeAndDescendants(((BinaryNode) logicalNode).getRightChild());
       } else if (logicalNode instanceof TableSubQueryNode) {
-        add(((TableSubQueryNode) logicalNode).getSubQuery());
+        addNodeAndDescendants(((TableSubQueryNode) logicalNode).getSubQuery());
       }
     }
 
@@ -87,7 +87,7 @@ public class ExecutionPlan implements GsonObject {
     public LogicalNode toLinkedLogicalNode() {
       LogicalNode[] nodes = this.nodes.toArray(new LogicalNode[this.nodes.size()]);
 
-      for (int i = 0; i < nodes.length; i++) {
+      for (int i = 0; i < nodes.length;) {
         if (nodes[i] instanceof UnaryNode) {
           ((UnaryNode)nodes[i]).setChild(nodes[++i]);
         } else if (nodes[i] instanceof BinaryNode) {
@@ -95,6 +95,8 @@ public class ExecutionPlan implements GsonObject {
           ((BinaryNode)nodes[i]).setRightChild(nodes[++i]);
         } else if (nodes[i] instanceof TableSubQueryNode) {
           ((TableSubQueryNode)nodes[i]).setSubQuery(nodes[++i]);
+        } else {
+          i++;
         }
       }
       return nodes[0];
@@ -131,10 +133,7 @@ public class ExecutionPlan implements GsonObject {
     for (ExecutionPlanEdge edge : graph.getEdgesAll()) {
       graph.removeEdge(edge.getChildId(), edge.getParentId());
     }
-    for (LogicalNodeGroup eachGroup : logicalNodeGroups.values()) {
-      eachGroup.clear();
-    }
-    logicalNodeGroups.clear();
+    planGroups.clear();
     vertices.clear();
     this.inputContext = null;
     this.hasUnionPlan = false;
@@ -152,17 +151,33 @@ public class ExecutionPlan implements GsonObject {
     }
 
     // add group
-    LogicalNodeGroup nodeGroup = new LogicalNodeGroup(topNode.getPID());
+    PlanGroup nodeGroup = new PlanGroup(topNode.getPID());
     nodeGroup.addNodeAndDescendants(topNode);
-    logicalNodeGroups.put(nodeGroup.rootPID, nodeGroup);
+    planGroups.put(nodeGroup.rootPID, nodeGroup);
   }
 
-  public LogicalNodeGroup getLogicalNodeGroupWithPID(int pid) {
-    return logicalNodeGroups.get(pid);
+  public PlanGroup remoteLogicalNodeGroup(int pid) {
+    // TODO: improve the code
+    PlanGroup removed = planGroups.remove(pid);
+    Collection<PlanGroup> remain = planGroups.values();
+    clear();
+    for (PlanGroup planGroup : remain) {
+      addPlan(planGroup.toLinkedLogicalNode());
+    }
+    build();
+    return removed;
   }
 
-  public LogicalNodeGroup getFirstLogicalNodeGroup() {
-    return logicalNodeGroups.firstEntry().getValue();
+  public PlanGroup getPlanGroupWithPID(int pid) {
+    return planGroups.get(pid);
+  }
+
+  public PlanGroup getFirstPlanGroup() {
+    return planGroups.firstEntry().getValue();
+  }
+
+  public boolean hasPlanGroup() {
+    return planGroups.size() > 0;
   }
 
   public void build() {
@@ -173,8 +188,8 @@ public class ExecutionPlan implements GsonObject {
 
     ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
 
-    for (LogicalNodeGroup logicalNodeGroup : logicalNodeGroups.values()) {
-      LogicalNode topNode = logicalNodeGroup.nodes.iterator().next();
+    for (PlanGroup planGroup : planGroups.values()) {
+      LogicalNode topNode = planGroup.nodes.iterator().next();
       builder.visit(topNode);
       this.add(topNode, terminalNode, EdgeType.SINGLE);
     }
@@ -238,6 +253,10 @@ public class ExecutionPlan implements GsonObject {
     return vertices.get(graph.getChild(terminalNode.getPID(), i)).getOutSchema();
   }
 
+  public Schema getOutSchemaWithPID(int pid) {
+    return planGroups.get(pid).getRootNode().getOutSchema();
+  }
+
   @Override
   public boolean equals(Object o) {
     if (o instanceof ExecutionPlan) {
@@ -266,12 +285,11 @@ public class ExecutionPlan implements GsonObject {
   }
 
   public LogicalNode getTopNodeFromPID(int pid) {
-    for (Integer childId : graph.getChilds(terminalNode.getPID())) {
-      if (childId == pid) {
-        return vertices.get(childId);
-      }
+    if (planGroups.containsKey(pid)) {
+      return planGroups.get(pid).getRootNode();
+    } else {
+      return null;
     }
-    return null;
   }
 
   public int getChildCount(LogicalNode node) {
@@ -318,33 +336,15 @@ public class ExecutionPlan implements GsonObject {
     @Expose private final boolean hasUnionPlan;
     @Expose private final InputContext inputContext;
     @Expose private final LogicalRootNode terminalNode;
-    @Expose Map<Integer, LogicalNode> vertices = new HashMap<Integer, LogicalNode>();
-    @Expose Map<Integer, List<PIDAndEdgeType>> adjacentList = new HashMap<Integer, List<PIDAndEdgeType>>();
+    @Expose private final Map<Integer, PlanGroup> planGroups;
 
     public ExecutionPlanJsonHelper(ExecutionPlan plan) {
       this.pidFactory = plan.pidFactory;
       this.hasJoinPlan = plan.hasJoinPlan;
       this.hasUnionPlan = plan.hasUnionPlan;
-      this.inputContext = plan.getInputContext();
+      this.inputContext = plan.inputContext;
       this.terminalNode = plan.terminalNode;
-      this.vertices.putAll(plan.vertices);
-      Collection<ExecutionPlanEdge> edges = plan.graph.getEdgesAll();
-      int parentId, childId;
-      List<PIDAndEdgeType> adjacents;
-
-      // convert the graph to an adjacent list
-      for (ExecutionPlanEdge edge : edges) {
-        childId = edge.getChildId();
-        parentId = edge.getParentId();
-
-        if (adjacentList.containsKey(childId)) {
-          adjacents = adjacentList.get(childId);
-        } else {
-          adjacents = new ArrayList<PIDAndEdgeType>();
-          adjacentList.put(childId, adjacents);
-        }
-        adjacents.add(new PIDAndEdgeType(parentId, edge.getEdgeType()));
-      }
+      this.planGroups = plan.planGroups;
     }
 
     @Override
@@ -358,14 +358,10 @@ public class ExecutionPlan implements GsonObject {
       plan.hasJoinPlan = this.hasJoinPlan;
       plan.hasUnionPlan = this.hasUnionPlan;
       plan.setInputContext(this.inputContext);
-      plan.vertices.putAll(this.vertices);
-
-      for (Entry<Integer, List<PIDAndEdgeType>> e : this.adjacentList.entrySet()) {
-        LogicalNode child = this.vertices.get(e.getKey());
-        for (PIDAndEdgeType pidAndEdgeType : e.getValue()) {
-          plan.add(child, this.vertices.get(pidAndEdgeType.id), pidAndEdgeType.edgeType);
-        }
+      for (PlanGroup planGroup : planGroups.values()) {
+        plan.addPlan(planGroup.toLinkedLogicalNode());
       }
+      plan.build();
 
       return plan;
     }

@@ -26,7 +26,6 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 
 import java.util.ArrayList;
@@ -124,7 +123,7 @@ public class MasterPlan {
 
   @VisibleForTesting
   public void addConnect(ExecutionBlockId src, ExecutionBlockId target, PartitionType type) {
-    addConnect(new DataChannel(src, target, null, null, type));
+    addConnect(new DataChannel(src, target, type));
   }
 
   public boolean isConnected(ExecutionBlock src, ExecutionBlock target) {

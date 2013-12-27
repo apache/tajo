@@ -492,13 +492,18 @@ public class PlannerUtil {
     Preconditions.checkNotNull(executionPlan);
     Preconditions.checkNotNull(type);
 
-    LogicalNodeFinderForExecPlan finder = new LogicalNodeFinderForExecPlan(type, executionPlan);
-    finder.find();
-
-    if (finder.getFoundNodes().size() == 0) {
+    if (executionPlan.hasPlanGroup()) {
+      return findTopNode(executionPlan.getFirstPlanGroup().toLinkedLogicalNode(), type);
+    } else {
       return null;
     }
-    return (T) finder.getFoundNodes().get(0);
+//    LogicalNodeFinderForExecPlan finder = new LogicalNodeFinderForExecPlan(type, executionPlan);
+//    finder.find();
+//
+//    if (finder.getFoundNodes().size() == 0) {
+//      return null;
+//    }
+//    return (T) finder.getFoundNodes().get(0);
   }
 
   /**

@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.graph;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.util.TUtil;
 
@@ -34,9 +33,9 @@ import java.util.*;
  */
 public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   /** map: child -> parent */
-  @Expose protected Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
+  protected Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
   /** map: parent -> child */
-  @Expose protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
+  protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
 
   @Override
   public int getVertexSize() {

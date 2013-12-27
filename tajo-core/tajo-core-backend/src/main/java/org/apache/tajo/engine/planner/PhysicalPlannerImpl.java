@@ -128,7 +128,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     LogicalNode root = plan.getTerminalNode();
     List<DataChannel> channels = context.getOutgoingChannels();
     for (DataChannel channel : channels) {
-      LogicalNode node = plan.getTopNodeFromPID(channel.getSrcPID());
+      LogicalNode node = plan.getPlanGroupWithPID(channel.getSrcPID()).getRootNode();
       if (node.getType() != NodeType.STORE) {
         StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
         storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
@@ -140,9 +140,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           storeTableNode.setDefaultParition();
         }
 
-        plan.remove(node, root);
-        plan.add(node, storeTableNode, EdgeType.SINGLE);
-        plan.add(storeTableNode, root, EdgeType.SINGLE);
+        LogicalNode topNode = plan.getFirstPlanGroup().toLinkedLogicalNode();
+        storeTableNode.setChild(topNode);
+        plan.setPlan(storeTableNode);
+
         channel.updateSrcPID(storeTableNode.getPID());
       }
     }

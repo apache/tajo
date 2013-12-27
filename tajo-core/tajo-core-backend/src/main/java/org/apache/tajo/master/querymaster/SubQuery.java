@@ -514,6 +514,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         } else {
           ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
           DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
+          execBlock.getPlan().build();
+          parent.getPlan().build();
           setRepartitionIfNecessary(subQuery, channel);
           createTasks(subQuery);
 
@@ -656,7 +658,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     private static void createTasks(SubQuery subQuery) throws IOException {
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock execBlock = subQuery.getBlock();
-//      execBlock.getPlan().build();
       QueryUnit [] tasks;
       if (execBlock.getInputContext() == null) {
         return;

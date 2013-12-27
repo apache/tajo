@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.planner.global.ExecutionPlan.LogicalNodeGroup;
+import org.apache.tajo.engine.planner.global.ExecutionPlan.PlanGroup;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -49,9 +49,8 @@ public class DataChannel {
     this.partitionType = partitionType;
   }
 
-  public DataChannel(ExecutionBlock src, ExecutionBlock target, PartitionType partitionType, int partNum, Schema schema) {
+  public DataChannel(ExecutionBlock src, ExecutionBlock target, PartitionType partitionType, int partNum) {
     this(src.getId(), target.getId(), partitionType, partNum);
-    setSchema(schema);
   }
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, PartitionType partitionType, int partNum) {
@@ -235,10 +234,12 @@ public class DataChannel {
     return targetId.getPid();
   }
 
-  public static DataChannel linkChannelAndLogicalNodeGroups(LogicalNodeGroup src, LogicalNodeGroup target,
-                                                            DataChannel channel) {
+  public static DataChannel linkChannelAndPlanGroups(PlanGroup src, PlanGroup target,
+                                                     DataChannel channel) {
     channel.srcId.setPID(src.getId());
-    channel.targetId.setPID(target.getId());
+    if (target != null) {
+      channel.targetId.setPID(target.getId());
+    }
     return channel;
   }
 }
