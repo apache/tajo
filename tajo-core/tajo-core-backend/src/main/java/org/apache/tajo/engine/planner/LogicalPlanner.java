@@ -1141,10 +1141,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
                                          timeValue.getSecondsFraction());
 
         TimeDatum datum;
-        if (times[3] == 0) {
-          datum = new TimeDatum(times[0], times[1], times[2]);
-        } else {
+        if (timeValue.hasSecondsFraction()) {
           datum = new TimeDatum(times[0], times[1], times[2], times[3]);
+        } else {
+          datum = new TimeDatum(times[0], times[1], times[2]);
         }
         return new ConstEval(datum);
       }
@@ -1162,10 +1162,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
                                         timeValue.getSeconds(),
                                         timeValue.getSecondsFraction());
         DateTime dateTime;
-        if (times[3] == 0) {
-          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2]);
+        if (timeValue.hasSecondsFraction()) {
+          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2], times[3]);
         } else {
-          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[3]);
+          dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2]);
         }
 
         return new ConstEval(new TimestampDatum(dateTime));

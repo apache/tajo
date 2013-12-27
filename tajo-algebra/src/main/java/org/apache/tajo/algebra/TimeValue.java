@@ -19,6 +19,7 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import org.apache.commons.lang.StringUtils;
 
 public class TimeValue {
   private String hours;
@@ -49,7 +50,7 @@ public class TimeValue {
   }
 
   public void setSecondsFraction(String secondsFraction) {
-    this.secondsFraction = secondsFraction;
+    this.secondsFraction = StringUtils.rightPad(secondsFraction, 3, '0');
   }
 
   public String getSecondsFraction() {
