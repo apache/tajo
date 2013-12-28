@@ -432,6 +432,12 @@ public class ExecutionPlan implements GsonObject {
       if (plan.inputContext == null) {
         plan.inputContext = new InputContext();
       }
+      // TODO: update scan and the plan graph
+      for (ScanNode eachScan : plan.inputContext.getScanNodes()) {
+        if (eachScan.equals(node)) {
+          return;
+        }
+      }
       plan.inputContext.addScanNode(node);
     }
 

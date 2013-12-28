@@ -145,6 +145,7 @@ public class ScanNode extends RelationNode implements Projectable {
 	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
 	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
+      eq = eq && TUtil.checkEquals(this.renamedSchema, other.renamedSchema);
 	    
 	    return eq;
 	  }	  
