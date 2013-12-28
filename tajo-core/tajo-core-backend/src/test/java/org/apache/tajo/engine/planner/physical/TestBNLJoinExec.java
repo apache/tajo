@@ -155,6 +155,7 @@ public class TestBNLJoinExec {
 
     ExecutionPlan execPlan = new ExecutionPlan(logicalPlan.getPidFactory());
     execPlan.addPlan(plan);
+//    execPlan.build();
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlanWithoutMaterialize(ctx, execPlan);
 

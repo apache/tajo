@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.global;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
@@ -234,12 +235,19 @@ public class DataChannel {
     return targetId.getPid();
   }
 
-  public static DataChannel linkChannelAndPlanGroups(PlanGroup src, PlanGroup target,
-                                                     DataChannel channel) {
+  public static DataChannel connectPlanGroups(PlanGroup src, PlanGroup target,
+                                              DataChannel channel) {
     channel.srcId.setPID(src.getId());
     if (target != null) {
       channel.targetId.setPID(target.getId());
     }
+    return channel;
+  }
+
+  @VisibleForTesting
+  public static DataChannel setSrcPID(int srcId, DataChannel channel) {
+    channel.srcId.setPID(srcId);
+//    channel.targetId.setPID(targetId);
     return channel;
   }
 }

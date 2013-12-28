@@ -485,6 +485,7 @@ public class TestPhysicalPlanner {
 
     ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
+    DataChannel.setSrcPID(execPlan.getFirstPlanGroup().getId(), dataChannel);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
     exec.init();
@@ -545,6 +546,7 @@ public class TestPhysicalPlanner {
 
     ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
+    DataChannel.setSrcPID(execPlan.getFirstPlanGroup().getId(), dataChannel);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
     exec.init();
@@ -861,6 +863,7 @@ public class TestPhysicalPlanner {
 
     ExecutionPlan execPlan = new ExecutionPlan(plan.getPidFactory());
     execPlan.addPlan(rootNode);
+    DataChannel.setSrcPID(execPlan.getFirstPlanGroup().getId(), channel);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, execPlan);
 
@@ -868,6 +871,8 @@ public class TestPhysicalPlanner {
     exec.init();
     while (exec.next() != null);
     exec.close();
+
+    Schema outSchema = ((PhysicalRootExec)exec).getChild(0).getSchema();
 
     Schema keySchema = new Schema();
     keySchema.addColumn("?empId", Type.INT4);
@@ -881,7 +886,7 @@ public class TestPhysicalPlanner {
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
     TableMeta meta = CatalogUtil.newTableMeta(channel.getStoreType(), new Options());
     SeekableScanner scanner =
-        StorageManagerFactory.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);
+        StorageManagerFactory.getSeekableScanner(conf, meta, outSchema, outputPath);
     scanner.init();
 
     int cnt = 0;

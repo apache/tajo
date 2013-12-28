@@ -50,7 +50,8 @@ public class ExecutionPlan implements GsonObject {
       = new SimpleDirectedGraph<Integer, ExecutionPlanEdge>();
 
   @Expose private NavigableMap<Integer, PlanGroup> planGroups = Maps.newTreeMap();
-  private boolean built = false;
+//  private boolean built = false;
+  private ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
 
   public static class PlanGroup {
     @Expose private int rootPID;
@@ -139,22 +140,22 @@ public class ExecutionPlan implements GsonObject {
     this.inputContext = null;
     this.hasUnionPlan = false;
     this.hasJoinPlan = false;
-    this.built = false;
   }
 
   public void addPlan(LogicalNode plan) {
-//    Preconditions.checkState(built==false, "Execution plan is already built.");
-    built = false;
-
     LogicalNode topNode = plan;
     if (topNode.getType() == NodeType.ROOT) {
       topNode = ((LogicalRootNode)topNode).getChild();
     }
 
     // add group
-    PlanGroup nodeGroup = new PlanGroup(topNode.getPID());
-    nodeGroup.addNodeAndDescendants(topNode);
-    planGroups.put(nodeGroup.rootPID, nodeGroup);
+    PlanGroup planGroup = new PlanGroup(topNode.getPID());
+    planGroup.addNodeAndDescendants(topNode);
+    planGroups.put(planGroup.rootPID, planGroup);
+
+    topNode = planGroup.nodes.iterator().next();
+    builder.visit(topNode);
+    this.add(topNode, terminalNode, EdgeType.SINGLE);
   }
 
   public PlanGroup remoteLogicalNodeGroup(int pid) {
@@ -165,7 +166,6 @@ public class ExecutionPlan implements GsonObject {
     for (PlanGroup planGroup : remain) {
       addPlan(planGroup.toLinkedLogicalNode());
     }
-    build();
     return removed;
   }
 
@@ -179,26 +179,6 @@ public class ExecutionPlan implements GsonObject {
 
   public boolean hasPlanGroup() {
     return planGroups.size() > 0;
-  }
-
-  public void build() {
-//    Preconditions.checkState(built==false, "Execution plan is already built.");
-    if (built) {
-      return;
-    }
-
-    ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
-
-    for (PlanGroup planGroup : planGroups.values()) {
-      LogicalNode topNode = planGroup.nodes.iterator().next();
-      builder.visit(topNode);
-      this.add(topNode, terminalNode, EdgeType.SINGLE);
-    }
-    this.built = true;
-  }
-
-  public boolean isBuilt() {
-    return built;
   }
 
   public void add(LogicalNode child, LogicalNode parent, EdgeType edgeType) {
@@ -354,7 +334,6 @@ public class ExecutionPlan implements GsonObject {
     }
 
     public ExecutionPlan toExecutionPlan() {
-      // TODO: check that it works
       ExecutionPlan plan = new ExecutionPlan(this.pidFactory, this.terminalNode);
       plan.hasJoinPlan = this.hasJoinPlan;
       plan.hasUnionPlan = this.hasUnionPlan;
@@ -362,7 +341,6 @@ public class ExecutionPlan implements GsonObject {
       for (PlanGroup planGroup : planGroups.values()) {
         plan.addPlan(planGroup.toLinkedLogicalNode());
       }
-      plan.build();
 
       return plan;
     }
@@ -461,7 +439,7 @@ public class ExecutionPlan implements GsonObject {
       if (node.getChild() != null) {
         LogicalNode child = node.getChild();
         plan.add(child, node, edgeType);
-        node.setChild(null);
+//        node.setChild(null);
         visit(child, edgeType);
       }
     }
@@ -478,13 +456,13 @@ public class ExecutionPlan implements GsonObject {
       if (node.getLeftChild() != null) {
         child = node.getLeftChild();
         plan.add(child, node, EdgeType.LEFT);
-        node.setLeftChild(null);
+//        node.setLeftChild(null);
         visit(child, EdgeType.LEFT);
       }
       if (node.getRightChild() != null) {
         child = node.getRightChild();
         plan.add(child, node, EdgeType.RIGHT);
-        node.setRightChild(null);
+//        node.setRightChild(null);
         visit(child, EdgeType.RIGHT);
       }
     }

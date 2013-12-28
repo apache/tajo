@@ -52,7 +52,6 @@ public class TestExecutionPlan {
 
     ExecutionPlan plan = new ExecutionPlan(pidFactory);
     plan.addPlan(groupbyNode);
-    plan.build();
 
     String json = plan.toJson();
     ExecutionPlan fromJson = CoreGsonHelper.fromJson(json, ExecutionPlan.class);
@@ -92,7 +91,6 @@ public class TestExecutionPlan {
     ExecutionPlan plan = new ExecutionPlan(pidFactory);
     plan.addPlan(root1);
     plan.addPlan(root2);
-    plan.build();
     assertEquals(1, plan.getInputContext().size());
     assertEquals(1, plan.getChildCount(groupbyNode));
     assertEquals(1, plan.getChildCount(sortNode));
@@ -100,7 +98,6 @@ public class TestExecutionPlan {
 
 //    plan.clear();
     plan.addPlan(root3);
-    plan.build();
     assertEquals(2, plan.getInputContext().size());
     assertEquals(3, plan.getParentCount(scanNode));
 
