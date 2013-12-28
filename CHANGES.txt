@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-381: Implement find_in_set function. (Jae Young Lee via hyunsik)
+
     TAJO-439: Time literal support. (DaeMyung Kang via jihoon)
 
     TAJO-437: Timestamp literal support. (hyunsik)

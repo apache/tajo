@@ -91,7 +91,13 @@ public class ExprTestBase {
     testEval(null, null, null, query, expected);
   }
 
-  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected) throws IOException {
+  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
+      throws IOException {
+    testEval(schema, tableName, csvTuple, query, expected, ',');
+  }
+
+  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected,
+                       char delimiter) throws IOException {
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
     Schema inputSchema = null;
@@ -104,7 +110,8 @@ public class ExprTestBase {
         targetIdx[i] = i;
       }
 
-      lazyTuple = new LazyTuple(inputSchema, Bytes.splitPreserveAllTokens(csvTuple.getBytes(), ',', targetIdx), 0);
+      lazyTuple =
+          new LazyTuple(inputSchema, Bytes.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
       vtuple = new VTuple(inputSchema.getColumnNum());
       for (int i = 0; i < inputSchema.getColumnNum(); i++) {
         // If null value occurs, null datum is manually inserted to an input tuple.
@@ -114,7 +121,8 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.addTable(new TableDesc(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
+      cat.addTable(new TableDesc(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(),
+          CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets = null;
