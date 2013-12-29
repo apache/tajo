@@ -50,8 +50,8 @@ public class ExecutionPlan implements GsonObject {
       = new SimpleDirectedGraph<Integer, ExecutionPlanEdge>();
 
   @Expose private NavigableMap<Integer, PlanGroup> planGroups = Maps.newTreeMap();
-//  private boolean built = false;
   private ExecutionPlanBuilder builder = new ExecutionPlanBuilder(this);
+  private final ExecutionPlanComparator comparator = new ExecutionPlanComparator();
 
   public static class PlanGroup {
     @Expose private int rootPID;
@@ -148,14 +148,77 @@ public class ExecutionPlan implements GsonObject {
       topNode = ((LogicalRootNode)topNode).getChild();
     }
 
+    SameNodeChecker sameNodeChecker = new SameNodeChecker();
+    sameNodeChecker.visit(topNode);
+    LogicalNode sameNode = getSameNode(topNode);
+    if (sameNode != null) {
+      connectChild(topNode, sameNode);
+      topNode = sameNode;
+    }
+
     // add group
     PlanGroup planGroup = new PlanGroup(topNode.getPID());
     planGroup.addNodeAndDescendants(topNode);
     planGroups.put(planGroup.rootPID, planGroup);
 
-    topNode = planGroup.nodes.iterator().next();
+    topNode = planGroup.getRootNode();
     builder.visit(topNode);
     this.add(topNode, terminalNode, EdgeType.SINGLE);
+  }
+
+  private LogicalNode getSameNode(LogicalNode node) {
+    for (Entry<Integer, LogicalNode> eachEntry : vertices.entrySet()) {
+      if (node.equals(eachEntry.getValue())) {
+        return eachEntry.getValue();
+      }
+    }
+    return null;
+  }
+
+  private class SameNodeChecker implements LogicalNodeVisitor {
+
+    @Override
+    public void visit(LogicalNode node) {
+      LogicalNode sameNode;
+      if (node instanceof UnaryNode) {
+        UnaryNode unaryNode = (UnaryNode) node;
+        sameNode = getSameNode(unaryNode.getChild());
+        if (sameNode != null) {
+          connectChild(unaryNode.getChild(), sameNode);
+          unaryNode.setChild(sameNode);
+        }
+      } else if (node instanceof BinaryNode) {
+        BinaryNode binaryNode = (BinaryNode) node;
+        sameNode = getSameNode(binaryNode.getLeftChild());
+        if (sameNode != null) {
+          connectChild(binaryNode.getLeftChild(), sameNode);
+          binaryNode.setLeftChild(sameNode);
+        }
+        sameNode = getSameNode(binaryNode.getRightChild());
+        if (sameNode != null) {
+          connectChild(binaryNode.getRightChild(), sameNode);
+          binaryNode.setRightChild(sameNode);
+        }
+      } else if (node instanceof TableSubQueryNode) {
+        TableSubQueryNode tableSubQueryNode = (TableSubQueryNode) node;
+        sameNode = getSameNode(tableSubQueryNode.getSubQuery());
+        if (sameNode != null) {
+          connectChild(tableSubQueryNode.getSubQuery(), sameNode);
+          tableSubQueryNode.setSubQuery(sameNode);
+        }
+      }
+    }
+  }
+
+  private void connectChild(LogicalNode originNode, LogicalNode replaceNode) {
+    if (replaceNode instanceof UnaryNode) {
+      ((UnaryNode) replaceNode).setChild(((UnaryNode)originNode).getChild());
+    } else if (replaceNode instanceof BinaryNode) {
+      ((BinaryNode) replaceNode).setLeftChild(((BinaryNode) originNode).getLeftChild());
+      ((BinaryNode) replaceNode).setRightChild(((BinaryNode) originNode).getRightChild());
+    } else if (replaceNode instanceof TableSubQueryNode) {
+      ((TableSubQueryNode) replaceNode).setSubQuery(((TableSubQueryNode) originNode).getSubQuery());
+    }
   }
 
   public PlanGroup remoteLogicalNodeGroup(int pid) {
@@ -250,8 +313,7 @@ public class ExecutionPlan implements GsonObject {
         return false;
       }
 
-      ExecutionPlanComparator comparator = new ExecutionPlanComparator(this, other);
-      eq &= comparator.compare();
+      eq &= comparator.compare(this, other);
       return eq;
     }
     return false;
@@ -347,32 +409,10 @@ public class ExecutionPlan implements GsonObject {
   }
 
   private static class ExecutionPlanComparator {
-    ExecutionPlan plan1;
-    ExecutionPlan plan2;
     boolean equal = true;
 
-    public ExecutionPlanComparator(ExecutionPlan plan1, ExecutionPlan plan2) {
-      this.plan1 = plan1;
-      this.plan2 = plan2;
-    }
-
-    public boolean compare() {
-      if (plan1.getChildCount(plan1.terminalNode)
-          == plan2.getChildCount(plan2.terminalNode)) {
-        Stack<Integer> s1 = new Stack<Integer>();
-        Stack<Integer> s2 = new Stack<Integer>();
-        int childCount = plan1.getChildCount(plan1.terminalNode);
-        for (int i = 0; i < childCount; i++) {
-          s1.push(plan1.getTopNode(i).getPID());
-          s2.push(plan2.getTopNode(i).getPID());
-        }
-        return recursiveCompare(s1, s2);
-      } else {
-        return false;
-      }
-    }
-
-    private boolean recursiveCompare(Stack<Integer> s1, Stack<Integer> s2) {
+    private boolean recursiveCompare(ExecutionPlan plan1, ExecutionPlan plan2,
+                                     Stack<Integer> s1, Stack<Integer> s2) {
       Integer l1 = s1.pop();
       Integer l2 = s2.pop();
 
@@ -386,7 +426,7 @@ public class ExecutionPlan implements GsonObject {
             for (Integer child : plan2.graph.getChilds(l2)) {
               s2.push(child);
             }
-            return recursiveCompare(s1, s2);
+            return recursiveCompare(plan1, plan2, s1, s2);
           } else {
             equal &= true;
           }
@@ -397,6 +437,22 @@ public class ExecutionPlan implements GsonObject {
         equal = false;
       }
       return equal;
+    }
+
+    public boolean compare(ExecutionPlan plan1, ExecutionPlan plan2) {
+      if (plan1.getChildCount(plan1.terminalNode)
+          == plan2.getChildCount(plan2.terminalNode)) {
+        Stack<Integer> s1 = new Stack<Integer>();
+        Stack<Integer> s2 = new Stack<Integer>();
+        int childCount = plan1.getChildCount(plan1.terminalNode);
+        for (int i = 0; i < childCount; i++) {
+          s1.push(plan1.getTopNode(i).getPID());
+          s2.push(plan2.getTopNode(i).getPID());
+        }
+        return recursiveCompare(plan1, plan2, s1, s2);
+      } else {
+        return false;
+      }
     }
   }
 
@@ -431,12 +487,6 @@ public class ExecutionPlan implements GsonObject {
     private void visitScan(ScanNode node, EdgeType edgeType) throws PlanningException {
       if (plan.inputContext == null) {
         plan.inputContext = new InputContext();
-      }
-      // TODO: update scan and the plan graph
-      for (ScanNode eachScan : plan.inputContext.getScanNodes()) {
-        if (eachScan.equals(node)) {
-          return;
-        }
       }
       plan.inputContext.addScanNode(node);
     }
