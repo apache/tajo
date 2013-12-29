@@ -174,10 +174,7 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-463: Throw PlanningException when Creating table with Partition
-    exception COLUMN. (DaeMyung Kang via hyunsik)
-
-    TAJO-452: Timstamp literal with fractional seconds results in
+    TAJO-452: Timstamp literal with fractional seconds results in 
     java.lang.ArrayIndexOutOfBoundsException. (Keuntae Park via hyunsik)
 
     TAJO-454: pass invalid argument to DateTime constructor in LogicalPlanner.

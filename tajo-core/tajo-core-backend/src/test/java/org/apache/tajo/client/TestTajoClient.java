@@ -250,7 +250,7 @@ public class TestTajoClient {
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
 
-  //@Test
+  @Test
   public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
@@ -274,7 +274,7 @@ public class TestTajoClient {
     assertTrue(hdfs.exists(tablePath));
   }
 
-  //@Test
+  @Test
   public final void testCreateAndPurgeTablePartitionedHash1ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
@@ -298,7 +298,7 @@ public class TestTajoClient {
     assertFalse(hdfs.exists(tablePath));
   }
 
-  //@Test
+  @Test
   public final void testCreateAndDropTablePartitionedHash2ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
@@ -322,7 +322,7 @@ public class TestTajoClient {
     assertFalse(hdfs.exists(tablePath));
   }
 
-  //@Test
+  @Test
   public final void testCreateAndDropTablePartitionedListByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
@@ -347,7 +347,7 @@ public class TestTajoClient {
     assertFalse(hdfs.exists(tablePath));
   }
 
-  //@Test
+  @Test
   public final void testCreateAndDropTablePartitionedRangeByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
@@ -372,37 +372,6 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
-
-  @Test
-  public final void testFailCreateTablePartitionedOtherExceptColumn() throws IOException,
-      ServiceException, SQLException {
-    TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testFailCreateTablePartitionedOtherExceptColumn";
-
-    assertFalse(client.existTable(tableName));
-
-    String rangeSql = "create table " + tableName + " (deptname text, score int4)";
-    rangeSql += "PARTITION BY RANGE (score)";
-    rangeSql += "( PARTITION sub_part1 VALUES LESS THAN (2),";
-    rangeSql += "PARTITION sub_part2 VALUES LESS THAN (5),";
-    rangeSql += "PARTITION sub_part2 VALUES LESS THAN (MAXVALUE) )";
-
-    assertFalse(client.updateQuery(rangeSql));
- 
-    String listSql = "create table " + tableName + " (deptname text, score int4)";
-    listSql += "PARTITION BY LIST (deptname)";
-    listSql += "( PARTITION sub_part1 VALUES('r&d', 'design'),";
-    listSql += "PARTITION sub_part2 VALUES('sales', 'hr') )";
-
-    assertFalse(client.updateQuery(listSql));
-
-    String hashSql = "create table " + tableName + " (deptname text, score int4)";
-    hashSql += "PARTITION BY HASH (deptname)";
-    hashSql += "PARTITIONS 2";
-
-    assertFalse(client.updateQuery(hashSql));
-  }
-
   @Test
   public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException,
       ServiceException, SQLException {
