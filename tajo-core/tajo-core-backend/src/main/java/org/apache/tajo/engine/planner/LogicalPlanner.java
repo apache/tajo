@@ -781,12 +781,22 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       return storeNode;
     } else {
-
       Schema tableSchema;
-      if (expr.hasPartition() && expr.getPartition().getPartitionType() == PartitionType.COLUMN &&
-          ((ColumnPartition)expr.getPartition()).isOmitValues()) {
+      boolean mergedPartition = false;
+      if (expr.hasPartition()) {
+        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+          if (((ColumnPartition)expr.getPartition()).isOmitValues()) {
+            mergedPartition = true;
+          }
+        } else {
+          throw new PlanningException(String.format("Not supported PartitonType: %s", 
+                                      expr.getPartition().getPartitionType()));
+        }
+      }
+
+      if (mergedPartition) {
         ColumnDefinition [] merged = TUtil.concat(expr.getTableElements(),
-            ((ColumnPartition)expr.getPartition()).getColumns());
+                          ((ColumnPartition)expr.getPartition()).getColumns());
         tableSchema = convertTableElementsSchema(merged);
       } else {
         tableSchema = convertTableElementsSchema(expr.getTableElements());
@@ -808,6 +818,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         // TODO - it should be configurable.
         createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
       }
+
       if (expr.hasParams()) {
         Options options = new Options();
         options.putAll(expr.getParams());
@@ -818,9 +829,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         createTableNode.setPath(new Path(expr.getLocation()));
       }
 
-      if (expr.hasPartition()) {
-        createTableNode.setPartitions(convertTableElementsPartition(context, expr));
+      if (expr.hasPartition()) { 
+        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+          createTableNode.setPartitions(convertTableElementsPartition(context, expr));
+        } else {
+          throw new PlanningException(String.format("Not supported PartitonType: %s", 
+                                      expr.getPartition().getPartitionType()));
+        }
       }
+
       return createTableNode;
     }
   }

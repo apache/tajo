@@ -323,7 +323,9 @@ public class GlobalPlanner {
 
   private ExecutionBlock buildStorePlan(GlobalPlanContext context,
                                         ExecutionBlock childBlock,
-                                        StoreTableNode currentNode) {
+                                        StoreTableNode currentNode) 
+    throws PlanningException
+    {
     PartitionDesc partitionDesc = currentNode.getPartitions();
 
     // if result table is not a partitioned table, directly store it
@@ -351,17 +353,8 @@ public class GlobalPlanner {
       channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
       channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);
-    } else if (partitionsType == CatalogProtos.PartitionsType.HASH) {
-      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION,
-          partitionDesc.getNumPartitions());
-      Column[] columns = new Column[partitionDesc.getColumns().size()];
-      channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
-      channel.setSchema(childNode.getOutSchema());
-      channel.setStoreType(storeType);
-    } else if(partitionsType == CatalogProtos.PartitionsType.RANGE) {
-      // TODO
-    } else if(partitionsType == CatalogProtos.PartitionsType.LIST) {
-      // TODO
+    } else {
+      throw new PlanningException(String.format("Not Supported PartitionsType :%s", partitionsType));
     }
 
     // 3. create a ScanNode for scanning shuffle data
