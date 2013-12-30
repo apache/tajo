@@ -167,6 +167,8 @@ public class DatumFactory {
       return new Int8Datum(val);
     case TIMESTAMP:
       return createTimeStampFromMillis(val);
+    case TIME:
+      return createTime(val); 
     default:
       throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT8");
     }

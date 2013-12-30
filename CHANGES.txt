@@ -110,6 +110,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-466: Supporting TIME types in DatumFactory.createFromInt8. (DaeMyung Kang via jihoon)
+
     TAJO-458: Visit methods of LogicalPlanVisitor should take a query block
     as parameter. (hyunsik)
 

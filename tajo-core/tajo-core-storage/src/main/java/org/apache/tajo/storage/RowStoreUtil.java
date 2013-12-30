@@ -97,6 +97,7 @@ public class RowStoreUtil {
             break;
 
           case INT8:
+          case TIME:
           case TIMESTAMP:
             long l = bb.getLong();
             if ( l < Long.MIN_VALUE + 1) {

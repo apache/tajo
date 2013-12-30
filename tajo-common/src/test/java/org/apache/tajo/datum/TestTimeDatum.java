@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.junit.Test;
@@ -29,44 +30,44 @@ import static org.junit.Assert.assertEquals;
 public class TestTimeDatum {
   private static String TIME = "12:34:56";
 
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createTime(TIME);
+  @Test
+  public final void testType() {
+    Datum d = DatumFactory.createTime(TIME);
     assertEquals(Type.TIME, d.type());
-	}
+  }
 
   @Test(expected = InvalidCastException.class)
-	public final void testAsInt4() {
+  public final void testAsInt4() {
     Datum d = DatumFactory.createTime(TIME);
     Datum copy = DatumFactory.createTime(d.asInt4());
     assertEquals(d, copy);
-	}
+  }
 
-	@Test
-	public final void testAsInt8() {
+  @Test
+  public final void testAsInt8() {
     Datum d = DatumFactory.createTime(TIME);
     Datum copy = DatumFactory.createTime(d.asInt8());
     assertEquals(d, copy);
-	}
+  }
 
   @Test(expected = InvalidCastException.class)
-	public final void testAsFloat4() {
+  public final void testAsFloat4() {
     Datum d = DatumFactory.createTime(TIME);
     d.asFloat4();
-	}
+  }
 
   @Test(expected = InvalidCastException.class)
-	public final void testAsFloat8() {
+  public final void testAsFloat8() {
     Datum d = DatumFactory.createTime(TIME);
     d.asFloat8();
-	}
+  }
 
-	@Test
-	public final void testAsText() {
+  @Test
+  public final void testAsText() {
     Datum d = DatumFactory.createTime(TIME);
     Datum copy = DatumFactory.createTime(d.asChars());
     assertEquals(d, copy);
-	}
+  }
 
   @Test
   public final void testAsByteArray() {
@@ -75,7 +76,7 @@ public class TestTimeDatum {
     assertEquals(d.asInt8(), copy.asInt8());
   }
 
-	@Test
+  @Test
   public final void testSize() {
     Datum d = DatumFactory.createTime(TIME);
     assertEquals(TimeDatum.SIZE, d.asByteArray().length);
@@ -107,5 +108,17 @@ public class TestTimeDatum {
     assertEquals(12, d.getHourOfDay());
     assertEquals(34, d.getMinuteOfHour());
     assertEquals(56, d.getSecondOfMinute());
+  }
+
+  @Test
+  public final void testTimeDatumFromCreateFromInt8() {
+    TimeDatum d = DatumFactory.createTime(TIME);
+    DataType type = DataType.newBuilder().setType(Type.TIME).build();
+    TimeDatum copy = (TimeDatum)DatumFactory.createFromInt8(type, d.asInt8());
+
+    assertEquals(d, copy);
+    assertEquals(12, copy.getHourOfDay());
+    assertEquals(34, copy.getMinuteOfHour());
+    assertEquals(56, copy.getSecondOfMinute());
   }
 }
