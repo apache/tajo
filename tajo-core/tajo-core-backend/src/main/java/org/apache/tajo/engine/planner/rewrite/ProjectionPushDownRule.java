@@ -34,8 +34,8 @@ import org.apache.tajo.engine.utils.SchemaUtil;
 
 import java.util.*;
 
-public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPushDownRule.PushDownContext, LogicalNode>
-    implements RewriteRule {
+public class ProjectionPushDownRule extends
+    BasicLogicalPlanVisitor<ProjectionPushDownRule.PushDownContext, LogicalNode> implements RewriteRule {
   /** Class Logger */
   private final Log LOG = LogFactory.getLog(ProjectionPushDownRule.class);
   private static final String name = "ProjectionPushDown";
@@ -71,7 +71,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     }
 
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
-    PushDownContext context = new PushDownContext(topmostBlock);
+    PushDownContext context = new PushDownContext();
     context.plan = plan;
 
     if (topmostBlock.getProjection() != null && topmostBlock.getProjection().isAllProjected()) {
@@ -80,43 +80,34 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       context.targetListManager= new TargetListManager(plan, topmostBlock.getName());
     }
 
-    visitChild(context, plan, topmostBlock.getRoot(), stack);
+    visit(context, plan, topmostBlock, topmostBlock.getRoot(), stack);
 
     return plan;
   }
 
   public static class PushDownContext {
-    LogicalPlan.QueryBlock queryBlock;
     LogicalPlan plan;
     TargetListManager targetListManager;
     Set<Column> upperRequired;
 
-    public PushDownContext(LogicalPlan.QueryBlock block) {
-      this.queryBlock = block;
-    }
+    public PushDownContext() {}
 
     public PushDownContext(ProjectionPushDownRule.PushDownContext context) {
       this.plan = context.plan;
-      this.queryBlock = context.queryBlock;
       this.targetListManager = context.targetListManager;
       this.upperRequired = context.upperRequired;
     }
-
-    public PushDownContext(ProjectionPushDownRule.PushDownContext context, LogicalPlan.QueryBlock queryBlock) {
-      this(context);
-      this.queryBlock = queryBlock;
-    }
   }
 
   @Override
-  public LogicalNode visitRoot(PushDownContext context, LogicalPlan plan, LogicalRootNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
-    return pushDownCommonPost(context, node, stack);
+  public LogicalNode visitRoot(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               LogicalRootNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownCommonPost(context, block, node, stack);
   }
 
   @Override
-  public LogicalNode visitProjection(PushDownContext context, LogicalPlan plan, ProjectionNode node,
-                                     Stack<LogicalNode> stack) throws PlanningException {
+  public LogicalNode visitProjection(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
     if (context.upperRequired == null) { // all projected
       context.upperRequired = new HashSet<Column>();
       for (Target target : node.getTargets()) {
@@ -138,7 +129,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     }
 
     stack.push(node);
-    LogicalNode child = visitChild(context, plan, node.getChild(), stack);
+    LogicalNode child = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
 
     LogicalNode childNode = node.getChild();
@@ -149,7 +140,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       child.setOutSchema(context.targetListManager.getUpdatedSchema());
       if (stack.isEmpty()) {
         // update the child node's output schemas
-        context.queryBlock.setRoot(child);
+        block.setRoot(child);
       } else if (stack.peek().getType() == NodeType.TABLE_SUBQUERY) {
         ((TableSubQueryNode)stack.peek()).setSubQuery(childNode);
       } else {
@@ -165,24 +156,24 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
   }
 
   @Override
-  public LogicalNode visitLimit(PushDownContext context, LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
-    return pushDownCommonPost(context, node, stack);
+  public LogicalNode visitLimit(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownCommonPost(context, block, node, stack);
   }
 
   @Override
-  public LogicalNode visitSort(PushDownContext context, LogicalPlan plan, SortNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitSort(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               SortNode node, Stack<LogicalNode> stack) throws PlanningException {
     for (SortSpec spec : node.getSortKeys()) {
       context.upperRequired.add(spec.getSortKey());
     }
 
-    return pushDownCommonPost(context, node, stack);
+    return pushDownCommonPost(context, block, node, stack);
   }
 
   @Override
-  public LogicalNode visitGroupBy(PushDownContext context, LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitGroupBy(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                  GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     Set<Column> currentRequired = new HashSet<Column>(context.upperRequired);
 
     for (Target target : node.getTargets()) {
@@ -195,22 +186,22 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
     PushDownContext groupByContext = new PushDownContext(context);
     groupByContext.upperRequired = currentRequired;
-    return pushDownCommonPost(groupByContext, node, stack);
+    return pushDownCommonPost(groupByContext, block, node, stack);
   }
 
   @Override
-  public LogicalNode visitFilter(PushDownContext context, LogicalPlan plan, SelectionNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+  public LogicalNode visitFilter(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
     if (node.getQual() != null) {
       context.upperRequired.addAll(EvalTreeUtil.findDistinctRefColumns(node.getQual()));
     }
 
-    return pushDownCommonPost(context, node, stack);
+    return pushDownCommonPost(context, block, node, stack);
   }
 
   @Override
-  public LogicalNode visitJoin(PushDownContext context, LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitJoin(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
+                               Stack<LogicalNode> stack) throws PlanningException {
     Set<Column> currentRequired = Sets.newHashSet(context.upperRequired);
 
     if (node.hasTargets()) {
@@ -233,8 +224,8 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     rightContext.upperRequired = currentRequired;
 
     stack.push(node);
-    LogicalNode outer = visitChild(leftContext, plan, node.getLeftChild(), stack);
-    LogicalNode inner = visitChild(rightContext, plan, node.getRightChild(), stack);
+    LogicalNode outer = visit(leftContext, plan, block, node.getLeftChild(), stack);
+    LogicalNode inner = visit(rightContext, plan, block, node.getRightChild(), stack);
     stack.pop();
 
     Schema merged = SchemaUtil.merge(outer.getOutSchema(), inner.getOutSchema());
@@ -245,32 +236,32 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
   }
 
   @Override
-  public LogicalNode visitUnion(PushDownContext context, LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
-    return pushDownSetNode(plan, node, stack, context);
+  public LogicalNode visitUnion(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownSetNode(plan, block, node, stack, context);
   }
 
   @Override
-  public LogicalNode visitExcept(PushDownContext context, LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
-    return pushDownSetNode(plan, node, stack, context);
+  public LogicalNode visitExcept(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 ExceptNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownSetNode(plan, block, node, stack, context);
   }
 
   @Override
-  public LogicalNode visitIntersect(PushDownContext context, LogicalPlan plan, IntersectNode node,
-                                    Stack<LogicalNode> stack) throws PlanningException {
-    return pushDownSetNode(plan, node, stack, context);
+  public LogicalNode visitIntersect(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IntersectNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownSetNode(plan, block, node, stack, context);
   }
 
   @Override
-  public LogicalNode visitTableSubQuery(PushDownContext context, LogicalPlan plan, TableSubQueryNode node,
-                                        Stack<LogicalNode> stack) throws PlanningException {
+  public LogicalNode visitTableSubQuery(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     LogicalPlan.QueryBlock subBlock = plan.getBlock(node.getSubQuery());
     LogicalNode subRoot = subBlock.getRoot();
 
     Stack<LogicalNode> newStack = new Stack<LogicalNode>();
     newStack.push(node);
-    PushDownContext newContext = new PushDownContext(subBlock);
+    PushDownContext newContext = new PushDownContext();
 
     newContext.upperRequired = new HashSet<Column>();
 
@@ -301,7 +292,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
     newContext.upperRequired.addAll(PlannerUtil.targetToSchema(newContext.targetListManager.getTargets()).getColumns());
 
-    LogicalNode child = visitChild(newContext, plan, subRoot, newStack);
+    LogicalNode child = visit(newContext, plan, subBlock, subRoot, newStack);
     newStack.pop();
     Schema inSchema = (Schema) child.getOutSchema().clone();
     inSchema.setQualifier(node.getCanonicalName());
@@ -310,22 +301,22 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
   }
 
   @Override
-  public LogicalNode visitScan(PushDownContext context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitScan(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
     return pushDownProjectablePost(context, node, isTopmostProjectable(stack));
   }
 
   @Override
-  public LogicalNode visitStoreTable(PushDownContext context, LogicalPlan plan, StoreTableNode node,
-                                     Stack<LogicalNode> stack) throws PlanningException {
-    return pushDownCommonPost(context, node, stack);
+  public LogicalNode visitStoreTable(PushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return pushDownCommonPost(context, block, node, stack);
   }
 
-  private LogicalNode pushDownCommonPost(PushDownContext context, UnaryNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+  private LogicalNode pushDownCommonPost(PushDownContext context, LogicalPlan.QueryBlock block,
+                                         UnaryNode node, Stack<LogicalNode> stack) throws PlanningException {
 
     stack.push(node);
-    LogicalNode child = visitChild(context, context.plan, node.getChild(), stack);
+    LogicalNode child = visit(context, context.plan, block, node.getChild(), stack);
     stack.pop();
     node.setInSchema(child.getOutSchema());
     node.setOutSchema(child.getOutSchema());
@@ -447,24 +438,23 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     return subBlockTargetList;
   }
 
-  private BinaryNode pushDownSetNode(LogicalPlan plan, BinaryNode setNode, Stack<LogicalNode> stack,
-                                            PushDownContext context) throws PlanningException {
+  private BinaryNode pushDownSetNode(LogicalPlan plan, LogicalPlan.QueryBlock block, BinaryNode setNode,
+                                     Stack<LogicalNode> stack, PushDownContext context) throws PlanningException {
 
-    LogicalPlan.QueryBlock currentBlock = plan.getBlock(setNode);
-    LogicalPlan.QueryBlock leftBlock = plan.getChildBlocks(currentBlock).get(0);
-    LogicalPlan.QueryBlock rightBlock = plan.getChildBlocks(currentBlock).get(1);
+    LogicalPlan.QueryBlock leftBlock = plan.getChildBlocks(block).get(0);
+    LogicalPlan.QueryBlock rightBlock = plan.getChildBlocks(block).get(1);
 
-    PushDownContext leftContext = new PushDownContext(context, leftBlock);
+    PushDownContext leftContext = new PushDownContext(context);
     leftContext.targetListManager = buildSubBlockTargetList(plan, leftBlock,
         (TableSubQueryNode) setNode.getLeftChild(), context.upperRequired);
 
-    PushDownContext rightContext = new PushDownContext(context, rightBlock);
+    PushDownContext rightContext = new PushDownContext(context);
     rightContext.targetListManager = buildSubBlockTargetList(plan, rightBlock,
         (TableSubQueryNode) setNode.getRightChild(), context.upperRequired);
 
     stack.push(setNode);
-    visitChild(leftContext, plan, setNode.getLeftChild(), stack);
-    visitChild(rightContext, plan, setNode.getRightChild(), stack);
+    visit(leftContext, plan, leftBlock, setNode.getLeftChild(), stack);
+    visit(rightContext, plan, rightBlock, setNode.getRightChild(), stack);
     stack.pop();
 
     // if this is the final union, we assume that all targets are evalauted.

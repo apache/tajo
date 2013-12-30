@@ -74,8 +74,8 @@ public class GlobalPlanner {
 
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
-    LogicalNode lastNode = planner.visitChild(globalPlanContext, masterPlan.getLogicalPlan(), inputPlan,
-        new Stack<LogicalNode>());
+    LogicalNode lastNode = planner.visit(globalPlanContext,
+        masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
 
     ExecutionBlock childExecBlock = globalPlanContext.execBlockMap.get(lastNode.getPID());
 
@@ -372,16 +372,16 @@ public class GlobalPlanner {
   public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext, LogicalNode> {
 
     @Override
-    public LogicalNode visitRoot(GlobalPlanContext context, LogicalPlan plan, LogicalRootNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitRoot(context, plan, node, stack);
+    public LogicalNode visitRoot(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 LogicalRootNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitRoot(context, plan, block, node, stack);
       return child;
     }
 
     @Override
-    public LogicalNode visitProjection(GlobalPlanContext context, LogicalPlan plan, ProjectionNode node,
-                                       Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitProjection(context, plan, node, stack);
+    public LogicalNode visitProjection(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                       ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitProjection(context, plan, block, node, stack);
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
 
@@ -393,30 +393,30 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitLimit(GlobalPlanContext context, LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
-      LogicalNode child = super.visitLimit(context, plan, node, stack);
+    public LogicalNode visitLimit(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                  LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitLimit(context, plan, block, node, stack);
 
-      ExecutionBlock block;
-      block = context.execBlockMap.remove(child.getPID());
+      ExecutionBlock execBlock;
+      execBlock = context.execBlockMap.remove(child.getPID());
       if (child.getType() == NodeType.SORT) {
-        node.setChild(block.getPlan());
-        block.setPlan(node);
+        node.setChild(execBlock.getPlan());
+        execBlock.setPlan(node);
 
-        ExecutionBlock childBlock = context.plan.getChild(block, 0);
+        ExecutionBlock childBlock = context.plan.getChild(execBlock, 0);
         LimitNode childLimit = PlannerUtil.clone(context.plan.getLogicalPlan(), node);
         childLimit.setChild(childBlock.getPlan());
         childBlock.setPlan(childLimit);
 
-        DataChannel channel = context.plan.getChannel(childBlock, block);
+        DataChannel channel = context.plan.getChannel(childBlock, execBlock);
         channel.setPartitionNum(1);
-        context.execBlockMap.put(node.getPID(), block);
+        context.execBlockMap.put(node.getPID(), execBlock);
       } else {
-        node.setChild(block.getPlan());
-        block.setPlan(node);
+        node.setChild(execBlock.getPlan());
+        execBlock.setPlan(node);
 
         ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
-        DataChannel newChannel = new DataChannel(block, newExecBlock, HASH_PARTITION, 1);
+        DataChannel newChannel = new DataChannel(execBlock, newExecBlock, HASH_PARTITION, 1);
         newChannel.setPartitionKey(new Column[]{});
         newChannel.setSchema(node.getOutSchema());
         newChannel.setStoreType(storeType);
@@ -434,10 +434,10 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitSort(GlobalPlanContext context, LogicalPlan plan, SortNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
+    public LogicalNode visitSort(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 SortNode node, Stack<LogicalNode> stack) throws PlanningException {
 
-      LogicalNode child = super.visitSort(context, plan, node, stack);
+      LogicalNode child = super.visitSort(context, plan, block, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildSortPlan(context, childBlock, node);
@@ -447,9 +447,9 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitGroupBy(GlobalPlanContext context, LogicalPlan plan, GroupbyNode node,
-                                    Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitGroupBy(context, plan, node, stack);
+    public LogicalNode visitGroupBy(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitGroupBy(context, plan, block, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildGroupBy(context, childBlock, node);
@@ -459,9 +459,9 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitFilter(GlobalPlanContext context, LogicalPlan plan, SelectionNode node,
-                                   Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitFilter(context, plan, node, stack);
+    public LogicalNode visitFilter(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitFilter(context, plan, block, node, stack);
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
       node.setChild(execBlock.getPlan());
@@ -473,10 +473,10 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitJoin(GlobalPlanContext context, LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
-      LogicalNode leftChild = visitChild(context, plan, node.getLeftChild(), stack);
-      LogicalNode rightChild = visitChild(context, plan, node.getRightChild(), stack);
+    public LogicalNode visitJoin(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode leftChild = visit(context, plan, block, node.getLeftChild(), stack);
+      LogicalNode rightChild = visit(context, plan, block, node.getRightChild(), stack);
 
       ExecutionBlock leftChildBlock = context.execBlockMap.get(leftChild.getPID());
       ExecutionBlock rightChildBlock = context.execBlockMap.get(rightChild.getPID());
@@ -488,11 +488,11 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, UnionNode node,
-                                  Stack<LogicalNode> stack) throws PlanningException {
+    public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                  UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
       stack.push(node);
-      LogicalNode leftChild = visitChild(context, plan, node.getLeftChild(), stack);
-      LogicalNode rightChild = visitChild(context, plan, node.getRightChild(), stack);
+      LogicalNode leftChild = visit(context, plan, queryBlock, node.getLeftChild(), stack);
+      LogicalNode rightChild = visit(context, plan, queryBlock, node.getRightChild(), stack);
       stack.pop();
 
       List<ExecutionBlock> unionBlocks = Lists.newArrayList();
@@ -544,29 +544,30 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitExcept(GlobalPlanContext context, LogicalPlan plan, ExceptNode node,
-                                   Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitExcept(context, plan, node, stack);
+    public LogicalNode visitExcept(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                   ExceptNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitExcept(context, plan, queryBlock, node, stack);
       return handleUnaryNode(context, child, node);
     }
 
     @Override
-    public LogicalNode visitIntersect(GlobalPlanContext context, LogicalPlan plan, IntersectNode node,
-                                      Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitIntersect(context, plan, node, stack);
+    public LogicalNode visitIntersect(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                      IntersectNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitIntersect(context, plan, queryBlock, node, stack);
       return handleUnaryNode(context, child, node);
     }
 
     @Override
-    public LogicalNode visitTableSubQuery(GlobalPlanContext context, LogicalPlan plan, TableSubQueryNode node,
-                                          Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitTableSubQuery(context, plan, node, stack);
+    public LogicalNode visitTableSubQuery(GlobalPlanContext context, LogicalPlan plan,
+                                          LogicalPlan.QueryBlock queryBlock,
+                                          TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitTableSubQuery(context, plan, queryBlock, node, stack);
       return handleUnaryNode(context, child, node);
     }
 
     @Override
-    public LogicalNode visitScan(GlobalPlanContext context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
+    public LogicalNode visitScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                 ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
       ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
       newExecBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
@@ -574,9 +575,19 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitStoreTable(GlobalPlanContext context, LogicalPlan plan, StoreTableNode node,
-                                       Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitStoreTable(context, plan, node, stack);
+    public LogicalNode visitPartitionedTableScan(GlobalPlanContext context, LogicalPlan plan,
+                                                 LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
+                                                 Stack<LogicalNode> stack)throws PlanningException {
+      ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
+      newExecBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), newExecBlock);
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitStoreTable(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                       StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitStoreTable(context, plan, queryBlock, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
@@ -586,10 +597,10 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitInsert(GlobalPlanContext context, LogicalPlan plan, InsertNode node,
-                                   Stack<LogicalNode> stack)
+    public LogicalNode visitInsert(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                   InsertNode node, Stack<LogicalNode> stack)
         throws PlanningException {
-      LogicalNode child = super.visitInsert(context, plan, node, stack);
+      LogicalNode child = super.visitInsert(context, plan, queryBlock, node, stack);
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
       execBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), execBlock);
@@ -598,28 +609,24 @@ public class GlobalPlanner {
     }
   }
 
-  private class UnionsFinderContext {
-    List<UnionNode> unionList = new ArrayList<UnionNode>();
-  }
-
   @SuppressWarnings("unused")
-  private class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<UnionsFinderContext, LogicalNode> {
+  private class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<List<UnionNode>, LogicalNode> {
     @Override
-    public LogicalNode visitUnion(UnionsFinderContext context, LogicalPlan plan, UnionNode node,
-                                  Stack<LogicalNode> stack)
+    public LogicalNode visitUnion(List<UnionNode> unionNodeList, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                  UnionNode node, Stack<LogicalNode> stack)
         throws PlanningException {
       if (node.getType() == NodeType.UNION) {
-        context.unionList.add(node);
+        unionNodeList.add(node);
       }
 
       stack.push(node);
       TableSubQueryNode leftSubQuery = node.getLeftChild();
       TableSubQueryNode rightSubQuery = node.getRightChild();
       if (leftSubQuery.getSubQuery().getType() == NodeType.UNION) {
-        visitChild(context, plan, leftSubQuery, stack);
+        visit(unionNodeList, plan, queryBlock, leftSubQuery, stack);
       }
       if (rightSubQuery.getSubQuery().getType() == NodeType.UNION) {
-        visitChild(context, plan, rightSubQuery, stack);
+        visit(unionNodeList, plan, queryBlock, rightSubQuery, stack);
       }
       stack.pop();
 

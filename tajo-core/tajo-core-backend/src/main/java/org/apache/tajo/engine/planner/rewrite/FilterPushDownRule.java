@@ -53,19 +53,19 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      this.visit(new HashSet<EvalNode>(), plan, block.getRoot());
+      this.visit(new HashSet<EvalNode>(), plan, block, block.getRoot(), new Stack<LogicalNode>());
     }
 
     return plan;
   }
 
   @Override
-  public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 SelectionNode selNode, Stack<LogicalNode> stack) throws PlanningException {
     cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
-    visitChild(cnf, plan, selNode.getChild(), stack);
+    visit(cnf, plan, block, selNode.getChild(), stack);
     stack.pop();
 
     // remove the selection operator if there is no search condition
@@ -88,8 +88,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   }
 
   @Override
-  public LogicalNode visitJoin(Set<EvalNode> cnf, LogicalPlan plan, JoinNode joinNode, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitJoin(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
+                               Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode left = joinNode.getRightChild();
     LogicalNode right = joinNode.getLeftChild();
 
@@ -194,8 +194,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
       cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
 
-    visitChild(cnf, plan, left, stack);
-    visitChild(cnf, plan, right, stack);
+    visit(cnf, plan, block, left, stack);
+    visit(cnf, plan, block, right, stack);
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {
@@ -227,8 +227,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   }
 
   @Override
-  public LogicalNode visitScan(Set<EvalNode> cnf, LogicalPlan plan, ScanNode scanNode, Stack<LogicalNode> stack)
-      throws PlanningException {
+  public LogicalNode visitScan(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
+                               Stack<LogicalNode> stack) throws PlanningException {
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {

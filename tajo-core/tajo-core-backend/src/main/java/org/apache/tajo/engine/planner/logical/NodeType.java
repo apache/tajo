@@ -27,26 +27,26 @@ import org.apache.tajo.engine.planner.InsertNode;
  * This indicates a logical node type.
  */
 public enum NodeType {
-  BST_INDEX_SCAN(IndexScanNode.class),
-  CREATE_TABLE(CreateTableNode.class),
-  DROP_TABLE(DropTableNode.class),
-  EXCEPT(ExceptNode.class),
-  EXPRS(EvalExprNode.class),
-  GROUP_BY(GroupbyNode.class),
-  INSERT(InsertNode.class),
-  INTERSECT(IntersectNode.class),
-  LIMIT(LimitNode.class),
-  JOIN(JoinNode.class),
-  PARTITIONS_SCAN(PartitionedTableScanNode.class),
-  PROJECTION(ProjectionNode.class),
   ROOT(LogicalRootNode.class),
-  SCAN(ScanNode.class),
-  SELECTION(SelectionNode.class),
-  STORE(StoreTableNode.class),
+  EXPRS(EvalExprNode.class),
+  PROJECTION(ProjectionNode.class),
+  LIMIT(LimitNode.class),
   SORT(SortNode.class),
+  GROUP_BY(GroupbyNode.class),
+  SELECTION(SelectionNode.class),
+  JOIN(JoinNode.class),
   UNION(UnionNode.class),
-  TABLE_SUBQUERY(TableSubQueryNode.class);
-
+  EXCEPT(ExceptNode.class),
+  INTERSECT(IntersectNode.class),
+  TABLE_SUBQUERY(TableSubQueryNode.class),
+  SCAN(ScanNode.class),
+  PARTITIONS_SCAN(PartitionedTableScanNode.class),
+  BST_INDEX_SCAN(IndexScanNode.class),
+  STORE(StoreTableNode.class),
+  INSERT(InsertNode.class),
+  CREATE_TABLE(CreateTableNode.class),
+  DROP_TABLE(DropTableNode.class)
+  ;
 
   private final Class<? extends LogicalNode> baseClass;
 

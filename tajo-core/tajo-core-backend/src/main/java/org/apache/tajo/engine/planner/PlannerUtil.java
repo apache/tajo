@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -74,7 +75,7 @@ public class PlannerUtil {
   public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode node)
       throws PlanningException {
     RelationFinderVisitor visitor = new RelationFinderVisitor();
-    visitor.visit(null, plan, node);
+    visitor.visit(null, plan, null, node, new Stack<LogicalNode>());
     return visitor.getFoundRelations();
   }
 
@@ -86,10 +87,10 @@ public class PlannerUtil {
     }
 
     @Override
-    public LogicalNode visitChild(Object context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
+    public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
+                             Stack<LogicalNode> stack) throws PlanningException {
       if (node.getType() != NodeType.TABLE_SUBQUERY) {
-        super.visitChild(context, plan, node, stack);
+        super.visit(context, plan, block, node, stack);
       }
 
       if (node instanceof RelationNode) {
@@ -137,12 +138,11 @@ public class PlannerUtil {
   public static void replaceNode(LogicalPlan plan, LogicalNode startNode, LogicalNode oldNode, LogicalNode newNode) {
     LogicalNodeReplaceVisitor replacer = new LogicalNodeReplaceVisitor(oldNode, newNode);
     try {
-      replacer.visit(null, plan, startNode);
+      replacer.visit(null, plan, null, startNode, new Stack<LogicalNode>());
     } catch (PlanningException e) {
       e.printStackTrace();
     }
   }
-
   public static class LogicalNodeReplaceVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
     private LogicalNode target;
     private LogicalNode tobeReplaced;
@@ -153,9 +153,9 @@ public class PlannerUtil {
     }
 
     @Override
-    public LogicalNode visitChild(Object context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
-      super.visitChild(context, plan, node, stack);
+    public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
+                                  Stack<LogicalNode> stack) throws PlanningException {
+      super.visit(context, plan, null, node, stack);
 
       if (node.deepEquals(target)) {
         LogicalNode parent = stack.peek();

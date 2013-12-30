@@ -97,18 +97,9 @@ public class LogicalOptimizer {
   }
 
   private static class JoinGraphContext {
-    LogicalPlan.QueryBlock block;
     JoinGraph joinGraph = new JoinGraph();
     Set<EvalNode> quals = Sets.newHashSet();
     Set<String> relationsForProduct = Sets.newHashSet();
-
-    public JoinGraphContext(LogicalPlan.QueryBlock block) {
-      this.block = block;
-    }
-
-    public LogicalPlan.QueryBlock getBlock() {
-      return block;
-    }
   }
 
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
@@ -125,25 +116,25 @@ public class LogicalOptimizer {
      */
     public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
         throws PlanningException {
-      JoinGraphContext joinGraphContext = new JoinGraphContext(block);
+      JoinGraphContext joinGraphContext = new JoinGraphContext();
       instance.visit(joinGraphContext, plan, block);
       return joinGraphContext;
     }
 
-    public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, SelectionNode node,
-                                   Stack<LogicalNode> stack) throws PlanningException {
-      super.visitFilter(context, plan, node, stack);
+    public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      super.visitFilter(context, plan, block, node, stack);
       context.quals.addAll(Lists.newArrayList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
       return node;
     }
 
     @Override
-    public LogicalNode visitJoin(JoinGraphContext joinGraphContext, LogicalPlan plan, JoinNode joinNode,
-                                 Stack<LogicalNode> stack)
+    public LogicalNode visitJoin(JoinGraphContext joinGraphContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode joinNode, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitJoin(joinGraphContext, plan, joinNode, stack);
+      super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
       if (joinNode.hasJoinQual()) {
-        joinGraphContext.joinGraph.addJoin(plan, joinGraphContext.block, joinNode);
+        joinGraphContext.joinGraph.addJoin(plan, block, joinNode);
       } else {
         LogicalNode leftChild = joinNode.getLeftChild();
         LogicalNode rightChild = joinNode.getRightChild();
@@ -177,14 +168,14 @@ public class LogicalOptimizer {
     }
 
     @Override
-    public LogicalNode visitJoin(StringBuilder sb, LogicalPlan plan, JoinNode joinNode,
+    public LogicalNode visitJoin(StringBuilder sb, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
                                  Stack<LogicalNode> stack)
         throws PlanningException {
       stack.push(joinNode);
       sb.append("(");
-      visitChild(sb, plan, joinNode.getLeftChild(), stack);
+      visit(sb, plan, block, joinNode.getLeftChild(), stack);
       sb.append(" ").append(getJoinNotation(joinNode.getJoinType())).append(" ");
-      visitChild(sb, plan, joinNode.getRightChild(), stack);
+      visit(sb, plan, block, joinNode.getRightChild(), stack);
       sb.append(")");
       stack.pop();
       return joinNode;
@@ -205,13 +196,14 @@ public class LogicalOptimizer {
     }
 
     @Override
-    public LogicalNode visitTableSubQuery(StringBuilder sb, LogicalPlan plan, TableSubQueryNode node,
-                                          Stack<LogicalNode> stack) {
+    public LogicalNode visitTableSubQuery(StringBuilder sb, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          TableSubQueryNode node, Stack<LogicalNode> stack) {
       sb.append(node.getTableName());
       return node;
     }
 
-    public LogicalNode visitScan(StringBuilder sb, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack) {
+    public LogicalNode visitScan(StringBuilder sb, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
+                                 Stack<LogicalNode> stack) {
       sb.append(node.getTableName());
       return node;
     }
@@ -235,10 +227,10 @@ public class LogicalOptimizer {
     }
 
     @Override
-    public LogicalNode visitJoin(CostContext joinGraphContext, LogicalPlan plan, JoinNode joinNode,
-                                 Stack<LogicalNode> stack)
+    public LogicalNode visitJoin(CostContext joinGraphContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode joinNode, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitJoin(joinGraphContext, plan, joinNode, stack);
+      super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
 
       double filterFactor = 1;
       if (joinNode.hasJoinQual()) {

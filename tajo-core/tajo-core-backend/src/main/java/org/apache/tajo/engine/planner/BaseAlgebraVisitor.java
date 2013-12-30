@@ -47,7 +47,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visit(CONTEXT ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
     preHook(ctx, stack, expr);
 
-    RESULT current = null;
+    RESULT current;
 
     switch (expr.getType()) {
 
@@ -92,6 +92,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       break;
     case Relation:
       current = visitRelation(ctx, stack, (Relation) expr);
+      break;
+    case ScalarSubQuery:
+      current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
       break;
 
     case CreateTable:
@@ -207,11 +210,11 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       current = visitGeneralSetFunction(ctx, stack, (GeneralSetFunctionExpr) expr);
       break;
 
+    case DataType:
+      current = visitDataType(ctx, stack, (DataTypeExpr) expr);
+      break;
     case Cast:
       current = visitCastExpr(ctx, stack, (CastExpr) expr);
-      break;
-    case ScalarSubQuery:
-      current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
       break;
     case Literal:
       current = visitLiteral(ctx, stack, (LiteralValue) expr);
@@ -219,9 +222,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case NullLiteral:
       current = visitNullLiteral(ctx, stack, (NullLiteral) expr);
       break;
-    case DataType:
-      current = visitDataType(ctx, stack, (DataTypeExpr) expr);
+    case TimestampLiteral:
+      current = visitTimestampLiteral(ctx, stack, (TimestampLiteral) expr);
       break;
+
 
     default:
       throw new PlanningException("Cannot support this type algebra \"" + expr.getType() + "\"");

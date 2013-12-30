@@ -88,7 +88,7 @@ public class PartitionedTableRewriter implements RewriteRule {
         }
       }
       if (containsPartitionedTables) {
-        rewriter.visitChild(block, plan, block.getRoot(), new Stack<LogicalNode>());
+        rewriter.visit(block, plan, block, block.getRoot(), new Stack<LogicalNode>());
       }
     }
     return plan;
@@ -346,10 +346,10 @@ public class PartitionedTableRewriter implements RewriteRule {
     }
   }
 
-  private final class Rewriter extends BasicLogicalPlanVisitor<LogicalPlan.QueryBlock, Object> {
+  private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
     @Override
-    public Object visitScan(LogicalPlan.QueryBlock block, LogicalPlan plan, ScanNode scanNode, Stack<LogicalNode> stack)
-        throws PlanningException {
+    public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
+                            Stack<LogicalNode> stack) throws PlanningException {
 
       TableDesc table = scanNode.getTableDesc();
       if (!table.hasPartitions()) {
