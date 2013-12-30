@@ -58,6 +58,10 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     setInSchema(subQuery.getInSchema());
   }
 
+  public void nullifySubQuery() {
+    this.subQuery = null;
+  }
+
   public LogicalNode getSubQuery() {
     return subQuery;
   }

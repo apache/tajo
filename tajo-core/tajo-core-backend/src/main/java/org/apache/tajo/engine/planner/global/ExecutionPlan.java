@@ -495,7 +495,7 @@ public class ExecutionPlan implements GsonObject {
       if (node.getChild() != null) {
         LogicalNode child = node.getChild();
         plan.add(child, node, edgeType);
-//        node.setChild(null);
+        node.setChild(null);
         visit(child, edgeType);
       }
     }
@@ -512,13 +512,13 @@ public class ExecutionPlan implements GsonObject {
       if (node.getLeftChild() != null) {
         child = node.getLeftChild();
         plan.add(child, node, EdgeType.LEFT);
-//        node.setLeftChild(null);
+        node.setLeftChild(null);
         visit(child, EdgeType.LEFT);
       }
       if (node.getRightChild() != null) {
         child = node.getRightChild();
         plan.add(child, node, EdgeType.RIGHT);
-//        node.setRightChild(null);
+        node.setRightChild(null);
         visit(child, EdgeType.RIGHT);
       }
     }
@@ -526,6 +526,7 @@ public class ExecutionPlan implements GsonObject {
     private void visitTableSubQuery(TableSubQueryNode node, EdgeType edgeType) throws PlanningException {
       LogicalNode child = node.getSubQuery();
       plan.add(child, node, edgeType);
+      node.nullifySubQuery();
       visit(child, edgeType);
     }
   }

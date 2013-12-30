@@ -197,7 +197,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
       case TABLE_SUBQUERY: {
         TableSubQueryNode subQueryNode = (TableSubQueryNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, plan, subQueryNode.getSubQuery());
+        leftExec = createPlanRecursive(ctx, plan, plan.getChild(subQueryNode, 0));
         if (plan.getParentCount(logicalNode) > 1) {
           return new MultiOutputExec(ctx, leftExec.getSchema(), leftExec, plan.getParentCount(logicalNode));
         } else {
