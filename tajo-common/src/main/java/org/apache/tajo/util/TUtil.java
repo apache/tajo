@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * It provides miscellaneous and useful util methods.
@@ -111,6 +112,10 @@ public class TUtil {
     HashMap<K, V> newMap = new LinkedHashMap<K, V>();
     newMap.put(k, v);
     return newMap;
+  }
+
+  public static <K,V> Map<K,V> newConcurrentHashMap() {
+    return new ConcurrentHashMap<K, V>();
   }
 
   public static <T> List<T> newList() {

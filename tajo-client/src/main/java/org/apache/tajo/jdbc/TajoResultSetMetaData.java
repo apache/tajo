@@ -22,6 +22,7 @@
 package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.sql.ResultSetMetaData;
@@ -66,7 +67,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public int getColumnDisplaySize(int column) throws SQLException {
-    return TajoDriver.columnDisplaySize(getColumnType(column));
+    return ResultSetUtil.columnDisplaySize(getColumnType(column));
   }
 
   @Override
@@ -83,24 +84,24 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
   public int getColumnType(int column) throws SQLException {
     DataType type = schema.getColumn(column - 1).getDataType();
 
-    return TajoDriver.tajoTypeToSqlType(type);
+    return ResultSetUtil.tajoTypeToSqlType(type);
   }
 
   @Override
   public String getColumnTypeName(int column) throws SQLException {
     DataType type = schema.getColumn(column - 1).getDataType();
 
-    return TajoDriver.toSqlType(type);
+    return ResultSetUtil.toSqlType(type);
   }
 
   @Override
   public int getPrecision(int column) throws SQLException {
-    return TajoDriver.columnDisplaySize(getColumnType(column));
+    return ResultSetUtil.columnDisplaySize(getColumnType(column));
   }
 
   @Override
   public int getScale(int column) throws SQLException {
-    return TajoDriver.columnScale(getColumnType(column));
+    return ResultSetUtil.columnScale(getColumnType(column));
   }
 
   @Override

@@ -19,19 +19,18 @@
 package org.apache.tajo.conf;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-public class TajoConf extends YarnConfiguration {
+public class TajoConf extends Configuration {
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");
@@ -44,7 +43,7 @@ public class TajoConf extends YarnConfiguration {
 
   private static final String EMPTY_VALUE = "";
 
-  private static final Map<String, ConfVars> vars = Maps.newHashMap();
+  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
   public TajoConf() {
     super();

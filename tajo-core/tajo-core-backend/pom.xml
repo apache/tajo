@@ -127,14 +127,11 @@
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--proto_path=../../tajo-common/src/main/proto</argument>
                 <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
+                <argument>--proto_path=../../tajo-client/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/tajo_protos.proto</argument>
-                <argument>src/main/proto/ClientProtos.proto</argument>
                 <argument>src/main/proto/QueryMasterProtocol.proto</argument>
-                <argument>src/main/proto/QueryMasterClientProtocol.proto</argument>
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoWorkerProtocol.proto</argument>
-                <argument>src/main/proto/TajoMasterClientProtocol.proto</argument>
                 <argument>src/main/proto/InternalTypes.proto</argument>
               </arguments>
             </configuration>
@@ -224,6 +221,14 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-rpc</artifactId>
     </dependency>
 
@@ -234,6 +239,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -247,6 +253,10 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-yarn-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -281,6 +291,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.antlr</groupId>
@@ -324,20 +335,9 @@
       <artifactId>commons-lang</artifactId>
       <version>2.6</version>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>org.jboss.netty</groupId>
-      <artifactId>netty</artifactId>
-    </dependency>
-    -->
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
-      <version>2.11</version>
     </dependency>
 
     <dependency>

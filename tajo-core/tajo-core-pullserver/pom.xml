@@ -51,12 +51,12 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-server-nodemanager</artifactId>
-      <scope>compile</scope>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-common</artifactId>
-      <scope>compile</scope>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

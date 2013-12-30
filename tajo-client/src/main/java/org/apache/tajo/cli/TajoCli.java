@@ -27,7 +27,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
@@ -502,7 +501,7 @@ public class TajoCli {
           if (!specifier.getExpressions().equals("")) {
             sb.append(", expressions:").append(specifier.getExpressions());
           } else {
-            if (desc.getPartitions().getPartitionsType().name().equals(CreateTable.PartitionType.RANGE))
+            if (desc.getPartitions().getPartitionsType().name().equals("RANGE"));
               sb.append(" expressions: MAXVALUE");
           }
           sb.append("\n");

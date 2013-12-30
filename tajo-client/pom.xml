@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+      http://www.apache.org/licenses/LICENSE-2.0
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
-  limitations under the License. See accompanying LICENSE file.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>tajo-project</artifactId>
@@ -22,25 +26,23 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <version>0.8.0-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
-
-  <artifactId>tajo-common</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
-  <name>Tajo Common</name>
-  <description>Tajo Common Package</description>
+  <artifactId>tajo-client</artifactId>
   <packaging>jar</packaging>
-
+  <name>Tajo Client</name>
+  <version>0.8.0-SNAPSHOT</version>
   <properties>
-    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <metrics.version>3.0.1</metrics.version>
   </properties>
 
   <repositories>
     <repository>
-      <id>apache.snapshots</id>
-      <url>http://repository.apache.org/snapshots</url>
+      <id>repository.jboss.org</id>
+      <url>https://repository.jboss.org/nexus/content/repositories/releases/
+      </url>
       <snapshots>
-        <enabled>true</enabled>
+        <enabled>false</enabled>
       </snapshots>
     </repository>
   </repositories>
@@ -55,6 +57,30 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
           <target>1.6</target>
           <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.12.4</version>
+        <configuration>
+          <systemProperties>
+            <tajo.test>TRUE</tajo.test>
+          </systemProperties>
+          <argLine>-Xms512m -Xmx1024m -Dfile.encoding=UTF-8</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -86,12 +112,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <executable>protoc</executable>
               <arguments>
                 <argument>-Isrc/main/proto/</argument>
+                <argument>--proto_path=../tajo-common/src/main/proto</argument>
+                <argument>--proto_path=../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
+                <argument>--proto_path=../tajo-core/tajo-core-backend/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/TestProtos.proto</argument>
-                <argument>src/main/proto/TajoIdProtos.proto</argument>
-                <argument>src/main/proto/DataTypes.proto</argument>
-                <argument>src/main/proto/PrimitiveProtos.proto</argument>
-                <argument>src/main/proto/tajo_protos.proto</argument>
+                <argument>src/main/proto/ClientProtos.proto</argument>
+                <argument>src/main/proto/TajoMasterClientProtocol.proto</argument>
+                <argument>src/main/proto/QueryMasterClientProtocol.proto</argument>
               </arguments>
             </configuration>
             <goals>
@@ -121,25 +148,107 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-report-plugin</artifactId>
-        <version>2.15</version>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>false</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+              <excludeGroupIds>org.apache.hadoop</excludeGroupIds>
+              <excludeScope>provided</excludeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>2.7.1</version>
       </plugin>
     </plugins>
   </build>
 
+
   <dependencies>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.gson</groupId>
+          <artifactId>gson</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey.jersey-test-framework</groupId>
+          <artifactId>jersey-test-framework-grizzly2</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-catalog-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-core-storage</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-rpc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-el</groupId>
+          <artifactId>commons-el</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>tomcat</groupId>
+          <artifactId>jasper-runtime</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>tomcat</groupId>
+          <artifactId>jasper-compiler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jsp-2.1-jetty</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey.jersey-test-framework</groupId>
+          <artifactId>jersey-test-framework-grizzly2</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -149,21 +258,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging-api</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <type>jar</type>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <type>jar</type>
-      <scope>compile</scope>
+      <groupId>jline</groupId>
+      <artifactId>jline</artifactId>
+      <version>2.11</version>
     </dependency>
   </dependencies>
 
@@ -263,7 +362,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                       run cd ${project.artifactId}-${project.version}
                       run cp -r ${basedir}/target/${project.artifactId}-${project.version}*.jar .
                       echo
-                      echo "Tajo Common dist layout available at: ${project.build.directory}/${project.artifactId}-${project.version}"
+                      echo "Tajo Client dist layout available at: ${project.build.directory}/${project.artifactId}-${project.version}"
                       echo
                     </echo>
                     <exec executable="sh" dir="${project.build.directory}" failonerror="true">
@@ -283,9 +382,18 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
         <version>2.15</version>
       </plugin>
     </plugins>
   </reporting>
 </project>
+

@@ -38,9 +38,6 @@
 	  <module>tajo-core-pullserver</module>
   </modules>
 
-  <repositories>
-  </repositories>
-
   <build>
     <plugins>
       <plugin>
@@ -164,7 +161,6 @@
                       run rm -rf ${project.artifactId}-${project.version}
                       run mkdir ${project.artifactId}-${project.version}
                       run cd ${project.artifactId}-${project.version}
-                      run cp -r ${basedir}/${project.artifactId}-storage/target/${project.artifactId}-storage-${project.version}*.jar .
                       run cp -r ${basedir}/${project.artifactId}-pullserver/target/${project.artifactId}-pullserver-${project.version}*.jar .
                       run cp -r ${basedir}/${project.artifactId}-backend/target/${project.artifactId}-backend-${project.version}*.jar .
                       run cp -r ${basedir}/${project.artifactId}-backend/target/lib .

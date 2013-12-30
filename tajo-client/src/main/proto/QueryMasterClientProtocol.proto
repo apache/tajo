@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+option java_package = "org.apache.tajo.ipc";
+option java_outer_classname = "QueryMasterClientProtocol";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
 
-public enum SQLStates {
-  ER_NO_SUCH_TABLE("42S02");
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
+import "ClientProtos.proto";
 
-  private String state;
-
-  SQLStates(String state) {
-    this.state = state;
-  }
-
-  public String getState() {
-    return state;
-  }
+service QueryMasterClientProtocolService {
+  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
+  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
+  rpc killQuery(QueryIdProto) returns (BoolProto);
 }

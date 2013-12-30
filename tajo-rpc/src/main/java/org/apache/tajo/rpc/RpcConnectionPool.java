@@ -18,10 +18,10 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class RpcConnectionPool {
   private static final Log LOG = LogFactory.getLog(RpcConnectionPool.class);
 
-  private Map<RpcConnectionKey, NettyClientBase> connections = Maps.newConcurrentMap();
+  private Map<RpcConnectionKey, NettyClientBase> connections = TUtil.newConcurrentHashMap();
 
   private static RpcConnectionPool instance;
 

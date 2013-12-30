@@ -150,6 +150,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -158,11 +159,6 @@
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <version>10.8.2.2</version>
     </dependency>
   </dependencies>
 

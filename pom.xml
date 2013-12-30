@@ -83,6 +83,8 @@
     <module>tajo-core</module>
     <module>tajo-rpc</module>
     <module>tajo-catalog</module>
+    <module>tajo-client</module>
+    <module>tajo-jdbc</module>
     <module>tajo-dist</module>
   </modules>
 

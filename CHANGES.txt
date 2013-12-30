@@ -110,6 +110,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-456: Separate tajo-jdbc and tajo-client from tajo-core-backend. (hyunsik)
+
     TAJO-432: Add shuffle phase for column-partitioned table store. (Min Zhou via jihoon)
 
     TAJO-135: Bump up hadoop to 2.2.0. (jihoon)

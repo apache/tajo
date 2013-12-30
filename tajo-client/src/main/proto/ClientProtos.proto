@@ -21,7 +21,6 @@ option java_outer_classname = "ClientProtos";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "yarn_protos.proto";
 import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";

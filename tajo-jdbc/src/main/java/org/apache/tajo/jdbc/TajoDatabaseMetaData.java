@@ -1,4 +1,4 @@
-/**
+package org.apache.tajo.jdbc; /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.jdbc;
-
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.NullDatum;
@@ -503,8 +502,9 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
               tuple.put(index++, NullDatum.get());  //TABLE_SCHEM
               tuple.put(index++, new TextDatum(table));  //TABLE_NAME
               tuple.put(index++, new TextDatum(column.getColumnName()));  //COLUMN_NAME
-              tuple.put(index++, new TextDatum("" + TajoDriver.tajoTypeToSqlType(column.getDataType())));  //TODO DATA_TYPE
-              tuple.put(index++, new TextDatum(TajoDriver.toSqlType(column.getDataType())));  //TYPE_NAME
+              // TODO - DATA_TYPE
+              tuple.put(index++, new TextDatum("" + ResultSetUtil.tajoTypeToSqlType(column.getDataType())));
+              tuple.put(index++, new TextDatum(ResultSetUtil.toSqlType(column.getDataType())));  //TYPE_NAME
               tuple.put(index++, new TextDatum("0"));  //COLUMN_SIZE
               tuple.put(index++, new TextDatum("0"));  //BUFFER_LENGTH
               tuple.put(index++, new TextDatum("0"));  //DECIMAL_DIGITS
