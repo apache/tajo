@@ -28,6 +28,7 @@ import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
@@ -46,29 +47,34 @@ public abstract class NettyClientBase implements Closeable {
   public abstract <T> T getStub();
   public abstract RpcConnectionPool.RpcConnectionKey getKey();
 
-  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory) {
+  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory) throws IOException {
     this.addr = addr;
 
-    this.factory =
-        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-            Executors.newCachedThreadPool());
+    try {
+      this.factory =
+          new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+              Executors.newCachedThreadPool());
 
-    this.bootstrap = new ClientBootstrap(factory);
-    this.bootstrap.setPipelineFactory(pipeFactory);
-    // TODO - should be configurable
-    this.bootstrap.setOption("connectTimeoutMillis", 10000);
-    this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
-    this.bootstrap.setOption("receiveBufferSize", 1048576*2);
-    this.bootstrap.setOption("tcpNoDelay", false);
-    this.bootstrap.setOption("keepAlive", true);
+      this.bootstrap = new ClientBootstrap(factory);
+      this.bootstrap.setPipelineFactory(pipeFactory);
+      // TODO - should be configurable
+      this.bootstrap.setOption("connectTimeoutMillis", 10000);
+      this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
+      this.bootstrap.setOption("receiveBufferSize", 1048576*2);
+      this.bootstrap.setOption("tcpNoDelay", false);
+      this.bootstrap.setOption("keepAlive", true);
 
-    this.channelFuture = bootstrap.connect(addr);
-    this.channelFuture.awaitUninterruptibly();
-    if (!channelFuture.isSuccess()) {
-      channelFuture.getCause().printStackTrace();
-      throw new RuntimeException(channelFuture.getCause());
+      this.channelFuture = bootstrap.connect(addr);
+      this.channelFuture.awaitUninterruptibly();
+      if (!channelFuture.isSuccess()) {
+        channelFuture.getCause().printStackTrace();
+        throw new RuntimeException(channelFuture.getCause());
+      }
+      this.channel = channelFuture.getChannel();
+    } catch (Throwable t) {
+      close();
+      throw new IOException(t.getCause());
     }
-    this.channel = channelFuture.getChannel();
   }
 
   public boolean isConnected() {
@@ -85,11 +91,16 @@ public abstract class NettyClientBase implements Closeable {
 
   @Override
   public void close() {
-    this.channel.close().awaitUninterruptibly();
-    this.bootstrap.releaseExternalResources();
-    if(LOG.isDebugEnabled()) {
-      LOG.debug("Proxy is disconnected from " +
-          addr.getAddress().getHostAddress() + ":" + addr.getPort());
+    if(this.channel != null) {
+      this.channel.close().awaitUninterruptibly();
+    }
+
+    if(this.bootstrap != null) {
+      this.bootstrap.releaseExternalResources();
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("Proxy is disconnected from " +
+            addr.getAddress().getHostAddress() + ":" + addr.getPort());
+      }
     }
   }
 }

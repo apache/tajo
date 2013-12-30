@@ -182,6 +182,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-467: Too many open FD when master failed. (hyoungjunkim via hyunsik)
+
     TAJO-455: Throw PlanningException when Creating table with Partition
     exception COLUMN. (DaeMyung Kang via hyunsik)
 
