@@ -759,9 +759,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       storeNode.setChild(subQuery);
 
       if (expr.hasTableElements()) {
+        // CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
         Schema schema = convertTableElementsSchema(expr.getTableElements());
         storeNode.setOutSchema(schema);
       } else {
+        // CREATE TABLE tbl AS SELECT ...
         storeNode.setOutSchema(subQuery.getOutSchema());
       }
       storeNode.setInSchema(subQuery.getOutSchema());
@@ -779,14 +781,28 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         storeNode.setOptions(options);
       }
 
+      if (expr.hasPartition()) {
+        storeNode.setPartitions(convertTableElementsPartition(context, expr));
+      }
+
       return storeNode;
     } else {
-
       Schema tableSchema;
-      if (expr.hasPartition() && expr.getPartition().getPartitionType() == PartitionType.COLUMN &&
-          ((ColumnPartition)expr.getPartition()).isOmitValues()) {
+      boolean mergedPartition = false;
+      if (expr.hasPartition()) {
+        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+          if (((ColumnPartition)expr.getPartition()).isOmitValues()) {
+            mergedPartition = true;
+          }
+        } else {
+          throw new PlanningException(String.format("Not supported PartitonType: %s", 
+                                      expr.getPartition().getPartitionType()));
+        }
+      }
+
+      if (mergedPartition) {
         ColumnDefinition [] merged = TUtil.concat(expr.getTableElements(),
-            ((ColumnPartition)expr.getPartition()).getColumns());
+                          ((ColumnPartition)expr.getPartition()).getColumns());
         tableSchema = convertTableElementsSchema(merged);
       } else {
         tableSchema = convertTableElementsSchema(expr.getTableElements());
@@ -808,6 +824,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         // TODO - it should be configurable.
         createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
       }
+
       if (expr.hasParams()) {
         Options options = new Options();
         options.putAll(expr.getParams());
@@ -818,9 +835,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         createTableNode.setPath(new Path(expr.getLocation()));
       }
 
-      if (expr.hasPartition()) {
-        createTableNode.setPartitions(convertTableElementsPartition(context, expr));
+      if (expr.hasPartition()) { 
+        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+          createTableNode.setPartitions(convertTableElementsPartition(context, expr));
+        } else {
+          throw new PlanningException(String.format("Not supported PartitonType: %s", 
+                                      expr.getPartition().getPartitionType()));
+        }
       }
+
       return createTableNode;
     }
   }
@@ -1000,12 +1023,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       Schema targetSchema = new Schema();
       if (expr.hasTargetColumns()) {
+        // INSERT OVERWRITE INTO TABLE tbl(col1 type, col2 type) SELECT ...
         String [] targetColumnNames = expr.getTargetColumns();
         for (int i = 0; i < targetColumnNames.length; i++) {
           Column targetColumn = context.plan.resolveColumn(context.block, null, new ColumnReferenceExpr(targetColumnNames[i]));
           targetSchema.addColumn(targetColumn);
         }
       } else {
+        // use the output schema of select clause as target schema
+        // if didn't specific target columns like the way below,
+        // INSERT OVERWRITE INTO TABLE tbl SELECT ...
         Schema targetTableSchema = desc.getSchema();
         for (int i = 0; i < subQuery.getOutSchema().getColumnNum(); i++) {
           targetSchema.addColumn(targetTableSchema.getColumn(i));

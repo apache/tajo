@@ -539,7 +539,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   @Test
   public void testEncode() throws IOException {
     testSimpleEval("select encode('Hello\nworld', 'base64') ", new String[]{"SGVsbG8Kd29ybGQ="});
-    testSimpleEval("select encode('Hello\nworld', 'hex') ", new String[]{"0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64"});
+    testSimpleEval("select encode('Hello\nworld', 'hex') ",
+        new String[]{"0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64"});
     testSimpleEval("select encode('한글', 'base64') ", new String[]{"7ZWc6riA"});
     testSimpleEval("select encode('한글', 'hex') ", new String[]{"0xd55c0xae00"});
     testSimpleEval("select encode('한글\n테스트\t입니다.', 'hex') ",
@@ -549,12 +550,36 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testDecode() throws IOException {
-    testSimpleEval("select decode('SGVsbG8Kd29ybGQ=', 'base64') ", new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
+    testSimpleEval("select decode('SGVsbG8Kd29ybGQ=', 'base64') ",
+        new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
     testSimpleEval("select decode('0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64', 'hex') ",
         new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
     testSimpleEval("select decode('7ZWc6riA', 'base64') ", new String[]{StringEscapeUtils.escapeJava("한글")});
     testSimpleEval("select decode('0xd55c0xae00', 'hex') ", new String[]{StringEscapeUtils.escapeJava("한글")});
     testSimpleEval("select decode('0xd55c0xae000x0a0xd14c0xc2a40xd2b80x090xc7850xb2c80xb2e40x2e', 'hex') ",
         new String[]{StringEscapeUtils.escapeJava("한글\n" + "테스트\t입니다.")});
+  }
+
+  @Test
+  public void testFindInSet() throws IOException {
+    // abnormal cases
+    testSimpleEval("select find_in_set('cr','crt') as col1 ", new String[]{"0"}); // there is no matched string
+    testSimpleEval("select find_in_set('c,r','crt,c,cr,c,def') as col1 ", new String[]{"0"}); // abnormal parameter
+
+    // normal cases
+    testSimpleEval("select find_in_set('crt','crt,c,cr,d,def') as col1 ", new String[]{"1"});
+    testSimpleEval("select find_in_set('c','crt,c,cr,d,def') as col1 ", new String[]{"2"});
+    testSimpleEval("select find_in_set('def','crt,c,cr,d,def') as col1 ", new String[]{"5"});
+    // unicode test
+    testSimpleEval("select find_in_set('딸기','사과,배,옥수수,감자,딸기,수박') as col1 ", new String[]{"5"});
+
+    // null test
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    testEval(schema, "table1", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
+        new String[]{"t"}, '|');
+    testEval(schema, "table1", "cr|", "select find_in_set(col1, col2) is null from table1",
+        new String[]{"t"}, '|');
   }
 }

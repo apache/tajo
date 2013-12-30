@@ -834,6 +834,12 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("decode", Decode.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.TEXT),
             CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
+
+    sqlFuncs.add(
+        new FunctionDesc("find_in_set", FindInSet.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.INT4),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
+
     return sqlFuncs;
   }
 

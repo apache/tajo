@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Options;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.NodeType;
@@ -36,6 +37,7 @@ public class QueryContext extends Options {
 
   public static final String OUTPUT_TABLE_NAME = "tajo.query.output.table";
   public static final String OUTPUT_TABLE_PATH = "tajo.query.output.path";
+  public static final String OUTPUT_PARTITIONS = "tajo.query.output.partitions";
   public static final String OUTPUT_OVERWRITE = "tajo.query.output.overwrite";
   public static final String OUTPUT_AS_DIRECTORY = "tajo.query.output.asdirectory";
 
@@ -126,6 +128,18 @@ public class QueryContext extends Options {
   public Path getOutputPath() {
     String strVal = get(OUTPUT_TABLE_PATH);
     return strVal != null ? new Path(strVal) : null;
+  }
+
+  public boolean hasPartitions() {
+    return get(OUTPUT_PARTITIONS) != null;
+  }
+
+  public void setPartitions(PartitionDesc partitionDesc) {
+    put(OUTPUT_PARTITIONS, partitionDesc != null ? partitionDesc.toJson() : null);
+  }
+
+  public PartitionDesc getPartitions() {
+    return PartitionDesc.fromJson(get(OUTPUT_PARTITIONS));
   }
 
   public void setOutputOverwrite() {
