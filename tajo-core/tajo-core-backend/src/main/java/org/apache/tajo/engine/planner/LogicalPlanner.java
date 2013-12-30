@@ -759,9 +759,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       storeNode.setChild(subQuery);
 
       if (expr.hasTableElements()) {
+        // CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
         Schema schema = convertTableElementsSchema(expr.getTableElements());
         storeNode.setOutSchema(schema);
       } else {
+        // CREATE TABLE tbl AS SELECT ...
         storeNode.setOutSchema(subQuery.getOutSchema());
       }
       storeNode.setInSchema(subQuery.getOutSchema());
@@ -777,6 +779,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         Options options = new Options();
         options.putAll(expr.getParams());
         storeNode.setOptions(options);
+      }
+
+      if (expr.hasPartition()) {
+        storeNode.setPartitions(convertTableElementsPartition(context, expr));
       }
 
       return storeNode;
@@ -1017,12 +1023,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       Schema targetSchema = new Schema();
       if (expr.hasTargetColumns()) {
+        // INSERT OVERWRITE INTO TABLE tbl(col1 type, col2 type) SELECT ...
         String [] targetColumnNames = expr.getTargetColumns();
         for (int i = 0; i < targetColumnNames.length; i++) {
           Column targetColumn = context.plan.resolveColumn(context.block, null, new ColumnReferenceExpr(targetColumnNames[i]));
           targetSchema.addColumn(targetColumn);
         }
       } else {
+        // use the output schema of select clause as target schema
+        // if didn't specific target columns like the way below,
+        // INSERT OVERWRITE INTO TABLE tbl SELECT ...
         Schema targetTableSchema = desc.getSchema();
         for (int i = 0; i < subQuery.getOutSchema().getColumnNum(); i++) {
           targetSchema.addColumn(targetTableSchema.getColumn(i));

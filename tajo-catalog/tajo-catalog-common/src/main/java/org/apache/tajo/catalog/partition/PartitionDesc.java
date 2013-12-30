@@ -191,4 +191,8 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     return CatalogGsonHelper.toJson(this, PartitionDesc.class);
 
   }
+
+  public static PartitionDesc fromJson(String strVal) {
+    return strVal != null ? CatalogGsonHelper.fromJson(strVal, PartitionDesc.class) : null;
+  }
 }

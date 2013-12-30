@@ -410,6 +410,11 @@ public class Query implements EventHandler<QueryEvent> {
           finalTableDesc = updatingTable;
         }
       }
+
+      if(queryContext.hasPartitions()) {
+        finalTableDesc.setPartitions(queryContext.getPartitions());
+      }
+
       return finalTableDesc;
     }
   }
