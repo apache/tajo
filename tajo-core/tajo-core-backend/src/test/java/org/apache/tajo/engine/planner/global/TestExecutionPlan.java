@@ -102,4 +102,34 @@ public class TestExecutionPlan {
     assertEquals(3, plan.getParentCount(scanNode));
 
   }
+
+  @Test
+  public void testToLinkedLogicalNode() throws CloneNotSupportedException {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("age", Type.INT2);
+    PIDFactory pidFactory = new PIDFactory();
+
+    LogicalRootNode root1 = new LogicalRootNode(pidFactory.newPID());
+    GroupbyNode groupbyNode = new GroupbyNode(pidFactory.newPID(),
+        new Column[]{schema.getColumn(1), schema.getColumn(2)});
+    ScanNode scanNode = new ScanNode(pidFactory.newPID(),
+        CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
+    ScanNode scanNode2 = new ScanNode(pidFactory.newPID(),
+        CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
+    UnionNode unionNode = new UnionNode(pidFactory.newPID(), groupbyNode, scanNode2);
+    unionNode.setOutSchema(schema);
+    unionNode.setInSchema(schema);
+    TableSubQueryNode tableSubQueryNode = new TableSubQueryNode(pidFactory.newPID(), "test", unionNode);
+    root1.setChild(tableSubQueryNode);
+    groupbyNode.setChild(scanNode);
+
+    LogicalRootNode clone = (LogicalRootNode) root1.clone();
+
+    ExecutionPlan plan = new ExecutionPlan(pidFactory);
+    plan.addPlan(root1);
+
+    assertTrue(clone.getChild().deepEquals(plan.getFirstPlanGroup().toLinkedLogicalNode()));
+  }
 }

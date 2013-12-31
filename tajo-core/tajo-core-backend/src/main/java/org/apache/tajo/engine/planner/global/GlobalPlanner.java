@@ -579,11 +579,11 @@ public class GlobalPlanner {
 
     private LogicalNode handleUnaryNode(GlobalPlanContext context, LogicalNode child, LogicalNode node) {
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
-      if (node instanceof UnaryNode) {
-        ((UnaryNode)node).setChild(execBlock.getPlan().getFirstPlanGroup().toLinkedLogicalNode());
-      } else if (node instanceof TableSubQueryNode) {
-        ((TableSubQueryNode) node).setSubQuery(execBlock.getPlan().getFirstPlanGroup().toLinkedLogicalNode());
-      }
+//      if (node instanceof UnaryNode) {
+//        ((UnaryNode)node).setChild(execBlock.getPlan().getFirstPlanGroup().toLinkedLogicalNode());
+//      } else if (node instanceof TableSubQueryNode) {
+//        ((TableSubQueryNode) node).setSubQuery(execBlock.getPlan().getFirstPlanGroup().toLinkedLogicalNode());
+//      }
       execBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), execBlock);
 

@@ -88,20 +88,29 @@ public class ExecutionPlan implements GsonObject {
     public LogicalNode toLinkedLogicalNode() {
       LogicalNode[] nodes = this.nodes.toArray(new LogicalNode[this.nodes.size()]);
 
-      for (int i = 0; i < nodes.length;) {
+      toLinkedLogicalNode(nodes, 0);
+      return nodes[0];
+    }
+
+    private int toLinkedLogicalNode(LogicalNode[] nodes, int i) {
+      if (i < nodes.length) {
         if (nodes[i] instanceof UnaryNode) {
-          ((UnaryNode)nodes[i]).setChild(nodes[++i]);
+          ((UnaryNode)nodes[i]).setChild(nodes[i+1]);
+          return toLinkedLogicalNode(nodes, i + 1);
         } else if (nodes[i] instanceof BinaryNode) {
           ((BinaryNode)nodes[i]).setLeftChild(nodes[i+1]);
-          ((BinaryNode)nodes[i]).setRightChild(nodes[i+2]);
-          i += 2;
+          int rightChildIndex = toLinkedLogicalNode(nodes, i+1);
+          ((BinaryNode)nodes[i]).setRightChild(nodes[rightChildIndex]);
+          return toLinkedLogicalNode(nodes, rightChildIndex);
         } else if (nodes[i] instanceof TableSubQueryNode) {
-          ((TableSubQueryNode)nodes[i]).setSubQuery(nodes[++i]);
+          ((TableSubQueryNode)nodes[i]).setSubQuery(nodes[i+1]);
+          return toLinkedLogicalNode(nodes, i+1);
         } else {
-          i++;
+          return i+1;
         }
+      } else {
+        return -1;
       }
-      return nodes[0];
     }
 
     public LogicalNode getRootNode() {

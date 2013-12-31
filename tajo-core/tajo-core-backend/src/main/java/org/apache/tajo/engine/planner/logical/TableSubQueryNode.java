@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.util.TUtil;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
@@ -97,15 +98,26 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   public boolean equals(Object object) {
     if (object instanceof TableSubQueryNode) {
       TableSubQueryNode another = (TableSubQueryNode) object;
-      return tableName.equals(another.tableName) && subQuery.equals(another.subQuery);
+      return tableName.equals(another.tableName) && TUtil.checkEquals(this.targets, another.targets);
+//          && subQuery.equals(another.subQuery);
     }
 
     return false;
   }
 
   @Override
+  public boolean deepEquals(Object o) {
+    if (o instanceof TableSubQueryNode) {
+      TableSubQueryNode other = (TableSubQueryNode) o;
+      return equals(o) && subQuery.deepEquals(other.subQuery);
+    }
+    return false;
+  }
+
+  @Override
   public Object clone() throws CloneNotSupportedException {
     TableSubQueryNode newTableSubQueryNode = (TableSubQueryNode) super.clone();
+    newTableSubQueryNode.subQuery = this.subQuery == null ? null : (LogicalNode) this.subQuery.clone();
     newTableSubQueryNode.tableName = tableName;
     return newTableSubQueryNode;
   }

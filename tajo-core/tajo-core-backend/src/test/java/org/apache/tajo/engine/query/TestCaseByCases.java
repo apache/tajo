@@ -79,4 +79,32 @@ public class TestCaseByCases {
       res.close();
     }
   }
+
+  @Test
+  public final void testTAJO266Case() throws Exception {
+    ResultSet res = tpch.execute(FileUtil.readTextFile(new File("src/test/queries/tajo266_case.sql")));
+    try {
+      assertTrue(res.next());
+      assertEquals("1", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("1", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("1", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("1", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("2", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("3", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("3", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("3", res.getString(1));
+      assertTrue(res.next());
+      assertEquals("3", res.getString(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
 }

@@ -54,7 +54,11 @@ public class ExecutionBlock {
   }
 
   public void setPlan(LogicalNode plan) {
-    executionPlan.setPlan(plan);
+    try {
+      executionPlan.setPlan((LogicalNode) plan.clone());
+    } catch (CloneNotSupportedException e) {
+
+    }
   }
 
   public void setPlan(ExecutionPlan plan) {
