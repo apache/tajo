@@ -117,6 +117,7 @@ message WorkerResourceProto {
     required string host = 1;
     required int32 peerRpcPort = 2;
     required int32 queryMasterPort = 3;
+    required int32 infoPort = 4;
     required int32 memoryMB = 5 ;
     required float diskSlots = 6;
 }

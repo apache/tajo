@@ -87,6 +87,10 @@ public class TaskRunner extends AbstractService {
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final Map<QueryUnitAttemptId, Task> tasks =
       new ConcurrentHashMap<QueryUnitAttemptId, Task>();
+
+  private final Map<QueryUnitAttemptId, TaskHistory> taskHistories =
+      new ConcurrentHashMap<QueryUnitAttemptId, TaskHistory>();
+
   private LocalDirAllocator lDirAllocator;
 
   // A thread to receive each assigned query unit and execute the query unit
@@ -278,6 +282,18 @@ public class TaskRunner extends AbstractService {
 
     public ExecutionBlockId getExecutionBlockId() {
       return executionBlockId;
+    }
+
+    public void addTaskHistory(QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
+      taskHistories.put(quAttemptId, taskHistory);
+    }
+
+    public TaskHistory getTaskHistory(QueryUnitAttemptId quAttemptId) {
+      return taskHistories.get(quAttemptId);
+    }
+
+    public Map<QueryUnitAttemptId, TaskHistory> getTaskHistories() {
+      return taskHistories;
     }
   }
 

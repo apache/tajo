@@ -121,15 +121,16 @@ if(tajoWorker.getWorkerContext().isTaskRunnerMode()) {
   List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
   JSPUtil.sortTaskRunner(taskRunners);
 %>
-  <h3>Running Tasks</h3>
-  <a href='tasks.jsp'>[All Tasks]</a>
+  <h3>Running Task Containers</h3>
+  <a href='taskcontainers.jsp'>[All Task Containers]</a>
+  <br/>
   <table width="100%" border="1" class="border_table">
-    <tr><th>TaskId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
+    <tr><th>ContainerId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
     <%
       for(TaskRunner eachTaskRunner: taskRunners) {
     %>
     <tr>
-      <td><%=eachTaskRunner.getId()%></td>
+      <td><a href="tasks.jsp?containerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
       <td><%=df.format(eachTaskRunner.getStartTime())%></td>
       <td><%=eachTaskRunner.getFinishTime() == 0 ? "-" : df.format(eachTaskRunner.getFinishTime())%></td>
       <td><%=JSPUtil.getElapsedTime(eachTaskRunner.getStartTime(), eachTaskRunner.getFinishTime())%></td>

@@ -20,6 +20,8 @@ package org.apache.tajo.util;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.QueryUnitId;
 
 import java.text.DecimalFormat;
 
@@ -30,6 +32,14 @@ public class TajoIdUtils {
     String[] tokens = idStr.split("_");
 
     return new ExecutionBlockId(new QueryId(tokens[1], Integer.parseInt(tokens[2])), Integer.parseInt(tokens[3]));
+  }
+
+  public static QueryUnitAttemptId parseQueryUnitAttemptId(String idStr) {
+    String[] tokens = idStr.split("_");
+
+    return new QueryUnitAttemptId(new QueryUnitId(
+        new ExecutionBlockId(new QueryId(tokens[1], Integer.parseInt(tokens[2])), Integer.parseInt(tokens[3])),
+        Integer.parseInt(tokens[4])), Integer.parseInt(tokens[5]));
   }
 
   public static QueryId parseQueryId(String idStr) {

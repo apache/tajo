@@ -151,6 +151,9 @@ public class JSPUtil {
           String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
           return host2.compareTo(host1);
         } else if("runTime".equals(sortField)) {
+          if(queryUnit2.getLaunchTime() == 0) {
+            return -1;
+          }
           return compareLong(queryUnit2.getRunningTime(), queryUnit.getRunningTime());
         } else if("startTime".equals(sortField)) {
           return compareLong(queryUnit2.getLaunchTime(), queryUnit.getLaunchTime());

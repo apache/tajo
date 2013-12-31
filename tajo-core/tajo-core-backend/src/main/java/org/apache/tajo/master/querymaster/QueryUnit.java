@@ -248,6 +248,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	public Collection<Set<URI>> getFetches() {
 	  return fetchMap.values();
 	}
+
+  public Map<String, Set<URI>> getFetchMap() {
+    return fetchMap;
+  }
 	
 	public Collection<URI> getFetch(ScanNode scan) {
 	  return this.fetchMap.get(scan.getTableName());
@@ -321,7 +325,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public QueryUnitAttempt getLastAttempt() {
-    return this.attempts.get(this.lastAttemptId);
+    return getAttempt(this.lastAttemptId);
   }
 
   public QueryUnitAttempt getSuccessfulAttempt() {
@@ -422,7 +426,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     @Override
     public void transition(QueryUnit task,
                            TaskEvent event) {
+      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
+      QueryUnitAttempt attempt = task.attempts.get(
+          attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
+      task.succeededHost = attempt.getHost();
     }
   }
 

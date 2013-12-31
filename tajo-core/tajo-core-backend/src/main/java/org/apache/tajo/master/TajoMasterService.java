@@ -169,6 +169,7 @@ public class TajoMasterService extends AbstractService {
 
         workerResource.setHost(worker.getAllocatedHost());
         workerResource.setPeerRpcPort(worker.getPeerRpcPort());
+        workerResource.setInfoPort(worker.getHttpPort());
         workerResource.setQueryMasterPort(worker.getQueryMasterPort());
         workerResource.setMemoryMB(worker.getMemoryMB());
         workerResource.setDiskSlots(worker.getDiskSlots());

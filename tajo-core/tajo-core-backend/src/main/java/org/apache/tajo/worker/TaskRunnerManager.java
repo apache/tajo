@@ -22,6 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 
 import java.util.*;
@@ -106,6 +108,68 @@ public class TaskRunnerManager extends CompositeService {
     synchronized(finishedTaskRunnerMap) {
       return Collections.unmodifiableCollection(finishedTaskRunnerMap.values());
     }
+  }
+
+  public TaskRunner findTaskRunner(String taskRunnerId) {
+    synchronized(taskRunnerMap) {
+      if(taskRunnerMap.containsKey(taskRunnerId)) {
+        return taskRunnerMap.get(taskRunnerId);
+      }
+    }
+    synchronized(finishedTaskRunnerMap) {
+      return finishedTaskRunnerMap.get(taskRunnerId);
+    }
+  }
+
+  public Task findTaskByQueryUnitAttemptId(QueryUnitAttemptId quAttemptId) {
+    ExecutionBlockId ebid = quAttemptId.getQueryUnitId().getExecutionBlockId();
+    synchronized(taskRunnerMap) {
+      for (TaskRunner eachTaskRunner: taskRunnerMap.values()) {
+        if (eachTaskRunner.getExecutionBlockId().equals(ebid)) {
+          Task task = eachTaskRunner.getContext().getTask(quAttemptId);
+          if (task != null) {
+            return task;
+          }
+        }
+      }
+    }
+    synchronized(finishedTaskRunnerMap) {
+      for (TaskRunner eachTaskRunner: finishedTaskRunnerMap.values()) {
+        if (eachTaskRunner.getExecutionBlockId().equals(ebid)) {
+          Task task = eachTaskRunner.getContext().getTask(quAttemptId);
+          if (task != null) {
+            return task;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  public TaskHistory findTaskHistoryByQueryUnitAttemptId(QueryUnitAttemptId quAttemptId) {
+    ExecutionBlockId ebid = quAttemptId.getQueryUnitId().getExecutionBlockId();
+    synchronized(taskRunnerMap) {
+      for (TaskRunner eachTaskRunner: taskRunnerMap.values()) {
+        if (eachTaskRunner.getExecutionBlockId().equals(ebid)) {
+          TaskHistory taskHistory = eachTaskRunner.getContext().getTaskHistory(quAttemptId);
+          if (taskHistory != null) {
+            return taskHistory;
+          }
+        }
+      }
+    }
+    synchronized(finishedTaskRunnerMap) {
+      for (TaskRunner eachTaskRunner: finishedTaskRunnerMap.values()) {
+        if (eachTaskRunner.getExecutionBlockId().equals(ebid)) {
+          TaskHistory taskHistory = eachTaskRunner.getContext().getTaskHistory(quAttemptId);
+          if (taskHistory != null) {
+            return taskHistory;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   public int getNumTasks() {

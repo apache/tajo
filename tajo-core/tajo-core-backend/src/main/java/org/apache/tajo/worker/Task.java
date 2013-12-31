@@ -93,6 +93,9 @@ public class Task {
   private static int failed = 0;
   private static int succeeded = 0;
 
+  private long startTime;
+  private long finishTime;
+
   /**
    * flag that indicates whether progress update needs to be sent to parent.
    * If true, it has been set. If false, it has been reset.
@@ -223,6 +226,10 @@ public class Task {
     return taskId;
   }
 
+  public static Log getLog() {
+    return LOG;
+  }
+
   // getters and setters for flag
   void setProgressFlag() {
     progressFlag.set(true);
@@ -253,6 +260,10 @@ public class Task {
   public void setState(TaskAttemptState status) {
     context.setState(status);
     setProgressFlag();
+  }
+
+  public TaskAttemptContext getContext() {
+    return context;
   }
 
   public boolean hasFetchPhase() {
@@ -340,6 +351,7 @@ public class Task {
   }
 
   public void run() {
+    startTime = System.currentTimeMillis();
     String errorMessage = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
@@ -360,12 +372,14 @@ public class Task {
         }
         this.executor.close();
       }
+      context.setState(TaskAttemptState.TA_SUCCEEDED);
     } catch (Exception e) {
       // errorMessage will be sent to master.
       errorMessage = ExceptionUtils.getStackTrace(e);
       LOG.error(errorMessage);
       aborted = true;
 
+      context.setState(TaskAttemptState.TA_FAILED);
     } finally {
       setProgressFlag();
       stopped = true;
@@ -407,6 +421,11 @@ public class Task {
         succeeded++;
       }
 
+      if(killed) {
+        context.setState(TaskAttemptState.TA_KILLED);
+      }
+      finishTime = System.currentTimeMillis();
+
       cleanupTask();
       LOG.info("Task Counter - total:" + completed + ", succeeded: " + succeeded
           + ", failed: " + failed);
@@ -414,7 +433,48 @@ public class Task {
   }
 
   public void cleanupTask() {
+    taskRunnerContext.addTaskHistory(getId(), getTaskHistory());
     taskRunnerContext.getTasks().remove(getId());
+  }
+
+  public TaskHistory getTaskHistory() {
+    TaskHistory taskHistory = new TaskHistory();
+    taskHistory.setStartTime(startTime);
+    taskHistory.setFinishTime(finishTime);
+    if (context.getOutputPath() != null) {
+      taskHistory.setOutputPath(context.getOutputPath().toString());
+    }
+
+    if (context.getWorkDir() != null) {
+      taskHistory.setWorkingPath(context.getWorkDir().toString());
+    }
+
+    try {
+      taskHistory.setStatus(getStatus().toString());
+      taskHistory.setProgress(context.getProgress());
+
+      if (hasFetchPhase()) {
+        Map<URI, TaskHistory.FetcherHistory> fetcherHistories = new HashMap<URI, TaskHistory.FetcherHistory>();
+
+        for(Fetcher eachFetcher: fetcherRunners) {
+          TaskHistory.FetcherHistory fetcherHistory = new TaskHistory.FetcherHistory();
+          fetcherHistory.setStartTime(eachFetcher.getStartTime());
+          fetcherHistory.setFinishTime(eachFetcher.getFinishTime());
+          fetcherHistory.setStatus(eachFetcher.getStatus());
+          fetcherHistory.setUri(eachFetcher.getURI().toString());
+          fetcherHistory.setFileLen(eachFetcher.getFileLen());
+
+          fetcherHistories.put(eachFetcher.getURI(), fetcherHistory);
+        }
+
+        taskHistory.setFetchers(fetcherHistories);
+      }
+    } catch (Exception e) {
+      taskHistory.setStatus(StringUtils.stringifyException(e));
+      e.printStackTrace();
+    }
+
+    return taskHistory;
   }
 
   public int hashCode() {

@@ -50,6 +50,10 @@ public class Fetcher {
   private final String host;
   private int port;
 
+  private long startTime;
+  private long finishTime;
+  private long fileLen;
+
   public Fetcher(URI uri, File file) {
     this.uri = uri;
     this.file = file;
@@ -66,7 +70,32 @@ public class Fetcher {
     }
   }
 
+  public long getStartTime() {
+    return startTime;
+  }
+
+  public long getFinishTime() {
+    return finishTime;
+  }
+
+  public long getFileLen() {
+    return fileLen;
+  }
+
+  public String getStatus() {
+    if(startTime == 0) {
+      return "READY";
+    }
+
+    if(startTime > 0 && finishTime == 0) {
+      return "FETCHING";
+    } else {
+      return "FINISH";
+    }
+  }
+
   public File get() throws IOException {
+    startTime = System.currentTimeMillis();
     ClientBootstrap bootstrap = new ClientBootstrap(
         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
             Executors.newCachedThreadPool()));
@@ -109,7 +138,7 @@ public class Fetcher {
     return this.uri;
   }
 
-  public static class HttpClientHandler extends SimpleChannelUpstreamHandler {
+  class HttpClientHandler extends SimpleChannelUpstreamHandler {
     private volatile boolean readingChunks;
     private final File file;
     private RandomAccessFile raf;
@@ -123,69 +152,76 @@ public class Fetcher {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
-      if (!readingChunks) {
-        HttpResponse response = (HttpResponse) e.getMessage();
+      try {
+        if (!readingChunks) {
+          HttpResponse response = (HttpResponse) e.getMessage();
 
-        StringBuilder sb = new StringBuilder();
-        if (LOG.isDebugEnabled()) {
-          sb.append("STATUS: ").append(response.getStatus())
-              .append(", VERSION: ").append(response.getProtocolVersion())
-              .append(", HEADER: ");
-        }
-        if (!response.getHeaderNames().isEmpty()) {
-          for (String name : response.getHeaderNames()) {
-            for (String value : response.getHeaders(name)) {
-              if (LOG.isDebugEnabled()) {
-                sb.append(name).append(" = ").append(value);
-              }
-              if (this.length == -1 && name.equals("Content-Length")) {
-                this.length = Long.valueOf(value);
+          StringBuilder sb = new StringBuilder();
+          if (LOG.isDebugEnabled()) {
+            sb.append("STATUS: ").append(response.getStatus())
+                .append(", VERSION: ").append(response.getProtocolVersion())
+                .append(", HEADER: ");
+          }
+          if (!response.getHeaderNames().isEmpty()) {
+            for (String name : response.getHeaderNames()) {
+              for (String value : response.getHeaders(name)) {
+                if (LOG.isDebugEnabled()) {
+                  sb.append(name).append(" = ").append(value);
+                }
+                if (this.length == -1 && name.equals("Content-Length")) {
+                  this.length = Long.valueOf(value);
+                }
               }
             }
           }
-        }
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(sb.toString());
-        }
-
-        if (response.getStatus() == HttpResponseStatus.NO_CONTENT) {
-          LOG.info("There are no data corresponding to the request");
-          return;
-        }
-
-        this.raf = new RandomAccessFile(file, "rw");
-        this.fc = raf.getChannel();
-
-        if (response.isChunked()) {
-          readingChunks = true;
-        } else {
-          ChannelBuffer content = response.getContent();
-          if (content.readable()) {
-            fc.write(content.toByteBuffer());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(sb.toString());
           }
-        }
-      } else {
-        HttpChunk chunk = (HttpChunk) e.getMessage();
-        if (chunk.isLast()) {
-          readingChunks = false;
-          long fileLength = fc.position();
-          fc.close();
-          raf.close();
-          if (fileLength == length) {
-            LOG.info("Data fetch is done (total received bytes: " + fileLength
-                + ")");
+
+          if (response.getStatus() == HttpResponseStatus.NO_CONTENT) {
+            LOG.info("There are no data corresponding to the request");
+            return;
+          }
+
+          this.raf = new RandomAccessFile(file, "rw");
+          this.fc = raf.getChannel();
+
+          if (response.isChunked()) {
+            readingChunks = true;
           } else {
-            LOG.info("Data fetch is done, but cannot get all data "
-                + "(received/total: " + fileLength + "/" + length + ")");
+            ChannelBuffer content = response.getContent();
+            if (content.readable()) {
+              fc.write(content.toByteBuffer());
+            }
           }
         } else {
-          fc.write(chunk.getContent().toByteBuffer());
+          HttpChunk chunk = (HttpChunk) e.getMessage();
+          if (chunk.isLast()) {
+            readingChunks = false;
+            long fileLength = fc.position();
+            fc.close();
+            raf.close();
+            if (fileLength == length) {
+              LOG.info("Data fetch is done (total received bytes: " + fileLength
+                  + ")");
+            } else {
+              LOG.info("Data fetch is done, but cannot get all data "
+                  + "(received/total: " + fileLength + "/" + length + ")");
+            }
+          } else {
+            fc.write(chunk.getContent().toByteBuffer());
+          }
         }
+      } finally {
+        if(raf != null) {
+          fileLen = file.length();
+        }
+        finishTime = System.currentTimeMillis();
       }
     }
   }
 
-  public static class HttpClientPipelineFactory implements
+  class HttpClientPipelineFactory implements
       ChannelPipelineFactory {
     private final File file;
 
