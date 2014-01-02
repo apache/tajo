@@ -372,14 +372,11 @@ public class Task {
         }
         this.executor.close();
       }
-      context.setState(TaskAttemptState.TA_SUCCEEDED);
     } catch (Exception e) {
       // errorMessage will be sent to master.
       errorMessage = ExceptionUtils.getStackTrace(e);
       LOG.error(errorMessage);
       aborted = true;
-
-      context.setState(TaskAttemptState.TA_FAILED);
     } finally {
       setProgressFlag();
       stopped = true;
@@ -387,6 +384,11 @@ public class Task {
 
       if (killed || aborted) {
         context.setProgress(0.0f);
+        if(killed) {
+          context.setState(TaskAttemptState.TA_KILLED);
+        } else {
+          context.setState(TaskAttemptState.TA_FAILED);
+        }
 
         TaskFatalErrorReport.Builder errorBuilder =
             TaskFatalErrorReport.newBuilder()
@@ -408,6 +410,7 @@ public class Task {
       } else {
         // if successful
         context.setProgress(1.0f);
+        context.setState(TaskAttemptState.TA_SUCCEEDED);
 
         // stopping the status report
         try {
@@ -421,9 +424,6 @@ public class Task {
         succeeded++;
       }
 
-      if(killed) {
-        context.setState(TaskAttemptState.TA_KILLED);
-      }
       finishTime = System.currentTimeMillis();
 
       cleanupTask();

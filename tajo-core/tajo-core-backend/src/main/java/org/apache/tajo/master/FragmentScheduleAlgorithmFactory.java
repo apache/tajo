@@ -20,33 +20,33 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.master.querymaster.SubQuery;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Map;
 
-public class TaskSchedulerFactory {
-  private static Class<? extends AbstractTaskScheduler> CACHED_ALGORITHM_CLASS;
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
-  private static final Class<?>[] DEFAULT_PARAMS = { TaskSchedulerContext.class, SubQuery.class };
+public class FragmentScheduleAlgorithmFactory {
 
-  public static Class<? extends AbstractTaskScheduler> getTaskSchedulerClass(Configuration conf)
+  private static Class<? extends FragmentScheduleAlgorithm> CACHED_ALGORITHM_CLASS;
+  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
+  private static final Class<?>[] DEFAULT_PARAMS = {};
+
+  public static Class<? extends FragmentScheduleAlgorithm> getScheduleAlgorithmClass(Configuration conf)
       throws IOException {
     if (CACHED_ALGORITHM_CLASS != null) {
       return CACHED_ALGORITHM_CLASS;
     } else {
-      CACHED_ALGORITHM_CLASS = conf.getClass("tajo.querymaster.task-scheduler", null, AbstractTaskScheduler.class);
+      CACHED_ALGORITHM_CLASS = conf.getClass("tajo.querymaster.lazy-task-scheduler.algorithm", null,
+          FragmentScheduleAlgorithm.class);
     }
 
     if (CACHED_ALGORITHM_CLASS == null) {
-      throw new IOException("Task scheduler is null");
+      throw new IOException("Scheduler algorithm is null");
     }
     return CACHED_ALGORITHM_CLASS;
   }
 
-  public static <T extends AbstractTaskScheduler> T get(Class<T> clazz, TaskSchedulerContext context,
-                                                        SubQuery subQuery) {
+  public static <T extends FragmentScheduleAlgorithm> T get(Class<T> clazz) {
     T result;
     try {
       Constructor<T> constructor = (Constructor<T>) CONSTRUCTOR_CACHE.get(clazz);
@@ -55,15 +55,14 @@ public class TaskSchedulerFactory {
         constructor.setAccessible(true);
         CONSTRUCTOR_CACHE.put(clazz, constructor);
       }
-      result = constructor.newInstance(new Object[]{context, subQuery});
+      result = constructor.newInstance(new Object[]{});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
     return result;
   }
 
-  public static AbstractTaskScheduler get(Configuration conf, TaskSchedulerContext context, SubQuery subQuery)
-      throws IOException {
-    return get(getTaskSchedulerClass(conf), context, subQuery);
+  public static FragmentScheduleAlgorithm get(Configuration conf) throws IOException {
+    return get(getScheduleAlgorithmClass(conf));
   }
 }

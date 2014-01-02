@@ -37,28 +37,14 @@
     <description></description>
   </property>
 
-  <!--- Registered Scheduler Handler -->
   <property>
-    <name>tajo.querymaster.scheduler-handler</name>
-    <value>default</value>
-  </property>
-
-  <!--- Scheduler Configuration -->
-  <property>
-    <name>tajo.querymaster.scheduler-handler.type</name>
-    <value>default</value>
-  </property>
-
-  <!--- Scheduler Handler -->
-  <property>
-    <name>tajo.querymaster.scheduler-handler.default.class</name>
+    <name>tajo.querymaster.task-scheduler</name>
     <value>org.apache.tajo.master.DefaultTaskScheduler</value>
   </property>
 
-  <!-- Scheduler Event handler -->
   <property>
-    <name>tajo.querymaster.task-schedule-event.default.class</name>
-    <value>org.apache.tajo.master.event.DefaultTaskSchedulerEvent</value>
+    <name>tajo.querymaster.lazy-task-scheduler.algorithm</name>
+    <value>org.apache.tajo.master.GreedyFragmentScheduleAlgorithm</value>
   </property>
 
 </configuration>

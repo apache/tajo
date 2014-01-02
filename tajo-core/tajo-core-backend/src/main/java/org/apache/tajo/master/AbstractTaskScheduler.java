@@ -37,4 +37,5 @@ public abstract class AbstractTaskScheduler extends AbstractService
   }
 
   public abstract void handleTaskRequestEvent(TaskRequestEvent event);
+  public abstract int remainingScheduledObjectNum();
 }

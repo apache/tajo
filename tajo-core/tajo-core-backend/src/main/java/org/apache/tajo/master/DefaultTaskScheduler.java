@@ -34,36 +34,31 @@ import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.event.DefaultTaskSchedulerEvent;
-import org.apache.tajo.master.event.TaskAttemptAssignedEvent;
-import org.apache.tajo.master.event.TaskRequestEvent;
-import org.apache.tajo.master.event.TaskSchedulerEvent;
+import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
-import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.DataLocation;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
+import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class DefaultTaskScheduler extends AbstractTaskScheduler {
-  private static final Log LOG = LogFactory.getLog(DefaultTaskSchedulerEvent.class);
+  private static final Log LOG = LogFactory.getLog(DefaultTaskScheduler.class);
 
-  private final QueryMasterTask.QueryMasterTaskContext context;
-  private TajoAsyncDispatcher dispatcher;
+  private final TaskSchedulerContext context;
+  private SubQuery subQuery;
 
-  private Thread eventHandlingThread;
   private Thread schedulingThread;
   private volatile boolean stopEventHandling;
-
-  BlockingQueue<TaskSchedulerEvent> eventQueue
-      = new LinkedBlockingQueue<TaskSchedulerEvent>();
 
   private ScheduledRequests scheduledRequests;
   private TaskRequests taskRequests;
@@ -71,11 +66,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int hostLocalAssigned = 0;
   private int rackLocalAssigned = 0;
   private int totalAssigned = 0;
+  private int nextTaskId = 0;
 
-  public DefaultTaskScheduler(QueryMasterTask.QueryMasterTaskContext context) {
+  public DefaultTaskScheduler(TaskSchedulerContext context, SubQuery subQuery) {
     super(DefaultTaskScheduler.class.getName());
     this.context = context;
-    this.dispatcher = context.getDispatcher();
+    this.subQuery = subQuery;
   }
 
   @Override
@@ -90,24 +86,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void start() {
     LOG.info("Start TaskScheduler");
-    this.eventHandlingThread = new Thread() {
-      public void run() {
-
-        TaskSchedulerEvent event;
-        while(!stopEventHandling && !Thread.currentThread().isInterrupted()) {
-          try {
-            event = eventQueue.take();
-            handleEvent(event);
-          } catch (InterruptedException e) {
-            //LOG.error("Returning, iterrupted : " + e);
-            break;
-          }
-        }
-        LOG.info("TaskScheduler eventHandlingThread stopped");
-      }
-    };
-
-    this.eventHandlingThread.start();
 
     this.schedulingThread = new Thread() {
       public void run() {
@@ -148,7 +126,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void stop() {
     stopEventHandling = true;
-    eventHandlingThread.interrupt();
     schedulingThread.interrupt();
 
     // Return all of request callbacks instantly.
@@ -160,16 +137,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     super.stop();
   }
 
-  private void handleEvent(TaskSchedulerEvent event) {
-    if (event.getType() == EventType.T_SCHEDULE) {
-      DefaultTaskSchedulerEvent castEvent = (DefaultTaskSchedulerEvent) event;
-      if (castEvent.isLeafQuery()) {
-        scheduledRequests.addLeafTask(castEvent);
-      } else {
-        scheduledRequests.addNonLeafTask(castEvent);
-      }
-    }
-  }
+  private FileFragment[] fragmentsForNonLeafTask;
 
   List<TaskRequestEvent> taskRequestEvents = new ArrayList<TaskRequestEvent>();
   public void schedule() {
@@ -204,26 +172,54 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void handle(TaskSchedulerEvent event) {
-    int qSize = eventQueue.size();
-    if (qSize != 0 && qSize % 1000 == 0) {
-      LOG.info("Size of event-queue in YarnRMContainerAllocator is " + qSize);
-    }
-    int remCapacity = eventQueue.remainingCapacity();
-    if (remCapacity < 1000) {
-      LOG.warn("Very low remaining capacity in the event-queue "
-          + "of YarnRMContainerAllocator: " + remCapacity);
-    }
-
-    try {
-      eventQueue.put(event);
-    } catch (InterruptedException e) {
-      throw new InternalError(e.getMessage());
+    if (event.getType() == EventType.T_SCHEDULE) {
+      if (event instanceof FragmentScheduleEvent) {
+        FragmentScheduleEvent castEvent = (FragmentScheduleEvent) event;
+        if (context.isLeafQuery()) {
+          QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
+          QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
+          task.setFragment2(castEvent.getLeftFragment());
+          if (castEvent.getRightFragment() != null) {
+            task.setFragment2(castEvent.getRightFragment());
+          }
+          subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+        } else {
+          fragmentsForNonLeafTask = new FileFragment[2];
+          fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
+          fragmentsForNonLeafTask[1] = castEvent.getRightFragment();
+        }
+      } else if (event instanceof FetchScheduleEvent) {
+        FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
+        Map<String, List<URI>> fetches = castEvent.getFetches();
+        QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
+        QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
+        for (Entry<String, List<URI>> eachFetch : fetches.entrySet()) {
+          task.addFetches(eachFetch.getKey(), eachFetch.getValue());
+          task.setFragment2(fragmentsForNonLeafTask[0]);
+          if (fragmentsForNonLeafTask[1] != null) {
+            task.setFragment2(fragmentsForNonLeafTask[1]);
+          }
+        }
+        subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+      } else if (event instanceof QueryUnitAttemptScheduleEvent) {
+        QueryUnitAttemptScheduleEvent castEvent = (QueryUnitAttemptScheduleEvent) event;
+        if (context.isLeafQuery()) {
+          scheduledRequests.addLeafTask(castEvent);
+        } else {
+          scheduledRequests.addNonLeafTask(castEvent);
+        }
+      }
     }
   }
 
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     taskRequests.handle(event);
+  }
+
+  @Override
+  public int remainingScheduledObjectNum() {
+    return subQuery.getQueryUnits().length - totalAssigned;
   }
 
   private class TaskRequests implements EventHandler<TaskRequestEvent> {
@@ -347,8 +343,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
         new HashMap<String, LinkedList<QueryUnitAttemptId>>();
 
-    public void addLeafTask(DefaultTaskSchedulerEvent event) {
-      List<DataLocation> locations = event.getDataLocations();
+    private void addLeafTask(QueryUnitAttemptScheduleEvent event) {
+      QueryUnitAttempt queryUnitAttempt = event.getQueryUnitAttempt();
+      DataLocation[] locations = queryUnitAttempt.getQueryUnit().getDataLocations();
 
       for (DataLocation location : locations) {
         String host = location.getHost();
@@ -358,29 +355,29 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           taskBlockLocation = new TaskBlockLocation(host);
           leafTaskHostMapping.put(host, taskBlockLocation);
         }
-        taskBlockLocation.addQueryUnitAttemptId(location.getVolumeId(), event.getAttemptId());
+        taskBlockLocation.addQueryUnitAttemptId(location.getVolumeId(), queryUnitAttempt.getId());
 
         if (LOG.isDebugEnabled()) {
           LOG.debug("Added attempt req to host " + host);
         }
-      }
-      for (String rack : event.getRacks()) {
+
+        String rack = RackResolver.resolve(host).getNetworkLocation();
         LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
         if (list == null) {
           list = new LinkedList<QueryUnitAttemptId>();
           leafTasksRackMapping.put(rack, list);
         }
-        list.add(event.getAttemptId());
+        list.add(queryUnitAttempt.getId());
         if (LOG.isDebugEnabled()) {
           LOG.debug("Added attempt req to rack " + rack);
         }
       }
 
-      leafTasks.add(event.getAttemptId());
+      leafTasks.add(queryUnitAttempt.getId());
     }
 
-    public void addNonLeafTask(DefaultTaskSchedulerEvent event) {
-      nonLeafTasks.add(event.getAttemptId());
+    private void addNonLeafTask(QueryUnitAttemptScheduleEvent event) {
+      nonLeafTasks.add(event.getQueryUnitAttempt().getId());
     }
 
     public int leafTaskNum() {
@@ -402,7 +399,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         taskRequest = it.next();
         LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + taskRequest.getContainerId());
-        ContainerProxy container = context.getResourceAllocator().getContainer(taskRequest.getContainerId());
+        ContainerProxy container = context.getMasterContext().getResourceAllocator()
+            .getContainer(taskRequest.getContainerId());
         if(container == null) {
           continue;
         }
@@ -460,8 +458,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-        SubQuery subQuery = context.getQuery().getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
-
         if (attemptId != null) {
           QueryUnit task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
           QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
@@ -470,13 +466,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               "",
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryContext(),
+              context.getMasterContext().getQueryContext(),
               subQuery.getDataChannel(), subQuery.getBlock().getEnforcer());
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
 
-          context.getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
+          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
               taskRequest.getContainerId(),
               host, container.getTaskPort()));
           assignedRequest.add(attemptId);
@@ -523,7 +519,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           LOG.debug("Assigned based on * match");
 
           QueryUnit task;
-          SubQuery subQuery = context.getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
           task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
           QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
               attemptId,
@@ -531,7 +526,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               "",
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryContext(),
+              context.getMasterContext().getQueryContext(),
               subQuery.getDataChannel(),
               subQuery.getBlock().getEnforcer());
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
@@ -546,11 +541,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
           }
 
-          ContainerProxy container = context.getResourceAllocator().getContainer(
+          ContainerProxy container = context.getMasterContext().getResourceAllocator().getContainer(
               taskRequest.getContainerId());
-          context.getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
+          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
               taskRequest.getContainerId(), container.getTaskHostName(), container.getTaskPort()));
           taskRequest.getCallback().run(taskAssign.getProto());
+          totalAssigned++;
         }
       }
     }

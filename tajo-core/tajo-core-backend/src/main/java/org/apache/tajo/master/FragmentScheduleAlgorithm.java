@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+/**
+ * FragmentScheduleAlgorithm is used by LazyTaskScheduler.
+ * FragmentScheduleAlgorithm selects a fragment for the given argument.
+ *
+ * There are two implementations of DefaultFragmentScheduleAlgorithm and GreedyFragmentScheduleAlgorithm.
+ */
+public interface FragmentScheduleAlgorithm {
+  void addFragment(FragmentPair fragmentPair);
+  void removeFragment(FragmentPair fragmentPair);
 
-public abstract class TaskSchedulerEvent extends AbstractEvent<EventType> {
-  public enum EventType {
-    T_SCHEDULE,
-    T_SUBQUERY_COMPLETED
-  }
+  FragmentPair getHostLocalFragment(String host);
+  FragmentPair getHostLocalFragment(String host, Integer diskId);
+  FragmentPair getRackLocalFragment(String host);
+  FragmentPair getRandomFragment();
+  FragmentPair[] getAllFragments();
 
-  protected final ExecutionBlockId executionBlockId;
-
-  public TaskSchedulerEvent(EventType eventType, ExecutionBlockId executionBlockId) {
-    super(eventType);
-    this.executionBlockId = executionBlockId;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
-  }
+  int size();
 }

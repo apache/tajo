@@ -110,6 +110,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-385: Refactoring TaskScheduler to assign multiple fragments. (jihoon)
+
     TAJO-468: Implements task's detail info page in WEB UI.
     (hyoungjunkim via hyunsik)
 

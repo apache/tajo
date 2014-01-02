@@ -45,15 +45,15 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.AbstractTaskScheduler;
-import org.apache.tajo.master.TaskRunnerGroupEvent;
+import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
-import org.apache.tajo.master.TaskSchedulerFactory;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -201,6 +201,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private final Lock writeLock;
 
   private int completedTaskCount = 0;
+  private TaskSchedulerContext schedulerContext;
 
   public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block, AbstractStorageManager sm) {
     this.context = context;
@@ -267,7 +268,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         if (completedTaskCount == 0) {
           return 0.0f;
         } else {
-          return (float)completedTaskCount / (float)tasks.size();
+          return (float)completedTaskCount / (float)schedulerContext.getEstimatedTaskNum();
         }
       }
     } finally {
@@ -511,13 +512,16 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
           DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
           setRepartitionIfNecessary(subQuery, channel);
-          createTasks(subQuery);
+          initTaskScheduler(subQuery);
+          schedule(subQuery);
+          LOG.info(subQuery.getTaskScheduler().remainingScheduledObjectNum() + " objects are scheduled");
 
-          if (subQuery.tasks.size() == 0) { // if there is no tasks
+          if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+            subQuery.stopScheduler();
             subQuery.finish();
             return SubQueryState.SUCCEEDED;
           } else {
-            initTaskScheduler(subQuery);
+            subQuery.taskScheduler.start();
             allocateContainers(subQuery);
             return SubQueryState.INIT;
           }
@@ -533,10 +537,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return state;
     }
 
-    private void initTaskScheduler(SubQuery subQuery) {
-      subQuery.taskScheduler = TaskSchedulerFactory.getTaskSCheduler(subQuery.context.getConf(), subQuery.context);
-      subQuery.taskScheduler.init(subQuery.context.getConf());
-      subQuery.taskScheduler.start();
+    private void initTaskScheduler(SubQuery subQuery) throws IOException {
+      TajoConf conf = subQuery.context.getConf();
+      subQuery.schedulerContext = new TaskSchedulerContext(subQuery.context,
+          subQuery.getMasterPlan().isLeaf(subQuery.getId()), subQuery.getId());
+      subQuery.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
+      subQuery.taskScheduler = TaskSchedulerFactory.get(conf, subQuery.schedulerContext, subQuery);
+      subQuery.taskScheduler.init(conf);
+      LOG.info(subQuery.taskScheduler.getName() + " is chosen for the task scheduling");
     }
 
     /**
@@ -649,28 +657,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    private static void createTasks(SubQuery subQuery) throws IOException {
+    private static void schedule(SubQuery subQuery) throws IOException {
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock execBlock = subQuery.getBlock();
-      QueryUnit [] tasks;
       if (subQuery.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
-        tasks = createLeafTasks(subQuery);
-
+        scheduleFragmentsForLeafQuery(subQuery);
       } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
-        tasks = Repartitioner.createJoinTasks(subQuery);
-
+        Repartitioner.scheduleFragmentsForJoinQuery(subQuery.schedulerContext, subQuery);
       } else { // Case 3: Others (Sort or Aggregation)
         int numTasks = getNonLeafTaskNum(subQuery);
         ExecutionBlockId childId = masterPlan.getChilds(subQuery.getBlock()).get(0).getId();
         SubQuery child = subQuery.context.getSubQuery(childId);
         DataChannel channel = masterPlan.getChannel(child.getId(), subQuery.getId());
-        tasks = Repartitioner.createNonLeafTask(masterPlan, subQuery, child, channel, numTasks);
-      }
-
-      LOG.info("Create " + tasks.length + " Tasks");
-
-      for (QueryUnit task : tasks) {
-        subQuery.addTask(task);
+        Repartitioner.scheduleFragmentsForNonLeafTasks(subQuery.schedulerContext, masterPlan, subQuery, child,
+            channel, numTasks);
       }
     }
 
@@ -716,14 +716,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     public static void allocateContainers(SubQuery subQuery) {
       ExecutionBlock execBlock = subQuery.getBlock();
-      QueryUnit [] tasks = subQuery.getQueryUnits();
 
       //TODO consider disk slot
       int requiredMemoryMBPerTask = 512;
 
       int numRequest = subQuery.getContext().getResourceAllocator().calculateNumRequestContainers(
           subQuery.getContext().getQueryMasterContext().getWorkerContext(),
-          tasks.length,
+          subQuery.schedulerContext.getEstimatedTaskNum(),
           requiredMemoryMBPerTask
       );
 
@@ -758,7 +757,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return fragments;
     }
 
-    private static QueryUnit [] createLeafTasks(SubQuery subQuery) throws IOException {
+    private static void scheduleFragmentsForLeafQuery(SubQuery subQuery) throws IOException {
       ExecutionBlock execBlock = subQuery.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
@@ -779,27 +778,53 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, table.getSchema(), inputPath);
       }
 
-      QueryUnit queryUnit;
-      List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
-
-      int i = 0;
-      for (FileFragment fragment : fragments) {
-        queryUnit = newQueryUnit(subQuery, i++, fragment);
-        queryUnits.add(queryUnit);
-      }
-
-      return queryUnits.toArray(new QueryUnit[queryUnits.size()]);
+      SubQuery.scheduleFragments(subQuery, fragments);
+      int estimatedTaskNum = (int) Math.ceil((double)table.getStats().getNumBytes() /
+          (double)subQuery.schedulerContext.getTaskSize());
+      subQuery.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
     }
+  }
 
-    private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
-      ExecutionBlock execBlock = subQuery.getBlock();
-      QueryUnit unit = new QueryUnit(subQuery.context.getConf(),
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.masterPlan.isLeaf(execBlock),
-          subQuery.eventHandler);
-      unit.setLogicalPlan(execBlock.getPlan());
-      unit.setFragment2(fragment);
-      return unit;
+  public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> fragments) {
+    for (FileFragment eachFragment : fragments) {
+      scheduleFragment(subQuery, eachFragment);
     }
+  }
+
+  public static void scheduleFragment(SubQuery subQuery, FileFragment fragment) {
+    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        subQuery.getId(), fragment));
+  }
+
+  public static void scheduleFragments(SubQuery subQuery, List<FileFragment> leftFragments,
+                                       FileFragment broadcastFragment) {
+    for (FileFragment eachLeafFragment : leftFragments) {
+      scheduleFragment(subQuery, eachLeafFragment, broadcastFragment);
+    }
+  }
+
+  public static void scheduleFragment(SubQuery subQuery,
+                                      FileFragment leftFragment, FileFragment rightFragment) {
+    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        subQuery.getId(), leftFragment, rightFragment));
+  }
+
+  public static void scheduleFetches(SubQuery subQuery, Map<String, List<URI>> fetches) {
+    subQuery.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        subQuery.getId(), fetches));
+  }
+
+  public static QueryUnit newEmptyQueryUnit(TaskSchedulerContext schedulerContext,
+                                            QueryUnitAttemptScheduleContext queryUnitContext,
+                                            SubQuery subQuery, int taskId) {
+    ExecutionBlock execBlock = subQuery.getBlock();
+    QueryUnit unit = new QueryUnit(schedulerContext.getMasterContext().getConf(),
+        queryUnitContext,
+        QueryIdFactory.newQueryUnitId(schedulerContext.getBlockId(), taskId),
+        schedulerContext.isLeafQuery(), subQuery.eventHandler);
+    unit.setLogicalPlan(execBlock.getPlan());
+    subQuery.addTask(unit);
+    return unit;
   }
 
   int i = 0;
@@ -840,10 +865,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                            SubQueryEvent subQueryEvent) {
       // schedule tasks
       try {
-        for (QueryUnitId taskId : subQuery.tasks.keySet()) {
-          subQuery.eventHandler.handle(new TaskEvent(taskId, TaskEventType.T_SCHEDULE));
-        }
-
         return  SubQueryState.RUNNING;
       } catch (Exception e) {
         LOG.warn("SubQuery (" + subQuery.getId() + ") failed", e);
@@ -866,8 +887,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_FAILED));
       } else {
         LOG.info(subQuery.getId() + " SubQuery Succeeded " + subQuery.completedTaskCount + "/"
-            + subQuery.tasks.size() + " on " + task.getHost() + ":" + task.getPort());
-        if (subQuery.completedTaskCount == subQuery.tasks.size()) {
+            + subQuery.schedulerContext.getEstimatedTaskNum() + " on " + task.getHost() + ":" + task.getPort());
+        if (subQuery.taskScheduler.remainingScheduledObjectNum() == 0
+            && subQuery.getQueryUnits().length == subQuery.completedTaskCount) {
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
               SubQueryEventType.SQ_SUBQUERY_COMPLETED));
         }

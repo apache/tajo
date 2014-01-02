@@ -19,12 +19,11 @@
 package org.apache.tajo.master.querymaster;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -35,9 +34,13 @@ import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.TupleRange;
@@ -64,8 +67,9 @@ public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
   private static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
+  private final static String UNKNOWN_HOST = "unknown";
 
-  public static QueryUnit[] createJoinTasks(SubQuery subQuery)
+  public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, SubQuery subQuery)
       throws IOException {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
@@ -89,7 +93,7 @@ public class Repartitioner {
 
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat();
-        fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0);
+        fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
         tablePath = tableDesc.getPath();
         stats[i] = tableDesc.getStats();
@@ -99,19 +103,13 @@ public class Repartitioner {
     }
 
     // Assigning either fragments or fetch urls to query units
-    QueryUnit [] tasks;
     boolean leftSmall = execBlock.isBroadcastTable(scans[0].getCanonicalName());
     boolean rightSmall = execBlock.isBroadcastTable(scans[1].getCanonicalName());
 
     if (leftSmall && rightSmall) {
       LOG.info("[Distributed Join Strategy] : Immediate Two Way Join on Single Machine");
-      tasks = new QueryUnit[1];
-      tasks[0] = new QueryUnit(subQuery.getContext().getConf(),
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
-          subQuery.getMasterPlan().isLeaf(execBlock), subQuery.getEventHandler());
-      tasks[0].setLogicalPlan(execBlock.getPlan());
-      tasks[0].setFragment(scans[0].getCanonicalName(), fragments[0]);
-      tasks[0].setFragment(scans[1].getCanonicalName(), fragments[1]);
+      SubQuery.scheduleFragment(subQuery, fragments[0], fragments[1]);
+      schedulerContext.setEstimatedTaskNum(1);
     } else if (leftSmall ^ rightSmall) {
       LOG.info("[Distributed Join Strategy] : Broadcast Join");
       int broadcastIdx = leftSmall ? 0 : 1;
@@ -120,7 +118,7 @@ public class Repartitioner {
       LOG.info("Broadcasting Table Volume: " + stats[broadcastIdx].getNumBytes());
       LOG.info("Base Table Volume: " + stats[baseScanIdx].getNumBytes());
 
-      tasks = createLeafTasksWithBroadcastTable(subQuery, baseScanIdx, fragments[broadcastIdx]);
+      scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments[broadcastIdx]);
     } else {
       LOG.info("[Distributed Join Strategy] : Repartition Join");
       // The hash map is modeling as follows:
@@ -156,6 +154,11 @@ public class Repartitioner {
       LOG.info("Outer Intermediate Volume: " + stats[0].getNumBytes());
       LOG.info("Inner Intermediate Volume: " + stats[1].getNumBytes());
 
+      int [] avgSize = new int[2];
+      avgSize[0] = (int) (stats[0].getNumBytes() / hashEntries.size());
+      avgSize[1] = (int) (stats[1].getNumBytes() / hashEntries.size());
+      int bothFetchSize = avgSize[0] + avgSize[1];
+
       // Getting the desire number of join tasks according to the volumn
       // of a larger table
       int largerIdx = stats[0].getNumBytes() >= stats[1].getNumBytes() ? 0 : 1;
@@ -173,33 +176,22 @@ public class Repartitioner {
       // distinct partition ids.
       int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
       LOG.info("The determined number of join tasks is " + joinTaskNum);
-      QueryUnit [] createdTasks = newEmptyJoinTask(subQuery, fragments, joinTaskNum);
+
+      SubQuery.scheduleFragment(subQuery, fragments[0], fragments[1]);
 
       // Assign partitions to tasks in a round robin manner.
-      int i = 0;
       for (Entry<Integer, Map<String, List<IntermediateEntry>>> entry
           : hashEntries.entrySet()) {
-        addJoinPartition(createdTasks[i++], subQuery, entry.getKey(), entry.getValue());
-        if (i >= joinTaskNum) {
-          i = 0;
-        }
+        addJoinPartition(subQuery, entry.getKey(), entry.getValue());
       }
 
-      List<QueryUnit> filteredTasks = new ArrayList<QueryUnit>();
-      for (QueryUnit task : createdTasks) {
-        // if there are at least two fetches, the join is possible.
-        if (task.getFetches().size() > 1) {
-          filteredTasks.add(task);
-        }
-      }
-
-      tasks = filteredTasks.toArray(new QueryUnit[filteredTasks.size()]);
+      schedulerContext.setTaskSize((int) Math.ceil((double) bothFetchSize / joinTaskNum));
+      schedulerContext.setEstimatedTaskNum(joinTaskNum);
     }
-
-    return tasks;
   }
 
-  private static QueryUnit [] createLeafTasksWithBroadcastTable(SubQuery subQuery, int baseScanId, FileFragment broadcasted) throws IOException {
+  private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, SubQuery subQuery,
+                                                          int baseScanId, FileFragment broadcasted) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
     Preconditions.checkArgument(scans.length == 2, "Must be Join Query");
@@ -210,50 +202,16 @@ public class Repartitioner {
     inputPath = desc.getPath();
     meta = desc.getMeta();
 
-    FileSystem fs = inputPath.getFileSystem(subQuery.getContext().getConf());
     List<FileFragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
         inputPath);
-    QueryUnit queryUnit;
-    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
 
-    int i = 0;
-    for (FileFragment fragment : fragments) {
-      queryUnit = newQueryUnit(subQuery, i++, fragment);
-      queryUnit.setFragment2(broadcasted);
-      queryUnits.add(queryUnit);
-    }
-    return queryUnits.toArray(new QueryUnit[queryUnits.size()]);
+    SubQuery.scheduleFragments(subQuery, fragments, broadcasted);
+    schedulerContext.setEstimatedTaskNum(fragments.size());
   }
 
-  private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, FileFragment fragment) {
-    ExecutionBlock execBlock = subQuery.getBlock();
-    QueryUnit unit = new QueryUnit(subQuery.getContext().getConf(),
-        QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.getMasterPlan().isLeaf(execBlock),
-        subQuery.getEventHandler());
-    unit.setLogicalPlan(execBlock.getPlan());
-    unit.setFragment2(fragment);
-    return unit;
-  }
-
-  private static QueryUnit [] newEmptyJoinTask(SubQuery subQuery, FileFragment[] fragments, int taskNum) {
-    ExecutionBlock execBlock = subQuery.getBlock();
-    QueryUnit [] tasks = new QueryUnit[taskNum];
-    for (int i = 0; i < taskNum; i++) {
-      tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), i), subQuery.getMasterPlan().isLeaf(execBlock),
-          subQuery.getEventHandler());
-      tasks[i].setLogicalPlan(execBlock.getPlan());
-      for (FileFragment fragment : fragments) {
-        tasks[i].setFragment2(fragment);
-      }
-    }
-
-    return tasks;
-  }
-
-  private static void addJoinPartition(QueryUnit task, SubQuery subQuery, int partitionId,
+  private static void addJoinPartition(SubQuery subQuery, int partitionId,
                                        Map<String, List<IntermediateEntry>> grouppedPartitions) {
-
+    Map<String, List<URI>> fetches = new HashMap<String, List<URI>>();
     for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
       Map<String, List<IntermediateEntry>> requests;
       if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
@@ -269,8 +227,9 @@ public class Repartitioner {
             requestPerNode.getValue());
         fetchURIs.addAll(uris);
       }
-      task.addFetches(execBlock.getId().toString(), fetchURIs);
+      fetches.put(execBlock.getId().toString(), Lists.newArrayList(fetchURIs));
     }
+    SubQuery.scheduleFetches(subQuery, fetches);
   }
 
   /**
@@ -294,25 +253,26 @@ public class Repartitioner {
     return mergedPartitions;
   }
 
-  public static QueryUnit [] createNonLeafTask(MasterPlan masterPlan, SubQuery subQuery, SubQuery childSubQuery,
-                                               DataChannel channel, int maxNum)
+  public static void scheduleFragmentsForNonLeafTasks(TaskSchedulerContext schedulerContext,
+                                                      MasterPlan masterPlan, SubQuery subQuery, SubQuery childSubQuery,
+                                                      DataChannel channel, int maxNum)
       throws InternalException {
     if (channel.getPartitionType() == HASH_PARTITION) {
-      return createHashPartitionedTasks(masterPlan, subQuery, childSubQuery, channel, maxNum);
+      scheduleHashPartitionedFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
     } else if (channel.getPartitionType() == RANGE_PARTITION) {
-      return createRangePartitionedTasks(subQuery, childSubQuery, channel, maxNum);
+      scheduleRangePartitionedFetches(schedulerContext, subQuery, childSubQuery, channel, maxNum);
     } else {
       throw new InternalException("Cannot support partition type");
     }
   }
 
-  public static QueryUnit [] createRangePartitionedTasks(SubQuery subQuery,
-                                                         SubQuery childSubQuery, DataChannel channel, int maxNum)
+  public static void scheduleRangePartitionedFetches(TaskSchedulerContext schedulerContext, SubQuery subQuery,
+                                                     SubQuery childSubQuery, DataChannel channel, int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
     TableStats stat = childSubQuery.getTableStat();
     if (stat.getNumRows() == 0) {
-      return new QueryUnit[0];
+      return;
     }
 
     ScanNode scan = execBlock.getScanNodes()[0];
@@ -343,7 +303,8 @@ public class Repartitioner {
         " sub ranges (total units: " + determinedTaskNum + ")");
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
 
-    FileFragment dummyFragment = new FileFragment(scan.getTableName(), tablePath, 0, 0);
+    FileFragment dummyFragment = new FileFragment(scan.getTableName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
+    SubQuery.scheduleFragment(subQuery, dummyFragment);
 
     List<String> basicFetchURIs = new ArrayList<String>();
 
@@ -380,27 +341,27 @@ public class Repartitioner {
       LOG.error(e);
     }
 
-    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, determinedTaskNum, dummyFragment);
-    assignPartitionByRoundRobin(map, scan.getTableName(), tasks);
-    return tasks;
+    schedulePartitionByRoundRobin(subQuery, map, scan.getTableName(), determinedTaskNum);
+
+    schedulerContext.setEstimatedTaskNum(determinedTaskNum);
   }
 
-  public static QueryUnit [] assignPartitionByRoundRobin(Map<?, Set<URI>> partitions,
-                                               String tableName, QueryUnit [] tasks) {
-    int tid = 0;
-    for (Entry<?, Set<URI>> entry : partitions.entrySet()) {
-      for (URI uri : entry.getValue()) {
-        tasks[tid].addFetch(tableName, uri);
-      }
-
-      if (tid >= tasks.length) {
-        tid = 0;
-      } else {
-        tid ++;
-      }
+  public static void schedulePartitionByRoundRobin(SubQuery subQuery, Map<?, Set<URI>> partitions,
+                                                   String tableName, int num) {
+    int i;
+    Map<String, List<URI>>[] fetchesArray = new Map[num];
+    for (i = 0; i < num; i++) {
+      fetchesArray[i] = new HashMap<String, List<URI>>();
     }
-
-    return tasks;
+    i = 0;
+    for (Entry<?, Set<URI>> entry : partitions.entrySet()) {
+      Set<URI> value = entry.getValue();
+      fetchesArray[i++].put(tableName, Lists.newArrayList(value));
+      if (i == num) i = 0;
+    }
+    for (Map<String, List<URI>> eachFetches : fetchesArray) {
+      SubQuery.scheduleFetches(subQuery, eachFetches);
+    }
   }
 
   public static String createBasicFetchUri(String hostName, int port,
@@ -418,8 +379,9 @@ public class Repartitioner {
     return sb.toString();
   }
 
-  public static QueryUnit [] createHashPartitionedTasks(MasterPlan masterPlan, SubQuery subQuery,
-                                                 SubQuery childSubQuery, DataChannel channel, int maxNum) {
+  public static void scheduleHashPartitionedFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
+                                                    SubQuery subQuery, DataChannel channel,
+                                                    int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
 
     List<TableStats> tableStatses = new ArrayList<TableStats>();
@@ -431,16 +393,17 @@ public class Repartitioner {
     TableStats totalStat = StatisticsUtil.computeStatFromUnionBlock(tableStatses);
 
     if (totalStat.getNumRows() == 0) {
-      return new QueryUnit[0];
+      return;
     }
 
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
-
-    FileFragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0);
-
+    FileFragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
+    fragments.add(frag);
+    SubQuery.scheduleFragments(subQuery, fragments);
 
     Map<String, List<IntermediateEntry>> hashedByHost;
     Map<Integer, List<URI>> finalFetchURI = new HashMap<Integer, List<URI>>();
@@ -475,22 +438,14 @@ public class Repartitioner {
       determinedTaskNum = 1;
     }
 
-    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, determinedTaskNum, frag);
-
-    int tid = 0;
     for (Entry<Integer, List<URI>> entry : finalFetchURI.entrySet()) {
-      for (URI uri : entry.getValue()) {
-        tasks[tid].addFetch(scan.getTableName(), uri);
-      }
-
-      tid ++;
-
-      if (tid == tasks.length) {
-       tid = 0;
-      }
+      List<URI> value = entry.getValue();
+      Map<String, List<URI>> fetches = new HashMap<String, List<URI>>();
+      fetches.put(scan.getTableName(), value);
+      SubQuery.scheduleFetches(subQuery, fetches);
     }
 
-    return tasks;
+    schedulerContext.setEstimatedTaskNum(determinedTaskNum);
   }
 
   public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
@@ -561,20 +516,6 @@ public class Repartitioner {
     }
 
     return hashed;
-  }
-
-  public static QueryUnit [] createEmptyNonLeafTasks(SubQuery subQuery, int num,
-                                                     FileFragment frag) {
-    LogicalNode plan = subQuery.getBlock().getPlan();
-    QueryUnit [] tasks = new QueryUnit[num];
-    for (int i = 0; i < num; i++) {
-      tasks[i] = new QueryUnit(subQuery.getContext().getConf(),
-          QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
-          false, subQuery.getEventHandler());
-      tasks[i].setFragment2(frag);
-      tasks[i].setLogicalPlan(plan);
-    }
-    return tasks;
   }
 
   public static Map<String, List<IntermediateEntry>> hashByHost(

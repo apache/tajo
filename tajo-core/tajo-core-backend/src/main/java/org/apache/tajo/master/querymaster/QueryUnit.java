@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -32,8 +33,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
+import org.apache.tajo.master.FragmentPair;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TajoIdUtils;
@@ -59,18 +62,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private LogicalNode plan = null;
 	private List<ScanNode> scan;
 	
-	private Map<String, FragmentProto> fragMap;
+	private Map<String, Set<FragmentProto>> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
   private List<Partition> partitions;
 	private TableStats stats;
-  private List<DataLocation> dataLocations;
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
 
   private Map<QueryUnitAttemptId, QueryUnitAttempt> attempts;
   private final int maxAttempts = 3;
-  private Integer lastAttemptId;
+  private Integer nextAttempt = -1;
+  private QueryUnitAttemptId lastAttemptId;
 
   private QueryUnitAttemptId successfulAttempt;
   private String succeededHost;
@@ -81,6 +84,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private long launchTime;
   private long finishTime;
+
+  private List<DataLocation> dataLocations = Lists.newArrayList();
 
   protected static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
@@ -111,9 +116,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private final Lock readLock;
   private final Lock writeLock;
+  private QueryUnitAttemptScheduleContext scheduleContext;
 
-	public QueryUnit(Configuration conf, QueryUnitId id,
-                   boolean isLeafTask, EventHandler eventHandler) {
+	public QueryUnit(Configuration conf, QueryUnitAttemptScheduleContext scheduleContext,
+                   QueryUnitId id, boolean isLeafTask, EventHandler eventHandler) {
     this.systemConf = conf;
 		this.taskId = id;
     this.eventHandler = eventHandler;
@@ -123,32 +129,20 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     fragMap = Maps.newHashMap();
     partitions = new ArrayList<Partition>();
     attempts = Collections.emptyMap();
-    lastAttemptId = -1;
+    lastAttemptId = null;
+    nextAttempt = -1;
     failedAttempts = 0;
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
+    this.scheduleContext = scheduleContext;
 
     stateMachine = stateMachineFactory.make(this);
 	}
 
   public boolean isLeafTask() {
     return this.isLeafTask;
-  }
-
-  public void setDataLocations(FileFragment fragment) {
-    String[] hosts = fragment.getHosts();
-    int[] volumeIds = fragment.getDiskIds();
-    this.dataLocations = new ArrayList<DataLocation>(hosts.length);
-
-    for (int i = 0; i < hosts.length; i++) {
-      this.dataLocations.add(new DataLocation(hosts[i], volumeIds[i]));
-    }
-  }
-
-  public List<DataLocation> getDataLocations() {
-    return this.dataLocations;
   }
 
   public TaskState getState() {
@@ -183,15 +177,50 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  }
 	}
 
+  private void addDataLocation(FileFragment fragment) {
+    String[] hosts = fragment.getHosts();
+    int[] diskIds = fragment.getDiskIds();
+    for (int i = 0; i < hosts.length; i++) {
+      dataLocations.add(new DataLocation(hosts[i], diskIds[i]));
+    }
+  }
+
   @Deprecated
   public void setFragment(String tableId, FileFragment fragment) {
-    this.fragMap.put(tableId, fragment.getProto());
-    setDataLocations(fragment);
+    Set<FragmentProto> fragmentProtos;
+    if (fragMap.containsKey(tableId)) {
+      fragmentProtos = fragMap.get(tableId);
+    } else {
+      fragmentProtos = new HashSet<FragmentProto>();
+      fragMap.put(tableId, fragmentProtos);
+    }
+    fragmentProtos.add(fragment.getProto());
+    addDataLocation(fragment);
   }
 
   public void setFragment2(FileFragment fragment) {
-    this.fragMap.put(fragment.getTableName(), fragment.getProto());
-    setDataLocations(fragment);
+    Set<FragmentProto> fragmentProtos;
+    if (fragMap.containsKey(fragment.getTableName())) {
+      fragmentProtos = fragMap.get(fragment.getTableName());
+    } else {
+      fragmentProtos = new HashSet<FragmentProto>();
+      fragMap.put(fragment.getTableName(), fragmentProtos);
+    }
+    fragmentProtos.add(fragment.getProto());
+    addDataLocation(fragment);
+  }
+
+  public void setFragment(FragmentPair[] fragmentPairs) {
+    for (FragmentPair eachFragmentPair : fragmentPairs) {
+      this.setFragment2(eachFragmentPair.getLeftFragment());
+      if (eachFragmentPair.getRightFragment() != null) {
+        this.setFragment2(eachFragmentPair.getRightFragment());
+      }
+    }
+  }
+
+  public DataLocation[] getDataLocations() {
+    return dataLocations.toArray(new DataLocation[dataLocations.size()]);
   }
 
   public String getSucceededHost() {
@@ -230,7 +259,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	}
 
   public Collection<FragmentProto> getAllFragments() {
-    return fragMap.values();
+    Set<FragmentProto> fragmentProtos = new HashSet<FragmentProto>();
+    for (Set<FragmentProto> eachFragmentSet : fragMap.values()) {
+      fragmentProtos.addAll(eachFragmentSet);
+    }
+    return fragmentProtos;
   }
 	
 	public LogicalNode getLogicalPlan() {
@@ -276,9 +309,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	@Override
 	public String toString() {
 		String str = new String(plan.getType() + " \n");
-		for (Entry<String, FragmentProto> e : fragMap.entrySet()) {
+		for (Entry<String, Set<FragmentProto>> e : fragMap.entrySet()) {
 		  str += e.getKey() + " : ";
-      str += e.getValue() + " ";
+      for (FragmentProto fragment : e.getValue()) {
+        str += fragment + ", ";
+      }
 		}
 		for (Entry<String, Set<URI>> e : fetchMap.entrySet()) {
       str += e.getKey() + " : ";
@@ -311,8 +346,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	}
 
   public QueryUnitAttempt newAttempt() {
-    QueryUnitAttempt attempt = new QueryUnitAttempt(QueryIdFactory.newQueryUnitAttemptId(
-        this.getId(), ++lastAttemptId), this, eventHandler);
+    QueryUnitAttempt attempt = new QueryUnitAttempt(scheduleContext,
+        QueryIdFactory.newQueryUnitAttemptId(this.getId(), ++nextAttempt),
+        this, eventHandler);
+    lastAttemptId = attempt.getId();
     return attempt;
   }
 
@@ -341,7 +378,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public int getRetryCount () {
-    return this.lastAttemptId;
+    return this.nextAttempt;
   }
 
   private static class InitialScheduleTransition implements

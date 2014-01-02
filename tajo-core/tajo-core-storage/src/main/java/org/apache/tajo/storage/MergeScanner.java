@@ -29,6 +29,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -60,6 +61,7 @@ public class MergeScanner implements Scanner {
     for (Fragment f : rawFragmentList) {
       fragments.add((FileFragment) f);
     }
+    Collections.sort(fragments);
 
     this.target = target;
     this.reset();

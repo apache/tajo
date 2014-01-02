@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+import org.apache.tajo.master.event.TaskSchedulerEvent;
 
-public abstract class TaskSchedulerEvent extends AbstractEvent<EventType> {
-  public enum EventType {
-    T_SCHEDULE,
-    T_SUBQUERY_COMPLETED
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+public class FetchScheduleEvent extends TaskSchedulerEvent {
+  private final Map<String, List<URI>> fetches;
+
+  public FetchScheduleEvent(final EventType eventType, final ExecutionBlockId blockId,
+                            final Map<String, List<URI>> fetches) {
+    super(eventType, blockId);
+    this.fetches = fetches;
   }
 
-  protected final ExecutionBlockId executionBlockId;
-
-  public TaskSchedulerEvent(EventType eventType, ExecutionBlockId executionBlockId) {
-    super(eventType);
-    this.executionBlockId = executionBlockId;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
+  public Map<String, List<URI>> getFetches() {
+    return fetches;
   }
 }
