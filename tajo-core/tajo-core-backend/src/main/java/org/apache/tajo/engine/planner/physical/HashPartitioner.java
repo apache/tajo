@@ -29,14 +29,14 @@ public class HashPartitioner extends Partitioner {
   
   public HashPartitioner(final int [] keys, final int numPartitions) {
     super(keys, numPartitions);
-    this.keyTuple = new VTuple(partitionKeys.length);
+    this.keyTuple = new VTuple(partitionKeyIds.length);
   }
   
   @Override
   public int getPartition(Tuple tuple) {
     // build one key tuple
-    for (int i = 0; i < partitionKeys.length; i++) {
-      keyTuple.put(i, tuple.get(partitionKeys[i]));
+    for (int i = 0; i < partitionKeyIds.length; i++) {
+      keyTuple.put(i, tuple.get(partitionKeyIds[i]));
     }
     return (keyTuple.hashCode() & Integer.MAX_VALUE) %
         (numPartitions == 32 ? numPartitions-1 : numPartitions);

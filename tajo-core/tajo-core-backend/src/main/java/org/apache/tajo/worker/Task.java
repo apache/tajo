@@ -104,7 +104,7 @@ public class Task {
   private AtomicBoolean progressFlag = new AtomicBoolean(false);
 
   // TODO - to be refactored
-  private PartitionType partitionType = null;
+  private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
@@ -163,9 +163,9 @@ public class Task {
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();
-      this.partitionType = context.getDataChannel().getPartitionType();
+      this.shuffleType = context.getDataChannel().getShuffleType();
 
-      if (partitionType == PartitionType.RANGE_PARTITION) {
+      if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
         SortNode sortNode = (SortNode) PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
@@ -185,7 +185,7 @@ public class Task {
     LOG.info("==================================");
     LOG.info("* Subquery " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.partitionType  + " partitioning":""));
+        + (interQuery ? ", Use " + this.shuffleType + " partitioning":""));
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
@@ -326,13 +326,13 @@ public class Task {
       builder.setResultStats(new TableStats().getProto());
     }
 
-    Iterator<Entry<Integer,String>> it = context.getRepartitions();
+    Iterator<Entry<Integer,String>> it = context.getShuffleFileOutputs();
     if (it.hasNext()) {
       do {
         Entry<Integer,String> entry = it.next();
-        Partition.Builder part = Partition.newBuilder();
-        part.setPartitionKey(entry.getKey());
-        builder.addPartitions(part.build());
+        ShuffleFileOutput.Builder part = ShuffleFileOutput.newBuilder();
+        part.setPartId(entry.getKey());
+        builder.addShuffleFileOutputs(part.build());
       } while (it.hasNext());
     }
 

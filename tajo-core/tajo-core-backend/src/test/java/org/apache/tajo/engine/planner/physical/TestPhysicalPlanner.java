@@ -43,6 +43,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -62,7 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce.SortAlgorithm;
 import static org.junit.Assert.*;
 
@@ -450,8 +451,8 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", Type.TEXT);
     Column key2 = new Column("score.class", Type.TEXT);
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.HASH_PARTITION, numPartitions);
-    dataChannel.setPartitionKey(new Column[]{key1, key2});
+        ShuffleType.HASH_SHUFFLE, numPartitions);
+    dataChannel.setShuffleKeys(new Column[]{key1, key2});
     ctx.setDataChannel(dataChannel);
     LogicalNode rootNode = optimizer.optimize(plan);
 
@@ -508,8 +509,8 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = plan.getRootBlock().getRoot();
     int numPartitions = 1;
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.HASH_PARTITION, numPartitions);
-    dataChannel.setPartitionKey(new Column[]{});
+        ShuffleType.HASH_SHUFFLE, numPartitions);
+    dataChannel.setShuffleKeys(new Column[]{});
     ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
@@ -773,8 +774,8 @@ public class TestPhysicalPlanner {
 
     SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
     DataChannel channel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        PartitionType.RANGE_PARTITION);
-    channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
+        TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE);
+    channel.setShuffleKeys(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
     ctx.setDataChannel(channel);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);

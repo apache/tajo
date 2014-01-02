@@ -35,11 +35,11 @@ public class TestMasterPlan {
     ExecutionBlock eb2 = masterPlan.newExecutionBlock();
     ExecutionBlock eb3 = masterPlan.newExecutionBlock();
 
-    masterPlan.addConnect(eb1, eb2, TajoWorkerProtocol.PartitionType.LIST_PARTITION);
+    masterPlan.addConnect(eb1, eb2, TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE);
     assertTrue(masterPlan.isConnected(eb1.getId(), eb2.getId()));
     assertTrue(masterPlan.isReverseConnected(eb2.getId(), eb1.getId()));
 
-    masterPlan.addConnect(eb3, eb2, TajoWorkerProtocol.PartitionType.LIST_PARTITION);
+    masterPlan.addConnect(eb3, eb2, TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE);
     assertTrue(masterPlan.isConnected(eb1.getId(), eb2.getId()));
     assertTrue(masterPlan.isConnected(eb3.getId(), eb2.getId()));
 

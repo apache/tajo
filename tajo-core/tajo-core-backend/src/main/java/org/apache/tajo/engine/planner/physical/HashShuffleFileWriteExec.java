@@ -30,51 +30,49 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.logical.ShuffleFileWriteNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class PartitionedStoreExec extends UnaryPhysicalExec {
-  private static Log LOG = LogFactory.getLog(PartitionedStoreExec.class);
-  private static final NumberFormat numFormat = NumberFormat.getInstance();
-
-  static {
-    numFormat.setGroupingUsed(false);
-    numFormat.setMinimumIntegerDigits(6);
-  }
-
-  private final StoreTableNode plan;
-
-  private final int numPartitions;
-  private final int [] partitionKeys;  
-
+/**
+ * <code>HashShuffleFileWriteExec</code> is a physical executor to store intermediate data into a number of
+ * file outputs associated with shuffle keys. The file outputs are stored on local disks.
+ */
+public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
+  private static Log LOG = LogFactory.getLog(HashShuffleFileWriteExec.class);
+  private final ShuffleFileWriteNode plan;
   private final TableMeta meta;
   private final Partitioner partitioner;
   private final Path storeTablePath;
   private final Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
+  private final int numShuffleOutputs;
+  private final int [] shuffleKeyIds;
   
-  public PartitionedStoreExec(TaskAttemptContext context, final AbstractStorageManager sm,
-      final StoreTableNode plan, final PhysicalExec child) throws IOException {
+  public HashShuffleFileWriteExec(TaskAttemptContext context, final AbstractStorageManager sm,
+                                  final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
-    Preconditions.checkArgument(plan.hasPartitionKey());
+    Preconditions.checkArgument(plan.hasShuffleKeys());
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(context.getDataChannel().getStoreType());
-    // about the partitions
-    this.numPartitions = this.plan.getNumPartitions();
+    if (plan.hasOptions()) {
+      this.meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
+    } else {
+      this.meta = CatalogUtil.newTableMeta(plan.getStorageType());
+    }
+    // about the shuffle
+    this.numShuffleOutputs = this.plan.getNumOutputs();
     int i = 0;
-    this.partitionKeys = new int [this.plan.getPartitionKeys().length];
-    for (Column key : this.plan.getPartitionKeys()) {
-      partitionKeys[i] = inSchema.getColumnId(key.getQualifiedName());
+    this.shuffleKeyIds = new int [this.plan.getShuffleKeys().length];
+    for (Column key : this.plan.getShuffleKeys()) {
+      shuffleKeyIds[i] = inSchema.getColumnId(key.getQualifiedName());
       i++;
     }
-    this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
+    this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
     storeTablePath = new Path(context.getWorkDir(), "output");
   }
 
@@ -85,11 +83,11 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     fs.mkdirs(storeTablePath);
   }
   
-  private Appender getAppender(int partition) throws IOException {
-    Appender appender = appenderMap.get(partition);
+  private Appender getAppender(int partId) throws IOException {
+    Appender appender = appenderMap.get(partId);
 
     if (appender == null) {
-      Path dataFile = getDataFile(partition);
+      Path dataFile = getDataFile(partId);
       FileSystem fs = dataFile.getFileSystem(context.getConf());
       if (fs.exists(dataFile)) {
         LOG.info("File " + dataFile + " already exists!");
@@ -99,26 +97,26 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
       appender.enableStats();
       appender.init();
-      appenderMap.put(partition, appender);
+      appenderMap.put(partId, appender);
     } else {
-      appender = appenderMap.get(partition);
+      appender = appenderMap.get(partId);
     }
 
     return appender;
   }
 
-  private Path getDataFile(int partition) {
-    return StorageUtil.concatPath(storeTablePath, ""+partition);
+  private Path getDataFile(int partId) {
+    return StorageUtil.concatPath(storeTablePath, ""+partId);
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     Appender appender;
-    int partition;
+    int partId;
     while ((tuple = child.next()) != null) {
-      partition = partitioner.getPartition(tuple);
-      appender = getAppender(partition);
+      partId = partitioner.getPartition(tuple);
+      appender = getAppender(partId);
       appender.addTuple(tuple);
     }
     
@@ -130,7 +128,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       app.close();
       statSet.add(app.getStats());
       if (app.getStats().getNumRows() > 0) {
-        context.addRepartition(partNum, getDataFile(partNum).getName());
+        context.addShuffleFileOutput(partNum, getDataFile(partNum).getName());
       }
     }
     

@@ -125,9 +125,9 @@
     String partitionKey = "-";
     String partitionFileName = "-";
     if(numPartitions > 0) {
-        TajoWorkerProtocol.Partition partition = queryUnit.getPartitions().get(0);
-        partitionKey = "" + partition.getPartitionKey();
-        partitionFileName = partition.getFileName();
+        TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = queryUnit.getShuffleFileOutputs().get(0);
+        partitionKey = "" + shuffleFileOutputs.getPartId();
+        partitionFileName = shuffleFileOutputs.getFileName();
     }
 
     //int numIntermediateData = queryUnit.getIntermediateData() == null ? 0 : queryUnit.getIntermediateData().size();

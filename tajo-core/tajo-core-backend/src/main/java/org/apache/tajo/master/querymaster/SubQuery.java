@@ -61,7 +61,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 
 
 /**
@@ -552,7 +552,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
      * methods and the number of partitions to a given subquery.
      */
     private static void setRepartitionIfNecessary(SubQuery subQuery, DataChannel channel) {
-      if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
+      if (channel.getShuffleType() != ShuffleType.NONE_SHUFFLE) {
         int numTasks = calculatePartitionNum(subQuery, channel);
         Repartitioner.setPartitionNumberForTwoPhase(subQuery, numTasks, channel);
       }

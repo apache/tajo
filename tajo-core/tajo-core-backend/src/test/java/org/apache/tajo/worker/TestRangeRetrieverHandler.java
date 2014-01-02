@@ -35,7 +35,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.IndexedStoreExec;
+import org.apache.tajo.engine.planner.physical.RangeShuffleFileWriteExec;
 import org.apache.tajo.engine.planner.physical.MemSortExec;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.planner.physical.ProjectionExec;
@@ -147,7 +147,7 @@ public class TestRangeRetrieverHandler {
     MemSortExec sort = (MemSortExec) proj.getChild();
 
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
-    IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(),
+    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort, sort.getSchema(),
         sort.getSchema(), sortSpecs);
 
     exec = idxStoreExec;
@@ -260,7 +260,7 @@ public class TestRangeRetrieverHandler {
     ProjectionExec proj = (ProjectionExec) exec;
     MemSortExec sort = (MemSortExec) proj.getChild();
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
-    IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort,
+    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort,
         sort.getSchema(), sort.getSchema(), sortSpecs);
 
     exec = idxStoreExec;

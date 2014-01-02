@@ -21,13 +21,11 @@
 
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.*" %>
-<%@ page import="org.apache.hadoop.conf.Configuration" %>
 <%@ page import="org.apache.tajo.master.querymaster.Query" %>
 <%@ page import="org.apache.tajo.QueryId" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
 <%@ page import="org.apache.tajo.master.querymaster.SubQuery" %>
-<%@ page import="java.text.DecimalFormat" %>
 <%@ page import="org.apache.tajo.engine.planner.global.ExecutionBlock" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
@@ -134,7 +132,7 @@
       String outgoing = "";
       String prefix = "";
       for (DataChannel channel : masterPlan.getOutgoingChannels(eachSubQueryInfo.executionBlock.getId())) {
-        outgoing += prefix + channel.getPartitionType();
+        outgoing += prefix + channel.getShuffleType();
         prefix = "; ";
       }
 %>

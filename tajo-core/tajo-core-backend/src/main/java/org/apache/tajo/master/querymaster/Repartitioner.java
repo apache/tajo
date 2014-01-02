@@ -55,9 +55,9 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.HASH_PARTITION;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.RANGE_PARTITION;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -223,7 +223,7 @@ public class Repartitioner {
       for (Entry<String, List<IntermediateEntry>> requestPerNode : requests.entrySet()) {
         Collection<URI> uris = createHashFetchURL(requestPerNode.getKey(),
             execBlock.getId(),
-            partitionId, HASH_PARTITION,
+            partitionId, HASH_SHUFFLE,
             requestPerNode.getValue());
         fetchURIs.addAll(uris);
       }
@@ -257,9 +257,9 @@ public class Repartitioner {
                                                       MasterPlan masterPlan, SubQuery subQuery, SubQuery childSubQuery,
                                                       DataChannel channel, int maxNum)
       throws InternalException {
-    if (channel.getPartitionType() == HASH_PARTITION) {
+    if (channel.getShuffleType() == HASH_SHUFFLE) {
       scheduleHashPartitionedFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
-    } else if (channel.getPartitionType() == RANGE_PARTITION) {
+    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
       scheduleRangePartitionedFetches(schedulerContext, subQuery, childSubQuery, channel, maxNum);
     } else {
       throw new InternalException("Cannot support partition type");
@@ -281,7 +281,7 @@ public class Repartitioner {
 
     SortNode sortNode = PlannerUtil.findTopNode(childSubQuery.getBlock().getPlan(), NodeType.SORT);
     SortSpec [] sortSpecs = sortNode.getSortKeys();
-    Schema sortSchema = new Schema(channel.getPartitionKey());
+    Schema sortSchema = new Schema(channel.getShuffleKeys());
 
     // calculate the number of maximum query ranges
     TupleRange mergedRange = TupleUtil.columnStatToRange(channel.getSchema(), sortSchema, stat.getColumnStats());
@@ -420,7 +420,7 @@ public class Repartitioner {
         hashedByHost = hashByHost(interm.getValue());
         for (Entry<String, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
           Collection<URI> uris = createHashFetchURL(e.getKey(), block.getId(),
-              interm.getKey(), channel.getPartitionType(), e.getValue());
+              interm.getKey(), channel.getShuffleType(), e.getValue());
 
           if (finalFetchURI.containsKey(interm.getKey())) {
             finalFetchURI.get(interm.getKey()).addAll(uris);
@@ -449,7 +449,7 @@ public class Repartitioner {
   }
 
   public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
-                                       int partitionId, PartitionType type, List<IntermediateEntry> entries) {
+                                       int partitionId, ShuffleType type, List<IntermediateEntry> entries) {
     String scheme = "http://";
     StringBuilder urlPrefix = new StringBuilder(scheme);
     urlPrefix.append(hostAndPort).append("/?")
@@ -457,9 +457,9 @@ public class Repartitioner {
         .append("&sid=").append(ebid.getId())
         .append("&p=").append(partitionId)
         .append("&type=");
-    if (type == HASH_PARTITION) {
+    if (type == HASH_SHUFFLE) {
       urlPrefix.append("h");
-    } else if (type == RANGE_PARTITION) {
+    } else if (type == RANGE_SHUFFLE) {
       urlPrefix.append("r");
     }
     urlPrefix.append("&ta=");
@@ -542,22 +542,22 @@ public class Repartitioner {
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
     MasterPlan masterPlan = subQuery.getMasterPlan();
-    keys = channel.getPartitionKey();
+    keys = channel.getShuffleKeys();
     if (!masterPlan.isRoot(subQuery.getBlock()) ) {
       ExecutionBlock parentBlock = masterPlan.getParent(subQuery.getBlock());
       if (parentBlock.getPlan().getType() == NodeType.JOIN) {
-        channel.setPartitionNum(desiredNum);
+        channel.setShuffleOutputNum(desiredNum);
       }
     }
 
 
     // set the partition number for group by and sort
-    if (channel.getPartitionType() == HASH_PARTITION) {
+    if (channel.getShuffleType() == HASH_SHUFFLE) {
       if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode) execBlock.getPlan();
         keys = groupby.getGroupingColumns();
       }
-    } else if (channel.getPartitionType() == RANGE_PARTITION) {
+    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
       if (execBlock.getPlan().getType() == NodeType.SORT) {
         SortNode sort = (SortNode) execBlock.getPlan();
         keys = new Column[sort.getSortKeys().length];
@@ -568,11 +568,11 @@ public class Repartitioner {
     }
     if (keys != null) {
       if (keys.length == 0) {
-        channel.setPartitionKey(new Column[] {});
-        channel.setPartitionNum(1);
+        channel.setShuffleKeys(new Column[]{});
+        channel.setShuffleOutputNum(1);
       } else {
-        channel.setPartitionKey(keys);
-        channel.setPartitionNum(desiredNum);
+        channel.setShuffleKeys(keys);
+        channel.setShuffleOutputNum(desiredNum);
       }
     }
     return subQuery;

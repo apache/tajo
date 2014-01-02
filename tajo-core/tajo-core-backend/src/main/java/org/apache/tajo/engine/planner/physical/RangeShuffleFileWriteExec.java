@@ -33,8 +33,14 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class IndexedStoreExec extends UnaryPhysicalExec {
-  private static Log LOG = LogFactory.getLog(IndexedStoreExec.class);
+/**
+ * <code>RangeShuffleFileWriteExec</code> is a physical executor to store intermediate data into a number of
+ * file outputs associated with shuffle key ranges. The file outputs are stored with index files on local disks.
+ * <code>RangeShuffleFileWriteExec</code> is implemented with an assumption that input tuples are sorted in an
+ * specified order of shuffle keys.
+ */
+public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
+  private static Log LOG = LogFactory.getLog(RangeShuffleFileWriteExec.class);
   private final SortSpec[] sortSpecs;
   private int [] indexKeys = null;
   private Schema keySchema;
@@ -44,9 +50,9 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  public IndexedStoreExec(final TaskAttemptContext context, final AbstractStorageManager sm,
-      final PhysicalExec child, final Schema inSchema, final Schema outSchema,
-      final SortSpec[] sortSpecs) throws IOException {
+  public RangeShuffleFileWriteExec(final TaskAttemptContext context, final AbstractStorageManager sm,
+                                   final PhysicalExec child, final Schema inSchema, final Schema outSchema,
+                                   final SortSpec[] sortSpecs) throws IOException {
     super(context, inSchema, outSchema, child);
     this.sortSpecs = sortSpecs;
   }
@@ -117,6 +123,6 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
 
     // Collect statistics data
     context.setResultStats(appender.getStats());
-    context.addRepartition(0, context.getTaskId().toString());
+    context.addShuffleFileOutput(0, context.getTaskId().toString());
   }
 }

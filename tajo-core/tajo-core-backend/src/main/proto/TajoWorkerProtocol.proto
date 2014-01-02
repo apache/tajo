@@ -35,14 +35,14 @@ message TaskStatusProto {
   required TaskAttemptState state = 4;
   optional StatSetProto stats = 5;
   optional TableStatsProto resultStats = 6;
-  repeated Partition partitions = 7;
+  repeated ShuffleFileOutput shuffleFileOutputs = 7;
 }
 
 message TaskCompletionReport {
   required QueryUnitAttemptIdProto id = 1;
   optional StatSetProto stats = 2;
   optional TableStatsProto resultStats = 3;
-  repeated Partition partitions = 4;
+  repeated ShuffleFileOutput shuffleFileOutputs = 4;
 }
 
 message TaskFatalErrorReport {
@@ -100,8 +100,8 @@ enum CommandType {
     FINALIZE = 3;
 }
 
-message Partition {
-    required int32 partitionKey = 1;
+message ShuffleFileOutput {
+    required int32 partId = 1;
     optional string fileName = 2;
 }
 
@@ -117,11 +117,10 @@ message GetTaskRequestProto {
     required ExecutionBlockIdProto executionBlockId = 2;
 }
 
-enum PartitionType {
-  NONE_PARTITION = 0;
-  LIST_PARTITION = 1;
-  HASH_PARTITION = 2;
-  RANGE_PARTITION = 3;
+enum ShuffleType {
+  NONE_SHUFFLE = 0;
+  HASH_SHUFFLE = 1;
+  RANGE_SHUFFLE = 2;
 }
 
 enum TransmitType {
@@ -135,12 +134,12 @@ message DataChannelProto {
   required ExecutionBlockIdProto targetId = 2;
 
   required TransmitType transmitType = 3 [default = PULL_TRANSMIT];
-  required PartitionType partitionType = 4;
+  required ShuffleType shuffleType = 4;
 
   optional SchemaProto schema = 5;
 
-  repeated ColumnProto partitionKey = 7;
-  optional int32 partitionNum = 9 [default = 1];
+  repeated ColumnProto shuffleKeys = 7;
+  optional int32 numOutputs = 9 [default = 1];
 
   optional StoreType storeType = 10 [default = CSV];
 }

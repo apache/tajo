@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,33 +18,37 @@
 
 package org.apache.tajo.engine.planner.logical;
 
+
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Options;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 
-public class StoreTableNode extends PersistentStoreNode implements Cloneable {
-  @Expose private boolean isCreatedTable = false;
-  @Expose private boolean isOverwritten = false;
-  @Expose private PartitionDesc partitionDesc;
+/**
+ * <code>PersistentStoreNode</code> an expression for a persistent data store step.
+ * This includes some basic information for materializing data.
+ */
+public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
+  @Expose protected String tableName;
+  @Expose protected CatalogProtos.StoreType storageType = CatalogProtos.StoreType.CSV;
+  @Expose protected Options options;
 
-  public StoreTableNode(int pid, String tableName) {
-    super(pid, tableName);
+  public PersistentStoreNode(int pid, String tableName) {
+    super(pid, NodeType.STORE);
+    this.tableName = tableName;
   }
 
-  public StoreTableNode(int pid, String tableName, PartitionDesc partitionDesc) {
-    super(pid, tableName);
-    this.partitionDesc = partitionDesc;
+  public final String getTableName() {
+    return this.tableName;
   }
 
-  public void setStorageType(StoreType storageType) {
+  public void setStorageType(CatalogProtos.StoreType storageType) {
     this.storageType = storageType;
   }
 
-  public StoreType getStorageType() {
+  public CatalogProtos.StoreType getStorageType() {
     return this.storageType;
   }
 
@@ -52,20 +56,8 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     return this.options != null;
   }
 
-  public void setOptions(Options options) {
-    this.options = options;
-  }
-
   public Options getOptions() {
     return this.options;
-  }
-
-  public PartitionDesc getPartitions() {
-    return partitionDesc;
-  }
-
-  public void setPartitions(PartitionDesc partitionDesc) {
-    this.partitionDesc = partitionDesc;
   }
 
   @Override
@@ -77,22 +69,14 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     return planStr;
   }
 
-  public boolean isCreatedTable() {
-    return isCreatedTable;
-  }
-
-  public void setCreateTable() {
-    isCreatedTable = true;
-  }
-  
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof StoreTableNode) {
-      StoreTableNode other = (StoreTableNode) obj;
+    if (obj instanceof PersistentStoreNode) {
+      PersistentStoreNode other = (PersistentStoreNode) obj;
       boolean eq = super.equals(other);
-      eq = eq && isCreatedTable == other.isCreatedTable;
-      eq = eq && isOverwritten == other.isOverwritten;
-      eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
+      eq = eq && this.tableName.equals(other.tableName);
+      eq = eq && this.storageType.equals(other.storageType);
+      eq = eq && TUtil.checkEquals(options, other.options);
       return eq;
     } else {
       return false;
@@ -101,10 +85,10 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    StoreTableNode store = (StoreTableNode) super.clone();
-    store.isCreatedTable = isCreatedTable;
-    store.isOverwritten = isOverwritten;
-    store.partitionDesc = partitionDesc;
+    PersistentStoreNode store = (PersistentStoreNode) super.clone();
+    store.tableName = tableName;
+    store.storageType = storageType != null ? storageType : null;
+    store.options = options != null ? (Options) options.clone() : null;
     return store;
   }
 
@@ -114,16 +98,12 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     if (storageType != null) {
       sb.append(", storage: "+ storageType.name());
     }
-    
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInSchema());
 
-    if(partitionDesc != null) {
-      sb.append(partitionDesc.toString());
-    }
+    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
+        .append("\n  \"in schema\": ").append(getInSchema());
 
     sb.append("}");
-    
+
     return sb.toString() + "\n"
         + getChild().toString();
   }

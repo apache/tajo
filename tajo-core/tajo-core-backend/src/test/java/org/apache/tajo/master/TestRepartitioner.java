@@ -49,7 +49,7 @@ public class TestRepartitioner {
 
     Collection<URI> uris = Repartitioner.
         createHashFetchURL(hostName + ":" + port, sid, partitionId,
-                TajoWorkerProtocol.PartitionType.HASH_PARTITION, intermediateEntries);
+                TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE, intermediateEntries);
 
     List<String> taList = TUtil.newList();
     for (URI uri : uris) {

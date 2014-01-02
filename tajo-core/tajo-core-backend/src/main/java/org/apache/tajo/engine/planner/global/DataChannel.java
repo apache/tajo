@@ -30,9 +30,9 @@ public class DataChannel {
   private ExecutionBlockId srcId;
   private ExecutionBlockId targetId;
   private TransmitType transmitType = TransmitType.PULL_TRANSMIT;
-  private PartitionType partitionType;
-  private Integer partitionNum = 1;
-  private Column[] key;
+  private ShuffleType shuffleType;
+  private Integer numOutputs = 1;
+  private Column[] shuffleKeys;
 
   private Schema schema;
 
@@ -43,39 +43,39 @@ public class DataChannel {
     this.targetId = targetId;
   }
 
-  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, PartitionType partitionType) {
+  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, ShuffleType shuffleType) {
     this(srcId, targetId);
-    this.partitionType = partitionType;
+    this.shuffleType = shuffleType;
   }
 
-  public DataChannel(ExecutionBlock src, ExecutionBlock target, PartitionType partitionType, int partNum) {
-    this(src.getId(), target.getId(), partitionType, partNum);
+  public DataChannel(ExecutionBlock src, ExecutionBlock target, ShuffleType shuffleType, int numOutput) {
+    this(src.getId(), target.getId(), shuffleType, numOutput);
     setSchema(src.getPlan().getOutSchema());
   }
 
-  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, PartitionType partitionType, int partNum) {
-    this(srcId, targetId, partitionType);
-    this.partitionNum = partNum;
+  public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId, ShuffleType shuffleType, int numOutputs) {
+    this(srcId, targetId, shuffleType);
+    this.numOutputs = numOutputs;
   }
 
   public DataChannel(DataChannelProto proto) {
     this.srcId = new ExecutionBlockId(proto.getSrcId());
     this.targetId = new ExecutionBlockId(proto.getTargetId());
     this.transmitType = proto.getTransmitType();
-    this.partitionType = proto.getPartitionType();
+    this.shuffleType = proto.getShuffleType();
     if (proto.hasSchema()) {
       this.setSchema(new Schema(proto.getSchema()));
     }
-    if (proto.getPartitionKeyCount() > 0) {
-      key = new Column[proto.getPartitionKeyCount()];
-      for (int i = 0; i < proto.getPartitionKeyCount(); i++) {
-        key[i] = new Column(proto.getPartitionKey(i));
+    if (proto.getShuffleKeysCount() > 0) {
+      shuffleKeys = new Column[proto.getShuffleKeysCount()];
+      for (int i = 0; i < proto.getShuffleKeysCount(); i++) {
+        shuffleKeys[i] = new Column(proto.getShuffleKeys(i));
       }
     } else {
-      key = new Column[] {};
+      shuffleKeys = new Column[] {};
     }
-    if (proto.hasPartitionNum()) {
-      this.partitionNum = proto.getPartitionNum();
+    if (proto.hasNumOutputs()) {
+      this.numOutputs = proto.getNumOutputs();
     }
 
     if (proto.hasStoreType()) {
@@ -91,8 +91,8 @@ public class DataChannel {
     return targetId;
   }
 
-  public PartitionType getPartitionType() {
-    return partitionType;
+  public ShuffleType getShuffleType() {
+    return shuffleType;
   }
 
   public TransmitType getTransmitType() {
@@ -103,37 +103,37 @@ public class DataChannel {
     this.transmitType = transmitType;
   }
 
-  public void setPartition(PartitionType partitionType, Column [] keys, int numPartitions) {
-    Preconditions.checkArgument(keys.length >= 0, "At least one partition key must be specified.");
-    Preconditions.checkArgument(numPartitions > 0, "The number of partitions must be positive: %s", numPartitions);
+  public void setShuffle(ShuffleType shuffleType, Column[] keys, int numOutputs) {
+    Preconditions.checkArgument(keys.length >= 0, "At least one shuffle key must be specified.");
+    Preconditions.checkArgument(numOutputs > 0, "The number of outputs must be positive: %s", numOutputs);
 
-    this.partitionType = partitionType;
-    this.key = keys;
-    this.partitionNum = numPartitions;
+    this.shuffleType = shuffleType;
+    this.shuffleKeys = keys;
+    this.numOutputs = numOutputs;
   }
 
-  public void setPartitionType(PartitionType partitionType) {
-    this.partitionType = partitionType;
+  public void setShuffleType(ShuffleType shuffleType) {
+    this.shuffleType = shuffleType;
   }
 
-  public boolean hasPartitionKey() {
-    return key != null;
+  public boolean hasShuffleKeys() {
+    return shuffleKeys != null;
   }
 
-  public void setPartitionKey(Column [] key) {
-    this.key = key;
+  public void setShuffleKeys(Column[] key) {
+    this.shuffleKeys = key;
   }
 
-  public Column [] getPartitionKey() {
-    return this.key;
+  public Column [] getShuffleKeys() {
+    return this.shuffleKeys;
   }
 
-  public void setPartitionNum(int partNum) {
-    this.partitionNum = partNum;
+  public void setShuffleOutputNum(int partNum) {
+    this.numOutputs = partNum;
   }
 
-  public int getPartitionNum() {
-    return partitionNum;
+  public int getShuffleOutputNum() {
+    return numOutputs;
   }
 
   public boolean hasStoreType() {
@@ -155,17 +155,17 @@ public class DataChannel {
     if (transmitType != null) {
       builder.setTransmitType(transmitType);
     }
-    builder.setPartitionType(partitionType);
+    builder.setShuffleType(shuffleType);
     if (schema != null) {
       builder.setSchema(schema.getProto());
     }
-    if (key != null) {
-      for (Column column : key) {
-        builder.addPartitionKey(column.getProto());
+    if (shuffleKeys != null) {
+      for (Column column : shuffleKeys) {
+        builder.addShuffleKeys(column.getProto());
       }
     }
-    if (partitionNum != null) {
-      builder.setPartitionNum(partitionNum);
+    if (numOutputs != null) {
+      builder.setNumOutputs(numOutputs);
     }
 
     if(storeType != null){
@@ -186,11 +186,11 @@ public class DataChannel {
     StringBuilder sb = new StringBuilder();
     sb.append("[").append(srcId.getQueryId()).append("] ");
     sb.append(srcId.getId()).append(" => ").append(targetId.getId());
-    sb.append(" (type=").append(partitionType);
-    if (hasPartitionKey()) {
+    sb.append(" (type=").append(shuffleType);
+    if (hasShuffleKeys()) {
       sb.append(", key=");
       boolean first = true;
-      for (Column column : getPartitionKey()) {
+      for (Column column : getShuffleKeys()) {
         if (first) {
           first = false;
         } else {
@@ -198,7 +198,7 @@ public class DataChannel {
         }
         sb.append(column.getColumnName());
       }
-      sb.append(", num=").append(partitionNum);
+      sb.append(", num=").append(numOutputs);
     }
     sb.append(")");
     return sb.toString();

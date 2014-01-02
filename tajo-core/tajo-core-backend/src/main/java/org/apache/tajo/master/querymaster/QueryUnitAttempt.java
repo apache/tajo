@@ -25,7 +25,6 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
@@ -39,6 +38,8 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 
 public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
@@ -186,13 +187,13 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   }
 
   private void fillTaskStatistics(TaskCompletionReport report) {
-    if (report.getPartitionsCount() > 0) {
-      this.getQueryUnit().setPartitions(report.getPartitionsList());
+    if (report.getShuffleFileOutputsCount() > 0) {
+      this.getQueryUnit().setPartitions(report.getShuffleFileOutputsList());
 
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
-      for (Partition p : report.getPartitionsList()) {
+      for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
-            getId().getId(), p.getPartitionKey(), getHost(), getPullServerPort());
+            getId().getId(), p.getPartId(), getHost(), getPullServerPort());
         partitions.add(entry);
       }
       this.getQueryUnit().setIntermediateData(partitions);

@@ -32,7 +32,6 @@ import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.FragmentPair;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
@@ -50,6 +49,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 
 public class QueryUnit implements EventHandler<TaskEvent> {
   /** Class Logger */
@@ -65,7 +65,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private Map<String, Set<FragmentProto>> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
-  private List<Partition> partitions;
+  private List<ShuffleFileOutput> partitions;
 	private TableStats stats;
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
@@ -127,7 +127,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		scan = new ArrayList<ScanNode>();
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
-    partitions = new ArrayList<Partition>();
+    partitions = new ArrayList<ShuffleFileOutput>();
     attempts = Collections.emptyMap();
     lastAttemptId = null;
     nextAttempt = -1;
@@ -329,7 +329,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  this.stats = stats;
 	}
 	
-	public void setPartitions(List<Partition> partitions) {
+	public void setPartitions(List<ShuffleFileOutput> partitions) {
 	  this.partitions = Collections.unmodifiableList(partitions);
 	}
 	
@@ -337,7 +337,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  return this.stats;
 	}
 	
-	public List<Partition> getPartitions() {
+	public List<ShuffleFileOutput> getPartitions() {
 	  return this.partitions;
 	}
 	

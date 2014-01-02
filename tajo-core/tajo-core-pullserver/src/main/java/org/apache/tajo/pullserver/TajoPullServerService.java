@@ -364,17 +364,17 @@ public class TajoPullServerService extends AbstractService {
       final List<String> qids = params.get("qid");
       final List<String> taskIdList = params.get("ta");
       final List<String> subQueryIds = params.get("sid");
-      final List<String> partitionIds = params.get("p");
+      final List<String> partIds = params.get("p");
 
       if (types == null || taskIdList == null || subQueryIds == null || qids == null
-          || partitionIds == null) {
-        sendError(ctx, "Required queryId, type, taskIds, subquery Id, and partition id",
+          || partIds == null) {
+        sendError(ctx, "Required queryId, type, taskIds, subquery Id, and part id",
             BAD_REQUEST);
         return;
       }
 
       if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
-        sendError(ctx, "Required qids, type, taskIds, subquery Id, and partition id",
+        sendError(ctx, "Required qids, type, taskIds, subquery Id, and part id",
             BAD_REQUEST);
         return;
       }
@@ -382,21 +382,21 @@ public class TajoPullServerService extends AbstractService {
       final List<FileChunk> chunks = Lists.newArrayList();
 
       String queryId = qids.get(0);
-      String repartitionType = types.get(0);
+      String shuffleType = types.get(0);
       String sid = subQueryIds.get(0);
-      String partitionId = partitionIds.get(0);
+      String partId = partIds.get(0);
       List<String> taskIds = splitMaps(taskIdList);
 
-      LOG.info("PullServer request param: repartitionType=" + repartitionType +
-          ", sid=" + sid + ", partitionId=" + partitionId + ", taskIds=" + taskIdList);
+      LOG.info("PullServer request param: shuffleType=" + shuffleType +
+          ", sid=" + sid + ", partId=" + partId + ", taskIds=" + taskIdList);
 
       // the working dir of tajo worker for each query
       String queryBaseDir = queryId.toString() + "/output";
 
       LOG.info("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
 
-      // if a subquery requires a range partitioning
-      if (repartitionType.equals("r")) {
+      // if a subquery requires a range shuffle
+      if (shuffleType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
             lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf));
@@ -417,18 +417,18 @@ public class TajoPullServerService extends AbstractService {
           chunks.add(chunk);
         }
 
-        // if a subquery requires a hash repartition
-      } else if (repartitionType.equals("h")) {
+        // if a subquery requires a hash shuffle
+      } else if (shuffleType.equals("h")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
               lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" +
-                  ta + "/output/" + partitionId, conf));
+                  ta + "/output/" + partId, conf));
           File file = new File(path.toUri());
           FileChunk chunk = new FileChunk(file, 0, file.length());
           chunks.add(chunk);
         }
       } else {
-        LOG.error("Unknown repartition type: " + repartitionType);
+        LOG.error("Unknown shuffle type: " + shuffleType);
         return;
       }
 
@@ -482,16 +482,16 @@ public class TajoPullServerService extends AbstractService {
       }
       ChannelFuture writeFuture;
       if (ch.getPipeline().get(SslHandler.class) == null) {
-        final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
+        final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
             file.startOffset, file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
-        writeFuture = ch.write(partition);
+        writeFuture = ch.write(filePart);
         writeFuture.addListener(new ChannelFutureListener() {
           // TODO error handling; distinguish IO/connection failures,
           //      attribute to appropriate spill output
           @Override
           public void operationComplete(ChannelFuture future) {
-            partition.releaseExternalResources();
+            filePart.releaseExternalResources();
           }
         });
       } else {

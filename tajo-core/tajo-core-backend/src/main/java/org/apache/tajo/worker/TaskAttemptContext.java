@@ -56,7 +56,8 @@ public class TaskAttemptContext {
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
   private float progress = 0;
-  private Map<Integer, String> repartitions;
+  /** a map of shuffled file outputs */
+  private Map<Integer, String> shuffleFileOutputs;
   private File fetchIn;
   private boolean stopped = false;
   private boolean interQuery = false;
@@ -81,7 +82,7 @@ public class TaskAttemptContext {
     }
 
     this.workDir = workDir;
-    this.repartitions = Maps.newHashMap();
+    this.shuffleFileOutputs = Maps.newHashMap();
     
     state = TaskAttemptState.TA_PENDING;
   }
@@ -175,12 +176,12 @@ public class TaskAttemptContext {
     return doneFetchPhaseSignal;
   }
   
-  public void addRepartition(int partKey, String path) {
-    repartitions.put(partKey, path);
+  public void addShuffleFileOutput(int partId, String fileName) {
+    shuffleFileOutputs.put(partId, fileName);
   }
   
-  public Iterator<Entry<Integer,String>> getRepartitions() {
-    return repartitions.entrySet().iterator();
+  public Iterator<Entry<Integer,String>> getShuffleFileOutputs() {
+    return shuffleFileOutputs.entrySet().iterator();
   }
   
   public void updateAssignedFragments(String tableId, Fragment[] fragments) {

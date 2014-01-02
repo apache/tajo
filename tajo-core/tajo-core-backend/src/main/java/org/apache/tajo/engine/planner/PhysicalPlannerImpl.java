@@ -72,8 +72,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     try {
       execPlan = createPlanRecursive(context, logicalPlan);
       if (execPlan instanceof StoreTableExec
-          || execPlan instanceof IndexedStoreExec
-          || execPlan instanceof PartitionedStoreExec
+          || execPlan instanceof RangeShuffleFileWriteExec
+          || execPlan instanceof HashShuffleFileWriteExec
           || execPlan instanceof ColumnPartitionedTableStoreExec) {
         return execPlan;
       } else if (context.getDataChannel() != null) {
@@ -89,18 +89,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec buildOutputOperator(TaskAttemptContext context, LogicalNode plan,
                                            PhysicalExec execPlan) throws IOException {
     DataChannel channel = context.getDataChannel();
-    StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
-    if(context.isInterQuery()) storeTableNode.setStorageType(context.getDataChannel().getStoreType());
-    storeTableNode.setInSchema(plan.getOutSchema());
-    storeTableNode.setOutSchema(plan.getOutSchema());
-    if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
-      storeTableNode.setPartitions(channel.getPartitionType(), channel.getPartitionKey(), channel.getPartitionNum());
-    } else {
-      storeTableNode.setDefaultParition();
-    }
-    storeTableNode.setChild(plan);
+    ShuffleFileWriteNode shuffleFileWriteNode =
+        new ShuffleFileWriteNode(UNGENERATED_PID, channel.getTargetId().toString());
+    shuffleFileWriteNode.setStorageType(context.getDataChannel().getStoreType());
+    shuffleFileWriteNode.setInSchema(plan.getOutSchema());
+    shuffleFileWriteNode.setOutSchema(plan.getOutSchema());
+    shuffleFileWriteNode.setShuffle(channel.getShuffleType(), channel.getShuffleKeys(), channel.getShuffleOutputNum());
+    shuffleFileWriteNode.setChild(plan);
 
-    PhysicalExec outExecPlan = createStorePlan(context, storeTableNode, execPlan);
+    PhysicalExec outExecPlan = createShuffleFileWritePlan(context, shuffleFileWriteNode, execPlan);
     return outExecPlan;
   }
 
@@ -606,50 +603,56 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
+
+  /**
+   * Create a shuffle file write executor to store intermediate data into local disks.
+   */
+  public PhysicalExec createShuffleFileWritePlan(TaskAttemptContext ctx,
+                                                 ShuffleFileWriteNode plan, PhysicalExec subOp) throws IOException {
+    switch (plan.getShuffleType()) {
+    case HASH_SHUFFLE:
+      return new HashShuffleFileWriteExec(ctx, sm, plan, subOp);
+
+    case RANGE_SHUFFLE:
+      SortExec sortExec = PhysicalPlanUtil.findExecutor(subOp, SortExec.class);
+
+      SortSpec [] sortSpecs = null;
+      if (sortExec != null) {
+        sortSpecs = sortExec.getSortSpecs();
+      } else {
+        Column[] columns = ctx.getDataChannel().getShuffleKeys();
+        SortSpec specs[] = new SortSpec[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          specs[i] = new SortSpec(columns[i]);
+        }
+      }
+      return new RangeShuffleFileWriteExec(ctx, sm, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
+
+    case NONE_SHUFFLE:
+      return new StoreTableExec(ctx, plan, subOp);
+
+    default:
+      throw new IllegalStateException(ctx.getDataChannel().getShuffleType() + " is not supported yet.");
+    }
+  }
+
+  /**
+   * Create a executor to store a table into HDFS. This is used for CREATE TABLE ..
+   * AS or INSERT (OVERWRITE) INTO statement.
+   */
   public PhysicalExec createStorePlan(TaskAttemptContext ctx,
                                       StoreTableNode plan, PhysicalExec subOp) throws IOException {
-    if (plan.getPartitionType() == PartitionType.HASH_PARTITION
-        || plan.getPartitionType() == PartitionType.RANGE_PARTITION) {
-      switch (ctx.getDataChannel().getPartitionType()) {
-        case HASH_PARTITION:
-          return new PartitionedStoreExec(ctx, sm, plan, subOp);
 
-        case RANGE_PARTITION:
-          SortExec sortExec = PhysicalPlanUtil.findExecutor(subOp, SortExec.class);
-
-          SortSpec [] sortSpecs = null;
-          if (sortExec != null) {
-            sortSpecs = sortExec.getSortSpecs();
-          } else {
-            Column[] columns = ctx.getDataChannel().getPartitionKey();
-            SortSpec specs[] = new SortSpec[columns.length];
-            for (int i = 0; i < columns.length; i++) {
-              specs[i] = new SortSpec(columns[i]);
-            }
-          }
-
-          return new IndexedStoreExec(ctx, sm, subOp,
-              plan.getInSchema(), plan.getInSchema(), sortSpecs);
-      }
-    }
-    if (plan instanceof StoreIndexNode) {
-      return new TunnelExec(ctx, plan.getOutSchema(), subOp);
-    }
-
-    // Find partitioned table
     if (plan.getPartitions() != null) {
-      if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.COLUMN)) {
+      switch (plan.getPartitions().getPartitionsType()) {
+      case COLUMN:
         return new ColumnPartitionedTableStoreExec(ctx, plan, subOp);
-      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.HASH)) {
-        // TODO
-      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.RANGE)) {
-        // TODO
-      } else if (plan.getPartitions().getPartitionsType().equals(CatalogProtos.PartitionsType.LIST)) {
-        // TODO
+      default:
+        throw new IllegalStateException(plan.getPartitions().getPartitionsType() + " is not supported yet.");
       }
+    } else {
+      return new StoreTableExec(ctx, plan, subOp);
     }
-
-    return new StoreTableExec(ctx, plan, subOp);
   }
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode) throws IOException {

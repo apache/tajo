@@ -39,7 +39,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.*;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
 
 /**
  * Build DAG
@@ -72,25 +72,41 @@ public class GlobalPlanner {
     globalPlanContext.plan = masterPlan;
     LOG.info(masterPlan.getLogicalPlan());
 
+    // copy a logical plan in order to keep the original logical plan. The distributed planner can modify
+    // an input logical plan.
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
+
+    // create a distributed execution plan by visiting each logical node.
+    // Its output is a graph, where each vertex is an execution block, and each edge is a data channel.
+    // MasterPlan contains them.
     LogicalNode lastNode = planner.visit(globalPlanContext,
         masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
-
     ExecutionBlock childExecBlock = globalPlanContext.execBlockMap.get(lastNode.getPID());
 
+    ExecutionBlock terminalBlock;
+    // TODO - consider two terminal types: specified output or not
     if (childExecBlock.getPlan() != null) {
-      ExecutionBlock terminalBlock = masterPlan.createTerminalBlock();
-      DataChannel dataChannel = new DataChannel(childExecBlock, terminalBlock, NONE_PARTITION, 1);
-      dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
-      dataChannel.setSchema(lastNode.getOutSchema());
-      masterPlan.addConnect(dataChannel);
-      masterPlan.setTerminal(terminalBlock);
-    } else {
-      masterPlan.setTerminal(childExecBlock);
+      terminalBlock = masterPlan.createTerminalBlock();
+      DataChannel finalChannel = new DataChannel(childExecBlock.getId(), terminalBlock.getId());
+      setFinalOutputChannel(finalChannel, lastNode.getOutSchema());
+      masterPlan.addConnect(finalChannel);
+    } else { // if one or more unions is terminal
+      terminalBlock = childExecBlock;
+      for (DataChannel outputChannel : masterPlan.getIncomingChannels(terminalBlock.getId())) {
+        setFinalOutputChannel(outputChannel, lastNode.getOutSchema());
+      }
     }
 
+    masterPlan.setTerminal(terminalBlock);
     LOG.info(masterPlan);
+  }
+
+  private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
+    outputChannel.setShuffleType(NONE_SHUFFLE);
+    outputChannel.setShuffleOutputNum(1);
+    outputChannel.setStoreType(CatalogProtos.StoreType.CSV);
+    outputChannel.setSchema(outputSchema);
   }
 
   public static ScanNode buildInputExecutor(LogicalPlan plan, DataChannel channel) {
@@ -105,15 +121,15 @@ public class GlobalPlanner {
                                                 ExecutionBlock parent, JoinNode join, boolean leftTable) {
     ExecutionBlock childBlock = leftTable ? leftBlock : rightBlock;
 
-    DataChannel channel = new DataChannel(childBlock, parent, HASH_PARTITION, 32);
+    DataChannel channel = new DataChannel(childBlock, parent, HASH_SHUFFLE, 32);
     channel.setStoreType(storeType);
     if (join.getJoinType() != JoinType.CROSS) {
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
           leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema());
       if (leftTable) {
-        channel.setPartitionKey(joinColumns[0]);
+        channel.setShuffleKeys(joinColumns[0]);
       } else {
-        channel.setPartitionKey(joinColumns[1]);
+        channel.setShuffleKeys(joinColumns[1]);
       }
     }
     return channel;
@@ -218,8 +234,8 @@ public class GlobalPlanner {
 
     // setup channel
     DataChannel channel;
-    channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
-    channel.setPartitionKey(groupbyNode.getGroupingColumns());
+    channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
+    channel.setShuffleKeys(groupbyNode.getGroupingColumns());
     channel.setSchema(topMostOfFirstPhase.getOutSchema());
     channel.setStoreType(storeType);
 
@@ -251,9 +267,9 @@ public class GlobalPlanner {
         currentBlock = childBlock;
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(currentBlock.getId())) {
           if (firstPhaseGroupBy.isEmptyGrouping()) {
-            dataChannel.setPartition(HASH_PARTITION, firstPhaseGroupBy.getGroupingColumns(), 1);
+            dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
           } else {
-            dataChannel.setPartition(HASH_PARTITION, firstPhaseGroupBy.getGroupingColumns(), 32);
+            dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
           }
           dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
 
@@ -273,11 +289,11 @@ public class GlobalPlanner {
 
         DataChannel channel;
         if (firstPhaseGroupBy.isEmptyGrouping()) {
-          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 1);
-          channel.setPartitionKey(firstPhaseGroupBy.getGroupingColumns());
+          channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 1);
+          channel.setShuffleKeys(firstPhaseGroupBy.getGroupingColumns());
         } else {
-          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
-          channel.setPartitionKey(firstPhaseGroupBy.getGroupingColumns());
+          channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
+          channel.setShuffleKeys(firstPhaseGroupBy.getGroupingColumns());
         }
         channel.setSchema(firstPhaseGroupBy.getOutSchema());
         channel.setStoreType(storeType);
@@ -306,8 +322,8 @@ public class GlobalPlanner {
     childBlock.setPlan(firstSortNode);
 
     currentBlock = masterPlan.newExecutionBlock();
-    DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_PARTITION, 32);
-    channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
+    DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_SHUFFLE, 32);
+    channel.setShuffleKeys(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
     channel.setSchema(firstSortNode.getOutSchema());
     channel.setStoreType(storeType);
 
@@ -348,9 +364,9 @@ public class GlobalPlanner {
     DataChannel channel = null;
     CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
     if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
-      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+      channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
       Column[] columns = new Column[partitionDesc.getColumns().size()];
-      channel.setPartitionKey(partitionDesc.getColumns().toArray(columns));
+      channel.setShuffleKeys(partitionDesc.getColumns().toArray(columns));
       channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);
     } else {
@@ -409,15 +425,15 @@ public class GlobalPlanner {
         childBlock.setPlan(childLimit);
 
         DataChannel channel = context.plan.getChannel(childBlock, execBlock);
-        channel.setPartitionNum(1);
+        channel.setShuffleOutputNum(1);
         context.execBlockMap.put(node.getPID(), execBlock);
       } else {
         node.setChild(execBlock.getPlan());
         execBlock.setPlan(node);
 
         ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
-        DataChannel newChannel = new DataChannel(execBlock, newExecBlock, HASH_PARTITION, 1);
-        newChannel.setPartitionKey(new Column[]{});
+        DataChannel newChannel = new DataChannel(execBlock, newExecBlock, HASH_SHUFFLE, 1);
+        newChannel.setShuffleKeys(new Column[]{});
         newChannel.setSchema(node.getOutSchema());
         newChannel.setStoreType(storeType);
 
@@ -525,7 +541,7 @@ public class GlobalPlanner {
       }
 
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
-        DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_PARTITION, 1);
+        DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
         channel.setStoreType(storeType);
         context.plan.addConnect(channel);
       }

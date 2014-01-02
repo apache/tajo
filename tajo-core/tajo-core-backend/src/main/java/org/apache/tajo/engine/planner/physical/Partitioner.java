@@ -25,7 +25,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.storage.Tuple;
 
 public abstract class Partitioner {
-  protected final int [] partitionKeys;
+  protected final int [] partitionKeyIds;
   protected final int numPartitions;
   
   public Partitioner(final int [] keyList, final int numPartitions) {
@@ -35,7 +35,7 @@ public abstract class Partitioner {
         "At least one partition key must be specified.");
     Preconditions.checkArgument(numPartitions > 0, 
         "The number of partitions must be positive: %s", numPartitions);
-    this.partitionKeys = keyList;
+    this.partitionKeyIds = keyList;
     this.numPartitions = numPartitions;    
   }
   
