@@ -53,6 +53,7 @@ public class Fetcher {
   private long startTime;
   private long finishTime;
   private long fileLen;
+  private int messageReceiveCount;
 
   public Fetcher(URI uri, File file) {
     this.uri = uri;
@@ -80,6 +81,10 @@ public class Fetcher {
 
   public long getFileLen() {
     return fileLen;
+  }
+
+  public int getMessageReceiveCount() {
+    return messageReceiveCount;
   }
 
   public String getStatus() {
@@ -147,11 +152,14 @@ public class Fetcher {
 
     public HttpClientHandler(File file) throws FileNotFoundException {
       this.file = file;
+      this.raf = new RandomAccessFile(file, "rw");
+      this.fc = raf.getChannel();
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
+      messageReceiveCount++;
       try {
         if (!readingChunks) {
           HttpResponse response = (HttpResponse) e.getMessage();
@@ -180,11 +188,10 @@ public class Fetcher {
 
           if (response.getStatus() == HttpResponseStatus.NO_CONTENT) {
             LOG.info("There are no data corresponding to the request");
+            fc.close();
+            raf.close();
             return;
           }
-
-          this.raf = new RandomAccessFile(file, "rw");
-          this.fc = raf.getChannel();
 
           if (response.isChunked()) {
             readingChunks = true;
@@ -208,6 +215,7 @@ public class Fetcher {
               LOG.info("Data fetch is done, but cannot get all data "
                   + "(received/total: " + fileLength + "/" + length + ")");
             }
+            finishTime = System.currentTimeMillis();
           } else {
             fc.write(chunk.getContent().toByteBuffer());
           }
@@ -216,7 +224,6 @@ public class Fetcher {
         if(raf != null) {
           fileLen = file.length();
         }
-        finishTime = System.currentTimeMillis();
       }
     }
   }

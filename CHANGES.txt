@@ -192,6 +192,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-470: Fetcher's finished time and file length is changed in WEB UI.
+    (hyoungjunkim via hyunsik)
+
     TAJO-469: CTAS with no column definition will get  a NPE.
     (Min Zhou via hyunsik)
 

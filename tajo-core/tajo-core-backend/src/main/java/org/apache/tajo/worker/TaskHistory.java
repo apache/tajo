@@ -40,6 +40,7 @@ public class TaskHistory {
     private String status;
     private String uri;
     private long fileLen;
+    private int messageReceiveCount;
 
     public long getStartTime() {
       return startTime;
@@ -79,6 +80,14 @@ public class TaskHistory {
 
     public void setFileLen(long fileLen) {
       this.fileLen = fileLen;
+    }
+
+    public int getMessageReceiveCount() {
+      return messageReceiveCount;
+    }
+
+    public void setMessageReceiveCount(int messageReceiveCount) {
+      this.messageReceiveCount = messageReceiveCount;
     }
   }
 

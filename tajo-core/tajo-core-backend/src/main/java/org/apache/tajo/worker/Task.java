@@ -463,6 +463,7 @@ public class Task {
           fetcherHistory.setStatus(eachFetcher.getStatus());
           fetcherHistory.setUri(eachFetcher.getURI().toString());
           fetcherHistory.setFileLen(eachFetcher.getFileLen());
+          fetcherHistory.setMessageReceiveCount(eachFetcher.getMessageReceiveCount());
 
           fetcherHistories.put(eachFetcher.getURI(), fetcherHistory);
         }

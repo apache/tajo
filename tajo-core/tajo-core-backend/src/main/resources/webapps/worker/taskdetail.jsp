@@ -97,7 +97,7 @@
     <hr/>
     <h3>Fetch Status</h3>
     <table border="1" width="100%" class="border_table">
-        <tr><th>No</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th><th>File Length</th><th>URI</th></tr>
+        <tr><th>No</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th><th>File Length</th><th># Messages</th><th>URI</th></tr>
 <%
     int index = 1;
     for(TaskHistory.FetcherHistory eachFetcher: taskHistory.getFetchers()) {
@@ -109,6 +109,7 @@
             <td><%=JSPUtil.getElapsedTime(eachFetcher.getStartTime(), eachFetcher.getFinishTime())%></td>
             <td><%=eachFetcher.getStatus()%></td>
             <td align="right"><%=eachFetcher.getFileLen()%></td>
+            <td align="right"><%=eachFetcher.getMessageReceiveCount()%></td>
             <td><a href="<%=eachFetcher.getUri()%>"><%=eachFetcher.getUri()%></a></td>
         </tr>
 <%
