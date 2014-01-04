@@ -39,6 +39,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+
 /**
  * Test CREATE TABLE AS SELECT statements
  */
@@ -55,12 +56,53 @@ public class TestCTASQuery {
   }
 
   @Test
+  public final void testCtasWithoutTableDefinition() throws Exception {
+    String tableName ="testCtasWithoutTableDefinition";
+    tpch.execute(
+        "create table " + tableName
+            + " partition by column(key float8) "
+            + " as select l_orderkey as col1, l_partkey as col2, l_quantity as key from lineitem");
+
+    TajoTestingCluster cluster = tpch.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    TableDesc desc = catalog.getTableDesc(tableName);
+    assertTrue(catalog.existsTable(tableName));
+    assertTrue(desc.getSchema().contains("testCtasWithoutTableDefinition.col1"));
+    PartitionDesc partitionDesc = desc.getPartitions();
+    assertEquals(partitionDesc.getPartitionsType(), CatalogProtos.PartitionsType.COLUMN);
+    assertEquals("key", partitionDesc.getColumns().get(0).getColumnName());
+
+    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    Path path = desc.getPath();
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=38.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
+    assertEquals(5, desc.getStats().getNumRows().intValue());
+
+    ResultSet res = tpch.execute(
+        "select distinct * from " + tableName + " where (key = 45.0 or key = 38.0)");
+
+    Map<Double, int []> resultRows1 = Maps.newHashMap();
+    resultRows1.put(45.0d, new int[]{3, 2});
+    resultRows1.put(38.0d, new int[]{2, 2});
+
+    for (int i = 0; i < 3 && res.next(); i++) {
+      assertEquals(resultRows1.get(res.getDouble(3))[0], res.getInt(1));
+      assertEquals(resultRows1.get(res.getDouble(3))[1], res.getInt(2));
+    }
+    res.close();
+  }
+
+  @Test
   public final void testCtasWithColumnedPartition() throws Exception {
     String tableName ="testCtasWithColumnedPartition";
     tpch.execute(
         "create table " + tableName
-        + " (col1 int4, col2 int4) partition by column(key float8) "
-        + " as select l_orderkey as col1, l_partkey as col2, l_quantity as key from lineitem");
+            + " (col1 int4, col2 int4) partition by column(key float8) "
+            + " as select l_orderkey as col1, l_partkey as col2, l_quantity as key from lineitem");
 
     TajoTestingCluster cluster = tpch.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();

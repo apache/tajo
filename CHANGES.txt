@@ -192,6 +192,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-469: CTAS with no column definition will get  a NPE.
+    (Min Zhou via hyunsik)
+
     TAJO-467: Too many open FD when master failed. (hyoungjunkim via hyunsik)
 
     TAJO-455: Throw PlanningException when Creating table with Partition

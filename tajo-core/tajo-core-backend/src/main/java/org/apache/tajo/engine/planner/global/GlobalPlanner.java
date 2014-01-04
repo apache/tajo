@@ -340,8 +340,7 @@ public class GlobalPlanner {
   private ExecutionBlock buildStorePlan(GlobalPlanContext context,
                                         ExecutionBlock childBlock,
                                         StoreTableNode currentNode) 
-    throws PlanningException
-    {
+    throws PlanningException {
     PartitionDesc partitionDesc = currentNode.getPartitions();
 
     // if result table is not a partitioned table, directly store it

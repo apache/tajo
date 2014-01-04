@@ -758,15 +758,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       storeNode.setCreateTable();
       storeNode.setChild(subQuery);
 
-      if (expr.hasTableElements()) {
-        // CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
-        Schema schema = convertTableElementsSchema(expr.getTableElements());
-        storeNode.setOutSchema(schema);
-      } else {
-        // CREATE TABLE tbl AS SELECT ...
-        storeNode.setOutSchema(subQuery.getOutSchema());
-      }
       storeNode.setInSchema(subQuery.getOutSchema());
+      if(!expr.hasTableElements()) {
+        // CREATE TABLE tbl AS SELECT ...
+        expr.setTableElements(convertSchemaToTableElements(subQuery.getOutSchema()));
+      }
+      // else CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
+      storeNode.setOutSchema(convertTableElementsSchema(expr.getTableElements()));
 
       if (expr.hasStorageType()) {
         storeNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
@@ -975,6 +973,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     return schema;
+  }
+
+  private ColumnDefinition[] convertSchemaToTableElements(Schema schema) {
+    List<Column> columns = schema.getColumns();
+    ColumnDefinition[] columnDefinitions = new ColumnDefinition[columns.size()];
+    for(int i = 0; i < columns.size(); i ++) {
+      Column col = columns.get(i);
+      columnDefinitions[i] = new ColumnDefinition(col.getColumnName(), col.getDataType().getType().name());
+    }
+
+    return columnDefinitions;
   }
 
   private Collection<Column> convertTableElementsColumns(CreateTable.ColumnDefinition [] elements,
