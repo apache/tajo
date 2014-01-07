@@ -41,7 +41,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   @Expose private Long numRows = null; // required
   @Expose private Long numBytes = null; // required
   @Expose private Integer numBlocks = null; // optional
-  @Expose private Integer numPartitions = null; // optional
+  @Expose private Integer numShuffleOutputs = null; // optional
   @Expose private Long avgRows = null; // optional
   @Expose private List<ColumnStats> columnStatses = null; // repeated
 
@@ -49,7 +49,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     numRows = 0l;
     numBytes = 0l;
     numBlocks = 0;
-    numPartitions = 0;
+    numShuffleOutputs = 0;
     avgRows = 0l;
     columnStatses = TUtil.newList();
   }
@@ -63,10 +63,10 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     } else {
       this.numBlocks = 0;
     }
-    if (proto.hasNumPartitions()) {
-      this.numPartitions = proto.getNumPartitions();
+    if (proto.hasNumShuffleOutputs()) {
+      this.numShuffleOutputs = proto.getNumShuffleOutputs();
     } else {
-      this.numPartitions = 0;
+      this.numShuffleOutputs = 0;
     }
     if (proto.hasAvgRows()) {
       this.avgRows = proto.getAvgRows();
@@ -107,12 +107,12 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     this.numBlocks = numBlocks;
   }
 
-  public Integer getNumPartitions() {
-    return this.numPartitions;
+  public Integer getNumShuffleOutputs() {
+    return this.numShuffleOutputs;
   }
 
-  public void setNumPartitions(int numPartitions) {
-    this.numPartitions = numPartitions;
+  public void setNumShuffleOutputs(int numOutputs) {
+    this.numShuffleOutputs = numOutputs;
   }
 
   public Long getAvgRows() {
@@ -142,7 +142,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       boolean eq = this.numRows.equals(other.numRows);
       eq = eq && this.numBytes.equals(other.numBytes);
       eq = eq && TUtil.checkEquals(this.numBlocks, other.numBlocks);
-      eq = eq && TUtil.checkEquals(this.numPartitions, other.numPartitions);
+      eq = eq && TUtil.checkEquals(this.numShuffleOutputs, other.numShuffleOutputs);
       eq = eq && TUtil.checkEquals(this.avgRows, other.avgRows);
       eq = eq && TUtil.checkEquals(this.columnStatses, other.columnStatses);
       return eq;
@@ -153,7 +153,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
   public int hashCode() {
     return Objects.hashCode(numRows, numBytes,
-        numBlocks, numPartitions, columnStatses);
+        numBlocks, numShuffleOutputs, columnStatses);
   }
 
   public Object clone() throws CloneNotSupportedException {
@@ -162,7 +162,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     stat.numRows = numRows != null ? numRows.longValue() : null;
     stat.numBytes = numBytes != null ? numBytes.longValue() : null;
     stat.numBlocks = numBlocks != null ? numBlocks.intValue() : null;
-    stat.numPartitions = numPartitions != null ? numPartitions.intValue() : null;
+    stat.numShuffleOutputs = numShuffleOutputs != null ? numShuffleOutputs.intValue() : null;
     stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
 
     return stat;
@@ -192,8 +192,8 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     if (this.numBlocks != null) {
       builder.setNumBlocks(this.numBlocks);
     }
-    if (this.numPartitions != null) {
-      builder.setNumPartitions(this.numPartitions);
+    if (this.numShuffleOutputs != null) {
+      builder.setNumShuffleOutputs(this.numShuffleOutputs);
     }
     if (this.avgRows != null) {
       builder.setAvgRows(this.avgRows);

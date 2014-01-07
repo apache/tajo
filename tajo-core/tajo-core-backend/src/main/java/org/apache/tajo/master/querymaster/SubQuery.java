@@ -388,7 +388,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     TableStats stat = new TableStats();
     TableStats childStat;
     long avgRows = 0, numBytes = 0, numRows = 0;
-    int numBlocks = 0, numPartitions = 0;
+    int numBlocks = 0, numOutputs = 0;
     List<ColumnStats> columnStatses = Lists.newArrayList();
 
     MasterPlan masterPlan = subQuery.getMasterPlan();
@@ -401,14 +401,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       columnStatses.addAll(childStat.getColumnStats());
       numBlocks += childStat.getNumBlocks();
       numBytes += childStat.getNumBytes();
-      numPartitions += childStat.getNumPartitions();
+      numOutputs += childStat.getNumShuffleOutputs();
       numRows += childStat.getNumRows();
     }
 
     stat.setColumnStats(columnStatses);
     stat.setNumBlocks(numBlocks);
     stat.setNumBytes(numBytes);
-    stat.setNumPartitions(numPartitions);
+    stat.setNumShuffleOutputs(numOutputs);
     stat.setNumRows(numRows);
     stat.setAvgRows(avgRows);
     return stat;
@@ -511,7 +511,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         } else {
           ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
           DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
-          setRepartitionIfNecessary(subQuery, channel);
+          setShuffleIfNecessary(subQuery, channel);
           initTaskScheduler(subQuery);
           schedule(subQuery);
           LOG.info(subQuery.getTaskScheduler().remainingScheduledObjectNum() + " objects are scheduled");
@@ -551,10 +551,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
      * If a parent block requires a repartition operation, the method sets proper repartition
      * methods and the number of partitions to a given subquery.
      */
-    private static void setRepartitionIfNecessary(SubQuery subQuery, DataChannel channel) {
+    private static void setShuffleIfNecessary(SubQuery subQuery, DataChannel channel) {
       if (channel.getShuffleType() != ShuffleType.NONE_SHUFFLE) {
-        int numTasks = calculatePartitionNum(subQuery, channel);
-        Repartitioner.setPartitionNumberForTwoPhase(subQuery, numTasks, channel);
+        int numTasks = calculateShuffleOutputNum(subQuery, channel);
+        Repartitioner.setShuffleOutputNumForTwoPhase(subQuery, numTasks, channel);
       }
     }
 
@@ -581,7 +581,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
      * @param subQuery
      * @return
      */
-    public static int calculatePartitionNum(SubQuery subQuery, DataChannel channel) {
+    public static int calculateShuffleOutputNum(SubQuery subQuery, DataChannel channel) {
       TajoConf conf = subQuery.context.getConf();
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock parent = masterPlan.getParent(subQuery.getBlock());

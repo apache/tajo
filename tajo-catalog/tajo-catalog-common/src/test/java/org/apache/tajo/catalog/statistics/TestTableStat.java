@@ -33,7 +33,7 @@ public class TestTableStat {
     stat.setNumRows(957685);
     stat.setNumBytes(1023234);
     stat.setNumBlocks(3123);
-    stat.setNumPartitions(5);
+    stat.setNumShuffleOutputs(5);
     stat.setAvgRows(80000);
         
     int numCols = 3;
@@ -48,7 +48,7 @@ public class TestTableStat {
     assertTrue(957685 == stat.getNumRows());
     assertTrue(1023234 == stat.getNumBytes());
     assertTrue(3123 == stat.getNumBlocks());
-    assertTrue(5 == stat.getNumPartitions());
+    assertTrue(5 == stat.getNumShuffleOutputs());
     assertTrue(80000 == stat.getAvgRows());
     assertEquals(3, stat.getColumnStats().size());
     for (int i = 0; i < numCols; i++) {
@@ -69,7 +69,7 @@ public class TestTableStat {
   public void tableStatEquals(TableStats s1, TableStats s2) {
     assertEquals(s1.getNumRows(), s2.getNumRows());
     assertEquals(s1.getNumBlocks(), s2.getNumBlocks());
-    assertEquals(s1.getNumPartitions(), s2.getNumPartitions());
+    assertEquals(s1.getNumShuffleOutputs(), s2.getNumShuffleOutputs());
     assertEquals(s1.getAvgRows(), s2.getAvgRows());
     assertEquals(s1.getColumnStats().size(), s2.getColumnStats().size());
     for (int i = 0; i < s1.getColumnStats().size(); i++) {

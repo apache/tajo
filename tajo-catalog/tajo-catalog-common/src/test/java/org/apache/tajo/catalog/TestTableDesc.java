@@ -52,7 +52,7 @@ public class TestTableDesc {
     stats.setNumRows(957685);
     stats.setNumBytes(1023234);
     stats.setNumBlocks(3123);
-    stats.setNumPartitions(5);
+    stats.setNumShuffleOutputs(5);
     stats.setAvgRows(80000);
 
     int numCols = 2;

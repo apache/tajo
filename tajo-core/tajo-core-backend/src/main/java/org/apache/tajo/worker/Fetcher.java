@@ -135,7 +135,7 @@ public class Fetcher {
 
     // Shut down executor threads to exit.
     bootstrap.releaseExternalResources();
-
+    finishTime = System.currentTimeMillis();
     return file;
   }
 
@@ -215,7 +215,6 @@ public class Fetcher {
               LOG.info("Data fetch is done, but cannot get all data "
                   + "(received/total: " + fileLength + "/" + length + ")");
             }
-            finishTime = System.currentTimeMillis();
           } else {
             fc.write(chunk.getContent().toByteBuffer());
           }

@@ -92,7 +92,7 @@ public class StatisticsUtil {
       aggregated.setNumRows(aggregated.getNumRows() + ts.getNumRows());
       aggregated.setNumBytes(aggregated.getNumBytes() + ts.getNumBytes());
       aggregated.setNumBlocks(aggregated.getNumBlocks() + ts.getNumBlocks());
-      aggregated.setNumPartitions(aggregated.getNumPartitions() + ts.getNumPartitions());
+      aggregated.setNumShuffleOutputs(aggregated.getNumShuffleOutputs() + ts.getNumShuffleOutputs());
     }
 
     //aggregated.setAvgRows(aggregated.getNumRows() / tableStats.size());
@@ -117,14 +117,14 @@ public class StatisticsUtil {
       columnStatses.addAll(childStat.getColumnStats());
       numBlocks += childStat.getNumBlocks();
       numBytes += childStat.getNumBytes();
-      numPartitions += childStat.getNumPartitions();
+      numPartitions += childStat.getNumShuffleOutputs();
       numRows += childStat.getNumRows();
     }
 
     stat.setColumnStats(columnStatses);
     stat.setNumBlocks(numBlocks);
     stat.setNumBytes(numBytes);
-    stat.setNumPartitions(numPartitions);
+    stat.setNumShuffleOutputs(numPartitions);
     stat.setNumRows(numRows);
     stat.setAvgRows(avgRows);
     return stat;

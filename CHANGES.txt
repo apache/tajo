@@ -192,6 +192,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-479: Rename obsolete name 'partition' to 'shuffle and fix the broken
+    taskdetail.jsp. (hyunsik).
+
     TAJO-470: Fetcher's finished time and file length is changed in WEB UI.
     (hyoungjunkim via hyunsik)
 

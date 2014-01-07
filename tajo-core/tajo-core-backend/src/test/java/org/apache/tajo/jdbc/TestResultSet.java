@@ -28,7 +28,6 @@ import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -87,7 +86,7 @@ public class TestResultSet {
     stats.setNumBytes(written);
     stats.setAvgRows(tupleNum);
     stats.setNumBlocks(1000);
-    stats.setNumPartitions(100);
+    stats.setNumShuffleOutputs(100);
     desc = new TableDesc("score", scoreSchema, scoreMeta, p);
     desc.setStats(stats);
   }

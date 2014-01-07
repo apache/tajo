@@ -122,7 +122,7 @@ public class Repartitioner {
     } else {
       LOG.info("[Distributed Join Strategy] : Repartition Join");
       // The hash map is modeling as follows:
-      // <Partition Id, <Table Name, Intermediate Data>>
+      // <Part Id, <Table Name, Intermediate Data>>
       Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries = new HashMap<Integer, Map<String, List<IntermediateEntry>>>();
 
       // Grouping IntermediateData by a partition key and a table name
@@ -131,9 +131,9 @@ public class Repartitioner {
         for (QueryUnit task : childSubQuery.getQueryUnits()) {
           if (task.getIntermediateData() != null) {
             for (IntermediateEntry intermEntry : task.getIntermediateData()) {
-              if (hashEntries.containsKey(intermEntry.getPartitionId())) {
+              if (hashEntries.containsKey(intermEntry.getPartId())) {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
-                    hashEntries.get(intermEntry.getPartitionId());
+                    hashEntries.get(intermEntry.getPartId());
 
                 if (tbNameToInterm.containsKey(scan.getCanonicalName())) {
                   tbNameToInterm.get(scan.getCanonicalName()).add(intermEntry);
@@ -144,7 +144,7 @@ public class Repartitioner {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<String, List<IntermediateEntry>>();
                 tbNameToInterm.put(scan.getCanonicalName(), TUtil.newList(intermEntry));
-                hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
+                hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
               }
             }
           }
@@ -171,7 +171,7 @@ public class Repartitioner {
       // determine the number of task per 64MB
       int maxTaskNum = (int) Math.ceil((double)mb / desireJoinTaskVolumn);
       LOG.info("The calculated number of tasks is " + maxTaskNum);
-      LOG.info("The number of total partition keys is " + hashEntries.size());
+      LOG.info("The number of total shuffle keys is " + hashEntries.size());
       // the number of join tasks cannot be larger than the number of
       // distinct partition ids.
       int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
@@ -182,7 +182,7 @@ public class Repartitioner {
       // Assign partitions to tasks in a round robin manner.
       for (Entry<Integer, Map<String, List<IntermediateEntry>>> entry
           : hashEntries.entrySet()) {
-        addJoinPartition(subQuery, entry.getKey(), entry.getValue());
+        addJoinShuffle(subQuery, entry.getKey(), entry.getValue());
       }
 
       schedulerContext.setTaskSize((int) Math.ceil((double) bothFetchSize / joinTaskNum));
@@ -209,13 +209,13 @@ public class Repartitioner {
     schedulerContext.setEstimatedTaskNum(fragments.size());
   }
 
-  private static void addJoinPartition(SubQuery subQuery, int partitionId,
-                                       Map<String, List<IntermediateEntry>> grouppedPartitions) {
+  private static void addJoinShuffle(SubQuery subQuery, int partitionId,
+                                     Map<String, List<IntermediateEntry>> grouppedPartitions) {
     Map<String, List<URI>> fetches = new HashMap<String, List<URI>>();
     for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
       Map<String, List<IntermediateEntry>> requests;
       if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
-          requests = mergeHashPartitionRequest(grouppedPartitions.get(execBlock.getId().toString()));
+          requests = mergeHashShuffleRequest(grouppedPartitions.get(execBlock.getId().toString()));
       } else {
         return;
       }
@@ -238,10 +238,8 @@ public class Repartitioner {
    *
    * @return key: pullserver's address, value: a list of requests
    */
-  private static Map<String, List<IntermediateEntry>> mergeHashPartitionRequest(
-      List<IntermediateEntry> partitions) {
-    Map<String, List<IntermediateEntry>> mergedPartitions =
-        new HashMap<String, List<IntermediateEntry>>();
+  private static Map<String, List<IntermediateEntry>> mergeHashShuffleRequest(List<IntermediateEntry> partitions) {
+    Map<String, List<IntermediateEntry>> mergedPartitions = new HashMap<String, List<IntermediateEntry>>();
     for (IntermediateEntry partition : partitions) {
       if (mergedPartitions.containsKey(partition.getPullAddress())) {
         mergedPartitions.get(partition.getPullAddress()).add(partition);
@@ -258,16 +256,16 @@ public class Repartitioner {
                                                       DataChannel channel, int maxNum)
       throws InternalException {
     if (channel.getShuffleType() == HASH_SHUFFLE) {
-      scheduleHashPartitionedFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
+      scheduleHashShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
-      scheduleRangePartitionedFetches(schedulerContext, subQuery, childSubQuery, channel, maxNum);
+      scheduleRangeShuffledFetches(schedulerContext, subQuery, childSubQuery, channel, maxNum);
     } else {
       throw new InternalException("Cannot support partition type");
     }
   }
 
-  public static void scheduleRangePartitionedFetches(TaskSchedulerContext schedulerContext, SubQuery subQuery,
-                                                     SubQuery childSubQuery, DataChannel channel, int maxNum)
+  public static void scheduleRangeShuffledFetches(TaskSchedulerContext schedulerContext, SubQuery subQuery,
+                                                  SubQuery childSubQuery, DataChannel channel, int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
     TableStats stat = childSubQuery.getTableStat();
@@ -341,13 +339,13 @@ public class Repartitioner {
       LOG.error(e);
     }
 
-    schedulePartitionByRoundRobin(subQuery, map, scan.getTableName(), determinedTaskNum);
+    scheduleFetchesByRoundRobin(subQuery, map, scan.getTableName(), determinedTaskNum);
 
     schedulerContext.setEstimatedTaskNum(determinedTaskNum);
   }
 
-  public static void schedulePartitionByRoundRobin(SubQuery subQuery, Map<?, Set<URI>> partitions,
-                                                   String tableName, int num) {
+  public static void scheduleFetchesByRoundRobin(SubQuery subQuery, Map<?, Set<URI>> partitions,
+                                                 String tableName, int num) {
     int i;
     Map<String, List<URI>>[] fetchesArray = new Map[num];
     for (i = 0; i < num; i++) {
@@ -379,9 +377,9 @@ public class Repartitioner {
     return sb.toString();
   }
 
-  public static void scheduleHashPartitionedFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
-                                                    SubQuery subQuery, DataChannel channel,
-                                                    int maxNum) {
+  public static void scheduleHashShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
+                                                 SubQuery subQuery, DataChannel channel,
+                                                 int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
 
     List<TableStats> tableStatses = new ArrayList<TableStats>();
@@ -504,22 +502,20 @@ public class Repartitioner {
     return fetchURLs;
   }
 
-  public static Map<Integer, List<IntermediateEntry>> hashByKey(
-      List<IntermediateEntry> entries) {
+  public static Map<Integer, List<IntermediateEntry>> hashByKey(List<IntermediateEntry> entries) {
     Map<Integer, List<IntermediateEntry>> hashed = new HashMap<Integer, List<IntermediateEntry>>();
     for (IntermediateEntry entry : entries) {
-      if (hashed.containsKey(entry.getPartitionId())) {
-        hashed.get(entry.getPartitionId()).add(entry);
+      if (hashed.containsKey(entry.getPartId())) {
+        hashed.get(entry.getPartId()).add(entry);
       } else {
-        hashed.put(entry.getPartitionId(), TUtil.newList(entry));
+        hashed.put(entry.getPartId(), TUtil.newList(entry));
       }
     }
 
     return hashed;
   }
 
-  public static Map<String, List<IntermediateEntry>> hashByHost(
-      List<IntermediateEntry> entries) {
+  public static Map<String, List<IntermediateEntry>> hashByHost(List<IntermediateEntry> entries) {
     Map<String, List<IntermediateEntry>> hashed = new HashMap<String, List<IntermediateEntry>>();
 
     String hostName;
@@ -535,7 +531,7 @@ public class Repartitioner {
     return hashed;
   }
 
-  public static SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int desiredNum, DataChannel channel) {
+  public static SubQuery setShuffleOutputNumForTwoPhase(SubQuery subQuery, final int desiredNum, DataChannel channel) {
     ExecutionBlock execBlock = subQuery.getBlock();
     Column[] keys = null;
     // if the next query is join,

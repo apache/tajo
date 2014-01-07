@@ -121,7 +121,7 @@
         delim = "<br/>";
     }
 
-    int numPartitions = queryUnit.getPartitionNum();
+    int numPartitions = queryUnit.getShuffleOutpuNum();
     String partitionKey = "-";
     String partitionFileName = "-";
     if(numPartitions > 0) {

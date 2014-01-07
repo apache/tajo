@@ -183,7 +183,7 @@ message TableStatsProto {
 	required int64 numRows = 1;
 	required int64 numBytes = 2;
 	optional int32 numBlocks = 4;
-	optional int32 numPartitions = 5;
+	optional int32 numShuffleOutputs = 5;
 	optional int64 avgRows = 6;
 	repeated ColumnStatsProto colStat = 7;
 }

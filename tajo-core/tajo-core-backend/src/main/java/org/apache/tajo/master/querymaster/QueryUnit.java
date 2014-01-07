@@ -29,7 +29,6 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.FragmentPair;
@@ -41,7 +40,6 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
@@ -65,7 +63,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private Map<String, Set<FragmentProto>> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
-  private List<ShuffleFileOutput> partitions;
+  private List<ShuffleFileOutput> shuffleFileOutputs;
 	private TableStats stats;
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
@@ -127,7 +125,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		scan = new ArrayList<ScanNode>();
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
-    partitions = new ArrayList<ShuffleFileOutput>();
+    shuffleFileOutputs = new ArrayList<ShuffleFileOutput>();
     attempts = Collections.emptyMap();
     lastAttemptId = null;
     nextAttempt = -1;
@@ -185,20 +183,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
-  @Deprecated
-  public void setFragment(String tableId, FileFragment fragment) {
-    Set<FragmentProto> fragmentProtos;
-    if (fragMap.containsKey(tableId)) {
-      fragmentProtos = fragMap.get(tableId);
-    } else {
-      fragmentProtos = new HashSet<FragmentProto>();
-      fragMap.put(tableId, fragmentProtos);
-    }
-    fragmentProtos.add(fragment.getProto());
-    addDataLocation(fragment);
-  }
-
-  public void setFragment2(FileFragment fragment) {
+  public void setFragment(FileFragment fragment) {
     Set<FragmentProto> fragmentProtos;
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
@@ -212,9 +197,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   public void setFragment(FragmentPair[] fragmentPairs) {
     for (FragmentPair eachFragmentPair : fragmentPairs) {
-      this.setFragment2(eachFragmentPair.getLeftFragment());
+      this.setFragment(eachFragmentPair.getLeftFragment());
       if (eachFragmentPair.getRightFragment() != null) {
-        this.setFragment2(eachFragmentPair.getRightFragment());
+        this.setFragment(eachFragmentPair.getRightFragment());
       }
     }
   }
@@ -226,21 +211,6 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   public String getSucceededHost() {
     return succeededHost;
   }
-
-	public void addFetch(String tableId, String uri) throws URISyntaxException {
-	  this.addFetch(tableId, new URI(uri));
-	}
-	
-	public void addFetch(String tableId, URI uri) {
-	  Set<URI> uris;
-	  if (fetchMap.containsKey(tableId)) {
-	    uris = fetchMap.get(tableId);
-	  } else {
-	    uris = Sets.newHashSet();
-	  }
-	  uris.add(uri);
-    fetchMap.put(tableId, uris);
-	}
 	
 	public void addFetches(String tableId, Collection<URI> urilist) {
 	  Set<URI> uris;
@@ -289,18 +259,6 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	public Collection<URI> getFetch(ScanNode scan) {
 	  return this.fetchMap.get(scan.getTableName());
 	}
-
-	public String getOutputName() {
-		return this.store.getTableName();
-	}
-	
-	public Schema getOutputSchema() {
-	  return this.store.getOutSchema();
-	}
-	
-	public StoreTableNode getStoreTableNode() {
-	  return this.store;
-	}
 	
 	public ScanNode[] getScanNodes() {
 	  return this.scan.toArray(new ScanNode[scan.size()]);
@@ -329,20 +287,20 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  this.stats = stats;
 	}
 	
-	public void setPartitions(List<ShuffleFileOutput> partitions) {
-	  this.partitions = Collections.unmodifiableList(partitions);
+	public void setShuffleFileOutputs(List<ShuffleFileOutput> partitions) {
+	  this.shuffleFileOutputs = Collections.unmodifiableList(partitions);
 	}
 	
 	public TableStats getStats() {
 	  return this.stats;
 	}
 	
-	public List<ShuffleFileOutput> getPartitions() {
-	  return this.partitions;
+	public List<ShuffleFileOutput> getShuffleFileOutputs() {
+	  return this.shuffleFileOutputs;
 	}
 	
-	public int getPartitionNum() {
-	  return this.partitions.size();
+	public int getShuffleOutpuNum() {
+	  return this.shuffleFileOutputs.size();
 	}
 
   public QueryUnitAttempt newAttempt() {
@@ -540,15 +498,15 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   public static class IntermediateEntry {
     int taskId;
     int attemptId;
-    int partitionId;
+    int partId;
     String pullHost;
     int port;
 
-    public IntermediateEntry(int taskId, int attemptId, int partitionId,
+    public IntermediateEntry(int taskId, int attemptId, int partId,
                              String pullServerAddr, int pullServerPort) {
       this.taskId = taskId;
       this.attemptId = attemptId;
-      this.partitionId = partitionId;
+      this.partId = partId;
       this.pullHost = pullServerAddr;
       this.port = pullServerPort;
     }
@@ -561,8 +519,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       return this.attemptId;
     }
 
-    public int getPartitionId() {
-      return this.partitionId;
+    public int getPartId() {
+      return this.partId;
     }
 
     public String getPullHost() {
