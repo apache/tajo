@@ -281,7 +281,7 @@ if [ -d ${HIVE_LIB} ]; then
   done
 fi
 
-if [ ${HIVE_JDBC_DRIVER_DIR} != "" ]; then
+if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then
   CLASSPATH=${CLASSPATH}:$HIVE_JDBC_DRIVER_DIR;
 fi
 

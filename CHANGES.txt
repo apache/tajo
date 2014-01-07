@@ -200,6 +200,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-484: Fix bug [: !=: unary operator expected when execute start-tajo.sh.
+    (DaeMyung Kang via jihoon)
+
     TAJO-479: Rename obsolete name 'partition' to 'shuffle and fix the broken
     taskdetail.jsp. (hyunsik).
 
