@@ -1,0 +1,1 @@
+select split_part(split_part(l_shipinstruct, ' ', 1), 'A', 2) from lineitem;

@@ -1,0 +1,3 @@
+s_acctbal,s_name,n_name,p_partkey,p_mfgr,s_address,s_phone,s_comment,ps_supplycost,r_name,p_type,p_size
+-------------------------------
+4192.4,Supplier#000000003,ARGENTINA,2,Manufacturer#1,q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3,11-383-516-1199,blithely silent requests after the express dependencies are sl,1.01,AMERICA,LARGE BRUSHED BRASS,15

@@ -1,0 +1,1 @@
+select l_orderkey as gkey from lineitem group by gkey order by gkey;

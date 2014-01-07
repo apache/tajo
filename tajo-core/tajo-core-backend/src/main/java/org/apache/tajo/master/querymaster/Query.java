@@ -307,8 +307,7 @@ public class Query implements EventHandler<QueryEvent> {
           SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
           nextSubQuery.setPriority(query.priority--);
           query.addSubQuery(nextSubQuery);
-          nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
-              SubQueryEventType.SQ_INIT));
+          nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));
           LOG.info("Scheduling SubQuery:" + nextSubQuery.getId());
           if(LOG.isDebugEnabled()) {
             LOG.debug("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());

@@ -252,37 +252,45 @@ public class Repartitioner {
   }
 
   public static void scheduleFragmentsForNonLeafTasks(TaskSchedulerContext schedulerContext,
-                                                      MasterPlan masterPlan, SubQuery subQuery, SubQuery childSubQuery,
-                                                      DataChannel channel, int maxNum)
+                                                      MasterPlan masterPlan, SubQuery subQuery, int maxNum)
       throws InternalException {
+    DataChannel channel = masterPlan.getIncomingChannels(subQuery.getBlock().getId()).get(0);
     if (channel.getShuffleType() == HASH_SHUFFLE) {
       scheduleHashShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
-      scheduleRangeShuffledFetches(schedulerContext, subQuery, childSubQuery, channel, maxNum);
+      scheduleRangeShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
     } else {
       throw new InternalException("Cannot support partition type");
     }
   }
 
-  public static void scheduleRangeShuffledFetches(TaskSchedulerContext schedulerContext, SubQuery subQuery,
-                                                  SubQuery childSubQuery, DataChannel channel, int maxNum)
+  private static TableStats computeChildBlocksStats(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan,
+                                                    ExecutionBlockId parentBlockId) {
+    List<TableStats> tableStatses = new ArrayList<TableStats>();
+    List<ExecutionBlock> childBlocks = masterPlan.getChilds(parentBlockId);
+    for (ExecutionBlock childBlock : childBlocks) {
+      SubQuery childExecSM = context.getSubQuery(childBlock.getId());
+      tableStatses.add(childExecSM.getTableStat());
+    }
+    return StatisticsUtil.aggregateTableStat(tableStatses);
+  }
+
+  public static void scheduleRangeShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
+                                                  SubQuery subQuery, DataChannel channel, int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStats stat = childSubQuery.getTableStat();
-    if (stat.getNumRows() == 0) {
-      return;
-    }
-
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
-    SortNode sortNode = PlannerUtil.findTopNode(childSubQuery.getBlock().getPlan(), NodeType.SORT);
+    ExecutionBlock sampleChildBlock = masterPlan.getChild(subQuery.getId(), 0);
+    SortNode sortNode = PlannerUtil.findTopNode(sampleChildBlock.getPlan(), NodeType.SORT);
     SortSpec [] sortSpecs = sortNode.getSortKeys();
     Schema sortSchema = new Schema(channel.getShuffleKeys());
 
     // calculate the number of maximum query ranges
-    TupleRange mergedRange = TupleUtil.columnStatToRange(channel.getSchema(), sortSchema, stat.getColumnStats());
+    TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
+    TupleRange mergedRange = TupleUtil.columnStatToRange(channel.getSchema(), sortSchema, totalStat.getColumnStats());
     RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
     BigDecimal card = partitioner.getTotalCardinality();
 
@@ -305,12 +313,14 @@ public class Repartitioner {
     SubQuery.scheduleFragment(subQuery, dummyFragment);
 
     List<String> basicFetchURIs = new ArrayList<String>();
-
-    for (QueryUnit qu : childSubQuery.getQueryUnits()) {
-      for (IntermediateEntry p : qu.getIntermediateData()) {
-        String uri = createBasicFetchUri(p.getPullHost(), p.getPullPort(),
-            childSubQuery.getId(), p.taskId, p.attemptId);
-        basicFetchURIs.add(uri);
+    List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
+    for (ExecutionBlock childBlock : childBlocks) {
+      SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
+      for (QueryUnit qu : childExecSM.getQueryUnits()) {
+        for (IntermediateEntry p : qu.getIntermediateData()) {
+          String uri = createBasicFetchUri(p.getPullHost(), p.getPullPort(), childBlock.getId(), p.taskId, p.attemptId);
+          basicFetchURIs.add(uri);
+        }
       }
     }
 
@@ -345,7 +355,7 @@ public class Repartitioner {
   }
 
   public static void scheduleFetchesByRoundRobin(SubQuery subQuery, Map<?, Set<URI>> partitions,
-                                                 String tableName, int num) {
+                                                   String tableName, int num) {
     int i;
     Map<String, List<URI>>[] fetchesArray = new Map[num];
     for (i = 0; i < num; i++) {
@@ -381,14 +391,7 @@ public class Repartitioner {
                                                  SubQuery subQuery, DataChannel channel,
                                                  int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
-
-    List<TableStats> tableStatses = new ArrayList<TableStats>();
-    List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
-    for (ExecutionBlock childBlock : childBlocks) {
-      SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-      tableStatses.add(childExecSM.getTableStat());
-    }
-    TableStats totalStat = StatisticsUtil.computeStatFromUnionBlock(tableStatses);
+    TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
 
     if (totalStat.getNumRows() == 0) {
       return;
@@ -406,7 +409,7 @@ public class Repartitioner {
     Map<String, List<IntermediateEntry>> hashedByHost;
     Map<Integer, List<URI>> finalFetchURI = new HashMap<Integer, List<URI>>();
 
-    for (ExecutionBlock block : childBlocks) {
+    for (ExecutionBlock block : masterPlan.getChilds(execBlock)) {
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
       for (QueryUnit tasks : subQuery.getContext().getSubQuery(block.getId()).getQueryUnits()) {
         if (tasks.getIntermediateData() != null) {

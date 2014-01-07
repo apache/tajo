@@ -1,0 +1,1 @@
+select l_orderkey as orderkey from lineitem where l_orderkey = 1;

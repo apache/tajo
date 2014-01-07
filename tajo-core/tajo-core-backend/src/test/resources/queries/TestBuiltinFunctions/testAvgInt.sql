@@ -1,0 +1,1 @@
+select avg(l_partkey) as total_avg from lineitem;

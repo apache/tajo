@@ -1,0 +1,1 @@
+create table orderkeys as select l_orderkey from lineitem;

@@ -314,24 +314,44 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     SortNode firstSortNode = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
-    LogicalNode childBlockPlan = childBlock.getPlan();
-    firstSortNode.setChild(childBlockPlan);
-    // sort is a non-projectable operator. So, in/out schemas are the same to its child operator.
-    firstSortNode.setInSchema(childBlockPlan.getOutSchema());
-    firstSortNode.setOutSchema(childBlockPlan.getOutSchema());
-    childBlock.setPlan(firstSortNode);
 
-    currentBlock = masterPlan.newExecutionBlock();
-    DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_SHUFFLE, 32);
-    channel.setShuffleKeys(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
-    channel.setSchema(firstSortNode.getOutSchema());
-    channel.setStoreType(storeType);
+    if (firstSortNode.getChild().getType() == NodeType.TABLE_SUBQUERY &&
+        ((TableSubQueryNode)firstSortNode.getChild()).getSubQuery().getType() == NodeType.UNION) {
 
-    ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
-    currentNode.setChild(secondScan);
-    currentNode.setInSchema(secondScan.getOutSchema());
-    currentBlock.setPlan(currentNode);
-    masterPlan.addConnect(channel);
+      currentBlock = childBlock;
+      for (DataChannel channel : masterPlan.getIncomingChannels(childBlock.getId())) {
+        channel.setShuffle(RANGE_SHUFFLE, PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray(), 32);
+        channel.setSchema(firstSortNode.getOutSchema());
+
+        ExecutionBlock subBlock = masterPlan.getExecBlock(channel.getSrcId());
+        SortNode s1 = PlannerUtil.clone(context.plan.getLogicalPlan(), firstSortNode);
+        s1.setChild(subBlock.getPlan());
+        subBlock.setPlan(s1);
+
+        ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+        currentNode.setChild(secondScan);
+        currentNode.setInSchema(secondScan.getOutSchema());
+        currentBlock.setPlan(currentNode);
+      }
+    } else {
+      LogicalNode childBlockPlan = childBlock.getPlan();
+      firstSortNode.setChild(childBlockPlan);
+      // sort is a non-projectable operator. So, in/out schemas are the same to its child operator.
+      firstSortNode.setInSchema(childBlockPlan.getOutSchema());
+      firstSortNode.setOutSchema(childBlockPlan.getOutSchema());
+      childBlock.setPlan(firstSortNode);
+
+      currentBlock = masterPlan.newExecutionBlock();
+      DataChannel channel = new DataChannel(childBlock, currentBlock, RANGE_SHUFFLE, 32);
+      channel.setShuffleKeys(PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray());
+      channel.setSchema(firstSortNode.getOutSchema());
+
+      ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+      currentNode.setChild(secondScan);
+      currentNode.setInSchema(secondScan.getOutSchema());
+      currentBlock.setPlan(currentNode);
+      masterPlan.addConnect(channel);
+    }
 
     return currentBlock;
   }
@@ -360,7 +380,7 @@ public class GlobalPlanner {
     // 2. create a new execution block, pipeline 2 exec blocks through a DataChannel
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
-    DataChannel channel = null;
+    DataChannel channel;
     CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
     if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
       channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
@@ -389,8 +409,7 @@ public class GlobalPlanner {
     @Override
     public LogicalNode visitRoot(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  LogicalRootNode node, Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visitRoot(context, plan, block, node, stack);
-      return child;
+      return super.visitRoot(context, plan, block, node, stack);
     }
 
     @Override

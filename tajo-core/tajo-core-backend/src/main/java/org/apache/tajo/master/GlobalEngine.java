@@ -276,6 +276,7 @@ public class GlobalEngine extends AbstractService {
     }
 
     if(!fs.exists(path)) {
+      LOG.error("ERROR: " + path.toUri() + " does not exist");
       throw new IOException("ERROR: " + path.toUri() + " does not exist");
     }
 
@@ -284,7 +285,7 @@ public class GlobalEngine extends AbstractService {
     try {
       totalSize = sm.calculateSize(path);
     } catch (IOException e) {
-      LOG.error("Cannot calculate the size of the relation", e);
+      LOG.warn("Cannot calculate the size of the relation", e);
     }
 
     TableStats stats = new TableStats();

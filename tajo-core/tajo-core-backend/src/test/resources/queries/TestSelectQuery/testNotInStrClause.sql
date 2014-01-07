@@ -1,0 +1,1 @@
+select l_orderkey from lineitem where l_returnflag not in ('N', 'S');

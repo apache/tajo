@@ -27,7 +27,7 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -43,7 +43,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
                                       Set<String> relationsWithoutQual) throws PlanningException {
 
     // Setup a remain relation set to be joined
-    Set<LogicalNode> remainRelations = new HashSet<LogicalNode>();
+    // Why we should use LinkedHashSet? - it should keep the deterministic for the order of joins.
+    // Otherwise, join orders can be different even if join costs are the same to each other.
+    Set<LogicalNode> remainRelations = new LinkedHashSet<LogicalNode>();
     for (RelationNode relation : block.getRelations()) {
       remainRelations.add(relation);
     }

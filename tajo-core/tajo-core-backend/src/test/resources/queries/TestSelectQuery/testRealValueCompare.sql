@@ -1,0 +1,1 @@
+select ps_supplycost from partsupp where ps_supplycost = 771.64;

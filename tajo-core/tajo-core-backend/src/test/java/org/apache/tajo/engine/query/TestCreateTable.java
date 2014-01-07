@@ -19,39 +19,22 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.util.FileUtil;
-import org.junit.BeforeClass;
+import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.ResultSet;
-
-import static org.junit.Assert.assertTrue;
-
 @Category(IntegrationTest.class)
-public class TestCreateTableStatement {
-  private static TpchTestBase tpch;
-  public TestCreateTableStatement() throws IOException {
-    super();
-  }
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    tpch = TpchTestBase.getInstance();
-  }
+public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testVariousTypes() throws Exception {
-    String tableName ="various_types";
-    ResultSet res = tpch.execute(FileUtil.readTextFile(new File("src/test/queries/create_table_various_types.sql")));
-    res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(tableName));
+    String tableName = executeDDL("create_table_various_types.sql", null);
+    assertTableExists(tableName);
+  }
+
+  @Test
+  public final void testCreateTable1() throws Exception {
+    String tableName = executeDDL("table1_ddl.sql", "table1.tbl", "table1");
+    assertTableExists(tableName);
   }
 }

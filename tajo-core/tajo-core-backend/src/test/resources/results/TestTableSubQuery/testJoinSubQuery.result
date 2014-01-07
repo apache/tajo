@@ -1,0 +1,4 @@
+n_regionkey,r_regionkey,n_name,r_name
+-------------------------------
+0,0,ALGERIA,AFRICA
+1,1,ARGENTINA,AMERICA

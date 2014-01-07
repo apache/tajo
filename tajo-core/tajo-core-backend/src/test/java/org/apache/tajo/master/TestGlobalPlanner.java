@@ -118,11 +118,6 @@ public class TestGlobalPlanner {
   }
 
   @Test
-  public void testMultipleJoin() throws Exception {
-    buildPlan(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.sql")));
-  }
-
-  @Test
   public void testUnion() throws IOException, PlanningException {
     buildPlan("select o_custkey as num from orders union select c_custkey as num from customer union select p_partkey as num from part");
   }
@@ -176,12 +171,12 @@ public class TestGlobalPlanner {
 
   @Test
   public void testComplexUnion1() throws Exception {
-    buildPlan(FileUtil.readTextFile(new File("src/test/queries/complex_union_1.sql")));
+    buildPlan(FileUtil.readTextFile(new File("src/test/resources/queries/default/complex_union_1.sql")));
   }
 
   @Test
   public void testComplexUnion2() throws Exception {
-    buildPlan(FileUtil.readTextFile(new File("src/test/queries/complex_union_2.sql")));
+    buildPlan(FileUtil.readTextFile(new File("src/test/resources/queries/default/complex_union_2.sql")));
   }
 
   @Test

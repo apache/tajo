@@ -229,7 +229,7 @@ public class TestTablePartitions {
 
   @Test
   public final void testColumnPartitionedTableByThreeColumnsWithCompression() throws Exception {
-    String tableName = "testColumnPartitionedTableNoMatchedPartition";
+    String tableName = "testColumnPartitionedTableByThreeColumnsWithCompression";
     ResultSet res = tpch.execute(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +

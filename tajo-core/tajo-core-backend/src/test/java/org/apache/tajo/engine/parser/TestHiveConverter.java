@@ -85,7 +85,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect1() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_1.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_1.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -93,7 +93,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect3() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_3.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_3.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -101,7 +101,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect4() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_4.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_4.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -109,7 +109,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect5() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_5.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_5.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -117,7 +117,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect7() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_7.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_7.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -125,7 +125,7 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect8() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_8.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_8.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -133,34 +133,34 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect9() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_9.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_9.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/select_9.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_9.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testSelect10() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_10.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_10.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/select_10.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_10.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   //@Test
   public void testSelect11() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_11.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_11.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/select_11.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_11.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testSelect12() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_12.hiveql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_12.hiveql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -168,16 +168,16 @@ public class TestHiveConverter {
 
   @Test
   public void testSelect13() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_13.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_13.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/select_13.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_13.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testSelect14() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/select_14.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_14.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -185,7 +185,7 @@ public class TestHiveConverter {
 
   @Test
   public void testGroupby1() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/groupby_1.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_1.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -193,7 +193,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin2() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_2.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_2.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -201,7 +201,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin5() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_5.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_5.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -209,7 +209,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin6() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_6.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_6.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -217,7 +217,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin7() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_7.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_7.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -225,7 +225,7 @@ public class TestHiveConverter {
 
   //@Test
   public void testJoin9() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_9.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_9.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     assertEquals(expr, hiveExpr);
@@ -233,7 +233,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin12() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_12.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_12.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     assertEquals(expr, hiveExpr);
@@ -241,7 +241,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin13() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_13.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_13.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -249,7 +249,7 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin14() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_14.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_14.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -257,16 +257,16 @@ public class TestHiveConverter {
 
   @Test
   public void testJoin15() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/join_15.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_15.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/join_15.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_15.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testUnion1() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/union_1.hiveql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/union_1.hiveql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -274,7 +274,7 @@ public class TestHiveConverter {
 
   @Test
   public void testInsert1() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/insert_into_select_1.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/insert_into_select_1.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
@@ -283,52 +283,52 @@ public class TestHiveConverter {
 
   @Test
   public void testInsert2() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/insert_overwrite_into_select_2.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/insert_overwrite_into_select_2.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/insert_overwrite_into_select_2.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/insert_overwrite_into_select_2.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testCreate1() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_1.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_1.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/create_table_1.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_1.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testCreate2() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_2.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_2.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/create_table_2.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_2.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testCreate11() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_11.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_11.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/create_table_11.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_11.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testCreate12() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/create_table_12.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_12.sql"));
     Expr expr = parseQuery(sql);
-    sql = FileUtil.readTextFile(new File("src/test/queries/create_table_12.hiveql"));
+    sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_12.hiveql"));
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);
   }
 
   @Test
   public void testDrop() throws IOException {
-    String sql = FileUtil.readTextFile(new File("src/test/queries/drop_table.sql"));
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/drop_table.sql"));
     Expr expr = parseQuery(sql);
     Expr hiveExpr = parseHiveQL(sql);
     compareJsonResult(expr, hiveExpr);

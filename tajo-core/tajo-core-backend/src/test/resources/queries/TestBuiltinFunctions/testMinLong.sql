@@ -1,0 +1,1 @@
+select min(l_orderkey) as total_min from lineitem;

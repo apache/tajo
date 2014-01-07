@@ -27,6 +27,7 @@ import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
@@ -77,7 +78,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private Schema schema;
   private TableMeta meta;
   private TableStats statistics;
-  private EventHandler eventHandler;
+  private EventHandler<Event> eventHandler;
   private final AbstractStorageManager sm;
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
@@ -233,7 +234,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return masterPlan.getOutgoingChannels(getId()).iterator().next();
   }
 
-  public EventHandler getEventHandler() {
+  public EventHandler<Event> getEventHandler() {
     return eventHandler;
   }
 
@@ -666,11 +667,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         Repartitioner.scheduleFragmentsForJoinQuery(subQuery.schedulerContext, subQuery);
       } else { // Case 3: Others (Sort or Aggregation)
         int numTasks = getNonLeafTaskNum(subQuery);
-        ExecutionBlockId childId = masterPlan.getChilds(subQuery.getBlock()).get(0).getId();
-        SubQuery child = subQuery.context.getSubQuery(childId);
-        DataChannel channel = masterPlan.getChannel(child.getId(), subQuery.getId());
-        Repartitioner.scheduleFragmentsForNonLeafTasks(subQuery.schedulerContext, masterPlan, subQuery, child,
-            channel, numTasks);
+//        ExecutionBlockId childId = masterPlan.getChilds(subQuery.getBlock()).get(0).getId();
+//        SubQuery child = subQuery.context.getSubQuery(childId);
+//        DataChannel channel = masterPlan.getChannel(child.getId(), subQuery.getId());
+        Repartitioner.scheduleFragmentsForNonLeafTasks(subQuery.schedulerContext, masterPlan, subQuery, numTasks);
       }
     }
 

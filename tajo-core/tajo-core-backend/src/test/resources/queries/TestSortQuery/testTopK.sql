@@ -1,0 +1,1 @@
+select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;

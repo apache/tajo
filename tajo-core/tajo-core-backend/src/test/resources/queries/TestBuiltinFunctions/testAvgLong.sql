@@ -1,0 +1,1 @@
+select avg(l_orderkey) as total_avg from lineitem;

@@ -43,6 +43,6 @@ public class TestDDLBuilder {
 
     TableDesc desc = new TableDesc("table1", schema, meta, new Path("/table1"));
 
-    assertEquals(FileUtil.readTextFile(new File("src/test/results/testBuildDDL.result")), DDLBuilder.buildDDL(desc));
+    assertEquals(FileUtil.readTextFile(new File("src/test/resources/results/testBuildDDL.result")), DDLBuilder.buildDDL(desc));
   }
 }

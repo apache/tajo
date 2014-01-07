@@ -126,7 +126,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void stop() {
     stopEventHandling = true;
-    schedulingThread.interrupt();
+    if (schedulingThread != null) {
+      schedulingThread.interrupt();
+    }
 
     // Return all of request callbacks instantly.
     for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
