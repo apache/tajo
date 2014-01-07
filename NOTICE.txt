@@ -7,3 +7,4 @@ The Apache Software Foundation (http://www.apache.org/).
 This product includes Protobuf-java-format (http://code.google.com/p/protobuf-java-format/)
 Copyright 2000-2011 NeuStar, Inc. All rights reserved.
 Copyright (c) 2009, Orbitz World Wide All rights reserved.
+Copyright 2012 Cloudera Inc.

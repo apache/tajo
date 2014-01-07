@@ -116,6 +116,18 @@
       <artifactId>derby</artifactId>
       <version>10.8.2.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libfb303</artifactId>
+      <version>0.9.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
+      <version>0.9.0</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -132,35 +144,53 @@
           <groupId>javax.jdo</groupId>
           <artifactId>jdo2-api</artifactId>
           <version>2.3-eb</version>
+          <scope>provided</scope>
         </dependency>
         <dependency>
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-exec</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-contrib</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-service</artifactId>
+              <artifactId>hive-hbase-handler</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-testutils</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libfb303</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libthrift</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>javax.jdo</groupId>
+              <artifactId>jdo2-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -168,30 +198,31 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-metastore</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-service</artifactId>
+              <artifactId>hive-shimss</artifactId>
             </exclusion>
             <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-shims</artifactId>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libfb303</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libthrift</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>javax.jdo</groupId>
+              <artifactId>jdo2-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -199,22 +230,23 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-cli</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-exec</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
@@ -223,6 +255,10 @@
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>javax.jdo</groupId>
+              <artifactId>jdo2-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -230,11 +266,8 @@
           <groupId>org.apache.hcatalog</groupId>
           <artifactId>hcatalog-core</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-cli</artifactId>
@@ -245,7 +278,15 @@
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-exec</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
@@ -254,6 +295,10 @@
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>javax.jdo</groupId>
+              <artifactId>jdo2-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -275,38 +320,50 @@
       </properties>
       <dependencies>
         <dependency>
-          <groupId>javax.jdo</groupId>
-          <artifactId>jdo2-api</artifactId>
-          <version>2.3-eb</version>
-        </dependency>
-        <dependency>
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-exec</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-contrib</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-service</artifactId>
+              <artifactId>hive-hbase-handler</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-testutils</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libfb303</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libthrift</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>com.jolbox</groupId>
+              <artifactId>bonecp</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -314,30 +371,31 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-metastore</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-service</artifactId>
+              <artifactId>hive-shimss</artifactId>
             </exclusion>
             <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-shims</artifactId>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libfb303</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.thrift</groupId>
+              <artifactId>libthrift</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>com.jolbox</groupId>
+              <artifactId>bonecp</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -345,22 +403,23 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>hive-cli</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-common</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-exec</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
@@ -369,6 +428,10 @@
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>com.jolbox</groupId>
+              <artifactId>bonecp</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
@@ -376,11 +439,8 @@
           <groupId>org.apache.hive.hcatalog</groupId>
           <artifactId>hcatalog-core</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-builtins</artifactId>
-            </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-cli</artifactId>
@@ -391,7 +451,15 @@
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
-              <artifactId>hive-pdk</artifactId>
+              <artifactId>hive-exec</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-metastore</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.apache.hive</groupId>
+              <artifactId>hive-serde</artifactId>
             </exclusion>
             <exclusion>
               <groupId>org.apache.hive</groupId>
@@ -400,6 +468,10 @@
             <exclusion>
               <groupId>org.apache.hive</groupId>
               <artifactId>hive-shims</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>com.jolbox</groupId>
+              <artifactId>bonecp</artifactId>
             </exclusion>
           </exclusions>
         </dependency>

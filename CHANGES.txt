@@ -110,6 +110,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-433: Improve integration with Hive. (jaehwa)
+
     TAJO-471: Extract ColumnPartitonUtils class for ColumnPartition rewrite.
     (DaeMyung Kang via hyunsik)
 

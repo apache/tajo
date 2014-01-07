@@ -171,6 +171,11 @@ public class CatalogServer extends AbstractService {
       this.rpcServer.shutdown();
     }
     LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
+    try {
+      store.close();
+    } catch (IOException ioe) {
+      LOG.error(ioe);
+    }
     super.stop();
   }
 

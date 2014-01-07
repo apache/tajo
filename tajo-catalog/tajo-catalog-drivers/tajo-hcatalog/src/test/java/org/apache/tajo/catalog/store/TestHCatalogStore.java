@@ -61,6 +61,9 @@ public class TestHCatalogStore {
 
   @BeforeClass
   public static void setUp() throws Exception {
+    // delete metstore default path for successful unit tests
+    deleteMetaStoreDirectory();
+
     // Set Hive MetaStore
     Database db = new Database();
     db.setName(DB_NAME);
@@ -80,10 +83,18 @@ public class TestHCatalogStore {
     conf.set(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "false");
     conf.set(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname, DummyListener.class.getName());
 
+    // set property to use at HCatalogUtil
+    System.setProperty(HiveConf.ConfVars.METASTOREURIS.varname, metastoreUri);
+    System.setProperty(HiveConf.ConfVars.METASTORETHRIFTCONNECTIONRETRIES.varname, "3");
+    System.setProperty(HiveConf.ConfVars.PREEXECHOOKS.varname, "");
+    System.setProperty(HiveConf.ConfVars.POSTEXECHOOKS.varname, "");
+    System.setProperty(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "false");
+    System.setProperty(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname, DummyListener.class.getName());
+
     SessionState.start(new CliSessionState(conf));
 
     // create database and tables on Hive MetaStore.
-    client = new HiveMetaStoreClient(conf, null);
+    client = new HiveMetaStoreClient(conf);
 
     client.createDatabase(db);
     createTable(NATION);
@@ -93,11 +104,19 @@ public class TestHCatalogStore {
 
     // create local HCatalogStore.
     TajoConf tajoConf = new TajoConf();
-    tajoConf.set(CatalogConstants.CATALOG_URI, metastoreUri);
     tajoConf.set(CatalogConstants.STORE_CLASS, HCatalogStore.class.getCanonicalName());
     tajoConf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
     store = new HCatalogStore(tajoConf);
+  }
+
+  private static void deleteMetaStoreDirectory() throws Exception {
+    Path path = new Path("metastore_db");
+    FileSystem fs = FileSystem.getLocal(new Configuration());
+    if(fs.exists(path)) {
+      fs.delete(path, true);
+    }
+    fs.close();
   }
 
   private static void createTable(String tableName) throws Exception {
@@ -164,13 +183,7 @@ public class TestHCatalogStore {
   private static void dropDatabase() throws Exception {
     try {
       client.dropDatabase(DB_NAME);
-
-      Path path = new Path("metastore_db");
-      FileSystem fs = FileSystem.getLocal(new Configuration());
-      if(fs.exists(path)) {
-        fs.delete(path, true);
-      }
-      fs.close();
+      deleteMetaStoreDirectory();
     } catch (NoSuchObjectException e) {
     } catch (InvalidOperationException e) {
     } catch (Exception e) {

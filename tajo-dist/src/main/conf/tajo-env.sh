@@ -68,3 +68,4 @@ export TAJO_WORKER_STANDBY_MODE=true
 
 # It must be required to use HCatalogStore
 # export HIVE_HOME=
+# export HIVE_JDBC_DRIVER_DIR=

@@ -19,11 +19,8 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatException;
-import org.apache.hcatalog.common.HCatUtil;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -56,32 +53,6 @@ public class HCatalogUtil {
     } catch (HCatException e) {
       throw new InternalException("incompatible hcatalog types when assigning to tajo type. - " +
           "HCatFieldSchema:" + fieldSchema, e);
-    }
-  }
-
-  public static HiveMetaStoreClient getHiveMetaClient(String metaStoreUri,
-                                                      String metaStoreKerberosPrincipal)
-                                                      //Class<?> cls)
-  throws Exception {
-//    HiveConf hiveConf = new HiveConf(cls);
-
-    HiveConf hiveConf = new HiveConf();
-
-    if (metaStoreUri != null) {
-      hiveConf.set("hive.metastore.local", "false");
-      hiveConf.setVar(HiveConf.ConfVars.METASTOREURIS, metaStoreUri.trim());
-    }
-
-    if (metaStoreKerberosPrincipal != null) {
-      hiveConf.setBoolVar(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL, true);
-      hiveConf.setVar(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL, metaStoreKerberosPrincipal);
-    }
-
-    try {
-      return HCatUtil.getHiveClient(hiveConf);
-    } catch (Exception e) {
-      throw new InternalException("Tajo cannot connect Hive metastore. - serverUri:" +
-          metaStoreUri, e);
     }
   }
 

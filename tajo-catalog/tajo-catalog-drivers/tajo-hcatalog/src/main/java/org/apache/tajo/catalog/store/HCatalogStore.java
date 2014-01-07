@@ -21,8 +21,8 @@ package org.apache.tajo.catalog.store;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatUtil;
@@ -42,30 +42,29 @@ import java.util.*;
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
-  protected String catalogUri;
+  private static final int CLIENT_POOL_SIZE = 5;
+  private final HCatalogStoreClientPool clientPool = new HCatalogStoreClientPool(0);
+
   private Map<Pair<String, String>, Table> tableMap = new HashMap<Pair<String, String>, Table>();
 
   public HCatalogStore(final Configuration conf)
       throws InternalException {
     this.conf = conf;
-    if(conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
-      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CATALOG_URI + " " +
-          "is deprecated. Use " + CatalogConstants.CATALOG_URI + " instead.");
-      this.catalogUri = conf.get(CatalogConstants.DEPRECATED_CATALOG_URI);
-    } else {
-      this.catalogUri = conf.get(CatalogConstants.CATALOG_URI);
+    try {
+      clientPool.addClients(CLIENT_POOL_SIZE);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
   @Override
-  public final boolean existTable(final String name) throws IOException {
+  public boolean existTable(final String name) throws IOException {
     boolean exist = false;
 
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
     org.apache.hadoop.hive.ql.metadata.Table table = null;
-    HiveMetaStoreClient client = null;
-
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
     // get db name and table name.
     try {
       tablePair = HCatUtil.getDbAndTableName(name);
@@ -78,8 +77,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     // get table
     try {
       try {
-        client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
-        table = HCatUtil.getTable(client, dbName, tableName);
+        client = clientPool.getClient();
+        table = HCatUtil.getTable(client.getHiveClient(), dbName, tableName);
         if (table != null) {
           exist = true;
         }
@@ -89,7 +88,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         throw new IOException(e);
       }
     } finally {
-      HCatUtil.closeHiveClientQuietly(client);
+      client.release();
     }
 
     return exist;
@@ -100,7 +99,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
     org.apache.hadoop.hive.ql.metadata.Table table = null;
-    HiveMetaStoreClient client = null;
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
     Path path = null;
     CatalogProtos.StoreType storeType = null;
     org.apache.tajo.catalog.Schema schema = null;
@@ -123,8 +122,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       // get hive table schema
       try {
-        client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
-        table = HCatUtil.getTable(client, dbName, tableName);
+        client = clientPool.getClient();
+        table = HCatUtil.getTable(client.getHiveClient(), dbName, tableName);
         path = table.getPath();
       } catch (NoSuchObjectException nsoe) {
         throw new InternalException("Table not found. - tableName:" + name, nsoe);
@@ -170,9 +169,16 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         // set data size
+        long totalSize = 0;
         if(properties.getProperty("totalSize") != null) {
-          stats.setNumBytes(new Long(properties.getProperty("totalSize")));
+          totalSize = new Long(properties.getProperty("totalSize"));
+        } else {
+          FileSystem fs = path.getFileSystem(conf);
+          if (fs.exists(path)) {
+            totalSize = fs.getContentSummary(path).getLength();
+          }
         }
+        stats.setNumBytes(totalSize);
       }
 
       // set partition keys
@@ -189,7 +195,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
       }
     } finally {
-      HCatUtil.closeHiveClientQuietly(client);
+      client.release();
     }
     TableMeta meta = new TableMeta(storeType, options);
 
@@ -218,14 +224,14 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     List<String> dbs = null;
     List<String> tables = null;
     List<String> allTables = new ArrayList<String>();
-    HiveMetaStoreClient client = null;
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     try {
       try {
-        client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
-        dbs = client.getAllDatabases();
+        client = clientPool.getClient();
+        dbs = client.getHiveClient().getAllDatabases();
         for(String eachDB: dbs) {
-          tables = client.getAllTables(eachDB);
+          tables = client.getHiveClient().getAllTables(eachDB);
           for(String eachTable: tables) {
             allTables.add(eachDB + "." + eachTable);
           }
@@ -235,7 +241,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
     } finally {
-      HCatUtil.closeHiveClientQuietly(client);
+      client.release();
     }
     return allTables;
   }
@@ -244,7 +250,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   public final void addTable(final TableDesc tableDesc) throws IOException {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
-    HiveMetaStoreClient client = null;
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     // get db name and table name.
     try {
@@ -257,7 +263,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
     try {
       try {
-        client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
+        client = clientPool.getClient();
 
         org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api
             .Table();
@@ -310,12 +316,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setSortCols(new ArrayList<Order>());
 
         table.setSd(sd);
-        client.createTable(table);
+        client.getHiveClient().createTable(table);
       } catch (Exception e) {
         throw new IOException(e);
       }
     } finally {
-      HCatUtil.closeHiveClientQuietly(client);
+      client.release();
     }
   }
 
@@ -323,7 +329,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   public final void deleteTable(final String name) throws IOException {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
-    HiveMetaStoreClient client = null;
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     // get db name and table name.
     try {
@@ -335,13 +341,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     }
 
     try {
-      client = HCatalogUtil.getHiveMetaClient(catalogUri, null);
-      client.dropTable(dbName, tableName, false, false);
+      client = clientPool.getClient();
+      client.getHiveClient().dropTable(dbName, tableName, false, false);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new IOException(e);
     } finally {
-      HCatUtil.closeHiveClientQuietly(client);
+      client.release();
     }
   }
   @Override
@@ -408,5 +414,6 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void close() {
+    clientPool.close();
   }
 }
