@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
@@ -109,15 +110,13 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
   private void rewriteColumnPartitionedTableSchema() {
     PartitionDesc partitionDesc = plan.getPartitions();
     Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
-    columnPartitionSchema.setQualifier(plan.getTableName());
+    String qualifier = plan.getTableName();
 
-    Schema modifiedOutputSchema = new Schema();
-    for (Column column : outSchema.toArray()) {
-      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
-        modifiedOutputSchema.addColumn(column);
-      }
-    }
-    outSchema = modifiedOutputSchema;
+    outSchema = PlannerUtil.rewriteColumnPartitionedTableSchema(
+                                             partitionDesc,
+                                             columnPartitionSchema,
+                                             outSchema,
+                                             qualifier);
   }
 
   public void init() throws IOException {

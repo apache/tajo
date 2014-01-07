@@ -27,6 +27,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.logical.*;
@@ -690,4 +691,19 @@ public class PlannerUtil {
   public static boolean isCommutativeJoin(JoinType joinType) {
     return joinType == JoinType.INNER;
   }
+
+  public static Schema rewriteColumnPartitionedTableSchema(
+                               PartitionDesc partitionDesc,
+                               Schema columnPartitionSchema,
+                               Schema sourceSchema,
+                               String qualifier) {
+    Schema schema = new Schema();
+    for (Column column : sourceSchema.toArray()) {
+      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
+        schema.addColumn(column);
+      }
+    }
+    return schema;
+  }
+
 }

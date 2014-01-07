@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
 
@@ -79,21 +80,20 @@ public class SeqScanExec extends PhysicalExec {
   private void rewriteColumnPartitionedTableSchema() throws IOException {
     PartitionDesc partitionDesc = plan.getTableDesc().getPartitions();
     Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
+    String qualifier = inSchema.getColumn(0).getQualifier();
+
+    // Remove partition key columns from an input schema.
+    this.inSchema = PlannerUtil.rewriteColumnPartitionedTableSchema(
+                                                 partitionDesc,
+                                                 columnPartitionSchema,
+                                                 inSchema,
+                                                 qualifier);
+
     List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
     // Get a partition key value from a given path
     Tuple partitionRow =
         TupleUtil.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(), false);
-
-    // Remove partition key columns from an input schema.
-    columnPartitionSchema.setQualifier(inSchema.getColumn(0).getQualifier());
-    Schema modifiedInputSchema = new Schema();
-    for (Column column : inSchema.toArray()) {
-      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
-        modifiedInputSchema.addColumn(column);
-      }
-    }
-    this.inSchema = modifiedInputSchema;
 
     // Targets or search conditions may contain column references.
     // However, actual values absent in tuples. So, Replace all column references by constant datum.

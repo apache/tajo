@@ -110,6 +110,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-471: Extract ColumnPartitonUtils class for ColumnPartition rewrite.
+    (DaeMyung Kang via hyunsik)
+
     TAJO-476: Add a test development kit for unit tests based on executions
     of queries. (hyunsik)
 
