@@ -31,5 +31,5 @@ service QueryMasterClientProtocolService {
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc killQuery(QueryIdProto) returns (BoolProto);
+  rpc closeQuery(QueryIdProto) returns (BoolProto);
 }

@@ -105,7 +105,7 @@ public class TajoClient {
       try {
         qmClient = connPool.getConnection(queryMasterMap.get(queryId), QueryMasterClientProtocol.class, false);
         QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
-        queryMasterService.killQuery(null, queryId.getProto());
+        queryMasterService.closeQuery(null, queryId.getProto());
       } catch (Exception e) {
         LOG.warn("Fail to close a QueryMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
       } finally {
