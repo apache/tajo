@@ -191,6 +191,7 @@ general_literal
 datetime_literal
   : timestamp_literal
   | time_literal
+  | date_literal
   ;
 
 time_literal
@@ -199,6 +200,10 @@ time_literal
 
 timestamp_literal
   : TIMESTAMP timestamp_string=Character_String_Literal
+  ;
+
+date_literal
+  : DATE date_string=Character_String_Literal
   ;
 
 boolean_literal

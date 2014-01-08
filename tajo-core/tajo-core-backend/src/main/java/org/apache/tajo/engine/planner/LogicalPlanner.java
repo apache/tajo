@@ -40,6 +40,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.datum.TimeDatum;
+import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.exception.UndefinedFunctionException;
@@ -1182,6 +1183,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         } else {
           datum = new TimeDatum(times[0], times[1], times[2]);
         }
+        return new ConstEval(datum);
+      }
+
+      case DateLiteral: {
+        DateLiteral dateLiteral = (DateLiteral) expr;
+        DateValue dateValue = dateLiteral.getDate();
+        int [] dates = LogicalPlanner.dateToIntArray(dateValue.getYears(),
+            dateValue.getMonths(),
+            dateValue.getDays());
+
+        DateDatum datum;
+        datum = new DateDatum(dates[0], dates[1], dates[2]);
         return new ConstEval(datum);
       }
 

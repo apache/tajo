@@ -100,5 +100,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitNullLiteral(CONTEXT ctx, Stack<OpType> stack, NullLiteral expr) throws PlanningException;
   RESULT visitTimestampLiteral(CONTEXT ctx, Stack<OpType> stack, TimestampLiteral expr) throws PlanningException;
   RESULT visitTimeLiteral(CONTEXT ctx, Stack<OpType> stack, TimeLiteral expr) throws PlanningException;
+  RESULT visitDateLiteral(CONTEXT ctx, Stack<OpType> stack, DateLiteral expr) throws PlanningException;
+
 
 }

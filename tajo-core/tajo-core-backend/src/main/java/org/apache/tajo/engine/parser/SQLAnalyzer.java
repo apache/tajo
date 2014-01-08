@@ -1265,7 +1265,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitDatetime_literal(@NotNull SQLParser.Datetime_literalContext ctx) {
     if (checkIfExist(ctx.time_literal())) {
       return visitTime_literal(ctx.time_literal());
-    } else { 
+    } else if(checkIfExist(ctx.date_literal())) {
+      return visitDate_literal(ctx.date_literal());
+    } else {
       return visitTimestamp_literal(ctx.timestamp_literal());
     }
   }
@@ -1274,6 +1276,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitTime_literal(SQLParser.Time_literalContext ctx) {
     String timePart = stripQuote(ctx.time_string.getText());
     return new TimeLiteral(parseTime(timePart));
+  }
+
+  @Override
+  public Expr visitDate_literal(SQLParser.Date_literalContext ctx) {
+    String datePart = stripQuote(ctx.date_string.getText());
+    return new DateLiteral(parseDate(datePart));
   }
 
   @Override

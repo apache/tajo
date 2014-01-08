@@ -290,8 +290,10 @@ public class DatumFactory {
       return new DateDatum(datum.asInt4());
     case TEXT:
       return new DateDatum(datum.asChars());
+    case DATE:
+      return (DateDatum) datum;
     default:
-      throw new InvalidCastException(datum.type() + " cannot be casted to TIMESTAMP type");
+      throw new InvalidCastException(datum.type() + " cannot be casted to DATE type");
     }
   }
 

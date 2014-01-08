@@ -98,6 +98,7 @@ public enum OpType {
   Literal(LiteralValue.class),
   NullLiteral(NullLiteral.class),
   TimeLiteral(TimeLiteral.class),
+  DateLiteral(DateLiteral.class),
   TimestampLiteral(TimestampLiteral.class);
 
   private Class baseClass;

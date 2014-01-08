@@ -43,4 +43,11 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
     testSimpleEval("select TIME '10:09:37';",
         new String[]{"10:09:37"});
   }
+
+  @Test
+  public void testDateLiteral() throws IOException {
+    testSimpleEval("select DATE '1970-01-17';",
+        new String[]{"1970-01-17"});
+  }
+
 }

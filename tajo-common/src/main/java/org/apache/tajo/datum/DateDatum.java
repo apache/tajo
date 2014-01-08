@@ -38,6 +38,11 @@ public class DateDatum extends Datum {
     date = decode(value);
   }
 
+  public DateDatum(int year, int month, int day) {
+    super(TajoDataTypes.Type.DATE);
+    date = new LocalDate(year, month, day);
+  }
+
   public DateDatum(String dateStr) {
     super(TajoDataTypes.Type.DATE);
     this.date = LocalDate.parse(dateStr, DEFAULT_FORMATTER);
