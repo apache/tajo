@@ -69,14 +69,19 @@ message GetQueryListRequest {
   optional SessionIdProto sessionId = 1;
 }
 
-message BriefQueryStatus {
+message BriefQueryInfo {
   required QueryIdProto queryId = 1;
   required QueryState state = 2;
-  required int32 executionTime = 3;
+  required int64 startTime = 3;
+  required int64 finishTime = 4;
+  required string query = 5;
+  required string queryMasterHost = 6;
+  required int32 queryMasterPort = 7;
+  required float progress = 8;
 }
 
 message GetQueryListResponse {
-  repeated BriefQueryStatus queryList = 1;
+  repeated BriefQueryInfo queryList = 1;
 }
 
 message GetQueryStatusRequest {
@@ -101,8 +106,32 @@ message GetClusterInfoRequest {
   optional SessionIdProto sessionId = 1;
 }
 
+message WorkerResourceInfo {
+  required string allocatedHost = 1;
+  required int32 peerRpcPort = 2;
+  required int32 queryMasterPort = 3;
+  required int32 clientPort = 4;
+  required int32 pullServerPort = 5;
+  required int32 httpPort = 6;
+  required float diskSlots = 7;
+  required int32 cpuCoreSlots = 8;
+  required int32 memoryMB = 9;
+  required float usedDiskSlots = 10;
+  required int32 usedMemoryMB = 11;
+  required int32 usedCpuCoreSlots = 12;
+  required int64 maxHeap = 13;
+  required int64 freeHeap = 14;
+  required int64 totalHeap = 15;
+  required int32 numRunningTasks = 16;
+  required string workerStatus = 17;
+  required int64 lastHeartbeat = 18;
+  required bool queryMasterMode = 19;
+  required bool taskRunnerMode = 20;
+  required int32 numQueryMasterTasks = 21;
+}
+
 message GetClusterInfoResponse {
-  repeated string serverName = 1;
+  repeated WorkerResourceInfo workerList = 1;
 }
 
 message GetTableListRequest {

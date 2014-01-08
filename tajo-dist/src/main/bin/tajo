@@ -68,6 +68,7 @@ if [ $# = 0 ]; then
   echo "  catalog              run the Catalog server"
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
+  echo "  admin                run the tajo admin util"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
   echo " or"
@@ -361,6 +362,9 @@ elif [ "$COMMAND" = "catalog" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
 elif [ "$COMMAND" = "cli" ] ; then
   CLASS='org.apache.tajo.cli.TajoCli'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
+elif [ "$COMMAND" = "admin" ] ; then
+  CLASS='org.apache.tajo.client.TajoAdmin'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "dump" ] ; then
   CLASS='org.apache.tajo.client.TajoDump'

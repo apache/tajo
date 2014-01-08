@@ -46,6 +46,7 @@ import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -53,7 +54,7 @@ import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.util.*;
 
 public class TajoMasterClientService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
@@ -199,7 +200,33 @@ public class TajoMasterClientService extends AbstractService {
     public GetQueryListResponse getQueryList(RpcController controller,
                                              GetQueryListRequest request)
         throws ServiceException {
-      return null;
+      GetQueryListResponse.Builder builder
+        = GetQueryListResponse.newBuilder(); 
+       
+      Collection<QueryInProgress> queries 
+        = context.getQueryJobManager().getRunningQueries();
+
+      BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
+ 
+      for (QueryInProgress queryInProgress : queries) {
+        QueryInfo queryInfo = queryInProgress.getQueryInfo();
+
+        infoBuilder.setQueryId(queryInfo.getQueryId().getProto());
+        infoBuilder.setState(queryInfo.getQueryState());
+        infoBuilder.setQuery(queryInfo.getSql());
+        infoBuilder.setStartTime(queryInfo.getStartTime());
+        long endTime = (queryInfo.getFinishTime() == 0) ? 
+                       System.currentTimeMillis() : queryInfo.getFinishTime();
+        infoBuilder.setFinishTime(endTime);
+        infoBuilder.setProgress(queryInfo.getProgress());
+        infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
+        infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+
+        builder.addQueryList(infoBuilder.build());
+      }
+
+      GetQueryListResponse result = builder.build();
+      return result;
     }
 
     @Override
@@ -259,7 +286,47 @@ public class TajoMasterClientService extends AbstractService {
     public GetClusterInfoResponse getClusterInfo(RpcController controller,
                                                  GetClusterInfoRequest request)
         throws ServiceException {
-      return null;
+      GetClusterInfoResponse.Builder builder
+        = GetClusterInfoResponse.newBuilder(); 
+       
+      Map<String, WorkerResource> workers 
+        = context.getResourceManager().getWorkers();
+
+      List<String> wokerKeys = new ArrayList<String>(workers.keySet());
+      Collections.sort(wokerKeys);
+
+      int runningQueryMasterTasks = 0;
+
+      WorkerResourceInfo.Builder workerBuilder
+        = WorkerResourceInfo.newBuilder();
+
+      for(WorkerResource eachWorker: workers.values()) {
+        workerBuilder.setAllocatedHost(eachWorker.getAllocatedHost());
+        workerBuilder.setDiskSlots(eachWorker.getDiskSlots());
+        workerBuilder.setCpuCoreSlots(eachWorker.getCpuCoreSlots());
+        workerBuilder.setMemoryMB(eachWorker.getMemoryMB());
+        workerBuilder.setLastHeartbeat(eachWorker.getLastHeartbeat());
+        workerBuilder.setUsedMemoryMB(eachWorker.getUsedMemoryMB());
+        workerBuilder.setUsedCpuCoreSlots(eachWorker.getUsedCpuCoreSlots());
+        workerBuilder.setUsedDiskSlots(eachWorker.getUsedDiskSlots());
+        workerBuilder.setWorkerStatus(eachWorker.getWorkerStatus().toString());
+        workerBuilder.setQueryMasterMode(eachWorker.isQueryMasterMode());
+        workerBuilder.setTaskRunnerMode(eachWorker.isTaskRunnerMode());
+        workerBuilder.setPeerRpcPort(eachWorker.getPeerRpcPort());
+        workerBuilder.setQueryMasterPort(eachWorker.getQueryMasterPort());
+        workerBuilder.setClientPort(eachWorker.getClientPort());
+        workerBuilder.setPullServerPort(eachWorker.getPullServerPort());
+        workerBuilder.setHttpPort(eachWorker.getHttpPort());
+        workerBuilder.setMaxHeap(eachWorker.getMaxHeap());
+        workerBuilder.setFreeHeap(eachWorker.getFreeHeap());
+        workerBuilder.setTotalHeap(eachWorker.getTotalHeap());
+        workerBuilder.setNumRunningTasks(eachWorker.getNumRunningTasks());
+        workerBuilder.setNumQueryMasterTasks(eachWorker.getNumQueryMasterTasks());
+
+        builder.addWorkerList(workerBuilder.build());
+      }
+
+      return builder.build();
     }
 
     @Override

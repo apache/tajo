@@ -215,7 +215,7 @@ public class TajoClient {
     return new QueryStatus(res);
   }
 
-  private static boolean isQueryRunnning(QueryState state) {
+  public static boolean isQueryRunnning(QueryState state) {
     return state == QueryState.QUERY_NEW ||
         state == QueryState.QUERY_RUNNING ||
         state == QueryState.QUERY_MASTER_LAUNCHED ||
@@ -378,6 +378,32 @@ public class TajoClient {
       }
     }.withRetries();
 
+  }
+
+  public List<BriefQueryInfo> getQueryList() throws ServiceException {
+    return new ServerCallable<List<BriefQueryInfo>>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
+        GetQueryListResponse res = tajoMasterService.getQueryList(null, builder.build());
+        return res.getQueryListList();
+      }
+    }.withRetries();
+  }
+
+  public List<WorkerResourceInfo> getClusterInfo() throws ServiceException {
+    return new ServerCallable<List<WorkerResourceInfo>>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public List<WorkerResourceInfo> call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        GetClusterInfoRequest.Builder builder = GetClusterInfoRequest.newBuilder();
+        GetClusterInfoResponse res = tajoMasterService.getClusterInfo(null, builder.build());
+        return res.getWorkerListList();
+      }
+    }.withRetries();
   }
 
   /**

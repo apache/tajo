@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-474: Add query admin utility. (DaeMyung Kang via hyunsik)
+
     TAJO-460: CTAS statement should support partitioned table.
     (Min Zhou via hyunsik)
 
