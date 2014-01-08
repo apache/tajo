@@ -126,7 +126,7 @@ public class LogicalPlan {
   }
 
   public QueryBlock getParentBlock(QueryBlock block) {
-    return queryBlocks.get(queryBlockGraph.getParent(block.getName()));
+    return queryBlocks.get(queryBlockGraph.getParent(block.getName(), 0));
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {

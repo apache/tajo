@@ -45,13 +45,17 @@ public interface DirectedGraph<V, E> extends Graph<V, E> {
 
   boolean isLeaf(V v);
 
-  @Nullable V getParent(V v);
+  int getParentCount(V block);
 
-  int getChildCount(V v);
+  @Nullable V getParent(V block, int idx);
+
+  List<V> getParents(V block);
+
+  int getChildCount(V block);
 
   @Nullable V getChild(V block, int idx);
 
-  List<V> getChilds(V v);
+  List<V> getChilds(V block);
 
   /**
    * It visits all vertices in a post-order traverse way.

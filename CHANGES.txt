@@ -114,6 +114,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-483: Add getParentCount(), getParents(), getParent() functions to DirectedGraph. 
+    (jihoon)
+
     TAJO-433: Improve integration with Hive. (jaehwa)
 
     TAJO-471: Extract ColumnPartitonUtils class for ColumnPartition rewrite.

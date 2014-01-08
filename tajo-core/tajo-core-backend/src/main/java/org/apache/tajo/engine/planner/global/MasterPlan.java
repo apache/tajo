@@ -146,7 +146,7 @@ public class MasterPlan {
 
   public boolean isRoot(ExecutionBlock execBlock) {
     if (!execBlock.getId().equals(terminalBlock.getId())) {
-      return execBlockGraph.getParent(execBlock.getId()).equals(terminalBlock.getId());
+      return execBlockGraph.getParent(execBlock.getId(), 0).equals(terminalBlock.getId());
     } else {
       return false;
     }
@@ -173,7 +173,7 @@ public class MasterPlan {
   }
 
   public ExecutionBlock getParent(ExecutionBlock executionBlock) {
-    return execBlockMap.get(execBlockGraph.getParent(executionBlock.getId()));
+    return execBlockMap.get(execBlockGraph.getParent(executionBlock.getId(), 0));
   }
 
   public List<ExecutionBlock> getChilds(ExecutionBlock execBlock) {

@@ -153,16 +153,39 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
 
   @Override
   public V getChild(V block, int idx) {
-    return getChilds(block).get(idx);
+    if (reversedEdges.containsKey(block)) {
+      int i = 0;
+      for (Map.Entry<V, E> entry: reversedEdges.get(block).entrySet()) {
+        if (idx == i++) {
+          return entry.getKey();
+        }
+      }
+    }
+    return null;
   }
 
   @Override
-  public @Nullable V getParent(V v) {
-    if (directedEdges.containsKey(v)) {
-      return directedEdges.get(v).keySet().iterator().next();
-    } else {
-      return null;
+  public @Nullable V getParent(V block, int idx) {
+    if (directedEdges.containsKey(block)) {
+      int i = 0;
+      for (Map.Entry<V, E> entry: directedEdges.get(block).entrySet()) {
+        if (idx == i++) {
+          return entry.getKey();
+        }
+      }
     }
+    return null;
+  }
+
+  @Override
+  public List<V> getParents(V block) {
+    List<V> childBlocks = new ArrayList<V>();
+    if (directedEdges.containsKey(block)) {
+      for (Map.Entry<V, E> entry: directedEdges.get(block).entrySet()) {
+        childBlocks.add(entry.getKey());
+      }
+    }
+    return childBlocks;
   }
 
   @Override
@@ -173,6 +196,15 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   @Override
   public boolean isLeaf(V v) {
     return !reversedEdges.containsKey(v);
+  }
+
+  @Override
+  public int getParentCount(V block) {
+    if (directedEdges.containsKey(block)) {
+      return directedEdges.get(block).size();
+    } else {
+      return -1;
+    }
   }
 
   @Override
