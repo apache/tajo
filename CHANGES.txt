@@ -207,6 +207,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-490: Tajo can't use 'dfs.nameservices' based on namenode ha mode. (jaehwa)
+
     TAJO-477: Rename killQuery of QMClientProtocol to closeQuery. (hyunsik)
 
     TAJO-484: Fix bug [: !=: unary operator expected when execute start-tajo.sh.
