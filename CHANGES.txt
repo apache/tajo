@@ -207,7 +207,11 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-490: Tajo can't use 'dfs.nameservices' based on namenode ha mode. (jaehwa)
+    TAJO-496: java.lang.NoSuchFieldError: IS_SECURITY_ENABLED when debugging
+    tajo. (Min Zhou via hyunsik)
+
+    TAJO-490: Tajo can't use 'dfs.nameservices' based on namenode ha mode. 
+    (jaehwa)
 
     TAJO-477: Rename killQuery of QMClientProtocol to closeQuery. (hyunsik)
 
