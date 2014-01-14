@@ -89,11 +89,14 @@ public class TestCTASQuery {
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
 
-    for (int i = 0; i < 3 && res.next(); i++) {
+    int i = 0;
+    while(res.next()) {
       assertEquals(resultRows1.get(res.getDouble(3))[0], res.getInt(1));
       assertEquals(resultRows1.get(res.getDouble(3))[1], res.getInt(2));
+      i++;
     }
     res.close();
+    assertEquals(2, i);
   }
 
   @Test
@@ -129,11 +132,14 @@ public class TestCTASQuery {
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
 
-    for (int i = 0; i < 3 && res.next(); i++) {
+    int i = 0;
+    while(res.next()) {
       assertEquals(resultRows1.get(res.getDouble(3))[0], res.getInt(1));
       assertEquals(resultRows1.get(res.getDouble(3))[1], res.getInt(2));
+      i++;
     }
     res.close();
+    assertEquals(2, i);
   }
 
 }

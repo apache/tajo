@@ -207,6 +207,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-485: 'CREATE TABLE AS' does not work properly with partition. (jinho)
+
     TAJO-488: Data fetcher doesn't close small file in shuffle. (jinho)
 
     TAJO-496: java.lang.NoSuchFieldError: IS_SECURITY_ENABLED when debugging

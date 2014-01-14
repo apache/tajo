@@ -81,6 +81,7 @@ public class SeqScanExec extends PhysicalExec {
     PartitionDesc partitionDesc = plan.getTableDesc().getPartitions();
     Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
     String qualifier = inSchema.getColumn(0).getQualifier();
+    columnPartitionSchema.setQualifier(qualifier);
 
     // Remove partition key columns from an input schema.
     this.inSchema = PlannerUtil.rewriteColumnPartitionedTableSchema(
