@@ -32,6 +32,7 @@ service TajoMasterClientProtocolService {
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
   rpc submitQuery(QueryRequest) returns (GetQueryStatusResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
+  rpc explainQuery(ExplainQueryRequest) returns (ExplainQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
   rpc getQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);

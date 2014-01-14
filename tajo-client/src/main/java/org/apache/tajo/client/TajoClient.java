@@ -115,6 +115,19 @@ public class TajoClient {
     }
   }
 
+  public ExplainQueryResponse explainQuery(final String sql) throws ServiceException {
+    return new ServerCallable<ExplainQueryResponse>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public ExplainQueryResponse call(NettyClientBase client) throws ServiceException {
+        final ExplainQueryRequest.Builder builder = ExplainQueryRequest.newBuilder();
+        builder.setQuery(sql);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.explainQuery(null, builder.build());
+      }
+    }.withRetries();
+  }
+
   /**
    * It submits a query statement and get a response immediately.
    * The response only contains a query id, and submission status.

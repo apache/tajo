@@ -188,6 +188,18 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
+  public String explainQuery(String sql) throws IOException, SQLException, PlanningException {
+    LOG.info("SQL: " + sql);
+    // parse the query
+
+    final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
+    Expr planningContext = hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+    LOG.info("hive.query.mode:" + hiveQueryMode);
+
+    LogicalPlan plan = createLogicalPlan(planningContext);
+    return plan.toString();
+  }
+
   public QueryId updateQuery(String sql) throws IOException, SQLException, PlanningException {
     LOG.info("SQL: " + sql);
     // parse the query

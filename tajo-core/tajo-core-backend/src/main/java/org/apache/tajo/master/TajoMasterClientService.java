@@ -124,6 +124,31 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
+    public ExplainQueryResponse explainQuery(RpcController controller,
+                                           ExplainQueryRequest request)
+        throws ServiceException {
+
+      try {
+        if(LOG.isDebugEnabled()) {
+          LOG.debug("ExplainQuery [" + request.getQuery() + "]");
+        }
+        ClientProtos.ExplainQueryResponse.Builder responseBuilder = ClientProtos.ExplainQueryResponse.newBuilder();
+        responseBuilder.setResultCode(ResultCode.OK);
+        String plan = context.getGlobalEngine().explainQuery(request.getQuery());
+        if(LOG.isDebugEnabled()) {
+          LOG.debug("ExplainQuery [" + plan + "]");
+        }
+        responseBuilder.setExplain(plan);
+        return responseBuilder.build();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        ClientProtos.ExplainQueryResponse.Builder responseBuilder = ClientProtos.ExplainQueryResponse.newBuilder();
+        responseBuilder.setResultCode(ResultCode.ERROR);
+        responseBuilder.setErrorMessage(e.getMessage());
+        return responseBuilder.build();
+      }
+    }
+    @Override
     public GetQueryStatusResponse submitQuery(RpcController controller,
                                            QueryRequest request)
         throws ServiceException {

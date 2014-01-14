@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-122: Add EXPLAIN clause to show a logical plan. 
+    (DaeMyung Kang via hyunsik)
+
     TAJO-438: Date literal support. (Jae Young Lee via jihoon)
 
     TAJO-474: Add query admin utility. (DaeMyung Kang via hyunsik)

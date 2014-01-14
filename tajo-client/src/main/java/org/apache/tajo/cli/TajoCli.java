@@ -288,7 +288,22 @@ public class TajoCli {
       } else if (cmds[0].equalsIgnoreCase("detach") && cmds.length > 1 && cmds[1].equalsIgnoreCase("table")) {
         // this command should be moved to GlobalEngine
         invokeCommand(cmds);
-
+      } else if (cmds[0].equalsIgnoreCase("explain") && cmds.length > 1) {
+        String sql = stripped.substring(8);
+        ClientProtos.ExplainQueryResponse response = client.explainQuery(sql);
+        if (response == null) {
+          sout.println("response is null");
+        } else {
+          if (response.hasExplain()) {
+            sout.println(response.getExplain());
+          } else {
+            if (response.hasErrorMessage()) {
+                sout.println(response.getErrorMessage());
+            } else {
+                sout.println("No Explain");
+            }
+          }
+        }
       } else { // submit a query to TajoMaster
         ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
         if (response == null) {
