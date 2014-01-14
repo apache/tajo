@@ -229,6 +229,8 @@ public class TajoPullServerService extends AbstractService {
   public synchronized void start() {
     Configuration conf = getConfig();
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
+    bootstrap.setOption("tcpNoDelay", true);
+
     try {
       pipelineFact = new HttpPipelineFactory(conf);
     } catch (Exception ex) {
@@ -345,6 +347,16 @@ public class TajoPullServerService extends AbstractService {
         Collections.addAll(ret, s.split(","));
       }
       return ret;
+    }
+
+    @Override
+    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent evt)
+        throws Exception {
+
+      accepted.add(evt.getChannel());
+      LOG.info(String.format("Current number of shuffle connections (%d)", accepted.size()));
+      super.channelOpen(ctx, evt);
+
     }
 
     @Override

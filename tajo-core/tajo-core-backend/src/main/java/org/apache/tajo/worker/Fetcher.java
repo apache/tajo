@@ -18,8 +18,10 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IOUtils;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
@@ -34,6 +36,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
@@ -54,6 +57,8 @@ public class Fetcher {
   private long finishTime;
   private long fileLen;
   private int messageReceiveCount;
+  private ChannelFactory factory;
+  private ClientBootstrap bootstrap;
 
   public Fetcher(URI uri, File file) {
     this.uri = uri;
@@ -69,6 +74,25 @@ public class Fetcher {
         this.port = 443;
       }
     }
+
+    ThreadFactory bossFactory = new ThreadFactoryBuilder()
+        .setNameFormat("Fetcher Netty Boss #%d")
+        .build();
+    ThreadFactory workerFactory = new ThreadFactoryBuilder()
+        .setNameFormat("Fetcher Netty Worker #%d")
+        .build();
+
+    factory = new NioClientSocketChannelFactory(
+        Executors.newCachedThreadPool(bossFactory),
+        Executors.newCachedThreadPool(workerFactory));
+
+    bootstrap = new ClientBootstrap(factory);
+    bootstrap.setOption("connectTimeoutMillis", 5000L); // set 5 sec
+    bootstrap.setOption("receiveBufferSize", 1048576); // set 1M
+    bootstrap.setOption("tcpNoDelay", true);
+
+    ChannelPipelineFactory factory = new HttpClientPipelineFactory(file);
+    bootstrap.setPipelineFactory(factory);
   }
 
   public long getStartTime() {
@@ -101,13 +125,6 @@ public class Fetcher {
 
   public File get() throws IOException {
     startTime = System.currentTimeMillis();
-    ClientBootstrap bootstrap = new ClientBootstrap(
-        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-            Executors.newCachedThreadPool()));
-    bootstrap.setOption("connectTimeoutMillis", 5000L); // set 5 sec
-    bootstrap.setOption("receiveBufferSize", 1048576); // set 1M
-    ChannelPipelineFactory factory = new HttpClientPipelineFactory(file);
-    bootstrap.setPipelineFactory(factory);
 
     ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
 
@@ -127,11 +144,14 @@ public class Fetcher {
     request.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
     request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
+
     // Send the HTTP request.
-    channel.write(request);
+    ChannelFuture channelFuture = channel.write(request);
 
     // Wait for the server to close the connection.
     channel.getCloseFuture().awaitUninterruptibly();
+
+    channelFuture.addListener(ChannelFutureListener.CLOSE);
 
     // Shut down executor threads to exit.
     bootstrap.releaseExternalResources();
@@ -152,8 +172,6 @@ public class Fetcher {
 
     public HttpClientHandler(File file) throws FileNotFoundException {
       this.file = file;
-      this.raf = new RandomAccessFile(file, "rw");
-      this.fc = raf.getChannel();
     }
 
     @Override
@@ -188,10 +206,11 @@ public class Fetcher {
 
           if (response.getStatus() == HttpResponseStatus.NO_CONTENT) {
             LOG.info("There are no data corresponding to the request");
-            fc.close();
-            raf.close();
             return;
           }
+
+          this.raf = new RandomAccessFile(file, "rw");
+          this.fc = raf.getChannel();
 
           if (response.isChunked()) {
             readingChunks = true;
@@ -205,9 +224,7 @@ public class Fetcher {
           HttpChunk chunk = (HttpChunk) e.getMessage();
           if (chunk.isLast()) {
             readingChunks = false;
-            long fileLength = fc.position();
-            fc.close();
-            raf.close();
+            long fileLength = file.length();
             if (fileLength == length) {
               LOG.info("Data fetch is done (total received bytes: " + fileLength
                   + ")");
@@ -222,6 +239,11 @@ public class Fetcher {
       } finally {
         if(raf != null) {
           fileLen = file.length();
+        }
+
+        if(fileLen >= length){
+          IOUtils.cleanup(LOG, fc, raf);
+
         }
       }
     }
