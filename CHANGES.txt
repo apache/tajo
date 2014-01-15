@@ -210,6 +210,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-503: HCatalogStore can't scan several hive databases. (jaehwa)
+
     TAJO-502: Jenkins build is failing. (jinho)
 
     TAJO-485: 'CREATE TABLE AS' does not work properly with partition. (jinho)

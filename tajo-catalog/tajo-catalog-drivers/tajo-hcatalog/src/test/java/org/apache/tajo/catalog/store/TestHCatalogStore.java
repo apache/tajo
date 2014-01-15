@@ -244,7 +244,7 @@ public class TestHCatalogStore {
     TableDesc table = store.getTable(DB_NAME + "." + CUSTOMER);
 
     List<Column> columns = table.getSchema().getColumns();
-    assertEquals(CUSTOMER, table.getName());
+    assertEquals(DB_NAME + "." + CUSTOMER, table.getName());
     assertEquals(8, columns.size());
     assertEquals("c_custkey", columns.get(0).getColumnName());
     assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());
@@ -266,7 +266,7 @@ public class TestHCatalogStore {
 
     table = store.getTable(DB_NAME + "." + NATION);
     columns = table.getSchema().getColumns();
-    assertEquals(NATION, table.getName());
+    assertEquals(DB_NAME + "." + NATION, table.getName());
     assertEquals(5, columns.size());
     assertEquals("n_nationkey", columns.get(0).getColumnName());
     assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());

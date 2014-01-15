@@ -199,7 +199,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     }
     TableMeta meta = new TableMeta(storeType, options);
 
-    TableDesc tableDesc = new TableDesc(tableName, schema, meta, path);
+    TableDesc tableDesc = new TableDesc(dbName + "." + tableName, schema, meta, path);
     if (stats != null) {
       tableDesc.setStats(stats);
     }
