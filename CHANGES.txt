@@ -334,6 +334,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-166: Automatic precommit test using Jenkins. (hyunsik)
+
     TAJO-322: Documentation by version. (hyunsik)
 
     TAJO-320: Visualize Tajo statemachine. (Min Zhou via hyunsik)
