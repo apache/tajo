@@ -87,7 +87,6 @@
       <id>hsaputra</id>
       <name>Henry Saputra</name>
       <email>hsaputra@apache.org</email>
-      <organization>Platfora</organization>
       <roles>
         <role>PPMC</role>
       </roles>
@@ -144,6 +143,16 @@
       <timezone>+9</timezone>
     </developer>
     <developer>
+      <id>sirpkt</id>
+      <name>Keuntae Park</name>
+      <email>keuntae.park@sk.com</email>
+      <organization>SK Telecom</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
       <id>omalley</id>
       <name>Owen O'Malley</name>
       <email>owen@hortonworks.com</email>
@@ -191,18 +200,31 @@
     </contributor>
     <contributor>
       <name>DaeMyung Kang</name>
+      <organization>Kakao</organization>
     </contributor>
     <contributor>
       <name>Dongmin Yu</name>
       <organization>InfiniLoop</organization>
     </contributor>
     <contributor>
-      <name>Keuntae Park </name>
+      <name>Hyoung Jun Kim</name>
+      <organization>Gruter</organization>
+    </contributor>
+    <contributor>
+      <name>Jae Young Lee</name>
       <organization>SK Telecom</organization>
     </contributor>
     <contributor>
-      <name>Hyoung Jun Kim</name>
-      <organization>Gruter</organization>
+      <name>KyoungBok Lee</name>
+      <organization>Line</organization>
+    </contributor>
+    <contributor>
+      <name>Min Zhou</name>
+      <organization>LinkedIn</organization>
+    </contributor>
+    <contributor>
+      <name>Seungun Choe</name>
+      <organization>SK Telecom</organization>
     </contributor>
     <contributor>
       <name>Sergio Esteves</name>
@@ -210,6 +232,10 @@
     <contributor>
       <name>SeongHwa Ahn</name>
       <organization>SK Telecom</organization>
+    </contributor>
+    <contributor>
+      <name>Wan Heo</name>
+      <organization>Korea University</organization>
     </contributor>
   </contributors>
 

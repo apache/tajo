@@ -334,6 +334,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-457: Update committer list and contributor list. (hyunsik)
+
     TAJO-166: Automatic precommit test using Jenkins. (hyunsik)
 
     TAJO-322: Documentation by version. (hyunsik)
