@@ -337,6 +337,9 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-478: Add request-patch-review.py that helps submitting patches to
+    jira and reviewboard. (hyunsik)
+
     TAJO-508: Apply findbugs-excludeFilterFile to TajoQA. (jinho)
 
     TAJO-457: Update committer list and contributor list. (hyunsik)
