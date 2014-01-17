@@ -209,9 +209,6 @@ IFS=$'\n'
 
 # TAJO_BASE_CLASSPATH contains $TAJO_CONF_DIR before containing jars.
 TAJO_BASE_CLASSPATH="${TAJO_CONF_DIR}"
-for f in $TAJO_CONF_DIR/*.xml; do
-  TAJO_BASE_CLASSPATH=${TAJO_BASE_CLASSPATH}:$f;
-done
 
 # Tajo Jar Directory
 TAJO_JAR_DIRS="$TAJO_HOME
@@ -240,10 +237,6 @@ HIVE_CONF=$HIVE_HOME/conf
 
 if [ -d ${HIVE_CONF} ]; then
   CLASSPATH=${CLASSPATH}:${HIVE_CONF}
-
-  for f in ${HIVE_CONF}/hive-site.xml; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
 fi
 
 HIVE_LIB=$HIVE_HOME/lib
@@ -284,22 +277,17 @@ fi
 ##############################################################################
 
 # HADOOP JAR DIRS
-HADOOP_MODULE_DIRS="$HADOOP_HOME/share/hadoop/common/lib/
-$HADOOP_HOME/share/hadoop/common/
+HADOOP_MODULE_DIRS="$HADOOP_HOME/share/hadoop/common/lib
+$HADOOP_HOME/share/hadoop/common
 $HADOOP_HOME/share/hadoop/hdfs
-$HADOOP_HOME/share/hadoop/hdfs/lib/
-$HADOOP_HOME/share/hadoop/yarn/lib/
-$HADOOP_HOME/share/hadoop/yarn/"
+$HADOOP_HOME/share/hadoop/hdfs/lib
+$HADOOP_HOME/share/hadoop/yarn/lib
+$HADOOP_HOME/share/hadoop/yarn"
 
 HADOOP_EXT_CLASSPATH="${HADOOP_CONF_DIR}"
-for f in $HADOOP_CONF_DIR/*.xml; do
-  HADOOP_EXT_CLASSPATH=${HADOOP_EXT_CLASSPATH}:$f
-done;
 
 for d in $HADOOP_MODULE_DIRS; do
-  for j in `find $d/*.jar ! -name "*test*"`; do
-    CLASSPATH=${CLASSPATH}:$j
-  done;
+  CLASSPATH=${CLASSPATH}:$d/*
 done;
 
 export HADOOP_EXT_CLASSPATH
@@ -413,4 +401,5 @@ fi
 TAJO_OPTS="$TAJO_OPTS -Dtajo.policy.file=$TAJO_POLICYFILE"
 
 # run it
-exec "$JAVA" -Dproc_$COMMAND $TAJO_OPTS -classpath "$CLASSPATH" $CLASS $TAJO_DAEMON_MODE "$@"
+export CLASSPATH=$CLASSPATH
+exec "$JAVA" -Dproc_$COMMAND $TAJO_OPTS $CLASS $TAJO_DAEMON_MODE "$@"
