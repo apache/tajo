@@ -38,6 +38,7 @@
     <tajo.version>0.8.0-SNAPSHOT</tajo.version>
     <hadoop.version>2.2.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
+    <tajo.root>${project.parent.relativePath}/..</tajo.root>
   </properties>
 
   <licenses>
@@ -393,6 +394,18 @@
           <artifactId>maven-surefire-report-plugin</artifactId>
           <version>2.15</version>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+            <findbugsXmlOutput>true</findbugsXmlOutput>
+            <xmlOutput>true</xmlOutput>
+            <effort>Max</effort>
+            <excludeFilterFile>${tajo.root}/dev-support/findbugs-exclude.xml</excludeFilterFile>
+          </configuration>
+        </plugin>
+
         <!--This plugin's configuration is used to store Eclipse m2e settings only. 
           It has no influence on the Maven build itself. -->
         <plugin>

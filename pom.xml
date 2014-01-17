@@ -74,6 +74,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.8.0-SNAPSHOT</tajo.version>
+    <tajo.root>${basedir}</tajo.root>
   </properties>
 
   <modules>

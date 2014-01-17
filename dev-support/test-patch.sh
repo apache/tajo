@@ -288,7 +288,7 @@ verifyPatch () {
       echo "PATCH APPLICATION FAILED"
       JIRA_COMMENT="$JIRA_COMMENT
 
-      {color:red}-1 patch.  The patch command could not apply the patch.{color:red}"
+      {color:red}-1 patch.{color}  The patch command could not apply the patch."
       return -1
     else
       return 1
@@ -340,12 +340,12 @@ checkAuthor () {
   if [[ $authorTags != 0 ]] ; then
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 @author.  The patch appears to contain $authorTags @author tags which the Tajo community has agreed to not allow in code contributions.{color:red}"
+    {color:red}-1 @author.{color}  The patch appears to contain $authorTags @author tags which the Tajo community has agreed to not allow in code contributions."
     return 1
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 @author.  The patch does not contain any @author tags.{color:green}"
+    {color:green}+1 @author.{color}  The patch does not contain any @author tags."
   return 0
 }
 
@@ -376,14 +376,14 @@ checkTests () {
     fi
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 tests included.  The patch doesn't appear to include any new or modified tests.{color:red}
+    {color:red}-1 tests included.{color}  The patch doesn't appear to include any new or modified tests.
                         Please justify why no new tests are needed for this patch.
                         Also please list what manual steps were performed to verify this patch."
     return 1
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 tests included.  The patch appears to include $testReferences new or modified test files.{color:green}"
+    {color:green}+1 tests included.{color}  The patch appears to include $testReferences new or modified test files."
   return 0
 }
 
@@ -414,7 +414,7 @@ applyPatch () {
     echo "PATCH APPLICATION FAILED"
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 patch.  The patch command could not apply the patch.{color:red}"
+    {color:red}-1 patch.{color}  The patch command could not apply the patch."
     return 1
   fi
   return 0
@@ -449,13 +449,13 @@ checkJavadocWarnings () {
     ### if patch warning greater than trunk warning
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 javadoc.  The applied patch generated $patchJavadocWarnings javadoc warnings (more than the trunk's current $trunkJavadocWarnings warnings).{color:red}"
+    {color:red}-1 javadoc.{color}  The applied patch generated $patchJavadocWarnings javadoc warnings (more than the trunk's current $trunkJavadocWarnings warnings)."
     return 1
     fi
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 javadoc.  The applied patch does not increase the total number of javadoc warnings.{color:green}"
+    {color:green}+1 javadoc.{color}  The applied patch does not increase the total number of javadoc warnings."
   return 0
 }
 
@@ -476,7 +476,7 @@ checkJavacWarnings () {
   if [[ $? != 0 ]] ; then
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 javac.  The patch appears to cause the build to fail.{color:red}"
+    {color:red}-1 javac.{color}  The patch appears to cause the build to fail."
     return 2
   fi
   ### Compare trunk and patch javac warning numbers
@@ -492,7 +492,7 @@ checkJavacWarnings () {
       if [[ $patchJavacWarnings -gt $trunkJavacWarnings ]] ; then
         JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 javac.  The applied patch generated $patchJavacWarnings javac compiler warnings (more than the trunk's current $trunkJavacWarnings warnings).{color:red}"
+    {color:red}-1 javac.{color}  The applied patch generated $patchJavacWarnings javac compiler warnings (more than the trunk's current $trunkJavacWarnings warnings)."
 
     $DIFF $PATCH_DIR/filteredTrunkJavacWarnings.txt $PATCH_DIR/filteredPatchJavacWarnings.txt > $PATCH_DIR/diffJavacWarnings.txt 
         JIRA_COMMENT_FOOTER="Javac warnings: $BUILD_URL/artifact/incubator-tajo/patchprocess/diffJavacWarnings.txt
@@ -504,7 +504,7 @@ $JIRA_COMMENT_FOOTER"
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 javac.  The applied patch does not increase the total number of javac compiler warnings.{color:green}"
+    {color:green}+1 javac.{color}  The applied patch does not increase the total number of javac compiler warnings."
   return 0
 }
 
@@ -534,7 +534,7 @@ checkReleaseAuditWarnings () {
       if [[ $patchReleaseAuditWarnings -gt 0 ]] ; then
         JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 release audit.  The applied patch generated $patchReleaseAuditWarnings release audit warnings.{color:red}"
+    {color:red}-1 release audit.{color}  The applied patch generated $patchReleaseAuditWarnings release audit warnings."
         $GREP '\!?????' $PATCH_DIR/patchReleaseAuditWarnings.txt > $PATCH_DIR/patchReleaseAuditProblems.txt
         echo "Lines that start with ????? in the release audit report indicate files that do not have an Apache license header." >> $PATCH_DIR/patchReleaseAuditProblems.txt
         JIRA_COMMENT_FOOTER="Release audit warnings: $BUILD_URL/artifact/incubator-tajo/patchprocess/patchReleaseAuditProblems.txt
@@ -545,7 +545,7 @@ $JIRA_COMMENT_FOOTER"
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 release audit.  The applied patch does not increase the total number of release audit warnings.{color:green}"
+    {color:green}+1 release audit.{color}  The applied patch does not increase the total number of release audit warnings."
   return 0
 }
 
@@ -580,12 +580,12 @@ checkStyle () {
   if [[ $patchStyleErrors != 0 ]] ; then
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 checkstyle.  The patch generated $patchStyleErrors code style errors.{color:red}"
+    {color:red}-1 checkstyle.{color}  The patch generated $patchStyleErrors code style errors."
     return 1
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 checkstyle.  The patch generated 0 code style errors.{color:green}"
+    {color:green}+1 checkstyle.{color}  The patch generated 0 code style errors."
   return 0
 }
 
@@ -640,7 +640,7 @@ $JIRA_COMMENT_FOOTER"
 
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 findbugs.  The patch appears to cause Findbugs (version ${findbugs_version}) to fail.{color:red}"
+    {color:red}-1 findbugs.{color}  The patch appears to cause Findbugs (version ${findbugs_version}) to fail."
     return 1
   fi
     
@@ -673,12 +673,12 @@ $JIRA_COMMENT_FOOTER"
   if [[ $findbugsWarnings -gt 0 ]] ; then
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 findbugs.  The patch appears to introduce $findbugsWarnings new Findbugs (version ${findbugs_version}) warnings.{color:red}"
+    {color:red}-1 findbugs.{color}  The patch appears to introduce $findbugsWarnings new Findbugs (version ${findbugs_version}) warnings."
     return 1
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 findbugs.  The patch does not introduce any new Findbugs (version ${findbugs_version}) warnings.{color:green}"
+    {color:green}+1 findbugs.{color}  The patch does not introduce any new Findbugs (version ${findbugs_version}) warnings."
   return 0
 }
 
@@ -716,13 +716,12 @@ ${module_failed_tests}"
   if [[ -n "$failed_tests" ]] ; then
     JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:red}-1 core tests.  The patch failed these unit tests in $modules:
-$failed_tests{color:red}"
+    {color:red}-1 core tests.{color}  The patch failed these unit tests in $modules: $failed_tests"
     return 1
   fi
   JIRA_COMMENT="$JIRA_COMMENT
 
-    {color:green}+1 core tests.  The patch passed unit tests in $modules.{color:green}"
+    {color:green}+1 core tests.{color}  The patch passed unit tests in $modules."
   return 0
 }
 
@@ -781,11 +780,11 @@ submitJiraComment () {
     JIRA_COMMENT_FOOTER=""
   fi
   if [[ $result == 0 ]] ; then
-    comment="{color:green}*+1 overall.*{color:green}  $JIRA_COMMENT
+    comment="{color:green}*+1 overall.*{color}  $JIRA_COMMENT
 
 $JIRA_COMMENT_FOOTER"
   else
-    comment="{color:red}*-1 overall.*{color:red}  $JIRA_COMMENT
+    comment="{color:red}*-1 overall.*{color}  $JIRA_COMMENT
 
 $JIRA_COMMENT_FOOTER"
   fi
