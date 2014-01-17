@@ -1,149 +1,157 @@
-SELECT
-  *
-FROM (
+SELECT * FROM (
   SELECT
-    n_nationkey,
-    n_name
-
+    *
   FROM (
     SELECT
       n_nationkey,
       n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
+
+    FROM (
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
 
 
-    UNION ALL
+      UNION ALL
 
-    SELECT
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+
+    ) T1
+    GROUP BY
       n_nationkey,
       n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
+    ORDER BY
+      n_nationkey desc,
+      n_name desc
 
-  ) T1
-  GROUP BY
+   UNION
+
+   SELECT
     n_nationkey,
     n_name
+
+   FROM (
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+
+      UNION ALL
+
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+   ) T2
+
+   GROUP BY
+     n_nationkey,
+     n_name
+
+   ORDER BY
+     n_nationkey desc,
+     n_name desc
+
+  ) TABLE1
+
   ORDER BY
-    n_nationkey desc,
-    n_name desc
-
- UNION
-
- SELECT
-  n_nationkey,
-  n_name
-
- FROM (
-    SELECT
-      n_nationkey,
-      n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
-
-    UNION ALL
-
-    SELECT
-      n_nationkey,
-      n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
- ) T2
-
- GROUP BY
-   n_nationkey,
-   n_name
-
- ORDER BY
-   n_nationkey desc,
-   n_name desc
-
-) TABLE1
-
-ORDER BY
-  n_nationkey desc
-
-UNION
-
-SELECT
-  *
-FROM (
-  SELECT
     n_nationkey,
     n_name
 
+  UNION
+
+  SELECT
+    *
   FROM (
     SELECT
       n_nationkey,
       n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
+
+    FROM (
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
 
 
-    UNION ALL
+      UNION ALL
 
-    SELECT
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+
+    ) T3
+    GROUP BY
       n_nationkey,
       n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
+    ORDER BY
+      n_nationkey desc,
+      n_name desc
 
-  ) T3
-  GROUP BY
+   UNION
+
+   SELECT
     n_nationkey,
     n_name
+
+   FROM (
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+
+      UNION ALL
+
+      SELECT
+        n_nationkey,
+        n_name
+      FROM
+        nation
+      WHERE
+        n_regionkey = 0
+   ) T4
+
+   GROUP BY
+     n_nationkey,
+     n_name
+
+   ORDER BY
+     n_nationkey desc,
+     n_name desc
+
+  ) TABLE2
+
   ORDER BY
-    n_nationkey desc,
-    n_name desc
+    n_nationkey,
+    n_name
 
- UNION
-
- SELECT
-  n_nationkey,
-  n_name
-
- FROM (
-    SELECT
-      n_nationkey,
-      n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
-
-    UNION ALL
-
-    SELECT
-      n_nationkey,
-      n_name
-    FROM
-      nation
-    WHERE
-      n_regionkey = 0
- ) T4
-
- GROUP BY
-   n_nationkey,
-   n_name
-
- ORDER BY
-   n_nationkey desc,
-   n_name desc
-
-) TABLE2
+) TABLE3
 
 ORDER BY
   n_nationkey,
