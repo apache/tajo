@@ -18,9 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
-
-import java.util.Objects;
 
 public class DataTypeExpr extends Expr {
   String typeName;
@@ -62,7 +61,7 @@ public class DataTypeExpr extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hash(typeName, lengthOrPrecision, scale);
+    return Objects.hashCode(typeName, lengthOrPrecision, scale);
   }
 
   @Override

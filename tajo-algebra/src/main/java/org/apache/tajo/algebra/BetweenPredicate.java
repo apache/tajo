@@ -18,7 +18,7 @@
 
 package org.apache.tajo.algebra;
 
-import java.util.Objects;
+import com.google.common.base.Objects;
 
 public class BetweenPredicate extends Expr {
   private boolean not;
@@ -60,7 +60,7 @@ public class BetweenPredicate extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hash(not, symmetric, predicand, begin, end);
+    return Objects.hashCode(not, symmetric, predicand, begin, end);
   }
 
   @Override
