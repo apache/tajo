@@ -104,6 +104,7 @@
       <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html" />
       <item name="How To Contribute" href="http://wiki.apache.org/tajo/HowToContribute" />
       <item name="Review Board" href="https://reviews.apache.org/groups/tajo" />
+      <item name="Review Request Tool" href="review-request-tool.html" />
       <item name="Coding Style" href="http://wiki.apache.org/tajo/CodingStyle" />
     </menu>
 
