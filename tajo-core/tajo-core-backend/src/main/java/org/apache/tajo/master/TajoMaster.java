@@ -1026,8 +1026,6 @@ public class TajoMaster extends CompositeService {
           break;
         }
 
-        System.out.println(line);
-
         int indexStart = line.indexOf(" on /");
         int indexEnd = line.indexOf(" ", indexStart + 4);
 

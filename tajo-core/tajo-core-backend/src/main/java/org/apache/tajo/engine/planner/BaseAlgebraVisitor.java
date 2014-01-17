@@ -27,14 +27,14 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   /**
    * The prehook is called before each expression is visited.
    */
-  public void preHook(CONTEXT ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
+  public void preHook(CONTEXT ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
   }
 
 
   /**
    * The posthook is called before each expression is visited.
    */
-  public RESULT postHook(CONTEXT ctx, Stack<OpType> stack, Expr expr, RESULT current) throws PlanningException {
+  public RESULT postHook(CONTEXT ctx, Stack<Expr> stack, Expr expr, RESULT current) throws PlanningException {
     return current;
   }
 
@@ -44,7 +44,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
    * @param stack The stack contains the upper operators' type.
    * @param expr The visiting relational operator
    */
-  public RESULT visit(CONTEXT ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
+  public RESULT visit(CONTEXT ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
     preHook(ctx, stack, expr);
 
     RESULT current;
@@ -196,7 +196,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       current = visitColumnReference(ctx, stack, (ColumnReferenceExpr) expr);
       break;
     case Target:
-      current = visitTargetExpr(ctx, stack, (TargetExpr) expr);
+      current = visitTargetExpr(ctx, stack, (NamedExpr) expr);
       break;
     case Function:
       current = visitFunction(ctx, stack, (FunctionExpr) expr);
@@ -222,30 +222,44 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case NullLiteral:
       current = visitNullLiteral(ctx, stack, (NullLiteral) expr);
       break;
+    case DateLiteral:
+      current = visitDateLiteral(ctx, stack, (DateLiteral) expr);
+      break;
+    case TimeLiteral:
+      current = visitTimeLiteral(ctx, stack, (TimeLiteral) expr);
+      break;
     case TimestampLiteral:
       current = visitTimestampLiteral(ctx, stack, (TimestampLiteral) expr);
       break;
+
 
 
     default:
       throw new PlanningException("Cannot support this type algebra \"" + expr.getType() + "\"");
     }
 
-    postHook(ctx, stack, expr, current);
+    // skip postHook against only one relation
+    if (expr.getType() == OpType.RelationList) {
+      RelationList relationList = (RelationList)expr;
+      if (relationList.size() == 1 && relationList.getRelations()[0].getType() == OpType.Relation) {
+        return current;
+      }
+    }
 
+    postHook(ctx, stack, expr, current);
     return current;
   }
 
-  private RESULT visitDefaultUnaryExpr(CONTEXT ctx, Stack<OpType> stack, UnaryOperator expr) throws PlanningException {
-    stack.push(expr.getType());
+  private RESULT visitDefaultUnaryExpr(CONTEXT ctx, Stack<Expr> stack, UnaryOperator expr) throws PlanningException {
+    stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
-  private RESULT visitDefaultBinaryExpr(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr)
+  private RESULT visitDefaultBinaryExpr(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr)
       throws PlanningException {
-    stack.push(expr.getType());
+    stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getLeft());
     visit(ctx, stack, expr.getRight());
     stack.pop();
@@ -253,76 +267,113 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitProjection(CONTEXT ctx, Stack<OpType> stack, Projection expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+  public RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws PlanningException {
+    stack.push(expr);
+    for (NamedExpr target : expr.getNamedExprs()) {
+      visit(ctx, stack, target);
+    }
+    RESULT result = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return result;
   }
 
   @Override
-  public RESULT visitLimit(CONTEXT ctx, Stack<OpType> stack, Limit expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+  public RESULT visitLimit(CONTEXT ctx, Stack<Expr> stack, Limit expr) throws PlanningException {
+    stack.push(expr);
+    visit(ctx, stack, expr.getFetchFirstNum());
+    RESULT result = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return result;
   }
 
   @Override
-  public RESULT visitSort(CONTEXT ctx, Stack<OpType> stack, Sort expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+  public RESULT visitSort(CONTEXT ctx, Stack<Expr> stack, Sort expr) throws PlanningException {
+    stack.push(expr);
+    for (Sort.SortSpec sortSpec : expr.getSortSpecs()) {
+      visit(ctx, stack, sortSpec.getKey());
+    }
+    RESULT result = visit(ctx, stack, expr.getChild());
+    return result;
   }
 
   @Override
-  public RESULT visitHaving(CONTEXT ctx, Stack<OpType> stack, Having expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+  public RESULT visitHaving(CONTEXT ctx, Stack<Expr> stack, Having expr) throws PlanningException {
+    stack.push(expr);
+    visit(ctx, stack, expr.getQual());
+    RESULT result = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return result;
   }
 
   @Override
-  public RESULT visitGroupBy(CONTEXT ctx, Stack<OpType> stack, Aggregation expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+  public RESULT visitGroupBy(CONTEXT ctx, Stack<Expr> stack, Aggregation expr) throws PlanningException {
+    stack.push(expr);
+
+    if (expr.hasHavingCondition()) {
+      visit(ctx, stack, expr.getHavingCondition());
+    }
+    for (org.apache.tajo.algebra.Aggregation.GroupElement groupElement : expr.getGroupSet()) {
+      for (Expr groupingSet : groupElement.getGroupingSets()) {
+        visit(ctx, stack, groupingSet);
+      }
+    }
+    RESULT result = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return result;
   }
 
   @Override
-  public RESULT visitJoin(CONTEXT ctx, Stack<OpType> stack, Join expr) throws PlanningException {
+  public RESULT visitJoin(CONTEXT ctx, Stack<Expr> stack, Join expr) throws PlanningException {
+    stack.push(expr);
+    visit(ctx, stack, expr.getQual());
+    visit(ctx, stack, expr.getLeft());
+    RESULT result = visit(ctx, stack, expr.getRight());
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitFilter(CONTEXT ctx, Stack<Expr> stack, Selection expr) throws PlanningException {
+    stack.push(expr);
+    visit(ctx, stack, expr.getQual());
+    RESULT result = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitUnion(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitFilter(CONTEXT ctx, Stack<OpType> stack, Selection expr) throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
-  }
-
-  @Override
-  public RESULT visitUnion(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
+  public RESULT visitExcept(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitExcept(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
+  public RESULT visitIntersect(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitIntersect(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
-    return visitDefaultBinaryExpr(ctx, stack, expr);
-  }
-
-  @Override
-  public RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<OpType> stack, SimpleTableSubQuery expr)
+  public RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr)
       throws PlanningException {
-    stack.push(expr.getType());
+    return visitDefaultUnaryExpr(ctx, stack, expr);
+  }
+
+  @Override
+  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
+      throws PlanningException {
+    stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getSubQuery());
     stack.pop();
     return child;
   }
 
   @Override
-  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TablePrimarySubQuery expr)
-      throws PlanningException {
-    stack.push(expr.getType());
-    RESULT child = visit(ctx, stack, expr.getSubQuery());
-    stack.pop();
-    return child;
-  }
-
-  @Override
-  public RESULT visitRelationList(CONTEXT ctx, Stack<OpType> stack, RelationList expr) throws PlanningException {
-    stack.push(expr.getType());
+  public RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws PlanningException {
+    stack.push(expr);
     RESULT child = null;
     for (Expr e : expr.getRelations()) {
       child = visit(ctx, stack, e);
@@ -332,16 +383,13 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitRelation(CONTEXT ctx, Stack<OpType> stack, Relation expr) throws PlanningException {
+  public RESULT visitRelation(CONTEXT ctx, Stack<Expr> stack, Relation expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitScalarSubQuery(CONTEXT ctx, Stack<OpType> stack, ScalarSubQuery expr) throws PlanningException {
-    stack.push(OpType.ScalarSubQuery);
-    RESULT result = visit(ctx, stack, expr.getSubQuery());
-    stack.pop();
-    return result;
+  public RESULT visitScalarSubQuery(CONTEXT ctx, Stack<Expr> stack, ScalarSubQuery expr) throws PlanningException {
+    return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -349,8 +397,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitCreateTable(CONTEXT ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException {
-    stack.push(expr.getType());
+  public RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws PlanningException {
+    stack.push(expr);
     RESULT child = null;
     if (expr.hasSubQuery()) {
       child = visit(ctx, stack, expr.getSubQuery());
@@ -360,7 +408,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitDropTable(CONTEXT ctx, Stack<OpType> stack, DropTable expr) throws PlanningException {
+  public RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws PlanningException {
     return null;
   }
 
@@ -368,8 +416,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public RESULT visitInsert(CONTEXT ctx, Stack<OpType> stack, Insert expr) throws PlanningException {
-    stack.push(expr.getType());
+  public RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException {
+    stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getSubQuery());
     stack.pop();
     return child;
@@ -380,17 +428,17 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitAnd(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitAnd(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitOr(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitOr(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitNot(CONTEXT ctx, Stack<OpType> stack, NotExpr expr) throws PlanningException {
+  public RESULT visitNot(CONTEXT ctx, Stack<Expr> stack, NotExpr expr) throws PlanningException {
     return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
@@ -398,32 +446,32 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   // Comparison Predicates Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   @Override
-  public RESULT visitEquals(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitEquals(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitNotEquals(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitNotEquals(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitLessThan(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitLessThan(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitLessThanOrEquals(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitLessThanOrEquals(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitGreaterThan(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitGreaterThan(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitGreaterThanOrEquals(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr)
+  public RESULT visitGreaterThanOrEquals(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr)
       throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
@@ -433,8 +481,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitBetween(CONTEXT ctx, Stack<OpType> stack, BetweenPredicate expr) throws PlanningException {
-    stack.push(OpType.Between);
+  public RESULT visitBetween(CONTEXT ctx, Stack<Expr> stack, BetweenPredicate expr) throws PlanningException {
+    stack.push(expr);
     RESULT result = visit(ctx, stack, expr.predicand());
     visit(ctx, stack, expr.begin());
     visit(ctx, stack, expr.end());
@@ -443,8 +491,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitCaseWhen(CONTEXT ctx, Stack<OpType> stack, CaseWhenPredicate expr) throws PlanningException {
-    stack.push(OpType.CaseWhen);
+  public RESULT visitCaseWhen(CONTEXT ctx, Stack<Expr> stack, CaseWhenPredicate expr) throws PlanningException {
+    stack.push(expr);
     RESULT result = null;
     for (CaseWhenPredicate.WhenExpr when : expr.getWhens()) {
       result = visit(ctx, stack, when.getCondition());
@@ -458,21 +506,18 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitIsNullPredicate(CONTEXT ctx, Stack<OpType> stack, IsNullPredicate expr) throws PlanningException {
-    stack.push(OpType.IsNullPredicate);
-    RESULT result = visit(ctx, stack, expr.getPredicand());
-    stack.pop();
-    return result;
+  public RESULT visitIsNullPredicate(CONTEXT ctx, Stack<Expr> stack, IsNullPredicate expr) throws PlanningException {
+    return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitInPredicate(CONTEXT ctx, Stack<OpType> stack, InPredicate expr) throws PlanningException {
+  public RESULT visitInPredicate(CONTEXT ctx, Stack<Expr> stack, InPredicate expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitValueListExpr(CONTEXT ctx, Stack<OpType> stack, ValueListExpr expr) throws PlanningException {
-    stack.push(OpType.ValueList);
+  public RESULT visitValueListExpr(CONTEXT ctx, Stack<Expr> stack, ValueListExpr expr) throws PlanningException {
+    stack.push(expr);
     RESULT result = null;
     for (Expr value : expr.getValues()) {
       result = visit(ctx, stack, value);
@@ -482,45 +527,33 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitExistsPredicate(CONTEXT ctx, Stack<OpType> stack, ExistsPredicate expr) throws PlanningException {
-    stack.push(OpType.ExistsPredicate);
-    RESULT result = visit(ctx, stack, expr.getSubQuery());
-    stack.pop();
-    return result;
+  public RESULT visitExistsPredicate(CONTEXT ctx, Stack<Expr> stack, ExistsPredicate expr) throws PlanningException {
+    return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // String Operator or Pattern Matching Predicates Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private RESULT visitPatternMatchPredicate(CONTEXT ctx, Stack<OpType> stack, PatternMatchPredicate expr)
-      throws PlanningException {
-    stack.push(expr.getType());
-    RESULT result = visit(ctx, stack, expr.getPredicand());
-    visit(ctx, stack, expr.getPattern());
-    stack.pop();
-    return result;
-  }
   @Override
-  public RESULT visitLikePredicate(CONTEXT ctx, Stack<OpType> stack, PatternMatchPredicate expr)
+  public RESULT visitLikePredicate(CONTEXT ctx, Stack<Expr> stack, PatternMatchPredicate expr)
       throws PlanningException {
-    return visitPatternMatchPredicate(ctx, stack, expr);
+    return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitSimilarToPredicate(CONTEXT ctx, Stack<OpType> stack, PatternMatchPredicate expr)
+  public RESULT visitSimilarToPredicate(CONTEXT ctx, Stack<Expr> stack, PatternMatchPredicate expr)
       throws PlanningException {
-    return visitPatternMatchPredicate(ctx, stack, expr);
+    return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitRegexpPredicate(CONTEXT ctx, Stack<OpType> stack, PatternMatchPredicate expr)
+  public RESULT visitRegexpPredicate(CONTEXT ctx, Stack<Expr> stack, PatternMatchPredicate expr)
       throws PlanningException {
-    return visitPatternMatchPredicate(ctx, stack, expr);
+    return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitConcatenate(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitConcatenate(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
@@ -529,27 +562,27 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitPlus(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitPlus(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitMinus(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitMinus(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitMultiply(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitMultiply(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitDivide(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitDivide(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitModular(CONTEXT ctx, Stack<OpType> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitModular(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
   }
 
@@ -558,27 +591,24 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitSign(CONTEXT ctx, Stack<OpType> stack, SignedExpr expr) throws PlanningException {
+  public RESULT visitSign(CONTEXT ctx, Stack<Expr> stack, SignedExpr expr) throws PlanningException {
     return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitColumnReference(CONTEXT ctx, Stack<OpType> stack, ColumnReferenceExpr expr)
+  public RESULT visitColumnReference(CONTEXT ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitTargetExpr(CONTEXT ctx, Stack<OpType> stack, TargetExpr expr) throws PlanningException {
-    stack.push(OpType.Target);
-    RESULT result = visit(ctx, stack, expr.getExpr());
-    stack.pop();
-    return result;
+  public RESULT visitTargetExpr(CONTEXT ctx, Stack<Expr> stack, NamedExpr expr) throws PlanningException {
+    return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitFunction(CONTEXT ctx, Stack<OpType> stack, FunctionExpr expr) throws PlanningException {
-    stack.push(OpType.Function);
+  public RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
+    stack.push(expr);
     RESULT result = null;
     for (Expr param : expr.getParams()) {
       result = visit(ctx, stack, param);
@@ -592,15 +622,15 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitCountRowsFunction(CONTEXT ctx, Stack<OpType> stack, CountRowsFunctionExpr expr)
+  public RESULT visitCountRowsFunction(CONTEXT ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
       throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitGeneralSetFunction(CONTEXT ctx, Stack<OpType> stack, GeneralSetFunctionExpr expr)
+  public RESULT visitGeneralSetFunction(CONTEXT ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
       throws PlanningException {
-    stack.push(OpType.GeneralSetFunction);
+    stack.push(expr);
     RESULT result = null;
     for (Expr param : expr.getParams()) {
       result = visit(ctx, stack, param);
@@ -614,40 +644,40 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitDataType(CONTEXT ctx, Stack<OpType> stack, DataTypeExpr expr) throws PlanningException {
+  public RESULT visitDataType(CONTEXT ctx, Stack<Expr> stack, DataTypeExpr expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitCastExpr(CONTEXT ctx, Stack<OpType> stack, CastExpr expr) throws PlanningException {
-    stack.push(OpType.Cast);
+  public RESULT visitCastExpr(CONTEXT ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
+    stack.push(expr);
     RESULT result = visit(ctx, stack, expr.getOperand());
     stack.pop();
     return result;
   }
 
   @Override
-  public RESULT visitLiteral(CONTEXT ctx, Stack<OpType> stack, LiteralValue expr) throws PlanningException {
+  public RESULT visitLiteral(CONTEXT ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitNullLiteral(CONTEXT ctx, Stack<OpType> stack, NullLiteral expr) throws PlanningException {
+  public RESULT visitNullLiteral(CONTEXT ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<OpType> stack, TimestampLiteral expr) throws PlanningException {
+  public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitTimeLiteral(CONTEXT ctx, Stack<OpType> stack, TimeLiteral expr) throws PlanningException {
+  public RESULT visitTimeLiteral(CONTEXT ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public RESULT visitDateLiteral(CONTEXT ctx, Stack<OpType> stack, DateLiteral expr) throws PlanningException {
+  public RESULT visitDateLiteral(CONTEXT ctx, Stack<Expr> stack, DateLiteral expr) throws PlanningException {
     return null;
   }
 }

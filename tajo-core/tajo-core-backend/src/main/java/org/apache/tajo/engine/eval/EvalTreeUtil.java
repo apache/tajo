@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -124,16 +125,16 @@ public class EvalTreeUtil {
           + expr.getType().toString());
     }
   }
-  
+
   /**
    * Return all exprs to refer columns corresponding to the target.
-   * 
-   * @param expr 
+   *
+   * @param expr
    * @param target to be found
    * @return a list of exprs
    */
   public static Collection<EvalNode> getContainExpr(EvalNode expr, Column target) {
-    Set<EvalNode> exprSet = Sets.newHashSet();    
+    Set<EvalNode> exprSet = Sets.newHashSet();
     getContainExpr(expr, target, exprSet);
     return exprSet;
   }
@@ -296,6 +297,32 @@ public class EvalTreeUtil {
 
     public Set<AggregationFunctionCallEval> getAggregationFunction() {
       return this.aggFucntions;
+    }
+  }
+
+  public static <T extends EvalNode> Collection<T> findEvalsByType(EvalNode evalNode, EvalType type) {
+    EvalFinder finder = new EvalFinder(type);
+    finder.visitChild(null, evalNode, new Stack<EvalNode>());
+    return (Collection<T>) finder.evalNodes;
+  }
+
+  public static class EvalFinder extends BasicEvalNodeVisitor<Object, Object> {
+    private EvalType targetType;
+    List<EvalNode> evalNodes = TUtil.newList();
+
+    public EvalFinder(EvalType targetType) {
+      this.targetType = targetType;
+    }
+
+    @Override
+    public Object visitChild(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visitChild(context, evalNode, stack);
+
+      if (evalNode.type == targetType) {
+        evalNodes.add(evalNode);
+      }
+
+      return evalNode;
     }
   }
 }

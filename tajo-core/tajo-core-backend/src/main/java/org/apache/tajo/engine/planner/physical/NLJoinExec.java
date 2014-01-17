@@ -59,7 +59,7 @@ public class NLJoinExec extends BinaryPhysicalExec {
 
     // for projection
     projector = new Projector(inSchema, outSchema, plan.getTargets());
-    evalContexts = projector.renew();
+    evalContexts = projector.newContexts();
 
     // for join
     needNewOuter = true;

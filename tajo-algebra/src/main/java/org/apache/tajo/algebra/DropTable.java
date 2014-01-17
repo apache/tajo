@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+
 public class DropTable extends Expr {
   private final String tableName;
   private final boolean purge;
@@ -34,6 +36,11 @@ public class DropTable extends Expr {
 
   public boolean isPurge() {
     return purge;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(tableName, purge);
   }
 
   @Override

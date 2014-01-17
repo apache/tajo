@@ -71,9 +71,6 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
       }
     }
 
-    if (node.hasHavingCondition()) {
-      ExprsVerifier.verify(state, node.getHavingCondition());
-    }
     return node;
   }
 

@@ -18,4 +18,9 @@ public class CountRowsFunctionExpr extends FunctionExpr {
   public CountRowsFunctionExpr() {
     super(OpType.CountRowsFunction, "count");
   }
+
+  @Override
+  public int hashCode() {
+    return "count_row".hashCode();
+  }
 }

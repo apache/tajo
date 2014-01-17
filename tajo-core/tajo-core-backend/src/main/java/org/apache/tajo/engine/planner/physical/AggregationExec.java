@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Sets;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.DatumFactory;
@@ -29,8 +28,11 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 public abstract class AggregationExec extends UnaryPhysicalExec {
@@ -43,24 +45,12 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   protected EvalContext evalContexts [];
   protected Schema evalSchema;
 
-  protected EvalNode havingQual;
-  protected EvalContext havingContext;
-
   public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
                          PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
 
-    if (plan.hasHavingCondition()) {
-      this.havingQual = plan.getHavingCondition();
-      this.havingContext = plan.getHavingCondition().newContext();
-    }
-
-    if (plan.getHavingSchema() != null) {
-      this.evalSchema = plan.getHavingSchema();
-    } else {
-      this.evalSchema = plan.getOutSchema();
-    }
+    evalSchema = plan.getOutSchema();
 
     nonNullGroupingFields = Sets.newHashSet();
     // keylist will contain a list of IDs of grouping column
@@ -72,27 +62,25 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
       nonNullGroupingFields.add(col);
     }
 
-    // measureList will contain a list of IDs of measure fields
-    int valueIdx = 0;
-    measureList = new int[plan.getTargets().length - keylist.length];
-    if (measureList.length > 0) {
-      search: for (int inputIdx = 0; inputIdx < plan.getTargets().length; inputIdx++) {
-        for (int key : keylist) { // eliminate key field
-          if (plan.getTargets()[inputIdx].getColumnSchema().getColumnName()
-              .equals(inSchema.getColumn(key).getColumnName())) {
-            continue search;
-          }
-        }
-        measureList[valueIdx] = inputIdx;
-        valueIdx++;
+    // measureList will contain a list of measure field indexes against the target list.
+    List<Integer> measureIndexes = TUtil.newList();
+    for (int i = 0; i < plan.getTargets().length; i++) {
+      Target target = plan.getTargets()[i];
+      if (target.getEvalTree().getType() == EvalType.AGG_FUNCTION) {
+        measureIndexes.add(i);
       }
+    }
+
+    measureList = new int[measureIndexes.size()];
+    for (int i = 0; i < measureIndexes.size(); i++) {
+      measureList[i] = measureIndexes.get(i);
     }
 
     evals = new EvalNode[plan.getTargets().length];
     evalContexts = new EvalContext[plan.getTargets().length];
     for (int i = 0; i < plan.getTargets().length; i++) {
       Target t = plan.getTargets()[i];
-      if (t.getEvalTree().getType() == EvalType.FIELD && !nonNullGroupingFields.contains(t.getColumnSchema())) {
+      if (t.getEvalTree().getType() == EvalType.FIELD && !nonNullGroupingFields.contains(t.getNamedColumn())) {
         evals[i] = new ConstEval(DatumFactory.createNullDatum());
         evalContexts[i] = evals[i].newContext();
       } else {

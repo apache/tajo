@@ -60,32 +60,32 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected final Projector projector;
   protected final EvalContext [] evalContexts;
 
-  public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
-      PhysicalExec inner) {
-    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
-        plan.getOutSchema(), outer, inner);
+  public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
+      PhysicalExec rightExec) {
+    super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
+        leftExec, rightExec);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
     this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
-        outer.getSchema(), inner.getSchema());
+        leftExec.getSchema(), rightExec.getSchema());
 
     leftKeyList = new int[joinKeyPairs.size()];
     rightKeyList = new int[joinKeyPairs.size()];
 
     for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
+      leftKeyList[i] = leftExec.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
     }
 
     for (int i = 0; i < joinKeyPairs.size(); i++) {
-      rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
+      rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.renew();
+    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();

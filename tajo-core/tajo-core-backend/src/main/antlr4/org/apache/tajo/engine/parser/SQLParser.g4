@@ -574,11 +574,11 @@ boolean_value_expression
   ;
 
 or_predicate
-  : and_predicate (OR boolean_value_expression)*
+  : and_predicate (OR or_predicate)*
   ;
 
 and_predicate
-  : boolean_factor (AND boolean_value_expression)*
+  : boolean_factor (AND and_predicate)*
   ;
 
 boolean_factor
@@ -789,8 +789,8 @@ grouping_element
   ;
 
 ordinary_grouping_set
-  : column_reference_list
-  | LEFT_PAREN column_reference_list RIGHT_PAREN
+  : row_value_predicand_list
+  | LEFT_PAREN row_value_predicand_list RIGHT_PAREN
   ;
 
 rollup_list
@@ -807,6 +807,10 @@ empty_grouping_set
 
 having_clause
   : HAVING boolean_value_expression
+  ;
+
+row_value_predicand_list
+  : row_value_predicand (COMMA row_value_predicand)*
   ;
 
 /*
@@ -1124,7 +1128,7 @@ sort_specifier_list
   ;
 
 sort_specifier
-  : column=column_reference order=order_specification? null_order=null_ordering?
+  : key=row_value_predicand order=order_specification? null_order=null_ordering?
   ;
 
 order_specification

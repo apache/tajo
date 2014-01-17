@@ -18,13 +18,14 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Projection extends UnaryOperator implements Cloneable {
   private boolean all;
   private boolean distinct = false;
 
-  private TargetExpr [] targets;
+  private NamedExpr[] targets;
 
   public Projection() {
     super(OpType.Projection);
@@ -50,18 +51,22 @@ public class Projection extends UnaryOperator implements Cloneable {
     return all;
   }
 	
-	public TargetExpr[] getTargets() {
+	public NamedExpr[] getNamedExprs() {
 	  return this.targets;
 	}
 
-  public void setTargets(TargetExpr[] targets) {
+  public void setNamedExprs(NamedExpr[] targets) {
     this.targets = targets;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(all, distinct, targets, getChild());
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     Projection another = (Projection) expr;
-    return TUtil.checkEquals(all, another.all) &&
+    return TUtil.checkEquals(all, another.all) && distinct == another.distinct &&
         TUtil.checkEquals(targets, another.targets);
   }
 

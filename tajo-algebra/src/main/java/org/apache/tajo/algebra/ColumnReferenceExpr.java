@@ -18,37 +18,48 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnReferenceExpr extends Expr {
   private String qualifier;
   private String name;
 
-  public ColumnReferenceExpr(String columnName) {
+  public ColumnReferenceExpr(String referenceName) {
     super(OpType.Column);
-    this.name = columnName;
+    setName(referenceName);
   }
 
   public ColumnReferenceExpr(String qualifier, String columnName) {
     super(OpType.Column);
-    this.qualifier = qualifier;
-    this.name = columnName;
-  }
-
-  public void setQualifier(String qualifier) {
-    this.qualifier = qualifier;
-  }
-
-  public String getName() {
-    return this.name;
+    this.qualifier = qualifier.toLowerCase();
+    this.name = columnName.toLowerCase();
   }
 
   public boolean hasQualifier() {
     return this.qualifier != null;
   }
 
+  public void setQualifier(String qualifier) {
+    this.qualifier = qualifier.toLowerCase();
+  }
+
   public String getQualifier() {
     return this.qualifier;
+  }
+
+  public String getName() {
+    return this.name;
+  }
+
+  public void setName(String qualifiedName) {
+    String [] parts = qualifiedName.toLowerCase().split("\\.");
+    if (parts.length == 2) {
+      qualifier = parts[0];
+      name = parts[1];
+    } else {
+      name = parts[0];
+    }
   }
 
   public String getCanonicalName() {
@@ -59,9 +70,20 @@ public class ColumnReferenceExpr extends Expr {
     }
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(name, qualifier);
+  }
+
+  @Override
   public boolean equalsTo(Expr expr) {
     ColumnReferenceExpr another = (ColumnReferenceExpr) expr;
     return name.equals(another.name) &&
         TUtil.checkEquals(qualifier, another.qualifier);
+  }
+
+  @Override
+  public String toString() {
+    return qualifier != null ? qualifier + "." + name : name;
   }
 }

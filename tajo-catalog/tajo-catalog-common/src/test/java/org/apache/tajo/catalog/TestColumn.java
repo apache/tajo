@@ -97,7 +97,6 @@ public class TestColumn {
 	public final void testToJson() {
 		Column col = new Column(field1.getProto());
 		String json = col.toJson();
-		System.out.println(json);
 		Column fromJson = CatalogGsonHelper.fromJson(json, Column.class);
 		assertEquals(col, fromJson);
 	}

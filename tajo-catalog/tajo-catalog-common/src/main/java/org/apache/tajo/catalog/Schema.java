@@ -108,6 +108,26 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return fields.get(id);
   }
 
+  public Column getColumn(Column column) {
+    if (!contains(column)) {
+      return null;
+    }
+    if (column.hasQualifier()) {
+      return fields.get(fieldsByQualifiedName.get(column.getQualifiedName()));
+    } else {
+      return fields.get(fieldsByName.get(column.getColumnName()).get(0));
+    }
+  }
+
+  public Column getColumn(String name) {
+    String [] parts = name.split("\\.");
+    if (parts.length == 2) {
+      return getColumnByFQN(name);
+    } else {
+      return getColumnByName(name);
+    }
+  }
+
 	public Column getColumnByFQN(String qualifiedName) {
 		Integer cid = fieldsByQualifiedName.get(qualifiedName.toLowerCase());
 		return cid != null ? fields.get(cid) : null;
@@ -124,22 +144,44 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     if (list.size() == 1) {
       return fields.get(list.get(0));
     } else {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (Integer id : list) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
-        }
-        sb.append(fields.get(id));
-      }
-      throw new RuntimeException("Ambiguous Column Name: " + sb.toString());
+      throw throwAmbiguousFieldException(list);
     }
 	}
+
+  private RuntimeException throwAmbiguousFieldException(Collection<Integer> idList) {
+    StringBuilder sb = new StringBuilder();
+    boolean first = true;
+    for (Integer id : idList) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(", ");
+      }
+      sb.append(fields.get(id));
+    }
+    throw new RuntimeException("Ambiguous Column Name Access: " + sb.toString());
+  }
 	
-	public int getColumnId(String qualifiedName) {
-	  return fieldsByQualifiedName.get(qualifiedName.toLowerCase());
+	public int getColumnId(String name) {
+    String [] parts = name.split("\\.");
+    if (parts.length == 2) {
+      if (fieldsByQualifiedName.containsKey(name)) {
+        return fieldsByQualifiedName.get(name);
+      } else {
+        return -1;
+      }
+    } else {
+      List<Integer> list = fieldsByName.get(name);
+      if (list == null) {
+        return -1;
+      } else  if (list.size() == 1) {
+        return fieldsByName.get(name).get(0);
+      } else if (list.size() == 0) {
+        return -1;
+      } else { // if list.size > 2
+        throw throwAmbiguousFieldException(list);
+      }
+    }
 	}
 
   public int getColumnIdByName(String colName) {
@@ -155,11 +197,46 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	public List<Column> getColumns() {
 		return ImmutableList.copyOf(fields);
 	}
-	
-	public boolean contains(String colName) {
-		return fieldsByQualifiedName.containsKey(colName.toLowerCase());
 
+  public boolean contains(String name) {
+    if (fieldsByQualifiedName.containsKey(name)) {
+      return true;
+    }
+    if (fieldsByName.containsKey(name)) {
+      if (fieldsByName.size() > 1) {
+        throw new RuntimeException("Ambiguous Column name");
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  public boolean contains(Column column) {
+    if (column.hasQualifier()) {
+      return fieldsByQualifiedName.containsKey(column.getQualifiedName());
+    } else {
+      if (fieldsByName.containsKey(column.getColumnName())) {
+        int num = fieldsByName.get(column.getColumnName()).size();
+        if (num == 0) {
+          throw new IllegalStateException("No such column name: " + column.getColumnName());
+        }
+        if (num > 1) {
+          throw new RuntimeException("Ambiguous column name: " + column.getColumnName());
+        }
+        return true;
+      }
+      return false;
+    }
+  }
+	
+	public boolean containsByQualifiedName(String qualifiedName) {
+		return fieldsByQualifiedName.containsKey(qualifiedName.toLowerCase());
 	}
+
+  public boolean containsByName(String colName) {
+    return fieldsByName.containsKey(colName);
+  }
 
   public boolean containsAll(Collection<Column> columns) {
     return fields.containsAll(columns);
@@ -229,7 +306,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
-	  sb.append("{");
+	  sb.append("{(").append(getColumnNum()).append(") ");
 	  int i = 0;
 	  for(Column col : fields) {
 	    sb.append(col);

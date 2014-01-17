@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
 public class InEval extends BinaryEval {
@@ -69,6 +70,12 @@ public class InEval extends BinaryEval {
     boolean isIncluded = false;
 
     Datum value = tuple.get(fieldId);
+
+    if (value.isNull()) {
+      isNullCtx.isNull = true;
+      return;
+    }
+
     for (Datum datum : values) {
       if (value.equalsTo(datum).asBool()) {
         isIncluded = true;
@@ -80,6 +87,9 @@ public class InEval extends BinaryEval {
 
   @Override
   public Datum terminate(EvalContext ctx) {
+    if (((InEvalCtx)ctx).isNull) {
+      return NullDatum.get();
+    }
     return DatumFactory.createBool(not ^ ((InEvalCtx)ctx).result);
   }
 
@@ -97,6 +107,7 @@ public class InEval extends BinaryEval {
   }
 
   private class InEvalCtx implements EvalContext {
+    boolean isNull;
     boolean result;
   }
 }

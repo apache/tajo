@@ -18,14 +18,15 @@
 
 package org.apache.tajo.algebra;
 
-public class ExistsPredicate extends Expr {
-  private SimpleTableSubQuery simpleTableSubQuery;
+import com.google.common.base.Objects;
+
+public class ExistsPredicate extends UnaryOperator {
   private boolean not;
 
   public ExistsPredicate(SimpleTableSubQuery simpleTableSubQuery, boolean not) {
     super(OpType.InPredicate);
-    this.simpleTableSubQuery = simpleTableSubQuery;
     this.not = not;
+    setChild(simpleTableSubQuery);
   }
 
   public boolean isNot() {
@@ -33,12 +34,17 @@ public class ExistsPredicate extends Expr {
   }
 
   public SimpleTableSubQuery getSubQuery() {
-    return simpleTableSubQuery;
+    return (SimpleTableSubQuery) getChild();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(not, getChild());
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     ExistsPredicate another = (ExistsPredicate) expr;
-    return not == another.not && simpleTableSubQuery.equals(another.simpleTableSubQuery);
+    return not == another.not;
   }
 }

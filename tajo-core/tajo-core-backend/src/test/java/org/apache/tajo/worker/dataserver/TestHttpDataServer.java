@@ -68,7 +68,6 @@ public class TestHttpDataServer {
     String line;
     boolean found = false;
     while ((line = in.readLine()) != null) {
-      System.out.println(line);
       if (line.equals(watermark))
         found = true;
     }    
@@ -164,7 +163,6 @@ public class TestHttpDataServer {
     String line;
     boolean found = false;
     while ((line = in.readLine()) != null) {
-      System.out.println(line);
       if (line.equals(watermark))
         found = true;
     }    

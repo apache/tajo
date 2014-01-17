@@ -22,6 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
@@ -34,14 +35,23 @@ public class Target implements Cloneable, GsonObject {
   @Expose private Column column;
   @Expose private String alias = null;
 
-  public Target(EvalNode expr) {
-    this.expr = expr;
-    this.column = new Column(expr.getName(), expr.getValueType());
+  public Target(FieldEval fieldEval) {
+    this.expr = fieldEval;
+    this.column = fieldEval.getColumnRef();
   }
 
   public Target(final EvalNode eval, final String alias) {
-    this(eval);
-    setAlias(alias);
+    this.expr = eval;
+    // force lower case
+    String normalized = alias.toLowerCase();
+
+    // If an expr is a column reference and its alias is equivalent to column name, ignore a given alias.
+    if (eval instanceof FieldEval && eval.getName().equals(normalized)) {
+      column = ((FieldEval) eval).getColumnRef();
+    } else {
+      column = new Column(normalized, eval.getValueType());
+      setAlias(alias);
+    }
   }
 
   public String getCanonicalName() {
@@ -73,7 +83,7 @@ public class Target implements Cloneable, GsonObject {
     return (T) this.expr;
   }
 
-  public Column getColumnSchema() {
+  public Column getNamedColumn() {
     return this.column;
   }
 

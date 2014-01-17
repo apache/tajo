@@ -38,14 +38,20 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   @Expose private boolean external;
   @Expose private PartitionDesc partitionDesc;
 
-  public CreateTableNode(int pid, String tableName, Schema schema) {
+  public CreateTableNode(int pid) {
     super(pid, NodeType.CREATE_TABLE);
-    this.tableName = tableName;
-    this.schema = schema;
+  }
+
+  public void setTableName(String name) {
+    this.tableName = name;
   }
 
   public final String getTableName() {
     return this.tableName;
+  }
+
+  public void setSchema(Schema schema) {
+    this.schema = schema;
   }
     
   public Schema getSchema() {

@@ -20,6 +20,16 @@ package org.apache.tajo.engine.planner.logical;
 
 import org.apache.tajo.catalog.Schema;
 
+/**
+ * It provides a logical view of a relation. Regarding a table, the main difference between a logical view and a
+ * physical view is as follows:
+ *
+ * <ul>
+ * <li>In logical view, each column in the table has qualified name by table alias name. In addition, the schema of
+ * logical view will includes partition columns if we use column-partitioned tables.</li>
+ * <li>In contrast, in physical view: each column in the table has qualified name by the original table.</li>
+ * </ul>
+ */
 public abstract class RelationNode extends LogicalNode {
 
   public RelationNode(int pid, NodeType nodeType) {

@@ -18,10 +18,11 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Aggregation extends UnaryOperator {
-  private TargetExpr[] targets;
+  private NamedExpr[] targets;
   private GroupElement [] groups;
   private Expr havingCondition;
 
@@ -29,11 +30,11 @@ public class Aggregation extends UnaryOperator {
     super(OpType.Aggregation);
   }
 
-  public TargetExpr[] getTargets() {
+  public NamedExpr[] getTargets() {
     return this.targets;
   }
 
-  public void setTargets(TargetExpr[] targets) {
+  public void setTargets(NamedExpr[] targets) {
     this.targets = targets;
   }
 
@@ -62,6 +63,11 @@ public class Aggregation extends UnaryOperator {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(targets, groups, havingCondition);
+  }
+
+  @Override
   public boolean equalsTo(Expr expr) {
     Aggregation another = (Aggregation) expr;
     boolean a = TUtil.checkEquals(groups, another.groups);
@@ -73,19 +79,19 @@ public class Aggregation extends UnaryOperator {
 
   public static class GroupElement implements JsonSerializable {
     private GroupType group_type;
-    private ColumnReferenceExpr[] columns;
+    private Expr [] grouping_sets;
 
-    public GroupElement(GroupType groupType, ColumnReferenceExpr[] columns) {
+    public GroupElement(GroupType groupType, Expr[] grouping_sets) {
       this.group_type = groupType;
-      this.columns = columns;
+      this.grouping_sets = grouping_sets;
     }
 
     public GroupType getType() {
       return this.group_type;
     }
 
-    public ColumnReferenceExpr[] getColumns() {
-      return this.columns;
+    public Expr[] getGroupingSets() {
+      return this.grouping_sets;
     }
 
     public String toString() {
@@ -97,11 +103,17 @@ public class Aggregation extends UnaryOperator {
       return JsonHelper.toJson(this);
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(group_type, grouping_sets);
+    }
+
+    @Override
     public boolean equals(Object obj) {
       if (obj instanceof GroupElement) {
         GroupElement other = (GroupElement) obj;
         return group_type.equals(other) &&
-            TUtil.checkEquals(columns, other.columns);
+            TUtil.checkEquals(grouping_sets, other.grouping_sets);
       }
 
       return false;

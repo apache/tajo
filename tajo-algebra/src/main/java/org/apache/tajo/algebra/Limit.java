@@ -19,6 +19,8 @@
 package org.apache.tajo.algebra;
 
 
+import com.google.common.base.Objects;
+
 public class Limit extends UnaryOperator {
   private Expr fetchFirstNum;
 
@@ -39,6 +41,10 @@ public class Limit extends UnaryOperator {
   @Override
   public String toJson() {
     return JsonHelper.toJson(this);
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(fetchFirstNum, getChild());
   }
 
   @Override

@@ -1,1 +1,1 @@
-select max(l_quantity), l_orderkey from lineitem group by l_orderkey order by l_orderkey;
+select max(l_quantity) as maxq, l_orderkey from lineitem group by l_orderkey order by l_orderkey;

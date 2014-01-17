@@ -66,8 +66,8 @@ public class TestBitDatum {
 	
 	@Test
 	public final void testAsChars() {
-		Datum d = DatumFactory.createBit((byte) 5);
-		System.out.println(d.asChars());
+		Datum d = DatumFactory.createBit((byte) 'a');
+		assertEquals("0x97", d.asChars());
 	}
 	
 	@Test

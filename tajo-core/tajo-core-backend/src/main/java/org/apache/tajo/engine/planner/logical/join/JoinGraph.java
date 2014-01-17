@@ -24,45 +24,92 @@ import org.apache.tajo.engine.eval.AlgebraicUtil;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.NamedExprsManager;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
+
+  private String [] guessRelationsFromJoinQual(LogicalPlan.QueryBlock block, EvalNode joinCondition)
+      throws PlanningException {
+
+    // Note that we can guarantee that each join qual used here is a singleton.
+    // This is because we use dissect a join qual into conjunctive normal forms.
+    // In other words, each join qual has a form 'col1 = col2'.
+    Column leftExpr = EvalTreeUtil.findAllColumnRefs(joinCondition.getLeftExpr()).get(0);
+    Column rightExpr = EvalTreeUtil.findAllColumnRefs(joinCondition.getRightExpr()).get(0);
+
+    // 0 - left table, 1 - right table
+    String [] relationNames = new String[2];
+
+    NamedExprsManager namedExprsMgr = block.getNamedExprsManager();
+    if (leftExpr.hasQualifier()) {
+      relationNames[0] = leftExpr.getQualifier();
+    } else {
+      if (namedExprsMgr.isAliasedName(leftExpr.getColumnName())) {
+        String columnName = namedExprsMgr.getOriginalName(leftExpr.getColumnName());
+        String [] parts = columnName.split("\\.");
+
+        if (parts.length != 2) {
+          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        }
+
+        relationNames[0] = parts[0];
+      } else {
+        throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+      }
+    }
+
+    if (rightExpr.hasQualifier()) {
+      relationNames[1] = rightExpr.getQualifier();
+    } else {
+      if (namedExprsMgr.isAliasedName(rightExpr.getColumnName())) {
+        String columnName = namedExprsMgr.getOriginalName(rightExpr.getColumnName());
+        String [] parts = columnName.split("\\.");
+        if (parts.length != 2) {
+          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        }
+        relationNames[1] = parts[0];
+      } else {
+        throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
+      }
+    }
+
+    return relationNames;
+  }
   public Collection<EvalNode> addJoin(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       JoinNode joinNode) throws PlanningException {
     Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
     Set<EvalNode> nonJoinQuals = Sets.newHashSet();
     for (EvalNode singleQual : cnf) {
       if (PlannerUtil.isJoinQual(singleQual)) {
-        List<Column> leftExpr = EvalTreeUtil.findAllColumnRefs(singleQual.getLeftExpr());
-        List<Column> rightExpr = EvalTreeUtil.findAllColumnRefs(singleQual.getRightExpr());
 
-        String leftExprRelation = leftExpr.get(0).getQualifier();
-        String rightExprRelName = rightExpr.get(0).getQualifier();
+        String [] relations = guessRelationsFromJoinQual(block, singleQual);
+        String leftExprRelName = relations[0];
+        String rightExprRelName = relations[1];
 
         Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
 
-        boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelation);
+        boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelName);
         JoinEdge edge;
-        edge = getEdge(leftExprRelation, rightExprRelName);
+        edge = getEdge(leftExprRelName, rightExprRelName);
 
         if (edge != null) {
           edge.addJoinQual(singleQual);
         } else {
           if (isLeftExprForLeftTable) {
             edge = new JoinEdge(joinNode.getJoinType(),
-                block.getRelation(leftExprRelation), block.getRelation(rightExprRelName), singleQual);
-            addEdge(leftExprRelation, rightExprRelName, edge);
+                block.getRelation(leftExprRelName), block.getRelation(rightExprRelName), singleQual);
+            addEdge(leftExprRelName, rightExprRelName, edge);
           } else {
             edge = new JoinEdge(joinNode.getJoinType(),
-                block.getRelation(rightExprRelName), block.getRelation(leftExprRelation), singleQual);
-            addEdge(rightExprRelName, leftExprRelation, edge);
+                block.getRelation(rightExprRelName), block.getRelation(leftExprRelName), singleQual);
+            addEdge(rightExprRelName, leftExprRelName, edge);
           }
         }
       } else {

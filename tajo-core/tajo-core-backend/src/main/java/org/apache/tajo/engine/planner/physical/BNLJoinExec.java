@@ -18,13 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.JoinNode;
-import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.FrameTuple;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -35,46 +35,57 @@ import java.util.List;
 
 public class BNLJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
-  private EvalContext qualCtx;
+  private final JoinNode plan;
+  private final boolean hasJoinQual;
+  private final EvalNode joinQual;
+  private final EvalContext qualCtx;
 
-  private final List<Tuple> outerTupleSlots;
-  private final List<Tuple> innerTupleSlots;
-  private Iterator<Tuple> outerIterator;
-  private Iterator<Tuple> innerIterator;
+  private final List<Tuple> leftTupleSlots;
+  private final List<Tuple> rightTupleSlots;
+  private Iterator<Tuple> leftIterator;
+  private Iterator<Tuple> rightIterator;
 
-  private boolean innerEnd;
-  private boolean outerEnd;
+  private boolean leftEnd;
+  private boolean rightEnd;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
-  private Tuple outerTuple = null;
+  private Tuple leftTuple = null;
   private Tuple outputTuple = null;
-  private Tuple innext = null;
+  private Tuple rightNext = null;
 
   private final int TUPLE_SLOT_SIZE = 10000;
 
   // projection
-  private final int[] targetIds;
+  private final Projector projector;
+  private final EvalContext [] evalContexts;
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
-                     final PhysicalExec outer, PhysicalExec inner) {
-    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()), plan.getOutSchema(), outer, inner);
+                     final PhysicalExec leftExec, PhysicalExec rightExec) {
+    super(context, plan.getInSchema(), plan.getOutSchema(), leftExec, rightExec);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
     if (joinQual != null) { // if join type is not 'cross join'
+      hasJoinQual = true;
       this.qualCtx = this.joinQual.newContext();
+    } else {
+      hasJoinQual = false;
+      this.qualCtx = null;
     }
-    this.outerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
-    this.innerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
-    this.outerIterator = outerTupleSlots.iterator();
-    this.innerIterator = innerTupleSlots.iterator();
-    this.innerEnd = false;
-    this.outerEnd = false;
+    this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
+    this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
+    this.leftIterator = leftTupleSlots.iterator();
+    this.rightIterator = rightTupleSlots.iterator();
+    this.rightEnd = false;
+    this.leftEnd = false;
 
     // for projection
-    targetIds = RowStoreUtil.getTargetIds(inSchema, outSchema);
+    if (!plan.hasTargets()) {
+      plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
+    }
+
+    projector = new Projector(inSchema, outSchema, plan.getTargets());
+    evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -87,106 +98,108 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
   public Tuple next() throws IOException {
 
-    if (outerTupleSlots.isEmpty()) {
+    if (leftTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
         Tuple t = leftChild.next();
         if (t == null) {
-          outerEnd = true;
+          leftEnd = true;
           break;
         }
-        outerTupleSlots.add(t);
+        leftTupleSlots.add(t);
       }
-      outerIterator = outerTupleSlots.iterator();
-      outerTuple = outerIterator.next();
+      leftIterator = leftTupleSlots.iterator();
+      leftTuple = leftIterator.next();
     }
 
-    if (innerTupleSlots.isEmpty()) {
+    if (rightTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
         Tuple t = rightChild.next();
         if (t == null) {
-          innerEnd = true;
+          rightEnd = true;
           break;
         }
-        innerTupleSlots.add(t);
+        rightTupleSlots.add(t);
       }
-      innerIterator = innerTupleSlots.iterator();
+      rightIterator = rightTupleSlots.iterator();
     }
 
-    if((innext = rightChild.next()) == null){
-      innerEnd = true;
+    if((rightNext = rightChild.next()) == null){
+      rightEnd = true;
     }
 
     while (true) {
-      if (!innerIterator.hasNext()) { // if inneriterator ended
-        if (outerIterator.hasNext()) { // if outertupleslot remains
-          outerTuple = outerIterator.next();
-          innerIterator = innerTupleSlots.iterator();
+      if (!rightIterator.hasNext()) { // if leftIterator ended
+        if (leftIterator.hasNext()) { // if rightTupleslot remains
+          leftTuple = leftIterator.next();
+          rightIterator = rightTupleSlots.iterator();
         } else {
-          if (innerEnd) {
+          if (rightEnd) {
             rightChild.rescan();
-            innerEnd = false;
+            rightEnd = false;
             
-            if (outerEnd) {
+            if (leftEnd) {
               return null;
             }
-            outerTupleSlots.clear();
+            leftTupleSlots.clear();
             for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
               Tuple t = leftChild.next();
               if (t == null) {
-                outerEnd = true;
+                leftEnd = true;
                 break;
               }
-              outerTupleSlots.add(t);
+              leftTupleSlots.add(t);
             }
-            if (outerTupleSlots.isEmpty()) {
+            if (leftTupleSlots.isEmpty()) {
               return null;
             }
-            outerIterator = outerTupleSlots.iterator();
-            outerTuple = outerIterator.next();
+            leftIterator = leftTupleSlots.iterator();
+            leftTuple = leftIterator.next();
             
           } else {
-            outerIterator = outerTupleSlots.iterator();
-            outerTuple = outerIterator.next();
+            leftIterator = leftTupleSlots.iterator();
+            leftTuple = leftIterator.next();
           }
           
-          innerTupleSlots.clear();
-          if (innext != null) {
-            innerTupleSlots.add(innext);
-            for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill inner
+          rightTupleSlots.clear();
+          if (rightNext != null) {
+            rightTupleSlots.add(rightNext);
+            for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill right
               Tuple t = rightChild.next();
               if (t == null) {
-                innerEnd = true;
+                rightEnd = true;
                 break;
               }
-              innerTupleSlots.add(t);
+              rightTupleSlots.add(t);
             }
           } else {
-            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill inner
+            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill right
               Tuple t = rightChild.next();
               if (t == null) {
-                innerEnd = true;
+                rightEnd = true;
                 break;
               }
-              innerTupleSlots.add(t);
+              rightTupleSlots.add(t);
             }
           }
           
-          if ((innext = rightChild.next()) == null) {
-            innerEnd = true;
+          if ((rightNext = rightChild.next()) == null) {
+            rightEnd = true;
           }
-          innerIterator = innerTupleSlots.iterator();
+          rightIterator = rightTupleSlots.iterator();
         }
       }
 
-      frameTuple.set(outerTuple, innerIterator.next());
-      if (joinQual != null) {
+      frameTuple.set(leftTuple, rightIterator.next());
+      if (hasJoinQual) {
         joinQual.eval(qualCtx, inSchema, frameTuple);
         if (joinQual.terminate(qualCtx).asBool()) {
-          RowStoreUtil.project(frameTuple, outputTuple, targetIds);
+          projector.eval(evalContexts, frameTuple);
+          projector.terminate(evalContexts, outputTuple);
           return outputTuple;
         }
       } else {
-        RowStoreUtil.project(frameTuple, outputTuple, targetIds);
+        projector.eval(evalContexts, frameTuple);
+        projector.terminate(evalContexts, outputTuple);
         return outputTuple;
       }
     }
@@ -195,10 +208,10 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   @Override
   public void rescan() throws IOException {
     super.rescan();
-    innerEnd = false;
-    innerTupleSlots.clear();
-    outerTupleSlots.clear();
-    innerIterator = innerTupleSlots.iterator();
-    outerIterator = outerTupleSlots.iterator();
+    rightEnd = false;
+    rightTupleSlots.clear();
+    leftTupleSlots.clear();
+    rightIterator = rightTupleSlots.iterator();
+    leftIterator = leftTupleSlots.iterator();
   }
 }

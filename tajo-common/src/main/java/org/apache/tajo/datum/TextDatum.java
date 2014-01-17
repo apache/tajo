@@ -138,7 +138,7 @@ public class TextDatum extends Datum {
       case NULL_TYPE:
         return datum;
       default:
-        throw new InvalidOperationException();
+        throw new InvalidOperationException("Cannot equivalent check: " + this.type() + " and " + datum.type());
     }
   }
 

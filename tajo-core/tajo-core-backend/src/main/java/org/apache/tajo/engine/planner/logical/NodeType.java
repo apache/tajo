@@ -32,6 +32,7 @@ public enum NodeType {
   PROJECTION(ProjectionNode.class),
   LIMIT(LimitNode.class),
   SORT(SortNode.class),
+  HAVING(HavingNode.class),
   GROUP_BY(GroupbyNode.class),
   SELECTION(SelectionNode.class),
   JOIN(JoinNode.class),

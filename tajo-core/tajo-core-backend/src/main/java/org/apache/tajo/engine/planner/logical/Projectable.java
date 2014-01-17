@@ -18,10 +18,17 @@
 
 package org.apache.tajo.engine.planner.logical;
 
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.Target;
 
 public interface Projectable {
   boolean hasTargets();
+
   void setTargets(Target[] targets);
+
   Target [] getTargets();
+
+  public Schema getInSchema();
+
+  public Schema getOutSchema();
 }

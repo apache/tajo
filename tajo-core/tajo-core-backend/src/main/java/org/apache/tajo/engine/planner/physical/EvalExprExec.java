@@ -35,9 +35,9 @@ public class EvalExprExec extends PhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema());
     this.plan = plan;
 
-    evalContexts = new EvalContext[plan.getExprs().length];
-    for (int i = 0; i < plan.getExprs().length; i++) {
-      evalContexts[i] = plan.getExprs()[i].getEvalTree().newContext();
+    evalContexts = new EvalContext[plan.getTargets().length];
+    for (int i = 0; i < plan.getTargets().length; i++) {
+      evalContexts[i] = plan.getTargets()[i].getEvalTree().newContext();
     }
   }
 
@@ -50,7 +50,7 @@ public class EvalExprExec extends PhysicalExec {
   */
   @Override
   public Tuple next() throws IOException {    
-    Target [] targets = plan.getExprs();
+    Target [] targets = plan.getTargets();
     Tuple t = new VTuple(targets.length);
     for (int i = 0; i < targets.length; i++) {
       targets[i].getEvalTree().eval(evalContexts[i], inSchema, null);

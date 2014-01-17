@@ -90,6 +90,7 @@ public class ScanNode extends RelationNode implements Projectable {
   @Override
 	public void setTargets(Target [] targets) {
 	  this.targets = targets;
+    setOutSchema(PlannerUtil.targetToSchema(targets));
 	}
 
   @Override

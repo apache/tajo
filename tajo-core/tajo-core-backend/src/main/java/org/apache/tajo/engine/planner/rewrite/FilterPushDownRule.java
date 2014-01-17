@@ -43,7 +43,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   @Override
   public boolean isEligible(LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      if (block.hasSelectionNode() || block.hasJoinNode()) {
+      if (block.hasNode(NodeType.SELECTION) || block.hasNode(NodeType.JOIN)) {
         return true;
       }
     }

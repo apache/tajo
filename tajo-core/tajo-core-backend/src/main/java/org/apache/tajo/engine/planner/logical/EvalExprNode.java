@@ -29,9 +29,8 @@ import org.apache.tajo.util.TUtil;
 public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private Target[] exprs;
 
-  public EvalExprNode(int pid, Target[] exprs) {
+  public EvalExprNode(int pid) {
     super(pid, NodeType.EXPRS);
-    this.exprs = exprs;
   }
 
   @Override

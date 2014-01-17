@@ -106,9 +106,6 @@ public class TestResultSet {
     for (int i = 0; i < meta.getColumnCount(); i++) {
       assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i + 1));
       assertEquals(schema.getColumn(i).getQualifier(), meta.getTableName(i + 1));
-//      assertEquals(schema.getColumn(i).getDataType().getClass().getCanonicalName(),
-//          meta.getColumnTypeName(i + 1));
-      System.out.println(">>>>>>>>>>" + meta.getColumnTypeName(i + 1));
     }
 
     int i = 0;

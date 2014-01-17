@@ -24,6 +24,7 @@ package org.apache.tajo.datum;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
@@ -70,9 +71,7 @@ public class Float8Datum extends NumericDatum {
 
   @Override
 	public byte[] asByteArray() {
-		ByteBuffer bb = ByteBuffer.allocate(8);
-		bb.putDouble(val);
-		return bb.array();
+		return Bytes.toBytes(val);
 	}
 
   @Override

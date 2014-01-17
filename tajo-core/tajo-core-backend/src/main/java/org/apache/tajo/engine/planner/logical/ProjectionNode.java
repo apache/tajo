@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.planner.PlanString;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
@@ -32,12 +33,8 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   @Expose	private Target [] targets;
   @Expose private boolean distinct = false;
 
-  /**
-   * @param targets they should be all evaluated ones.
-   */
-	public ProjectionNode(int pid, Target [] targets) {
+	public ProjectionNode(int pid) {
 		super(pid, NodeType.PROJECTION);
-		this.targets = targets;
 	}
 
   public boolean hasTargets() {
@@ -47,6 +44,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   @Override
   public void setTargets(Target[] targets) {
     this.targets = targets;
+    this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override

@@ -71,18 +71,6 @@ public class TestHiveConverter {
     }
   }
 
-  public static Expr parseExpr(String sql) {
-    ANTLRInputStream input = new ANTLRInputStream(sql);
-    SQLLexer lexer = new SQLLexer(input);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
-    SQLParser parser = new SQLParser(tokens);
-    parser.setBuildParseTree(true);
-    SQLAnalyzer visitor = new SQLAnalyzer();
-    Boolean_value_expressionContext context = parser.boolean_value_expression();
-    System.out.println(context.toStringTree(parser));
-    return visitor.visitBoolean_value_expression(context);
-  }
-
   @Test
   public void testSelect1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/select_1.sql"));

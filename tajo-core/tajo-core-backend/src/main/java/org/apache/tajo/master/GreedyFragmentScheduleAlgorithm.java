@@ -20,8 +20,8 @@ package org.apache.tajo.master;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import com.sun.org.apache.commons.logging.Log;
-import com.sun.org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.master.DefaultFragmentScheduleAlgorithm.FragmentsPerDisk;
 import org.apache.tajo.util.NetUtils;

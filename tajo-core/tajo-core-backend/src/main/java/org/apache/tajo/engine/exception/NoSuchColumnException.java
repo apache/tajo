@@ -20,6 +20,6 @@ package org.apache.tajo.engine.exception;
 
 public class NoSuchColumnException extends VerifyException {
   public NoSuchColumnException(String columnName) {
-    super("ERROR: no such column '" + columnName + "'");
+    super("ERROR: no such a column '" + columnName + "'");
   }
 }

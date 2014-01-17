@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+
 public class BinaryOperator extends Expr {
   protected Expr left;
   protected Expr right;
@@ -48,8 +50,16 @@ public class BinaryOperator extends Expr {
     this.right = right;
   }
 
+  public int hashCode() {
+    return Objects.hashCode(opType, left, right);
+  }
+
   @Override
   boolean equalsTo(Expr expr) {
     return true;
+  }
+
+  public String toString() {
+    return left.toString() + " " + opType.toString() + " " + right.toString();
   }
 }

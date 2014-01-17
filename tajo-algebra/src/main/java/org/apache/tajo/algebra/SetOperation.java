@@ -19,6 +19,7 @@
 package org.apache.tajo.algebra;
 
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 public class SetOperation extends BinaryOperator {
@@ -38,6 +39,10 @@ public class SetOperation extends BinaryOperator {
 
   public void unsetDistinct() {
     distinct = false;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(distinct, getLeft(), getRight());
   }
 
   boolean equalsTo(Expr expr) {

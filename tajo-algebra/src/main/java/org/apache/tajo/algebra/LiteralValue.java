@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+
 public class LiteralValue extends Expr {
   protected LiteralType valueType;
   protected String value;
@@ -42,6 +44,10 @@ public class LiteralValue extends Expr {
 
   public String getValue() {
     return this.value;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(valueType, value);
   }
 
   public boolean equalsTo(Expr expr) {

@@ -25,6 +25,11 @@ public class NullLiteral extends Expr {
   }
 
   @Override
+  public int hashCode() {
+    return getType().hashCode();
+  }
+
+  @Override
   boolean equalsTo(Expr expr) {
     return expr instanceof NullLiteral;
   }

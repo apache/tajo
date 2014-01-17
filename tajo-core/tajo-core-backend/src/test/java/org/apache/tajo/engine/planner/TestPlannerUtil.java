@@ -101,8 +101,6 @@ public class TestPlannerUtil {
     TestLogicalPlanner.testQuery7(root.getChild());
     
     root.postOrder(new TwoPhaseBuilder());
-    
-    System.out.println(root);
   }
   
   private final class TwoPhaseBuilder implements LogicalNodeVisitor {

@@ -25,4 +25,15 @@ public class GeneralSetFunctionExpr extends FunctionExpr {
   public boolean isDistinct() {
     return distinct;
   }
+
+  @Override
+  public int hashCode() {
+    int hash = super.hashCode();
+    return hash * 89 * (distinct ? 31 : 23);
+  }
+
+  @Override
+  public boolean equalsTo(Expr expr) {
+    return distinct == ((GeneralSetFunctionExpr)expr).distinct;
+  }
 }

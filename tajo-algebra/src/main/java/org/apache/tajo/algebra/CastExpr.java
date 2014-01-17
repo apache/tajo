@@ -18,18 +18,19 @@
 
 package org.apache.tajo.algebra;
 
-public class CastExpr extends Expr {
-  private Expr operand;
+import com.google.common.base.Objects;
+
+public class CastExpr extends UnaryOperator {
   private DataTypeExpr target;
 
   public CastExpr(Expr operand, DataTypeExpr target) {
     super(OpType.Cast);
-    this.operand = operand;
     this.target = target;
+    setChild(operand);
   }
 
   public Expr getOperand() {
-    return operand;
+    return getChild();
   }
 
   public DataTypeExpr getTarget() {
@@ -37,8 +38,13 @@ public class CastExpr extends Expr {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(target, getChild());
+  }
+
+  @Override
   boolean equalsTo(Expr expr) {
     CastExpr another = (CastExpr) expr;
-    return operand.equals(another.operand) && target.equals(another.target);
+    return target.equals(another.target);
   }
 }

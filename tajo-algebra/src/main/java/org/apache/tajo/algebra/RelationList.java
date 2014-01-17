@@ -14,6 +14,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.util.TUtil;
 
@@ -50,6 +51,11 @@ public class RelationList extends Expr {
   @Override
   public String toString() {
     return toJson();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(relations);
   }
 
   @Override

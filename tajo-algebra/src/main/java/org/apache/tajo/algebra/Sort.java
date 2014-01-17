@@ -18,7 +18,7 @@
 
 package org.apache.tajo.algebra;
 
-import com.google.gson.annotations.SerializedName;
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Sort extends UnaryOperator {
@@ -38,6 +38,11 @@ public class Sort extends UnaryOperator {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(sortSpecs);
+  }
+
+  @Override
   public boolean equalsTo(Expr expr) {
     Sort another = (Sort) expr;
     return TUtil.checkEquals(sortSpecs, another.sortSpecs);
@@ -49,12 +54,11 @@ public class Sort extends UnaryOperator {
   }
 
   public static class SortSpec {
-    private ColumnReferenceExpr key;
+    private Expr key;
     private boolean asc = true;
-    @SerializedName("null_first")
     private boolean nullFirst = false;
 
-    public SortSpec(final ColumnReferenceExpr key) {
+    public SortSpec(final Expr key) {
       this.key = key;
     }
 
@@ -88,10 +92,16 @@ public class Sort extends UnaryOperator {
       this.nullFirst = true;
     }
 
-    public final ColumnReferenceExpr getKey() {
+    public final Expr getKey() {
       return this.key;
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(asc, key, nullFirst);
+    }
+
+    @Override
     public boolean equals(Object obj) {
       if (obj instanceof SortSpec) {
         SortSpec other = (SortSpec) obj;
@@ -100,6 +110,11 @@ public class Sort extends UnaryOperator {
             TUtil.checkEquals(nullFirst, other.nullFirst);
       }
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return key + " " + (asc ? "asc" : "desc") + " " + (nullFirst ? "null first" :"");
     }
   }
 }

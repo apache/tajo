@@ -35,7 +35,6 @@ public class IndexScanNode extends ScanNode {
     super(pid, scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
-    setOutSchema(scanNode.getOutSchema());
     setTargets(scanNode.getTargets());
     setType(NodeType.BST_INDEX_SCAN);
     this.sortKeys = sortKeys;

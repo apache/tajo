@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.util.TUtil;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
@@ -33,10 +34,13 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   public TableSubQueryNode(int pid, String tableName, LogicalNode subQuery) {
     super(pid, NodeType.TABLE_SUBQUERY);
     this.tableName = PlannerUtil.normalizeTableName(tableName);
-    this.subQuery = subQuery;
-    setOutSchema((Schema) this.subQuery.getOutSchema().clone());
-    getOutSchema().setQualifier(this.tableName);
-    setInSchema((Schema) this.subQuery.getInSchema().clone());
+    if (subQuery != null) {
+      this.subQuery = subQuery;
+      setOutSchema((Schema) this.subQuery.getOutSchema().clone());
+      setInSchema((Schema) this.subQuery.getOutSchema().clone());
+      getInSchema().setQualifier(this.tableName);
+      getOutSchema().setQualifier(this.tableName);
+    }
   }
 
   public String getTableName() {
@@ -55,7 +59,10 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
   public void setSubQuery(LogicalNode node) {
     this.subQuery = node;
-    setInSchema(subQuery.getInSchema());
+    setInSchema((Schema) this.subQuery.getOutSchema().clone());
+    getInSchema().setQualifier(this.tableName);
+    setOutSchema((Schema) this.subQuery.getOutSchema().clone());
+    getOutSchema().setQualifier(this.tableName);
   }
 
   public LogicalNode getSubQuery() {
@@ -70,6 +77,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   @Override
   public void setTargets(Target[] targets) {
     this.targets = targets;
+    setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
@@ -81,6 +89,24 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   public PlanString getPlanString() {
     PlanString planStr = new PlanString("TablePrimarySubQuery");
     planStr.appendTitle(" as ").appendTitle(tableName);
+
+    if (hasTargets()) {
+      StringBuilder sb = new StringBuilder("Targets: ");
+      for (int i = 0; i < targets.length; i++) {
+        sb.append(targets[i]);
+        if( i < targets.length - 1) {
+          sb.append(", ");
+        }
+      }
+      planStr.addExplan(sb.toString());
+      if (getOutSchema() != null) {
+        planStr.addExplan("out schema: " + getOutSchema().toString());
+      }
+      if (getInSchema() != null) {
+        planStr.addExplan("in  schema: " + getInSchema().toString());
+      }
+    }
+
     return planStr;
   }
 
@@ -103,6 +129,13 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   public Object clone() throws CloneNotSupportedException {
     TableSubQueryNode newTableSubQueryNode = (TableSubQueryNode) super.clone();
     newTableSubQueryNode.tableName = tableName;
+    newTableSubQueryNode.subQuery = (LogicalNode) subQuery.clone();
+    if (hasTargets()) {
+      newTableSubQueryNode.targets = new Target[targets.length];
+      for (int i = 0; i < targets.length; i++) {
+        newTableSubQueryNode.targets[i] = (Target) targets[i].clone();
+      }
+    }
     return newTableSubQueryNode;
   }
 
@@ -119,6 +152,14 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   public String toString() {
-    return "(" + getPID() + ") Table Subquery (alias = " + tableName + ")\n" + subQuery.toString();
+    StringBuilder sb = new StringBuilder();
+    sb.append("(").append(getPID()).append(") Table Subquery (alias=").append(tableName).append(")\n");
+    if (hasTargets()) {
+      sb.append("  targets: ").append(TUtil.arrayToString(targets)).append("\n");
+    }
+    sb.append("  out schema:").append(getOutSchema()).append("\n");
+    sb.append("  input schema:").append(getInSchema()).append("\n");
+    sb.append(subQuery.toString());
+    return sb.toString();
   }
 }

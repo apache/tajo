@@ -25,6 +25,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
@@ -87,6 +88,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Override
   public void setTargets(Target[] targets) {
     this.targets = targets;
+    this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
@@ -97,8 +99,21 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
       planStr.addExplan("Join Cond: " + joinQual.toString());
     }
 
-    planStr.addDetail("in schema: " + getInSchema());
+    if (hasTargets()) {
+      planStr.addExplan("target list: ");
+      boolean first = true;
+      for (Target target : targets) {
+        if (!first) {
+          planStr.appendExplain(", ");
+        }
+        planStr.appendExplain(target.toString());
+        first = false;
+      }
+    }
+
     planStr.addDetail("out schema: " + getOutSchema());
+    planStr.addDetail("in schema: " + getInSchema());
+
     return planStr;
   }
 
@@ -108,14 +123,8 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
       JoinNode other = (JoinNode) obj;
       boolean eq = this.joinType.equals(other.joinType);
       eq &= TUtil.checkEquals(this.targets, other.targets);
-      if (this.joinQual != null && other.joinQual != null) {
-        eq &= this.joinQual.equals(other.joinQual);
-      } else if (this.joinQual == null && other.joinQual == null) {
-
-      } else {
-        eq = false;
-      }
-      return eq;
+      eq &= TUtil.checkEquals(joinQual, other.joinQual);
+      return eq && leftChild.equals(other.leftChild) && rightChild.equals(other.rightChild);
     } else {
       return false;
     }
@@ -126,6 +135,12 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     JoinNode join = (JoinNode) super.clone();
     join.joinType = this.joinType;
     join.joinQual = this.joinQual == null ? null : (EvalNode) this.joinQual.clone();
+    if (hasTargets()) {
+      join.targets = new Target[targets.length];
+      for (int i = 0; i < targets.length; i++) {
+        join.targets[i] = (Target) targets[i].clone();
+      }
+    }
     return join;
   }
 

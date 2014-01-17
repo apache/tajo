@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Having extends UnaryOperator implements JsonSerializable {
@@ -43,6 +44,11 @@ public class Having extends UnaryOperator implements JsonSerializable {
   @Override
   public String toJson() {
     return JsonHelper.toJson(this);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(qual, getChild());
   }
 
   @Override

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+
 public class SignedExpr extends UnaryOperator {
   private boolean negative;
 
@@ -29,6 +31,10 @@ public class SignedExpr extends UnaryOperator {
 
   public boolean isNegative() {
     return negative;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(negative, getChild());
   }
 
   @Override

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+
 public abstract class UnaryOperator extends Expr {
   private Expr child;
 
@@ -35,5 +37,9 @@ public abstract class UnaryOperator extends Expr {
 
   public void setChild(Expr op) {
     this.child = op;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(getType(), child.hashCode());
   }
 }

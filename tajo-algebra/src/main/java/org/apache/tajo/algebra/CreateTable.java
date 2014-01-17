@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 import java.util.List;
@@ -128,9 +129,15 @@ public class CreateTable extends Expr {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(external, tableElements, tableName, storageType, location, subquery, params, getSubQuery());
+  }
+
+  @Override
   boolean equalsTo(Expr expr) {
     CreateTable another = (CreateTable) expr;
-    return tableName.equals(another.tableName) &&
+    return external == another.external &&
+        tableName.equals(another.tableName) &&
         TUtil.checkEquals(tableElements, another.tableElements) &&
         TUtil.checkEquals(storageType, another.storageType) &&
         TUtil.checkEquals(location, another.location) &&
@@ -161,10 +168,18 @@ public class CreateTable extends Expr {
       return this.col_name;
     }
 
-    public boolean equals(Object obj) {
-      if (obj instanceof ColumnDefinition) {
-        ColumnDefinition another = (ColumnDefinition) obj;
-        return col_name.equals(another.col_name) && super.equals(another);
+    @Override
+    public int hashCode() {
+      int hash = super.hashCode();
+      return hash * 89 * col_name.hashCode();
+
+    }
+
+    @Override
+    public boolean equalsTo(Expr expr) {
+      if (expr instanceof ColumnDefinition) {
+        ColumnDefinition another = (ColumnDefinition) expr;
+        return col_name.equals(another.col_name) && super.equalsTo(another);
       }
 
       return false;
@@ -207,12 +222,27 @@ public class CreateTable extends Expr {
     public List<RangePartitionSpecifier> getSpecifiers() {
       return specifiers;
     }
+
+    public int hashCode() {
+      return Objects.hashCode(type, columns, specifiers);
+    }
+
+    public boolean equals(Object object) {
+      if (object instanceof RangePartition) {
+        RangePartition another = (RangePartition) object;
+        return type == another.type && TUtil.checkEquals(columns, another.columns) &&
+            specifiers.equals(another.specifiers);
+      } else {
+        return false;
+      }
+    }
   }
 
   public static class HashPartition extends PartitionDescExpr {
     ColumnReferenceExpr [] columns;
     Expr quantity;
     List<PartitionSpecifier> specifiers;
+
     public HashPartition(ColumnReferenceExpr [] columns, Expr quantity) {
       super(PartitionType.HASH);
       this.columns = columns;
@@ -244,6 +274,20 @@ public class CreateTable extends Expr {
     public List<PartitionSpecifier> getSpecifiers() {
       return specifiers;
     }
+
+    public int hashCode() {
+      return Objects.hashCode(type, columns, specifiers);
+    }
+
+    public boolean equals(Object object) {
+      if (object instanceof HashPartition) {
+        HashPartition another = (HashPartition) object;
+        return type == another.type && TUtil.checkEquals(columns, another.columns) &&
+            specifiers.equals(another.specifiers);
+      } else {
+        return false;
+      }
+    }
   }
 
   public static class ListPartition extends PartitionDescExpr {
@@ -263,6 +307,20 @@ public class CreateTable extends Expr {
     public List<ListPartitionSpecifier> getSpecifiers() {
       return specifiers;
     }
+
+    public int hashCode() {
+      return Objects.hashCode(columns, specifiers);
+    }
+
+    public boolean equals(Object object) {
+      if (object instanceof HashPartition) {
+        HashPartition another = (HashPartition) object;
+        return type == another.type && TUtil.checkEquals(columns, another.columns) &&
+            specifiers.equals(another.specifiers);
+      } else {
+        return false;
+      }
+    }
   }
 
   public static class ColumnPartition extends PartitionDescExpr {
@@ -281,6 +339,19 @@ public class CreateTable extends Expr {
 
     public boolean isOmitValues() {
       return isOmitValues;
+    }
+
+    public int hashCode() {
+      return Objects.hashCode(columns);
+    }
+
+    public boolean equals(Object object) {
+      if (object instanceof HashPartition) {
+        HashPartition another = (HashPartition) object;
+        return type == another.type && TUtil.checkEquals(columns, another.columns);
+      } else {
+        return false;
+      }
     }
   }
 
@@ -305,6 +376,23 @@ public class CreateTable extends Expr {
     public boolean isEndMaxValue() {
       return this.maxValue;
     }
+
+    public int hashCode() {
+      return Objects.hashCode(end, maxValue);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      RangePartitionSpecifier that = (RangePartitionSpecifier) o;
+
+      if (maxValue != that.maxValue) return false;
+      if (!end.equals(that.end)) return false;
+
+      return true;
+    }
   }
 
   public static class ListPartitionSpecifier extends PartitionSpecifier {
@@ -318,6 +406,23 @@ public class CreateTable extends Expr {
     public ValueListExpr getValueList() {
       return valueList;
     }
+
+    @Override
+    public int hashCode() {
+      return valueList.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      ListPartitionSpecifier that = (ListPartitionSpecifier) o;
+
+      if (!valueList.equals(that.valueList)) return false;
+
+      return true;
+    }
   }
 
   public static class PartitionSpecifier {
@@ -329,6 +434,18 @@ public class CreateTable extends Expr {
 
     public String getName() {
       return this.name;
+    }
+
+    public int hashCode() {
+      return name.hashCode();
+    }
+
+    public boolean equals(Object obj) {
+      if (obj instanceof PartitionSpecifier ) {
+        return name == ((PartitionSpecifier)obj).name;
+      } else {
+        return false;
+      }
     }
   }
 }

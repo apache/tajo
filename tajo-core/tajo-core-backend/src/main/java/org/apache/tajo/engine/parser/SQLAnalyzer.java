@@ -37,9 +37,6 @@ import java.util.Map;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
-
-import org.apache.tajo.algebra.DateValue;
-import org.apache.tajo.algebra.TimeValue;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -229,11 +226,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (ctx.MULTIPLY() != null) {
       projection.setAll();
     } else {
-      TargetExpr[] targets = new TargetExpr[ctx.select_sublist().size()];
+      NamedExpr[] targets = new NamedExpr[ctx.select_sublist().size()];
       for (int i = 0; i < targets.length; i++) {
         targets[i] = visitSelect_sublist(ctx.select_sublist(i));
       }
-      projection.setTargets(targets);
+      projection.setNamedExprs(targets);
     }
 
     return projection;
@@ -250,9 +247,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public TargetExpr visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
+  public NamedExpr visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
     if (ctx.asterisked_qualifier != null) {
-      return new TargetExpr(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
+      return new NamedExpr(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
     } else {
       return visitDerived_column(ctx.derived_column());
     }
@@ -285,13 +282,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             ctx.grouping_element_list().grouping_element().get(i);
         if (element.ordinary_grouping_set() != null) {
           groups[i] = new GroupElement(GroupType.OrdinaryGroup,
-              getColumnReferences(element.ordinary_grouping_set().column_reference_list()));
+              getRowValuePredicands(element.ordinary_grouping_set().row_value_predicand_list()));
         } else if (element.rollup_list() != null) {
           groups[i] = new GroupElement(GroupType.Rollup,
-              getColumnReferences(element.rollup_list().c.column_reference_list()));
+              getRowValuePredicands(element.rollup_list().c.row_value_predicand_list()));
         } else if (element.cube_list() != null) {
           groups[i] = new GroupElement(GroupType.Cube,
-              getColumnReferences(element.cube_list().c.column_reference_list()));
+              getRowValuePredicands(element.cube_list().c.row_value_predicand_list()));
         }
       }
       clause.setGroups(groups);
@@ -306,7 +303,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     Sort.SortSpec specs [] = new Sort.SortSpec[size];
     for (int i = 0; i < size; i++) {
       SQLParser.Sort_specifierContext specContext = ctx.sort_specifier_list().sort_specifier(i);
-      ColumnReferenceExpr column = visitColumn_reference(specContext.column);
+      Expr column = visitRow_value_predicand(specContext.key);
       specs[i] = new Sort.SortSpec(column);
       if (specContext.order_specification() != null) {
         if (specContext.order.DESC() != null) {
@@ -385,6 +382,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     join.setRight(visitTable_primary(ctx.right));
     return join;
+  }
+
+  private Expr [] getRowValuePredicands(Row_value_predicand_listContext ctx) {
+    Expr [] rowValuePredicands = new Expr[ctx.row_value_predicand().size()];
+    for (int i = 0; i < rowValuePredicands.length; i++) {
+      rowValuePredicands[i] = visitRow_value_predicand(ctx.row_value_predicand(i));
+    }
+    return rowValuePredicands;
   }
 
   private ColumnReferenceExpr [] getColumnReferences(Column_reference_listContext ctx) {
@@ -490,9 +495,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     Expr left;
     Expr right;
-    for (int i = 0; i < ctx.boolean_value_expression().size(); i++) {
+    for (int i = 0; i < ctx.or_predicate().size(); i++) {
       left = current;
-      right = visitBoolean_value_expression(ctx.boolean_value_expression(i));
+      right = visitOr_predicate(ctx.or_predicate(i));
       current = new BinaryOperator(OpType.Or, left, right);
     }
 
@@ -505,9 +510,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     Expr left;
     Expr right;
-    for (int i = 0; i < ctx.boolean_value_expression().size(); i++) {
+    for (int i = 0; i < ctx.and_predicate().size(); i++) {
       left = current;
-      right = visitBoolean_value_expression(ctx.boolean_value_expression(i));
+      right = visitAnd_predicate(ctx.and_predicate(i));
       current = new BinaryOperator(OpType.And, left, right);
     }
 
@@ -821,8 +826,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public TargetExpr visitDerived_column(SQLParser.Derived_columnContext ctx) {
-    TargetExpr target = new TargetExpr(visitValue_expression(ctx.value_expression()));
+  public NamedExpr visitDerived_column(SQLParser.Derived_columnContext ctx) {
+    NamedExpr target = new NamedExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
       target.setAlias(ctx.as_clause().Identifier().getText());
     }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class FunctionExpr extends Expr {
@@ -60,6 +61,11 @@ public class FunctionExpr extends Expr {
 
   public void setParams(Expr[] params) {
     this.params = params;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(signature, params);
   }
 
   @Override

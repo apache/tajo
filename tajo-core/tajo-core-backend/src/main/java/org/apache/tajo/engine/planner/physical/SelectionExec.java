@@ -18,36 +18,24 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.SelectionNode;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 public class SelectionExec extends UnaryPhysicalExec  {
   private final EvalNode qual;
   private final EvalContext qualCtx;
-  private final Tuple outputTuple;
-  // projection
-  private int [] targetIds;
 
   public SelectionExec(TaskAttemptContext context,
                        SelectionNode plan,
                        PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
-
     this.qual = plan.getQual();
     this.qualCtx = this.qual.newContext();
-    // for projection
-    if (!inSchema.equals(outSchema)) {
-      targetIds = RowStoreUtil.getTargetIds(inSchema, outSchema);
-    }
-
-    this.outputTuple = new VTuple(outSchema.getColumnNum());
   }
 
   @Override
@@ -55,13 +43,8 @@ public class SelectionExec extends UnaryPhysicalExec  {
     Tuple tuple;
     while ((tuple = child.next()) != null) {
       qual.eval(qualCtx, inSchema, tuple);
-      if (qual.terminate(qualCtx).asBool()) {
-        if (targetIds != null) {
-          RowStoreUtil.project(tuple, outputTuple, targetIds);
-          return outputTuple;
-        } else {
+      if (qual.terminate(qualCtx).isTrue()) {
           return tuple;
-        }
       }
     }
 

@@ -83,14 +83,12 @@ public class TestTablePartitions {
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
 
-    int i = 0;
-    while(res.next()) {
+    for (int i = 0; i < 2; i++) {
+      assertTrue(res.next());
       assertEquals(resultRows1.get(res.getDouble(4))[0], res.getInt(1));
       assertEquals(resultRows1.get(res.getDouble(4))[1], res.getInt(2));
-      i++;
     }
     res.close();
-    assertEquals(2, i);
   }
 
   @Test
@@ -132,14 +130,12 @@ public class TestTablePartitions {
     resultRows1.put(38.0d, new int[]{2, 2});
 
 
-    int i = 0;
-    while(res.next()) {
+    for (int i = 0; i < 2; i++) {
+      assertTrue(res.next());
       assertEquals(resultRows1.get(res.getDouble(4))[0], res.getInt(2));
       assertEquals(resultRows1.get(res.getDouble(4))[1], res.getInt(3));
-      i++;
     }
     res.close();
-    assertEquals(2, i);
 
 
     Map<Double, int []> resultRows2 = Maps.newHashMap();
@@ -149,14 +145,12 @@ public class TestTablePartitions {
 
     res = tpch.execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
 
-    i = 0;
-    while(res.next()) {
+    for (int i = 0; i < 3; i++) {
+      assertTrue(res.next());
       assertEquals(resultRows2.get(res.getDouble(4))[0], res.getInt(2));
       assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
-      i++;
     }
     res.close();
-    assertEquals(3, i);
   }
 
   @Test

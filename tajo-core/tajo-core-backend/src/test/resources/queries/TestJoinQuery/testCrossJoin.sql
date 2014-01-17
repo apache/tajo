@@ -1,1 +1,1 @@
-select n_name, r_name, n_regionkey, r_regionkey from nation, region;
+select n_name, r_name, n_regionkey, r_regionkey from nation, region order by n_name, r_name;

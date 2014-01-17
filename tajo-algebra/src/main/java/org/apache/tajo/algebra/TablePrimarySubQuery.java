@@ -18,6 +18,9 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
+import org.apache.tajo.util.TUtil;
+
 public class TablePrimarySubQuery extends Relation {
   private Expr subquery;
   private String [] columnNames;
@@ -43,9 +46,14 @@ public class TablePrimarySubQuery extends Relation {
     return subquery;
   }
 
+  public int hashCode() {
+    return Objects.hashCode(subquery, columnNames);
+  }
+
   @Override
   boolean equalsTo(Expr expr) {
-    return subquery.equals(subquery);
+    TablePrimarySubQuery another = (TablePrimarySubQuery) expr;
+    return subquery.equals(subquery) && TUtil.checkEquals(columnNames, another.columnNames);
   }
 
   public String toJson() {

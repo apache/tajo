@@ -18,22 +18,20 @@
 
 package org.apache.tajo.algebra;
 
-public class ScalarSubQuery extends Expr {
-  private Expr subquery;
+public class ScalarSubQuery extends UnaryOperator {
 
   public ScalarSubQuery(Expr subQuery) {
     super(OpType.ScalarSubQuery);
-    this.subquery = subQuery;
+    this.setChild(subQuery);
   }
 
   public Expr getSubQuery() {
-    return this.subquery;
+    return getChild();
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    ScalarSubQuery another = (ScalarSubQuery) expr;
-    return subquery.equals(another);
+    return true;
   }
 
   public String toJson() {

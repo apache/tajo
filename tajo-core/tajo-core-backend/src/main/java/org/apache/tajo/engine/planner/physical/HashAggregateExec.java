@@ -18,11 +18,11 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -86,29 +86,15 @@ public class HashAggregateExec extends AggregationExec {
     }
 
     EvalContext [] ctx;
-    if (havingQual == null) {
-      if (iterator.hasNext()) {
-      ctx =  iterator.next().getValue();
 
+    if (iterator.hasNext()) {
+      ctx =  iterator.next().getValue();
       for (int i = 0; i < ctx.length; i++) {
         tuple.put(i, evals[i].terminate(ctx[i]));
       }
 
       return tuple;
-      } else {
-        return null;
-      }
     } else {
-      while(iterator.hasNext()) {
-        ctx =  iterator.next().getValue();
-        for (int i = 0; i < ctx.length; i++) {
-          tuple.put(i, evals[i].terminate(ctx[i]));
-        }
-        havingQual.eval(havingContext, evalSchema, tuple);
-        if (havingQual.terminate(havingContext).asBool()) {
-          return tuple;
-        }
-      }
       return null;
     }
   }

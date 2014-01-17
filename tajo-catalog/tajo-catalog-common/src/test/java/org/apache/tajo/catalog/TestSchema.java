@@ -69,9 +69,9 @@ public class TestSchema {
 	@Test
 	public final void testAddField() {
 		Schema schema = new Schema();
-		assertFalse(schema.contains("studentId"));
+		assertFalse(schema.containsByQualifiedName("studentId"));
 		schema.addColumn("studentId", Type.INT4);
-		assertTrue(schema.contains("studentId"));
+		assertTrue(schema.containsByQualifiedName("studentId"));
 	}
 
 	@Test

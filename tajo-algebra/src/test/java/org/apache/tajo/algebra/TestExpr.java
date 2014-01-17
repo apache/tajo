@@ -36,6 +36,7 @@ public class TestExpr {
         new LiteralValue("1", LiteralType.Unsigned_Integer),
         new LiteralValue("2", LiteralType.Unsigned_Integer));
 
+    assertEquals(expr1.hashCode(), expr2.hashCode());
     assertEquals(expr1, expr2);
 
     Expr expr3 = new BinaryOperator(OpType.Minus,
@@ -102,8 +103,8 @@ public class TestExpr {
     selection.setChild(relation);
 
     Aggregation aggregation = new Aggregation();
-    aggregation.setTargets(new TargetExpr[]{
-          new TargetExpr(new ColumnReferenceExpr("col1"))
+    aggregation.setTargets(new NamedExpr[]{
+          new NamedExpr(new ColumnReferenceExpr("col1"))
         }
     );
 
@@ -129,8 +130,8 @@ public class TestExpr {
     selection.setChild(relation);
 
     Aggregation aggregation = new Aggregation();
-    aggregation.setTargets(new TargetExpr[]{
-        new TargetExpr(new ColumnReferenceExpr("col1"))
+    aggregation.setTargets(new NamedExpr[]{
+        new NamedExpr(new ColumnReferenceExpr("col1"))
     });
 
     aggregation.setChild(selection);

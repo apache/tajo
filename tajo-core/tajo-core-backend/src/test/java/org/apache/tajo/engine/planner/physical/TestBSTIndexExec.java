@@ -172,10 +172,11 @@ public class TestBSTIndexExec {
 
     int tupleCount = this.randomValues.get(rndKey);
     int counter = 0;
-
+    exec.init();
     while (exec.next() != null) {
       counter ++;
     }
+    exec.close();
     assertEquals(tupleCount , counter);
   }
 
@@ -200,8 +201,7 @@ public class TestBSTIndexExec {
       
       Datum[] datum = new Datum[]{DatumFactory.createInt4(rndKey)};
 
-      return new BSTIndexScanExec(ctx, sm, scanNode, fragments.get(0), idxPath,
-          idxSchema, comp , datum);
+      return new BSTIndexScanExec(ctx, sm, scanNode, fragments.get(0), idxPath, idxSchema, comp , datum);
 
     }
   }

@@ -59,6 +59,11 @@ public class IsNullEval extends BinaryEval {
   }
 
   @Override
+  public String toString() {
+    return leftExpr + " IS " + (isNot ? "NOT NULL" : "NULL");
+  }
+
+  @Override
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     IsNullEvalCtx isNullCtx = (IsNullEvalCtx) ctx;
     leftExpr.eval(isNullCtx.predicandContext, schema, tuple);

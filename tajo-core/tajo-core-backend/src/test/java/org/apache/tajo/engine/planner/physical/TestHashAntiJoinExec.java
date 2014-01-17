@@ -165,8 +165,8 @@ public class TestHashAntiJoinExec {
       MergeJoinExec join = (MergeJoinExec) exec;
       ExternalSortExec sortLeftChild = (ExternalSortExec) join.getLeftChild();
       ExternalSortExec sortRightChild = (ExternalSortExec) join.getRightChild();
-      SeqScanExec scanLeftChild = (SeqScanExec) sortLeftChild.getChild();
-      SeqScanExec scanRightChild = (SeqScanExec) sortRightChild.getChild();
+      SeqScanExec scanLeftChild = sortLeftChild.getChild();
+      SeqScanExec scanRightChild = sortRightChild.getChild();
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("people")) {

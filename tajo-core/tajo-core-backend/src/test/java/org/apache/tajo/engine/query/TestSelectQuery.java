@@ -33,8 +33,10 @@ import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
 public class TestSelectQuery extends QueryTestCaseBase {
+
   @Test
   public final void testSelect() throws Exception {
+    // select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -42,6 +44,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSelect2() throws Exception {
+    // select l_orderkey, l_partkey, l_orderkey + l_partkey as plus from lineitem;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -49,6 +52,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSelect3() throws Exception {
+    // select l_orderkey + l_partkey as plus from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelectColumnAlias1() throws Exception {
+    // select l_orderkey as col1, l_orderkey + 1 as col2 from lineitem;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -154,20 +166,6 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNotInClause() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-  }
-
-  @Test
-  public final void testUnion1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-  }
-
-  @Test
-  public final void testUnion2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

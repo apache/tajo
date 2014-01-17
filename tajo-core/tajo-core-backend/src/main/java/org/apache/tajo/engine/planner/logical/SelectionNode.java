@@ -24,11 +24,10 @@ import org.apache.tajo.engine.planner.PlanString;
 
 public class SelectionNode extends UnaryNode implements Cloneable {
 	@Expose private EvalNode qual;
-	
-	public SelectionNode(int pid, EvalNode qual) {
-		super(pid, NodeType.SELECTION);
-		setQual(qual);
-	}
+
+  public SelectionNode(int pid) {
+    super(pid, NodeType.SELECTION);
+  }
 
 	public EvalNode getQual() {
 		return this.qual;

@@ -176,8 +176,8 @@ public class TestPhysicalPlanner {
       "select deptName, nullable from score group by deptName, nullable", // 11
       "select 3 < 4 as ineq, 3.5 * 2 as score", // 12
       "select (1 > 0) and 3 > 1", // 13
-      "select deptName, class, sum(score), max(score), min(score) from score", // 14
-      "select deptname, class, sum(score), max(score), min(score) from score group by deptname", // 15
+      "select sum(score), max(score), min(score) from score", // 14
+      "select deptname, sum(score), max(score), min(score) from score group by deptname", // 15
       "select name from employee where empid >= 0", // 16
   };
 
@@ -287,10 +287,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     exec.init();
     while ((tuple = exec.next()) != null) {
-      assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
-      assertEquals(12, tuple.get(2).asInt4()); // sum
-      assertEquals(3, tuple.get(3).asInt4()); // max
-      assertEquals(1, tuple.get(4).asInt4()); // min
+      assertEquals(12, tuple.get(1).asInt4()); // sum
+      assertEquals(3, tuple.get(2).asInt4()); // max
+      assertEquals(1, tuple.get(3).asInt4()); // min
       i++;
     }
     exec.close();
@@ -538,9 +537,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(60, tuple.get(2).asInt4()); // sum
-      assertEquals(3, tuple.get(3).asInt4()); // max
-      assertEquals(1, tuple.get(4).asInt4()); // min
+      assertEquals(60, tuple.get(0).asInt4()); // sum
+      assertEquals(3, tuple.get(1).asInt4()); // max
+      assertEquals(1, tuple.get(2).asInt4()); // min
       i++;
     }
     assertEquals(1, i);
@@ -595,7 +594,6 @@ public class TestPhysicalPlanner {
     Expr context = analyzer.parse(QUERIES[9]);
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
-    System.out.println(rootNode.toString());
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
@@ -651,7 +649,9 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
-    UnionNode union = new UnionNode(plan.newPID(), root.getChild(), root.getChild());
+    UnionNode union = new UnionNode(plan.newPID());
+    union.setLeftChild(root.getChild());
+    union.setRightChild(root.getChild());
     root.setChild(union);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -875,7 +875,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    assertTrue(((ProjectionExec)exec).getChild() instanceof MemSortExec);
+    assertTrue(exec instanceof MemSortExec);
 
     context = analyzer.parse(SORT_QUERY[0]);
     plan = planner.createPlan(context);
@@ -896,7 +896,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    assertTrue(((ProjectionExec)exec).getChild() instanceof ExternalSortExec);
+    assertTrue(exec instanceof ExternalSortExec);
   }
 
   @Test
@@ -923,7 +923,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    assertTrue(exec instanceof HashAggregateExec);
+    assertNotNull(PhysicalPlanUtil.findExecutor(exec, HashAggregateExec.class));
 
     context = analyzer.parse(QUERIES[7]);
     plan = planner.createPlan(context);

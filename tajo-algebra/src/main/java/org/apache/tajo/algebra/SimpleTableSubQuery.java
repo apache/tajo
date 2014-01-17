@@ -18,21 +18,20 @@
 
 package org.apache.tajo.algebra;
 
-public class SimpleTableSubQuery extends Expr {
-  private Expr subquery;
+public class SimpleTableSubQuery extends UnaryOperator {
 
   public SimpleTableSubQuery(Expr subquery) {
     super(OpType.SimpleTableSubQuery);
-    this.subquery = subquery;
+    setChild(subquery);
   }
 
   public Expr getSubQuery() {
-    return subquery;
+    return getChild();
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    return subquery.equals(subquery);
+    return true;
   }
 
   public String toJson() {

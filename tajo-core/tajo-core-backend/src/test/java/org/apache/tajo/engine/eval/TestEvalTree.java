@@ -33,6 +33,8 @@ import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.SelectionNode;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -41,14 +43,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.*;
 
-public class TestEvalTree {
+public class TestEvalTree extends ExprTestBase{
   private static TajoTestingCluster util;
   private static CatalogService cat;
-  private static SQLAnalyzer analyzer;
-  private static LogicalPlanner planner;
   private static Tuple [] tuples = new Tuple[3];
   
   @BeforeClass
@@ -73,9 +75,6 @@ public class TestEvalTree {
         CatalogUtil.newSimpleDataType(INT4),
         CatalogUtil.newSimpleDataTypeArray(INT4, INT4));
     cat.createFunction(funcMeta);
-
-    analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(cat);
     
     tuples[0] = new VTuple(3);
     tuples[0].put(new Datum[] {
@@ -124,81 +123,6 @@ public class TestEvalTree {
       "select sum(score) from people", // 4
       "select name from people where NOT (20 > 30)", // 5
   };
-
-  public static Target[] getRawTargets(String query) throws PlanningException {
-    Expr expr = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(expr);
-    Target [] targets = plan.getRootBlock().getTargetListManager().getUnresolvedTargets();
-    for (Target t : targets) {
-      assertJsonSerDer(t.getEvalTree());
-    }
-    return targets;
-  }
-
-  public static EvalNode getRootSelection(String query) {
-    Expr block = analyzer.parse(query);
-    LogicalPlan plan = null;
-    try {
-      plan = planner.createPlan(block);
-    } catch (PlanningException e) {
-      e.printStackTrace();
-    }
-    EvalNode qual = plan.getRootBlock().getSelectionNode().getQual();
-    assertJsonSerDer(qual);
-    return qual;
-  }
-
-  @Test
-  public final void testFunctionEval() throws Exception {    
-    Tuple tuple = new VTuple(3);
-    tuple.put(
-        new Datum[] {
-          DatumFactory.createText("hyunsik"),
-          DatumFactory.createInt4(500),
-          DatumFactory.createInt4(30)});
-
-    EvalNode expr;
-
-    Schema peopleSchema = cat.getTableDesc("people").getSchema();
-    EvalContext evalCtx;
-    expr = getRootSelection(QUERIES[0]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuple);
-    assertEquals(true, expr.terminate(evalCtx).asBool());
-
-    expr = getRootSelection(QUERIES[1]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuple);
-    assertEquals(15000, expr.terminate(evalCtx).asInt4());
-    assertCloneEqual(expr);
-
-    expr = getRootSelection(QUERIES[2]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuple);
-    assertEquals(15050, expr.terminate(evalCtx).asInt4());
-    assertCloneEqual(expr);
-    
-    // Aggregation function test
-    expr = getRawTargets(QUERIES[4])[0].getEvalTree();
-    evalCtx = expr.newContext();
-    
-    final int tuplenum = 10;
-    Tuple [] tuples = new Tuple[tuplenum];
-    for (int i=0; i < tuplenum; i++) {
-      tuples[i] = new VTuple(3);
-      tuples[i].put(0, DatumFactory.createText("hyunsik"));
-      tuples[i].put(1, DatumFactory.createInt4(i + 1));
-      tuples[i].put(2, DatumFactory.createInt4(30));
-    }
-    
-    int sum = 0;
-    for (int i=0; i < tuplenum; i++) {
-      expr.eval(evalCtx, peopleSchema, tuples[i]);
-      sum = sum + (i+1);
-      assertEquals(sum, expr.terminate(evalCtx).asInt4());
-    }
-  }
-  
   
   @Test
   public void testTupleEval() throws CloneNotSupportedException {
@@ -557,166 +481,5 @@ public class TestEvalTree {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
     assertFalse(eval == copy);
-  }
-  
-  static String[] NOT = {
-    "select name, score, age from people where not (score >= 200)", // 0"
-  };
-  
-  @Test
-  public final void testNot() throws CloneNotSupportedException {
-    ConstEval e1;
-    ConstEval e2;
-    EvalNode expr;
-
-    // Constant
-    e1 = new ConstEval(DatumFactory.createInt4(9));
-    e2 = new ConstEval(DatumFactory.createInt4(34));
-    expr = new BinaryEval(EvalType.LTH, e1, e2);
-    EvalContext evalCtx = expr.newContext();
-    expr.eval(evalCtx, null, null);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    NotEval not = new NotEval(expr);
-    evalCtx = not .newContext();
-    not.eval(evalCtx, null, null);
-    assertFalse(not.terminate(evalCtx).asBool());
-    
-    expr = new BinaryEval(EvalType.LEQ, e1, e2);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, null, null);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    not = new NotEval(expr);
-    evalCtx = not.newContext();
-    not.eval(evalCtx, null, null);
-    assertFalse(not.terminate(evalCtx).asBool());
-    
-    expr = new BinaryEval(EvalType.LTH, e2, e1);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, null, null);
-    assertFalse(expr.terminate(evalCtx).asBool());
-    not = new NotEval(expr);
-    evalCtx = not.newContext();
-    not.eval(evalCtx, null, null);
-    assertTrue(not.terminate(evalCtx).asBool());
-    
-    expr = new BinaryEval(EvalType.LEQ, e2, e1);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, null, null);
-    assertFalse(expr.terminate(evalCtx).asBool());
-    not = new NotEval(expr);
-    evalCtx = not.newContext();
-    not.eval(evalCtx, null, null);
-    assertTrue(not.terminate(evalCtx).asBool());
-    
-    // Evaluation Test
-    Schema peopleSchema = cat.getTableDesc("people").getSchema();
-    expr = getRootSelection(NOT[0]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuples[0]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[1]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[2]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-  }
-  
-  static String[] LIKE = {
-    "select name, score, age from people where name like '%bc'", // 0"
-    "select name, score, age from people where name like 'aa%'", // 1"
-    "select name, score, age from people where name not like '%bc'", // 2"
-    "select name, score, age from people where name like '.*b_'", // 3"
-  };
-  
-  @Test
-  public final void testLike() {
-    EvalNode expr;
-
-    Schema peopleSchema = cat.getTableDesc("people").getSchema();
-    // prefix
-    expr = getRootSelection(LIKE[0]);
-    EvalContext evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuples[0]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[1]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[2]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    
-    // suffix
-    expr = getRootSelection(LIKE[1]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuples[0]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[1]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[2]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-
-    // Not Test
-    expr = getRootSelection(LIKE[2]);
-    evalCtx = expr.newContext();
-    expr.eval(evalCtx, peopleSchema, tuples[0]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[1]);
-    assertTrue(expr.terminate(evalCtx).asBool());
-    expr.eval(evalCtx, peopleSchema, tuples[2]);
-    assertFalse(expr.terminate(evalCtx).asBool());
-  }
-
-  static String[] IS_NULL = {
-      "select name, score, age from people where name is null", // 0"
-      "select name, score, age from people where name is not null", // 1"
-  };
-
-  @Test
-  public void testIsNullEval() {
-    EvalNode expr;
-
-    expr = getRootSelection(IS_NULL[0]);
-
-    assertIsNull(expr);
-
-    expr = getRootSelection(IS_NULL[1]);
-
-    IsNullEval nullEval = (IsNullEval) expr;
-    assertTrue(nullEval.isNot());
-    assertIsNull(expr);
-  }
-
-  static String[] IN_PREDICATE = {
-      "select name, score, age from people where name in ('abc', 'def', 'ghi')", // 0
-      "select name, score, age from people where score in (1, 2, 3)", // 1
-      "select name, score, age from people where score not in (1, 2, 3)", // 2
-  };
-
-  @Test
-  public void testInEval() {
-    EvalNode expr;
-
-    expr = getRootSelection(IN_PREDICATE[0]);
-    assertEquals(EvalType.IN, expr.getType());
-    InEval inEval = (InEval) expr;
-
-    expr = getRootSelection(IN_PREDICATE[1]);
-    assertEquals(EvalType.IN, expr.getType());
-
-    expr = getRootSelection(IN_PREDICATE[2]);
-    assertEquals(EvalType.IN, expr.getType());
-    inEval = (InEval) expr;
-    assertTrue(inEval.isNot());
-  }
-
-  private void assertIsNull(EvalNode isNullEval) {
-    assertEquals(EvalType.IS_NULL, isNullEval.getType());
-    assertEquals(EvalType.FIELD, isNullEval.getLeftExpr().getType());
-    FieldEval left = (FieldEval) isNullEval.getLeftExpr();
-    assertEquals("name", left.getColumnName());
-    assertEquals(EvalType.CONST, isNullEval.getRightExpr().getType());
-  }
-
-  private static void assertJsonSerDer(EvalNode expr) {
-    String json = expr.toJson();
-    EvalNode fromJson = CoreGsonHelper.fromJson(json, EvalNode.class);
-    assertEquals(expr, fromJson);
   }
 }

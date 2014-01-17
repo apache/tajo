@@ -20,10 +20,8 @@ package org.apache.tajo.algebra;
 
 import com.google.common.base.Preconditions;
 
-public class PatternMatchPredicate extends Expr {
+public class PatternMatchPredicate extends BinaryOperator {
   private boolean not;
-  private Expr columnRef;
-  private Expr pattern;
   private boolean caseInsensitive;
 
   public PatternMatchPredicate(OpType opType, boolean not, Expr predicand, Expr pattern,
@@ -33,9 +31,9 @@ public class PatternMatchPredicate extends Expr {
         opType == OpType.LikePredicate || opType == OpType.SimilarToPredicate || opType == OpType.Regexp,
         "pattern matching predicate is only available: " + opType.name());
     this.not = not;
-    this.columnRef = predicand;
-    this.pattern = pattern;
     this.caseInsensitive = caseInsensitive;
+    setLeft(predicand);
+    setRight(pattern);
   }
 
   public PatternMatchPredicate(OpType opType, boolean not, Expr predicand, Expr pattern) {
@@ -47,11 +45,11 @@ public class PatternMatchPredicate extends Expr {
   }
 
   public Expr getPredicand() {
-    return this.columnRef;
+    return getLeft();
   }
 
   public Expr getPattern() {
-    return this.pattern;
+    return getRight();
   }
 
   public boolean isCaseInsensitive() {
@@ -61,9 +59,6 @@ public class PatternMatchPredicate extends Expr {
   boolean equalsTo(Expr expr) {
     PatternMatchPredicate another = (PatternMatchPredicate) expr;
     return opType == another.opType &&
-        not == another.not &&
-        columnRef.equals(another.columnRef) &&
-        pattern.equals(another.pattern) &&
-        caseInsensitive == another.caseInsensitive;
+        not == another.not && caseInsensitive == another.caseInsensitive;
   }
 }

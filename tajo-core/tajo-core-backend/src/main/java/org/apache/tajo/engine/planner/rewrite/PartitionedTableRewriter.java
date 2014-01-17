@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner.rewrite;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.sun.org.apache.commons.logging.Log;
-import com.sun.org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -359,7 +359,8 @@ public class PartitionedTableRewriter implements RewriteRule {
       try {
         Path [] filteredPaths = findFilteredPartitionPaths(scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
-        PartitionedTableScanNode rewrittenScanNode = new PartitionedTableScanNode(plan.newPID(), scanNode, filteredPaths);
+        PartitionedTableScanNode rewrittenScanNode =
+            new PartitionedTableScanNode(plan.newPID(), scanNode, filteredPaths);
         updateTableStat(rewrittenScanNode);
         PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
       } catch (IOException e) {

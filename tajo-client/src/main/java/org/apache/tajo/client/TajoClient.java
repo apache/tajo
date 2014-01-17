@@ -318,9 +318,15 @@ public class TajoClient {
         builder.setQuery(sql);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        ResultCode resultCode =
-            tajoMasterService.updateQuery(null, builder.build()).getResultCode();
-        return resultCode == ResultCode.OK;
+        UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
+        if (response.getResultCode() == ResultCode.OK) {
+          return true;
+        } else {
+          if (response.hasErrorMessage()) {
+            LOG.error(response.getErrorMessage());
+          }
+          return false;
+        }
       }
     }.withRetries();
   }

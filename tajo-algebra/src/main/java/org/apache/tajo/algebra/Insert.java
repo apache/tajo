@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Map;
@@ -109,6 +110,11 @@ public class Insert extends Expr {
 
   public Expr getSubQuery() {
     return subquery;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(overwrite, tableName, subquery, storageType, location, params);
   }
 
   @Override

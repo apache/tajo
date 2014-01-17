@@ -131,6 +131,11 @@ public class AlgebraicUtil {
    * @return the simplified expr
    */
   public static EvalNode eliminateConstantExprs(EvalNode expr) {
+
+    if (expr.getType() == EvalType.FIELD) {
+      return expr;
+    }
+
     EvalNode left = expr.getLeftExpr();
     EvalNode right = expr.getRightExpr();
     

@@ -166,7 +166,6 @@ public class DiskUtil {
 				int indexEnd = line.indexOf(" ", indexStart + 4);
 
 				String deviceName = line.substring(0, indexStart).trim();
-				System.out.println(deviceName);
 				String[] deviceNameTokens = deviceName.split("/");
 				if(deviceNameTokens.length == 3) {
 					if("dev".equals(deviceNameTokens[1])) {

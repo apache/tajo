@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class ValueListExpr extends Expr {
@@ -30,6 +31,11 @@ public class ValueListExpr extends Expr {
 
   public Expr[] getValues() {
     return values;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(values);
   }
 
   @Override

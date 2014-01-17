@@ -112,7 +112,6 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    // 5 input relations, 1 broadcast join and 2 symmetric repartition joins and 1 terminal = 8 execution blocks
-    assertEquals(8, count);
+    assertEquals(6, count);
   }
 }

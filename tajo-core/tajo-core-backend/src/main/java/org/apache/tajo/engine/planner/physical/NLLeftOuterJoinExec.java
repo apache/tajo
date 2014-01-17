@@ -62,7 +62,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
 
     // for projection
     projector = new Projector(inSchema, outSchema, plan.getTargets());
-    evalContexts = projector.renew();
+    evalContexts = projector.newContexts();
 
     // for join
     needNextRightTuple = true;

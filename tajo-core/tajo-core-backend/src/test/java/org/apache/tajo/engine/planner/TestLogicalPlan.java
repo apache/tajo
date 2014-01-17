@@ -83,7 +83,7 @@ public class TestLogicalPlan {
 
   @Test
   public final void testQueryBlockGraph() {
-    LogicalPlan plan = new LogicalPlan(new LogicalPlanner(catalog));
+    LogicalPlan plan = new LogicalPlan(planner);
     LogicalPlan.QueryBlock root = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     LogicalPlan.QueryBlock new1 = plan.newAndGetBlock("@new1");
     LogicalPlan.QueryBlock new2 = plan.newAndGetBlock("@new2");

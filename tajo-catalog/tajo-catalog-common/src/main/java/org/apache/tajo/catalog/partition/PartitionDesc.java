@@ -181,9 +181,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().
-        excludeFieldsWithoutExposeAnnotation().create();
-    return gson.toJson(this);
+    StringBuilder sb = new StringBuilder("Partition Type: " + partitionsType.name()).append(", key=");
+    sb.append(schema);
+    return sb.toString();
   }
 
   @Override

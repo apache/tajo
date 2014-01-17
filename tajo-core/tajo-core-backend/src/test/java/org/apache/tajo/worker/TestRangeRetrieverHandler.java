@@ -54,8 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestRangeRetrieverHandler {
   private TajoTestingCluster util;
@@ -143,8 +142,15 @@ public class TestRangeRetrieverHandler {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    ProjectionExec proj = (ProjectionExec) exec;
-    MemSortExec sort = (MemSortExec) proj.getChild();
+    MemSortExec sort = null;
+    if (exec instanceof ProjectionExec) {
+      ProjectionExec projExec = (ProjectionExec) exec;
+      sort = projExec.getChild();
+    } else if (exec instanceof MemSortExec) {
+      sort = (MemSortExec) exec;
+    } else {
+      assertTrue(false);
+    }
 
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
     RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort, sort.getSchema(),
@@ -257,8 +263,16 @@ public class TestRangeRetrieverHandler {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    ProjectionExec proj = (ProjectionExec) exec;
-    MemSortExec sort = (MemSortExec) proj.getChild();
+    MemSortExec sort = null;
+    if (exec instanceof ProjectionExec) {
+      ProjectionExec projExec = (ProjectionExec) exec;
+      sort = projExec.getChild();
+    } else if (exec instanceof MemSortExec) {
+      sort = (MemSortExec) exec;
+    } else {
+      assertTrue(false);
+    }
+
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
     RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort,
         sort.getSchema(), sort.getSchema(), sortSpecs);

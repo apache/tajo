@@ -18,6 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import java.util.Objects;
+
 public class BetweenPredicate extends Expr {
   private boolean not;
   // if symmetric is not set, asymmetric is implicit.
@@ -54,6 +56,11 @@ public class BetweenPredicate extends Expr {
 
   public Expr end() {
     return end;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(not, symmetric, predicand, begin, end);
   }
 
   @Override

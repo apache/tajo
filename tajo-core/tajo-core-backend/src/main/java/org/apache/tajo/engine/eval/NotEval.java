@@ -64,7 +64,8 @@ public class NotEval extends EvalNode implements Cloneable {
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return DatumFactory.createBool(!childEval.terminate(((NotEvalCtx) ctx).childExprCtx).asBool());
+    Datum datum = childEval.terminate(((NotEvalCtx) ctx).childExprCtx);
+    return !datum.isNull() ? DatumFactory.createBool(!datum.asBool()) : datum;
   }
 
   @Override

@@ -238,7 +238,6 @@ public class TestTajoJdbc {
 
       while(rs.next()) {
         assertEquals(tableName, rs.getString("TABLE_NAME"));
-        System.out.println(">>>>" + rs.getString("COLUMN_NAME"));
         assertEquals(columns.get(numColumns).getColumnName(), rs.getString("COLUMN_NAME"));
         //TODO assert type
         numColumns++;

@@ -23,17 +23,16 @@ import java.util.Stack;
 public class PhysicalPlanUtil {
   public static <T extends PhysicalExec> T findExecutor(PhysicalExec plan, Class<? extends PhysicalExec> clazz)
       throws PhysicalPlanningException {
-    return (T) new FindVisitor().visitChild(plan, new Stack<PhysicalExec>(), clazz);
+    return (T) new FindVisitor().visit(plan, new Stack<PhysicalExec>(), clazz);
   }
 
   private static class FindVisitor extends BasicPhysicalExecutorVisitor<Class<? extends PhysicalExec>, PhysicalExec> {
-    public PhysicalExec visitChild(PhysicalExec exec, Stack<PhysicalExec> stack, Class<? extends PhysicalExec> target)
+    public PhysicalExec visit(PhysicalExec exec, Stack<PhysicalExec> stack, Class<? extends PhysicalExec> target)
         throws PhysicalPlanningException {
-
       if (target.isAssignableFrom(exec.getClass())) {
         return exec;
       } else {
-        return super.visitChild(exec, stack, target);
+        return super.visit(exec, stack, target);
       }
     }
   }

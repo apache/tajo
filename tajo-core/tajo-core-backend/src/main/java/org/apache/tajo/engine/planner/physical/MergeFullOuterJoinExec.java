@@ -93,7 +93,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.renew();
+    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();

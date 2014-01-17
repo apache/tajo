@@ -26,13 +26,9 @@ import static org.junit.Assert.*;
 public class TestIPv4 {
 
 	@Test
-	public final void testSet() {
+	public final void testSet() throws InvalidAddressException {
 		IPv4 ip = null;
-		try {
-			ip = new IPv4("255.255.255.255");
-		} catch (InvalidAddressException e) {
-			System.out.println("InvalidAddressException is catched");
-		}
+	  ip = new IPv4("255.255.255.255");
 		byte[] b = new byte[4];
 		for (int i = 0; i < 4; i++) {
 			b[i] = (byte)0xFF;

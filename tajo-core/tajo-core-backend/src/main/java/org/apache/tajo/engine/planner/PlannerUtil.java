@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -33,6 +33,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -139,12 +140,17 @@ public class PlannerUtil {
   public static void replaceNode(LogicalPlan plan, LogicalNode startNode, LogicalNode oldNode, LogicalNode newNode) {
     LogicalNodeReplaceVisitor replacer = new LogicalNodeReplaceVisitor(oldNode, newNode);
     try {
-      replacer.visit(null, plan, null, startNode, new Stack<LogicalNode>());
+      replacer.visit(new ReplacerContext(), plan, null, startNode, new Stack<LogicalNode>());
     } catch (PlanningException e) {
       e.printStackTrace();
     }
   }
-  public static class LogicalNodeReplaceVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
+
+  static class ReplacerContext {
+    boolean updateSchemaFlag = false;
+  }
+
+  public static class LogicalNodeReplaceVisitor extends BasicLogicalPlanVisitor<ReplacerContext, LogicalNode> {
     private LogicalNode target;
     private LogicalNode tobeReplaced;
 
@@ -154,9 +160,9 @@ public class PlannerUtil {
     }
 
     @Override
-    public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
-                                  Stack<LogicalNode> stack) throws PlanningException {
-      super.visit(context, plan, null, node, stack);
+    public LogicalNode visit(ReplacerContext context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visit(context, plan, null, node, stack);
 
       if (node.deepEquals(target)) {
         LogicalNode parent = stack.peek();
@@ -172,6 +178,18 @@ public class PlannerUtil {
         } else if (parent instanceof UnaryNode) {
           UnaryNode unaryParent = (UnaryNode) parent;
           unaryParent.setChild(tobeReplaced);
+        }
+
+        context.updateSchemaFlag = true;
+      }
+
+      if (context.updateSchemaFlag && !node.deepEquals(target)) {
+        if (node instanceof Projectable) {
+          node.setInSchema(child.getOutSchema());
+          context.updateSchemaFlag = false;
+        } else {
+          node.setInSchema(child.getOutSchema());
+          node.setOutSchema(child.getOutSchema());
         }
       }
       return node;
@@ -241,10 +259,8 @@ public class PlannerUtil {
                 new Column(targetName, newTarget.getEvalTree().getValueType()))});
           } else {
             func.setFirstPhase();
-            newTarget = new Target(func);
             String targetName = "column_" + (targetId++);
-            newTarget.setAlias(targetName);
-
+            newTarget = new Target(func, targetName);
             AggregationFunctionCallEval secondFunc = null;
             for (AggregationFunctionCallEval sf : secondStepFunctions) {
               if (func.equals(sf)) {
@@ -264,14 +280,13 @@ public class PlannerUtil {
       Schema targetSchema = PlannerUtil.targetToSchema(targetArray);
       List<Target> newTarget = Lists.newArrayList();
       for (Column column : groupBy.getGroupingColumns()) {
-        if (!targetSchema.contains(column.getQualifiedName())) {
+        if (!targetSchema.containsByQualifiedName(column.getQualifiedName())) {
           newTarget.add(new Target(new FieldEval(column)));
         }
       }
       targetArray = ObjectArrays.concat(targetArray, newTarget.toArray(new Target[newTarget.size()]), Target.class);
 
       child.setTargets(targetArray);
-      child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
       groupBy.setChild(child);
       groupBy.setInSchema(child.getOutSchema());
@@ -409,7 +424,7 @@ public class PlannerUtil {
     } else {
 
       for (Column col : columnRefs) {
-        if (!node.getInSchema().contains(col.getQualifiedName())) {
+        if (!node.getInSchema().containsByQualifiedName(col.getQualifiedName())) {
           return false;
         }
       }
@@ -504,6 +519,21 @@ public class PlannerUtil {
       targets[i] = new Target(eval);
     }
     return targets;
+  }
+
+  public static Target[] schemaToTargetsWithGeneratedFields(Schema schema) {
+    List<Target> targets = TUtil.newList();
+
+    FieldEval eval;
+    Column column;
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      column = schema.getColumn(i);
+      if (column.getColumnName().charAt(0) != LogicalPlan.NONAMED_COLUMN_PREFIX) {
+        eval = new FieldEval(schema.getColumn(i));
+        targets.add(new Target(eval));
+      }
+    }
+    return targets.toArray(new Target[targets.size()]);
   }
 
   public static SortSpec[] schemaToSortSpecs(Schema schema) {
@@ -619,7 +649,7 @@ public class PlannerUtil {
           for (int j = 0; j < schemas.length; j++) {
           // check whether the column is for either outer or inner
           // 0 is outer, and 1 is inner
-            if (schemas[j].contains(column.getQualifiedName())) {
+            if (schemas[j].containsByQualifiedName(column.getQualifiedName())) {
               pair[j] = column;
             }
           }
@@ -637,6 +667,10 @@ public class PlannerUtil {
     }
   }
 
+  public static Schema targetToSchema(Collection<Target> targets) {
+    return targetToSchema(targets.toArray(new Target[targets.size()]));
+  }
+
   public static Schema targetToSchema(Target[] targets) {
     Schema schema = new Schema();
     for(Target t : targets) {
@@ -647,7 +681,9 @@ public class PlannerUtil {
       } else {
         name = t.getEvalTree().getName();
       }
-      schema.addColumn(name, type);
+      if (!schema.containsByQualifiedName(name)) {
+        schema.addColumn(name, type);
+      }
     }
 
     return schema;
@@ -668,7 +704,7 @@ public class PlannerUtil {
         throw new InternalError(e.getMessage());
       }
       if (copy[i].getEvalTree().getType() == EvalType.FIELD) {
-        FieldEval fieldEval = (FieldEval) copy[i].getEvalTree();
+        FieldEval fieldEval = copy[i].getEvalTree();
         if (fieldEval.getColumnRef().hasQualifier()) {
           fieldEval.getColumnRef().setName(fieldEval.getColumnName());
         }
@@ -706,4 +742,51 @@ public class PlannerUtil {
     return schema;
   }
 
+  public static boolean existsAggregationFunction(Expr expr) throws PlanningException {
+    AggregationFunctionFinder finder = new AggregationFunctionFinder();
+    AggFunctionFoundResult result = new AggFunctionFoundResult();
+    finder.visit(result, new Stack<Expr>(), expr);
+    return result.generalSetFunction;
+  }
+
+  public static boolean existsDistinctAggregationFunction(Expr expr) throws PlanningException {
+    AggregationFunctionFinder finder = new AggregationFunctionFinder();
+    AggFunctionFoundResult result = new AggFunctionFoundResult();
+    finder.visit(result, new Stack<Expr>(), expr);
+    return result.distinctSetFunction;
+  }
+
+  static class AggFunctionFoundResult {
+    boolean generalSetFunction;
+    boolean distinctSetFunction;
+  }
+  static class AggregationFunctionFinder extends SimpleAlgebraVisitor<AggFunctionFoundResult, Object> {
+    @Override
+    public Object visitCountRowsFunction(AggFunctionFoundResult ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
+        throws PlanningException {
+      ctx.generalSetFunction = true;
+      return super.visitCountRowsFunction(ctx, stack, expr);
+    }
+
+    @Override
+    public Object visitGeneralSetFunction(AggFunctionFoundResult ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
+        throws PlanningException {
+      ctx.generalSetFunction = true;
+      ctx.distinctSetFunction = expr.isDistinct();
+      return super.visitGeneralSetFunction(ctx, stack, expr);
+    }
+  }
+
+  public static Collection<String> toQualifiedFieldNames(Collection<String> fieldNames, String qualifier) {
+    List<String> names = TUtil.newList();
+    for (String n : fieldNames) {
+      String [] parts = n.split("\\.");
+      if (parts.length == 1) {
+        names.add(qualifier + "." + parts[0]);
+      } else {
+        names.add(qualifier + "." + parts[1]);
+      }
+    }
+    return names;
+  }
 }

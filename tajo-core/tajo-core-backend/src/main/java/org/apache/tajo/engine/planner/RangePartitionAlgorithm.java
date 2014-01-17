@@ -60,6 +60,9 @@ public abstract class RangePartitionAlgorithm {
     BigDecimal columnCard;
 
     switch (dataType.getType()) {
+      case BOOLEAN:
+        columnCard = new BigDecimal(2);
+        break;
       case CHAR:
         columnCard = new BigDecimal(end.asChar() - start.asChar());
         break;

@@ -18,3 +18,8 @@ where
 	and s_suppkey = ps_suppkey
 	and s_nationkey = n_nationkey
 	and n_regionkey = r_regionkey
+order by
+  s_acctbal,
+  s_name,
+  n_name,
+  p_partkey;

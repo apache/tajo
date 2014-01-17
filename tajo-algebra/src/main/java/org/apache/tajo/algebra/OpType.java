@@ -85,7 +85,7 @@ public enum OpType {
   // Other Expressions
   Sign(SignedExpr.class),
   Column(ColumnReferenceExpr.class),
-  Target(TargetExpr.class),
+  Target(NamedExpr.class),
   Function(FunctionExpr.class),
 
   // Set Functions

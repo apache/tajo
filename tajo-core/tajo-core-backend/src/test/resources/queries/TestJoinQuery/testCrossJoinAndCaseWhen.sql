@@ -13,3 +13,6 @@ from
   nation
 where
   r_regionkey = n_regionkey
+order by
+  r_regionkey,
+  n_regionkey

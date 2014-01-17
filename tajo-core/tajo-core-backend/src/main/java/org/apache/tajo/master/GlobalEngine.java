@@ -370,8 +370,9 @@ public class GlobalEngine extends AbstractService {
 
     @Override
     public boolean isEligible(QueryContext queryContext, LogicalPlan plan) {
-      if (plan.getRootBlock().hasStoreTableNode()) {
-        StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
+      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+      if (rootNode.getChild().getType() == NodeType.STORE) {
+        StoreTableNode storeTableNode = rootNode.getChild();
         return storeTableNode.isCreatedTable();
       } else {
         return false;
@@ -380,7 +381,8 @@ public class GlobalEngine extends AbstractService {
 
     @Override
     public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
-      StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
+      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+      StoreTableNode storeTableNode = rootNode.getChild();
       String tableName = storeTableNode.getTableName();
       queryContext.setOutputTable(tableName);
       queryContext.setOutputPath(new Path(TajoConf.getWarehouseDir(context.getConf()), tableName));
@@ -402,7 +404,7 @@ public class GlobalEngine extends AbstractService {
   public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
       queryContext.setInsert();
 
-      InsertNode insertNode = plan.getRootBlock().getInsertNode();
+      InsertNode insertNode = plan.getRootBlock().getNode(NodeType.INSERT);
       StoreTableNode storeNode;
 
       // Set QueryContext settings, such as output table name and output path.
@@ -489,9 +491,9 @@ public class GlobalEngine extends AbstractService {
         }
 
 
-        ProjectionNode projectionNode = new ProjectionNode(plan.newPID(), targets);
+        ProjectionNode projectionNode = new ProjectionNode(plan.newPID());
+        projectionNode.setTargets(targets);
         projectionNode.setInSchema(insertNode.getSubQuery().getOutSchema());
-        projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
         List<LogicalPlan.QueryBlock> blocks = plan.getChildBlocks(plan.getRootBlock());
         projectionNode.setChild(blocks.get(0).getRoot());
 

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -29,59 +28,21 @@ public class Projector {
 
   // for projection
   private final int targetNum;
-  private final int [] inMap;
-  private final int [] outMap;
-  private int [] evalOutMap; // target list?
-  private EvalNode[] evals;
-  private Tuple prevTuple;
+  private final EvalNode[] evals;
 
   public Projector(Schema inSchema, Schema outSchema, Target [] targets) {
     this.inSchema = inSchema;
-
-    this.targetNum = targets != null ? targets.length : 0;
-
-    inMap = new int[outSchema.getColumnNum() - targetNum];
-    outMap = new int[outSchema.getColumnNum() - targetNum];
-    int mapId = 0;
-    Column col;
-
-    if (targetNum > 0) {
-      evalOutMap = new int[targetNum];
-      evals = new EvalNode[targetNum];
-      for (int i = 0; i < targetNum; i++) {
-        // TODO - is it always  correct?
-        if (targets[i].hasAlias()) {
-          evalOutMap[i] = outSchema.getColumnId(targets[i].getAlias());
-        } else {
-          evalOutMap[i] = outSchema.getColumnId(targets[i].getEvalTree().getName());
-        }
-        evals[i] = targets[i].getEvalTree();
-      }
-
-      outer:
-      for (int targetId = 0; targetId < outSchema.getColumnNum(); targetId ++) {
-        for (int j = 0; j < evalOutMap.length; j++) {
-          if (evalOutMap[j] == targetId)
-            continue outer;
-        }
-
-        col = inSchema.getColumnByFQN(outSchema.getColumn(targetId).getQualifiedName());
-        outMap[mapId] = targetId;
-        inMap[mapId] = inSchema.getColumnId(col.getQualifiedName());
-        mapId++;
-      }
-    } else {
-      for (int targetId = 0; targetId < outSchema.getColumnNum(); targetId ++) {
-        col = inSchema.getColumnByFQN(outSchema.getColumn(targetId).getQualifiedName());
-        outMap[mapId] = targetId;
-        inMap[mapId] = inSchema.getColumnId(col.getQualifiedName());
-        mapId++;
-      }
+    if (targets == null) {
+      targets = PlannerUtil.schemaToTargets(outSchema);
+    }
+    this.targetNum = targets.length;
+    evals = new EvalNode[targetNum];
+    for (int i = 0; i < targetNum; i++) {
+      evals[i] = targets[i].getEvalTree();
     }
   }
 
   public void eval(EvalContext[] evalContexts, Tuple in) {
-    this.prevTuple = in;
     if (targetNum > 0) {
       for (int i = 0; i < evals.length; i++) {
         evals[i].eval(evalContexts[i], inSchema, in);
@@ -90,17 +51,12 @@ public class Projector {
   }
 
   public void terminate(EvalContext [] evalContexts, Tuple out) {
-    for (int i = 0; i < inMap.length; i++) {
-      out.put(outMap[i], prevTuple.get(inMap[i]));
-    }
-    if (targetNum > 0) {
-      for (int i = 0; i < evals.length; i++) {
-        out.put(evalOutMap[i], evals[i].terminate(evalContexts[i]));
-      }
+    for (int i = 0; i < targetNum; i++) {
+      out.put(i, evals[i].terminate(evalContexts[i]));
     }
   }
 
-  public EvalContext [] renew() {
+  public EvalContext [] newContexts() {
     EvalContext [] evalContexts = new EvalContext[targetNum];
     for (int i = 0; i < targetNum; i++) {
       evalContexts[i] = evals[i].newContext();

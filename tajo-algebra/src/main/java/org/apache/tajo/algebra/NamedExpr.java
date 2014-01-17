@@ -18,24 +18,37 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
-public class TargetExpr extends Expr {
-  private Expr expr;
+/**
+ * <code>NamedExpr</code> is an expression which can be aliased in a target list.
+ *
+ * <pre>
+ *   SELECT col1 + col2 as a, sum(col2) as b, col3 as c, col4, ... FROM ...
+ *          ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^
+ *               expr1             expr2        expr3    expr4
+ * </pre>
+ *
+ * We define each expression in expr1 - expr4 as a named expression.
+ * In database community, each of them is called target or an expression in a select list,
+ * Each expression can be explicitly aliased as an given name.
+ */
+public class NamedExpr extends UnaryOperator {
   private String alias;
 
-  public TargetExpr(Expr expr) {
+  public NamedExpr(Expr expr) {
     super(OpType.Target);
-    this.expr = expr;
+    setChild(expr);
   }
 
-  public TargetExpr(Expr expr, String alias) {
+  public NamedExpr(Expr expr, String alias) {
     this(expr);
     setAlias(alias);
   }
 
   public Expr getExpr() {
-    return expr;
+    return getChild();
   }
 
   public boolean hasAlias() {
@@ -51,13 +64,22 @@ public class TargetExpr extends Expr {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(alias, getChild());
+  }
+
+  @Override
   public boolean equalsTo(Expr obj) {
-    if (obj instanceof TargetExpr) {
-      TargetExpr another = (TargetExpr) obj;
-      return expr.equals(another.expr) && TUtil.checkEquals(alias, another.alias);
+    if (obj instanceof NamedExpr) {
+      NamedExpr another = (NamedExpr) obj;
+      return TUtil.checkEquals(alias, another.alias);
     }
 
     return false;
+  }
+
+  public String toString() {
+    return getChild().toString() + (hasAlias() ? " AS " + alias : "");
   }
 
   @Override

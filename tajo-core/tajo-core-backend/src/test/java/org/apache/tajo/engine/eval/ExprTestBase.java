@@ -77,7 +77,7 @@ public class ExprTestBase {
   private static Target[] getRawTargets(String query) throws PlanningException {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(expr);
-    Target [] targets = plan.getRootBlock().getTargetListManager().getUnresolvedTargets();
+    Target [] targets = plan.getRootBlock().getUnresolvedTargets();
     if (targets == null) {
       throw new PlanningException("Wrong query statement or query plan: " + query);
     }
@@ -125,29 +125,29 @@ public class ExprTestBase {
           CommonTestingUtil.getTestDir()));
     }
 
-    Target [] targets = null;
+    Target [] targets;
 
     try {
       targets = getRawTargets(query);
+
+      EvalContext [] evalContexts = new EvalContext[targets.length];
+      Tuple outTuple = new VTuple(targets.length);
+      for (int i = 0; i < targets.length; i++) {
+        EvalNode eval = targets[i].getEvalTree();
+        evalContexts[i] = eval.newContext();
+        eval.eval(evalContexts[i], inputSchema, vtuple);
+        outTuple.put(i, eval.terminate(evalContexts[i]));
+      }
+
+      for (int i = 0; i < expected.length; i++) {
+        assertEquals(query, expected[i], outTuple.get(i).asChars());
+      }
     } catch (PlanningException e) {
       assertFalse(e.getMessage(), true);
-    }
-
-    EvalContext [] evalContexts = new EvalContext[targets.length];
-    Tuple outTuple = new VTuple(targets.length);
-    for (int i = 0; i < targets.length; i++) {
-      EvalNode eval = targets[i].getEvalTree();
-      evalContexts[i] = eval.newContext();
-      eval.eval(evalContexts[i], inputSchema, vtuple);
-      outTuple.put(i, eval.terminate(evalContexts[i]));
-    }
-
-    if (schema != null) {
-      cat.deleteTable(tableName);
-    }
-
-    for (int i = 0; i < expected.length; i++) {
-      assertEquals(query, expected[i], outTuple.get(i).asChars());
+    } finally {
+      if (schema != null) {
+        cat.deleteTable(tableName);
+      }
     }
   }
 }

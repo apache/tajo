@@ -45,11 +45,13 @@ public class TestLogicalNode {
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("age", Type.INT2);
-    GroupbyNode groupbyNode = new GroupbyNode(0, new Column[]{schema.getColumn(1), schema.getColumn(2)});
+    GroupbyNode groupbyNode = new GroupbyNode(0);
+    groupbyNode.setGroupingColumns(new Column[]{schema.getColumn(1), schema.getColumn(2)});
     ScanNode scanNode = new ScanNode(0,
         CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
 
-    GroupbyNode groupbyNode2 = new GroupbyNode(0, new Column[]{schema.getColumn(1), schema.getColumn(2)});
+    GroupbyNode groupbyNode2 = new GroupbyNode(0);
+    groupbyNode2.setGroupingColumns(new Column[]{schema.getColumn(1), schema.getColumn(2)});
     JoinNode joinNode = new JoinNode(0);
     ScanNode scanNode2 = new ScanNode(0,
         CatalogUtil.newTableDesc("in2", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in2")));

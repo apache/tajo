@@ -35,9 +35,44 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testCrossJoinWithExplicitJoinQual() throws Exception {
+  public final void testWhereClauseJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereClauseJoin2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereClauseJoin3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereClauseJoin4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereClauseJoin5() throws Exception {
+    ResultSet res = executeQuery();
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereClauseJoin6() throws Exception {
+    ResultSet res = executeQuery();
+    System.out.println(resultSetToString(res));
     cleanupQuery(res);
   }
 
@@ -77,7 +112,16 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testJoinAndCaseWhen() throws Exception {
+  public void testCrossJoinAndCaseWhen() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testOuterJoinAndCaseWhen1() throws Exception {
+    executeDDL("oj_table1_ddl.sql", "table1.tbl");
+    executeDDL("oj_table2_ddl.sql", "table2.tbl");
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

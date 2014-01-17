@@ -153,7 +153,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     }
 
     Projection projection = new Projection();
-    projection.setTargets(select.getTargets());
+    projection.setNamedExprs(select.getNamedExprs());
 
     if (current != null)
       projection.setChild(current);
@@ -253,7 +253,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       }
 
       Projection projection = new Projection();
-      projection.setTargets(select.getTargets());
+      projection.setNamedExprs(select.getNamedExprs());
 
       if (current != null)
         projection.setChild(current);
@@ -368,7 +368,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     }
 
     Projection projection = new Projection();
-    projection.setTargets(select.getTargets());
+    projection.setNamedExprs(select.getNamedExprs());
 
     if (current != null)
       projection.setChild(current);
@@ -542,7 +542,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   public Expr visitSelectList(HiveParser.SelectListContext ctx) {
     Expr current = null;
     Projection projection = new Projection();
-    TargetExpr[] targets = new TargetExpr[ctx.selectItem().size()];
+    NamedExpr[] targets = new NamedExpr[ctx.selectItem().size()];
     for (int i = 0; i < targets.length; i++) {
       targets[i] = visitSelectItem(ctx.selectItem(i));
     }
@@ -557,16 +557,16 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     }
 
     if (!projection.isAllProjected())
-      projection.setTargets(targets);
+      projection.setNamedExprs(targets);
 
     current = projection;
     return current;
   }
 
   @Override
-  public TargetExpr visitSelectItem(HiveParser.SelectItemContext ctx) {
+  public NamedExpr visitSelectItem(HiveParser.SelectItemContext ctx) {
     ColumnReferenceExpr columnReference;
-    TargetExpr target = null;
+    NamedExpr target = null;
 
     String tableName = "", itemName = "", alias = "";
 
@@ -587,9 +587,9 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
     if (ctx.selectExpression() != null) {
       if (ctx.selectExpression().expression() != null) {
-        target = new TargetExpr(visitSelectExpression(ctx.selectExpression()));
+        target = new NamedExpr(visitSelectExpression(ctx.selectExpression()));
       } else {
-        target = new TargetExpr(columnReference);
+        target = new NamedExpr(columnReference);
       }
     }
 

@@ -104,12 +104,12 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("CASE\n");
+    StringBuilder sb = new StringBuilder("CASE ");
     for (IfThenEval when : whens) {
-     sb.append(when).append("\n");
+     sb.append(when).append(" ");
     }
 
-    sb.append("ELSE ").append(elseResult).append(" END\n");
+    sb.append("ELSE ").append(elseResult).append(" END");
 
     return sb.toString();
   }
@@ -199,8 +199,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     public boolean equals(Object object) {
       if (object instanceof IfThenEval) {
         IfThenEval other = (IfThenEval) object;
-        return condition.equals(other.condition) &&
-            result.equals(other.result);
+        return condition.equals(other.condition) && result.equals(other.result);
       } else {
         return false;
       }

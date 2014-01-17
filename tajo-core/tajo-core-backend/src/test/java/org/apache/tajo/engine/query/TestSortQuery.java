@@ -36,7 +36,24 @@ public class TestSortQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testSortWithAliasKey() throws Exception {
+  public final void testSortWithAlias1() throws Exception {
+    // select l_linenumber, l_orderkey as sortkey from lineitem order by sortkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSortWithExpr1() throws Exception {
+    // select l_linenumber, l_orderkey as sortkey from lineitem order by l_orderkey + 1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSortWithExpr2() throws Exception {
+    // select l_linenumber, l_orderkey as sortkey from lineitem order by l_linenumber, l_orderkey, (l_orderkey is null);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

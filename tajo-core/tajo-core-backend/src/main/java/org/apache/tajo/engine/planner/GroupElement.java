@@ -22,29 +22,28 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.Aggregation;
-import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.eval.EvalNode;
 
 public class GroupElement implements Cloneable {
-  @Expose
-  private Aggregation.GroupType type;
-  @Expose private Column[] columns;
+  @Expose private Aggregation.GroupType type;
+  @Expose private EvalNode [] groupingSets;
 
   @SuppressWarnings("unused")
   public GroupElement() {
     // for gson
   }
 
-  public GroupElement(Aggregation.GroupType type, Column[] columns) {
+  public GroupElement(Aggregation.GroupType type, EvalNode [] groupingSets) {
     this.type = type;
-    this.columns = columns;
+    this.groupingSets = groupingSets;
   }
 
   public Aggregation.GroupType getType() {
     return this.type;
   }
 
-  public Column [] getColumns() {
-    return this.columns;
+  public EvalNode [] getGroupingSets() {
+    return this.groupingSets;
   }
 
   public String toString() {
@@ -56,9 +55,9 @@ public class GroupElement implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     GroupElement groups = (GroupElement) super.clone();
     groups.type = type;
-    groups.columns = new Column[columns.length];
-    for (int i = 0; i < columns.length; i++) {
-      groups.columns[i++] = (Column) columns[i].clone();
+    groups.groupingSets = new EvalNode [groupingSets.length];
+    for (int i = 0; i < groupingSets.length; i++) {
+      groups.groupingSets[i++] = (EvalNode) groupingSets[i].clone();
     }
     return groups;
   }

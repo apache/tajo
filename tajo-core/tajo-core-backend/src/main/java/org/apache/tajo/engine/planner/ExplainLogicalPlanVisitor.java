@@ -96,6 +96,11 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
+  public LogicalNode visitHaving(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
+                                  Stack<LogicalNode> stack) throws PlanningException {
+    return visitUnaryNode(context, plan, block, node, stack);
+  }
+
   @Override
   public LogicalNode visitGroupBy(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
                                   Stack<LogicalNode> stack) throws PlanningException {

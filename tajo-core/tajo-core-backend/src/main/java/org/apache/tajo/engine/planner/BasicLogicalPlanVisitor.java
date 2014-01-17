@@ -68,6 +68,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case SORT:
         current = visitSort(context, plan, block, (SortNode) node, stack);
         break;
+      case HAVING:
+        current = visitHaving(context, plan, block, (HavingNode) node, stack);
+        break;
       case GROUP_BY:
         current = visitGroupBy(context, plan, block, (GroupbyNode) node, stack);
         break;
@@ -145,6 +148,15 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   @Override
   public RESULT visitSort(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SortNode node,
                           Stack<LogicalNode> stack) throws PlanningException {
+    stack.push(node);
+    RESULT result = visit(context, plan, block, node.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitHaving(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
+                            Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();

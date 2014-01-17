@@ -18,9 +18,8 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
-
-import java.util.Arrays;
 
 public class Join extends BinaryOperator {
   private JoinType joinType;
@@ -69,6 +68,11 @@ public class Join extends BinaryOperator {
     return natural;
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(joinType, joinQual, joinColumns, natural);
+  }
+
   boolean equalsTo(Expr expr) {
     Join another = (Join) expr;
     return joinType.equals(another.joinType) &&
@@ -80,15 +84,5 @@ public class Join extends BinaryOperator {
   @Override
   public String toJson() {
     return JsonHelper.toJson(this);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = getType().hashCode();
-    result = 31 * result + joinType.hashCode();
-    result = 31 * result + (joinQual != null ? joinQual.hashCode() : 0);
-    result = 31 * result + (joinColumns != null ? Arrays.hashCode(joinColumns) : 0);
-    result = 31 * result + (natural ? 1 : 0);
-    return result;
   }
 }

@@ -20,6 +20,8 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
+import java.util.Objects;
+
 public class DataTypeExpr extends Expr {
   String typeName;
   Integer lengthOrPrecision;
@@ -56,6 +58,11 @@ public class DataTypeExpr extends Expr {
 
   public Integer getScale() {
     return this.scale;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(typeName, lengthOrPrecision, scale);
   }
 
   @Override

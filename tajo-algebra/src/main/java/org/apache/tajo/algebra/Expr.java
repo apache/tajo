@@ -33,6 +33,9 @@ public abstract class Expr implements JsonSerializable {
 		return this.opType;
 	}
 
+  @Override
+  public abstract int hashCode();
+
   abstract boolean equalsTo(Expr expr);
 
 	@Override

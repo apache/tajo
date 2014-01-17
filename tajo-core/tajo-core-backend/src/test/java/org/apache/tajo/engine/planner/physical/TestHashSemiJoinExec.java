@@ -159,7 +159,6 @@ public class TestHashSemiJoinExec {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(expr);
     optimizer.optimize(plan);
-    System.out.println(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);

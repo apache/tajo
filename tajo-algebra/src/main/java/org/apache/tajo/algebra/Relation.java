@@ -18,6 +18,7 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Relation extends Expr {
@@ -59,16 +60,14 @@ public class Relation extends Expr {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(tableName, alias);
+  }
+
+  @Override
   boolean equalsTo(Expr expr) {
     Relation other = (Relation) expr;
     return TUtil.checkEquals(tableName, other.tableName) &&
         TUtil.checkEquals(alias, other.alias);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = tableName.hashCode();
-    result = 31 * result + (alias != null ? alias.hashCode() : 0);
-    return result;
   }
 }

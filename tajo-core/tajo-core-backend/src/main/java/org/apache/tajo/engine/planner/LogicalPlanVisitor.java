@@ -35,6 +35,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitSort(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SortNode node,
                    Stack<LogicalNode> stack) throws PlanningException;
 
+  RESULT visitHaving(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
+                      Stack<LogicalNode> stack) throws PlanningException;
+
   RESULT visitGroupBy(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
                       Stack<LogicalNode> stack) throws PlanningException;
 
