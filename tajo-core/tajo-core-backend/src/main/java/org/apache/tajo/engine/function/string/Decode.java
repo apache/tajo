@@ -26,6 +26,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 
@@ -34,10 +36,20 @@ import org.apache.tajo.storage.Tuple;
  *
  * bytearray decode(string text, format text)
  */
+@Description(
+  functionName = "decode",
+  description = "Decode binary data from textual representation in string. "
+          + "Options for format are same as in encode.",
+  detail = "format is one of 'base64', 'hex'",
+  example = "> SELECT decode('MTIzAAE=', 'base64');\n"
+          + "\\x3132330001",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
+)
 public class Decode extends GeneralFunction {
   public Decode() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("format", TajoDataTypes.Type.TEXT)
     });
   }

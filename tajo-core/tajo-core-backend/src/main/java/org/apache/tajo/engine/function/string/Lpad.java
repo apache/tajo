@@ -27,21 +27,32 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-
 
 /**
  * Function definition
  *
  * text lpad(string text, length int [, fill text])
  */
+@Description(
+  functionName = "lpad",
+  description = "Fill up the string to length length by prepending the characters fill (a space by default)",
+  detail = "If the string is already longer than length then it is truncated (on the right)",
+  example = "> SELECT lpad('hi', 5, 'xy');\n"
+      + "xyxhi",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4, TajoDataTypes.Type.TEXT})}
+)
 public class Lpad extends GeneralFunction {
   @Expose private boolean hasFillCharacters;
 
   public Lpad() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
-        new Column("length", TajoDataTypes.Type.INT4)
+        new Column("string", TajoDataTypes.Type.TEXT),
+        new Column("length", TajoDataTypes.Type.INT4),
+        new Column("fill_text", TajoDataTypes.Type.TEXT)
     });
   }
 
@@ -56,23 +67,23 @@ public class Lpad extends GeneralFunction {
     Datum datum = params.get(0);
     Datum lengthDatum = params.get(1);
 
-    if(datum instanceof NullDatum) return NullDatum.get();
-    if(lengthDatum instanceof NullDatum) return NullDatum.get();
+    if (datum instanceof NullDatum) return NullDatum.get();
+    if (lengthDatum instanceof NullDatum) return NullDatum.get();
 
-    Datum fillText=NullDatum.get();
+    Datum fillText = NullDatum.get();
 
-    if(hasFillCharacters) {
-      fillText=params.get(2);
-    }
-    else {
-      fillText=DatumFactory.createText(" ");
+    if (hasFillCharacters) {
+      fillText = params.get(2);
+    } else {
+      fillText = DatumFactory.createText(" ");
     }
 
     int templen = lengthDatum.asInt4() - datum.asChars().length();
 
-    if(templen<=0)
+    if (templen <= 0) {
       return DatumFactory.createText(datum.asChars().substring(0,lengthDatum.asInt4()));
-
-    return DatumFactory.createText(StringUtils.leftPad(datum.asChars(), lengthDatum.asInt4(), fillText.asChars()));
+    } else {
+      return DatumFactory.createText(StringUtils.leftPad(datum.asChars(), lengthDatum.asInt4(), fillText.asChars()));
+    }
   }
 }

@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -172,5 +173,19 @@ public class JSPUtil {
     } else {
       return 0;
     }
+  }
+
+  public static void sortFunctionDesc(List<FunctionDesc> functions) {
+    Collections.sort(functions, new java.util.Comparator<FunctionDesc>() {
+      @Override
+      public int compare(FunctionDesc f1, FunctionDesc f2) {
+        int nameCompared = f1.getSignature().compareTo(f2.getSignature());
+        if(nameCompared != 0) {
+          return nameCompared;
+        } else {
+          return f1.getReturnType().getType().compareTo(f2.getReturnType().getType());
+        }
+      }
+    });
   }
 }

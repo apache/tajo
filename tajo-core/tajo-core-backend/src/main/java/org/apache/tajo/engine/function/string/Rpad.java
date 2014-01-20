@@ -27,6 +27,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 
@@ -35,13 +37,23 @@ import org.apache.tajo.storage.Tuple;
  *
  * text rpad(string text, length int [, fill text])
  */
+@Description(
+  functionName = "rpad",
+  description = "Fill up the string to length length by appending the characters fill (a space by default)",
+  detail = "If the string is already longer than length then it is truncated.",
+  example = "> SELECT rpad('hi', 5, 'xy');\n"
+      + "hixyx",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4, TajoDataTypes.Type.TEXT})}
+)
 public class Rpad extends GeneralFunction {
   @Expose private boolean hasFillCharacters;
 
   public Rpad() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
-        new Column("length", TajoDataTypes.Type.INT4)
+        new Column("string", TajoDataTypes.Type.TEXT),
+        new Column("length", TajoDataTypes.Type.INT4),
+        new Column("fill_text", TajoDataTypes.Type.TEXT)
     });
   }
 

@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -37,10 +39,20 @@ import org.apache.tajo.storage.Tuple;
  * SELECT find_in_set('cr','crt,c,cr,c,def') FROM src LIMIT 1;\n"
  * -> result: 3
  */
+@Description(
+  functionName = "find_in_set",
+  description = "Returns the first occurrence of str in str_array where str_array is a comma-delimited string",
+  detail = "Returns null if either argument is null.\n"
+      + "Returns 0 if the first argument has any commas.",
+  example = "> SELECT find_in_set('cr','crt,c,cr,c,def');\n"
+          + "3",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
+)
 public class FindInSet extends GeneralFunction {
   public FindInSet() {
     super(new Column[]{
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("str_array", TajoDataTypes.Type.TEXT)
     });
   }

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -32,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestFunctionDesc {
   private static final String TEST_PATH = "target/test-data/TestFunctionDesc";
@@ -48,6 +50,11 @@ public class TestFunctionDesc {
     public String toJSON() {
       return CatalogGsonHelper.toJson(this, Function.class);
     }
+
+    @Override
+    public CatalogProtos.FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
+    }
   }
 
 
@@ -56,6 +63,10 @@ public class TestFunctionDesc {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
+    desc.setDescription("desc");
+    desc.setExample("example");
+    desc.setDetail("detail");
+
     assertEquals("sum", desc.getSignature());
     assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
@@ -71,10 +82,12 @@ public class TestFunctionDesc {
     proto = (FunctionDescProto) FileUtil.loadProto(save, proto);
 
     FunctionDesc newDesc = new FunctionDesc(proto);
+
     assertEquals("sum", newDesc.getSignature());
     assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
     assertEquals(Type.INT4, newDesc.getReturnType().getType());
+
     assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
         newDesc.getParamTypes());
 

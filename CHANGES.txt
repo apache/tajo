@@ -117,7 +117,10 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-499: Shorten the length of classpath in shell command. 
+    TAJO-409: Add explored and explained annotations to Tajo function system.
+    (SeongHwa Ahn via hyunsik)
+
+    TAJO-499: Shorten the length of classpath in shell command.
     (hyoungjunkim via hyunsik)
 
     TAJO-483: Add getParentCount(), getParents(), getParent() functions to DirectedGraph. 

@@ -18,9 +18,19 @@
 
 package org.apache.tajo.engine.function.builtin;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
+@Description(
+  functionName = "avg",
+  description = "the mean of a set of numbers.",
+  example = "> SELECT avg(expr);",
+  returnType = TajoDataTypes.Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
+)
 public class AvgInt extends AvgLong {
 
   public AvgInt() {
@@ -33,4 +43,5 @@ public class AvgInt extends AvgLong {
     avgCtx.sum += params.get(0).asInt4();
     avgCtx.count++;
   }
+
 }

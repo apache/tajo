@@ -19,19 +19,29 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * Count(column) function
  */
+@Description(
+  functionName = "count",
+  description = "The number of retrieved rows for "
+          + "which the supplied expressions are non-NULL",
+  example = "> SELECT count(expr);",
+  returnType = Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.ANY})}
+)
 public final class CountValue extends CountRows {
 
   public CountValue() {
     super(new Column[] {
-        new Column("col", Type.ANY)
+        new Column("expr", Type.ANY)
     });
   }
 
@@ -41,4 +51,5 @@ public final class CountValue extends CountRows {
       ((CountRowContext) ctx).count++;
     }
   }
+
 }

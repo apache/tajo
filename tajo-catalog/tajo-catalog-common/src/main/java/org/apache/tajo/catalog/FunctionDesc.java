@@ -40,34 +40,47 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   @Expose private FunctionType funcType;
   @Expose private DataType returnType;
   @Expose private DataType [] params;
+  @Expose private String description;
+  @Expose private String detail;
+  @Expose private String example;
 
   public FunctionDesc() {
   }
 
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType retType, DataType [] params) {
+      FunctionType funcType, DataType retType,
+      DataType [] params) {
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
     this.funcType = funcType;
     this.returnType = retType;
     this.params = params;
   }
-  
+
   public FunctionDesc(FunctionDescProto proto) throws ClassNotFoundException {
     this(proto.getSignature(), proto.getClassName(), proto.getType(),
         proto.getReturnType(),
         proto.getParameterTypesList().toArray(new DataType[proto.getParameterTypesCount()]));
+    if (proto.hasDescription()) {
+      this.description = proto.getDescription();
+    }
+    if (proto.hasDetail()) {
+      this.detail = proto.getDetail();
+    }
+    if (proto.hasExample()) {
+      this.example = proto.getExample();
+    }
   }
 
   public FunctionDesc(String signature, String className, FunctionType type,
-                      DataType retType, DataType... argTypes) throws ClassNotFoundException {
-    this(signature, (Class<? extends Function>) Class.forName(className), type,
-        retType, argTypes);
+                      DataType retType,
+                      DataType... argTypes) throws ClassNotFoundException {
+    this(signature, (Class<? extends Function>) Class.forName(className), type, retType, argTypes);
   }
 
   /**
    * 
-   * @return 함수 인스턴스
+   * @return Function Instance
    * @throws org.apache.tajo.exception.InternalException
    */
   public Function newInstance() throws InternalException {
@@ -100,6 +113,30 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return this.returnType;
   }
 
+  public String getDescription() {
+    return description;
+  }
+
+  public String getDetail() {
+    return detail;
+  }
+
+  public String getExample() {
+    return example;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public void setDetail(String detail) {
+    this.detail = detail;
+  }
+
+  public void setExample(String example) {
+    this.example = example;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(signature, params);
@@ -121,6 +158,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     
     desc.signature = this.signature;
     desc.params = params.clone();
+    desc.description = this.description;
+    desc.example = this.example;
+    desc.detail = this.detail;
     desc.returnType = this.returnType;
     desc.funcClass = this.funcClass;
     
@@ -138,7 +178,15 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     builder.setClassName(this.funcClass.getName());
     builder.setType(this.funcType);
     builder.setReturnType(this.returnType);
-
+    if(this.description != null) {
+      builder.setDescription(this.description);
+    }
+    if (this.detail != null) {
+      builder.setDetail(this.detail);
+    }
+    if (this.example != null) {
+      builder.setExample(this.example);
+    }
     if (this.params != null) { // repeated field
       builder.addAllParameterTypes(Arrays.asList(params));
     }
@@ -152,5 +200,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   
   public String toJson() {
     return CatalogGsonHelper.toJson(this, FunctionDesc.class);
+  }
+
+  public String getHelpSignature() {
+    return returnType.getType() + " " + CatalogUtil.getCanonicalName(signature, getParamTypes());
   }
 }

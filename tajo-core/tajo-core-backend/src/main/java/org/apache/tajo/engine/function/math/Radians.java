@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,20 @@ import org.apache.tajo.storage.Tuple;
  *
  * FLOAT8 radians(value FLOAT8)
  */
+@Description(
+  functionName = "radians",
+  description = "Degrees to radians",
+  example = "> SELECT radians(45.0)\n"
+      + "0.785398163397448",
+  returnType = TajoDataTypes.Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4})
+  }
+)
 public class Radians extends GeneralFunction {
   public Radians() {
     super(new Column[] {
-      new Column("value", TajoDataTypes.Type.FLOAT8)
+      new Column("x", TajoDataTypes.Type.FLOAT8)
     });
   }
 

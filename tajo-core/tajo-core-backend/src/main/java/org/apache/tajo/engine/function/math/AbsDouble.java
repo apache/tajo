@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,19 @@ import org.apache.tajo.storage.Tuple;
  *
  * FLOAT8 abs(value FLOAT8)
  */
+@Description(
+  functionName = "abs",
+  description = "Absolute value",
+  detail = "",
+  example = "> SELECT abs(-10);\n"
+          + "10",
+  returnType = TajoDataTypes.Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8})}
+)
 public class AbsDouble extends GeneralFunction {
   public AbsDouble() {
     super(new Column[] {
-      new Column("value", TajoDataTypes.Type.FLOAT8)
+      new Column("x", TajoDataTypes.Type.FLOAT8)
     });
   }
 

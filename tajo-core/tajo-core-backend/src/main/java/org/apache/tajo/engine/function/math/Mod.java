@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,11 +33,23 @@ import org.apache.tajo.storage.Tuple;
  *
  * INT8 mod(value INT8, value INT8)
  */
+@Description(
+  functionName = "mod",
+  description = "Remainder of y/x",
+  example = "> SELECT mod(9, 4);\n" +
+            "1",
+  returnType = TajoDataTypes.Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4})
+  }
+)
 public class Mod extends GeneralFunction {
   public Mod() {
     super(new Column[] {
-      new Column("value1", TajoDataTypes.Type.INT8),
-      new Column("value2", TajoDataTypes.Type.INT8)
+      new Column("y", TajoDataTypes.Type.INT8),
+      new Column("x", TajoDataTypes.Type.INT8)
     });
   }
 

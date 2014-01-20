@@ -19,21 +19,32 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.Random;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 
+@Description(
+  functionName = "random",
+  description = "A pseudorandom number",
+  example = "> SELECT random(10);\n"
+          + "4",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
+)
 public class RandomInt extends GeneralFunction {
   private Random random;
 
   public RandomInt() {
     super(new Column[] {
-        new Column("val", INT4)
+        new Column("n", INT4)
     });
     random = new Random(System.nanoTime());
   }
@@ -42,4 +53,5 @@ public class RandomInt extends GeneralFunction {
   public Datum eval(Tuple params) {
     return DatumFactory.createInt4(random.nextInt(params.get(0).asInt4()));
   }
+
 }

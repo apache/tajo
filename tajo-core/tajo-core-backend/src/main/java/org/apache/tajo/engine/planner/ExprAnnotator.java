@@ -376,8 +376,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     // Given parameters
     Expr[] params = expr.getParams();
     if (params == null) {
-      params = new Expr[1];
-      params[0] = new NullLiteral();
+      params = new Expr[0];
     }
 
     EvalNode[] givenArgs = new EvalNode[params.length];
@@ -395,7 +394,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
-
+    if (funcDesc == null) {
+      throw new UndefinedFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
+    }
     try {
     CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
     if (functionType == CatalogProtos.FunctionType.GENERAL
@@ -427,6 +428,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       throws PlanningException {
     FunctionDesc countRows = catalog.getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[] {});
+    if (countRows == null) {
+      throw new UndefinedFunctionException(CatalogUtil.
+          getCanonicalName(countRows.getSignature(), new TajoDataTypes.DataType[]{}));
+    }
 
     try {
       ctx.currentBlock.setAggregationRequire();

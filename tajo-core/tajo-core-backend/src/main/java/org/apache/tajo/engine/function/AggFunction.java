@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
@@ -48,5 +49,10 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
   @Override
   public String toJson() {
     return CatalogGsonHelper.toJson(this, AggFunction.class);
+  }
+
+  @Override
+  public CatalogProtos.FunctionType getFunctionType() {
+    return CatalogProtos.FunctionType.AGGREGATION;
   }
 }

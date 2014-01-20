@@ -23,6 +23,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 
@@ -33,11 +35,20 @@ import org.apache.tajo.storage.Tuple;
  *   SELECT Tobin(22) FROM src LIMIT 1;
  *   -> result: '10110'
  */
+@Description(
+  functionName = "to_bin",
+  description = "Returns n in binary.",
+  example = "> SELECT to_bin(22);\n"
+      + "10110",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
+)
 public class ToBin extends GeneralFunction {
 
   public ToBin() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("n", TajoDataTypes.Type.INT8)
     });
   }
 

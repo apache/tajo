@@ -23,6 +23,8 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.regex.Matcher;
@@ -38,6 +40,15 @@ import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
  *
  * flags is not supported yet.
  */
+@Description(
+  functionName = "regexp_replace",
+  description = " Replace substring(s) matching a POSIX regular expression.",
+  example = "> SELECT regexp_replace('Thomas', '.[mN]a.', 'M');\n"
+          + "ThM",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.TEXT,TajoDataTypes.Type.TEXT})}
+)
 public class RegexpReplace extends GeneralFunction {
   @Expose protected boolean isPatternConstant;
 
@@ -49,7 +60,7 @@ public class RegexpReplace extends GeneralFunction {
 
   public RegexpReplace() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("pattern", TajoDataTypes.Type.TEXT),
         new Column("replacement", TajoDataTypes.Type.INT4),
         new Column("flags", TajoDataTypes.Type.INT4), // it is not supported yet.

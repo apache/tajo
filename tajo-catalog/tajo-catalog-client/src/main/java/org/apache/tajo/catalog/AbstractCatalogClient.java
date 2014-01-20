@@ -25,7 +25,9 @@ import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
@@ -324,6 +326,10 @@ public abstract class AbstractCatalogClient implements CatalogService {
       }.withRetries();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
+      return null;
+    }
+    if(descProto == null) {
+      LOG.error("No matched function:" + signature + "," + funcType + "," + paramTypes);
       return null;
     }
     try {

@@ -38,17 +38,13 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
+import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.function.Country;
-import org.apache.tajo.engine.function.InCountry;
-import org.apache.tajo.engine.function.builtin.*;
-import org.apache.tajo.engine.function.datetime.ToCharTimestamp;
-import org.apache.tajo.engine.function.datetime.ToTimestamp;
-import org.apache.tajo.engine.function.math.*;
-import org.apache.tajo.engine.function.string.*;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -56,6 +52,7 @@ import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
@@ -67,9 +64,11 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class TajoMaster extends CompositeService {
   private static final String METRICS_GROUP_NAME = "tajomaster";
@@ -259,586 +258,73 @@ public class TajoMaster extends CompositeService {
   public static List<FunctionDesc> initBuiltinFunctions() throws ServiceException {
     List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
 
-    // Sum
-    sqlFuncs.add(new FunctionDesc("sum", SumInt.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(new FunctionDesc("sum", SumLong.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(new FunctionDesc("sum", SumFloat.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(new FunctionDesc("sum", SumDouble.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    // Max
-    sqlFuncs.add(new FunctionDesc("max", MaxInt.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(new FunctionDesc("max", MaxLong.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(new FunctionDesc("max", MaxFloat.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(new FunctionDesc("max", MaxDouble.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    // Min
-    sqlFuncs.add(new FunctionDesc("min", MinInt.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(new FunctionDesc("min", MinLong.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(new FunctionDesc("min", MinFloat.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(new FunctionDesc("min", MinDouble.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-    sqlFuncs.add(new FunctionDesc("min", MinString.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.TEXT),
-        CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    // AVG
-    sqlFuncs.add(new FunctionDesc("avg", AvgInt.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(new FunctionDesc("avg", AvgLong.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(new FunctionDesc("avg", AvgFloat.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    // Count
-    sqlFuncs.add(new FunctionDesc("count", CountValue.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.ANY)));
-    sqlFuncs.add(new FunctionDesc("count", CountRows.class, FunctionType.AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray()));
-    sqlFuncs.add(new FunctionDesc("count", CountValueDistinct.class, FunctionType.DISTINCT_AGGREGATION,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.ANY)));
-
-    // GeoIP
-    sqlFuncs.add(new FunctionDesc("in_country", InCountry.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.BOOLEAN),
-        CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(new FunctionDesc("country", Country.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.TEXT),
-        CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    // Date
-    sqlFuncs.add(new FunctionDesc("date", Date.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    // Today
-    sqlFuncs.add(new FunctionDesc("today", Date.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray()));
-
-    sqlFuncs.add(
-        new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("reverse", Reverse.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("repeat", Repeat.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("left", Left.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("right", Right.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("to_hex", ToHex.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("to_hex", ToHex.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("to_bin", ToBin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("to_bin", ToBin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("upper", Upper.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("lower", Lower.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("md5", Md5.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("char_length", CharLength.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("character_length", CharLength.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("bit_length", BitLength.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("split_part", SplitPart.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("trim", BTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("trim", BTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("btrim", BTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("btrim", BTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("ltrim", LTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("ltrim", LTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("rtrim", RTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("rtrim", RTrim.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("regexp_replace", RegexpReplace.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("ascii", Ascii.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("chr", Chr.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.CHAR),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("length", Length.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("octet_length", OctetLength.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("substr", Substr.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.INT4)));
-    
-    sqlFuncs.add(
-        new FunctionDesc("locate", Locate.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-    sqlFuncs.add(
-        new FunctionDesc("locate", Locate.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT, Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("quote_ident", QuoteIdent.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("round", Round.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("round", Round.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("floor", Floor.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("floor", Floor.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("ceil", Ceil.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("ceil", Ceil.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("ceiling", Ceil.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("ceiling", Ceil.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("strpos", StrPos.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("strposb", StrPosb.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sin", Sin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sin", Sin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("cos", Cos.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("cos", Cos.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("tan", Tan.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("tan", Tan.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("asin", Asin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("asin", Asin.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("acos", Acos.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("acos", Acos.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("atan", Atan.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("atan", Atan.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("atan2", Atan2.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("atan2", Atan2.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("mod", Mod.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("div", Div.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
-
-     sqlFuncs.add(
-         new FunctionDesc("degrees", Degrees.class, FunctionType.GENERAL,
-             CatalogUtil.newSimpleDataType(Type.FLOAT8),
-             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-     sqlFuncs.add(
-         new FunctionDesc("degrees", Degrees.class, FunctionType.GENERAL,
-             CatalogUtil.newSimpleDataType(Type.FLOAT8),
-             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-     sqlFuncs.add(
-         new FunctionDesc("radians", Radians.class, FunctionType.GENERAL,
-             CatalogUtil.newSimpleDataType(Type.FLOAT8),
-             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-     sqlFuncs.add(
-         new FunctionDesc("radians", Radians.class, FunctionType.GENERAL,
-             CatalogUtil.newSimpleDataType(Type.FLOAT8),
-             CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-
-    sqlFuncs.add(
-        new FunctionDesc("initcap", InitCap.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("lpad", Lpad.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("rpad", Rpad.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.INT4, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sign", Sign.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sqrt", Sqrt.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("sqrt", Sqrt.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("exp", Exp.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-
-    sqlFuncs.add(
-        new FunctionDesc("exp", Exp.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    //abs
-    sqlFuncs.add(new FunctionDesc("abs", AbsInt.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.INT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(new FunctionDesc("abs", AbsLong.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.INT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(new FunctionDesc("abs", AbsFloat.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.FLOAT4),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(new FunctionDesc("abs", AbsDouble.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(Type.FLOAT8),
-        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-
-    sqlFuncs.add(
-        new FunctionDesc("cbrt", Cbrt.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4)));
-    sqlFuncs.add(
-        new FunctionDesc("cbrt", Cbrt.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8)));
-
-    // Date Time
-    sqlFuncs.add(
-        new FunctionDesc("to_timestamp", ToTimestamp.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TIMESTAMP),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("to_timestamp", ToTimestamp.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TIMESTAMP),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("to_char", ToCharTimestamp.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TIMESTAMP, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.FLOAT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.FLOAT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.INT8, Type.FLOAT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT8)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4)));
-    sqlFuncs.add(
-        new FunctionDesc("pow", Pow.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT8)));
-
-    sqlFuncs.add(
-        new FunctionDesc("pi", Pi.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.FLOAT8),
-            CatalogUtil.newSimpleDataTypeArray(Type.NULL_TYPE)));
-
-    sqlFuncs.add(
-        new FunctionDesc("encode", Encode.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("decode", Decode.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.TEXT),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
-
-    sqlFuncs.add(
-        new FunctionDesc("find_in_set", FindInSet.class, FunctionType.GENERAL,
-            CatalogUtil.newSimpleDataType(Type.INT4),
-            CatalogUtil.newSimpleDataTypeArray(Type.TEXT, Type.TEXT)));
+    Set<Class> functionClasses = ClassUtil.findClasses(org.apache.tajo.catalog.function.Function.class,
+          "org.apache.tajo.engine.function");
+
+    for (Class eachClass : functionClasses) {
+      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
+        continue;
+      }
+      Function function = null;
+      try {
+        function = (Function)eachClass.newInstance();
+      } catch (Exception e) {
+        LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage());
+        continue;
+      }
+      String functionName = function.getClass().getAnnotation(Description.class).functionName();
+      String[] synonyms = function.getClass().getAnnotation(Description.class).synonyms();
+      String description = function.getClass().getAnnotation(Description.class).description();
+      String detail = function.getClass().getAnnotation(Description.class).detail();
+      String example = function.getClass().getAnnotation(Description.class).example();
+      Type returnType = function.getClass().getAnnotation(Description.class).returnType();
+      ParamTypes[] paramArray = function.getClass().getAnnotation(Description.class).paramTypes();
+
+      String[] allFunctionNames = null;
+      if(synonyms != null && synonyms.length > 0) {
+        allFunctionNames = new String[1 + synonyms.length];
+        allFunctionNames[0] = functionName;
+        System.arraycopy(synonyms, 0, allFunctionNames, 1, synonyms.length);
+      } else {
+        allFunctionNames = new String[]{functionName};
+      }
+
+      for(String eachFunctionName: allFunctionNames) {
+        for (ParamTypes params : paramArray) {
+          ParamOptionTypes[] paramOptionArray;
+          if(params.paramOptionTypes() == null ||
+              params.paramOptionTypes().getClass().getAnnotation(ParamTypes.class) == null) {
+            paramOptionArray = new ParamOptionTypes[0];
+          } else {
+            paramOptionArray = params.paramOptionTypes().getClass().getAnnotation(ParamTypes.class).paramOptionTypes();
+          }
+
+          Type[] paramTypes = params.paramTypes();
+          if (paramOptionArray.length > 0)
+            paramTypes = params.paramTypes().clone();
+
+          for (int i=0; i < paramOptionArray.length + 1; i++) {
+            FunctionDesc functionDesc = new FunctionDesc(eachFunctionName,
+                function.getClass(), function.getFunctionType(),
+                CatalogUtil.newSimpleDataType(returnType),
+                paramTypes.length == 0 ? CatalogUtil.newSimpleDataTypeArray() : CatalogUtil.newSimpleDataTypeArray(paramTypes));
+
+            functionDesc.setDescription(description);
+            functionDesc.setExample(example);
+            functionDesc.setDetail(detail);
+            sqlFuncs.add(functionDesc);
+
+            if (i != paramOptionArray.length) {
+              paramTypes = new Type[paramTypes.length +
+                  paramOptionArray[i].paramOptionTypes().length];
+              System.arraycopy(params.paramTypes(), 0, paramTypes, 0, paramTypes.length);
+              System.arraycopy(paramOptionArray[i].paramOptionTypes(), 0, paramTypes, paramTypes.length,
+                  paramOptionArray[i].paramOptionTypes().length);
+            }
+          }
+        }
+      }
+    }
 
     return sqlFuncs;
   }

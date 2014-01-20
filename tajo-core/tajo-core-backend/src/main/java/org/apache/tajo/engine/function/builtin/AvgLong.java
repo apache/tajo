@@ -28,15 +28,24 @@ import org.apache.tajo.datum.Float8Datum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 import static org.apache.tajo.InternalTypes.AvgLongProto;
 
+@Description(
+  functionName = "avg",
+  description = "the mean of a set of numbers",
+  example = "> SELECT avg(expr);",
+  returnType = Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.INT8})}
+)
 public class AvgLong extends AggFunction<Float8Datum> {
 
   public AvgLong() {
     super(new Column[] {
-        new Column("val", Type.FLOAT8)
+        new Column("expr", Type.FLOAT8)
     });
   }
 

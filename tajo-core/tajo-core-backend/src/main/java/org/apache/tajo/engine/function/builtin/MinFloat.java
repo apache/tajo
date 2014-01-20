@@ -20,20 +20,29 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Float4Datum;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
+@Description(
+  functionName = "min",
+  description = "the minimum value of expr",
+  example = "> SELECT min(expr);",
+  returnType = Type.FLOAT4,
+  paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4})}
+)
 public class MinFloat extends AggFunction<Float4Datum> {
 
   public MinFloat() {
     super(new Column[] {
-        new Column("val", Type.FLOAT4)
+        new Column("expr", Type.FLOAT4)
     });
   }
 

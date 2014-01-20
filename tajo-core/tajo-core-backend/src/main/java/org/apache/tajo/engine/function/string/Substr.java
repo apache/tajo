@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,12 +33,21 @@ import org.apache.tajo.storage.Tuple;
  *
  * text substr(string text, from int4 [, length int4])
  */
+@Description(
+  functionName = "substr",
+  description = "Extract substring.",
+  example = "> SELECT substr('alphabet', 3, 2);\n"
+          + "ph",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.INT4,TajoDataTypes.Type.INT4})}
+)
 public class Substr extends GeneralFunction {
   public Substr() {
     super(new Column[] {
         new Column("text", TajoDataTypes.Type.TEXT),
         new Column("from", TajoDataTypes.Type.INT4),
-        new Column("count", TajoDataTypes.Type.INT4)    //optional
+        new Column("length", TajoDataTypes.Type.INT4)    //optional
     });
   }
 

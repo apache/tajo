@@ -27,6 +27,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -34,6 +36,17 @@ import org.apache.tajo.storage.Tuple;
  *
  * text ltrim(string text [, characters text])
  */
+@Description(
+  functionName = "ltrim",
+  description = "Remove the longest string containing only "
+          + "characters from characters (a space by default) "
+          + "from the start of string.",
+  example = "> SELECT ltrim('zzzytrim', 'xyz');\n"
+          + "trim",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT}),
+          @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,TajoDataTypes.Type.TEXT})}
+)
 public class LTrim extends GeneralFunction {
   @Expose private boolean hasTrimCharacters;
 

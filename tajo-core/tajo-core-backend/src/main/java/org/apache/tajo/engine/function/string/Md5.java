@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 import java.security.*;
 import org.apache.commons.codec.binary.Hex;
@@ -33,10 +35,18 @@ import org.apache.commons.codec.binary.Hex;
  *
  * text md5(string text)
  */
+@Description(
+  functionName = "md5",
+  description = "Calculates the MD5 hash of string",
+  example = "> SELECT md5('abc');\n"
+          + "900150983cd24fb0 d6963f7d28e17f72",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Md5 extends GeneralFunction {
   public Md5() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("string", TajoDataTypes.Type.TEXT)
     });
   }
 

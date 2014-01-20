@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -34,10 +36,21 @@ import org.apache.tajo.storage.Tuple;
  * Description:
  * Return a quoted string.
  */
+@Description(
+  functionName = "quote_ident",
+  description = "Return the given string suitably quoted to be used as an identifier in an SQL statement string",
+  detail = "Quotes are added only if necessary "
+        + "(i.e., if the string contains non-identifier characters or would be case-folded).\n"
+        + "Embedded quotes are properly doubled.",
+  example = "> SELECT quote_ident('Foo bar');\n"
+      + "\"Foo bar\"",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class QuoteIdent extends GeneralFunction {
   public QuoteIdent() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("string", TajoDataTypes.Type.TEXT)
     });
   }
 

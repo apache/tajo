@@ -25,6 +25,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -32,10 +34,19 @@ import org.apache.tajo.storage.Tuple;
  *
  * text left(string text, int size)
  */
+@Description(
+  functionName = "left",
+  description = "First n characters in the string.",
+  example = "> SELECT left('ABC', 2);\n"
+          + "AB",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.INT4})}
+)
 public class Left extends GeneralFunction {
   public Left() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("size", TajoDataTypes.Type.INT4)
     });
   }

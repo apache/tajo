@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,18 @@ import org.apache.tajo.storage.Tuple;
  *
  * INT4 bit_length(string text)
  */
+@Description(
+  functionName = "bit_length",
+  description = "Number of bits in string",
+  example = "> SELECT bit_length('jose');\n"
+          + "32",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class BitLength extends GeneralFunction {
   public BitLength() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("string", TajoDataTypes.Type.TEXT)
     });
   }
 

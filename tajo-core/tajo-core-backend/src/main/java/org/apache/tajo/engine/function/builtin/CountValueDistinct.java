@@ -19,22 +19,33 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * Count(distinct column) function
  */
+@Description(
+  functionName = "count",
+  description = " The number of rows for "
+          + "which the supplied expressions are unique and non-NULL.",
+  example = "> SELECT count(expr);",
+  returnType = Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.ANY})}
+)
 public final class CountValueDistinct extends CountRows {
 
   public CountValueDistinct() {
     super(new Column[] {
-        new Column("col", Type.ANY)
+        new Column("expr", Type.ANY)
     });
   }
 
@@ -70,5 +81,10 @@ public final class CountValueDistinct extends CountRows {
   private class CountDistinctValueContext implements FunctionContext {
     long count = 0;
     Datum latest = null;
+  }
+
+  @Override
+  public CatalogProtos.FunctionType getFunctionType() {
+    return CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
   }
 }

@@ -27,6 +27,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -34,12 +36,24 @@ import org.apache.tajo.storage.Tuple;
  *
  * text btrim(string text [, characters text])
  */
+@Description(
+  functionName = "trim",
+  synonyms = {"btrim"},
+  description = " Remove the longest string consisting only of "
+          + " characters in characters (a space by default) "
+          + "from the start and end of string.",
+  example = "> SELECT trim('xyxtrimyyx', 'xy');\n"
+          + "trim",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT}),
+          @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,TajoDataTypes.Type.TEXT})}
+)
 public class BTrim extends GeneralFunction {
   @Expose private boolean hasTrimCharacters;
 
   public BTrim() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
     });
   }
 

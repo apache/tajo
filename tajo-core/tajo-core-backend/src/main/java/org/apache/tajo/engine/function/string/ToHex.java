@@ -18,17 +18,16 @@
 
 package org.apache.tajo.engine.function.string;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.Float4Datum;
-import org.apache.tajo.datum.Float8Datum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.apache.commons.codec.binary.Hex;
-import java.nio.ByteBuffer;
 
 /**
  * Function definition
@@ -36,11 +35,20 @@ import java.nio.ByteBuffer;
  * text to_hex(text)
  * text to_hex(int)
  */
+@Description(
+  functionName = "to_hex",
+  description = "Convert the argument to hexadecimal",
+  example = "SELECT to_hex(15);\n"
+          + "F",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4}),
+          @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8})}
+)
 public class ToHex extends GeneralFunction {
 
   public ToHex() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("n", TajoDataTypes.Type.INT8)
     });
   }
 

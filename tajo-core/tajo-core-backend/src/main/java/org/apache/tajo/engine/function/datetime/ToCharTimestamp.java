@@ -19,12 +19,15 @@
 package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -32,6 +35,14 @@ import org.joda.time.format.DateTimeFormatter;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
+@Description(
+  functionName = "to_char",
+  description = "Convert time stamp to string",
+  example = "> SELECT to_char(1389071652, 'yyyy-MM');\n"
+          + "2014-01",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIMESTAMP, TajoDataTypes.Type.TEXT})}
+)
 public class ToCharTimestamp extends GeneralFunction {
   private boolean constantFormat;
   private DateTimeFormatter formatter;

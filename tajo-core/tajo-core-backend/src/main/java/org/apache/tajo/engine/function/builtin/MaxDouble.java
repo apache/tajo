@@ -20,20 +20,29 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Float8Datum;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
+@Description(
+  functionName = "max",
+  description = "the maximum value of expr",
+  example = "> SELECT max(expr);",
+  returnType = Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+)
 public class MaxDouble extends AggFunction<Float8Datum> {
 
   public MaxDouble() {
     super(new Column[] {
-        new Column("val", Type.FLOAT8)
+        new Column("expr", Type.FLOAT8)
     });
   }
 

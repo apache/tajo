@@ -28,6 +28,15 @@
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   CatalogService catalog = master.getCatalog();
 
+  String catalogType = request.getParameter("type");
+  if(catalogType != null && "function".equals(catalogType)) {
+%>
+<script type="text/javascript">
+    document.location.href = 'functions.jsp';
+</script>
+    return;
+<%
+  }
   String selectedDatabase = request.getParameter("database");
   if(selectedDatabase == null || selectedDatabase.trim().isEmpty()) {
     selectedDatabase = "default";
@@ -58,6 +67,11 @@
   <h2>Tajo Master: <%=master.getMasterName()%></h2>
   <hr/>
   <h3>Catalog</h3>
+  <div>
+    <div style='float:left; margin-right:10px'><a href='catalogview.jsp'>[Table]</a></div>
+    <div style='float:left; margin-right:10px'><a href='functions.jsp'>[Function]</a></div>
+    <div style='clear:both'></div>
+  </div>
   <p/>
   <table width="100%" border='0'>
     <tr>

@@ -25,19 +25,30 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * Function definition
  *
- * text split_part(string text, delimiter text, part int)
+ * text split_part(string text, delimiter text, field int)
  */
+@Description(
+  functionName = "split_part",
+  description = "Split string on delimiter and return the given field",
+  example = "> SELECT split_part('abc~@~def~@~ghi', '~@~', 2);\n"
+          + "def",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.TEXT,TajoDataTypes.Type.INT4})}
+)
 public class SplitPart extends GeneralFunction {
   public SplitPart() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("delimiter", TajoDataTypes.Type.TEXT),
-        new Column("part", TajoDataTypes.Type.INT4),
+        new Column("field", TajoDataTypes.Type.INT4),
     });
   }
 

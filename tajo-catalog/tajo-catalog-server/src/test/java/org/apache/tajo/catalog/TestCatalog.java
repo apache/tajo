@@ -153,6 +153,10 @@ public class TestCatalog {
 					}
 			);
 		}
+
+    public CatalogProtos.FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
+    }
 	}
 
   public static class TestFunc2 extends Function {
@@ -163,6 +167,9 @@ public class TestCatalog {
               new Column("bytes", TajoDataTypes.Type.BLOB)
           }
       );
+    }
+    public CatalogProtos.FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
     }
   }
 

@@ -26,6 +26,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 
@@ -34,10 +36,20 @@ import org.apache.tajo.storage.Tuple;
  *
  * bytearray encode(data bytea, format text)
  */
+@Description(
+  functionName = "encode",
+  description = "Encode binary data into a textual representation.",
+  detail = "Supported formats are: base64, hex, escape. escape converts zero bytes and "
+        + "high-bit-set bytes to octal sequences (\\nnn) and doubles backslashes.",
+  example = "> SELECT encode(E'123\\\\000\\\\001', 'base64');\n"
+          + "MTIzAAE=",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
+)
 public class Encode extends GeneralFunction {
   public Encode() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("format", TajoDataTypes.Type.TEXT)
     });
   }

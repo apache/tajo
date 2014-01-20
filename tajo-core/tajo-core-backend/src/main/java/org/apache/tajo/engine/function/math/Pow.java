@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,11 +33,35 @@ import org.apache.tajo.storage.Tuple;
  *
  * Float8 pow(value FLOAT8, value FLOAT8)
  */
+@Description(
+  functionName = "pow",
+  description = "x raised to the power of y",
+  example = "> SELECT pow(9.0, 3.0)\n"
+           + "729",
+  returnType = TajoDataTypes.Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.FLOAT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.FLOAT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.FLOAT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.FLOAT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.FLOAT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.FLOAT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.INT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.INT8}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.INT4}),
+      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.INT8})
+  }
+)
 public class Pow extends GeneralFunction {
   public Pow() {
     super(new Column[] {
-        new Column("value", TajoDataTypes.Type.FLOAT8),
-        new Column("value", TajoDataTypes.Type.FLOAT8)
+        new Column("x", TajoDataTypes.Type.FLOAT8),
+        new Column("y", TajoDataTypes.Type.FLOAT8)
     });
   }
 

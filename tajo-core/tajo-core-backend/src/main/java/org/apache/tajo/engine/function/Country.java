@@ -19,16 +19,26 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.GeoUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
+@Description(
+  functionName = "country",
+  description = "Returns country code.",
+  example = "",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Country extends GeneralFunction {
 
   public Country() {
-    super(new Column[] {new Column("addr", TEXT)});
+    super(new Column[] {new Column("string", TEXT)});
   }
 
   @Override

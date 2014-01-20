@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,6 +33,14 @@ import org.apache.tajo.storage.Tuple;
  *
  * text lower(string text)
  */
+@Description(
+  functionName = "lower",
+  description = "Convert string to lower case",
+  example = "> SELECT lower('ToM');\n"
+          + "tom",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Lower extends GeneralFunction {
   public Lower() {
     super(new Column[] {

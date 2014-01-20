@@ -18,13 +18,14 @@
 
 package org.apache.tajo.engine.function.string;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -32,13 +33,22 @@ import org.apache.tajo.storage.Tuple;
  *
  * int4 ascii(string text)
  */
-
+@Description(
+  functionName = "ascii",
+  description = "ASCII code of the first character of the argument.",
+  detail = "For UTF8 returns the Unicode code point of the character.\n"
+        + "For other multibyte encodings, the argument must be an ASCII character.",
+  example = "> SELECT ascii('x');\n"
+          + "120",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Ascii extends GeneralFunction {
 
 
   public Ascii() {
     super(new Column[]{
-            new Column("text", TajoDataTypes.Type.TEXT)
+            new Column("char", TajoDataTypes.Type.TEXT)
     });
   }
 

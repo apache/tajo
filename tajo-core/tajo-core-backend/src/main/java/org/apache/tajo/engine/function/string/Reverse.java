@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,18 @@ import org.apache.tajo.storage.Tuple;
  *
  * text reverse(string text)
  */
+@Description(
+  functionName = "reverse",
+  description = "Reverse str",
+  example = "> SELECT reverse('TAJO');\n"
+          + "OJAT",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Reverse extends GeneralFunction {
   public Reverse() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("string", TajoDataTypes.Type.TEXT)
     });
   }
 

@@ -131,6 +131,9 @@ message FunctionDescProto {
 	required FunctionType type = 3;
 	repeated DataType parameterTypes = 4;
 	required DataType returnType = 5;
+  optional string description = 6;
+  optional string example = 7;
+  optional string detail = 8;
 }
 
 message IndexDescProto {

@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 import java.nio.ByteBuffer;
@@ -33,6 +35,15 @@ import java.nio.ByteBuffer;
  *
  * int strposb(string text, substring text))
  */
+@Description(
+  functionName = "strposb",
+  description = "Binary location of specified substring.",
+  example = "> SELECT strpos('tajo', 'aj');\n"
+      + "2",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.TEXT})}
+)
 public class StrPosb extends GeneralFunction {
   public StrPosb() {
     super(new Column[] {

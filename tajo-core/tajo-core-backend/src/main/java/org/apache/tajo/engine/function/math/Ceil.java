@@ -24,17 +24,29 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * Function definition
  *
- * INT8 ceil(value FLOAT8)
+ * INT8 ceil(value FLOAT4/FLOAT8)
  */
+@Description(
+  functionName = "ceil",
+  synonyms = {"ceiling"},
+  description = "Smallest integer not less than argument.",
+  example = "> SELECT ceil(-42.8);\n"
+          + "-42",
+  returnType = TajoDataTypes.Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4}),
+          @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8})}
+)
 public class Ceil extends GeneralFunction {
   public Ceil() {
     super(new Column[] {
-      new Column("value", TajoDataTypes.Type.FLOAT8)
+      new Column("x", TajoDataTypes.Type.FLOAT8)
     });
   }
 
@@ -47,4 +59,5 @@ public class Ceil extends GeneralFunction {
 
     return DatumFactory.createInt8((long)Math.ceil(valueDatum.asFloat8()));
   }
+
 }

@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,19 @@ import org.apache.tajo.storage.Tuple;
  *
  * text reverse(string text)
  */
+@Description(
+  functionName = "repeat",
+  description = "Repeat string the specified number of times.",
+  example = "> SELECT repeat('Pg', 4);\n"
+          + "PgPgPgPg",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
+          TajoDataTypes.Type.INT4})}
+)
 public class Repeat extends GeneralFunction {
   public Repeat() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("string", TajoDataTypes.Type.TEXT),
         new Column("count", TajoDataTypes.Type.INT4)
     });
   }

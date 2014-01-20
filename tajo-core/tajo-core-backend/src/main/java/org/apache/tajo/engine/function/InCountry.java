@@ -22,13 +22,22 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.GeoUtil;
 
+@Description(
+  functionName = "in_country",
+  description = "",
+  example = "",
+  returnType = TajoDataTypes.Type.BOOLEAN,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class InCountry extends GeneralFunction {
 
   public InCountry() {
-    super(new Column[] {new Column("addr", TajoDataTypes.Type.TEXT),
+    super(new Column[] {new Column("string", TajoDataTypes.Type.TEXT),
         new Column("code", TajoDataTypes.Type.TEXT)});
   }
 

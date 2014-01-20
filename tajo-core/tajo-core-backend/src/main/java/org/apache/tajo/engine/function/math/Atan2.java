@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,19 @@ import org.apache.tajo.storage.Tuple;
  *
  * Float8 atan2(value FLOAT8, value FLOAT8)
  */
+@Description(
+  functionName = "atan2",
+  description = "Inverse tangent of y/x.",
+  example = "> SELECT atan(y,x);",
+  returnType = TajoDataTypes.Type.FLOAT8,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.FLOAT4}),
+          @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT8})}
+)
 public class Atan2 extends GeneralFunction {
   public Atan2() {
     super(new Column[] {
-        new Column("value", TajoDataTypes.Type.FLOAT8)
+        new Column("y", TajoDataTypes.Type.FLOAT8),
+        new Column("x", TajoDataTypes.Type.FLOAT8)
     });
   }
 

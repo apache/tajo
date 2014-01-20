@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,19 @@ import org.apache.tajo.storage.Tuple;
  *
  * INT4 abs(value INT4)
  */
+@Description(
+  functionName = "abs",
+  description = "Absolute value",
+  detail = "",
+  example = "> SELECT abs(-10);\n"
+      + "10",
+  returnType = TajoDataTypes.Type.INT4,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
+)
 public class AbsInt extends GeneralFunction {
   public AbsInt() {
     super(new Column[] {
-      new Column("value", TajoDataTypes.Type.INT4)
+      new Column("x", TajoDataTypes.Type.INT4)
     });
   }
 

@@ -24,6 +24,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -31,10 +33,18 @@ import org.apache.tajo.storage.Tuple;
  *
  * text upper(string text)
  */
+@Description(
+  functionName = "upper",
+  description = "Convert string to upper case.",
+  example = "> SELECT upper('tajo');\n"
+          + "TAJO",
+  returnType = TajoDataTypes.Type.TEXT,
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+)
 public class Upper extends GeneralFunction {
   public Upper() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT)
+        new Column("string", TajoDataTypes.Type.TEXT)
     });
   }
 

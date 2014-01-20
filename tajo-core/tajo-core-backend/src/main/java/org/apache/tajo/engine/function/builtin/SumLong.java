@@ -20,20 +20,34 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
+/**
+ * Function definition
+ *
+ * INT8 sum(value INT8)
+ */
+@Description(
+  functionName = "sum",
+  description = "the sum of a set of numbers",
+  example = "> SELECT sum(expr);",
+  returnType = Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.INT8})}
+)
 public class SumLong extends AggFunction<Datum> {
 
   public SumLong() {
     super(new Column[] {
-        new Column("val", Type.INT8)
+        new Column("expr", Type.INT8)
     });
   }
 

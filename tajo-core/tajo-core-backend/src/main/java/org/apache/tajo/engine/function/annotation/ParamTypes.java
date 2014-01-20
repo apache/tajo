@@ -16,31 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.engine.function.annotation;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.function.GeneralFunction;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-@Description(
-  functionName = "today",
-  description = "get current time millis",
-  example = "> SELECT today();",
-  returnType = TajoDataTypes.Type.INT8,
-  paramTypes = {@ParamTypes(paramTypes = {})}
-)
-public class Today extends GeneralFunction {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-  public Today() {
-    super(NoArgs);
-  }
-
-  @Override
-  public Datum eval(Tuple params) {
-    return DatumFactory.createInt8(System.currentTimeMillis());
-  }
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ParamTypes {
+  Type[] paramTypes() default { Type.NULL_TYPE };
+  ParamOptionTypes[] paramOptionTypes() default {};
 }
