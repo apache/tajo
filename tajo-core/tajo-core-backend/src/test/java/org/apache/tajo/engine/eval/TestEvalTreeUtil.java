@@ -107,7 +107,7 @@ public class TestEvalTreeUtil {
       e.printStackTrace();
     }
 
-    return plan.getRootBlock().getUnresolvedTargets();
+    return plan.getRootBlock().getRawTargets();
   }
 
   public static EvalNode getRootSelection(String query) throws PlanningException {
@@ -190,7 +190,7 @@ public class TestEvalTreeUtil {
   public final void testGetContainExprs() throws CloneNotSupportedException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(expr);
-    Target [] targets = plan.getRootBlock().getUnresolvedTargets();
+    Target [] targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
@@ -276,7 +276,7 @@ public class TestEvalTreeUtil {
 
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(expr);
-    targets = plan.getRootBlock().getUnresolvedTargets();
+    targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);

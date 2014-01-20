@@ -47,7 +47,7 @@ public class DropTable extends Expr {
   boolean equalsTo(Expr expr) {
     if (expr instanceof DropTable) {
       DropTable another = (DropTable) expr;
-      return tableName.equals(another.tableName);
+      return tableName.equals(another.tableName) && purge == another.purge;
     }
     return false;
   }

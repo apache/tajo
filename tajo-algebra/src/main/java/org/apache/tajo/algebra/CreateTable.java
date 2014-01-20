@@ -130,7 +130,7 @@ public class CreateTable extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(external, tableElements, tableName, storageType, location, subquery, params, getSubQuery());
+    return Objects.hashCode(external, tableName, tableElements, storageType, subquery, location, params, partition);
   }
 
   @Override
@@ -142,7 +142,8 @@ public class CreateTable extends Expr {
         TUtil.checkEquals(storageType, another.storageType) &&
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(subquery, another.subquery) &&
-        TUtil.checkEquals(params, another.params);
+        TUtil.checkEquals(params, another.params) &&
+        TUtil.checkEquals(partition, another.partition);
   }
 
   public static class ColumnDefinition extends DataTypeExpr {
@@ -342,13 +343,14 @@ public class CreateTable extends Expr {
     }
 
     public int hashCode() {
-      return Objects.hashCode(columns);
+      return Objects.hashCode(columns, isOmitValues);
     }
 
     public boolean equals(Object object) {
       if (object instanceof HashPartition) {
-        HashPartition another = (HashPartition) object;
-        return type == another.type && TUtil.checkEquals(columns, another.columns);
+        ColumnPartition another = (ColumnPartition) object;
+        return type == another.type && TUtil.checkEquals(columns, another.columns) &&
+            TUtil.checkEquals(isOmitValues, another.isOmitValues);
       } else {
         return false;
       }
@@ -419,9 +421,7 @@ public class CreateTable extends Expr {
 
       ListPartitionSpecifier that = (ListPartitionSpecifier) o;
 
-      if (!valueList.equals(that.valueList)) return false;
-
-      return true;
+      return valueList.equals(that.valueList);
     }
   }
 

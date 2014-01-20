@@ -129,8 +129,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       throws PlanningException {
 
 
-    // This checking determines whether current logical node is already visited or not.
-    // generated logical nodes (e.g., implicit aggregation) without exprs will pass NULL as a expr parameter.
+    // Some generated logical nodes (e.g., implicit aggregation) without exprs will pass NULL as a expr parameter.
     // We should skip them.
     if (expr != null) {
       // A relation list including a single ScanNode will return a ScanNode instance that already passed postHook.
@@ -142,9 +141,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock queryBlock = context.queryBlock;
     queryBlock.updateLatestNode(current);
-    if (current.getType() == NodeType.GROUP_BY) {
-      queryBlock.unsetAggregationRequire();
-    }
 
     // if this node is the topmost
     if (stack.size() == 0) {
@@ -192,8 +188,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ////////////////////////////////////////////////////////
     stack.push(projection);
     LogicalNode child = visit(context, stack, projection.getChild());
-    // check if it is aggregation query without group-by clause. If so, it inserts group-by node to its child.
-    child = insertGroupbyNodeIfUnresolved(context, child, stack);
+
+    // check if it is implicit aggregation. If so, it inserts group-by node to its child.
+    if (block.isAggregationRequired()) {
+      child = insertGroupbyNode(context, child, stack);
+    }
     stack.pop();
     ////////////////////////////////////////////////////////
 
@@ -234,17 +233,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     if (projection.isAllProjected()) {
-      block.setUnresolvedTargets(targets);
+      block.setRawTargets(targets);
     } else {
       // It's for debugging or unit tests.
-      Target [] unresolvedTargets = new Target[projection.getNamedExprs().length];
+      Target [] rawTargets = new Target[projection.getNamedExprs().length];
       for (int i = 0; i < targets.length; i++) {
         NamedExpr namedExpr = projection.getNamedExprs()[i];
         EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
-        unresolvedTargets[i] = new Target(evalNode, referenceNames[i]);
+        rawTargets[i] = new Target(evalNode, referenceNames[i]);
       }
       // it's for debugging or unit testing
-      block.setUnresolvedTargets(unresolvedTargets);
+      block.setRawTargets(rawTargets);
     }
   }
 
@@ -326,7 +325,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     evalExprNode.setTargets(targets);
     evalExprNode.setOutSchema(PlannerUtil.targetToSchema(targets));
     // it's for debugging or unit testing
-    block.setUnresolvedTargets(targets);
+    block.setRawTargets(targets);
     return evalExprNode;
   }
 
@@ -350,41 +349,37 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * Insert a group-by operator before a sort or a projection operator.
    * It is used only when a group-by clause is not given.
    */
-  private LogicalNode insertGroupbyNodeIfUnresolved(PlanContext context,
-                                                    LogicalNode child,
-                                                    Stack<Expr> stack) throws PlanningException {
+  private LogicalNode insertGroupbyNode(PlanContext context, LogicalNode child, Stack<Expr> stack)
+      throws PlanningException {
+
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
+    GroupbyNode groupbyNode = new GroupbyNode(plan.newPID());
+    groupbyNode.setGroupingColumns(new Column[] {});
 
-    if (!block.isAggregationRequired()) {
-      GroupbyNode groupbyNode = new GroupbyNode(plan.newPID());
-      groupbyNode.setGroupingColumns(new Column[] {});
-
-      Set<Target> evaluatedTargets = new LinkedHashSet<Target>();
-      boolean includeDistinctFunction = false;
-      for (Iterator<NamedExpr> it = block.namedExprsMgr.getUnresolvedExprs(); it.hasNext();) {
-        NamedExpr rawTarget = it.next();
-        try {
-          includeDistinctFunction = PlannerUtil.existsDistinctAggregationFunction(rawTarget.getExpr());
-          EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
-          if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
-            block.namedExprsMgr.resolveExpr(rawTarget.getAlias(), evalNode);
-            evaluatedTargets.add(new Target(evalNode, rawTarget.getAlias()));
-          }
-        } catch (VerifyException ve) {
+    Set<Target> evaluatedTargets = new LinkedHashSet<Target>();
+    boolean includeDistinctFunction = false;
+    for (Iterator<NamedExpr> it = block.namedExprsMgr.getUnresolvedExprs(); it.hasNext();) {
+      NamedExpr rawTarget = it.next();
+      try {
+        includeDistinctFunction = PlannerUtil.existsDistinctAggregationFunction(rawTarget.getExpr());
+        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
+        if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
+          block.namedExprsMgr.resolveExpr(rawTarget.getAlias(), evalNode);
+          evaluatedTargets.add(new Target(evalNode, rawTarget.getAlias()));
         }
+      } catch (VerifyException ve) {
       }
-      groupbyNode.setDistinct(includeDistinctFunction);
-      groupbyNode.setTargets(evaluatedTargets.toArray(new Target[evaluatedTargets.size()]));
-      groupbyNode.setChild(child);
-      groupbyNode.setInSchema(child.getOutSchema());
-
-      block.registerNode(groupbyNode); // this inserted group-by node doesn't pass through preprocessor. So manually added.
-      postHook(context, stack, null, groupbyNode);
-      return groupbyNode;
-    } else {
-      return child;
     }
+    groupbyNode.setDistinct(includeDistinctFunction);
+    groupbyNode.setTargets(evaluatedTargets.toArray(new Target[evaluatedTargets.size()]));
+    groupbyNode.setChild(child);
+    groupbyNode.setInSchema(child.getOutSchema());
+
+    // this inserted group-by node doesn't pass through preprocessor. So manually added.
+    block.registerNode(groupbyNode);
+    postHook(context, stack, null, groupbyNode);
+    return groupbyNode;
   }
 
   /*===============================================================================================
@@ -420,13 +415,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       stack.pop();
       ////////////////////////////////////////////////////////
 
-
-      // Consider the following query:
-      //
-      // SELECT one + two AS total ... FROM ... LIMIT total + 10;
-      //
-      // "total + 10" cannot be resolved in ScanNode. "total + 10" should be resolved in some of the upper nodes.
-      // So, we have to check if the reference is resolved. If not, it annotates the expression here.
       if (block.namedExprsMgr.isResolved(referName)) {
         firstFetNum = block.namedExprsMgr.getTarget(referName).getEvalTree();
       } else {
@@ -435,12 +423,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         block.namedExprsMgr.resolveExpr(referName, firstFetNum);
       }
     }
-
     LimitNode limitNode = block.getNodeFromExpr(limit);
-    limitNode.setFetchFirst(firstFetNum.terminate(null).asInt8());
     limitNode.setChild(child);
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
+
+    limitNode.setFetchFirst(firstFetNum.terminate(null).asInt8());
+
     return limitNode;
   }
 
@@ -467,9 +456,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ////////////////////////////////////////////////////////
     stack.push(sort);
     LogicalNode child = visit(context, stack, sort.getChild());
-    child = insertGroupbyNodeIfUnresolved(context, child, stack);
+    if (block.isAggregationRequired()) {
+      child = insertGroupbyNode(context, child, stack);
+    }
     stack.pop();
     ////////////////////////////////////////////////////////
+
+    SortNode sortNode = block.getNodeFromExpr(sort);
+    sortNode.setInSchema(child.getOutSchema());
+    sortNode.setOutSchema(child.getOutSchema());
+    sortNode.setChild(child);
 
     // Building sort keys
     Column column;
@@ -483,14 +479,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
     }
 
-    SortNode sortNode = block.getNodeFromExpr(sort);
     sortNode.setSortSpecs(annotatedSortSpecs);
-
-    // 4. Set Child Plan, Update Input/Output Schemas:
-    sortNode.setChild(child);
-    sortNode.setInSchema(child.getOutSchema());
-    sortNode.setOutSchema(child.getOutSchema());
-
     return sortNode;
   }
 
@@ -515,12 +504,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-    // Consider the following query:
-    //
-    // SELECT sum(avg) AS total ... FROM ... WHERE total > 2;
-    //
-    // "total" cannot be resolved in GroupByNode. "total" should be resolved in the upper nodes.
-    // So, we have to check if the reference is resolved. If not, it annotates the expression here.
+    HavingNode having = new HavingNode(context.plan.newPID());
+    having.setInSchema(child.getOutSchema());
+    having.setOutSchema(child.getOutSchema());
+    having.setChild(child);
+
     EvalNode havingCondition;
     if (block.namedExprsMgr.isResolved(referName)) {
       havingCondition = block.namedExprsMgr.getTarget(referName).getEvalTree();
@@ -530,11 +518,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       block.namedExprsMgr.resolveExpr(referName, havingCondition);
     }
 
-    HavingNode having = new HavingNode(context.plan.newPID());
+    // set having condition
     having.setQual(havingCondition);
-    having.setInSchema(child.getOutSchema());
-    having.setOutSchema(child.getOutSchema());
-    having.setChild(child);
+
     return having;
   }
 
@@ -567,7 +553,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalNode child = visit(context, stack, aggregation.getChild());
     stack.pop();
     ////////////////////////////////////////////////////////
+    GroupbyNode groupingNode = context.queryBlock.getNodeFromExpr(aggregation);
+    groupingNode.setChild(child);
+    groupingNode.setInSchema(child.getOutSchema());
 
+
+    // create EvalNodes and check if each EvalNode can be evaluated here.
     Set<Target> evaluatedTargets = new LinkedHashSet<Target>();
     boolean includeDistinctFunction = false;
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
@@ -581,11 +572,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } catch (VerifyException ve) {
       }
     }
+    // If there is at least one distinct aggregation function
+    groupingNode.setDistinct(includeDistinctFunction);
 
-    // 3. Build This Plan:
+
+    // Set grouping sets
+    List<Target> targets = new ArrayList<Target>();
     Aggregation.GroupElement [] groupElements = aggregation.getGroupSet();
 
-    if (groupElements[0].getType() == GroupType.OrdinaryGroup) { // for group-by
+    // Currently, single ordinary grouping set is only available.
+    if (groupElements[0].getType() == GroupType.OrdinaryGroup) {
       Column [] groupingColumns = new Column[aggregation.getGroupSet()[0].getGroupingSets().length];
       for (int i = 0; i < groupingColumns.length; i++) {
         if (block.namedExprsMgr.isResolved(groupingKeyRefNames[i])) {
@@ -595,32 +591,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
 
-      GroupbyNode groupingNode = context.queryBlock.getNodeFromExpr(aggregation);
-      groupingNode.setGroupingColumns(groupingColumns);
-      groupingNode.setDistinct(includeDistinctFunction);
-
-      List<Target> targets = new ArrayList<Target>();
-
       for (Column column : groupingColumns) {
         if (child.getOutSchema().contains(column)) {
           targets.add(new Target(new FieldEval(child.getOutSchema().getColumn(column))));
         }
       }
-
-      targets.addAll(evaluatedTargets);
-      groupingNode.setTargets(targets.toArray(new Target[targets.size()]));
-      // 4. Set Child Plan and Update Input Schemes Phase
-      groupingNode.setChild(child);
-      block.registerNode(groupingNode);
-      groupingNode.setInSchema(child.getOutSchema());
-
-      // 5. Update Output Schema and Targets for Upper Plan
-
-      return groupingNode;
-
+      groupingNode.setGroupingColumns(groupingColumns);
     } else {
       throw new InvalidQueryException("Not support grouping");
     }
+
+    targets.addAll(evaluatedTargets);
+    groupingNode.setTargets(targets.toArray(new Target[targets.size()]));
+    block.unsetAggregationRequire();
+    return groupingNode;
   }
 
   public static final Column[] ALL= Lists.newArrayList().toArray(new Column[0]);
@@ -665,18 +649,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-    // Create EvalNode for a search condition.
-    EvalNode searchCondition = exprAnnotator.createEvalNode(context.plan, block, selection.getQual());
-    EvalNode simplified = AlgebraicUtil.eliminateConstantExprs(searchCondition);
-
     SelectionNode selectionNode = context.queryBlock.getNodeFromExpr(selection);
-    selectionNode.setQual(simplified);
     selectionNode.setChild(child);
     selectionNode.setInSchema(child.getOutSchema());
     selectionNode.setOutSchema(child.getOutSchema());
 
-    // 5. update block information:
-    block.registerNode(selectionNode);
+    // Create EvalNode for a search condition.
+    EvalNode searchCondition = exprAnnotator.createEvalNode(context.plan, block, selection.getQual());
+    EvalNode simplified = AlgebraicUtil.eliminateConstantExprs(searchCondition);
+    // set selection condition
+    selectionNode.setQual(simplified);
 
     return selectionNode;
   }
@@ -709,7 +691,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-
     JoinNode joinNode = context.queryBlock.getNodeFromExpr(join);
     joinNode.setJoinType(join.getJoinType());
     joinNode.setLeftChild(left);
@@ -731,6 +712,27 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       joinCondition = AlgebraicUtil.eliminateConstantExprs(evalNode);
     }
 
+    List<Expr> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(plan, block, joinNode, stack);
+    List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
+
+    for (Expr newAddedExpr : newlyEvaluatedExprs) {
+      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
+    }
+    joinNode.setTargets(targets.toArray(new Target[targets.size()]));
+
+    // Determine join conditions
+    if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
+      EvalNode njCond = getNaturalJoinCondition(joinNode);
+      joinNode.setJoinQual(njCond);
+    } else if (join.hasQual()) { // otherwise, the given join conditions are set
+      joinNode.setJoinQual(joinCondition);
+    }
+
+    return joinNode;
+  }
+
+  private List<Expr> getNewlyEvaluatedExprsForJoin(LogicalPlan plan, QueryBlock block, JoinNode joinNode,
+                                                   Stack<Expr> stack) {
     EvalNode evalNode;
     List<Expr> newlyEvaluatedExprs = TUtil.newList();
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getUnresolvedExprs(); it.hasNext();) {
@@ -741,28 +743,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.resolveExpr(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getExpr());
         }
-      } catch (VerifyException ve) {}
+      } catch (VerifyException ve) {} catch (PlanningException e) {
+        e.printStackTrace();
+      }
     }
-
-    List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
-
-    for (Expr newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
-    joinNode.setTargets(targets.toArray(new Target[targets.size()]));
-
-    // Determine join conditions
-    if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
-      Schema leftSchema = joinNode.getLeftChild().getInSchema();
-      Schema rightSchema = joinNode.getRightChild().getInSchema();
-      Schema commons = SchemaUtil.getNaturalJoinColumns(leftSchema, rightSchema);
-      EvalNode njCond = getNaturalJoinCondition(leftSchema, rightSchema, commons);
-      joinNode.setJoinQual(njCond);
-    } else if (join.hasQual()) { // otherwise, the given join conditions are set
-      joinNode.setJoinQual(joinCondition);
-    }
-
-    return joinNode;
+    return newlyEvaluatedExprs;
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
@@ -783,15 +768,19 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return joinSchema;
   }
 
-  private static EvalNode getNaturalJoinCondition(Schema outer, Schema inner, Schema commons) {
+  private static EvalNode getNaturalJoinCondition(JoinNode joinNode) {
+    Schema leftSchema = joinNode.getLeftChild().getInSchema();
+    Schema rightSchema = joinNode.getRightChild().getInSchema();
+    Schema commons = SchemaUtil.getNaturalJoinColumns(leftSchema, rightSchema);
+
     EvalNode njQual = null;
     EvalNode equiQual;
-
     Column leftJoinKey;
     Column rightJoinKey;
+
     for (Column common : commons.getColumns()) {
-      leftJoinKey = outer.getColumnByName(common.getColumnName());
-      rightJoinKey = inner.getColumnByName(common.getColumnName());
+      leftJoinKey = leftSchema.getColumnByName(common.getColumnName());
+      rightJoinKey = rightSchema.getColumnByName(common.getColumnName());
       equiQual = new BinaryEval(EvalType.EQUAL,
           new FieldEval(leftJoinKey), new FieldEval(rightJoinKey));
       if (njQual == null) {

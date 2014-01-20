@@ -52,7 +52,7 @@ import java.util.Stack;
  *   <li>$1 = price * rage</li>
  *   <li>$2 = sum($1)</li>
  *   <li>$3 = avg(discount_rate)</li>
- *   <li>$4 = $3 * (1 - $3)</li>
+ *   <li>$4 = $2 * (1 - $3)</li>
  * </ul>
  *
  * It mainly two advantages. Firstly, it makes complex expression evaluations easier across multiple physical executors.

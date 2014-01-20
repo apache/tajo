@@ -56,6 +56,7 @@ public class BinaryOperator extends Expr {
 
   @Override
   boolean equalsTo(Expr expr) {
+    // Operator type is compared at Expr.equals(Object). So, we don't need to compare it here.
     return true;
   }
 

@@ -25,12 +25,14 @@ import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.LogicalRootNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -440,13 +442,13 @@ public class LogicalPlan {
     /**
      * Set true value if this query block has either implicit or explicit aggregation.
      */
-    private boolean aggregationRequired = true;
+    private boolean aggregationRequired = false;
     private Schema schema;
 
     /** It contains a planning log for this block */
     private final List<String> planingHistory = Lists.newArrayList();
     /** It is for debugging or unit tests */
-    private Target [] unresolvedTargets;
+    private Target [] rawTargets;
 
     public QueryBlock(String blockName) {
       this.blockName = blockName;
@@ -477,12 +479,12 @@ public class LogicalPlan {
       return rootType;
     }
 
-    public Target [] getUnresolvedTargets() {
-      return unresolvedTargets;
+    public Target [] getRawTargets() {
+      return rawTargets;
     }
 
-    public void setUnresolvedTargets(Target [] unresolvedTargets) {
-      this.unresolvedTargets = unresolvedTargets;
+    public void setRawTargets(Target[] rawTargets) {
+      this.rawTargets = rawTargets;
     }
 
     public boolean existsRelation(String name) {
@@ -603,11 +605,11 @@ public class LogicalPlan {
      * Unset aggregation required flag. It has to be called after an aggregation phase is added to this block.
      */
     public void unsetAggregationRequire() {
-      this.aggregationRequired = true;
+      this.aggregationRequired = false;
     }
 
     public void setAggregationRequire() {
-      aggregationRequired = false;
+      aggregationRequired = true;
     }
 
     public boolean containsJoinType(JoinType joinType) {

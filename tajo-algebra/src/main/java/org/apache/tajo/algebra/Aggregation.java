@@ -22,32 +22,19 @@ import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
 public class Aggregation extends UnaryOperator {
-  private NamedExpr[] targets;
+  private NamedExpr[] namedExprs;
   private GroupElement [] groups;
-  private Expr havingCondition;
 
   public Aggregation() {
     super(OpType.Aggregation);
   }
 
   public NamedExpr[] getTargets() {
-    return this.targets;
+    return this.namedExprs;
   }
 
-  public void setTargets(NamedExpr[] targets) {
-    this.targets = targets;
-  }
-
-  public boolean hasHavingCondition() {
-    return havingCondition != null;
-  }
-
-  public Expr getHavingCondition() {
-    return havingCondition;
-  }
-
-  public void setHavingCondition(Expr expr) {
-    this.havingCondition = expr;
+  public void setTargets(NamedExpr[] namedExprs) {
+    this.namedExprs = namedExprs;
   }
 
   public void setGroups(GroupElement [] groups) {
@@ -64,17 +51,16 @@ public class Aggregation extends UnaryOperator {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(targets, groups, havingCondition);
+    return Objects.hashCode(namedExprs, groups, getChild());
   }
 
   @Override
   public boolean equalsTo(Expr expr) {
     Aggregation another = (Aggregation) expr;
     boolean a = TUtil.checkEquals(groups, another.groups);
-    boolean b = TUtil.checkEquals(targets, another.targets);
-    boolean c = TUtil.checkEquals(havingCondition, another.havingCondition);
+    boolean b = TUtil.checkEquals(namedExprs, another.namedExprs);
 
-    return a && b && c;
+    return a && b;
   }
 
   public static class GroupElement implements JsonSerializable {

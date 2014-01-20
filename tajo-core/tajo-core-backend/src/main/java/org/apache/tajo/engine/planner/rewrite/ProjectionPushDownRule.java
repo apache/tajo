@@ -451,8 +451,6 @@ public class ProjectionPushDownRule extends
     }
     node.setInSchema(child.getOutSchema());
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
-
-    node.setInSchema(child.getOutSchema());
     return node;
   }
 
@@ -639,8 +637,8 @@ public class ProjectionPushDownRule extends
         rightBlock.getName()));
 
     stack.push(node);
-    LogicalNode leftChild = visit(leftContext, plan, leftBlock, node.getLeftChild(), new Stack<LogicalNode>());
-    LogicalNode rightChild = visit(rightContext, plan, rightBlock, node.getRightChild(), new Stack<LogicalNode>());
+    visit(leftContext, plan, leftBlock, node.getLeftChild(), new Stack<LogicalNode>());
+    visit(rightContext, plan, rightBlock, node.getRightChild(), new Stack<LogicalNode>());
     stack.pop();
     return node;
   }

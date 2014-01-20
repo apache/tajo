@@ -19,6 +19,7 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,7 +60,8 @@ public class CaseWhenPredicate extends Expr {
 
   @Override
   boolean equalsTo(Expr expr) {
-    return false;
+    CaseWhenPredicate another = (CaseWhenPredicate) expr;
+    return whens.equals(another.whens) && TUtil.checkEquals(elseResult, another.elseResult);
   }
 
   @Override
