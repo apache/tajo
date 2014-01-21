@@ -494,14 +494,4 @@ public class TajoClient {
 
     return true;
   }
-
-  public static void main(String[] args) throws Exception {
-    TajoClient client = new TajoClient(new TajoConf());
-
-    client.close();
-
-    synchronized(client) {
-      client.wait();
-    }
-  }
 }

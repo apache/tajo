@@ -181,7 +181,7 @@ public class TajoCli {
 
     String raw;
     String line;
-    String accumulatedLine = "";
+    StringBuffer accumulatedLine = new StringBuffer();
     String prompt = "tajo";
     String curPrompt = prompt;
     boolean newStatement = true;
@@ -190,8 +190,8 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
     while((raw = reader.readLine(curPrompt + "> ")) != null) {
       // each accumulated line has a space delimiter
-      if (!accumulatedLine.equals("")) {
-        accumulatedLine += ' ';
+      if (accumulatedLine.length() > 0) {
+        accumulatedLine.append(' ');
       }
 
       line = raw.trim();
@@ -229,14 +229,14 @@ public class TajoCli {
 
         // reset accumulated lines
         newStatement = true;
-        accumulatedLine = "";
+        accumulatedLine = new StringBuffer();
         curPrompt = prompt;
 
       } else {
         line = StringUtils.chomp(raw).trim();
 
         // accumulate a line
-        accumulatedLine = accumulatedLine + line;
+        accumulatedLine.append(line);
 
         // replace the latest line with a accumulated line
         if (!newStatement) { // if this is not first line, remove one more line.
@@ -245,7 +245,7 @@ public class TajoCli {
           newStatement = false;
         }
         reader.getHistory().removeLast();
-        reader.getHistory().add(accumulatedLine);
+        reader.getHistory().add(accumulatedLine.toString());
 
         // use an alternative prompt during accumulating lines
         curPrompt = StringUtils.repeat(" ", prompt.length());
@@ -516,7 +516,7 @@ public class TajoCli {
           if (!specifier.getExpressions().equals("")) {
             sb.append(", expressions:").append(specifier.getExpressions());
           } else {
-            if (desc.getPartitions().getPartitionsType().name().equals("RANGE"));
+            if (desc.getPartitions().getPartitionsType().name().equals("RANGE"))
               sb.append(" expressions: MAXVALUE");
           }
           sb.append("\n");

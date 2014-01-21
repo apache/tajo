@@ -19,7 +19,6 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -55,12 +54,13 @@ public class TajoResultSet extends TajoResultSetBase {
   }
 
   public TajoResultSet(TajoClient tajoClient, QueryId queryId,
-                       Configuration conf, TableDesc desc) throws IOException {
-    this.schema = desc.getSchema();
+                       TajoConf conf, TableDesc desc) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     if(desc != null) {
-      fs = FileScanner.getFileSystem((TajoConf)conf, desc.getPath());
+      this.schema = desc.getSchema();
+
+      fs = FileScanner.getFileSystem(conf, desc.getPath());
       this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
 
       Collection<FileFragment> frags = getFragments(desc.getMeta(), desc.getPath());
@@ -75,7 +75,7 @@ public class TajoResultSet extends TajoResultSetBase {
     curRow = 0;
   }
 
-  class FileNameComparator implements Comparator<FileStatus> {
+  static class FileNameComparator implements Comparator<FileStatus> {
 
     @Override
     public int compare(FileStatus f1, FileStatus f2) {

@@ -52,7 +52,7 @@ public class TajoAdmin {
   final static String line20  = "--------------------";
   final static String line25  = "-------------------------";
   final static String line30  = "------------------------------";
-  final static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  final static String DATE_FORMAT  = "yyyy-MM-dd HH:mm:ss";
 
   static {
     options = new Options();
@@ -139,15 +139,18 @@ public class TajoAdmin {
     }
 
     Writer writer = new PrintWriter(System.out);
-    switch(cmdType) {
+    switch (cmdType) {
       case 1:
         processList(writer, client);
-        break;  
+        break;
       case 2:
         processDesc(writer, client);
         break;
       case 3:
         processCluster(writer, client);
+        break;
+      default:
+        printUsage();
         break;
     }
 
@@ -157,9 +160,10 @@ public class TajoAdmin {
     System.exit(0);
   }
 
-  public static void processDesc(Writer writer, TajoClient client) throws ParseException, IOException, ServiceException, SQLException {
+  public static void processDesc(Writer writer, TajoClient client) throws ParseException, IOException,
+      ServiceException, SQLException {
     List<BriefQueryInfo> queryList = client.getQueryList();
-
+    SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
     for (BriefQueryInfo queryInfo : queryList) {
         String queryId = String.format("q_%s_%04d",
@@ -182,7 +186,7 @@ public class TajoAdmin {
         if (state.equals("RUNNING") == false) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
-        } 
+        }
         writer.write("Execution Time: " + executionTime);
         writer.write("\n");
         writer.write("Query Progress: " + queryInfo.getProgress());
@@ -195,7 +199,8 @@ public class TajoAdmin {
     }
   }
 
-  public static void processCluster(Writer writer, TajoClient client) throws ParseException, IOException, ServiceException, SQLException {
+  public static void processCluster(Writer writer, TajoClient client) throws ParseException, IOException,
+      ServiceException, SQLException {
     List<WorkerResourceInfo> workerList = client.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
@@ -231,14 +236,14 @@ public class TajoAdmin {
 
     String fmtInfo = "%1$-5s %2$-5s %3$-5s%n";
     String infoLine = String.format(fmtInfo, "Live", "Dead", "Tasks");
-  
+
     writer.write("Query Master\n");
     writer.write("============\n\n");
     writer.write(infoLine);
     String line = String.format(fmtInfo, line5, line5, line5);
     writer.write(line);
 
-    line = String.format(fmtInfo, liveQueryMasters.size(), 
+    line = String.format(fmtInfo, liveQueryMasters.size(),
                          deadQueryMasters.size(), runningQueryMasterTasks);
     writer.write(line);
     writer.write("\n");
@@ -257,11 +262,11 @@ public class TajoAdmin {
                            line5, line10, line10);
       writer.write(line);
       for (WorkerResourceInfo queryMaster : liveQueryMasters) {
-        String queryMasterHost = String.format("%s:%d", 
+        String queryMasterHost = String.format("%s:%d",
                                   queryMaster.getAllocatedHost(),
                                   queryMaster.getQueryMasterPort());
         String heap = String.format("%d MB", queryMaster.getMaxHeap()/1024/1024);
-        line = String.format(fmtQueryMasterLine, queryMasterHost, 
+        line = String.format(fmtQueryMasterLine, queryMasterHost,
                              queryMaster.getClientPort(),
                              queryMaster.getNumQueryMasterTasks(),
                              heap, queryMaster.getWorkerStatus());
@@ -282,10 +287,10 @@ public class TajoAdmin {
       writer.write(line);
 
       for (WorkerResourceInfo queryMaster : deadQueryMasters) {
-        String queryMasterHost = String.format("%s:%d", 
+        String queryMasterHost = String.format("%s:%d",
                                   queryMaster.getAllocatedHost(),
                                   queryMaster.getQueryMasterPort());
-        line = String.format(fmtQueryMasterLine, queryMasterHost, 
+        line = String.format(fmtQueryMasterLine, queryMasterHost,
                              queryMaster.getClientPort(),
                              queryMaster.getWorkerStatus());
         writer.write(line);
@@ -313,7 +318,7 @@ public class TajoAdmin {
       writer.write("No Live Workers\n\n");
     } else {
       writeWorkerInfo(writer, liveWorkers);
-    } 
+    }
 
     writer.write("Dead Workers\n");
     writer.write("============\n\n");
@@ -324,21 +329,22 @@ public class TajoAdmin {
     }
   }
 
-  private static void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException, IOException, ServiceException, SQLException {
+  private static void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException,
+      IOException, ServiceException, SQLException {
     String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-10s %6$-12s %7$-10s%n";
-    String line = String.format(fmtWorkerLine, 
+    String line = String.format(fmtWorkerLine,
         "Worker", "Port", "Tasks",
-        "Mem", "Disk", 
+        "Mem", "Disk",
         "Heap", "Status");
     writer.write(line);
-    line = String.format(fmtWorkerLine, 
-        line25, line5, line5, 
+    line = String.format(fmtWorkerLine,
+        line25, line5, line5,
         line10, line10,
         line12, line10);
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
-      String workerHost = String.format("%s:%d", 
+      String workerHost = String.format("%s:%d",
           worker.getAllocatedHost(),
           worker.getPeerRpcPort());
       String mem = String.format("%d/%d", worker.getUsedMemoryMB(),
@@ -348,7 +354,7 @@ public class TajoAdmin {
       String heap = String.format("%d/%d MB", worker.getFreeHeap()/1024/1024,
           worker.getMaxHeap()/1024/1024);
 
-      line = String.format(fmtWorkerLine, workerHost, 
+      line = String.format(fmtWorkerLine, workerHost,
           worker.getPullServerPort(),
           worker.getNumRunningTasks(),
           mem, disk, heap, worker.getWorkerStatus());
@@ -357,9 +363,10 @@ public class TajoAdmin {
     writer.write("\n\n");
   }
 
-  public static void processList(Writer writer, TajoClient client) throws ParseException, IOException, ServiceException, SQLException {
+  public static void processList(Writer writer, TajoClient client) throws ParseException, IOException,
+      ServiceException, SQLException {
     List<BriefQueryInfo> queryList = client.getQueryList();
-
+    SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     String fmt = "%1$-20s %2$-7s %3$-20s %4$-30s%n";
     String line = String.format(fmt, "QueryId", "State", 
                   "StartTime", "Query");
