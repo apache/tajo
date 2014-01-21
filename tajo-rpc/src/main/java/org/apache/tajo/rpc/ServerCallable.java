@@ -56,8 +56,16 @@ public abstract class ServerCallable<T> {
     this.startTime = System.currentTimeMillis();
   }
 
+  public long getStartTime(){
+    return startTime;
+  }
+
   public void afterCall() {
     this.endTime = System.currentTimeMillis();
+  }
+
+  public long getEndTime(){
+    return endTime;
   }
 
   boolean abort = false;

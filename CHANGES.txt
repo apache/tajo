@@ -348,6 +348,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-535: Fix warnings in tajo-rpc. (jinho)
+
     TAJO-531: Fix warnings in tajo-client. (jinho)
 
     TAJO-478: Add request-patch-review.py that helps submitting patches to

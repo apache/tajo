@@ -100,7 +100,6 @@ public class RpcConnectionPool {
         }
       }
       connections.clear();
-      instance = null;
     }
   }
 
