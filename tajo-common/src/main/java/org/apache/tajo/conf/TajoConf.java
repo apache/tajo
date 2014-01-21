@@ -179,6 +179,7 @@ public class TajoConf extends Configuration {
     // RPC
     //////////////////////////////////
     RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
+    RPC_CLIENT_SOCKET_IO_THREADS("tajo.rpc.client.socket-io-threads", 0),
 
     //////////////////////////////////
     // The Below is reserved

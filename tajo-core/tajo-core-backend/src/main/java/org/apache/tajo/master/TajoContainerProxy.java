@@ -30,7 +30,6 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
-import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -62,13 +61,13 @@ public class TajoContainerProxy extends ContainerProxy {
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, Container container) {
-    AsyncRpcClient tajoWorkerRpc = null;
+    NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
           .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = new AsyncRpcClient(TajoWorkerProtocol.class, addr);
+      tajoWorkerRpc = RpcConnectionPool.getPool(context.getConf()).getConnection(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
@@ -84,27 +83,11 @@ public class TajoContainerProxy extends ContainerProxy {
       tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());
     } catch (Exception e) {
       //TODO retry
+      RpcConnectionPool.getPool(context.getConf()).closeConnection(tajoWorkerRpc);
+      tajoWorkerRpc = null;
       LOG.error(e.getMessage(), e);
     } finally {
-      if(tajoWorkerRpc != null) {
-        (new AyncRpcClose(tajoWorkerRpc)).start();
-      }
-    }
-  }
-
-  class AyncRpcClose extends Thread {
-    AsyncRpcClient client;
-    public AyncRpcClose(AsyncRpcClient client) {
-      this.client = client;
-    }
-
-    @Override
-    public void run() {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-      }
-      client.close();
+      RpcConnectionPool.getPool(context.getConf()).releaseConnection(tajoWorkerRpc);
     }
   }
 

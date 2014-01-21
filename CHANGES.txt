@@ -219,6 +219,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-522: OutOfMemoryError: unable to create new native thread.
+    (hyoungjunkim via hyunsik)
+
     TAJO-518: tajo-algebra and ProjectionPushDownRule code cleanup. (hyunsik)
 
     TAJO-503: HCatalogStore can't scan several hive databases. (jaehwa)

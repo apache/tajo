@@ -20,6 +20,7 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.conf.TajoConf;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -35,11 +36,24 @@ import java.util.concurrent.Executors;
 public abstract class NettyClientBase implements Closeable {
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
+  //netty default value
+  protected static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
+  protected static int nettyWorkerCount;
+
   private ClientSocketChannelFactory factory;
   protected ClientBootstrap bootstrap;
   private ChannelFuture channelFuture;
   private Channel channel;
   protected InetSocketAddress addr;
+
+  static {
+    TajoConf conf = new TajoConf();
+
+    nettyWorkerCount = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_SOCKET_IO_THREADS);
+    if (nettyWorkerCount <= 0) {
+      nettyWorkerCount = DEFAULT_IO_THREADS;
+    }
+  }
 
   public NettyClientBase() {
   }
@@ -53,7 +67,8 @@ public abstract class NettyClientBase implements Closeable {
     try {
       this.factory =
           new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-              Executors.newCachedThreadPool());
+              Executors.newCachedThreadPool(),
+              nettyWorkerCount);
 
       this.bootstrap = new ClientBootstrap(factory);
       this.bootstrap.setPipelineFactory(pipeFactory);
@@ -61,7 +76,7 @@ public abstract class NettyClientBase implements Closeable {
       this.bootstrap.setOption("connectTimeoutMillis", 10000);
       this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
       this.bootstrap.setOption("receiveBufferSize", 1048576*2);
-      this.bootstrap.setOption("tcpNoDelay", false);
+      this.bootstrap.setOption("tcpNoDelay", true);
       this.bootstrap.setOption("keepAlive", true);
 
       this.channelFuture = bootstrap.connect(addr);
