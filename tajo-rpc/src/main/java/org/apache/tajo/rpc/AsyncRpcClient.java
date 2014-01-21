@@ -51,7 +51,11 @@ public class AsyncRpcClient extends NettyClientBase {
 
   private RpcConnectionKey key;
 
-  public AsyncRpcClient(final Class<?> protocol,
+  /**
+   * Intentionally make this method package-private, avoiding user directly
+   * new an instance through this constructor.
+   */
+  AsyncRpcClient(final Class<?> protocol,
                         final InetSocketAddress addr)
       throws Exception {
 
@@ -209,7 +213,7 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
-      LOG.error(addr + "," + protocol + "," + e.getCause().getMessage(), e.getCause());
+      LOG.error(getRemoteAddress() + "," + protocol + "," + e.getCause().getMessage(), e.getCause());
       e.getChannel().close();
 
       for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {

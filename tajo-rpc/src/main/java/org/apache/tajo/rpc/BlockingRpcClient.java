@@ -54,7 +54,11 @@ public class BlockingRpcClient extends NettyClientBase {
 
   private RpcConnectionKey key;
 
-  public BlockingRpcClient(final Class<?> protocol,
+  /**
+   * Intentionally make this method package-private, avoiding user directly
+   * new an instance through this constructor.
+   */
+  BlockingRpcClient(final Class<?> protocol,
                            final InetSocketAddress addr)
       throws Exception {
 

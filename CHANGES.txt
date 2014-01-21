@@ -219,6 +219,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-537: After TAJO-522, still OutOfMemoryError: unable to create new
+    native thread. (Min Zhou  via hyunsik)
+
     TAJO-522: OutOfMemoryError: unable to create new native thread.
     (hyoungjunkim via hyunsik)
 

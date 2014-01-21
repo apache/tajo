@@ -40,11 +40,14 @@ public abstract class NettyClientBase implements Closeable {
   protected static final int DEFAULT_IO_THREADS = Runtime.getRuntime().availableProcessors() * 2;
   protected static int nettyWorkerCount;
 
-  private ClientSocketChannelFactory factory;
+  /**
+   * make this factory static thus all clients can share its thread pool.
+   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
+   */
+  private static final ClientSocketChannelFactory factory;
+
   protected ClientBootstrap bootstrap;
   private ChannelFuture channelFuture;
-  private Channel channel;
-  protected InetSocketAddress addr;
 
   static {
     TajoConf conf = new TajoConf();
@@ -53,6 +56,10 @@ public abstract class NettyClientBase implements Closeable {
     if (nettyWorkerCount <= 0) {
       nettyWorkerCount = DEFAULT_IO_THREADS;
     }
+
+    factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+        Executors.newCachedThreadPool(),
+        nettyWorkerCount);
   }
 
   public NettyClientBase() {
@@ -62,14 +69,7 @@ public abstract class NettyClientBase implements Closeable {
   public abstract RpcConnectionPool.RpcConnectionKey getKey();
 
   public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory) throws IOException {
-    this.addr = addr;
-
     try {
-      this.factory =
-          new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-              Executors.newCachedThreadPool(),
-              nettyWorkerCount);
-
       this.bootstrap = new ClientBootstrap(factory);
       this.bootstrap.setPipelineFactory(pipeFactory);
       // TODO - should be configurable
@@ -85,7 +85,6 @@ public abstract class NettyClientBase implements Closeable {
         channelFuture.getCause().printStackTrace();
         throw new RuntimeException(channelFuture.getCause());
       }
-      this.channel = channelFuture.getChannel();
     } catch (Throwable t) {
       close();
       throw new IOException(t.getCause());
@@ -97,24 +96,25 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public InetSocketAddress getRemoteAddress() {
-    return this.addr;
+    return (InetSocketAddress) channelFuture.getChannel().getRemoteAddress();
   }
 
   public Channel getChannel() {
-    return this.channel;
+    return channelFuture.getChannel();
   }
 
   @Override
   public void close() {
-    if(this.channel != null) {
-      this.channel.close().awaitUninterruptibly();
+    if(this.channelFuture != null) {
+      this.channelFuture.getChannel().close();
     }
 
     if(this.bootstrap != null) {
-      this.bootstrap.releaseExternalResources();
+      // This line will shutdown the factory
+      // this.bootstrap.releaseExternalResources();
       if(LOG.isDebugEnabled()) {
         LOG.debug("Proxy is disconnected from " +
-            addr.getAddress().getHostAddress() + ":" + addr.getPort());
+            getRemoteAddress().getHostName() + ":" + getRemoteAddress().getPort());
       }
     }
   }

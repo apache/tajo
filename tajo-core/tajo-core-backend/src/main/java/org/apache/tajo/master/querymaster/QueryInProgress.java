@@ -27,6 +27,7 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -36,8 +37,9 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.net.InetSocketAddress;
@@ -62,7 +64,7 @@ public class QueryInProgress extends CompositeService {
 
   private final TajoMaster.MasterContext masterContext;
 
-  private AsyncRpcClient queryMasterRpc;
+  private NettyClientBase queryMasterRpc;
 
   private QueryMasterProtocolService queryMasterRpcClient;
 
@@ -127,8 +129,7 @@ public class QueryInProgress extends CompositeService {
     super.stop();
 
     if(queryMasterRpc != null) {
-      //TODO release to connection pool
-      queryMasterRpc.close();
+      RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
     }
   }
 
@@ -185,8 +186,8 @@ public class QueryInProgress extends CompositeService {
       InetSocketAddress addr = NetUtils.createSocketAddr(
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
       LOG.info("Connect to QueryMaster:" + addr);
-      //TODO Get Connection from pool
-      queryMasterRpc = new AsyncRpcClient(QueryMasterProtocol.class, addr);
+      queryMasterRpc =
+          RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
       queryMasterRpcClient = queryMasterRpc.getStub();
     }
   }
