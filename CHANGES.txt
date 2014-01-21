@@ -4,7 +4,10 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-122: Add EXPLAIN clause to show a logical plan. 
+    TAJO-498: Implement digest(text, text) function.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-122: Add EXPLAIN clause to show a logical plan.
     (DaeMyung Kang via hyunsik)
 
     TAJO-438: Date literal support. (Jae Young Lee via jihoon)

@@ -297,6 +297,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testDigest() throws IOException {
+    testSimpleEval("select digest('tajo', 'md2') as col1 ", new String[]{"bf523bce8241982f6bea9af0f7fd37ff"});
+    testSimpleEval("select digest('tajo', 'md5') as col1 ", new String[]{"742721b3a79f71a9491681b8e8a7ce85"});
+    testSimpleEval("select digest('tajo', 'sha1') as col1 ", new String[]{"02b0e20540b89f0b735092bbac8093eb2e3804cf"});
+    testSimpleEval("select digest('tajo', 'sha256') as col1 ", 
+      new String[]{"6440083be076869a9f9d0271a4bf298d98c8aa3ecb49df841895fbcddbb04a70"});
+    testSimpleEval("select digest('tajo', 'sha384') as col1 ", 
+      new String[]{"59ff99b0e274eb3d8e10f221b6b949bfc1244d2a1226c5c720062fb03d82272be633e4a0f2babccffbfdff7cc1cb06fb"});
+    testSimpleEval("select digest('tajo', 'sha512') as col1 ", 
+      new String[]{"ee8ba254d331ddfb1bca9aaf0c4b8c58aea5331928cbd20168c87828afb853b0c096af71ec69a23b669217a1dddd2934edaac33b1296fe526b22abd28a15c4b3"});
+    testSimpleEval("select digest('tajo', 'not') as col1 ", new String[]{""});
+  }
+
+  @Test
   public void testHex() throws IOException {
     testSimpleEval("select to_hex(1) as col1 ", new String[]{"1"});
     testSimpleEval("select to_hex(10) as col1 ", new String[]{"a"});
