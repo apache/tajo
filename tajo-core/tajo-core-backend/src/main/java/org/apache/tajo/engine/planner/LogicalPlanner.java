@@ -852,14 +852,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ScanNode scanNode = block.getNodeFromExpr(expr);
     updatePhysicalInfo(scanNode.getTableDesc());
 
-    // Add additional expressions required in upper nodes.
-    Set<Expr> newlyEvaluatedExprs = new LinkedHashSet<Expr>();
+    // Add additional expressions required in upper nodes, such as sort key, grouping columns,
+    // column references included in filter condition
+    //
+    // newlyEvaluatedExprsRef keeps
+    Set<String> newlyEvaluatedExprsReferences = new LinkedHashSet<String>();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
       try {
         EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
         if (checkIfBeEvaluatedAtRelation(block, evalNode, scanNode)) {
           block.namedExprsMgr.resolveExpr(rawTarget.getAlias(), evalNode);
-          newlyEvaluatedExprs.add(rawTarget.getExpr()); // newly added exr
+          newlyEvaluatedExprsReferences.add(rawTarget.getAlias()); // newly added exr
         }
       } catch (VerifyException ve) {
       }
@@ -872,14 +875,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       if (block.namedExprsMgr.contains(columnRef)) {
         String referenceName = block.namedExprsMgr.getName(columnRef);
         targets.add(new Target(new FieldEval(column), referenceName));
-        newlyEvaluatedExprs.remove(columnRef);
+        newlyEvaluatedExprsReferences.remove(column.getQualifiedName());
       } else {
         targets.add(new Target(new FieldEval(column)));
       }
     }
 
-    for (Expr newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
+    // The fact the some expr is included in newlyEvaluatedExprsReferences means that it is already resolved.
+    // So, we get a raw expression and then creates a target.
+    for (String reference : newlyEvaluatedExprsReferences) {
+      NamedExpr refrrer = block.namedExprsMgr.getNamedExpr(reference);
+      EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, block, refrrer.getExpr());
+      targets.add(new Target(evalNode, reference));
     }
 
     scanNode.setTargets(targets.toArray(new Target[targets.size()]));
@@ -1049,7 +1056,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Schema targetSchema = new Schema();
       if (expr.hasTargetColumns()) {
         // INSERT OVERWRITE INTO TABLE tbl(col1 type, col2 type) SELECT ...
-        String [] targetColumnNames = expr.getTargetColumns();
+        String[] targetColumnNames = expr.getTargetColumns();
         for (int i = 0; i < targetColumnNames.length; i++) {
           Column targetColumn = context.plan.resolveColumn(context.queryBlock,
               new ColumnReferenceExpr(targetColumnNames[i]));
@@ -1315,7 +1322,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private Schema convertTableElementsSchema(CreateTable.ColumnDefinition [] elements) {
+  private Schema convertTableElementsSchema(CreateTable.ColumnDefinition[] elements) {
     Schema schema = new Schema();
 
     for (CreateTable.ColumnDefinition columnDefinition: elements) {

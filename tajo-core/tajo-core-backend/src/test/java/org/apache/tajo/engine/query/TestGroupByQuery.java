@@ -60,6 +60,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupBy5() throws Exception {
+    // select l_orderkey as gkey, '00' as num from lineitem group by lineitem.l_orderkey order by gkey
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testGroupByNested1() throws Exception {
     // select l_orderkey + l_partkey as unique_key from lineitem group by l_orderkey + l_partkey;
     ResultSet res = executeQuery();

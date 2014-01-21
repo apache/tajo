@@ -26,6 +26,7 @@ import org.apache.tajo.algebra.NamedExpr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.util.TUtil;
 
@@ -170,6 +171,9 @@ public class NamedExprsManager {
   }
 
   public void resolveExpr(String name, EvalNode evalNode) throws PlanningException {
+    if (evalNode.getType() == EvalType.CONST) {
+      return;
+    }
     String normalized = name.toLowerCase();
     nameToEvalMap.put(normalized, evalNode);
     evalToNameMap.put(evalNode, normalized);
