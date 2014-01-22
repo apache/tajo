@@ -222,6 +222,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-360: If there is no matched function, catalog causes NPE.
+    (hyoungjunkim via hyunsik)
+
     TAJO-537: After TAJO-522, still OutOfMemoryError: unable to create new
     native thread. (Min Zhou  via hyunsik)
 

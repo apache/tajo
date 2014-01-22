@@ -447,7 +447,7 @@ public class CatalogServer extends AbstractService {
           }
         }
       }
-      return null;
+      throw new NoSuchFunctionException(signature);
     }
 
     private FunctionDescProto findFunction(String signature, FunctionType type, List<DataType> params) {
@@ -458,7 +458,7 @@ public class CatalogServer extends AbstractService {
           }
         }
       }
-      return null;
+      throw new NoSuchFunctionException(signature);
     }
 
     private FunctionDescProto findFunction(FunctionDescProto target) {
@@ -471,9 +471,13 @@ public class CatalogServer extends AbstractService {
       FunctionSignature signature = FunctionSignature.create(funcDesc);
 
       if (functions.containsKey(funcDesc.getSignature())) {
-        FunctionDescProto found = findFunction(funcDesc);
-        if (found != null) {
-          throw new AlreadyExistsFunctionException(signature.toString());
+        try {
+          FunctionDescProto found = findFunction(funcDesc);
+          if (found != null) {
+            throw new AlreadyExistsFunctionException(signature.toString());
+          }
+        } catch (NoSuchFunctionException e) {
+          //create function
         }
       }
 
@@ -508,7 +512,7 @@ public class CatalogServer extends AbstractService {
               request.getParameterTypesList());
           return desc;
         }
-        return null;
+        throw new NoSuchFunctionException(request.getSignature());
       } else {
         FunctionDescProto function = findFunction(request.getSignature(), request.getParameterTypesList());
         return function;

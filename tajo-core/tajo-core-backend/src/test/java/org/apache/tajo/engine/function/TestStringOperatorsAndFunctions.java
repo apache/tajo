@@ -21,12 +21,14 @@ package org.apache.tajo.engine.function;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.junit.Assert.fail;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 

@@ -23,11 +23,11 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.exception.UndefinedFunctionException;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
@@ -390,12 +390,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new UndefinedFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
     if (funcDesc == null) {
-      throw new UndefinedFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
     }
     try {
     CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
@@ -429,7 +429,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc countRows = catalog.getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[] {});
     if (countRows == null) {
-      throw new UndefinedFunctionException(CatalogUtil.
+      throw new NoSuchFunctionException(CatalogUtil.
           getCanonicalName(countRows.getSignature(), new TajoDataTypes.DataType[]{}));
     }
 
@@ -439,7 +439,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
           new EvalNode[] {});
     } catch (InternalException e) {
-      throw new UndefinedFunctionException(CatalogUtil.
+      throw new NoSuchFunctionException(CatalogUtil.
           getCanonicalName(countRows.getSignature(), new TajoDataTypes.DataType[]{}));
     }
   }
@@ -462,7 +462,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new UndefinedFunctionException(CatalogUtil. getCanonicalName(setFunction.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(CatalogUtil. getCanonicalName(setFunction.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);

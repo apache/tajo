@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.Specifier;
@@ -88,7 +89,7 @@ public class TestCatalog {
     assertFalse(catalog.existsTable("getTable"));
 	}
 	
-	@Test(expected = Throwable.class)
+	@Test
 	public void testAddTableNoName() throws Exception {
 	  schema1 = new Schema();
     schema1.addColumn(FieldName1, Type.BLOB);
@@ -99,7 +100,7 @@ public class TestCatalog {
 	  TableDesc desc = new TableDesc();
 	  desc.setMeta(info);
 	  
-	  catalog.addTable(desc);
+	  assertFalse(catalog.addTable(desc));
 	}
 
   static IndexDesc desc1;
@@ -188,6 +189,11 @@ public class TestCatalog {
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
+
+  @Test(expected = NoSuchFunctionException.class)
+  public final void testSuchFunctionException() throws Exception {
+    catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
+  }
 
   @Test
   public final void testDropFunction() throws Exception {

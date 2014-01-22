@@ -22,6 +22,7 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -316,17 +317,25 @@ public abstract class AbstractCatalogClient implements CatalogService {
       builder.addParameterTypes(type);
     }
 
-    FunctionDescProto descProto;
+    FunctionDescProto descProto = null;
     try {
       descProto = new ServerCallable<FunctionDescProto>(conf, catalogServerAddr, CatalogProtocol.class, false) {
         public FunctionDescProto call(NettyClientBase client) throws ServiceException {
-          CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.getFunctionMeta(null, builder.build());
+          try {
+            CatalogProtocolService.BlockingInterface stub = getStub(client);
+            return stub.getFunctionMeta(null, builder.build());
+          } catch (NoSuchFunctionException e) {
+            abort();
+            throw e;
+          }
         }
       }.withRetries();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
-      return null;
+    }
+
+    if (descProto == null) {
+      throw new NoSuchFunctionException(signature);
     }
     if(descProto == null) {
       LOG.error("No matched function:" + signature + "," + funcType + "," + paramTypes);
@@ -336,7 +345,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new FunctionDesc(descProto);
     } catch (ClassNotFoundException e) {
       LOG.error(e);
-      return null;
+      throw new NoSuchFunctionException(signature);
     }
   }
 

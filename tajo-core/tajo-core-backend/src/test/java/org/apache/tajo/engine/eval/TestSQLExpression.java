@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.datum.TimestampDatum;
 import org.junit.Test;
 
@@ -27,6 +28,11 @@ import java.io.IOException;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestSQLExpression extends ExprTestBase {
+
+  @Test(expected = NoSuchFunctionException.class)
+  public void testNoSuchFunction() throws IOException {
+    testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});
+  }
 
   @Test
   public void testCast() throws IOException {
