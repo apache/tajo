@@ -31,6 +31,7 @@ import org.apache.tajo.exception.InternalException;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.List;
 
 public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, GsonObject {
   private FunctionDescProto.Builder builder = FunctionDescProto.newBuilder();
@@ -204,5 +205,16 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 
   public String getHelpSignature() {
     return returnType.getType() + " " + CatalogUtil.getCanonicalName(signature, getParamTypes());
+  }
+
+  public static String dataTypesToStr(List<DataType> parameterTypesList) {
+    String result = "";
+    String prefix = "";
+    for(DataType eachType: parameterTypesList) {
+      result += prefix + eachType.getType().toString();
+      prefix = ",";
+    }
+
+    return result;
   }
 }

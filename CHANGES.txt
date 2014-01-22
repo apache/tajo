@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-482: Implements listing functions and describing a specified
+    function. (hyoungjunkim via hyunsik)
+
     TAJO-498: Implement digest(text, text) function.
     (DaeMyung Kang via hyunsik)
 

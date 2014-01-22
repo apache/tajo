@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -493,5 +494,24 @@ public class TajoClient {
     }
 
     return true;
+  }
+
+  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
+    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(conf, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        String paramFunctionName = functionName == null ? "" : functionName;
+
+        FunctionResponse res = tajoMasterService.getFunctionList(null,
+            StringProto.newBuilder().setValue(paramFunctionName).build());
+        if (res.getResultCode() == ResultCode.OK) {
+          return res.getFunctionsList();
+        } else {
+          throw new SQLException(res.getErrorMessage());
+        }
+      }
+    }.withRetries();
   }
 }

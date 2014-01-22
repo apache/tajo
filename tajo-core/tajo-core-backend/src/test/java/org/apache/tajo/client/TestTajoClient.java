@@ -28,7 +28,9 @@ import org.apache.tajo.BackendTestingUtil;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -38,6 +40,8 @@ import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -424,5 +428,27 @@ public class TestTajoClient {
     client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
+  }
+
+  @Test
+  public final void testGetFunctions() throws IOException,
+      ServiceException, SQLException {
+    Collection<FunctionDesc> catalogFunctions = cluster.getMaster().getCatalog().getFunctions();
+    String functionName = "sum";
+    int numFunctions = 0;
+    for(FunctionDesc eachFunction: catalogFunctions) {
+      if(functionName.equals(eachFunction.getSignature())) {
+        numFunctions++;
+      }
+    }
+
+    List<CatalogProtos.FunctionDescProto> functions = client.getFunctions(functionName);
+    assertEquals(numFunctions, functions.size());
+
+    functions = client.getFunctions("notmatched");
+    assertEquals(0, functions.size());
+
+    functions = client.getFunctions(null);
+    assertEquals(catalogFunctions.size(), functions.size());
   }
 }

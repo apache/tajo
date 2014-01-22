@@ -175,3 +175,9 @@ message TableResponse {
   optional TableDescProto tableDesc = 2;
   optional string errorMessage = 3;
 }
+
+message FunctionResponse {
+  required ResultCode resultCode = 1;
+  repeated FunctionDescProto functions = 2;
+  optional string errorMessage = 3;
+}

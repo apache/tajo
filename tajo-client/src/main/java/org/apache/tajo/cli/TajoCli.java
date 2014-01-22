@@ -25,12 +25,9 @@ import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.partition.Specifier;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
@@ -47,11 +44,12 @@ import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 public class TajoCli {
+  public static final int PRINT_LIMIT = 24;
+
   private final TajoConf conf;
   private static final Options options;
 
@@ -61,15 +59,15 @@ public class TajoCli {
   private final InputStream sin;
   private final PrintWriter sout;
 
-  private static final int PRINT_LIMIT = 24;
-  private final Map<String, Command> commands = new TreeMap<String, Command>();
+  private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
   private static final Class [] registeredCommands = {
       DescTableCommand.class,
+      DescFunctionCommand.class,
       HelpCommand.class,
       ExitCommand.class,
-      Copyright.class,
-      Version.class
+      CopyrightCommand.class,
+      VersionCommand.class
   };
 
   private static final String HOME_DIR = System.getProperty("user.home");
@@ -165,10 +163,10 @@ public class TajoCli {
 
   private void initCommands() {
     for (Class clazz : registeredCommands) {
-      Command cmd = null;
+      TajoShellCommand cmd = null;
       try {
-         Constructor cons = clazz.getConstructor(new Class[] {TajoCli.class});
-         cmd = (Command) cons.newInstance(this);
+         Constructor cons = clazz.getConstructor(new Class[] {TajoClient.class, PrintWriter.class});
+         cmd = (TajoShellCommand) cons.newInstance(client, sout);
       } catch (Exception e) {
         System.err.println(e.getMessage());
         System.exit(-1);
@@ -257,7 +255,7 @@ public class TajoCli {
 
   private void invokeCommand(String [] cmds) {
     // this command should be moved to GlobalEngine
-    Command invoked;
+    TajoShellCommand invoked;
     try {
       invoked = commands.get(cmds[0]);
       invoked.invoke(cmds);
@@ -288,22 +286,7 @@ public class TajoCli {
       } else if (cmds[0].equalsIgnoreCase("detach") && cmds.length > 1 && cmds[1].equalsIgnoreCase("table")) {
         // this command should be moved to GlobalEngine
         invokeCommand(cmds);
-      } else if (cmds[0].equalsIgnoreCase("explain") && cmds.length > 1) {
-        String sql = stripped.substring(8);
-        ClientProtos.ExplainQueryResponse response = client.explainQuery(sql);
-        if (response == null) {
-          sout.println("response is null");
-        } else {
-          if (response.hasExplain()) {
-            sout.println(response.getExplain());
-          } else {
-            if (response.hasErrorMessage()) {
-                sout.println(response.getErrorMessage());
-            } else {
-                sout.println("No Explain");
-            }
-          }
-        }
+
       } else { // submit a query to TajoMaster
         ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
         if (response == null) {
@@ -456,257 +439,13 @@ public class TajoCli {
     formatter.printHelp( "tajo cli [options]", options );
   }
 
-  public static abstract class Command {
-    public abstract String getCommand();
-    public abstract void invoke(String [] command) throws Exception;
-    public abstract String getUsage();
-    public abstract String getDescription();
-  }
-
-  private String toFormattedString(TableDesc desc) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\ntable name: ").append(desc.getName()).append("\n");
-    sb.append("table path: ").append(desc.getPath()).append("\n");
-    sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
-    if (desc.getStats() != null) {
-      sb.append("number of rows: ").append(desc.getStats().getNumRows()).append("\n");
-      sb.append("volume: ").append(
-          FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
-              true)).append("\n");
-    }
-    sb.append("Options: \n");
-    for(Map.Entry<String, String> entry : desc.getMeta().toMap().entrySet()){
-      sb.append("\t").append("'").append(entry.getKey()).append("'").append("=")
-          .append("'").append(entry.getValue()).append("'").append("\n");
-    }
-    sb.append("\n");
-    sb.append("schema: \n");
-
-    for(int i = 0; i < desc.getSchema().getColumnNum(); i++) {
-      Column col = desc.getSchema().getColumn(i);
-      sb.append(col.getColumnName()).append("\t").append(col.getDataType().getType());
-      if (col.getDataType().hasLength()) {
-        sb.append("(").append(col.getDataType().getLength()).append(")");
-      }
-      sb.append("\n");
-    }
-
-    sb.append("\n");
-    sb.append("Partitions: \n");
-    if (desc.getPartitions() != null) {
-      sb.append("type:").append(desc.getPartitions().getPartitionsType().name()).append("\n");
-      if (desc.getPartitions().getNumPartitions() > 0)
-        sb.append("numbers:").append(desc.getPartitions().getNumPartitions()).append("\n");
-
-      sb.append("columns:").append("\n");
-      for(Column eachColumn: desc.getPartitions().getColumns()) {
-        sb.append("  ");
-        sb.append(eachColumn.getColumnName()).append("\t").append(eachColumn.getDataType().getType());
-        if (eachColumn.getDataType().hasLength()) {
-          sb.append("(").append(eachColumn.getDataType().getLength()).append(")");
-        }
-        sb.append("\n");
-      }
-
-      if (desc.getPartitions().getSpecifiers() != null) {
-        sb.append("specifier:").append("\n");
-        for(Specifier specifier :desc.getPartitions().getSpecifiers()) {
-          sb.append("  ");
-          sb.append("name:").append(specifier.getName());
-          if (!specifier.getExpressions().equals("")) {
-            sb.append(", expressions:").append(specifier.getExpressions());
-          } else {
-            if (desc.getPartitions().getPartitionsType().name().equals("RANGE"))
-              sb.append(" expressions: MAXVALUE");
-          }
-          sb.append("\n");
-        }
-      }
-    }
-
-    return sb.toString();
-  }
-
-  public class DescTableCommand extends Command {
-    public DescTableCommand() {}
-
-    @Override
-    public String getCommand() {
-      return "\\d";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      if (cmd.length == 2) {
-        TableDesc desc = client.getTableDesc(cmd[1]);
-        if (desc == null) {
-          sout.println("Did not find any relation named \"" + cmd[1] + "\"");
-        } else {
-          sout.println(toFormattedString(desc));
-        }
-      } else if (cmd.length == 1) {
-        List<String> tableList = client.getTableList();
-        if (tableList.size() == 0) {
-          sout.println("No Relation Found");
-        }
-        for (String table : tableList) {
-          sout.println(table);
-        }
-      } else {
-        throw new IllegalArgumentException();
-      }
-    }
-
-    @Override
-    public String getUsage() {
-      return "[table_name]";
-    }
-
-    @Override
-    public String getDescription() {
-      return "show table description";
-    }
-  }
-
-  public class HelpCommand extends Command {
-
-    @Override
-    public String getCommand() {
-      return "\\?";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      sout.println();
-
-      sout.println("General");
-      sout.println("  \\copyright  show Apache License 2.0");
-      sout.println("  \\version    show Tajo version");
-      sout.println("  \\?          show help");
-      sout.println("  \\q          quit tsql");
-      sout.println();
-      sout.println();
-
-      sout.println("Informational");
-      sout.println("  \\d         list tables");
-      sout.println("  \\d  NAME   describe table");
-      sout.println();
-      sout.println();
-
-      sout.println("Documentations");
-      sout.println("  tsql guide        http://wiki.apache.org/tajo/tsql");
-      sout.println("  Query language    http://wiki.apache.org/tajo/QueryLanguage");
-      sout.println("  Functions         http://wiki.apache.org/tajo/Functions");
-      sout.println("  Backup & restore  http://wiki.apache.org/tajo/BackupAndRestore");
-      sout.println("  Configuration     http://wiki.apache.org/tajo/Configuration");
-      sout.println();
-    }
-
-    @Override
-    public String getUsage() {
-      return "";
-    }
-
-    @Override
-    public String getDescription() {
-      return "show command lists and their usages";
-    }
-  }
-
-  public class Version extends Command {
-
-    @Override
-    public String getCommand() {
-      return "\\version";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      sout.println(TajoConstants.TAJO_VERSION);
-    }
-
-    @Override
-    public String getUsage() {
-      return "";
-    }
-
-    @Override
-    public String getDescription() {
-      return "show Apache License 2.0";
-    }
-  }
-
-  public class Copyright extends Command {
-
-    @Override
-    public String getCommand() {
-      return "\\copyright";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      sout.println();
-      sout.println(
-      "  Licensed to the Apache Software Foundation (ASF) under one\n" +
-      "  or more contributor license agreements.  See the NOTICE file\n" +
-      "  distributed with this work for additional information\n" +
-      "  regarding copyright ownership.  The ASF licenses this file\n" +
-      "  to you under the Apache License, Version 2.0 (the\n" +
-      "  \"License\"); you may not use this file except in compliance\n" +
-      "  with the License.  You may obtain a copy of the License at\n" +
-      "\n" +
-      "       http://www.apache.org/licenses/LICENSE-2.0\n" +
-      "\n" +
-      "   Unless required by applicable law or agreed to in writing, software\n" +
-      "   distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
-      "   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
-      "   See the License for the specific language governing permissions and\n" +
-      "   limitations under the License.");
-      sout.println();
-    }
-
-    @Override
-    public String getUsage() {
-      return "";
-    }
-
-    @Override
-    public String getDescription() {
-      return "show Apache License 2.0";
-    }
-  }
-
-  public class ExitCommand extends Command {
-
-    @Override
-    public String getCommand() {
-      return "\\q";
-    }
-
-    @Override
-    public void invoke(String[] cmd) throws Exception {
-      sout.println("bye!");
-      System.exit(0);
-    }
-
-    @Override
-    public String getUsage() {
-      return "";
-    }
-
-    @Override
-    public String getDescription() {
-      return "quit";
-    }
-  }
-
   public int executeCommand(String line) throws Exception {
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
       String arguments [];
       arguments = metaCommand.split(" ");
 
-      Command invoked = commands.get(arguments[0]);
+      TajoShellCommand invoked = commands.get(arguments[0]);
       if (invoked == null) {
         printInvalidCommand(arguments[0]);
         return -1;

@@ -31,11 +31,9 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -436,6 +434,28 @@ public class TajoMasterClientService extends AbstractService {
     public BoolProto dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
       context.getGlobalEngine().dropTable(dropTable.getName(), dropTable.getPurge());
       return BOOL_TRUE;
+    }
+
+    @Override
+    public FunctionResponse getFunctionList(RpcController controller, StringProto request) throws ServiceException {
+      String functionName = request.getValue();
+      Collection<FunctionDesc> functions = catalog.getFunctions();
+
+      List<CatalogProtos.FunctionDescProto> functionProtos = new ArrayList<CatalogProtos.FunctionDescProto>();
+
+      for (FunctionDesc eachFunction: functions) {
+        if (functionName == null || functionName.isEmpty()) {
+          functionProtos.add(eachFunction.getProto());
+        } else {
+          if(functionName.equals(eachFunction.getSignature())) {
+            functionProtos.add(eachFunction.getProto());
+          }
+        }
+      }
+      return FunctionResponse.newBuilder()
+          .setResultCode(ResultCode.OK)
+          .addAllFunctions(functionProtos)
+          .build();
     }
   }
 }
