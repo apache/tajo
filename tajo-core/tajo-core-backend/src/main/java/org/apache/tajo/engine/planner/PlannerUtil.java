@@ -48,7 +48,8 @@ public class PlannerUtil {
       baseNode = ((LogicalRootNode) node).getChild();
     }
 
-    return baseNode.getType() == NodeType.CREATE_TABLE || baseNode.getType() == NodeType.DROP_TABLE;
+    return (baseNode.getType() == NodeType.CREATE_TABLE && !((CreateTableNode)baseNode).hasSubQuery()) ||
+        baseNode.getType() == NodeType.DROP_TABLE;
   }
 
   /**

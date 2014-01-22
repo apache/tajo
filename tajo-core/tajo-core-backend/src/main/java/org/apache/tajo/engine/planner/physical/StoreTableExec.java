@@ -23,6 +23,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.engine.planner.InsertNode;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
@@ -54,8 +55,14 @@ public class StoreTableExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
-    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
-        context.getOutputPath());
+    if (plan instanceof InsertNode) {
+      InsertNode createTableNode = (InsertNode) plan;
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
+          createTableNode.getTableSchema(), context.getOutputPath());
+    } else {
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
+          context.getOutputPath());
+    }
 
     appender.enableStats();
     appender.init();

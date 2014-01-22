@@ -123,6 +123,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-543: InsertNode and CreateTableNode should play their roles. (hyunsik)
+
     TAJO-409: Add explored and explained annotations to Tajo function system.
     (SeongHwa Ahn via hyunsik)
 

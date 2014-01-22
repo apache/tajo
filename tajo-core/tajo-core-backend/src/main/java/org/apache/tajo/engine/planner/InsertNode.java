@@ -20,30 +20,38 @@ package org.apache.tajo.engine.planner;
 
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalNodeVisitor;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.util.TUtil;
 
-public class InsertNode extends LogicalNode implements Cloneable {
+public class InsertNode extends StoreTableNode implements Cloneable {
   @Expose private boolean overwrite;
-  @Expose private TableDesc targetTableDesc;
+  @Expose private Schema tableSchema;
+
+  /** a target schema of a target table */
   @Expose private Schema targetSchema;
+  /** a output schema of select clause */
+  @Expose private Schema projectedSchema;
   @Expose private Path path;
-  @Expose private StoreType storageType;
-  @Expose private Options options;
-  @Expose private LogicalNode subQuery;
 
   public InsertNode(int pid) {
     super(pid, NodeType.INSERT);
   }
 
-  public void setTargetTableDesc(TableDesc desc) {
-    this.targetTableDesc = desc;
+  public void setTargetTable(TableDesc desc) {
+    setTableName(desc.getName());
+    tableSchema = desc.getSchema();
+    setPath(desc.getPath());
+    setOptions(desc.getMeta().getOptions());
+    setStorageType(desc.getMeta().getStoreType());
+
+    if (desc.hasPartitions()) {
+      this.setPartitions(desc.getPartitions());
+    }
   }
 
   public void setTargetLocation(Path path) {
@@ -51,7 +59,7 @@ public class InsertNode extends LogicalNode implements Cloneable {
   }
 
   public void setSubQuery(LogicalNode subQuery) {
-    this.subQuery = subQuery;
+    this.setChild(subQuery);
     this.setInSchema(subQuery.getOutSchema());
     this.setOutSchema(subQuery.getOutSchema());
   }
@@ -64,12 +72,12 @@ public class InsertNode extends LogicalNode implements Cloneable {
     this.overwrite = overwrite;
   }
 
-  public boolean hasTargetTable() {
-    return this.targetTableDesc != null;
+  public Schema getTableSchema() {
+    return tableSchema;
   }
 
-  public TableDesc getTargetTable() {
-    return this.targetTableDesc;
+  public void setTableSchema(Schema tableSchema) {
+    this.tableSchema = tableSchema;
   }
 
   public boolean hasTargetSchema() {
@@ -82,6 +90,14 @@ public class InsertNode extends LogicalNode implements Cloneable {
 
   public void setTargetSchema(Schema schema) {
     this.targetSchema = schema;
+  }
+
+  public Schema getProjectedSchema() {
+    return this.projectedSchema;
+  }
+
+  public void setProjectedSchema(Schema projected) {
+    this.projectedSchema = projected;
   }
 
   public boolean hasPath() {
@@ -99,42 +115,16 @@ public class InsertNode extends LogicalNode implements Cloneable {
   public boolean hasStorageType() {
     return this.storageType != null;
   }
-
-  public void setStorageType(StoreType storageType) {
-    this.storageType = storageType;
-  }
-
-  public StoreType getStorageType() {
-    return this.storageType;
-  }
-  
-  public boolean hasOptions() {
-    return this.options != null;
-  }
-  
-  public void setOptions(Options opt) {
-    this.options = opt;
-  }
-  
-  public Options getOptions() {
-    return this.options;
-  }
-
-  public LogicalNode getSubQuery() {
-    return this.subQuery;
-  }
   
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof InsertNode) {
       InsertNode other = (InsertNode) obj;
       return super.equals(other)
-          && TUtil.checkEquals(this.targetTableDesc, other.targetTableDesc)
-          && TUtil.checkEquals(path, other.path)
           && this.overwrite == other.overwrite
-          && TUtil.checkEquals(this.storageType, other.storageType)
-          && TUtil.checkEquals(options, other.options)
-          && subQuery.equals(other.subQuery);
+          && TUtil.checkEquals(this.tableSchema, other.tableSchema)
+          && TUtil.checkEquals(this.targetSchema, other.targetSchema)
+          && TUtil.checkEquals(path, other.path);
     } else {
       return false;
     }
@@ -142,14 +132,12 @@ public class InsertNode extends LogicalNode implements Cloneable {
   
   @Override
   public Object clone() throws CloneNotSupportedException {
-    InsertNode store = (InsertNode) super.clone();
-    store.targetTableDesc = targetTableDesc != null ? targetTableDesc : null;
-    store.path = path != null ? new Path(path.toString()) : null;
-    store.overwrite = overwrite;
-    store.storageType = storageType != null ? storageType : null;
-    store.options = (Options) (options != null ? options.clone() : null);
-    store.subQuery = (LogicalNode) subQuery.clone();
-    return store;
+    InsertNode insertNode = (InsertNode) super.clone();
+    insertNode.overwrite = overwrite;
+    insertNode.tableSchema = new Schema(tableSchema);
+    insertNode.targetSchema = targetSchema != null ? new Schema(targetSchema) : null;
+    insertNode.path = path != null ? new Path(path.toString()) : null;
+    return insertNode;
   }
   
   public String toString() {
@@ -158,38 +146,47 @@ public class InsertNode extends LogicalNode implements Cloneable {
     if (overwrite) {
       sb.append("OVERWRITE ");
     }
-    sb.append("INTO");
+    sb.append("INTO ");
 
     if (hasTargetTable()) {
-      sb.append(targetTableDesc.getName());
+      sb.append("  ").append(tableName);
+    }
+
+    if (hasTargetSchema()) {
+      sb.append("\n  ").append(targetSchema);
     }
 
     if (hasPath()) {
-      sb.append(" LOCATION ");
+      sb.append("\n  LOCATION ");
       sb.append(path);
     }
 
-    sb.append(" [SUBQUERY]");
+    sb.append("\n").append(getChild());
     
     return sb.toString();
   }
 
   @Override
   public void preOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
+    getChild().preOrder(visitor);
+    visitor.visit(this);
   }
 
   @Override
   public void postOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
+    visitor.visit(this);
+    getChild().postOrder(visitor);
   }
 
   @Override
   public PlanString getPlanString() {
     PlanString planString = new PlanString("INSERT");
-    planString.addExplan(" INTO ");
+    planString.appendTitle(" INTO ");
     if (hasTargetTable()) {
-      planString.addExplan(getTargetTable().getName());
+      planString.appendTitle(getTableName());
+      if (hasTargetSchema()) {
+        planString.addExplan(getTargetSchema().toString());
+      }
     } else {
       planString.addExplan("LOCATION " + path);
     }

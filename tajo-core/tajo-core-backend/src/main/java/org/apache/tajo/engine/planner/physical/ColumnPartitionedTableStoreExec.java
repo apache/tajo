@@ -34,6 +34,8 @@ import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.InsertNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.storage.Appender;
@@ -83,21 +85,21 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
     }
 
     // Find column index to name subpartition directory path
-    if (this.plan.getPartitions() != null) {
-      if (this.plan.getPartitions().getColumns() != null) {
-        partitionColumnIndices = new int[plan.getPartitions().getColumns().size()];
-        partitionColumnNames = new String[partitionColumnIndices.length];
-        Schema columnPartitionSchema = plan.getPartitions().getSchema();
-        for(int i = 0; i < columnPartitionSchema.getColumnNum(); i++)  {
-          Column targetColumn = columnPartitionSchema.getColumn(i);
-          for(int j = 0; j < plan.getInSchema().getColumns().size();j++) {
-            Column inputColumn = plan.getInSchema().getColumn(j);
-            if (inputColumn.getColumnName().equals(targetColumn.getColumnName())) {
-              partitionColumnIndices[i] = j;
-              partitionColumnNames[i] = targetColumn.getColumnName();
-            }
-          }
-        }
+    int partitionKeyNum = this.plan.getPartitions().getColumns().size();
+    partitionColumnIndices = new int[partitionKeyNum];
+    partitionColumnNames = new String[partitionKeyNum];
+    for (int i = 0; i < partitionKeyNum; i++) {
+      Column column = this.plan.getPartitions().getColumns().get(i);
+      partitionColumnNames[i] = column.getColumnName();
+
+      if (this.plan.getType() == NodeType.INSERT) {
+        InsertNode insertNode = ((InsertNode)plan);
+        int idx = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
+        partitionColumnIndices[i] = idx;
+      } else {
+        // We can get partition column from a logical schema.
+        // Don't use output schema because it is rewritten.
+        partitionColumnIndices[i] = plan.getOutSchema().getColumnId(column.getQualifiedName());
       }
     }
   }

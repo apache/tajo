@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.util.TUtil;
 
 
 public abstract class UnaryNode extends LogicalNode implements Cloneable {
@@ -43,7 +44,7 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
   public boolean deepEquals(Object o) {
     if (o instanceof UnaryNode) {
       UnaryNode u = (UnaryNode) o;
-      return equals(o) && child.deepEquals(u.child);
+      return equals(o) && TUtil.checkEquals(child, u.child);
     }
     return false;
   }

@@ -21,9 +21,10 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Options;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 
 
 /**
@@ -32,11 +33,18 @@ import org.apache.tajo.util.TUtil;
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
   @Expose protected String tableName;
-  @Expose protected CatalogProtos.StoreType storageType = CatalogProtos.StoreType.CSV;
+  @Expose protected StoreType storageType = StoreType.CSV;
   @Expose protected Options options;
 
-  public PersistentStoreNode(int pid, String tableName) {
-    super(pid, NodeType.STORE);
+  public PersistentStoreNode(int pid, NodeType nodeType) {
+    super(pid, nodeType);
+  }
+
+  public boolean hasTargetTable() {
+    return tableName != null;
+  }
+
+  public void setTableName(String tableName) {
     this.tableName = tableName;
   }
 
@@ -44,11 +52,11 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
     return this.tableName;
   }
 
-  public void setStorageType(CatalogProtos.StoreType storageType) {
+  public void setStorageType(StoreType storageType) {
     this.storageType = storageType;
   }
 
-  public CatalogProtos.StoreType getStorageType() {
+  public StoreType getStorageType() {
     return this.storageType;
   }
 
@@ -58,6 +66,10 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
 
   public Options getOptions() {
     return this.options;
+  }
+
+  public void setOptions(Options options) {
+    this.options = options;
   }
 
   @Override

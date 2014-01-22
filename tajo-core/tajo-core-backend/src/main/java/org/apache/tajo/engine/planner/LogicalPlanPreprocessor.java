@@ -290,8 +290,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public LogicalNode visitInsert(PreprocessContext ctx, Stack<Expr> stack, Insert expr) throws PlanningException {
-    PreprocessContext newContext = new PreprocessContext(ctx, ctx.plan.newQueryBlock());
-    LogicalNode child = super.visitInsert(newContext, stack, expr);
+    LogicalNode child = super.visitInsert(ctx, stack, expr);
 
     InsertNode insertNode = new InsertNode(ctx.plan.newPID());
     insertNode.setInSchema(child.getOutSchema());

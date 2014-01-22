@@ -82,7 +82,6 @@ public class PartitionedTableScanNode extends ScanNode {
       sb.append("\n");
     }
 
-	  sb.append(",");
 	  sb.append("\n  \"out schema\": ").append(getOutSchema());
 	  sb.append("\n  \"in schema\": ").append(getInSchema());
 	  return sb.toString();

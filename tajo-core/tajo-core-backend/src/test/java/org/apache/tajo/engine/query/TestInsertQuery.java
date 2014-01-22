@@ -94,13 +94,13 @@ public class TestInsertQuery {
     assertTrue(catalog.existsTable(tableName));
     TableDesc originalDesc = catalog.getTableDesc(tableName);
 
-    res = tpch.execute("insert overwrite into " + tableName
-        + " (col1, col3) select l_orderkey, l_quantity from lineitem");
+    res = tpch.execute("insert overwrite into " + tableName + " (col1, col3) select l_orderkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
     res = tpch.execute("select * from " + tableName);
+
     assertTrue(res.next());
     assertEquals(1, res.getLong(1));
     assertTrue(0f == res.getFloat(2));

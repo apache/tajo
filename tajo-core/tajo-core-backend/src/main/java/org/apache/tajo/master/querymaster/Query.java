@@ -35,12 +35,15 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.logical.CreateTableNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -327,7 +330,7 @@ public class Query implements EventHandler<QueryEvent> {
 
             if (queryContext.hasOutputTable()) { // TRUE only if a query command is 'CREATE TABLE' OR 'INSERT INTO'
               if (queryContext.isOutputOverwrite()) { // TRUE only if a query is 'INSERT OVERWRITE INTO'
-                catalog.deleteTable(finalOutputDir.getName());
+                catalog.deleteTable(finalTableDesc.getName());
               }
               catalog.addTable(finalTableDesc);
             }
@@ -378,12 +381,25 @@ public class Query implements EventHandler<QueryEvent> {
                                                   Path finalOutputDir) {
       // Determine the output table name
       SubQuery subQuery = query.getSubQuery(finalExecBlockId);
-      QueryContext queryContext = query.context.getQueryContext();
+
       String outputTableName;
-      if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
-        outputTableName = queryContext.getOutputTable();
-      } else { // SELECT STATEMENT
-        outputTableName = query.getId().toString();
+      PartitionDesc partitionDesc = null;
+      QueryContext queryContext = query.context.getQueryContext();
+      if (subQuery.getBlock().getPlan().getType() == NodeType.CREATE_TABLE) {
+        CreateTableNode createTableNode = (CreateTableNode) subQuery.getBlock().getPlan();
+        outputTableName = createTableNode.getTableName();
+        if (createTableNode.hasPartition()) {
+          partitionDesc = createTableNode.getPartitions();
+        }
+      } else {
+        if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
+          outputTableName = queryContext.getOutputTable();
+        } else { // SELECT STATEMENT
+          outputTableName = query.getId().toString();
+        }
+        if(queryContext.hasPartitions()) {
+          partitionDesc = queryContext.getPartitions();
+        }
       }
 
       TableMeta meta = subQuery.getTableMeta();
@@ -410,8 +426,8 @@ public class Query implements EventHandler<QueryEvent> {
         }
       }
 
-      if(queryContext.hasPartitions()) {
-        finalTableDesc.setPartitions(queryContext.getPartitions());
+      if (partitionDesc != null) {
+        finalTableDesc.setPartitions(partitionDesc);
       }
 
       return finalTableDesc;

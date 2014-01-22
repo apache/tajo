@@ -34,8 +34,8 @@ public class ShuffleFileWriteNode extends PersistentStoreNode implements Cloneab
   @Expose private int numOutputs;
   @Expose private Column [] shuffleKeys;
 
-  public ShuffleFileWriteNode(int pid, String tableName) {
-    super(pid, tableName);
+  public ShuffleFileWriteNode(int pid) {
+    super(pid, NodeType.STORE);
   }
     
   public final int getNumOutputs() {

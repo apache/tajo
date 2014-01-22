@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner.logical;
 
 public class StoreIndexNode extends StoreTableNode {
 
-  public StoreIndexNode(int pid, String tableName) {
-    super(pid, tableName);
+  public StoreIndexNode(int pid) {
+    super(pid);
   }
 
 }

@@ -164,21 +164,17 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
                                      StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
     visit(state, plan, block, node.getChild(), stack);
 
-    if (node.isCreatedTable() && catalog.existsTable(node.getTableName())) {
-      state.addVerification("relation \"" + node.getTableName() + "\" already exists");
-    }
-
     return node;
   }
 
   @Override
   public LogicalNode visitInsert(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
-    LogicalNode child = visit(state, plan, plan.getBlock(node.getSubQuery()), node.getSubQuery(), stack);
+    LogicalNode child = visit(state, plan, block, node.getChild(), stack);
 
-    if (node.hasTargetSchema()) {
-      ensureDomains(state, node.getTargetSchema(), node.getSubQuery().getOutSchema());
-    }
+//    if (node.hasTargetSchema()) {
+//      ensureDomains(state, node.getTargetSchema(), node.getChild().getOutSchema());
+//    }
 
     return child;
   }

@@ -424,7 +424,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
 
-    assertEquals(NodeType.STORE, root.getChild().getType());
+    assertEquals(NodeType.CREATE_TABLE, root.getChild().getType());
     StoreTableNode storeNode = root.getChild();
     testQuery7(storeNode.getChild());
   }
@@ -776,31 +776,31 @@ public class TestLogicalPlanner {
   public final void testInsertInto0() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[0]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertFalse(insertNode.isOverwrite());
     assertTrue(insertNode.hasTargetTable());
-    assertEquals("score", insertNode.getTargetTable().getName());
+    assertEquals("score", insertNode.getTableName());
   }
 
   @Test
   public final void testInsertInto1() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[1]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertFalse(insertNode.isOverwrite());
-    assertEquals("score", insertNode.getTargetTable().getName());
+    assertEquals("score", insertNode.getTableName());
   }
 
   @Test
   public final void testInsertInto2() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[2]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertFalse(insertNode.isOverwrite());
-    assertEquals("employee", insertNode.getTargetTable().getName());
+    assertEquals("employee", insertNode.getTableName());
     assertTrue(insertNode.hasTargetSchema());
     assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
     assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
@@ -810,7 +810,7 @@ public class TestLogicalPlanner {
   public final void testInsertInto3() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[3]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertFalse(insertNode.isOverwrite());
     assertTrue(insertNode.hasPath());
@@ -820,11 +820,11 @@ public class TestLogicalPlanner {
   public final void testInsertInto4() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[4]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertTrue(insertNode.isOverwrite());
     assertTrue(insertNode.hasTargetTable());
-    assertEquals("employee", insertNode.getTargetTable().getName());
+    assertEquals("employee", insertNode.getTableName());
     assertTrue(insertNode.hasTargetSchema());
     assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
     assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
@@ -834,7 +834,7 @@ public class TestLogicalPlanner {
   public final void testInsertInto5() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(insertStatements[5]);
     LogicalPlan plan = planner.createPlan(expr);
-    assertEquals(2, plan.getQueryBlocks().size());
+    assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertTrue(insertNode.isOverwrite());
     assertTrue(insertNode.hasPath());

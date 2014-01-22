@@ -20,34 +20,18 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
-public class CreateTableNode extends LogicalNode implements Cloneable {
-  @Expose private String tableName;
-  @Expose private Column[] partitionKeys;
-  @Expose private StoreType storageType;
+public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Expose private Schema schema;
   @Expose private Path path;
-  @Expose private Options options;
   @Expose private boolean external;
-  @Expose private PartitionDesc partitionDesc;
 
   public CreateTableNode(int pid) {
     super(pid, NodeType.CREATE_TABLE);
-  }
-
-  public void setTableName(String name) {
-    this.tableName = name;
-  }
-
-  public final String getTableName() {
-    return this.tableName;
   }
 
   public void setSchema(Schema schema) {
@@ -56,14 +40,6 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     
   public Schema getSchema() {
     return this.schema;
-  }
-
-  public void setStorageType(StoreType storageType) {
-    this.storageType = storageType;
-  }
-
-  public StoreType getStorageType() {
-    return this.storageType;
   }
 
   public boolean hasPath() {
@@ -77,18 +53,6 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   public Path getPath() {
     return this.path;
   }
-  
-  public boolean hasOptions() {
-    return this.options != null;
-  }
-  
-  public void setOptions(Options opt) {
-    this.options = opt;
-  }
-  
-  public Options getOptions() {
-    return this.options;
-  }
 
   public boolean isExternal() {
     return external;
@@ -98,16 +62,8 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     this.external = external;
   }
 
-  public PartitionDesc getPartitions() {
-    return partitionDesc;
-  }
-
-  public void setPartitions(PartitionDesc partitionDesc) {
-    this.partitionDesc = partitionDesc;
-  }
-
-  public boolean hasPartition() {
-    return this.partitionDesc != null;
+  public boolean hasSubQuery() {
+    return child != null;
   }
 
   @Override
@@ -120,14 +76,9 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     if (obj instanceof CreateTableNode) {
       CreateTableNode other = (CreateTableNode) obj;
       return super.equals(other)
-          && this.tableName.equals(other.tableName)
           && this.schema.equals(other.schema)
-          && this.storageType == other.storageType
           && this.external == other.external
-          && TUtil.checkEquals(path, other.path)
-          && TUtil.checkEquals(options, other.options)
-          && TUtil.checkEquals(partitionKeys, other.partitionKeys)
-          && TUtil.checkEquals(partitionDesc, other.partitionDesc);
+          && TUtil.checkEquals(path, other.path);
     } else {
       return false;
     }
@@ -141,29 +92,17 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     store.storageType = storageType;
     store.external = external;
     store.path = path != null ? new Path(path.toString()) : null;
-    store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;
     store.options = (Options) (options != null ? options.clone() : null);
-    store.partitionDesc = (PartitionDesc) (partitionDesc != null ? partitionDesc.clone() : null);
     return store;
   }
   
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("\"CreateTable\": {\"table\": \""+tableName+"\",");
-    if (partitionKeys != null) {
-      sb.append("\"partition keys: [");
-      for (int i = 0; i < partitionKeys.length; i++) {
-        sb.append(partitionKeys[i]);
-        if (i < partitionKeys.length - 1)
-          sb.append(",");
-      }
-      sb.append("],");
-    }
     sb.append("\"schema: \"{" + this.schema).append("}");
     sb.append(",\"storeType\": \"" + this.storageType);
     sb.append(",\"path\" : \"" + this.path).append("\",");
     sb.append(",\"external\" : \"" + this.external).append("\",");
-    sb.append(",\"partitions\" : \"" + this.partitionDesc).append("\",");
     
     sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
     .append("\n  \"in schema\": ").append(getInSchema())
@@ -174,11 +113,17 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
 
   @Override
   public void preOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
+    if (hasSubQuery()) {
+      child.preOrder(visitor);
+    }
+    visitor.visit(this);
   }
 
   @Override
   public void postOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
+    visitor.visit(this);
+    if (hasSubQuery()) {
+      child.preOrder(visitor);
+    }
   }
 }

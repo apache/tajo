@@ -389,12 +389,27 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
     DataChannel channel;
     CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
+
     if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
       channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
       Column[] columns = new Column[partitionDesc.getColumns().size()];
-      channel.setShuffleKeys(partitionDesc.getColumns().toArray(columns));
+
+      if (currentNode.getType() == NodeType.INSERT) {
+        InsertNode insertNode = (InsertNode) currentNode;
+        channel.setSchema(((InsertNode)currentNode).getProjectedSchema());
+        Column [] shuffleKeys = new Column[partitionDesc.getColumns().size()];
+        int i = 0;
+        for (Column column : partitionDesc.getColumns()) {
+          int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
+          shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
+        }
+        channel.setShuffleKeys(shuffleKeys);
+      } else {
+        channel.setShuffleKeys(partitionDesc.getColumns().toArray(columns));
+      }
       channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);
+
     } else {
       throw new PlanningException(String.format("Not Supported PartitionsType :%s", partitionsType));
     }
@@ -679,13 +694,26 @@ public class GlobalPlanner {
     }
 
     @Override
+    public LogicalNode visitCreateTable(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                       CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitStoreTable(context, plan, queryBlock, node, stack);
+
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
+      context.execBlockMap.put(node.getPID(), newExecBlock);
+
+      return node;
+    }
+
+    @Override
     public LogicalNode visitInsert(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
                                    InsertNode node, Stack<LogicalNode> stack)
         throws PlanningException {
       LogicalNode child = super.visitInsert(context, plan, queryBlock, node, stack);
-      ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
-      execBlock.setPlan(node);
-      context.execBlockMap.put(node.getPID(), execBlock);
+
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
+      context.execBlockMap.put(node.getPID(), newExecBlock);
 
       return node;
     }
