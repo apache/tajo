@@ -413,6 +413,42 @@ If you want to customize the catalog service, copy $TAJO_HOME/conf/catalog-site.
     * tajo.catalog.store.DerbyStore - this storage class uses Apache Derby.
     * tajo.catalog.store.MySQLStore - this storage class uses MySQL.
     * tajo.catalog.store.MemStore - this is the in-memory storage. It is only used in unit tests to shorten the duration of unit tests.
+    * tajo.catalog.store.HCatalogStore - this storage class uses HiveMetaStore.
+
+### HCatalogStore Configuration
+
+Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogStore, you just do as follows.
+
+First, you must compile source code and get a binary archive as follows:
+
+```
+$ git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
+$ mvn clean package -DskipTests -Pdist -Dtar -Phcatalog-0.1x.0
+$ ls tajo-dist/target/tajo-0.8.0-SNAPSHOT.tar.gz
+```
+
+Tajo support to build based on hive 0.11.0 and hive 0.12.0. If you use hive 0.11.0, you have to set -Phcatalog-0.11.0. And if you use hive 0.12.0, you have to set -Phcatalog-0.12.0.
+
+Second, you must set your hive home directory to HIVE_HOME variable in conf/tajo-env.sh with it as follows:
+
+```
+export HIVE_HOME=/path/to/your/hive/directory
+```
+
+Third, if you need to use jdbc to connect HiveMetaStore, you have to prepare mysql jdbc driver on host which can be ran TajoMaster. If you prepare it, you should set jdbc driver file path to HIVE_JDBC_DRIVER_DIR variable in conf/tajo-env.sh with it  as follows:
+
+```
+export HIVE_JDBC_DRIVER_DIR==/path/to/your/mysql_jdbc_driver/mysql-connector-java-x.x.x-bin.jar
+```
+
+Lastly, you should add the following config to *conf/catalog-site.xml* :
+
+```
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.HCatalogStore</value>
+  </property>
+```
 
 ## <a name="DefaultPorts"></a>RPC/Http Service Configuration and Default Addresses
 

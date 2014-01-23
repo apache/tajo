@@ -4,7 +4,7 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
-	TAJO-449: Implement extract() function. (Keuntae Park)
+    TAJO-449: Implement extract() function. (Keuntae Park)
 
     TAJO-482: Implements listing functions and describing a specified
     function. (hyoungjunkim via hyunsik)
@@ -360,6 +360,8 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-526: HCatalogStore Documentation. (jaehwa)
 
     TAJO-535: Fix warnings in tajo-rpc. (jinho)
 
