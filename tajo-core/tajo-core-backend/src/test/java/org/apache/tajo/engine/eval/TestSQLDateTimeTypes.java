@@ -27,8 +27,8 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
   @Test
   public void testTimestamp() throws IOException {
     testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';", new String[]{"1970-01-17 10:09:37"});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';", new String[]{"1970-01-17 10:09:37.500"});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';", new String[]{"1970-01-17 10:09:37.010"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';", new String[]{"1970-01-17 10:09:37.5"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';", new String[]{"1970-01-17 10:09:37.01"});
     testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.003';", new String[]{"1970-01-17 10:09:37.003"});
   }
 

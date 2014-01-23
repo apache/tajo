@@ -57,6 +57,10 @@ public class DateDatum extends Datum {
     this(Bytes.toInt(bytes));
   }
 
+  public int getCenturyOfEra() {
+    return date.getCenturyOfEra();
+  }
+
   public int getYear() {
     return date.getYear();
   }
@@ -65,12 +69,24 @@ public class DateDatum extends Datum {
     return date.getMonthOfYear();
   }
 
+  public int getWeekyear() {
+    return date.getWeekyear();
+  }
+
+  public int getWeekOfWeekyear() {
+    return date.getWeekOfWeekyear();
+  }
+
   public int getDayOfWeek() {
     return date.getDayOfWeek();
   }
 
   public int getDayOfMonth() {
     return date.getDayOfMonth();
+  }
+
+  public int getDayOfYear() {
+    return date.getDayOfYear();
   }
 
   public String toString() {

@@ -511,10 +511,40 @@ array
 
 numeric_primary
   : value_expression_primary (CAST_EXPRESSION cast_target)*
+  | numeric_value_function
   ;
 
 sign
   : PLUS | MINUS
+  ;
+
+/*
+===============================================================================
+  6.27 <numeric value function>
+===============================================================================
+*/
+
+numeric_value_function
+  : extract_expression
+  ;
+
+extract_expression
+  : EXTRACT LEFT_PAREN extract_field_string=extract_field FROM extract_source RIGHT_PAREN
+  ;
+
+extract_field
+  : primary_datetime_field
+  | time_zone_field
+  | extended_datetime_field
+  ;
+
+time_zone_field
+  : TIMEZONE | TIMEZONE_HOUR | TIMEZONE_MINUTE
+  ;
+
+extract_source
+  : column_reference
+  | datetime_literal
   ;
 
 /*
@@ -1085,6 +1115,27 @@ exists_predicate
 
 unique_predicate
   : UNIQUE s=table_subquery
+  ;
+
+/*
+===============================================================================
+  10.1 <interval qualifier>
+
+  Specify the precision of an interval data type.
+===============================================================================
+*/
+
+primary_datetime_field
+	:	non_second_primary_datetime_field
+	|	SECOND
+	;
+
+non_second_primary_datetime_field
+  : YEAR | MONTH | DAY | HOUR | MINUTE
+  ;
+
+extended_datetime_field
+  : CENTURY | DECADE | DOW | DOY | EPOCH | ISODOW | ISOYEAR | MICROSECONDS | MILLENNIUM | MILLISECONDS | QUARTER | WEEK
   ;
 
 /*

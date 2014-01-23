@@ -28,6 +28,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.CSVFile;
 
@@ -654,10 +655,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitNumeric_primary(SQLParser.Numeric_primaryContext ctx) {
-    Expr current = visitValue_expression_primary(ctx.value_expression_primary());
-
-    for (int i = 0; i < ctx.CAST_EXPRESSION().size(); i++) {
-      current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
+    Expr current = null;
+    if (checkIfExist(ctx.value_expression_primary())) {
+      current = visitValue_expression_primary(ctx.value_expression_primary());
+      for (int i = 0; i < ctx.CAST_EXPRESSION().size(); i++) {
+        current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
+      }
+    } else if (checkIfExist(ctx.numeric_value_function())) {
+      current = visitNumeric_value_function(ctx.numeric_value_function());
     }
 
     return current;
@@ -861,6 +866,34 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     return current;
+  }
+
+
+  @Override
+  public Expr visitNumeric_value_function(Numeric_value_functionContext ctx) {
+    if (checkIfExist(ctx.extract_expression())) {
+      return visitExtract_expression(ctx.extract_expression());
+    }
+
+    return null;
+  }
+
+  @Override
+  public Expr visitExtract_expression(Extract_expressionContext ctx) {
+    Expr extractTarget = new LiteralValue(ctx.extract_field_string.getText(), LiteralType.String);
+    Expr extractSource;
+    if (checkIfExist(ctx.extract_source().column_reference())) {
+      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
+    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
+      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
+    } else {
+      return null;
+    }
+
+    String functionName = "date_part";
+    Expr [] params = new Expr[] {extractTarget, extractSource};
+
+    return new FunctionExpr(functionName, params);
   }
 
   @Override

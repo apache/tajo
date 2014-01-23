@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
@@ -66,6 +67,14 @@ public class TimestampDatum extends Datum {
     return dateTime;
   }
 
+  public int getCenturyOfEra() {
+    return dateTime.getCenturyOfEra();
+  }
+
+  public int getEra() {
+    return dateTime.getEra();
+  }
+
   public int getYear() {
     return dateTime.getYear();
   }
@@ -76,6 +85,10 @@ public class TimestampDatum extends Datum {
 
   public int getDayOfWeek() {
     return dateTime.getDayOfWeek();
+  }
+
+  public int getDayOfYear() {
+    return dateTime.getDayOfYear();
   }
 
   public int getDayOfMonth() {
@@ -102,6 +115,14 @@ public class TimestampDatum extends Datum {
     return dateTime.getMillisOfSecond();
   }
 
+  public int getWeekyear() {
+    return dateTime.getWeekyear();
+  }
+
+  public int getWeekOfWeekyear() {
+    return dateTime.getWeekOfWeekyear();
+  }
+
   public String toString() {
     return asChars();
   }
@@ -109,7 +130,7 @@ public class TimestampDatum extends Datum {
   @Override
   public String asChars() {
     if (getMillisOfSecond() > 0) {
-      return dateTime.toString(FRACTION_FORMATTER);
+      return StringUtils.stripEnd(dateTime.toString(FRACTION_FORMATTER), "0");
     } else {
       return dateTime.toString(DEFAULT_FORMATTER);
     }
