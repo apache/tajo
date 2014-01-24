@@ -363,6 +363,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-545: MySQLStore Documentation. (jaehwa)
+
     TAJO-526: HCatalogStore Documentation. (jaehwa)
 
     TAJO-535: Fix warnings in tajo-rpc. (jinho)

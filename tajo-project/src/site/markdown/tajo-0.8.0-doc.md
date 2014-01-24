@@ -415,6 +415,39 @@ If you want to customize the catalog service, copy $TAJO_HOME/conf/catalog-site.
     * tajo.catalog.store.MemStore - this is the in-memory storage. It is only used in unit tests to shorten the duration of unit tests.
     * tajo.catalog.store.HCatalogStore - this storage class uses HiveMetaStore.
 
+### MySQLStore Configuration
+
+If you want to use MySQLStore, you must create database and user on mysql for tajo. 
+
+And then, you need to prepare mysql jdbc driver on host which can be ran TajoMaster. If you do, you should set TAJO_CLASSPATH variable in conf/tajo-env.sh with it as follows:
+
+```
+export TAJO_CLASSPATH=/usr/local/mysql/lib/mysql-connector-java-x.x.x.jar
+```
+
+Or you just can copy jdbc driver into $TAJO_HOME/lib.
+
+Finally, you should add the following config to *conf/catalog-site.xml* :
+
+```
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.MySQLStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.id</name>
+    <value><mysql user name></value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.password</name>
+    <value><mysql user password></value>
+  </property>
+    <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:mysql://<mysql host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  </property>
+```
+
 ### HCatalogStore Configuration
 
 Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogStore, you just do as follows.
