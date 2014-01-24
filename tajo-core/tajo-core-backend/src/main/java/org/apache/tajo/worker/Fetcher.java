@@ -57,7 +57,18 @@ public class Fetcher {
   private long finishTime;
   private long fileLen;
   private int messageReceiveCount;
-  private ChannelFactory factory;
+
+
+  private static final ThreadFactory bossFactory = new ThreadFactoryBuilder()
+      .setNameFormat("Fetcher Netty Boss #%d")
+      .build();
+  private static final ThreadFactory workerFactory = new ThreadFactoryBuilder()
+      .setNameFormat("Fetcher Netty Worker #%d")
+      .build();
+  private static final ChannelFactory factory = new NioClientSocketChannelFactory(
+      Executors.newCachedThreadPool(bossFactory),
+      Executors.newCachedThreadPool(workerFactory));
+
   private ClientBootstrap bootstrap;
 
   public Fetcher(URI uri, File file) {
@@ -75,24 +86,13 @@ public class Fetcher {
       }
     }
 
-    ThreadFactory bossFactory = new ThreadFactoryBuilder()
-        .setNameFormat("Fetcher Netty Boss #%d")
-        .build();
-    ThreadFactory workerFactory = new ThreadFactoryBuilder()
-        .setNameFormat("Fetcher Netty Worker #%d")
-        .build();
-
-    factory = new NioClientSocketChannelFactory(
-        Executors.newCachedThreadPool(bossFactory),
-        Executors.newCachedThreadPool(workerFactory));
-
     bootstrap = new ClientBootstrap(factory);
     bootstrap.setOption("connectTimeoutMillis", 5000L); // set 5 sec
     bootstrap.setOption("receiveBufferSize", 1048576); // set 1M
     bootstrap.setOption("tcpNoDelay", true);
 
-    ChannelPipelineFactory factory = new HttpClientPipelineFactory(file);
-    bootstrap.setPipelineFactory(factory);
+    ChannelPipelineFactory pipelineFactory = new HttpClientPipelineFactory(file);
+    bootstrap.setPipelineFactory(pipelineFactory);
   }
 
   public long getStartTime() {
@@ -131,7 +131,7 @@ public class Fetcher {
     // Wait until the connection attempt succeeds or fails.
     Channel channel = future.awaitUninterruptibly().getChannel();
     if (!future.isSuccess()) {
-      bootstrap.releaseExternalResources();
+      future.getChannel().close();
       throw new IOException(future.getCause());
     }
 
@@ -153,8 +153,8 @@ public class Fetcher {
 
     channelFuture.addListener(ChannelFutureListener.CLOSE);
 
-    // Shut down executor threads to exit.
-    bootstrap.releaseExternalResources();
+    // Close the channel to exit.
+    future.getChannel().close();
     finishTime = System.currentTimeMillis();
     return file;
   }
