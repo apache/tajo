@@ -226,6 +226,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-493: maven pom.xml should enforce protobuf 2.5. (jaehwa)
+
     TAJO-360: If there is no matched function, catalog causes NPE.
     (hyoungjunkim via hyunsik)
 
