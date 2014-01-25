@@ -21,12 +21,11 @@
  */
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.logical.Projectable;
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.engine.planner.logical.Projectable;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -35,7 +34,6 @@ public class ProjectionExec extends UnaryPhysicalExec {
 
   // for projection
   private Tuple outTuple;
-  private EvalContext[] evalContexts;
   private Projector projector;
   
   public ProjectionExec(TaskAttemptContext context, Projectable plan,
@@ -49,7 +47,6 @@ public class ProjectionExec extends UnaryPhysicalExec {
 
     this.outTuple = new VTuple(outSchema.getColumnNum());
     this.projector = new Projector(inSchema, outSchema, this.plan.getTargets());
-    this.evalContexts = projector.newContexts();
   }
 
   @Override
@@ -60,8 +57,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
       return null;
     }
 
-    projector.eval(evalContexts, tuple);
-    projector.terminate(evalContexts, outTuple);
+    projector.eval(tuple, outTuple);
     return outTuple;
   }
 }

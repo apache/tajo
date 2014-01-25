@@ -80,8 +80,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       } else {
         // if not found, it returns a tuple.
         frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+        projector.eval(frameTuple, outTuple);
         return outTuple;
       }
 
@@ -91,16 +90,14 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
         frameTuple.set(leftTuple, rightTuple);
-        joinQual.eval(qualCtx, inSchema, frameTuple);
-        if (joinQual.terminate(qualCtx).asBool()) { // if the matched one is found
+        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
           notFound = false;
         }
       }
 
       if (notFound) { // if there is no matched tuple
         frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+        projector.eval(frameTuple, outTuple);
         break;
       }
     }

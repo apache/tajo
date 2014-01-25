@@ -219,19 +219,15 @@ public class TestEvalTreeUtil {
     EvalNode first = cnf[0];
     EvalNode second = cnf[1];
     
-    FieldEval field = (FieldEval) first.getLeftExpr();
+    FieldEval field = first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(EvalType.LTH, first.getType());
-    EvalContext firstRCtx = first.getRightExpr().newContext();
-    first.getRightExpr().eval(firstRCtx, null,  null);
-    assertEquals(10, first.getRightExpr().terminate(firstRCtx).asInt4());
+    assertEquals(10, first.getRightExpr().eval(null,  null).asInt4());
     
-    field = (FieldEval) second.getRightExpr();
+    field = second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(EvalType.LTH, second.getType());
-    EvalContext secondLCtx = second.getLeftExpr().newContext();
-    second.getLeftExpr().eval(secondLCtx, null,  null);
-    assertEquals(4, second.getLeftExpr().terminate(secondLCtx).asInt4());
+    assertEquals(4, second.getLeftExpr().eval(null,  null).asInt4());
   }
   
   @Test
@@ -264,15 +260,11 @@ public class TestEvalTreeUtil {
   public final void testSimplify() throws PlanningException {
     Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets[0].getEvalTree());
-    EvalContext nodeCtx = node.newContext();
     assertEquals(EvalType.CONST, node.getType());
-    node.eval(nodeCtx, null, null);
-    assertEquals(7, node.terminate(nodeCtx).asInt4());
+    assertEquals(7, node.eval(null, null).asInt4());
     node = AlgebraicUtil.eliminateConstantExprs(targets[1].getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
-    nodeCtx = node.newContext();
-    node.eval(nodeCtx, null, null);
-    assertTrue(7.0d == node.terminate(nodeCtx).asFloat8());
+    assertTrue(7.0d == node.eval(null, null).asFloat8());
 
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -300,9 +292,7 @@ public class TestEvalTreeUtil {
     assertEquals(EvalType.GTH, transposed.getType());
     FieldEval field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
-    EvalContext evalCtx = transposed.getRightExpr().newContext();
-    transposed.getRightExpr().eval(evalCtx, null, null);
-    assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt4());
+    assertEquals(1, transposed.getRightExpr().eval(null, null).asInt4());
 
     node = getRootSelection(QUERIES[4]);
     // we expect that score < 3
@@ -310,9 +300,7 @@ public class TestEvalTreeUtil {
     assertEquals(EvalType.LTH, transposed.getType());
     field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
-    evalCtx = transposed.getRightExpr().newContext();
-    transposed.getRightExpr().eval(evalCtx, null, null);
-    assertEquals(2, transposed.getRightExpr().terminate(evalCtx).asInt4());
+    assertEquals(2, transposed.getRightExpr().eval(null, null).asInt4());
   }
 
   @Test
@@ -321,11 +309,11 @@ public class TestEvalTreeUtil {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(expr);
     GroupbyNode groupByNode = plan.getRootBlock().getNode(NodeType.GROUP_BY);
-    Target [] targets = groupByNode.getTargets();
+    EvalNode [] aggEvals = groupByNode.getAggFunctions();
 
     List<AggregationFunctionCallEval> list = new ArrayList<AggregationFunctionCallEval>();
-    for (int i = 0; i < targets.length; i++) {
-      list.addAll(EvalTreeUtil.findDistinctAggFunction(targets[i].getEvalTree()));
+    for (int i = 0; i < aggEvals.length; i++) {
+      list.addAll(EvalTreeUtil.findDistinctAggFunction(aggEvals[i]));
     }
     assertEquals(2, list.size());
 

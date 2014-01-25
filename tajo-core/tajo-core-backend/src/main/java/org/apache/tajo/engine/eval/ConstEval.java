@@ -21,8 +21,10 @@ package org.apache.tajo.engine.eval;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.storage.Tuple;
 
 public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
 	@Expose Datum datum = null;
@@ -32,17 +34,6 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 		this.datum = datum;
 	}
 
-  @Override
-  public EvalContext newContext() {
-    return null;
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    return this.datum;
-  }
-
-
   public Datum getValue() {
     return this.datum;
   }
@@ -50,6 +41,11 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	public String toString() {
 		return datum.toString();
 	}
+
+  @Override
+  public Datum eval(Schema schema, Tuple tuple) {
+    return datum;
+  }
 
   @Override
 	public DataType getValueType() {

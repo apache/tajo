@@ -89,11 +89,9 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
         frameTuple.set(leftTuple, rightTuple);
-        joinQual.eval(qualCtx, inSchema, frameTuple);
-        if (joinQual.terminate(qualCtx).asBool()) { // if the matched one is found
+        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
           notFound = false;
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+          projector.eval(frameTuple, outTuple);
         }
       }
 

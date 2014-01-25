@@ -22,17 +22,15 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected GeneralFunction instance;
-  private Tuple tuple;
   private Tuple params = null;
-  private Schema schema;
 
 	public GeneralFunctionEval(FunctionDesc desc, GeneralFunction instance, EvalNode[] givenArgs) {
 		super(EvalType.FUNCTION, desc, givenArgs);
@@ -44,27 +42,19 @@ public class GeneralFunctionEval extends FunctionEval {
     * @see nta.query.executor.eval.Expr#evalVal(Tuple)
     */
 	@Override
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    this.schema = schema;
-    this.tuple = tuple;
-	}
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    FuncCallCtx localCtx = (FuncCallCtx) ctx;
+	public Datum eval(Schema schema, Tuple tuple) {
     if (this.params == null) {
       params = new VTuple(argEvals.length);
     }
-
     if(argEvals != null) {
       params.clear();
       for(int i=0;i < argEvals.length; i++) {
-        argEvals[i].eval(localCtx.argCtxs[i], schema, tuple);
-        params.put(i, argEvals[i].terminate(localCtx.argCtxs[i]));
+        params.put(i, argEvals[i].eval(schema, tuple));
       }
     }
+
     return instance.eval(params);
-  }
+	}
 	
 	@Override
 	public boolean equals(Object obj) {

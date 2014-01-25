@@ -130,13 +130,10 @@ public class ExprTestBase {
     try {
       targets = getRawTargets(query);
 
-      EvalContext [] evalContexts = new EvalContext[targets.length];
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
-        evalContexts[i] = eval.newContext();
-        eval.eval(evalContexts[i], inputSchema, vtuple);
-        outTuple.put(i, eval.terminate(evalContexts[i]));
+        outTuple.put(i, eval.eval(inputSchema, vtuple));
       }
 
       for (int i = 0; i < expected.length; i++) {

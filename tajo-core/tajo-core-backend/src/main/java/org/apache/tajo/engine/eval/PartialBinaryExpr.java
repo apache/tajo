@@ -34,11 +34,6 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
-  public EvalContext newContext() {
-    return null;
-  }
-
-  @Override
   public DataType getValueType() {
     return null;
   }
@@ -49,16 +44,9 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
+  public Datum eval(Schema schema, Tuple tuple) {
     throw new InvalidEvalException(
         "ERROR: the partial binary expression cannot be evluated: "
-            + this.toString() );
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    throw new InvalidEvalException(
-        "ERROR: the partial binary expression cannot be terminated: "
             + this.toString() );
   }
 

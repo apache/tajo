@@ -19,16 +19,15 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -37,11 +36,9 @@ public class BSTIndexScanExec extends PhysicalExec {
   private SeekableScanner fileScanner;
   
   private EvalNode qual;
-  private EvalContext qualCtx;
   private BSTIndex.BSTIndexReader reader;
   
   private final Projector projector;
-  private EvalContext [] evalContexts;
   
   private Datum[] datum = null;
   
@@ -54,18 +51,12 @@ public class BSTIndexScanExec extends PhysicalExec {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
     this.qual = scanNode.getQual();
-    if(this.qual == null) {
-      this.qualCtx = null;
-    } else {
-      this.qualCtx = this.qual.newContext();
-    }
     this.datum = datum;
 
     this.fileScanner = StorageManagerFactory.getSeekableScanner(context.getConf(),
         scanNode.getTableDesc().getMeta(), scanNode.getInSchema(), fragment, outSchema);
     this.fileScanner.init();
     this.projector = new Projector(inSchema, outSchema, scanNode.getTargets());
-    this.evalContexts = projector.newContexts();
 
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
         getIndexReader(fileName, keySchema, comparator);
@@ -109,18 +100,15 @@ public class BSTIndexScanExec extends PhysicalExec {
     Tuple outTuple = new VTuple(this.outSchema.getColumnNum());
     if (!scanNode.hasQual()) {
       if ((tuple = fileScanner.next()) != null) {
-        projector.eval(evalContexts, tuple);
-        projector.terminate(evalContexts, outTuple);
+        projector.eval(tuple, outTuple);
         return outTuple;
       } else {
         return null;
       }
     } else {
-       while( reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
-         qual.eval(qualCtx, inSchema, tuple);
-         if (qual.terminate(qualCtx).asBool()) {
-           projector.eval(evalContexts, tuple);
-           projector.terminate(evalContexts, outTuple);
+       while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
+         if (qual.eval(inSchema, tuple).isTrue()) {
+           projector.eval(tuple, outTuple);
            return outTuple;
          } else {
            fileScanner.seek(reader.next());

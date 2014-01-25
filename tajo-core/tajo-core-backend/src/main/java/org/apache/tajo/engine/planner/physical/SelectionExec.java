@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.SelectionNode;
 import org.apache.tajo.storage.Tuple;
@@ -28,23 +27,20 @@ import java.io.IOException;
 
 public class SelectionExec extends UnaryPhysicalExec  {
   private final EvalNode qual;
-  private final EvalContext qualCtx;
 
   public SelectionExec(TaskAttemptContext context,
                        SelectionNode plan,
                        PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.qual = plan.getQual();
-    this.qualCtx = this.qual.newContext();
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     while ((tuple = child.next()) != null) {
-      qual.eval(qualCtx, inSchema, tuple);
-      if (qual.terminate(qualCtx).isTrue()) {
-          return tuple;
+      if (qual.eval(inSchema, tuple).isTrue()) {
+        return tuple;
       }
     }
 

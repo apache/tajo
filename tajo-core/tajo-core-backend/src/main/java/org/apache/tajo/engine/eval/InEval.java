@@ -25,7 +25,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
 public class InEval extends BinaryEval {
@@ -45,11 +44,6 @@ public class InEval extends BinaryEval {
   }
 
   @Override
-  public EvalContext newContext() {
-    return new InEvalCtx();
-  }
-
-  @Override
   public TajoDataTypes.DataType getValueType() {
     return RES_TYPE;
   }
@@ -60,37 +54,27 @@ public class InEval extends BinaryEval {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    InEvalCtx isNullCtx = (InEvalCtx) ctx;
+  public Datum eval(Schema schema, Tuple tuple) {
     if (fieldId == null) {
       fieldId = schema.getColumnId(((FieldEval)leftExpr).getColumnRef().getQualifiedName());
       values = ((RowConstantEval)rightExpr).getValues();
     }
 
-    boolean isIncluded = false;
-
     Datum value = tuple.get(fieldId);
 
     if (value.isNull()) {
-      isNullCtx.isNull = true;
-      return;
+      return value;
     }
 
+    boolean isIncluded = false;
     for (Datum datum : values) {
       if (value.equalsTo(datum).asBool()) {
         isIncluded = true;
         break;
       }
     }
-    isNullCtx.result = isIncluded;
-  }
 
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    if (((InEvalCtx)ctx).isNull) {
-      return NullDatum.get();
-    }
-    return DatumFactory.createBool(not ^ ((InEvalCtx)ctx).result);
+    return DatumFactory.createBool(not ^ isIncluded);
   }
 
   @Override
@@ -104,10 +88,5 @@ public class InEval extends BinaryEval {
 
   public String toString() {
     return leftExpr + " IN (" + rightExpr + ")";
-  }
-
-  private class InEvalCtx implements EvalContext {
-    boolean isNull;
-    boolean result;
   }
 }

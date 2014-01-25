@@ -40,32 +40,14 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 
 	@Override
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
+	public Datum eval(Schema schema, Tuple tuple) {
 	  if (fieldId == -1) {
 	    fieldId = schema.getColumnId(column.getQualifiedName());
       if (fieldId == -1) {
         throw new IllegalStateException("No Such Column Reference: " + column + ", schema: " + schema);
       }
 	  }
-    FieldEvalContext fieldCtx = (FieldEvalContext) ctx;
-	  fieldCtx.datum = tuple.get(fieldId);
-	}
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    return ((FieldEvalContext)ctx).datum;
-  }
-
-  @Override
-  public EvalContext newContext() {
-    return new FieldEvalContext();
-  }
-
-  private static class FieldEvalContext implements EvalContext {
-    private Datum datum;
-
-    public FieldEvalContext() {
-    }
+	  return tuple.get(fieldId);
   }
 
   @Override

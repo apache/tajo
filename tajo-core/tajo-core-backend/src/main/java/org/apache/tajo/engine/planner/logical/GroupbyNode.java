@@ -20,14 +20,22 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
-	@Expose private Column [] columns;
-	@Expose private Target [] targets;
+	/** Grouping key sets */
+  @Expose private Column [] groupingColumns;
+  /** Aggregation Functions */
+  @Expose private AggregationFunctionCallEval [] aggrFunctions;
+  /**
+   * It's a list of targets. The grouping columns should be followed by aggregation functions.
+   * aggrFunctions keep actual aggregation functions, but it only contains field references.
+   * */
+  @Expose private Target [] targets;
   @Expose private boolean hasDistinct = false;
 
   public GroupbyNode(int pid) {
@@ -35,15 +43,15 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
 
   public final boolean isEmptyGrouping() {
-    return columns == null || columns.length == 0;
+    return groupingColumns == null || groupingColumns.length == 0;
   }
 
   public void setGroupingColumns(Column [] groupingColumns) {
-    this.columns = groupingColumns;
+    this.groupingColumns = groupingColumns;
   }
 
 	public final Column [] getGroupingColumns() {
-	  return this.columns;
+	  return this.groupingColumns;
 	}
 
   public final boolean isDistinct() {
@@ -52,6 +60,18 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
   public void setDistinct(boolean distinct) {
     hasDistinct = distinct;
+  }
+
+  public boolean hasAggFunctions() {
+    return this.aggrFunctions != null;
+  }
+
+  public AggregationFunctionCallEval [] getAggFunctions() {
+    return this.aggrFunctions;
+  }
+
+  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+    this.aggrFunctions = evals;
   }
 
   @Override
@@ -76,9 +96,9 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   
   public String toString() {
     StringBuilder sb = new StringBuilder("\"GroupBy\": {\"grouping fields\":[");
-    for (int i=0; i < columns.length; i++) {
-      sb.append("\"").append(columns[i]).append("\"");
-      if(i < columns.length - 1)
+    for (int i=0; i < groupingColumns.length; i++) {
+      sb.append("\"").append(groupingColumns[i]).append("\"");
+      if(i < groupingColumns.length - 1)
         sb.append(",");
     }
 
@@ -92,6 +112,9 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       }
       sb.append("],");
     }
+    if (aggrFunctions != null) {
+      sb.append("\n  \"expr\": ").append(TUtil.arrayToString(aggrFunctions)).append(",");
+    }
     sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
     sb.append("\n  \"in schema\": ").append(getInSchema());
     sb.append("}");
@@ -104,7 +127,8 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     if (obj instanceof GroupbyNode) {
       GroupbyNode other = (GroupbyNode) obj;
       boolean eq = super.equals(other);
-      eq = eq && TUtil.checkEquals(columns, other.columns);
+      eq = eq && TUtil.checkEquals(groupingColumns, other.groupingColumns);
+      eq = eq && TUtil.checkEquals(aggrFunctions, other.aggrFunctions);
       eq = eq && TUtil.checkEquals(targets, other.targets);
       return eq;
     } else {
@@ -115,10 +139,17 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     GroupbyNode grp = (GroupbyNode) super.clone();
-    if (columns != null) {
-      grp.columns = new Column[columns.length];
-      for (int i = 0; i < columns.length; i++) {
-        grp.columns[i] = (Column) columns[i].clone();
+    if (groupingColumns != null) {
+      grp.groupingColumns = new Column[groupingColumns.length];
+      for (int i = 0; i < groupingColumns.length; i++) {
+        grp.groupingColumns[i] = (Column) groupingColumns[i].clone();
+      }
+    }
+
+    if (aggrFunctions != null) {
+      grp.aggrFunctions = new AggregationFunctionCallEval[aggrFunctions.length];
+      for (int i = 0; i < aggrFunctions.length; i++) {
+        grp.aggrFunctions[i] = (AggregationFunctionCallEval) aggrFunctions[i].clone();
       }
     }
 
@@ -138,7 +169,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
     StringBuilder sb = new StringBuilder();
     sb.append("(");
-    Column [] groupingColumns = columns;
+    Column [] groupingColumns = this.groupingColumns;
     for (int j = 0; j < groupingColumns.length; j++) {
       sb.append(groupingColumns[j].getColumnName());
       if(j < groupingColumns.length - 1) {
@@ -149,6 +180,17 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     sb.append(")");
 
     planStr.appendTitle(sb.toString());
+
+    sb = new StringBuilder();
+    sb.append("(");
+    for (int j = 0; j < aggrFunctions.length; j++) {
+      sb.append(aggrFunctions[j]);
+      if(j < aggrFunctions.length - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append(")");
+    planStr.appendExplain("exprs: ").appendExplain(sb.toString());
 
     sb = new StringBuilder("target list: ");
     for (int i = 0; i < targets.length; i++) {

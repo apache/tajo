@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -42,13 +41,6 @@ public class IsNullEval extends BinaryEval {
   }
 
   @Override
-  public EvalContext newContext() {
-    IsNullEvalCtx context = new IsNullEvalCtx();
-    context.predicandContext = leftExpr.newContext();
-    return context;
-  }
-
-  @Override
   public DataType getValueType() {
     return RES_TYPE;
   }
@@ -64,16 +56,9 @@ public class IsNullEval extends BinaryEval {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    IsNullEvalCtx isNullCtx = (IsNullEvalCtx) ctx;
-    leftExpr.eval(isNullCtx.predicandContext, schema, tuple);
-    Datum result = leftExpr.terminate(((IsNullEvalCtx)ctx).predicandContext);
-    ((IsNullEvalCtx) ctx).result = DatumFactory.createBool(isNot ^ (result.type() == TajoDataTypes.Type.NULL_TYPE));
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    return ((IsNullEvalCtx)ctx).result;
+  public Datum eval(Schema schema, Tuple tuple) {
+    boolean isNull = leftExpr.eval(schema, tuple).isNull();
+    return DatumFactory.createBool(isNot ^ isNull);
   }
 
   public boolean isNot() {
@@ -95,14 +80,5 @@ public class IsNullEval extends BinaryEval {
     isNullEval.isNot = isNot;
 
     return isNullEval;
-  }
-
-  private class IsNullEvalCtx implements EvalContext {
-    EvalContext predicandContext;
-    BooleanDatum result;
-
-    IsNullEvalCtx() {
-      this.result = DatumFactory.createBool(false);
-    }
   }
 }

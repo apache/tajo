@@ -18,21 +18,24 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.eval.ConstEval;
+import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.Target;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.storage.*;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -46,12 +49,10 @@ public class SeqScanExec extends PhysicalExec {
   private Scanner scanner = null;
 
   private EvalNode qual = null;
-  private EvalContext qualCtx;
 
   private CatalogProtos.FragmentProto [] fragments;
 
   private Projector projector;
-  private EvalContext [] evalContexts;
 
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                      ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
@@ -60,12 +61,6 @@ public class SeqScanExec extends PhysicalExec {
     this.plan = plan;
     this.qual = plan.getQual();
     this.fragments = fragments;
-
-    if (qual == null) {
-      qualCtx = null;
-    } else {
-      qualCtx = this.qual.newContext();
-    }
   }
 
   /**
@@ -100,9 +95,7 @@ public class SeqScanExec extends PhysicalExec {
     // However, actual values absent in tuples. So, Replace all column references by constant datum.
     for (Column column : columnPartitionSchema.toArray()) {
       FieldEval targetExpr = new FieldEval(column);
-      EvalContext evalContext = targetExpr.newContext();
-      targetExpr.eval(evalContext, columnPartitionSchema, partitionRow);
-      Datum datum = targetExpr.terminate(evalContext);
+      Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
       ConstEval constExpr = new ConstEval(datum);
       for (Target target : plan.getTargets()) {
         if (target.getEvalTree().equals(targetExpr)) {
@@ -151,7 +144,6 @@ public class SeqScanExec extends PhysicalExec {
     }
 
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     if (fragments.length > 1) {
       this.scanner = new MergeScanner(context.getConf(), plan.getTableSchema(), plan.getTableDesc().getMeta(),
@@ -172,8 +164,7 @@ public class SeqScanExec extends PhysicalExec {
 
     if (!plan.hasQual()) {
       if ((tuple = scanner.next()) != null) {
-        projector.eval(evalContexts, tuple);
-        projector.terminate(evalContexts, outTuple);
+        projector.eval(tuple, outTuple);
         outTuple.setOffset(tuple.getOffset());
         return outTuple;
       } else {
@@ -181,10 +172,9 @@ public class SeqScanExec extends PhysicalExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        qual.eval(qualCtx, inSchema, tuple);
-        if (qual.terminate(qualCtx).isTrue()) {
-          projector.eval(evalContexts, tuple);
-          projector.terminate(evalContexts, outTuple);
+
+        if (qual.eval(inSchema, tuple).isTrue()) {
+          projector.eval(tuple, outTuple);
           return outTuple;
         }
       }

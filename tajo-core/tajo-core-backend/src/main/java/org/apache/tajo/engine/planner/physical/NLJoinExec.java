@@ -18,14 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -41,10 +40,8 @@ public class NLJoinExec extends BinaryPhysicalExec {
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
   private Tuple outTuple = null;
-  private EvalContext qualCtx;
 
   // projection
-  private final EvalContext [] evalContexts;
   private final Projector projector;
 
   public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
@@ -54,12 +51,10 @@ public class NLJoinExec extends BinaryPhysicalExec {
 
     if (plan.hasJoinQual()) {
       this.joinQual = plan.getJoinQual();
-      this.qualCtx = this.joinQual.newContext();
     }
 
     // for projection
     projector = new Projector(inSchema, outSchema, plan.getTargets());
-    evalContexts = projector.newContexts();
 
     // for join
     needNewOuter = true;
@@ -90,15 +85,12 @@ public class NLJoinExec extends BinaryPhysicalExec {
 
       frameTuple.set(outerTuple, innerTuple);
       if (joinQual != null) {
-        joinQual.eval(qualCtx, inSchema, frameTuple);
-        if (joinQual.terminate(qualCtx).asBool()) {
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+          projector.eval(frameTuple, outTuple);
           return outTuple;
         }
       } else {
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+        projector.eval(frameTuple, outTuple);
         return outTuple;
       }
     }

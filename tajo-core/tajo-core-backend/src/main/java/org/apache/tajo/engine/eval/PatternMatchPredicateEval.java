@@ -39,8 +39,6 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   @Expose protected boolean caseInsensitive;
 
   // transient variables
-  private EvalContext leftContext;
-  private boolean isNullResult = false;
   protected Pattern compiled;
 
   public PatternMatchPredicateEval(EvalType evalType, boolean not, EvalNode predicand, ConstEval pattern,
@@ -68,29 +66,17 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    if (leftContext == null) {
-      leftContext = leftExpr.newContext();
+  public Datum eval(Schema schema, Tuple tuple) {
+    if (this.compiled == null) {
       compile(this.pattern);
     }
 
-    leftExpr.eval(leftContext, schema, tuple);
-    Datum predicand = leftExpr.terminate(leftContext);
-    isNullResult = predicand instanceof NullDatum;
+    Datum predicand = leftExpr.eval(schema, tuple);
+    if (predicand.isNull()) {
+      return NullDatum.get();
+    }
+
     boolean matched = compiled.matcher(predicand.asChars()).matches();
-    ((PatternMatchPredicateContext)ctx).result = matched ^ not;
-  }
-
-  public Datum terminate(EvalContext ctx) {
-    return !isNullResult ?
-        DatumFactory.createBool(((PatternMatchPredicateContext)ctx).result) : NullDatum.get();
-  }
-
-  public EvalContext newContext() {
-    return new PatternMatchPredicateContext();
-  }
-
-  private class PatternMatchPredicateContext implements EvalContext {
-    public boolean result = false;
+    return DatumFactory.createBool(matched ^ not);
   }
 }

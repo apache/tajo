@@ -18,17 +18,68 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.Insert;
-import org.apache.tajo.algebra.OpType;
-import org.apache.tajo.algebra.Projection;
+import org.apache.tajo.algebra.*;
+import org.apache.tajo.catalog.CatalogService;
 
 import java.util.Stack;
 
 public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationState, Expr> {
+  private CatalogService catalog;
 
-  public Expr visitInsert(VerificationState ctx, Stack<Expr> stack, Insert expr) throws PlanningException {
-    Expr child = super.visitInsert(ctx, stack, expr);
+  public PreLogicalPlanVerifier(CatalogService catalog) {
+    this.catalog = catalog;
+  }
+
+  @Override
+  public Expr visitGroupBy(VerificationState ctx, Stack<Expr> stack, Aggregation expr) throws PlanningException {
+    Expr child = super.visitGroupBy(ctx, stack, expr);
+
+    // Enforcer only ordinary grouping set.
+    for (Aggregation.GroupElement groupingElement : expr.getGroupSet()) {
+      if (groupingElement.getType() != Aggregation.GroupType.OrdinaryGroup) {
+        ctx.addVerification(groupingElement.getType() + " is not supported yet");
+      }
+    }
+
+    Projection projection = null;
+    for (Expr parent : stack) {
+      if (parent.getType() == OpType.Projection) {
+        projection = (Projection) parent;
+        break;
+      }
+    }
+
+    if (projection == null) {
+      throw new PlanningException("No Projection");
+    }
+
+    return expr;
+  }
+
+  @Override
+  public Expr visitRelation(VerificationState state, Stack<Expr> stack, Relation expr) throws PlanningException {
+    checkRelationExistence(state, expr.getName());
+    return expr;
+  }
+
+  private boolean checkRelationExistence(VerificationState state, String name) {
+    if (!catalog.existsTable(name)) {
+      state.addVerification(String.format("relation \"%s\" does not exist", name));
+      return false;
+    }
+    return true;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Insert or Update Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public Expr visitInsert(VerificationState context, Stack<Expr> stack, Insert expr) throws PlanningException {
+    Expr child = super.visitInsert(context, stack, expr);
+
+    if (expr.hasTableName()) {
+      checkRelationExistence(context, expr.getTableName());
+    }
 
     if (child != null && child.getType() == OpType.Projection) {
       if (expr.hasTargetColumns()) {
@@ -37,13 +88,13 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
         int targetColumnNum = expr.getTargetColumns().length;
 
         if (targetColumnNum > projectColumnNum)  {
-          ctx.addVerification("INSERT has more target columns than expressions");
+          context.addVerification("INSERT has more target columns than expressions");
         } else if (targetColumnNum < projectColumnNum) {
-          ctx.addVerification("INSERT has more expressions than target columns");
+          context.addVerification("INSERT has more expressions than target columns");
         }
       }
     }
 
-    return child;
+    return expr;
   }
 }

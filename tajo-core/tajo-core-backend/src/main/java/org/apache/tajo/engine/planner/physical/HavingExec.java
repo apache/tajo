@@ -18,21 +18,15 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.HavingNode;
-import org.apache.tajo.engine.planner.logical.SelectionNode;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 public class HavingExec extends UnaryPhysicalExec  {
   private final EvalNode qual;
-  private final EvalContext qualCtx;
-  private final Tuple outputTuple;
 
   public HavingExec(TaskAttemptContext context,
                     HavingNode plan,
@@ -40,17 +34,14 @@ public class HavingExec extends UnaryPhysicalExec  {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
 
     this.qual = plan.getQual();
-    this.qualCtx = this.qual.newContext();
-    this.outputTuple = new VTuple(outSchema.getColumnNum());
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     while ((tuple = child.next()) != null) {
-      qual.eval(qualCtx, inSchema, tuple);
-      if (qual.terminate(qualCtx).asBool()) {
-          return tuple;
+      if (qual.eval(inSchema, tuple).isTrue()) {
+        return tuple;
       }
     }
 

@@ -19,9 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -30,6 +28,7 @@ import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode joinNode;
   private EvalNode joinQual;
-  private EvalContext qualCtx;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
@@ -63,7 +61,6 @@ public class MergeJoinExec extends BinaryPhysicalExec {
 
   // projection
   private final Projector projector;
-  private final EvalContext [] evalContexts;
 
   public MergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner, SortSpec[] outerSortKey, SortSpec[] innerSortKey) {
@@ -72,7 +69,6 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         "but there is no join condition");
     this.joinNode = plan;
     this.joinQual = plan.getJoinQual();
-    this.qualCtx = this.joinQual.newContext();
 
     this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -89,7 +85,6 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -165,10 +160,9 @@ public class MergeJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(outerNext, innerIterator.next());
-      joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).asBool()) {
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+        projector.eval(frameTuple, outTuple);
         return outTuple;
       }
     }

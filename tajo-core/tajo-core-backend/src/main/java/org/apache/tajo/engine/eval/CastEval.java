@@ -41,13 +41,6 @@ public class CastEval extends EvalNode {
   }
 
   @Override
-  public EvalContext newContext() {
-    CastContext castContext = new CastContext();
-    castContext.childCtx = operand.newContext();
-    return castContext;
-  }
-
-  @Override
   public DataType getValueType() {
     return target;
   }
@@ -57,15 +50,8 @@ public class CastEval extends EvalNode {
     return target.getType().name();
   }
 
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    CastContext castContext = (CastContext) ctx;
-    operand.eval(castContext.childCtx , schema, tuple);
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    CastContext castContext = (CastContext) ctx;
-    Datum operandDatum = operand.terminate(castContext.childCtx);
+  public Datum eval(Schema schema, Tuple tuple) {
+    Datum operandDatum = operand.eval(schema, tuple);
     if (operandDatum.isNull()) {
       return operandDatum;
     }
@@ -97,8 +83,7 @@ public class CastEval extends EvalNode {
       case BLOB:
         return DatumFactory.createBlob(operandDatum.asByteArray());
       default:
-        throw new InvalidCastException("Cannot cast " + operand.getValueType().getType() + " to "
-            + target.getType());
+      throw new InvalidCastException("Cannot cast " + operand.getValueType().getType() + " to " + target.getType());
     }
   }
 
@@ -126,9 +111,5 @@ public class CastEval extends EvalNode {
   public void postOrder(EvalNodeVisitor visitor) {
     operand.postOrder(visitor);
     visitor.visit(this);
-  }
-
-  static class CastContext implements EvalContext {
-    EvalContext childCtx;
   }
 }

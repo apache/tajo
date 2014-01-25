@@ -18,82 +18,108 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 /**
- * This is the sort-based Aggregation Operator.
+ * This is the sort-based aggregation operator.
+ *
+ * <h3>Implementation</h3>
+ * Sort Aggregation has two states while running.
+ *
+ * <h4>Aggregate state</h4>
+ * If lastkey is null or lastkey is equivalent to the current key, sort aggregation is changed to this state.
+ * In this state, this operator aggregates measure values via aggregation functions.
+ *
+ * <h4>Finalize state</h4>
+ * If currentKey is different from the last key, it computes final aggregation results, and then
+ * it makes an output tuple.
  */
 public class SortAggregateExec extends AggregationExec {
-  private Tuple prevKey = null;
+  private Tuple lastKey = null;
   private boolean finished = false;
+  private FunctionContext contexts[];
 
-
-  public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan,
-                           PhysicalExec child) throws IOException {
+  public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan, PhysicalExec child) throws IOException {
     super(context, plan, child);
+    contexts = new FunctionContext[plan.getAggFunctions().length];
   }
 
   @Override
   public Tuple next() throws IOException {
-    Tuple curKey;
+    Tuple currentKey;
     Tuple tuple;
-    Tuple finalTuple = null;
+    Tuple outputTuple = null;
+
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      // build a key tuple
-      curKey = new VTuple(keylist.length);
-      for(int i = 0; i < keylist.length; i++) {
-        curKey.put(i, tuple.get(keylist[i]));
+
+      // get a key tuple
+      currentKey = new VTuple(groupingKeyIds.length);
+      for(int i = 0; i < groupingKeyIds.length; i++) {
+        currentKey.put(i, tuple.get(groupingKeyIds[i]));
       }
 
-      if (prevKey == null || prevKey.equals(curKey)) {
-        if (prevKey == null) {
-          for(int i = 0; i < outSchema.getColumnNum(); i++) {
-            evalContexts[i] = evals[i].newContext();
-            evals[i].eval(evalContexts[i], inSchema, tuple);
+      /** Aggregation State */
+      if (lastKey == null || lastKey.equals(currentKey)) {
+        if (lastKey == null) {
+          for(int i = 0; i < aggFunctionsNum; i++) {
+            contexts[i] = aggFunctions[i].newContext();
+            aggFunctions[i].merge(contexts[i], inSchema, tuple);
           }
-          prevKey = curKey;
+          lastKey = currentKey;
         } else {
           // aggregate
-          for (int idx : measureList) {
-            evals[idx].eval(evalContexts[idx], inSchema, tuple);
+          for (int i = 0; i < aggFunctionsNum; i++) {
+            aggFunctions[i].merge(contexts[i], inSchema, tuple);
           }
         }
-      } else {
+
+      } else { /** Finalization State */
         // finalize aggregate and return
-        finalTuple = new VTuple(outSchema.getColumnNum());
-        for(int i = 0; i < outSchema.getColumnNum(); i++) {
-          finalTuple.put(i, evals[i].terminate(evalContexts[i]));
+        outputTuple = new VTuple(outSchema.getColumnNum());
+        int tupleIdx = 0;
+
+        for(; tupleIdx < groupingKeyNum; tupleIdx++) {
+          outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+        }
+        for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
+          outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
         }
 
-        for(int i = 0; i < outSchema.getColumnNum(); i++) {
-          evalContexts[i] = evals[i].newContext();
-          evals[i].eval(evalContexts[i], inSchema, tuple);
+        for(int evalIdx = 0; evalIdx < aggFunctionsNum; evalIdx++) {
+          contexts[evalIdx] = aggFunctions[evalIdx].newContext();
+          aggFunctions[evalIdx].merge(contexts[evalIdx], inSchema, tuple);
         }
-        prevKey = curKey;
-        return finalTuple;
+
+        lastKey = currentKey;
+        return outputTuple;
       }
     } // while loop
 
     if (!finished) {
-      finalTuple = new VTuple(outSchema.getColumnNum());
-      for(int i = 0; i < outSchema.getColumnNum(); i++) {
-        finalTuple.put(i, evals[i].terminate(evalContexts[i]));
+      outputTuple = new VTuple(outSchema.getColumnNum());
+      int tupleIdx = 0;
+      for(; tupleIdx < groupingKeyNum; tupleIdx++) {
+        outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+      }
+      for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
+        outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
       }
       finished = true;
     }
-    return finalTuple;
+    return outputTuple;
   }
 
   @Override
   public void rescan() throws IOException {
     super.rescan();
 
-    prevKey = null;
+    lastKey = null;
     finished = false;
   }
 }

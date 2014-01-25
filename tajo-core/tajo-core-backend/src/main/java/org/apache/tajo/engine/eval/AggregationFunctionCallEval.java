@@ -21,10 +21,10 @@ package org.apache.tajo.engine.eval;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -38,40 +38,38 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     this.instance = instance;
   }
 
-  @Override
-  public EvalContext newContext() {
-    return new AggFunctionCtx(argEvals, instance.newContext());
+  public FunctionContext newContext() {
+    return instance.newContext();
   }
 
-  @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    AggFunctionCtx localCtx = (AggFunctionCtx) ctx;
+  public void merge(FunctionContext context, Schema schema, Tuple tuple) {
     if (params == null) {
       this.params = new VTuple(argEvals.length);
     }
 
     if (argEvals != null) {
-      params.clear();
-
       for (int i = 0; i < argEvals.length; i++) {
-        argEvals[i].eval(localCtx.argCtxs[i], schema, tuple);
-        params.put(i, argEvals[i].terminate(localCtx.argCtxs[i]));
+        params.put(i, argEvals[i].eval(schema, tuple));
       }
     }
 
     if (firstPhase) {
-      instance.eval(localCtx.funcCtx, params);
+      instance.eval(context, params);
     } else {
-      instance.merge(localCtx.funcCtx, params);
+      instance.merge(context, params);
     }
   }
 
   @Override
-  public Datum terminate(EvalContext ctx) {
+  public Datum eval(Schema schema, Tuple tuple) {
+    throw new UnsupportedOperationException("Cannot execute eval() of aggregation function");
+  }
+
+  public Datum terminate(FunctionContext context) {
     if (firstPhase) {
-      return instance.getPartialResult(((AggFunctionCtx)ctx).funcCtx);
+      return instance.getPartialResult(context);
     } else {
-      return instance.terminate(((AggFunctionCtx)ctx).funcCtx);
+      return instance.terminate(context);
     }
   }
 
@@ -90,14 +88,5 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   public void setFirstPhase() {
     this.firstPhase = true;
-  }
-
-  protected class AggFunctionCtx extends FuncCallCtx {
-    FunctionContext funcCtx;
-
-    AggFunctionCtx(EvalNode [] argEvals, FunctionContext funcCtx) {
-      super(argEvals);
-      this.funcCtx = funcCtx;
-    }
   }
 }

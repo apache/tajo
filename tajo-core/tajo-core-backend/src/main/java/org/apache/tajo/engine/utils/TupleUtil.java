@@ -32,14 +32,12 @@ import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
@@ -418,14 +416,12 @@ public class TupleUtil {
 
   private static class TupleBlockFilterScanner {
     private EvalNode qual;
-    private EvalContext qualCtx;
     private Iterator<Tuple> iterator;
     private Schema schema;
 
     public TupleBlockFilterScanner(Schema schema, Collection<Tuple> tuples, EvalNode qual) {
       this.schema = schema;
       this.qual = qual;
-      this.qualCtx = qual.newContext();
       this.iterator = tuples.iterator();
     }
 
@@ -435,8 +431,7 @@ public class TupleUtil {
       Tuple tuple;
       while (iterator.hasNext()) {
         tuple = iterator.next();
-        qual.eval(qualCtx, schema, tuple);
-        if (qual.terminate(qualCtx).asBool()) {
+        if (qual.eval(schema, tuple).isTrue()) {
           results.add(tuple);
         }
       }

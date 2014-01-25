@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -29,6 +27,7 @@ import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
@@ -46,7 +45,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected Tuple outTuple = null;
   protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
-  protected EvalContext qualCtx;
   protected Tuple leftTuple;
   protected Tuple leftKeyTuple;
 
@@ -58,7 +56,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
   // projection
   protected final Projector projector;
-  protected final EvalContext [] evalContexts;
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
@@ -66,7 +63,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
         leftExec, rightExec);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
-    this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
@@ -85,7 +81,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -131,10 +126,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).asBool()) { // if both tuples are joinable
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+        projector.eval(frameTuple, outTuple);
         found = true;
       }
 

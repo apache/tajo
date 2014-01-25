@@ -40,8 +40,6 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 		this.leftExpr = left;
 		this.rightExpr = right;
 	}
-
-  public abstract EvalContext newContext();
 	
 	public EvalType getType() {
 		return this.type;
@@ -86,9 +84,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
     return CoreGsonHelper.toJson(this, EvalNode.class);
 	}
 	
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {}
-
-  public abstract <T extends Datum> T terminate(EvalContext ctx);
+	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
 
   @Deprecated
 	public void preOrder(EvalNodeVisitor visitor) {

@@ -91,28 +91,6 @@ public class TestPlannerUtil {
   }
 
   @Test
-  public final void testTransformTwoPhase() throws PlanningException {
-    // without 'having clause'
-    Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
-
-    assertEquals(NodeType.ROOT, plan.getType());
-    LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalPlanner.testQuery7(root.getChild());
-    
-    root.postOrder(new TwoPhaseBuilder());
-  }
-  
-  private final class TwoPhaseBuilder implements LogicalNodeVisitor {
-    @Override
-    public void visit(LogicalNode node) {
-      if (node.getType() == NodeType.GROUP_BY) {
-        PlannerUtil.transformGroupbyTo2P((GroupbyNode) node);
-      }
-    }    
-  }
-  
-  @Test
   public final void testFindTopNode() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);

@@ -36,13 +36,6 @@ public class NotEval extends EvalNode implements Cloneable {
     this.childEval = childEval;
   }
 
-  @Override
-  public EvalContext newContext() {
-    NotEvalCtx newCtx = new NotEvalCtx();
-    newCtx.childExprCtx = childEval.newContext();
-    return newCtx;
-  }
-
   public EvalNode getChild() {
     return childEval;
   }
@@ -58,13 +51,8 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    childEval.eval(((NotEvalCtx) ctx).childExprCtx, schema, tuple);
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    Datum datum = childEval.terminate(((NotEvalCtx) ctx).childExprCtx);
+  public Datum eval(Schema schema, Tuple tuple) {
+    Datum datum = childEval.eval(schema, tuple);
     return !datum.isNull() ? DatumFactory.createBool(!datum.asBool()) : datum;
   }
 
@@ -100,9 +88,5 @@ public class NotEval extends EvalNode implements Cloneable {
     NotEval eval = (NotEval) super.clone();
     eval.childEval = (EvalNode) this.childEval.clone();
     return eval;
-  }
-
-  private class NotEvalCtx implements EvalContext {
-    EvalContext childExprCtx;
   }
 }

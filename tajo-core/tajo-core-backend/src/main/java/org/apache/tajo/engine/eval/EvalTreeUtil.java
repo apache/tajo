@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.catalog.Column;
@@ -277,10 +276,10 @@ public class EvalTreeUtil {
     }
   }
 
-  public static List<AggregationFunctionCallEval> findDistinctAggFunction(EvalNode expr) {
+  public static Set<AggregationFunctionCallEval> findDistinctAggFunction(EvalNode expr) {
     AllAggFunctionFinder finder = new AllAggFunctionFinder();
     expr.postOrder(finder);
-    return Lists.newArrayList(finder.getAggregationFunction());
+    return finder.getAggregationFunction();
   }
 
   public static class AllAggFunctionFinder implements EvalNodeVisitor {

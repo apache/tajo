@@ -20,7 +20,10 @@ package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
@@ -34,11 +37,6 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public EvalContext newContext() {
-    return null;
-  }
-
-  @Override
   public DataType getValueType() {
     return CatalogUtil.newSimpleDataType(values[0].type());
   }
@@ -49,8 +47,12 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public Datum terminate(EvalContext ctx) {
-    return null;
+  public Datum eval(Schema schema, Tuple tuple) {
+    return NullDatum.get();
+  }
+
+  public Datum [] getValues() {
+    return values;
   }
 
   @Override
@@ -65,10 +67,6 @@ public class RowConstantEval extends EvalNode {
 
   public String toString() {
     return TUtil.arrayToString(values);
-  }
-
-  public Datum [] getValues() {
-    return values;
   }
 
   public void preOrder(EvalNodeVisitor visitor) {

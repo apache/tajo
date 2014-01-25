@@ -21,6 +21,7 @@ package org.apache.tajo.engine.eval;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NumericDatum;
 import org.apache.tajo.storage.Tuple;
 
@@ -32,13 +33,6 @@ public class SignedEval extends EvalNode implements Cloneable {
     super(EvalType.SIGNED);
     this.negative = negative;
     this.childEval = childEval;
-  }
-
-  @Override
-  public EvalContext newContext() {
-    SignedEvalCtx newCtx = new SignedEvalCtx();
-    newCtx.childExprCtx = childEval.newContext();
-    return newCtx;
   }
 
   public boolean isNegative() {
@@ -60,13 +54,8 @@ public class SignedEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    childEval.eval(((SignedEvalCtx) ctx).childExprCtx, schema, tuple);
-  }
-
-  @Override
-  public NumericDatum terminate(EvalContext ctx) {
-    NumericDatum result = childEval.terminate(((SignedEvalCtx) ctx).childExprCtx);
+  public Datum eval(Schema schema, Tuple tuple) {
+    NumericDatum result = childEval.eval(schema, tuple);
     if (negative) {
       result.inverseSign();
     }
@@ -106,9 +95,5 @@ public class SignedEval extends EvalNode implements Cloneable {
     eval.negative = negative;
     eval.childEval = (EvalNode) this.childEval.clone();
     return eval;
-  }
-
-  private class SignedEvalCtx implements EvalContext {
-    EvalContext childExprCtx;
   }
 }

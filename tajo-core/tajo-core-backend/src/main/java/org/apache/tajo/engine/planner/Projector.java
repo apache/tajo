@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.storage.Tuple;
 
@@ -42,26 +41,11 @@ public class Projector {
     }
   }
 
-  public void eval(EvalContext[] evalContexts, Tuple in) {
+  public void eval(Tuple in, Tuple out) {
     if (targetNum > 0) {
       for (int i = 0; i < evals.length; i++) {
-        evals[i].eval(evalContexts[i], inSchema, in);
+        out.put(i, evals[i].eval(inSchema, in));
       }
     }
-  }
-
-  public void terminate(EvalContext [] evalContexts, Tuple out) {
-    for (int i = 0; i < targetNum; i++) {
-      out.put(i, evals[i].terminate(evalContexts[i]));
-    }
-  }
-
-  public EvalContext [] newContexts() {
-    EvalContext [] evalContexts = new EvalContext[targetNum];
-    for (int i = 0; i < targetNum; i++) {
-      evalContexts[i] = evals[i].newContext();
-    }
-
-    return evalContexts;
   }
 }

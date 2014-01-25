@@ -31,9 +31,12 @@ import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.storage.AbstractStorageManager;
 
 import java.io.IOException;
@@ -212,15 +215,12 @@ public class GlobalPlanner {
     // setup current block
     ExecutionBlock currentBlock = context.plan.newExecutionBlock();
     LinkedHashSet<Column> columnsForDistinct = new LinkedHashSet<Column>();
-    for (Target target : groupbyNode.getTargets()) {
-      List<AggregationFunctionCallEval> functions = EvalTreeUtil.findDistinctAggFunction(target.getEvalTree());
-      for (AggregationFunctionCallEval function : functions) {
-        if (function.isDistinct()) {
-          columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
-        } else {
-          // See the comment of this method. the aggregation function should be executed as the first phase.
-          function.setFirstPhase();
-        }
+    for (AggregationFunctionCallEval function : groupbyNode.getAggFunctions()) {
+      if (function.isDistinct()) {
+        columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
+      } else {
+        // See the comment of this method. the aggregation function should be executed as the first phase.
+        function.setFirstPhase();
       }
     }
 
@@ -247,63 +247,138 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
-  private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock childBlock,
+  private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock lastBlock,
                                       GroupbyNode groupbyNode) throws PlanningException {
 
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
-    if (groupbyNode.isDistinct()) {
-      return buildDistinctGroupBy(context, childBlock, groupbyNode);
+    if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
+      return buildDistinctGroupBy(context, lastBlock, groupbyNode);
     } else {
-      GroupbyNode firstPhaseGroupBy = PlannerUtil.transformGroupbyTo2P(groupbyNode);
+      GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 
-      if (firstPhaseGroupBy.getChild().getType() == NodeType.TABLE_SUBQUERY &&
-          ((TableSubQueryNode)firstPhaseGroupBy.getChild()).getSubQuery().getType() == NodeType.UNION) {
-
-        currentBlock = childBlock;
-        for (DataChannel dataChannel : masterPlan.getIncomingChannels(currentBlock.getId())) {
-          if (firstPhaseGroupBy.isEmptyGrouping()) {
-            dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
-          } else {
-            dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
-          }
-          dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
-
-          ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
-          GroupbyNode g1 = PlannerUtil.clone(context.plan.getLogicalPlan(), firstPhaseGroupBy);
-          g1.setChild(subBlock.getPlan());
-          subBlock.setPlan(g1);
-
-          GroupbyNode g2 = PlannerUtil.clone(context.plan.getLogicalPlan(), groupbyNode);
-          ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
-          g2.setChild(scanNode);
-          currentBlock.setPlan(g2);
-        }
-      } else { // general hash-shuffled aggregation
-        childBlock.setPlan(firstPhaseGroupBy);
-        currentBlock = masterPlan.newExecutionBlock();
-
-        DataChannel channel;
-        if (firstPhaseGroupBy.isEmptyGrouping()) {
-          channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 1);
-          channel.setShuffleKeys(firstPhaseGroupBy.getGroupingColumns());
-        } else {
-          channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
-          channel.setShuffleKeys(firstPhaseGroupBy.getGroupingColumns());
-        }
-        channel.setSchema(firstPhaseGroupBy.getOutSchema());
-        channel.setStoreType(storeType);
-
-        ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
-        groupbyNode.setChild(scanNode);
-        groupbyNode.setInSchema(scanNode.getOutSchema());
-        currentBlock.setPlan(groupbyNode);
-        masterPlan.addConnect(channel);
+      if (hasUnionChild(firstPhaseGroupby)) {
+        currentBlock = buildGroupbyAndUnionPlan(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
+      } else {
+        // general hash-shuffled aggregation
+        currentBlock = buildTwoPhaseGroupby(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
       }
     }
 
     return currentBlock;
+  }
+
+  public boolean hasUnionChild(UnaryNode node) {
+
+    if (node.getChild().getType() == NodeType.TABLE_SUBQUERY) {
+      TableSubQueryNode tableSubQuery = node.getChild();
+      return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
+    }
+
+    return false;
+  }
+
+  private static ExecutionBlock buildGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
+                                                  GroupbyNode firstPhaseGroupBy, GroupbyNode secondPhaseGroupBy) {
+    DataChannel lastDataChannel = null;
+
+    // It pushes down the first phase group-by operator into all child blocks.
+    //
+    // (second phase)    G (currentBlock)
+    //                  /|\
+    //                / / | \
+    // (first phase) G G  G  G (child block)
+
+    // They are already connected one another.
+    // So, we don't need to connect them again.
+    for (DataChannel dataChannel : masterPlan.getIncomingChannels(lastBlock.getId())) {
+      if (firstPhaseGroupBy.isEmptyGrouping()) {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
+      } else {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
+      }
+      dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
+      ExecutionBlock childBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
+
+      // Why must firstPhaseGroupby be copied?
+      //
+      // A groupby in each execution block can have different child.
+      // It affects groupby's input schema.
+      GroupbyNode firstPhaseGroupbyCopy = PlannerUtil.clone(masterPlan.getLogicalPlan(), firstPhaseGroupBy);
+      firstPhaseGroupbyCopy.setChild(childBlock.getPlan());
+      childBlock.setPlan(firstPhaseGroupbyCopy);
+
+      // just keep the last data channel.
+      lastDataChannel = dataChannel;
+    }
+
+    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), lastDataChannel);
+    secondPhaseGroupBy.setChild(scanNode);
+    lastBlock.setPlan(secondPhaseGroupBy);
+    return lastBlock;
+  }
+
+  private ExecutionBlock buildTwoPhaseGroupby(MasterPlan masterPlan, ExecutionBlock latestBlock,
+                                                     GroupbyNode firstPhaseGroupby, GroupbyNode secondPhaseGroupby) {
+    ExecutionBlock childBlock = latestBlock;
+    childBlock.setPlan(firstPhaseGroupby);
+    ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
+
+    DataChannel channel;
+    if (firstPhaseGroupby.isEmptyGrouping()) {
+      channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 1);
+      channel.setShuffleKeys(firstPhaseGroupby.getGroupingColumns());
+    } else {
+      channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
+      channel.setShuffleKeys(firstPhaseGroupby.getGroupingColumns());
+    }
+    channel.setSchema(firstPhaseGroupby.getOutSchema());
+    channel.setStoreType(storeType);
+
+    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+    secondPhaseGroupby.setChild(scanNode);
+    secondPhaseGroupby.setInSchema(scanNode.getOutSchema());
+    currentBlock.setPlan(secondPhaseGroupby);
+
+    masterPlan.addConnect(channel);
+
+    return currentBlock;
+  }
+
+  public static GroupbyNode createFirstPhaseGroupBy(LogicalPlan plan, GroupbyNode groupBy) {
+    Preconditions.checkNotNull(groupBy);
+
+    GroupbyNode firstPhaseGroupBy = PlannerUtil.clone(plan, groupBy);
+    GroupbyNode secondPhaseGroupBy = groupBy;
+
+    // Set first phase expressions
+    if (secondPhaseGroupBy.hasAggFunctions()) {
+      int evalNum = secondPhaseGroupBy.getAggFunctions().length;
+      AggregationFunctionCallEval [] secondPhaseEvals = secondPhaseGroupBy.getAggFunctions();
+      AggregationFunctionCallEval [] firstPhaseEvals = new AggregationFunctionCallEval[evalNum];
+
+      String [] firstPhaseEvalNames = new String[evalNum];
+      for (int i = 0; i < evalNum; i++) {
+        try {
+          firstPhaseEvals[i] = (AggregationFunctionCallEval) secondPhaseEvals[i].clone();
+        } catch (CloneNotSupportedException e) {
+          throw new RuntimeException(e);
+        }
+
+        firstPhaseEvals[i].setFirstPhase();
+        firstPhaseEvalNames[i] = plan.newGeneratedFieldName(firstPhaseEvals[i]);
+        FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+        secondPhaseEvals[i].setArgs(new EvalNode[] {param});
+      }
+
+      secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);
+      firstPhaseGroupBy.setAggFunctions(firstPhaseEvals);
+      Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, firstPhaseEvalNames);
+      firstPhaseGroupBy.setTargets(firstPhaseTargets);
+      secondPhaseGroupBy.setInSchema(PlannerUtil.targetToSchema(firstPhaseTargets));
+    }
+    return firstPhaseGroupBy;
   }
 
   private ExecutionBlock buildSortPlan(GlobalPlanContext context, ExecutionBlock childBlock, SortNode currentNode) {

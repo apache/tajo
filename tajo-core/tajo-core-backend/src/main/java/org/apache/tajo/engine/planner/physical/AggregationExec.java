@@ -18,31 +18,22 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.collect.Sets;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalContext;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
 
 public abstract class AggregationExec extends UnaryPhysicalExec {
   protected GroupbyNode plan;
 
-  protected Set<Column> nonNullGroupingFields;
-  protected int keylist [];
-  protected int measureList[];
-  protected final EvalNode evals [];
-  protected EvalContext evalContexts [];
+  protected final int groupingKeyNum;
+  protected int groupingKeyIds[];
+  protected final int aggFunctionsNum;
+  protected final AggregationFunctionCallEval aggFunctions[];
+
   protected Schema evalSchema;
 
   public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
@@ -52,47 +43,26 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
 
     evalSchema = plan.getOutSchema();
 
-    nonNullGroupingFields = Sets.newHashSet();
-    // keylist will contain a list of IDs of grouping column
-    keylist = new int[plan.getGroupingColumns().length];
+    final Column [] keyColumns = plan.getGroupingColumns();
+    groupingKeyNum = keyColumns.length;
+    groupingKeyIds = new int[groupingKeyNum];
     Column col;
     for (int idx = 0; idx < plan.getGroupingColumns().length; idx++) {
-      col = plan.getGroupingColumns()[idx];
-      keylist[idx] = inSchema.getColumnId(col.getQualifiedName());
-      nonNullGroupingFields.add(col);
+      col = keyColumns[idx];
+      groupingKeyIds[idx] = inSchema.getColumnId(col.getQualifiedName());
     }
 
-    // measureList will contain a list of measure field indexes against the target list.
-    List<Integer> measureIndexes = TUtil.newList();
-    for (int i = 0; i < plan.getTargets().length; i++) {
-      Target target = plan.getTargets()[i];
-      if (target.getEvalTree().getType() == EvalType.AGG_FUNCTION) {
-        measureIndexes.add(i);
-      }
-    }
-
-    measureList = new int[measureIndexes.size()];
-    for (int i = 0; i < measureIndexes.size(); i++) {
-      measureList[i] = measureIndexes.get(i);
-    }
-
-    evals = new EvalNode[plan.getTargets().length];
-    evalContexts = new EvalContext[plan.getTargets().length];
-    for (int i = 0; i < plan.getTargets().length; i++) {
-      Target t = plan.getTargets()[i];
-      if (t.getEvalTree().getType() == EvalType.FIELD && !nonNullGroupingFields.contains(t.getNamedColumn())) {
-        evals[i] = new ConstEval(DatumFactory.createNullDatum());
-        evalContexts[i] = evals[i].newContext();
-      } else {
-        evals[i] = t.getEvalTree();
-        evalContexts[i] = evals[i].newContext();
-      }
+    if (plan.hasAggFunctions()) {
+      aggFunctions = plan.getAggFunctions();
+      aggFunctionsNum = aggFunctions.length;
+    } else {
+      aggFunctions = new AggregationFunctionCallEval[0];
+      aggFunctionsNum = 0;
     }
   }
 
   @Override
   public void close() throws IOException {
     super.close();
-    nonNullGroupingFields.clear();
   }
 }

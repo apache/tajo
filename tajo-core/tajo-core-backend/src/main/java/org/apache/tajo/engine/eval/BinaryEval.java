@@ -34,11 +34,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class BinaryEval extends EvalNode implements Cloneable {
   @Expose private DataType returnType = null;
 
-  private class BinaryEvalCtx implements EvalContext {
-    EvalContext left;
-    EvalContext right;
-  }
-
   /**
    * @param type
    */
@@ -73,15 +68,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
   public BinaryEval(PartialBinaryExpr expr) {
     this(expr.type, expr.leftExpr, expr.rightExpr);
-  }
-
-  @Override
-  public EvalContext newContext() {
-    BinaryEvalCtx newCtx =  new BinaryEvalCtx();
-    newCtx.left = leftExpr.newContext();
-    newCtx.right = rightExpr.newContext();
-
-    return newCtx;
   }
 
   /**
@@ -134,17 +120,9 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
-    leftExpr.eval(binCtx == null ? null : binCtx.left, schema, tuple);
-    rightExpr.eval(binCtx == null ? null : binCtx.right, schema, tuple);
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
-    Datum lhs = leftExpr.terminate(binCtx.left);
-    Datum rhs = rightExpr.terminate(binCtx.right);
+  public Datum eval(Schema schema, Tuple tuple) {
+    Datum lhs = leftExpr.eval(schema, tuple);
+    Datum rhs = rightExpr.eval(schema, tuple);
 
     switch(type) {
     case AND:

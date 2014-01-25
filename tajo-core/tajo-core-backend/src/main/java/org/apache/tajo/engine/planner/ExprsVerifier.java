@@ -46,6 +46,10 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
       return true;
     }
 
+    if (checkDateTime(dataType1) && checkDateTime(dataType2)) {
+      return true;
+    }
+
     return false;
   }
 
@@ -109,8 +113,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   private static void checkArithmeticOperand(VerificationState state, BinaryEval evalNode) {
     EvalNode leftExpr = evalNode.getLeftExpr();
     EvalNode rightExpr = evalNode.getRightExpr();
-    if (!(checkNumericType(leftExpr.getValueType())
-        && checkNumericType(rightExpr.getValueType()))) {
+    if (!(checkNumericType(leftExpr.getValueType()) && checkNumericType(rightExpr.getValueType()))) {
       state.addVerification("No operator matches the given name and argument type(s): " + evalNode.toString());
     }
   }
@@ -123,6 +126,12 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   private static boolean checkTextData(DataType dataType) {
     int typeNumber = dataType.getType().getNumber();
     return Type.CHAR.getNumber() < typeNumber && typeNumber <= Type.TEXT.getNumber();
+  }
+
+  private static boolean checkDateTime(DataType dataType) {
+    int typeNumber = dataType.getType().getNumber();
+    return (Type.DATE.getNumber() < typeNumber && typeNumber <= Type.INTERVAL.getNumber()) ||
+        (Type.TIMEZ.getNumber() < typeNumber && typeNumber <= Type.TIMESTAMPZ.getNumber());
   }
 
   @Override

@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.logical.JoinNode;
@@ -27,6 +25,7 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -41,10 +40,8 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
   private Tuple outTuple = null;
-  private EvalContext qualCtx;
 
   // projection
-  private final EvalContext [] evalContexts;
   private final Projector projector;
 
   private boolean foundAtLeastOneMatch;
@@ -57,12 +54,10 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
 
     if (plan.hasJoinQual()) {
       this.joinQual = plan.getJoinQual();
-      this.qualCtx = this.joinQual.newContext();
     }
 
     // for projection
     projector = new Projector(inSchema, outSchema, plan.getTargets());
-    evalContexts = projector.newContexts();
 
     // for join
     needNextRightTuple = true;
@@ -96,8 +91,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
           frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+          projector.eval(frameTuple, outTuple);
           // we simulate we found a match, which is exactly the null padded one
           foundAtLeastOneMatch = true;
           needNextRightTuple = true;
@@ -111,10 +105,9 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(leftTuple, rightTuple);
-      joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).isTrue()) {
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+      ;
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+        projector.eval(frameTuple, outTuple);
         foundAtLeastOneMatch = true;
         return outTuple;
       }

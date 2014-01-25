@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -30,6 +28,7 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,7 +47,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   protected Tuple outTuple = null;
   protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
-  protected EvalContext qualCtx;
   protected Tuple leftTuple;
   protected Tuple leftKeyTuple;
 
@@ -60,7 +58,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
   // projection
   protected final Projector projector;
-  protected final EvalContext [] evalContexts;
 
   private int rightNumCols;
   private int leftNumCols;
@@ -72,7 +69,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
         plan.getOutSchema(), outer, inner);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
-    this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     // this hashmap mirrors the evolution of the tupleSlots, with the same keys. For each join key,
@@ -95,7 +91,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -156,8 +151,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
           } else {
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, unmatchedRightTuple);
-            projector.eval(evalContexts, frameTuple);
-            projector.terminate(evalContexts, outTuple);
+            projector.eval(frameTuple, outTuple);
 
             return outTuple;
           }
@@ -173,8 +167,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
           frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+          projector.eval(frameTuple, outTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
           return outTuple;
@@ -184,10 +177,9 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      joinQual.eval(qualCtx, inSchema, frameTuple); //?? isn't it always true if hash function is identity function??
-      if (joinQual.terminate(qualCtx).isTrue()) { // if both tuples are joinable
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+        projector.eval(frameTuple, outTuple);
         found = true;
         getKeyLeftTuple(leftTuple, leftKeyTuple);
         matched.put(leftKeyTuple, true);

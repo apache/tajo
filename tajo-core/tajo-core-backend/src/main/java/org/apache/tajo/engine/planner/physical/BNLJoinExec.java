@@ -18,15 +18,14 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.engine.eval.EvalContext;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   private final JoinNode plan;
   private final boolean hasJoinQual;
   private final EvalNode joinQual;
-  private final EvalContext qualCtx;
 
   private final List<Tuple> leftTupleSlots;
   private final List<Tuple> rightTupleSlots;
@@ -58,7 +56,6 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
   // projection
   private final Projector projector;
-  private final EvalContext [] evalContexts;
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
@@ -67,10 +64,8 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     this.joinQual = plan.getJoinQual();
     if (joinQual != null) { // if join type is not 'cross join'
       hasJoinQual = true;
-      this.qualCtx = this.joinQual.newContext();
     } else {
       hasJoinQual = false;
-      this.qualCtx = null;
     }
     this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
@@ -85,7 +80,6 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     }
 
     projector = new Projector(inSchema, outSchema, plan.getTargets());
-    evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -191,15 +185,12 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
       frameTuple.set(leftTuple, rightIterator.next());
       if (hasJoinQual) {
-        joinQual.eval(qualCtx, inSchema, frameTuple);
-        if (joinQual.terminate(qualCtx).asBool()) {
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outputTuple);
+        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+          projector.eval(frameTuple, outputTuple);
           return outputTuple;
         }
       } else {
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outputTuple);
+        projector.eval(frameTuple, outputTuple);
         return outputTuple;
       }
     }

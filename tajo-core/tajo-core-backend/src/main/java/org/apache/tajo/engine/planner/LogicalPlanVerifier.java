@@ -64,13 +64,6 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   public LogicalNode visitGroupBy(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                   GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     visit(state, plan, block, node.getChild(), stack);
-
-    if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
-        ExprsVerifier.verify(state, target.getEvalTree());
-      }
-    }
-
     return node;
   }
 
@@ -171,10 +164,6 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   public LogicalNode visitInsert(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode child = visit(state, plan, block, node.getChild(), stack);
-
-//    if (node.hasTargetSchema()) {
-//      ensureDomains(state, node.getTargetSchema(), node.getChild().getOutSchema());
-//    }
 
     return child;
   }

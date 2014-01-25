@@ -20,9 +20,11 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.CountRowsFunctionExpr;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.GeneralSetFunctionExpr;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -30,8 +32,8 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.TUtil;
 
@@ -209,94 +211,6 @@ public class PlannerUtil {
     parentNode.setChild(newNode);
   }
 
-  public static GroupbyNode transformGroupbyTo2P(GroupbyNode groupBy) {
-    Preconditions.checkNotNull(groupBy);
-
-    GroupbyNode child = null;
-
-    // cloning groupby node
-    try {
-      child = (GroupbyNode) groupBy.clone();
-    } catch (CloneNotSupportedException e) {
-      e.printStackTrace();
-    }
-
-    List<Target> firstStepTargets = Lists.newArrayList();
-    Target[] secondTargets = groupBy.getTargets();
-    Target[] firstTargets = child.getTargets();
-
-    Target second;
-    Target first;
-    int targetId =  0;
-    for (int i = 0; i < firstTargets.length; i++) {
-      second = secondTargets[i];
-      first = firstTargets[i];
-
-      List<AggregationFunctionCallEval> secondStepFunctions = EvalTreeUtil.findDistinctAggFunction(second.getEvalTree());
-      List<AggregationFunctionCallEval> firstStepFunctions = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
-
-      if (firstStepFunctions.size() == 0) {
-        firstStepTargets.add(first);
-        targetId++;
-      } else {
-        for (AggregationFunctionCallEval func : firstStepFunctions) {
-          Target newTarget;
-
-          if (func.isDistinct()) {
-            List<Column> fields = EvalTreeUtil.findAllColumnRefs(func);
-            newTarget = new Target(new FieldEval(fields.get(0)));
-            String targetName = "column_" + (targetId++);
-            newTarget.setAlias(targetName);
-
-            AggregationFunctionCallEval secondFunc = null;
-            for (AggregationFunctionCallEval sf : secondStepFunctions) {
-              if (func.equals(sf)) {
-                secondFunc = sf;
-                break;
-              }
-            }
-
-            secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                new Column(targetName, newTarget.getEvalTree().getValueType()))});
-          } else {
-            func.setFirstPhase();
-            String targetName = "column_" + (targetId++);
-            newTarget = new Target(func, targetName);
-            AggregationFunctionCallEval secondFunc = null;
-            for (AggregationFunctionCallEval sf : secondStepFunctions) {
-              if (func.equals(sf)) {
-                secondFunc = sf;
-                break;
-              }
-            }
-            secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                new Column(targetName, newTarget.getEvalTree().getValueType()))});
-          }
-          firstStepTargets.add(newTarget);
-        }
-      }
-
-      // Getting new target list and updating input/output schema from the new target list.
-      Target[] targetArray = firstStepTargets.toArray(new Target[firstStepTargets.size()]);
-      Schema targetSchema = PlannerUtil.targetToSchema(targetArray);
-      List<Target> newTarget = Lists.newArrayList();
-      for (Column column : groupBy.getGroupingColumns()) {
-        if (!targetSchema.containsByQualifiedName(column.getQualifiedName())) {
-          newTarget.add(new Target(new FieldEval(column)));
-        }
-      }
-      targetArray = ObjectArrays.concat(targetArray, newTarget.toArray(new Target[newTarget.size()]), Target.class);
-
-      child.setTargets(targetArray);
-      // set the groupby chaining
-      groupBy.setChild(child);
-      groupBy.setInSchema(child.getOutSchema());
-
-    }
-    return child;
-  }
-
-  
   /**
    * Find the top logical node matched to type from the given node
    * 

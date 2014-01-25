@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,16 +35,15 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
-import static org.apache.tajo.algebra.Aggregation.GroupType;
 import static org.apache.tajo.algebra.CreateTable.ColumnPartition;
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
 import static org.apache.tajo.engine.planner.ExprNormalizer.ExprNormalizedResult;
@@ -225,6 +223,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // It sets raw targets, all of them are raw expressions instead of references.
     setRawTargets(context, targets, referenceNames, projection);
 
+    verifyProjectedFields(block, projectionNode);
     return projectionNode;
   }
 
@@ -333,6 +332,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private Target [] buildTargets(LogicalPlan plan, QueryBlock block, String[] referenceNames)
       throws PlanningException {
     Target [] targets = new Target[referenceNames.length];
+
     for (int i = 0; i < referenceNames.length; i++) {
       if (block.namedExprsMgr.isResolved(referenceNames[i])) {
         targets[i] = block.namedExprsMgr.getTarget(referenceNames[i]);
@@ -344,6 +344,44 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     }
     return targets;
+  }
+
+  private static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
+    if (projectable instanceof ProjectionNode && block.hasNode(NodeType.GROUP_BY)) {
+      for (Target target : projectable.getTargets()) {
+        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        for (Column c : columns) {
+          if (!projectable.getInSchema().contains(c)) {
+            throw new PlanningException(c.getQualifiedName()
+                + " must appear in the GROUP BY clause or be used in an aggregate function");
+          }
+        }
+      }
+    } else  if (projectable instanceof GroupbyNode) {
+      GroupbyNode groupbyNode = (GroupbyNode) projectable;
+      for (Column c : groupbyNode.getGroupingColumns()) {
+        if (!projectable.getInSchema().contains(c)) {
+          throw new PlanningException("Cannot get such a field: " + c);
+        }
+      }
+      for (AggregationFunctionCallEval f : groupbyNode.getAggFunctions()) {
+        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(f);
+        for (Column c : columns) {
+          if (!projectable.getInSchema().contains(c)) {
+            throw new PlanningException("Cannot get such a field: " + c);
+          }
+        }
+      }
+    } else {
+      for (Target target : projectable.getTargets()) {
+        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        for (Column c : columns) {
+          if (!projectable.getInSchema().contains(c)) {
+            throw new PlanningException("Cannot get such a field: " + c);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -358,22 +396,26 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     GroupbyNode groupbyNode = new GroupbyNode(plan.newPID());
     groupbyNode.setGroupingColumns(new Column[] {});
 
-    Set<Target> evaluatedTargets = new LinkedHashSet<Target>();
+    Set<String> aggEvalNames = new LinkedHashSet<String>();
+    Set<AggregationFunctionCallEval> aggEvals = new LinkedHashSet<AggregationFunctionCallEval>();
     boolean includeDistinctFunction = false;
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getUnresolvedExprs(); it.hasNext();) {
       NamedExpr rawTarget = it.next();
       try {
         includeDistinctFunction = PlannerUtil.existsDistinctAggregationFunction(rawTarget.getExpr());
         EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
-        if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
+        if (evalNode.getType() == EvalType.AGG_FUNCTION) {
+          aggEvalNames.add(rawTarget.getAlias());
+          aggEvals.add((AggregationFunctionCallEval) evalNode);
           block.namedExprsMgr.resolveExpr(rawTarget.getAlias(), evalNode);
-          evaluatedTargets.add(new Target(evalNode, rawTarget.getAlias()));
         }
       } catch (VerifyException ve) {
       }
     }
     groupbyNode.setDistinct(includeDistinctFunction);
-    groupbyNode.setTargets(evaluatedTargets.toArray(new Target[evaluatedTargets.size()]));
+    groupbyNode.setAggFunctions(aggEvals.toArray(new AggregationFunctionCallEval[aggEvals.size()]));
+    Target [] targets = ProjectionPushDownRule.buildGroupByTarget(groupbyNode, aggEvalNames.toArray(new String[aggEvalNames.size()]));
+    groupbyNode.setTargets(targets);
     groupbyNode.setChild(child);
     groupbyNode.setInSchema(child.getOutSchema());
 
@@ -429,7 +471,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
-    limitNode.setFetchFirst(firstFetNum.terminate(null).asInt8());
+    limitNode.setFetchFirst(firstFetNum.eval(null, null).asInt8());
 
     return limitNode;
   }
@@ -558,53 +600,64 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     groupingNode.setChild(child);
     groupingNode.setInSchema(child.getOutSchema());
 
+    // Set grouping sets
+    Column [] groupingColumns = new Column[aggregation.getGroupSet()[0].getGroupingSets().length];
+    for (int i = 0; i < groupingColumns.length; i++) {
+      if (block.namedExprsMgr.isResolved(groupingKeyRefNames[i])) {
+        groupingColumns[i] = block.namedExprsMgr.getTarget(groupingKeyRefNames[i]).getNamedColumn();
+      } else {
+        throw new PlanningException("Each grouping column expression must be a scalar expression.");
+      }
+    }
+    groupingNode.setGroupingColumns(groupingColumns);
+
+    ////////////////////////////////////////////////////////
+    // Visit and Build Child Plan
+    ////////////////////////////////////////////////////////
 
     // create EvalNodes and check if each EvalNode can be evaluated here.
-    Set<Target> evaluatedTargets = new LinkedHashSet<Target>();
+    List<String> aggEvalNames = TUtil.newList();
+    List<AggregationFunctionCallEval> aggEvalNodes = TUtil.newList();
     boolean includeDistinctFunction = false;
-    for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
+    for (Iterator<NamedExpr> iterator = block.namedExprsMgr.getUnresolvedExprs(); iterator.hasNext();) {
+      NamedExpr namedExpr = iterator.next();
       try {
-        includeDistinctFunction = PlannerUtil.existsDistinctAggregationFunction(rawTarget.getExpr());
-        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
-        if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
-          block.namedExprsMgr.resolveExpr(rawTarget.getAlias(), evalNode);
-          evaluatedTargets.add(new Target(evalNode, rawTarget.getAlias()));
+        includeDistinctFunction |= PlannerUtil.existsDistinctAggregationFunction(namedExpr.getExpr());
+        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, namedExpr.getExpr());
+        if (evalNode.getType() == EvalType.AGG_FUNCTION) {
+          block.namedExprsMgr.resolveExpr(namedExpr.getAlias(), evalNode);
+          aggEvalNames.add(namedExpr.getAlias());
+          aggEvalNodes.add((AggregationFunctionCallEval) evalNode);
         }
       } catch (VerifyException ve) {
       }
     }
-    // If there is at least one distinct aggregation function
+    // if there is at least one distinct aggregation function
     groupingNode.setDistinct(includeDistinctFunction);
+    groupingNode.setAggFunctions(aggEvalNodes.toArray(new AggregationFunctionCallEval[aggEvalNodes.size()]));
 
+    Target [] targets = new Target[groupingKeyNum + aggEvalNames.size()];
 
-    // Set grouping sets
-    List<Target> targets = new ArrayList<Target>();
-    Aggregation.GroupElement [] groupElements = aggregation.getGroupSet();
+    // In target, grouping columns will be followed by aggregation evals.
+    //
+    // col1, col2, col3,   sum(..),  agv(..)
+    // ^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^
+    //  grouping keys      aggregation evals
 
-    // Currently, single ordinary grouping set is only available.
-    if (groupElements[0].getType() == GroupType.OrdinaryGroup) {
-      Column [] groupingColumns = new Column[aggregation.getGroupSet()[0].getGroupingSets().length];
-      for (int i = 0; i < groupingColumns.length; i++) {
-        if (block.namedExprsMgr.isResolved(groupingKeyRefNames[i])) {
-          groupingColumns[i] = block.namedExprsMgr.getTarget(groupingKeyRefNames[i]).getNamedColumn();
-        } else {
-          throw new PlanningException("Each grouping column expression must be a scalar expression.");
-        }
-      }
-
-      for (Column column : groupingColumns) {
-        if (child.getOutSchema().contains(column)) {
-          targets.add(new Target(new FieldEval(child.getOutSchema().getColumn(column))));
-        }
-      }
-      groupingNode.setGroupingColumns(groupingColumns);
-    } else {
-      throw new InvalidQueryException("Not support grouping");
+    // Build grouping keys
+    for (int i = 0; i < groupingKeyNum; i++) {
+      Target target = new Target(new FieldEval(groupingNode.getGroupingColumns()[i]));
+      targets[i] = target;
     }
 
-    targets.addAll(evaluatedTargets);
-    groupingNode.setTargets(targets.toArray(new Target[targets.size()]));
+    for (int i = 0, targetIdx = groupingKeyNum; i < aggEvalNodes.size(); i++, targetIdx++) {
+      targets[targetIdx] = block.namedExprsMgr.getTarget(aggEvalNames.get(i));
+    }
+
+    groupingNode.setTargets(targets);
     block.unsetAggregationRequire();
+
+    verifyProjectedFields(block, groupingNode);
     return groupingNode;
   }
 
@@ -892,6 +945,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     scanNode.setTargets(targets.toArray(new Target[targets.size()]));
 
+    verifyProjectedFields(block, scanNode);
     return scanNode;
   }
 
@@ -1487,25 +1541,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   ===============================================================================================*/
 
   public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode groupbyNode) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
-
-    if (!groupbyNode.getInSchema().containsAll(columnRefs)) {
-      return false;
-    }
-
-    Set<String> tableIds = Sets.newHashSet();
-    // getting distinct table references
-    for (Column col : columnRefs) {
-      if (!tableIds.contains(col.getQualifier())) {
-        tableIds.add(col.getQualifier());
-      }
-    }
-
-    if (tableIds.size() > 1) {
-      return false;
-    }
-
-    return true;
+    return checkIfBeEvaluateAtThis(evalNode, groupbyNode) && evalNode.getType() == EvalType.AGG_FUNCTION;
   }
 
   public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode joinNode,
@@ -1524,11 +1560,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (checkCaseWhenWithOuterJoin(block, evalNode, isTopMostJoin)) {
-      return true;
-    } else {
-      return false;
-    }
+    return checkCaseWhenWithOuterJoin(block, evalNode, isTopMostJoin);
   }
 
   private static boolean checkCaseWhenWithOuterJoin(QueryBlock block, EvalNode evalNode, boolean isTopMostJoin) {
@@ -1564,9 +1596,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public static boolean checkIfBeEvaluateAtThis(EvalNode evalNode, LogicalNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
-    if (!node.getInSchema().containsAll(columnRefs)) {
-      return false;
-    }
-    return true;
+    return node.getInSchema().containsAll(columnRefs);
   }
 }

@@ -23,10 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
@@ -412,12 +409,19 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    // Getting target names
-    final int targetNum = node.getTargets().length;
-    final String [] targetNames = new String[targetNum];
-    for (int i = 0; i < targetNum; i++) {
-      Target target = node.getTargets()[i];
-      targetNames[i] = newContext.addExpr(target);
+    // Getting eval names
+
+    final String [] aggEvalNames;
+    if (node.hasAggFunctions()) {
+      final int evalNum = node.getAggFunctions().length;
+      aggEvalNames = new String[evalNum];
+      for (int evalIdx = 0, targetIdx = groupingKeyNum; targetIdx < node.getTargets().length; evalIdx++, targetIdx++) {
+        Target target = node.getTargets()[targetIdx];
+        EvalNode evalNode = node.getAggFunctions()[evalIdx];
+        aggEvalNames[evalIdx] = newContext.addExpr(new Target(evalNode, target.getCanonicalName()));
+      }
+    } else {
+      aggEvalNames = null;
     }
 
     // visit a child node
@@ -444,21 +448,48 @@ public class ProjectionPushDownRule extends
     }
 
     // Getting projected targets
-    List<Target> projectedTargets = TUtil.newList();
-    for (Iterator<String> it = getFilteredReferences(targetNames, context.requiredSet); it.hasNext();) {
-      String referenceName = it.next();
-      Target target = context.targetListMgr.getTarget(referenceName);
+    if (node.hasAggFunctions()) {
+      AggregationFunctionCallEval [] aggEvals = new AggregationFunctionCallEval[aggEvalNames.length];
+      int i = 0;
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, TUtil.newList(aggEvalNames)); it.hasNext();) {
 
-      if (context.targetListMgr.isResolved(referenceName)) {
-        projectedTargets.add(new Target(new FieldEval(target.getNamedColumn())));
-      } else if (LogicalPlanner.checkIfBeEvaluatedAtGroupBy(target.getEvalTree(), node)) {
-        projectedTargets.add(target);
-        context.targetListMgr.resolve(target);
+        String referenceName = it.next();
+        Target target = context.targetListMgr.getTarget(referenceName);
+
+        if (LogicalPlanner.checkIfBeEvaluatedAtGroupBy(target.getEvalTree(), node)) {
+          aggEvals[i++] = target.getEvalTree();
+          context.targetListMgr.resolve(target);
+        }
+      }
+      if (aggEvals.length > 0) {
+        node.setAggFunctions(aggEvals);
       }
     }
     node.setInSchema(child.getOutSchema());
-    node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
+    Target [] targets = buildGroupByTarget(node, aggEvalNames);
+    node.setTargets(targets);
+
     return node;
+  }
+
+  public static Target [] buildGroupByTarget(GroupbyNode groupbyNode, String [] aggEvalNames) {
+    final int groupingKeyNum = groupbyNode.getGroupingColumns().length;
+    final int aggrFuncNum = aggEvalNames != null ? aggEvalNames.length : 0;
+    EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions();
+    Target [] targets = new Target[groupingKeyNum + aggrFuncNum];
+
+    for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
+      targets[groupingKeyIdx] = new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx]));
+    }
+
+    if (aggEvalNames != null) {
+      for (int aggrFuncIdx = 0, targetIdx = groupingKeyNum; aggrFuncIdx < aggrFuncNum; aggrFuncIdx++, targetIdx++) {
+        targets[targetIdx] =
+            new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType()));
+      }
+    }
+
+    return targets;
   }
 
   public LogicalNode visitFilter(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -548,14 +579,14 @@ public class ProjectionPushDownRule extends
     return new FilteredStringsIterator(targetNames, required);
   }
 
-  static Iterator<String> getFilteredReferences(String [] targetNames, Set<String> required) {
+  static Iterator<String> getFilteredReferences(String [] targetNames, Collection<String> required) {
     return new FilteredStringsIterator(targetNames, required);
   }
 
   static class FilteredStringsIterator implements Iterator<String> {
     Iterator<String> iterator;
 
-    FilteredStringsIterator(Collection<String> targetNames, Set<String> required) {
+    FilteredStringsIterator(Collection<String> targetNames, Collection<String> required) {
       List<String> filtered = TUtil.newList();
       for (String name : targetNames) {
         if (required.contains(name)) {
@@ -566,7 +597,7 @@ public class ProjectionPushDownRule extends
       iterator = filtered.iterator();
     }
 
-    FilteredStringsIterator(String [] targetNames, Set<String> required) {
+    FilteredStringsIterator(String [] targetNames, Collection<String> required) {
       this(TUtil.newList(targetNames), required);
     }
 

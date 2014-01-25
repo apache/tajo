@@ -18,7 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.eval.EvalContext;
+import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -35,44 +35,38 @@ import java.util.Map.Entry;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private Map<Tuple, EvalContext[]> tupleSlots;
+  private Map<Tuple, FunctionContext[]> hashTable;
   private boolean computed = false;
-  private Iterator<Entry<Tuple, EvalContext []>> iterator = null;
+  private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
 
-  /**
-   * @throws java.io.IOException
-	 * 
-	 */
-  public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode annotation,
-                           PhysicalExec subOp) throws IOException {
-    super(ctx, annotation, subOp);
-    tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
-    this.tuple = new VTuple(evalSchema.getColumnNum());
+  public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
+    super(ctx, plan, subOp);
+    hashTable = new HashMap<Tuple, FunctionContext []>(100000);
+    this.tuple = new VTuple(plan.getOutSchema().getColumnNum());
   }
   
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    int targetLength = plan.getTargets().length;
     while((tuple = child.next()) != null && !context.isStopped()) {
-      keyTuple = new VTuple(keylist.length);
+      keyTuple = new VTuple(groupingKeyIds.length);
       // build one key tuple
-      for(int i = 0; i < keylist.length; i++) {
-        keyTuple.put(i, tuple.get(keylist[i]));
+      for(int i = 0; i < groupingKeyIds.length; i++) {
+        keyTuple.put(i, tuple.get(groupingKeyIds[i]));
       }
       
-      if(tupleSlots.containsKey(keyTuple)) {
-        EvalContext [] tmpTuple = tupleSlots.get(keyTuple);
-        for(int i = 0; i < measureList.length; i++) {
-          evals[measureList[i]].eval(tmpTuple[measureList[i]], inSchema, tuple);
+      if(hashTable.containsKey(keyTuple)) {
+        FunctionContext [] contexts = hashTable.get(keyTuple);
+        for(int i = 0; i < aggFunctions.length; i++) {
+          aggFunctions[i].merge(contexts[i], inSchema, tuple);
         }
       } else { // if the key occurs firstly
-        EvalContext evalCtx [] = new EvalContext[targetLength];
-        for(int i = 0; i < targetLength; i++) {
-          evalCtx[i] = evals[i].newContext();
-          evals[i].eval(evalCtx[i], inSchema, tuple);
+        FunctionContext contexts [] = new FunctionContext[aggFunctionsNum];
+        for(int i = 0; i < aggFunctionsNum; i++) {
+          contexts[i] = aggFunctions[i].newContext();
+          aggFunctions[i].merge(contexts[i], inSchema, tuple);
         }
-        tupleSlots.put(keyTuple, evalCtx);
+        hashTable.put(keyTuple, contexts);
       }
     }
   }
@@ -81,16 +75,23 @@ public class HashAggregateExec extends AggregationExec {
   public Tuple next() throws IOException {
     if(!computed) {
       compute();
-      iterator = tupleSlots.entrySet().iterator();
+      iterator = hashTable.entrySet().iterator();
       computed = true;
     }
 
-    EvalContext [] ctx;
+    FunctionContext [] contexts;
 
     if (iterator.hasNext()) {
-      ctx =  iterator.next().getValue();
-      for (int i = 0; i < ctx.length; i++) {
-        tuple.put(i, evals[i].terminate(ctx[i]));
+      Entry<Tuple, FunctionContext []> entry = iterator.next();
+      Tuple keyTuple = entry.getKey();
+      contexts =  entry.getValue();
+
+      int tupleIdx = 0;
+      for (; tupleIdx < groupingKeyNum; tupleIdx++) {
+        tuple.put(tupleIdx, keyTuple.get(tupleIdx));
+      }
+      for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
+        tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));
       }
 
       return tuple;
@@ -101,12 +102,12 @@ public class HashAggregateExec extends AggregationExec {
 
   @Override
   public void rescan() throws IOException {    
-    iterator = tupleSlots.entrySet().iterator();
+    iterator = hashTable.entrySet().iterator();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
-    tupleSlots.clear();
+    hashTable.clear();
   }
 }

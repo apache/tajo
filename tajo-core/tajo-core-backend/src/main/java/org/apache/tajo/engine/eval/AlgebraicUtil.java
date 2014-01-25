@@ -157,9 +157,7 @@ public class AlgebraicUtil {
       right = eliminateConstantExprs(right);
 
       if (left.getType() == EvalType.CONST && right.getType() == EvalType.CONST) {
-        EvalContext exprCtx = expr.newContext();
-        expr.eval(exprCtx, null, null);
-        return new ConstEval(expr.terminate(exprCtx));
+        return new ConstEval(expr.eval(null, null));
       } else {
         return new BinaryEval(expr.getType(), left, right);
       }

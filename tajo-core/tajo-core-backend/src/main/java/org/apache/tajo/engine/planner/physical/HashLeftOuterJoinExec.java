@@ -18,9 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -30,12 +30,10 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 
 public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
@@ -51,7 +49,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   protected Tuple outTuple = null;
   protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
-  protected EvalContext qualCtx;
   protected Tuple leftTuple;
   protected Tuple leftKeyTuple;
 
@@ -63,7 +60,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
   // projection
   protected final Projector projector;
-  protected final EvalContext [] evalContexts;
 
   private int rightNumCols;
   private int leftNumCols;
@@ -75,7 +71,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
         plan.getOutSchema(), leftChild, rightChild);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
-    this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(), rightChild.getSchema());
@@ -93,7 +88,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -137,8 +131,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
           // this left tuple doesn't have a match on the right, and output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
           frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+          projector.eval(frameTuple, outTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
           return outTuple;
@@ -148,10 +141,8 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).isTrue()) { // if both tuples are joinable
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+        projector.eval(frameTuple, outTuple);
         found = true;
       }
 

@@ -64,12 +64,6 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public boolean isDistinct() {
     return funcDesc.getFuncType() == DISTINCT_AGGREGATION || funcDesc.getFuncType() == DISTINCT_UDA;
   }
-
-  @Override
-  public EvalContext newContext() {
-    FuncCallCtx newCtx = new FuncCallCtx(argEvals);
-    return newCtx;
-  }
 	
 	public EvalNode [] getArgs() {
 	  return this.argEvals;
@@ -84,9 +78,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	}
 
 	@Override
-	public abstract void eval(EvalContext ctx, Schema schema, Tuple tuple);
-
-  public abstract Datum terminate(EvalContext ctx);
+	public abstract Datum eval(Schema schema, Tuple tuple);
 
 	@Override
 	public String getName() {
@@ -149,14 +141,4 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	  }
 	  visitor.visit(this);
 	}
-
-  protected class FuncCallCtx implements EvalContext {
-    EvalContext [] argCtxs;
-    FuncCallCtx(EvalNode [] argEvals) {
-      argCtxs = new EvalContext[argEvals.length];
-      for (int i = 0; i < argEvals.length; i++) {
-        argCtxs[i] = argEvals[i].newContext();
-      }
-    }
-  }
 }

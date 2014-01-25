@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
@@ -62,11 +62,6 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   @Override
-  public EvalContext newContext() {
-    return new CaseContext(whens, elseResult != null ? elseResult.newContext() : null);
-  }
-
-  @Override
   public DataType getValueType() {
     return whens.get(0).getResultExpr().getValueType();
   }
@@ -76,30 +71,18 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     return "?";
   }
 
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    CaseContext caseCtx = (CaseContext) ctx;
+  public Datum eval(Schema schema, Tuple tuple) {
     for (int i = 0; i < whens.size(); i++) {
-      whens.get(i).eval(caseCtx.contexts[i], schema, tuple);
-    }
-
-    if (elseResult != null) { // without else clause
-      elseResult.eval(caseCtx.elseCtx, schema, tuple);
-    }
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    CaseContext caseCtx = (CaseContext) ctx;
-    for (int i = 0; i < whens.size(); i++) {
-      if (whens.get(i).terminate(caseCtx.contexts[i]).asBool()) {
-        return whens.get(i).getThenResult(caseCtx.contexts[i]);
+      if (whens.get(i).checkIfCondition(schema, tuple)) {
+        return whens.get(i).eval(schema, tuple);
       }
     }
+
     if (elseResult != null) { // without else clause
-      return elseResult.terminate(caseCtx.elseCtx);
-    } else {
-      return DatumFactory.createNullDatum();
+      return elseResult.eval(schema, tuple);
     }
+
+    return NullDatum.get();
   }
 
   @Override
@@ -163,11 +146,6 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
 
     @Override
-    public EvalContext newContext() {
-      return new WhenContext(condition.newContext(), result.newContext());
-    }
-
-    @Override
     public DataType getValueType() {
       return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
     }
@@ -177,14 +155,12 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       return "when?";
     }
 
-    public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-      condition.eval(((WhenContext) ctx).condCtx, schema, tuple);
-      result.eval(((WhenContext) ctx).resultCtx, schema, tuple);
+    public boolean checkIfCondition(Schema schema, Tuple tuple) {
+      return condition.eval(schema, tuple).isTrue();
     }
 
-    @Override
-    public Datum terminate(EvalContext ctx) {
-      return condition.terminate(((WhenContext) ctx).condCtx);
+    public Datum eval(Schema schema, Tuple tuple) {
+      return result.eval(schema, tuple);
     }
 
     public EvalNode getConditionExpr() {
@@ -215,20 +191,6 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       return CoreGsonHelper.toJson(IfThenEval.this, IfThenEval.class);
     }
 
-    private class WhenContext implements EvalContext {
-      EvalContext condCtx;
-      EvalContext resultCtx;
-
-      public WhenContext(EvalContext condCtx, EvalContext resultCtx) {
-        this.condCtx = condCtx;
-        this.resultCtx = resultCtx;
-      }
-    }
-
-    public Datum getThenResult(EvalContext ctx) {
-      return result.terminate(((WhenContext) ctx).resultCtx);
-    }
-
     @Override
     public void preOrder(EvalNodeVisitor visitor) {
       visitor.visit(this);
@@ -241,19 +203,6 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       condition.postOrder(visitor);
       result.postOrder(visitor);
       visitor.visit(this);
-    }
-  }
-
-  private class CaseContext implements EvalContext {
-    EvalContext [] contexts;
-    EvalContext elseCtx;
-
-    CaseContext(List<IfThenEval> whens, EvalContext elseCtx) {
-      contexts = new EvalContext[whens.size()];
-      for (int i = 0; i < whens.size(); i++) {
-        contexts[i] = whens.get(i).newContext();
-      }
-      this.elseCtx = elseCtx;
     }
   }
 }

@@ -19,10 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -31,6 +29,7 @@ import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode joinNode;
   private EvalNode joinQual;
-  private EvalContext qualCtx;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
@@ -61,7 +59,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
   // projection
   private final Projector projector;
-  private final EvalContext [] evalContexts;
 
   private int rightNumCols;
   private int leftNumCols;
@@ -77,7 +74,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
         "but there is no join condition");
     this.joinNode = plan;
     this.joinQual = plan.getJoinQual();
-    this.qualCtx = this.joinQual.newContext();
 
     this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -91,7 +87,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
     // for projection
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    this.evalContexts = projector.newContexts();
 
     // for join
     frameTuple = new FrameTuple();
@@ -158,8 +153,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(evalContexts, frameTuple);
-            projector.terminate(evalContexts, outTuple);
+            projector.eval(frameTuple, outTuple);
 
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
@@ -225,8 +219,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             // output a tuple with the nulls padded left tuple
             Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(evalContexts, frameTuple);
-            projector.terminate(evalContexts, outTuple);
+            projector.eval(frameTuple, outTuple);
 
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
@@ -305,9 +298,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          joinQual.eval(qualCtx, inSchema, frameTuple);
-          projector.eval(evalContexts, frameTuple);
-          projector.terminate(evalContexts, outTuple);
+          joinQual.eval(inSchema, frameTuple);
+          projector.eval(frameTuple, outTuple);
           return outTuple;
 
         } else {
@@ -321,9 +313,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
             frameTuple.set(nextLeft, aTuple);
-            joinQual.eval(qualCtx, inSchema, frameTuple);
-            projector.eval(evalContexts, frameTuple);
-            projector.terminate(evalContexts, outTuple);
+            joinQual.eval(inSchema, frameTuple);
+            projector.eval(frameTuple, outTuple);
             return outTuple;
           }
         }

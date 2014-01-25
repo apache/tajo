@@ -95,16 +95,13 @@ public class PartitionedTableRewriter implements RewriteRule {
   }
 
   private static class PartitionPathFilter implements PathFilter {
-    private FileSystem fs;
     private Schema schema;
     private EvalNode partitionFilter;
-    private EvalContext evalContext;
 
 
     public PartitionPathFilter(Schema schema, EvalNode partitionFilter) {
       this.schema = schema;
       this.partitionFilter = partitionFilter;
-      evalContext = partitionFilter.newContext();
     }
 
     @Override
@@ -113,8 +110,8 @@ public class PartitionedTableRewriter implements RewriteRule {
       if (tuple == null) { // if it is a file or not acceptable file
         return false;
       }
-      partitionFilter.eval(evalContext, schema, tuple);
-      return partitionFilter.terminate(evalContext).asBool();
+
+      return partitionFilter.eval(schema, tuple).asBool();
     }
 
     @Override

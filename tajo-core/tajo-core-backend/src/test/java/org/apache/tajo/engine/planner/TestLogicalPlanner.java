@@ -570,7 +570,7 @@ public class TestLogicalPlanner {
 
   static final String ALIAS [] = {
     "select deptName, sum(score) as total from score group by deptName",
-    "select em.empId as id, sum(score) as total from employee as em inner join score using (em.deptName)"
+    "select em.empId as id, sum(score) as total from employee as em inner join score using (em.deptName) group by id"
   };
 
 

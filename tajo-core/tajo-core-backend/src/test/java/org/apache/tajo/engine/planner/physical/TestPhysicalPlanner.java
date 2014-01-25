@@ -25,7 +25,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -35,14 +37,12 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
@@ -563,12 +563,8 @@ public class TestPhysicalPlanner {
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
-    for (Target target : groupbyNode.getTargets()) {
-      for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
-        if (eval instanceof AggregationFunctionCallEval) {
-          ((AggregationFunctionCallEval) eval).setFirstPhase();
-        }
-      }
+    for (AggregationFunctionCallEval function : groupbyNode.getAggFunctions()) {
+      function.setFirstPhase();
     }
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -597,12 +593,8 @@ public class TestPhysicalPlanner {
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
-    for (Target target : groupbyNode.getTargets()) {
-      for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
-        if (eval instanceof AggregationFunctionCallEval) {
-          ((AggregationFunctionCallEval) eval).setFirstPhase();
-        }
-      }
+    for (AggregationFunctionCallEval function : groupbyNode.getAggFunctions()) {
+      function.setFirstPhase();
     }
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
