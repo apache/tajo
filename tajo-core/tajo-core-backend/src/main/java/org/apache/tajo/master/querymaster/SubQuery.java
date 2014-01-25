@@ -201,6 +201,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private final Lock readLock;
   private final Lock writeLock;
 
+  private int totalScheduledObjectsCount;
+  private int completedObjectCount = 0;
   private int completedTaskCount = 0;
   private TaskSchedulerContext schedulerContext;
 
@@ -266,11 +268,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (getState() == SubQueryState.NEW) {
         return 0;
       } else {
-        if (completedTaskCount == 0) {
-          return 0.0f;
-        } else {
-          return (float)completedTaskCount / (float)schedulerContext.getEstimatedTaskNum();
-        }
+        return (float)(completedObjectCount) / (float)totalScheduledObjectsCount;
       }
     } finally {
       readLock.unlock();
@@ -515,7 +513,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           setShuffleIfNecessary(subQuery, channel);
           initTaskScheduler(subQuery);
           schedule(subQuery);
-          LOG.info(subQuery.getTaskScheduler().remainingScheduledObjectNum() + " objects are scheduled");
+          subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
+          LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
 
           if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
             subQuery.stopScheduler();
@@ -879,17 +878,23 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     @Override
     public void transition(SubQuery subQuery,
                            SubQueryEvent event) {
-      subQuery.completedTaskCount++;
       SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
-      QueryUnitAttempt task = subQuery.getQueryUnit(taskEvent.getTaskId()).getSuccessfulAttempt();
+      QueryUnit task = subQuery.getQueryUnit(taskEvent.getTaskId());
+      QueryUnitAttempt taskAttempt = task.getSuccessfulAttempt();
+      if (task.isLeafTask()) {
+        subQuery.completedObjectCount += task.getTotalFragmentNum();
+      } else {
+        subQuery.completedObjectCount ++;
+      }
+      subQuery.completedTaskCount++;
 
       if (task == null) { // task failed
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_FAILED));
       } else {
         LOG.info(subQuery.getId() + " SubQuery Succeeded " + subQuery.completedTaskCount + "/"
-            + subQuery.schedulerContext.getEstimatedTaskNum() + " on " + task.getHost() + ":" + task.getPort());
+            + subQuery.schedulerContext.getEstimatedTaskNum() + " on " + taskAttempt.getHost() + ":" + taskAttempt.getPort());
         if (subQuery.taskScheduler.remainingScheduledObjectNum() == 0
-            && subQuery.getQueryUnits().length == subQuery.completedTaskCount) {
+            && subQuery.totalScheduledObjectsCount == subQuery.completedObjectCount) {
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
               SubQueryEventType.SQ_SUBQUERY_COMPLETED));
         }

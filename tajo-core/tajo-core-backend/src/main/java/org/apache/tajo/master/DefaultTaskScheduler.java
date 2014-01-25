@@ -67,6 +67,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int rackLocalAssigned = 0;
   private int totalAssigned = 0;
   private int nextTaskId = 0;
+  private int scheduledObjectNum = 0;
 
   public DefaultTaskScheduler(TaskSchedulerContext context, SubQuery subQuery) {
     super(DefaultTaskScheduler.class.getName());
@@ -181,8 +182,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
           QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
           task.setFragment(castEvent.getLeftFragment());
+          scheduledObjectNum++;
           if (castEvent.getRightFragment() != null) {
             task.setFragment(castEvent.getRightFragment());
+            scheduledObjectNum++;
           }
           subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
@@ -195,6 +198,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         Map<String, List<URI>> fetches = castEvent.getFetches();
         QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
         QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
+        scheduledObjectNum++;
         for (Entry<String, List<URI>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
           task.setFragment(fragmentsForNonLeafTask[0]);
@@ -221,7 +225,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public int remainingScheduledObjectNum() {
-    return subQuery.getQueryUnits().length - totalAssigned;
+    return scheduledObjectNum;
   }
 
   private class TaskRequests implements EventHandler<TaskRequestEvent> {
@@ -480,6 +484,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           assignedRequest.add(attemptId);
 
           totalAssigned++;
+          scheduledObjectNum -= task.getAllFragments().size();
           taskRequest.getCallback().run(taskAssign.getProto());
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
@@ -549,6 +554,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               taskRequest.getContainerId(), container.getTaskHostName(), container.getTaskPort()));
           taskRequest.getCallback().run(taskAssign.getProto());
           totalAssigned++;
+          scheduledObjectNum--;
         }
       }
     }

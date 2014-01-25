@@ -62,7 +62,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	
 	private Map<String, Set<FragmentProto>> fragMap;
 	private Map<String, Set<URI>> fetchMap;
-	
+
+  private int totalFragmentNum;
+
   private List<ShuffleFileOutput> shuffleFileOutputs;
 	private TableStats stats;
   private final boolean isLeafTask;
@@ -137,6 +139,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     this.scheduleContext = scheduleContext;
 
     stateMachine = stateMachineFactory.make(this);
+    totalFragmentNum = 0;
 	}
 
   public boolean isLeafTask() {
@@ -193,6 +196,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
     fragmentProtos.add(fragment.getProto());
     addDataLocation(fragment);
+    totalFragmentNum++;
   }
 
   public void setFragment(FragmentPair[] fragmentPairs) {
@@ -337,6 +341,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   public int getRetryCount () {
     return this.nextAttempt;
+  }
+
+  public int getTotalFragmentNum() {
+    return totalFragmentNum;
   }
 
   private static class InitialScheduleTransition implements

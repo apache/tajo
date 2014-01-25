@@ -604,6 +604,8 @@ Release 0.2.0 - released
 
   BUG FIXES
 
+    TAJO-511: Sometimes, a query progress becomes higher than 100%. (jihoon)
+
     TAJO-281: 'mvn package -Pdist' generates duplicate Tajo jar files.
     (hyunsik)
 
