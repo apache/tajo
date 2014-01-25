@@ -88,7 +88,7 @@
     <menu name="Community">
       <item name="Wiki" href="http://wiki.apache.org/tajo" />
       <item name="Team" href="team-list.html" />
-      <item name="Mailing Lists" href="mail-lists.html" />
+      <item name="Mailing Lists" href="mailing-lists.html" />
       <item name="Issue Tracker" href="https://issues.apache.org/jira/browse/TAJO" />
       <item name="Powered By" href="http://wiki.apache.org/tajo/PoweredBy" />
       <item name="Presentations" href="http://wiki.apache.org/tajo/Presentations" />
