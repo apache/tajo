@@ -430,6 +430,10 @@ public class CatalogServer extends AbstractService {
       return found != null && found.size() > 0;
     }
 
+    private boolean containFunction(String signature, List<DataType> params) {
+      return findFunction(signature, params) != null;
+    }
+
     private boolean containFunction(String signature, FunctionType type, List<DataType> params) {
       return findFunction(signature, type, params) != null;
     }
@@ -441,8 +445,7 @@ public class CatalogServer extends AbstractService {
     private FunctionDescProto findFunction(String signature, List<DataType> params) {
       if (functions.containsKey(signature)) {
         for (FunctionDescProto existing : functions.get(signature)) {
-          if (existing.getParameterTypesList().containsAll(params) &&
-              params.containsAll(existing.getParameterTypesList())) {
+          if (existing.getParameterTypesList() != null && existing.getParameterTypesList().equals(params)) {
             return existing;
           }
         }
@@ -527,7 +530,7 @@ public class CatalogServer extends AbstractService {
         returnValue = containFunction(request.getSignature(), request.getFunctionType(),
             request.getParameterTypesList());
       } else {
-        returnValue = containFunction(request.getSignature());
+        returnValue = containFunction(request.getSignature(), request.getParameterTypesList());
       }
 
       return BoolProto.newBuilder().setValue(returnValue).build();

@@ -39,8 +39,11 @@ import org.apache.tajo.storage.Tuple;
   example = "> SELECT substr('alphabet', 3, 2);\n"
           + "ph",
   returnType = TajoDataTypes.Type.TEXT,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,
-          TajoDataTypes.Type.INT4,TajoDataTypes.Type.INT4})}
+  paramTypes = {
+    @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,TajoDataTypes.Type.INT4}),
+    @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT,TajoDataTypes.Type.INT4,
+                              TajoDataTypes.Type.INT4})
+  } 
 )
 public class Substr extends GeneralFunction {
   public Substr() {

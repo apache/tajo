@@ -174,6 +174,25 @@ public class TestCatalog {
     }
   }
 
+  @Test(expected = NoSuchFunctionException.class)
+	public final void testRegisterAndFindFunc() throws Exception { 
+		assertFalse(catalog.containFunction("test10", FunctionType.GENERAL));
+		FunctionDesc meta = new FunctionDesc("test10", TestFunc2.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
+
+    catalog.createFunction(meta);
+		assertTrue(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB)));
+		FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
+
+		assertEquals(retrived.getSignature(),"test10");
+		assertEquals(retrived.getFuncClass(),TestFunc2.class);
+		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
+
+		catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4));
+	}
+  
+
 	@Test
 	public final void testRegisterFunc() throws Exception { 
 		assertFalse(catalog.containFunction("test2", FunctionType.UDF));

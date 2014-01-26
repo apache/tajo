@@ -229,6 +229,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-551: Fix bug getFunction can get wrong function that have invalid 
+    parameters. (DaeMyung Kang via jihoon)
+
     TAJO-544: Thread pool abusing. (Min Zhou via hyunsik)
 
     TAJO-493: maven pom.xml should enforce protobuf 2.5. (jaehwa)

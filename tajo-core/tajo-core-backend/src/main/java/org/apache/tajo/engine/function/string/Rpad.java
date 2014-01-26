@@ -44,7 +44,8 @@ import org.apache.tajo.storage.Tuple;
   example = "> SELECT rpad('hi', 5, 'xy');\n"
       + "hixyx",
   returnType = TajoDataTypes.Type.TEXT,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4, TajoDataTypes.Type.TEXT})}
+  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4}),
+                @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4, TajoDataTypes.Type.TEXT})}
 )
 public class Rpad extends GeneralFunction {
   @Expose private boolean hasFillCharacters;

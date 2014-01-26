@@ -337,10 +337,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
     if (descProto == null) {
       throw new NoSuchFunctionException(signature);
     }
-    if(descProto == null) {
-      LOG.error("No matched function:" + signature + "," + funcType + "," + paramTypes);
-      return null;
-    }
+
     try {
       return new FunctionDesc(descProto);
     } catch (ClassNotFoundException e) {
