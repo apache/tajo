@@ -51,6 +51,38 @@ public class TestTablePartitions {
   }
 
   @Test
+  public final void testCreateColumnPartitionedTable() throws Exception {
+    String tableName ="testCreateColumnPartitionedTable";
+    ResultSet res = tpch.execute(
+        "create table " + tableName +" (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+    TajoTestingCluster cluster = tpch.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(tableName));
+    assertEquals(2, catalog.getTableDesc(tableName).getSchema().getColumnNum());
+    assertEquals(3, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
+
+    res = tpch.execute("insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
+    res.close();
+  }
+
+  @Test
+  public final void testCreateColumnPartitionedTableWithSelectedColumns() throws Exception {
+    String tableName ="testCreateColumnPartitionedTableWithSelectedColumns";
+    ResultSet res = tpch.execute(
+        "create table " + tableName +" (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    res.close();
+    TajoTestingCluster cluster = tpch.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(tableName));
+    assertEquals(3, catalog.getTableDesc(tableName).getSchema().getColumnNum());
+    assertEquals(4, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
+
+    res = tpch.execute("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
+    res.close();
+  }
+
+  @Test
   public final void testColumnPartitionedTableByOneColumn() throws Exception {
     String tableName ="testColumnPartitionedTableByOneColumn";
     ResultSet res = tpch.execute(
@@ -166,7 +198,7 @@ public class TestTablePartitions {
     assertTrue(catalog.existsTable(tableName));
 
     res = tpch.execute(
-        "insert overwrite into " + tableName + " select  l_partkey, l_quantity, l_orderkey from lineitem");
+        "insert overwrite into " + tableName + " select l_partkey, l_quantity, l_orderkey from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
@@ -246,7 +278,7 @@ public class TestTablePartitions {
 
     res = tpch.execute(
         "insert overwrite into " + tableName +
-            " select  l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+            " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
@@ -328,7 +360,7 @@ public class TestTablePartitions {
 
     res = tpch.execute(
         "insert overwrite into " + tableName +
-            " select  l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+            " select l_returnflag , l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());

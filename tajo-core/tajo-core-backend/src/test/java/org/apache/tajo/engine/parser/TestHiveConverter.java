@@ -23,7 +23,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.engine.parser.SQLParser.Boolean_value_expressionContext;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;

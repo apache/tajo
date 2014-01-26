@@ -20,14 +20,13 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.eval.FieldEval;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
@@ -42,7 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionsType;
 
 public class SeqScanExec extends PhysicalExec {
   private final ScanNode plan;
@@ -73,17 +71,14 @@ public class SeqScanExec extends PhysicalExec {
    * indicate partition keys. In this time, it is right. Later, we have to fix it.
    */
   private void rewriteColumnPartitionedTableSchema() throws IOException {
-    PartitionDesc partitionDesc = plan.getTableDesc().getPartitions();
-    Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
+    PartitionMethodDesc partitionDesc = plan.getTableDesc().getPartitionMethod();
+    Schema columnPartitionSchema = (Schema) partitionDesc.getExpressionSchema().clone();
     String qualifier = inSchema.getColumn(0).getQualifier();
     columnPartitionSchema.setQualifier(qualifier);
 
     // Remove partition key columns from an input schema.
-    this.inSchema = PlannerUtil.rewriteColumnPartitionedTableSchema(
-                                                 partitionDesc,
-                                                 columnPartitionSchema,
-                                                 inSchema,
-                                                 qualifier);
+    this.inSchema = plan.getTableDesc().getSchema();
+
 
     List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
@@ -97,6 +92,7 @@ public class SeqScanExec extends PhysicalExec {
       FieldEval targetExpr = new FieldEval(column);
       Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
       ConstEval constExpr = new ConstEval(datum);
+
       for (Target target : plan.getTargets()) {
         if (target.getEvalTree().equals(targetExpr)) {
           if (!target.hasAlias()) {
@@ -117,8 +113,8 @@ public class SeqScanExec extends PhysicalExec {
   public void init() throws IOException {
     Schema projected;
 
-    if (plan.getTableDesc().hasPartitions()
-        && plan.getTableDesc().getPartitions().getPartitionsType() == PartitionsType.COLUMN) {
+    if (plan.getTableDesc().hasPartition()
+        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
       rewriteColumnPartitionedTableSchema();
     }
 
@@ -146,12 +142,13 @@ public class SeqScanExec extends PhysicalExec {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
 
     if (fragments.length > 1) {
-      this.scanner = new MergeScanner(context.getConf(), plan.getTableSchema(), plan.getTableDesc().getMeta(),
+      this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
           FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
               fragments), projected);
     } else {
       this.scanner = StorageManagerFactory.getStorageManager(
-          context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getTableSchema(), fragments[0], projected);
+          context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
+          projected);
     }
 
     scanner.init();

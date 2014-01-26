@@ -20,6 +20,7 @@ package org.apache.tajo.engine.utils;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 
 public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
@@ -50,5 +51,13 @@ public class SchemaUtil {
     }
     
     return common;
+  }
+
+  public static Schema getQualifiedLogicalSchema(TableDesc tableDesc, String tableName) {
+    Schema logicalSchema = new Schema(tableDesc.getLogicalSchema());
+    if (tableName != null) {
+      logicalSchema.setQualifier(tableName);
+    }
+    return logicalSchema;
   }
 }

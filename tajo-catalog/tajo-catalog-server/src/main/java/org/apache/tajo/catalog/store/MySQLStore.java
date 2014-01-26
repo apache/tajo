@@ -23,12 +23,10 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.exception.InternalException;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.List;
 import java.util.Map;
 
 public class MySQLStore extends AbstractDBStore  {
@@ -50,13 +48,14 @@ public class MySQLStore extends AbstractDBStore  {
   }
 
   // TODO - DDL and index statements should be renamed
-  protected void createBaseTable() throws SQLException {
-
+  @Override
+  protected void createBaseTable() throws IOException {
     int result;
     Statement stmt = null;
-    try {
-      stmt = getConnection().createStatement();
+    Connection conn = getConnection();
 
+    try {
+      stmt = conn.createStatement();
       // META
       if (!baseTableMaps.get(TB_META)) {
         String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
@@ -88,12 +87,10 @@ public class MySQLStore extends AbstractDBStore  {
       if (!baseTableMaps.get(TB_COLUMNS)) {
         String columns_ddl =
             "CREATE TABLE " + TB_COLUMNS + " ("
-                + "TID INT NOT NULL,"
                 + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
                 + "column_id INT NOT NULL,"
                 + "column_name VARCHAR(255) NOT NULL, " + "data_type CHAR(16), " + "type_length INTEGER, "
                 + "UNIQUE KEY(" + C_TABLE_ID + ", column_name),"
-                + "FOREIGN KEY(TID) REFERENCES "+TB_TABLES+"(TID) ON DELETE CASCADE,"
                 + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
         if (LOG.isDebugEnabled()) {
           LOG.debug(columns_ddl);
@@ -152,38 +149,61 @@ public class MySQLStore extends AbstractDBStore  {
         result = stmt.executeUpdate(stats_ddl);
       }
 
-      // PARTITION
+      // PARTITION_METHODS
+      if (!baseTableMaps.get(TB_PARTITION_METHODS)) {
+        String partition_method_ddl = "CREATE TABLE " + TB_PARTITION_METHODS + " ("
+            + C_TABLE_ID + " VARCHAR(255) PRIMARY KEY,"
+            + "partition_type VARCHAR(10) NOT NULL,"
+            + "expression TEXT NOT NULL,"
+            + "expression_schema VARBINARY(1024) NOT NULL, "
+            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(partition_method_ddl);
+        }
+        LOG.info("Table '" + TB_PARTITION_METHODS + "' is created.");
+        result = stmt.executeUpdate(partition_method_ddl);
+      }
+
+      // PARTITIONS
       if (!baseTableMaps.get(TB_PARTTIONS)) {
         String partition_ddl = "CREATE TABLE " + TB_PARTTIONS + " ("
             + "PID int NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-            + "name VARCHAR(255), "
-            + "TID INT NOT NULL,"
-            + "type VARCHAR(10) NOT NULL,"
-            + "quantity INT ,"
-            + "columns VARCHAR(255),"
-            + "expressions TEXT )";
+            + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
+            + "partition_name VARCHAR(255), "
+            + "ordinal_position INT NOT NULL,"
+            + "partition_value TEXT,"
+            + "path TEXT,"
+            + "cache_nodes VARCHAR(255), "
+            + "UNIQUE KEY(" + C_TABLE_ID + ", partition_name),"
+            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
         if (LOG.isDebugEnabled()) {
           LOG.debug(partition_ddl);
         }
         LOG.info("Table '" + TB_PARTTIONS + "' is created.");
         result = stmt.executeUpdate(partition_ddl);
       }
+    } catch (SQLException se) {
+      throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(stmt);
     }
   }
 
-  protected boolean isInitialized() throws SQLException {
-    ResultSet res = getConnection().getMetaData().getTables(null, null, null,
-        new String[]{"TABLE"});
-
+  @Override
+  protected boolean isInitialized() throws IOException {
+    ResultSet res = null;
+    Connection conn = getConnection();
     try {
+      res = conn.getMetaData().getTables(null, null, null,
+          new String[]{"TABLE"});
+
       baseTableMaps.put(TB_META, false);
       baseTableMaps.put(TB_TABLES, false);
       baseTableMaps.put(TB_COLUMNS, false);
       baseTableMaps.put(TB_OPTIONS, false);
       baseTableMaps.put(TB_STATISTICS, false);
       baseTableMaps.put(TB_INDEXES, false);
+      baseTableMaps.put(TB_PARTITION_METHODS, false);
       baseTableMaps.put(TB_PARTTIONS, false);
 
       if (res.wasNull())
@@ -192,6 +212,8 @@ public class MySQLStore extends AbstractDBStore  {
       while (res.next()) {
         baseTableMaps.put(res.getString("TABLE_NAME"), true);
       }
+    } catch(SQLException se) {
+      throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res);
     }
@@ -206,24 +228,4 @@ public class MySQLStore extends AbstractDBStore  {
 //    return false;
   }
 
-  @Override
-  public final void addFunction(final FunctionDesc func) throws IOException {
-    // TODO - not implemented yet    
-  }
-
-  @Override
-  public final void deleteFunction(final FunctionDesc func) throws IOException {
-    // TODO - not implemented yet    
-  }
-
-  @Override
-  public final void existFunction(final FunctionDesc func) throws IOException {
-    // TODO - not implemented yet    
-  }
-
-  @Override
-  public final List<String> getAllFunctionNames() throws IOException {
-    // TODO - not implemented yet
-    return null;
-  }
 }

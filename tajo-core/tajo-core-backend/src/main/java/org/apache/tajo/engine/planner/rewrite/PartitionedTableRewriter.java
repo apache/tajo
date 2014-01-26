@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
@@ -65,7 +65,7 @@ public class PartitionedTableRewriter implements RewriteRule {
       for (RelationNode relation : block.getRelations()) {
         if (relation.getType() == NodeType.SCAN) {
           TableDesc table = ((ScanNode)relation).getTableDesc();
-          if (table.hasPartitions()) {
+          if (table.hasPartition()) {
             return true;
           }
         }
@@ -82,7 +82,7 @@ public class PartitionedTableRewriter implements RewriteRule {
       for (RelationNode relation : block.getRelations()) {
         if (relation.getType() == NodeType.SCAN) {
           TableDesc table = ((ScanNode)relation).getTableDesc();
-          if (table.hasPartitions()) {
+          if (table.hasPartition()) {
             containsPartitionedTables = true;
           }
         }
@@ -237,10 +237,10 @@ public class PartitionedTableRewriter implements RewriteRule {
     FileSystem fs = table.getPath().getFileSystem(systemConf);
     LOG.info("Partitioned Table Dir: " + table.getPath());
     LOG.info("Summary: " + fs.getContentSummary(table.getPath()).getDirectoryCount());
-    PartitionDesc partitionDesc = scanNode.getTableDesc().getPartitions();
+    PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
     Schema paritionValuesSchema = new Schema();
-    for (Column column : partitionDesc.getColumns()) {
+    for (Column column : partitionDesc.getExpressionSchema().getColumns()) {
       paritionValuesSchema.addColumn(column);
     }
 
@@ -349,7 +349,7 @@ public class PartitionedTableRewriter implements RewriteRule {
                             Stack<LogicalNode> stack) throws PlanningException {
 
       TableDesc table = scanNode.getTableDesc();
-      if (!table.hasPartitions()) {
+      if (!table.hasPartition()) {
         return null;
       }
 

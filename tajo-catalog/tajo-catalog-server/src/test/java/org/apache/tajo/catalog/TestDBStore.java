@@ -22,8 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -75,10 +74,10 @@ public class TestDBStore {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
     store.deleteTable(tableName);
@@ -105,8 +104,8 @@ public class TestDBStore {
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "gettable"));
     desc.setStats(stat);
 
-    store.addTable(desc);
-    TableDesc retrieved = store.getTable(tableName);
+    store.addTable(desc.getProto());
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
     assertEquals(",", retrieved.getMeta().getOption("file.delimiter"));
     assertEquals(desc, retrieved);
     assertTrue(957685 == desc.getStats().getNumRows());
@@ -130,7 +129,7 @@ public class TestDBStore {
       TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
       TableDesc desc = new TableDesc(tableName, schema, meta,
           new Path(CommonTestingUtil.getTestDir(), "tableA_" + i));
-      store.addTable(desc);
+      store.addTable(desc.getProto());
     }
     
     assertEquals(numTables, store.getAllTableNames().size());
@@ -139,7 +138,7 @@ public class TestDBStore {
   @Test
   public final void testAddAndDeleteIndex() throws Exception {
     TableDesc table = prepareTable();
-    store.addTable(table);
+    store.addTable(table.getProto());
     
     store.addIndex(TestCatalog.desc1.getProto());
     assertTrue(store.existIndex(TestCatalog.desc1.getName()));
@@ -153,7 +152,7 @@ public class TestDBStore {
   public final void testGetIndex() throws Exception {
     
     TableDesc table = prepareTable();
-    store.addTable(table);
+    store.addTable(table.getProto());
     
     store.addIndex(TestCatalog.desc2.getProto());
     assertEquals(
@@ -168,7 +167,7 @@ public class TestDBStore {
   public final void testGetIndexByTableAndColumn() throws Exception {
     
     TableDesc table = prepareTable();
-    store.addTable(table);
+    store.addTable(table.getProto());
     
     store.addIndex(TestCatalog.desc2.getProto());
     
@@ -186,7 +185,7 @@ public class TestDBStore {
   public final void testGetAllIndexes() throws Exception {
     
     TableDesc table = prepareTable();
-    store.addTable(table);
+    store.addTable(table.getProto());
     
     store.addIndex(TestCatalog.desc1.getProto());
     store.addIndex(TestCatalog.desc2.getProto());
@@ -236,18 +235,21 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.addColumn(new Column("id", Type.INT4));
-    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.HASH);
-    partitionDesc.setNumPartitions(2);
+    PartitionMethodDesc partitionDesc = new PartitionMethodDesc();
+    partitionDesc.setTableId(tableName);
+    partitionDesc.setExpression("id");
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partitionDesc.setExpressionSchema(partSchema);
+    partitionDesc.setPartitionType(CatalogProtos.PartitionType.HASH);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitionDesc);
+    desc.setPartitionMethod(partitionDesc);
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
 
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
@@ -268,22 +270,22 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.addColumn(new Column("id", Type.INT4));
-    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.HASH);
-    partitionDesc.setNumPartitions(2);
 
-    partitionDesc.addSpecifier(new Specifier("sub_part1"));
-    partitionDesc.addSpecifier(new Specifier("sub_part2"));
-    partitionDesc.addSpecifier(new Specifier("sub_part3"));
+    PartitionMethodDesc partitionDesc = new PartitionMethodDesc();
+    partitionDesc.setTableId(tableName);
+    partitionDesc.setExpression("id");
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partitionDesc.setExpressionSchema(partSchema);
+    partitionDesc.setPartitionType(CatalogProtos.PartitionType.HASH);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitionDesc);
+    desc.setPartitionMethod(partitionDesc);
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
 
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
@@ -304,20 +306,21 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.addColumn(new Column("id", Type.INT4));
-    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.LIST);
-
-    partitionDesc.addSpecifier(new Specifier("sub_part1", "Seoul,서울"));
-    partitionDesc.addSpecifier(new Specifier("sub_part2", "Busan,부산"));
+    PartitionMethodDesc partitionDesc = new PartitionMethodDesc();
+    partitionDesc.setTableId(tableName);
+    partitionDesc.setExpression("id");
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partitionDesc.setExpressionSchema(partSchema);
+    partitionDesc.setPartitionType(CatalogProtos.PartitionType.LIST);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitionDesc);
+    desc.setPartitionMethod(partitionDesc);
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
 
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
@@ -338,21 +341,21 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.addColumn(new Column("id", Type.INT4));
-    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.RANGE);
-
-    partitionDesc.addSpecifier(new Specifier("sub_part1", "2"));
-    partitionDesc.addSpecifier(new Specifier("sub_part2", "5"));
-    partitionDesc.addSpecifier(new Specifier("sub_part3"));
+    PartitionMethodDesc partitionDesc = new PartitionMethodDesc();
+    partitionDesc.setTableId(tableName);
+    partitionDesc.setExpression("id");
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partitionDesc.setExpressionSchema(partSchema);
+    partitionDesc.setPartitionType(CatalogProtos.PartitionType.RANGE);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitionDesc);
+    desc.setPartitionMethod(partitionDesc);
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
 
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());
@@ -373,17 +376,21 @@ public class TestDBStore {
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.addColumn(new Column("id", Type.INT4));
-    partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
+    PartitionMethodDesc partitionDesc = new PartitionMethodDesc();
+    partitionDesc.setTableId(tableName);
+    partitionDesc.setExpression("id");
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partitionDesc.setExpressionSchema(partSchema);
+    partitionDesc.setPartitionType(CatalogProtos.PartitionType.COLUMN);
 
     TableDesc desc = new TableDesc(tableName, schema, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
-    desc.setPartitions(partitionDesc);
+    desc.setPartitionMethod(partitionDesc);
     assertFalse(store.existTable(tableName));
-    store.addTable(desc);
+    store.addTable(desc.getProto());
     assertTrue(store.existTable(tableName));
 
-    TableDesc retrieved = store.getTable(tableName);
+    TableDesc retrieved = new TableDesc(store.getTable(tableName));
 
     // Schema order check
     assertSchemaOrder(desc.getSchema(), retrieved.getSchema());

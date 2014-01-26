@@ -21,19 +21,21 @@
  */
 package org.apache.tajo.catalog.store;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.CatalogConstants;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
+import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 
@@ -43,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -60,9 +61,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   protected abstract Connection createConnection(final Configuration conf) throws SQLException;
 
-  protected abstract boolean isInitialized() throws SQLException;
+  protected abstract boolean isInitialized() throws IOException;
 
-  protected abstract void createBaseTable() throws SQLException;
+  protected abstract void createBaseTable() throws IOException;
 
   public AbstractDBStore(Configuration conf)
       throws InternalException {
@@ -117,7 +118,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       } else {
         LOG.info("The base tables of CatalogServer already is initialized.");
       }
-    } catch (SQLException se) {
+    } catch (IOException se) {
       throw new InternalException(
           "Cannot initialize the persistent storage of Catalog", se);
     }
@@ -125,7 +126,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     int dbVersion = 0;
     try {
       dbVersion = needUpgrade();
-    } catch (SQLException e) {
+    } catch (IOException e) {
       throw new InternalException(
           "Cannot check if the DB need to be upgraded", e);
     }
@@ -145,248 +146,187 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogUri;
   }
 
-  public Connection getConnection() throws SQLException{
-    boolean isValid = false;
-    try{
-      isValid = conn.isValid(100);
-    } catch (SQLException e){
-    }
-
-    if(!isValid){
+  public Connection getConnection() throws IOException {
+    try {
+      boolean isValid = conn.isValid(100);
+      if (!isValid) {
+        CatalogUtil.closeSQLWrapper(conn);
+        conn = createConnection(conf);
+      }
+    } catch (SQLException e) {
       CatalogUtil.closeSQLWrapper(conn);
-      conn = createConnection(conf);
+      throw new IOException(e);
     }
     return conn;
   }
 
-  private int needUpgrade() throws SQLException {
-    String sql = "SELECT VERSION FROM " + TB_META;
-    Statement stmt = getConnection().createStatement();
-    ResultSet res = stmt.executeQuery(sql);
+  private int needUpgrade() throws IOException {
+    Statement stmt = null;
+    try {
+      String sql = "SELECT VERSION FROM " + TB_META;
+      stmt = getConnection().createStatement();
+      ResultSet res = stmt.executeQuery(sql);
 
-    if (!res.next()) { // if this db version is 0
-      insertVersion();
-      return 0;
-    } else {
-      return res.getInt(1);
+      if (!res.next()) { // if this db version is 0
+        insertVersion();
+        return 0;
+      } else {
+        return res.getInt(1);
+      }
+    } catch (SQLException e) {
+      throw new IOException(e);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
     }
   }
 
-  private void insertVersion() throws SQLException {
-    String sql = "INSERT INTO " + TB_META + " values (0)";
-    Statement stmt = getConnection().createStatement();
-    stmt.executeUpdate(sql);
-    stmt.close();
+  private void insertVersion() throws IOException {
+    Statement stmt = null;
+    try {
+      String sql = "INSERT INTO " + TB_META + " values (0)";
+      stmt = getConnection().createStatement();
+      stmt.executeUpdate(sql);
+    } catch (SQLException e) {
+      throw new IOException(e);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
+    }
   }
 
-  private void upgrade(int from, int to) throws SQLException {
-    String sql;
-    Statement stmt;
-    if (from == 0) {
-      if (to == 1) {
-        sql = "DROP INDEX idx_options_key";
-        LOG.info(sql);
+  private void upgrade(int from, int to) throws IOException {
+    Statement stmt = null;
+    try {
+      if (from == 0) {
+        if (to == 1) {
+          String sql = "DROP INDEX idx_options_key";
+          LOG.info(sql);
 
-        stmt = getConnection().createStatement();
-        stmt.addBatch(sql);
+          stmt = getConnection().createStatement();
+          stmt.addBatch(sql);
 
-        sql =
-            "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
-        stmt.addBatch(sql);
-        LOG.info(sql);
-        stmt.executeBatch();
-        stmt.close();
+          sql =
+              "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
+          stmt.addBatch(sql);
+          LOG.info(sql);
+          stmt.executeBatch();
 
-        LOG.info("DB Upgraded from " + from + " to " + to);
-      } else {
-        LOG.info("DB Upgraded from " + from + " to " + to);
+          LOG.info("DB Upgraded from " + from + " to " + to);
+        } else {
+          LOG.info("DB Upgraded from " + from + " to " + to);
+        }
       }
+    } catch (SQLException e) {
+      throw new IOException(e);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
     }
   }
 
 
   @Override
-  public void addTable(final TableDesc table) throws IOException {
-    Statement stmt = null;
+  public void addTable(final CatalogProtos.TableDescProto table) throws IOException {
     PreparedStatement pstmt = null;
-
-    ResultSet res;
-
-    String sql =
-        "INSERT INTO " + TB_TABLES + " (" + C_TABLE_ID + ", path, store_type) "
-            + "VALUES('" + table.getName() + "', "
-            + "'" + table.getPath() + "', "
-            + "'" + table.getMeta().getStoreType() + "'"
-            + ")";
-
+    ResultSet res = null;
+    Connection conn = getConnection();
     try {
-      stmt = getConnection().createStatement();
+      conn.setAutoCommit(false);
+
+      String tableName = table.getId().toLowerCase();
+
+      String sql = String.format("INSERT INTO %s (%s, path, store_type) VALUES(?, ?, ?) ", TB_TABLES, C_TABLE_ID);
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setString(1, tableName);
+      pstmt.setString(2, table.getPath());
+      pstmt.setString(3, table.getMeta().getStoreType().name());
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
-      stmt.executeUpdate(sql);
+      pstmt.executeUpdate();
 
-
-      stmt = getConnection().createStatement();
-      sql = "SELECT TID from " + TB_TABLES + " WHERE " + C_TABLE_ID
-          + " = '" + table.getName() + "'";
+      String tidSql = String.format("SELECT TID from %s WHERE %s = ?", TB_TABLES, C_TABLE_ID);
+      pstmt = conn.prepareStatement(tidSql);
+      pstmt.setString(1, tableName);
       if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
+        LOG.debug(tidSql);
       }
-      res = stmt.executeQuery(sql);
+      res = pstmt.executeQuery();
       if (!res.next()) {
         throw new IOException("ERROR: there is no tid matched to "
-            + table.getName());
+            + table.getId());
       }
       int tid = res.getInt("TID");
 
-      String colSql;
-      int columnId = 0;
-      for (Column col : table.getSchema().getColumns()) {
-        colSql = columnToSQL(tid, table, columnId, col);
+      String colSql = String.format("INSERT INTO %s (TID, %s, column_id, column_name, data_type, type_length)"
+          + " VALUES(?, ?, ?, ?, ?, ?) ", TB_COLUMNS, C_TABLE_ID);
+      pstmt = conn.prepareStatement(colSql);
+      for(int i = 0; i < table.getSchema().getFieldsCount(); i++) {
+        ColumnProto col = table.getSchema().getFields(i);
+        pstmt.setInt(1, tid);
+        pstmt.setString(2, tableName);
+        pstmt.setInt(3, i);
+        pstmt.setString(4, col.getColumnName());
+        pstmt.setString(5, col.getDataType().getType().name());
+        pstmt.setInt(6, (col.getDataType().hasLength() ? col.getDataType().getLength() : 0));
+        pstmt.addBatch();
         if (LOG.isDebugEnabled()) {
           LOG.debug(colSql);
         }
-        stmt.addBatch(colSql);
-        columnId++;
       }
+      pstmt.executeBatch();
 
-
-      String optSql = String.format("INSERT INTO %s (%s, key_, value_) VALUES(?, ?, ?)", TB_OPTIONS, C_TABLE_ID);
-      pstmt = getConnection().prepareStatement(optSql);
-      try {
-        for (Entry<String, String> entry : table.getMeta().toMap().entrySet()) {
-          pstmt.setString(1, table.getName());
+      if(table.getMeta().hasParams()) {
+        String optSql = String.format("INSERT INTO %s (%s, key_, value_) VALUES(?, ?, ?)", TB_OPTIONS, C_TABLE_ID);
+        pstmt = conn.prepareStatement(optSql);
+        for (CatalogProtos.KeyValueProto entry : table.getMeta().getParams().getKeyvalList()) {
+          pstmt.setString(1, tableName);
           pstmt.setString(2, entry.getKey());
           pstmt.setString(3, entry.getValue());
+          pstmt.addBatch();
           if (LOG.isDebugEnabled()) {
             LOG.debug(optSql);
           }
-          pstmt.addBatch();
         }
         pstmt.executeBatch();
-      } finally {
-        CatalogUtil.closeSQLWrapper(pstmt);
       }
 
-      if (table.getStats() != null) {
-        sql = "INSERT INTO " + TB_STATISTICS + " (" + C_TABLE_ID + ", num_rows, num_bytes) "
-            + "VALUES ('" + table.getName() + "', "
-            + table.getStats().getNumRows() + ","
-            + table.getStats().getNumBytes() + ")";
+
+      if (table.hasStats()) {
+        String statSql =
+            String.format("INSERT INTO %s (%s, num_rows, num_bytes) VALUES(?, ?, ?)", TB_STATISTICS, C_TABLE_ID);
+        pstmt = conn.prepareStatement(statSql);
+        pstmt.setString(1, tableName);
+        pstmt.setLong(2, table.getStats().getNumRows());
+        pstmt.setLong(3, table.getStats().getNumBytes());
+        pstmt.addBatch();
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql);
+          LOG.debug(statSql);
         }
-        stmt.addBatch(sql);
-        stmt.executeBatch();
+        pstmt.executeBatch();
       }
 
-      //Partition
-      if (table.getPartitions() != null && !table.getPartitions().toString().isEmpty()) {
-        try {
-          PartitionDesc partitionDesc = table.getPartitions();
-          List<Column> columnList = partitionDesc.getColumns();
-
-          // Find columns which used for a partitioned table.
-          StringBuffer columns = new StringBuffer();
-          for(Column eachColumn : columnList) {
-            sql = "SELECT column_id from " + TB_COLUMNS + " WHERE TID "
-                + " = " + tid + " AND column_name = '" + eachColumn.getColumnName() + "'";
-
-            if (LOG.isDebugEnabled()) {
-              LOG.debug(sql);
-            }
-            res = stmt.executeQuery(sql);
-            if (!res.next()) {
-              throw new IOException("ERROR: there is no columnId matched to "
-                  + table.getName());
-            }
-            columnId = res.getInt("column_id");
-
-            if (columns.length() > 0) {
-              columns.append(",");
-            }
-            columns.append(columnId);
-          }
-
-          // Set default partition name. But if user named to subpartition, it would be updated.
-//          String partitionName = partitions.getPartitionsType().name() + "_" + table.getName();
-
-          sql = "INSERT INTO " + TB_PARTTIONS + " (name, TID, "
-              + " type, quantity, columns, expressions) VALUES (?, ?, ?, ?, ?, ?) ";
-          pstmt = getConnection().prepareStatement(sql);
-          if (LOG.isDebugEnabled()) {
-            LOG.debug(sql);
-          }
-
-          // Find information for subpartitions
-          if (partitionDesc.getSpecifiers() != null) {
-            int count = 1;
-            if (partitionDesc.getSpecifiers().size() == 0) {
-              pstmt.clearParameters();
-              pstmt.setString(1, null);
-              pstmt.setInt(2, tid);
-              pstmt.setString(3, partitionDesc.getPartitionsType().name());
-              pstmt.setInt(4, partitionDesc.getNumPartitions());
-              pstmt.setString(5, columns.toString());
-              pstmt.setString(6, null);
-              pstmt.addBatch();
-            } else {
-              for(Specifier specifier: partitionDesc.getSpecifiers()) {
-                pstmt.clearParameters();
-                if (specifier.getName() != null && !specifier.getName().equals("")) {
-                  pstmt.setString(1, specifier.getName());
-                } else {
-                  pstmt.setString(1, null);
-                }
-                pstmt.setInt(2, tid);
-                pstmt.setString(3, partitionDesc.getPartitionsType().name());
-                pstmt.setInt(4, partitionDesc.getNumPartitions());
-                pstmt.setString(5, columns.toString());
-                pstmt.setString(6, specifier.getExpressions());
-                pstmt.addBatch();
-                count++;
-              }
-            }
-          } else {
-            pstmt.clearParameters();
-            pstmt.setString(1, null);
-            pstmt.setInt(2, tid);
-            pstmt.setString(3, partitionDesc.getPartitionsType().name());
-            pstmt.setInt(4, partitionDesc.getNumPartitions());
-            pstmt.setString(5, columns.toString());
-            pstmt.setString(6, null);
-            pstmt.addBatch();
-          }
-          pstmt.executeBatch();
-        } finally {
-          CatalogUtil.closeSQLWrapper(pstmt);
-        }
+      if(table.hasPartition()) {
+        String partSql =
+            String.format("INSERT INTO %s (%s, partition_type, expression, expression_schema) VALUES(?, ?, ?, ?)",
+                TB_PARTITION_METHODS, C_TABLE_ID);
+        pstmt = conn.prepareStatement(partSql);
+        pstmt.setString(1, tableName);
+        pstmt.setString(2, table.getPartition().getPartitionType().name());
+        pstmt.setString(3, table.getPartition().getExpression());
+        pstmt.setBytes(4, table.getPartition().getExpressionSchema().toByteArray());
+        pstmt.executeUpdate();
       }
 
+      conn.commit();
     } catch (SQLException se) {
+      try {
+        conn.rollback();
+      } catch (SQLException rbe) {
+        throw new IOException(se.getMessage(), rbe);
+      }
       throw new IOException(se.getMessage(), se);
     } finally {
       CatalogUtil.closeSQLWrapper(pstmt);
-      CatalogUtil.closeSQLWrapper(stmt);
     }
-  }
-
-  private String columnToSQL(final int tid, final TableDesc desc,
-                             final int columnId, final Column col) {
-    String sql =
-        "INSERT INTO " + TB_COLUMNS
-            + " (tid, " + C_TABLE_ID + ", column_id, column_name, data_type, type_length) "
-            + "VALUES("
-            + tid + ","
-            + "'" + desc.getName() + "',"
-            + columnId + ", "
-            + "'" + col.getColumnName() + "',"
-            + "'" + col.getDataType().getType().name() + "',"
-            + (col.getDataType().hasLength() ? col.getDataType().getLength() : 0)
-            + ")";
-
-    return sql;
   }
 
   @Override
@@ -422,6 +362,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     String sql = null;
 
+    try {
+      getConnection().setAutoCommit(false);
+
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
+    }
     try {
       stmt = getConnection().createStatement();
       sql = "DELETE FROM " + TB_COLUMNS +
@@ -460,9 +408,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
 
     try {
-      sql = "DELETE FROM " + TB_PARTTIONS + " WHERE TID IN ("
-        + " SELECT TID FROM " + TB_TABLES
-        + " WHERE " + C_TABLE_ID + " = '" + name + "' )";
+      sql = "DELETE FROM " + TB_PARTTIONS +
+          " WHERE " + C_TABLE_ID + " = '" + name + "'";
       LOG.info(sql);
       stmt = getConnection().createStatement();
       stmt.execute(sql);
@@ -487,21 +434,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public TableDesc getTable(final String name) throws IOException {
+  public CatalogProtos.TableDescProto getTable(final String name) throws IOException {
     ResultSet res = null;
     Statement stmt = null;
 
-    String tableName = null;
-    Path path = null;
+    CatalogProtos.TableDescProto.Builder tableBuilder = CatalogProtos.TableDescProto.newBuilder();
     StoreType storeType = null;
-    Options options;
-    TableStats stat = null;
-    PartitionDesc partitionDesc = null;
-    int tid = 0;
-
     try {
       String sql =
-          "SELECT " + C_TABLE_ID + ", path, store_type, TID from " + TB_TABLES
+          "SELECT " + C_TABLE_ID + ", path, store_type from " + TB_TABLES
               + " WHERE " + C_TABLE_ID + "='" + name + "'";
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -511,17 +452,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (!res.next()) { // there is no table of the given name.
         return null;
       }
-      tableName = res.getString(C_TABLE_ID).trim();
-      path = new Path(res.getString("path").trim());
+      tableBuilder.setId(res.getString(C_TABLE_ID).trim());
+      tableBuilder.setPath(res.getString("path").trim());
+
       storeType = CatalogUtil.getStoreType(res.getString("store_type").trim());
-      tid = res.getInt("TID");
+
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
 
-    Schema schema = null;
+    CatalogProtos.SchemaProto.Builder schemaBuilder = CatalogProtos.SchemaProto.newBuilder();
     try {
       String sql = "SELECT column_name, data_type, type_length from " + TB_COLUMNS
           + " WHERE " + C_TABLE_ID + "='" + name + "' ORDER by column_id asc";
@@ -531,27 +473,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
       res = stmt.executeQuery(sql);
-
-      schema = new Schema();
       while (res.next()) {
-        String columnName = tableName + "."
-            + res.getString("column_name").trim();
-        Type dataType = getDataType(res.getString("data_type")
-            .trim());
-        int typeLength = res.getInt("type_length");
-        if (typeLength > 0) {
-          schema.addColumn(columnName, dataType, typeLength);
-        } else {
-          schema.addColumn(columnName, dataType);
-        }
+        schemaBuilder.addFields(resultToColumnProto(res));
       }
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
+    tableBuilder.setSchema(CatalogUtil.getQualfiedSchema(name, schemaBuilder.build()));
 
-    options = Options.create();
+    CatalogProtos.TableProto.Builder metaBuilder = CatalogProtos.TableProto.newBuilder();
+    metaBuilder.setStoreType(storeType);
     try {
       String sql = "SELECT key_, value_ from " + TB_OPTIONS
           + " WHERE " + C_TABLE_ID + "='" + name + "'";
@@ -560,17 +493,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
       res = stmt.executeQuery(sql);
-
-      while (res.next()) {
-        options.put(
-            res.getString("key_"),
-            res.getString("value_"));
-      }
+      metaBuilder.setParams(resultToKeyValueSetProto(res));
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
+    tableBuilder.setMeta(metaBuilder);
 
     try {
       String sql = "SELECT num_rows, num_bytes from " + TB_STATISTICS
@@ -582,9 +511,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = stmt.executeQuery(sql);
 
       if (res.next()) {
-        stat = new TableStats();
-        stat.setNumRows(res.getLong("num_rows"));
-        stat.setNumBytes(res.getLong("num_bytes"));
+        TableStatsProto.Builder statBuilder = TableStatsProto.newBuilder();
+        statBuilder.setNumRows(res.getLong("num_rows"));
+        statBuilder.setNumBytes(res.getLong("num_bytes"));
+        tableBuilder.setStats(statBuilder);
       }
     } catch (SQLException se) {
       throw new IOException(se);
@@ -593,53 +523,30 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     try {
-      String sql = "SELECT name, type, quantity, columns, expressions from " + TB_PARTTIONS
-          + " WHERE TID =" + tid + "";
-      stmt = getConnection().createStatement();
+      String sql =
+          "SELECT partition_type, expression, expression_schema from " + TB_PARTITION_METHODS
+              + " WHERE " + C_TABLE_ID + "='" + name + "'";
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
+      stmt = getConnection().createStatement();
       res = stmt.executeQuery(sql);
 
-      while (res.next()) {
-        if (partitionDesc == null) {
-          partitionDesc = new PartitionDesc();
-          String[] columns = res.getString("columns").split(",");
-          for(String eachColumn: columns) {
-            partitionDesc.addColumn(getColumn(tableName, tid, eachColumn));
-          }
-          partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.valueOf(res.getString("type")));
-          partitionDesc.setNumPartitions(res.getInt("quantity"));
-        }
-
-        Specifier specifier = new Specifier(res.getString("name"), res.getString("expressions"));
-        partitionDesc.addSpecifier(specifier);
+      if (res.next()) {
+        tableBuilder.setPartition(resultToPartitionMethodProto(name, res));
       }
-
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
 
-    TableMeta meta = new TableMeta(storeType, options);
-    TableDesc table = new TableDesc(tableName, schema, meta, path);
-    if (stat != null) {
-      table.setStats(stat);
-    }
-
-    if (partitionDesc != null) {
-      table.setPartitions(partitionDesc);
-    }
-
-    return table;
+    return tableBuilder.build();
   }
 
-  private Column getColumn(String tableName, int tid, String columnId) throws IOException {
+  private ColumnProto getColumn(String tableName, int tid, String columnId) throws IOException {
     ResultSet res = null;
-    Column column = null;
     Statement stmt = null;
-
     try {
       String sql = "SELECT column_name, data_type, type_length from "
           + TB_COLUMNS + " WHERE TID = " + tid + " AND column_id = " + columnId;
@@ -651,23 +558,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = stmt.executeQuery(sql);
 
       if (res.next()) {
-        String columnName = tableName + "."
-            + res.getString("column_name").trim();
-        Type dataType = getDataType(res.getString("data_type")
-            .trim());
-        int typeLength = res.getInt("type_length");
-        if (typeLength > 0) {
-          column = new Column(columnName, dataType, typeLength);
-        } else {
-          column = new Column(columnName, dataType);
-        }
+        return resultToColumnProto(res);
       }
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }
-    return column;
+    return null;
   }
 
   private Type getDataType(final String typeStr) {
@@ -704,6 +602,266 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     return tables;
   }
+
+  @Override
+  public void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws  IOException {
+    PreparedStatement pstmt = null;
+    String sql = "INSERT INTO " + TB_PARTTIONS + " (" + C_TABLE_ID
+        + ",  partition_name, ordinal_position, path, cache_nodes) "
+        + "VALUES (?, ?, ?, ?, ?, ?) ";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+    try {
+      pstmt = getConnection().prepareStatement(sql);
+      for (CatalogProtos.PartitionDescProto proto : partitionsProto.getPartitionList()) {
+        pstmt.setString(1, proto.getTableId());
+        pstmt.setString(2, proto.getPartitionName());
+        pstmt.setInt(3, proto.getOrdinalPosition());
+        pstmt.setString(4, proto.getPartitionValue());
+        pstmt.setString(5, proto.getPath());
+        pstmt.addBatch();
+      }
+      pstmt.executeBatch();
+    } catch (SQLException se) {
+      throw new IOException(se.getMessage(), se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(pstmt);
+    }
+  }
+
+  @Override
+  public void addPartitionMethod(CatalogProtos.PartitionMethodProto proto) throws IOException {
+    PreparedStatement pstmt = null;
+    String sql = "INSERT INTO " + TB_PARTITION_METHODS + " (" + C_TABLE_ID
+        + ", partition_type,  expression, expression_schema) "
+        + "VALUES (?, ?, ?, ?) ";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+
+    try {
+      pstmt = getConnection().prepareStatement(sql);
+      pstmt.setString(1, proto.getTableId().toLowerCase());
+      pstmt.setString(2, proto.getPartitionType().name());
+      pstmt.setString(3, proto.getExpression());
+      pstmt.setBytes(4, proto.getExpressionSchema().toByteArray());
+      pstmt.executeUpdate();
+    } catch (SQLException se) {
+      throw new IOException(se.getMessage(), se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(pstmt);
+    }
+  }
+
+  @Override
+  public void delPartitionMethod(String tableName) throws IOException {
+    String sql =
+        "DELETE FROM " + TB_PARTITION_METHODS
+            + " WHERE " + C_TABLE_ID + " ='" + tableName + "'";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+    Statement stmt = null;
+
+    try {
+      stmt = getConnection().createStatement();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      stmt.executeUpdate(sql);
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
+    }
+  }
+
+  @Override
+  public CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException {
+    ResultSet res = null;
+    Statement stmt = null;
+
+    try {
+      String sql =
+          "SELECT partition_type, expression, expression_schema from " + TB_PARTITION_METHODS
+              + " WHERE " + C_TABLE_ID + "='" + tableName + "'";
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      stmt = getConnection().createStatement();
+      res = stmt.executeQuery(sql);
+
+      if (res.next()) {
+        return resultToPartitionMethodProto(tableName, res);
+      }
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(res, stmt);
+    }
+    return null;
+  }
+
+  @Override
+  public boolean existPartitionMethod(String tableName) throws IOException {
+    ResultSet res = null;
+    Statement stmt = null;
+    boolean exist = false;
+    try {
+      String sql =
+          "SELECT partition_type, expression, expression_schema from " + TB_PARTITION_METHODS
+              + " WHERE " + C_TABLE_ID + "='" + tableName + "'";
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      stmt = getConnection().createStatement();
+      res = stmt.executeQuery(sql);
+      exist = res.next();
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(res, stmt);
+    }
+    return exist;
+  }
+
+  @Override
+  public void addPartition(CatalogProtos.PartitionDescProto proto) throws IOException {
+    PreparedStatement pstmt = null;
+    String sql = "INSERT INTO " + TB_PARTTIONS + " (" + C_TABLE_ID
+        + ", partition_method_id,  partition_name, ordinal_position, path, cache_nodes) "
+        + "VALUES (?, ?, ?, ?, ?, ?, ?) ";
+     if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+
+    try {
+      pstmt = getConnection().prepareStatement(sql);
+      pstmt.setString(1, proto.getTableId().toLowerCase());
+      pstmt.setString(2, proto.getPartitionName().toLowerCase());
+      pstmt.setInt(3, proto.getOrdinalPosition());
+      pstmt.setString(4, proto.getPartitionValue());
+      pstmt.setString(5, proto.getPath());
+      pstmt.executeUpdate();
+    } catch (SQLException se) {
+      throw new IOException(se.getMessage(), se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(pstmt);
+    }
+  }
+
+  @Override
+  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException {
+    ResultSet res = null;
+    PreparedStatement stmt = null;
+    CatalogProtos.PartitionDescProto proto = null;
+
+    String sql = "SELECT " + C_TABLE_ID
+        + ", partition_name, ordinal_position, partition_value, path, cache_nodes FROM "
+        + TB_PARTTIONS + "where partition_name = ?";
+
+    try {
+      stmt = getConnection().prepareStatement(sql);
+      stmt.setString(1, partitionName);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(stmt.toString());
+      }
+      res = stmt.executeQuery();
+      if (!res.next()) {
+        throw new IOException("ERROR: there is no index matched to " + partitionName);
+      }
+
+      proto = resultToPartitionDescProto(res);
+    } catch (SQLException se) {
+      throw new IOException(se.getMessage(), se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(res, stmt);
+    }
+
+    return proto;
+  }
+
+
+  @Override
+  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException {
+    ResultSet res = null;
+    PreparedStatement stmt = null;
+    CatalogProtos.PartitionsProto proto = null;
+
+    String partsSql = "SELECT " + C_TABLE_ID
+        + ", partition_name, ordinal_position, partition_value, path, cache_nodes FROM "
+        + TB_PARTTIONS + "where " + C_TABLE_ID + " = ?";
+
+    try {
+      // PARTITIONS
+      stmt = getConnection().prepareStatement(partsSql);
+      stmt.setString(1, tableName);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(stmt.toString());
+      }
+      res = stmt.executeQuery();
+      CatalogProtos.PartitionsProto.Builder builder = CatalogProtos.PartitionsProto.newBuilder();
+      while(res.next()) {
+        builder.addPartition(resultToPartitionDescProto(res));
+      }
+      proto = builder.build();
+    } catch (SQLException se) {
+      throw new IOException(se.getMessage(), se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(res, stmt);
+    }
+
+    return proto;
+  }
+
+
+  @Override
+  public void delPartition(String partitionName) throws IOException {
+    String sql =
+        "DELETE FROM " + TB_PARTTIONS
+            + " WHERE partition_name ='" + partitionName + "'";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+    Statement stmt = null;
+
+    try {
+      stmt = getConnection().createStatement();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      stmt.executeUpdate(sql);
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
+    }
+  }
+
+  @Override
+  public void delPartitions(String tableName) throws IOException {
+    String sql =
+        "DELETE FROM " + TB_PARTTIONS
+            + " WHERE " + C_TABLE_ID + " ='" + tableName + "'";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+    Statement stmt = null;
+
+    try {
+      stmt = getConnection().createStatement();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+      stmt.executeUpdate(sql);
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      CatalogUtil.closeSQLWrapper(stmt);
+    }
+  }
+
 
   @Override
   public void addIndex(final IndexDescProto proto) throws IOException {
@@ -781,7 +939,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (!res.next()) {
         throw new IOException("ERROR: there is no index matched to " + indexName);
       }
-      proto = resultToProto(res);
+      proto = resultToIndexDescProto(res);
     } catch (SQLException se) {
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
@@ -814,7 +972,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         throw new IOException("ERROR: there is no index matched to "
             + tableName + "." + columnName);
       }
-      proto = resultToProto(res);
+      proto = resultToIndexDescProto(res);
     } catch (SQLException se) {
       new IOException(se);
     } finally {
@@ -903,7 +1061,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       res = stmt.executeQuery();
       while (res.next()) {
-        protos.add(resultToProto(res));
+        protos.add(resultToIndexDescProto(res));
       }
     } catch (SQLException se) {
     } finally {
@@ -913,11 +1071,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return protos.toArray(new IndexDescProto[protos.size()]);
   }
 
-  private IndexDescProto resultToProto(final ResultSet res) throws SQLException {
+  private IndexDescProto resultToIndexDescProto(final ResultSet res) throws SQLException {
     IndexDescProto.Builder builder = IndexDescProto.newBuilder();
     builder.setName(res.getString("index_name"));
     builder.setTableId(res.getString(C_TABLE_ID));
-    builder.setColumn(resultToColumnProto(res));
+    builder.setColumn(indexResultToColumnProto(res));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
@@ -925,10 +1083,60 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return builder.build();
   }
 
+  /**
+   * INDEXS table doesn't store type_length, so we need another resultToColumnProto method
+   */
+  private ColumnProto indexResultToColumnProto(final ResultSet res) throws SQLException {
+    ColumnProto.Builder builder = ColumnProto.newBuilder();
+    builder.setColumnName(res.getString("column_name").trim());
+
+    Type type = getDataType(res.getString("data_type").trim());
+    builder.setDataType(CatalogUtil.newSimpleDataType(type));
+
+    return builder.build();
+  }
+
   private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
-    builder.setColumnName(res.getString("column_name"));
-    builder.setDataType(CatalogUtil.newSimpleDataType(getDataType(res.getString("data_type").trim())));
+    builder.setColumnName(res.getString("column_name").trim());
+
+    Type type = getDataType(res.getString("data_type").trim());
+    int typeLength = res.getInt("type_length");
+    if(typeLength > 0 ) {
+      builder.setDataType(CatalogUtil.newDataTypeWithLen(type, typeLength));
+    } else {
+      builder.setDataType(CatalogUtil.newSimpleDataType(type));
+    }
+
+    return builder.build();
+  }
+
+  private CatalogProtos.KeyValueSetProto resultToKeyValueSetProto(final ResultSet res) throws SQLException {
+    CatalogProtos.KeyValueSetProto.Builder setBuilder = CatalogProtos.KeyValueSetProto.newBuilder();
+    CatalogProtos.KeyValueProto.Builder builder = CatalogProtos.KeyValueProto.newBuilder();
+    while (res.next()) {
+      builder.setKey(res.getString("key_"));
+      builder.setValue(res.getString("value_"));
+      setBuilder.addKeyval(builder.build());
+    }
+    return setBuilder.build();
+  }
+
+  private ColumnProto resultToQualifiedColumnProto(String tableName, final ResultSet res) throws SQLException {
+    ColumnProto.Builder builder = ColumnProto.newBuilder();
+
+    String columnName = tableName + "."
+        + res.getString("column_name").trim();
+    builder.setColumnName(columnName);
+
+    Type type = getDataType(res.getString("data_type").trim());
+    int typeLength = res.getInt("type_length");
+    if(typeLength > 0 ) {
+      builder.setDataType(CatalogUtil.newDataTypeWithLen(type, typeLength));
+    } else {
+      builder.setDataType(CatalogUtil.newSimpleDataType(type));
+    }
+
     return builder.build();
   }
 
@@ -943,9 +1151,52 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
+  private CatalogProtos.PartitionMethodProto resultToPartitionMethodProto(final String tableName, final ResultSet res)
+      throws SQLException, InvalidProtocolBufferException {
+    CatalogProtos.PartitionMethodProto.Builder partBuilder = CatalogProtos.PartitionMethodProto.newBuilder();
+    partBuilder.setTableId(tableName);
+    partBuilder.setPartitionType(CatalogProtos.PartitionType.valueOf(res.getString("partition_type")));
+    partBuilder.setExpression(res.getString("expression"));
+    partBuilder.setExpressionSchema(SchemaProto.parseFrom(res.getBytes("expression_schema")));
+    return partBuilder.build();
+  }
+
+  private CatalogProtos.PartitionDescProto resultToPartitionDescProto(ResultSet res) throws SQLException {
+    CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+    builder.setTableId(res.getString(1));
+    builder.setPartitionName(res.getString(2));
+    builder.setOrdinalPosition(res.getInt(3));
+    builder.setPartitionValue(res.getString(4));
+    builder.setPath(res.getString(5));
+    return builder.build();
+  }
+
   @Override
   public void close() {
     CatalogUtil.closeSQLWrapper(conn);
     LOG.info("Shutdown database (" + catalogUri + ")");
   }
+
+  @Override
+  public final void addFunction(final FunctionDesc func) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public final void deleteFunction(final FunctionDesc func) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public final void existFunction(final FunctionDesc func) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public final List<String> getAllFunctionNames() throws IOException {
+    // TODO - not implemented yet
+    return null;
+  }
+
+
 }

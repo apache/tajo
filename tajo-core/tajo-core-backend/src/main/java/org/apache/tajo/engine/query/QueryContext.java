@@ -20,7 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Options;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.NodeType;
@@ -130,16 +130,16 @@ public class QueryContext extends Options {
     return strVal != null ? new Path(strVal) : null;
   }
 
-  public boolean hasPartitions() {
+  public boolean hasPartition() {
     return get(OUTPUT_PARTITIONS) != null;
   }
 
-  public void setPartitions(PartitionDesc partitionDesc) {
-    put(OUTPUT_PARTITIONS, partitionDesc != null ? partitionDesc.toJson() : null);
+  public void setPartitionMethod(PartitionMethodDesc partitionMethodDesc) {
+    put(OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
   }
 
-  public PartitionDesc getPartitions() {
-    return PartitionDesc.fromJson(get(OUTPUT_PARTITIONS));
+  public PartitionMethodDesc getPartitionMethod() {
+    return PartitionMethodDesc.fromJson(get(OUTPUT_PARTITIONS));
   }
 
   public void setOutputOverwrite() {

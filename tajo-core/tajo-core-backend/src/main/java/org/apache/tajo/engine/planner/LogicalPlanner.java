@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,8 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.CreateTable.ColumnDefinition;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
@@ -44,7 +45,6 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
-import static org.apache.tajo.algebra.CreateTable.ColumnPartition;
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
 import static org.apache.tajo.engine.planner.ExprNormalizer.ExprNormalizedResult;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
@@ -368,6 +368,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(f);
         for (Column c : columns) {
           if (!projectable.getInSchema().contains(c)) {
+            throw new PlanningException("Cannot get such a field: " + c);
+          }
+        }
+      }
+    } else if (projectable instanceof RelationNode) {
+      RelationNode relationNode = (RelationNode) projectable;
+      for (Target target : projectable.getTargets()) {
+        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        for (Column c : columns) {
+          if (!relationNode.getTableSchema().contains(c)) {
             throw new PlanningException("Cannot get such a field: " + c);
           }
         }
@@ -924,7 +934,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Assume that each unique expr is evaluated once.
     List<Target> targets = new ArrayList<Target>();
-    for (Column column : scanNode.getInSchema().getColumns()) {
+    for (Column column : scanNode.getTableSchema().getColumns()) {
       ColumnReferenceExpr columnRef = new ColumnReferenceExpr(column.getQualifier(), column.getColumnName());
       if (block.namedExprsMgr.contains(columnRef)) {
         String referenceName = block.namedExprsMgr.getName(columnRef);
@@ -1179,7 +1189,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     } else { // when a user do not specified target columns
 
       // The output schema of select clause determines the target columns.
-      Schema tableSchema = desc.getSchema();
+      Schema tableSchema = desc.getLogicalSchema();
       Schema projectedSchema = insertNode.getChild().getOutSchema();
 
       Schema targetColumns = new Schema();
@@ -1190,8 +1200,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       buildProjectedInsert(insertNode);
     }
 
-    if (desc.hasPartitions()) {
-      insertNode.setPartitions(desc.getPartitions());
+    if (desc.hasPartition()) {
+      insertNode.setPartitionMethod(desc.getPartitionMethod());
     }
     return insertNode;
   }
@@ -1254,222 +1264,121 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalNode visitCreateTable(PlanContext context, Stack<Expr> stack, CreateTable expr)
       throws PlanningException {
 
-    // Get a table name to be created.
-    String tableNameTobeCreated = expr.getTableName();
+    CreateTableNode createTableNode = context.queryBlock.getNodeFromExpr(expr);
+
+    // Set a table name to be created.
+    createTableNode.setTableName(expr.getTableName());
+
+    if (expr.hasStorageType()) { // If storage type (using clause) is specified
+      createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+    } else { // otherwise, default type
+      createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
+    }
+
+    if (expr.hasParams()) {
+      Options options = new Options();
+      options.putAll(expr.getParams());
+      createTableNode.setOptions(options);
+    }
+
+    if (expr.hasPartition()) {
+      if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
+        createTableNode.setPartitionMethod(getPartitionMethod(context, expr.getTableName(), expr.getPartitionMethod()));
+      } else {
+        throw new PlanningException(String.format("Not supported PartitonType: %s",
+            expr.getPartitionMethod().getPartitionType()));
+      }
+    }
 
     if (expr.hasSubQuery()) { // CREATE TABLE .. AS SELECT
       stack.add(expr);
       LogicalNode subQuery = visit(context, stack, expr.getSubQuery());
       stack.pop();
-      CreateTableNode createTableNode = context.queryBlock.getNodeFromExpr(expr);
-      createTableNode.setTableName(tableNameTobeCreated);
       createTableNode.setChild(subQuery);
       createTableNode.setInSchema(subQuery.getOutSchema());
 
-      // if no table definition, the select clause's output schema will be used.
-      // ex) CREATE TABLE tbl AS SELECT ...
-      if(!expr.hasTableElements()) {
-
-        expr.setTableElements(convertSchemaToTableElements(subQuery.getOutSchema()));
-      }
-
-      // Otherwise, it uses the defined table elements.
+      // If the table schema is defined
       // ex) CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
-      createTableNode.setOutSchema(convertTableElementsSchema(expr.getTableElements()));
-      createTableNode.setSchema(convertTableElementsSchema(expr.getTableElements()));
+      if (expr.hasTableElements()) {
+        createTableNode.setOutSchema(convertTableElementsSchema(expr.getTableElements()));
+        createTableNode.setTableSchema(convertTableElementsSchema(expr.getTableElements()));
+      } else {
+        // if no table definition, the select clause's output schema will be used.
+        // ex) CREATE TABLE tbl AS SELECT ...
 
-      if (expr.hasStorageType()) { // If storage type (using clause) is specified
-        createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
-      } else { // If no specified storage type
-        // default type
-        createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
-      }
+        if (expr.hasPartition()) {
+          PartitionMethodDesc partitionMethod = createTableNode.getPartitionMethod();
 
-      if (expr.hasParams()) { // if 'with clause' is specified
-        Options options = new Options();
-        options.putAll(expr.getParams());
-        createTableNode.setOptions(options);
-      }
-
-      if (expr.hasPartition()) { // if 'partition by' is specified
-        createTableNode.setPartitions(convertTableElementsPartition(context, expr));
+          Schema queryOutputSchema = subQuery.getOutSchema();
+          Schema partitionExpressionSchema = partitionMethod.getExpressionSchema();
+          if (partitionMethod.getPartitionType() == CatalogProtos.PartitionType.COLUMN &&
+              queryOutputSchema.getColumnNum() < partitionExpressionSchema.getColumnNum()) {
+            throw new VerifyException("Partition columns cannot be more than table columns.");
+          }
+          Schema tableSchema = new Schema();
+          for (int i = 0; i < queryOutputSchema.getColumnNum() - partitionExpressionSchema.getColumnNum(); i++) {
+            tableSchema.addColumn(queryOutputSchema.getColumn(i));
+          }
+          createTableNode.setOutSchema(tableSchema);
+          createTableNode.setTableSchema(tableSchema);
+        } else {
+          createTableNode.setOutSchema(subQuery.getOutSchema());
+          createTableNode.setTableSchema(subQuery.getOutSchema());
+        }
       }
 
       return createTableNode;
 
     } else { // if CREATE AN EMPTY TABLE
-      Schema tableSchema;
-      boolean mergedPartition = false;
-      if (expr.hasPartition()) {
-        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
-          if (((ColumnPartition)expr.getPartition()).isOmitValues()) {
-            mergedPartition = true;
-          }
-        } else {
-          throw new PlanningException(String.format("Not supported PartitonType: %s",
-              expr.getPartition().getPartitionType()));
-        }
-      }
-
-      if (mergedPartition) {
-        ColumnDefinition [] merged = TUtil.concat(expr.getTableElements(),
-            ((ColumnPartition)expr.getPartition()).getColumns());
-        tableSchema = convertTableElementsSchema(merged);
-      } else {
-        tableSchema = convertTableElementsSchema(expr.getTableElements());
-      }
-
-      CreateTableNode createTableNode = context.queryBlock.getNodeFromExpr(expr);
-      createTableNode.setTableName(expr.getTableName());
-      createTableNode.setSchema(tableSchema);
+      Schema tableSchema = convertColumnsToSchema(expr.getTableElements());
+      createTableNode.setTableSchema(tableSchema);
 
       if (expr.isExternal()) {
         createTableNode.setExternal(true);
-      }
-
-      if (expr.hasStorageType()) {
-        createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
-      } else {
-        // default type
-        // TODO - it should be configurable.
-        createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
-      }
-
-      if (expr.hasParams()) {
-        Options options = new Options();
-        options.putAll(expr.getParams());
-        createTableNode.setOptions(options);
       }
 
       if (expr.hasLocation()) {
         createTableNode.setPath(new Path(expr.getLocation()));
       }
 
-      if (expr.hasPartition()) {
-        if (expr.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
-          createTableNode.setPartitions(convertTableElementsPartition(context, expr));
-        } else {
-          throw new PlanningException(String.format("Not supported PartitonType: %s",
-              expr.getPartition().getPartitionType()));
-        }
-      }
-
       return createTableNode;
     }
   }
 
-  /**
-   * convert table elements into Partition.
-   *
-   * @param context
-   * @param expr
-   * @return
-   * @throws PlanningException
-   */
-  private PartitionDesc convertTableElementsPartition(PlanContext context,
-                                                      CreateTable expr) throws PlanningException {
-    Schema schema = convertTableElementsSchema(expr.getTableElements());
-    PartitionDesc partitionDesc = null;
-    List<Specifier> specifiers = null;
-    if (expr.hasPartition()) {
-      partitionDesc = new PartitionDesc();
-      specifiers = TUtil.newList();
+  private PartitionMethodDesc getPartitionMethod(PlanContext context,
+                                                 String tableName,
+                                                 CreateTable.PartitionMethodDescExpr expr) throws PlanningException {
+    PartitionMethodDesc partitionMethodDesc = new PartitionMethodDesc();
+    partitionMethodDesc.setTableId(tableName);
 
-      partitionDesc.setPartitionsType(CatalogProtos.PartitionsType.valueOf(expr.getPartition()
-          .getPartitionType().name()));
-
-      if (expr.getPartition().getPartitionType().equals(PartitionType.HASH)) {
-        CreateTable.HashPartition hashPartition = expr.getPartition();
-
-        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
-            , hashPartition.getColumns()));
-
-        if (hashPartition.getColumns() != null) {
-          if (hashPartition.getQuantifier() != null) {
-            String quantity = ((LiteralValue)hashPartition.getQuantifier()).getValue();
-            partitionDesc.setNumPartitions(Integer.parseInt(quantity));
-          }
-
-          if (hashPartition.getSpecifiers() != null) {
-            for(CreateTable.PartitionSpecifier eachSpec: hashPartition.getSpecifiers()) {
-              specifiers.add(new Specifier(eachSpec.getName()));
-            }
-          }
-
-          if (specifiers.isEmpty() && partitionDesc.getNumPartitions() > 0) {
-            for (int i = 0; i < partitionDesc.getNumPartitions(); i++) {
-              String partitionName = partitionDesc.getPartitionsType().name() + "_" + expr
-                  .getTableName() + "_" + i;
-              specifiers.add(new Specifier(partitionName));
-            }
-          }
-
-          if (!specifiers.isEmpty())
-            partitionDesc.setSpecifiers(specifiers);
-        }
-      } else if (expr.getPartition().getPartitionType().equals(PartitionType.LIST)) {
-        CreateTable.ListPartition listPartition = expr.getPartition();
-
-        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
-            , listPartition.getColumns()));
-
-        if (listPartition.getSpecifiers() != null) {
-          StringBuffer sb = new StringBuffer();
-
-          for(CreateTable.ListPartitionSpecifier eachSpec: listPartition.getSpecifiers()) {
-            Specifier specifier = new Specifier(eachSpec.getName());
-            sb.delete(0, sb.length());
-            for(Expr eachExpr : eachSpec.getValueList().getValues()) {
-              context.queryBlock.setSchema(schema);
-              EvalNode eval = exprAnnotator.createEvalNode(context.plan, context.queryBlock, eachExpr);
-              if(sb.length() > 1)
-                sb.append(",");
-
-              sb.append(eval.toString());
-            }
-            specifier.setExpressions(sb.toString());
-            specifiers.add(specifier);
-          }
-          if (!specifiers.isEmpty())
-            partitionDesc.setSpecifiers(specifiers);
-        }
-      } else if (expr.getPartition().getPartitionType().equals(PartitionType.RANGE)) {
-        CreateTable.RangePartition rangePartition = expr.getPartition();
-
-        partitionDesc.setColumns(convertTableElementsColumns(expr.getTableElements()
-            , rangePartition.getColumns()));
-
-        if (rangePartition.getSpecifiers() != null) {
-          for(CreateTable.RangePartitionSpecifier eachSpec: rangePartition.getSpecifiers()) {
-            Specifier specifier = new Specifier();
-
-            if (eachSpec.getName() != null)
-              specifier.setName(eachSpec.getName());
-
-            if (eachSpec.getEnd() != null) {
-              context.queryBlock.setSchema(schema);
-              EvalNode eval = exprAnnotator.createEvalNode(context.plan, context.queryBlock, eachSpec.getEnd());
-              specifier.setExpressions(eval.toString());
-            }
-
-            if(eachSpec.isEndMaxValue()) {
-              specifier.setExpressions(null);
-            }
-            specifiers.add(specifier);
-          }
-          if (!specifiers.isEmpty())
-            partitionDesc.setSpecifiers(specifiers);
-        }
-      } else if (expr.getPartition().getPartitionType() == PartitionType.COLUMN) {
-        ColumnPartition columnPartition = expr.getPartition();
-        partitionDesc.setColumns(convertTableElementsSchema(columnPartition.getColumns()).getColumns());
-        partitionDesc.setOmitValues(columnPartition.isOmitValues());
-      }
+    if(expr.getPartitionType() == PartitionType.COLUMN) {
+      CreateTable.ColumnPartition partition = (CreateTable.ColumnPartition) expr;
+      String partitionExpression = Joiner.on(',').join(partition.getColumns());
+      partitionMethodDesc.setPartitionType(CatalogProtos.PartitionType.COLUMN);
+      partitionMethodDesc.setExpression(partitionExpression);
+      partitionMethodDesc.setExpressionSchema(convertColumnsToSchema(partition.getColumns()));
+    } else {
+      throw new PlanningException(String.format("Not supported PartitonType: %s",
+          expr.getPartitionType()));
     }
-
-    return partitionDesc;
+    return partitionMethodDesc;
   }
 
+  /**
+   * It transforms table definition elements to schema.
+   *
+   * @param elements to be transformed
+   * @return schema transformed from table definition elements
+   */
+  private Schema convertColumnsToSchema(CreateTable.ColumnDefinition[] elements) {
+    Schema schema = new Schema();
+
+    for (CreateTable.ColumnDefinition columnDefinition: elements) {
+      schema.addColumn(convertColumn(columnDefinition));
+    }
+
+    return schema;
+  }
 
   /**
    * It transforms table definition elements to schema.
@@ -1485,32 +1394,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     return schema;
-  }
-
-  private ColumnDefinition[] convertSchemaToTableElements(Schema schema) {
-    List<Column> columns = schema.getColumns();
-    ColumnDefinition[] columnDefinitions = new ColumnDefinition[columns.size()];
-    for(int i = 0; i < columns.size(); i ++) {
-      Column col = columns.get(i);
-      columnDefinitions[i] = new ColumnDefinition(col.getColumnName(), col.getDataType().getType().name());
-    }
-
-    return columnDefinitions;
-  }
-
-  private Collection<Column> convertTableElementsColumns(CreateTable.ColumnDefinition [] elements,
-                                                         ColumnReferenceExpr[] references) {
-    List<Column> columnList = TUtil.newList();
-
-    for(CreateTable.ColumnDefinition columnDefinition: elements) {
-      for(ColumnReferenceExpr eachReference: references) {
-        if (columnDefinition.getColumnName().equalsIgnoreCase(eachReference.getName())) {
-          columnList.add(convertColumn(columnDefinition));
-        }
-      }
-    }
-
-    return columnList;
   }
 
   private Column convertColumn(ColumnDefinition columnDefinition) {
@@ -1541,7 +1424,25 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   ===============================================================================================*/
 
   public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode groupbyNode) {
-    return checkIfBeEvaluateAtThis(evalNode, groupbyNode) && evalNode.getType() == EvalType.AGG_FUNCTION;
+    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
+
+    if (!groupbyNode.getInSchema().containsAll(columnRefs)) {
+      return false;
+    }
+
+    Set<String> tableIds = Sets.newHashSet();
+    // getting distinct table references
+    for (Column col : columnRefs) {
+      if (!tableIds.contains(col.getQualifier())) {
+        tableIds.add(col.getQualifier());
+      }
+    }
+
+    if (tableIds.size() > 1) {
+      return false;
+    }
+
+    return true;
   }
 
   public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode joinNode,
@@ -1560,7 +1461,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    return checkCaseWhenWithOuterJoin(block, evalNode, isTopMostJoin);
+    if (checkCaseWhenWithOuterJoin(block, evalNode, isTopMostJoin)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private static boolean checkCaseWhenWithOuterJoin(QueryBlock block, EvalNode evalNode, boolean isTopMostJoin) {
@@ -1580,7 +1485,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
-    if (node.getInSchema().containsAll(columnRefs)) {
+    if (node.getTableSchema().containsAll(columnRefs)) {
       // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
       if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
         Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
@@ -1596,6 +1501,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public static boolean checkIfBeEvaluateAtThis(EvalNode evalNode, LogicalNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
-    return node.getInSchema().containsAll(columnRefs);
+    if (!node.getInSchema().containsAll(columnRefs)) {
+      return false;
+    }
+    return true;
   }
 }

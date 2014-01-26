@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -52,7 +53,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   public AbstractCatalogClient(TajoConf conf, InetSocketAddress catalogServerAddr) {
     this.pool = RpcConnectionPool.getPool(conf);
     this.catalogServerAddr = catalogServerAddr;
-    this.conf= conf;
+    this.conf = conf;
   }
 
   @Override
@@ -67,6 +68,38 @@ public abstract class AbstractCatalogClient implements CatalogService {
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
+    }
+  }
+
+  @Override
+  public final PartitionMethodDesc getPartitionMethod(final String tableName) {
+    try {
+      return new ServerCallable<PartitionMethodDesc>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+        public PartitionMethodDesc call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return CatalogUtil.newPartitionMethodDesc(stub.getPartitionMethodByTableName(null,
+              StringProto.newBuilder().setValue(tableName).build()));
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public final boolean existPartitionMethod(final String tableId) {
+    try {
+      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+        public Boolean call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.existPartitionMethod(null, StringProto.newBuilder().
+              setValue(tableId).build()).getValue();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
     }
   }
 

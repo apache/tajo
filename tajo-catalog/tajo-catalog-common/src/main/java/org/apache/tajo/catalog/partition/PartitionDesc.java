@@ -18,28 +18,22 @@
 
 package org.apache.tajo.catalog.partition;
 
-import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
+/**
+ * <code>PartitionDesc</code> presents a table partition.
+ */
 public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescProto>, Cloneable, GsonObject {
-  @Expose protected CatalogProtos.PartitionsType partitionsType; //required
-  @Expose protected Schema schema;
-  @Expose protected int numPartitions; //optional
-  @Expose protected List<Specifier> specifiers; //optional
-  @Expose protected boolean isOmitValues = false; // optional;
+
+  @Expose protected String tableId;                            // required
+  @Expose protected String partitionName;                      // optional
+  @Expose protected int ordinalPosition;                       // required
+  @Expose protected String partitionValue;                     // optional
+  @Expose protected String path;                               // optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
 
@@ -47,149 +41,120 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public PartitionDesc(PartitionDesc partition) {
-    this();
-    this.partitionsType = partition.partitionsType;
-    this.schema = partition.schema;
-    this.numPartitions = partition.numPartitions;
-    this.specifiers = partition.specifiers;
-  }
-
-  public PartitionDesc(CatalogProtos.PartitionsType partitionsType, Column[] columns, int numPartitions,
-                       List<Specifier> specifiers) {
-    this();
-    this.partitionsType = partitionsType;
-    for (Column c : columns) {
-      addColumn(c);
-    }
-    this.numPartitions = numPartitions;
-    this.specifiers = specifiers;
+    this.tableId = partition.tableId;
+    this.partitionName = partition.partitionName;
+    this.ordinalPosition = partition.ordinalPosition;
+    this.partitionValue = partition.partitionValue;
+    this.path = partition.path;
   }
 
   public PartitionDesc(CatalogProtos.PartitionDescProto proto) {
-    this.partitionsType = proto.getPartitionsType();
-    this.schema = new Schema(proto.getSchema());
-    this.numPartitions = proto.getNumPartitions();
-    this.isOmitValues = proto.getIsOmitValues();
-    if(proto.getSpecifiersList() != null) {
-      this.specifiers = TUtil.newList();
-      for(CatalogProtos.SpecifierProto specifier: proto.getSpecifiersList()) {
-        this.specifiers.add(new Specifier(specifier));
-      }
+    this.tableId = proto.getTableId();
+    if(proto.hasPartitionName()) {
+      this.partitionName = proto.getPartitionName();
+    }
+    this.ordinalPosition = proto.getOrdinalPosition();
+    if(proto.hasPartitionValue()) {
+      this.partitionValue = proto.getPartitionValue();
+    }
+    if(proto.hasPath()) {
+      this.path = proto.getPath();
     }
   }
 
-  public Schema getSchema() {
-    return schema;
+  public String getName() {
+    return partitionName;
   }
 
-  public List<Column> getColumns() {
-    return ImmutableList.copyOf(schema.toArray());
+  public String getTableId() {
+    return tableId;
   }
 
-  public void setColumns(Collection<Column> columns) {
-    this.schema = new Schema(columns.toArray(new Column[columns.size()]));
+  public int getOrdinalPosition() {
+    return ordinalPosition;
   }
 
-  public synchronized void addColumn(Column column) {
-    if (schema == null) {
-      schema = new Schema();
-    }
-    schema.addColumn(column);
+  public String getPartitionValue() {
+    return partitionValue;
   }
 
-  public synchronized void addSpecifier(Specifier specifier) {
-    if(specifiers == null)
-      specifiers = TUtil.newList();
-
-    specifiers.add(specifier);
+  public void setPartitionValue(String partitionValue) {
+    this.partitionValue = partitionValue;
   }
 
-  public CatalogProtos.PartitionsType getPartitionsType() {
-    return partitionsType;
+  public String getPath() {
+    return path;
   }
 
-  public void setPartitionsType(CatalogProtos.PartitionsType partitionsType) {
-    this.partitionsType = partitionsType;
+
+  public void setTable(String tableId) {
+    this.tableId = tableId;
   }
 
-  public int getNumPartitions() {
-    return numPartitions;
+  public void setName(String partitionName) {
+    this.partitionName = partitionName;
   }
 
-  public void setNumPartitions(int numPartitions) {
-    this.numPartitions = numPartitions;
+
+  public void setOrdinalPosition(int ordinalPosition) {
+    this.ordinalPosition = ordinalPosition;
   }
 
-  public List<Specifier> getSpecifiers() {
-    return specifiers;
-  }
-
-  public void setSpecifiers(List<Specifier> specifiers) {
-    this.specifiers = specifiers;
-  }
-
-  public void setOmitValues(boolean flag) {
-    isOmitValues = flag;
-  }
-
-  public boolean isOmitValues() {
-    return isOmitValues;
+  public void setPath(String path) {
+    this.path = path;
   }
 
   public boolean equals(Object o) {
     if (o instanceof PartitionDesc) {
       PartitionDesc another = (PartitionDesc) o;
-      boolean eq = partitionsType == another.partitionsType;
-      eq = eq && schema.equals(another.schema);
-      eq = eq && numPartitions == another.numPartitions;
-      eq = eq && TUtil.checkEquals(specifiers, another.specifiers);
-      eq = eq && isOmitValues == another.isOmitValues;
+      boolean eq = tableId.equals(another.tableId);
+      eq = eq && ((partitionName != null && another.partitionName != null
+          && partitionName.equals(another.partitionName)) ||
+          (partitionName == null && another.partitionName == null));
+      eq = eq && (ordinalPosition == another.ordinalPosition);
+      eq = eq && ((partitionValue != null && another.partitionValue != null
+                     && partitionValue.equals(another.partitionValue))
+                 || (partitionValue == null && another.partitionValue == null));
+      eq = eq && ((path != null && another.path != null && path.equals(another.path)) ||
+          (path == null && another.path == null));
       return eq;
     }
     return false;
   }
 
-  public Object clone() throws CloneNotSupportedException {
-    PartitionDesc copy = (PartitionDesc) super.clone();
-    copy.builder = CatalogProtos.PartitionDescProto.newBuilder();
-    copy.setPartitionsType(this.partitionsType);
-    copy.schema = new Schema(schema.getProto());
-    copy.setNumPartitions(this.numPartitions);
-    copy.specifiers = new ArrayList<Specifier>(this.specifiers);
-    copy.isOmitValues = isOmitValues;
-
-    return copy;
-  }
 
   @Override
   public CatalogProtos.PartitionDescProto getProto() {
     if (builder == null) {
       builder = CatalogProtos.PartitionDescProto.newBuilder();
     }
-    if (this.partitionsType != null) {
-      builder.setPartitionsType(this.partitionsType);
+
+    builder.setTableId(tableId);
+    if(this.partitionName != null) {
+      builder.setPartitionName(partitionName);
     }
-    builder.setSchema(schema.getProto());
-    builder.setNumPartitions(numPartitions);
-    builder.setIsOmitValues(isOmitValues);
-    if (this.specifiers != null) {
-      for(Specifier specifier: specifiers) {
-        builder.addSpecifiers(specifier.getProto());
-      }
+
+    builder.setOrdinalPosition(this.ordinalPosition);
+
+    if (this.partitionValue != null) {
+      builder.setPartitionValue(this.partitionValue);
     }
+
+    if(this.path != null) {
+      builder.setPath(this.path);
+    }
+
     return builder.build();
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("Partition Type: " + partitionsType.name()).append(", key=");
-    sb.append(schema);
+    StringBuilder sb = new StringBuilder("name: " + partitionName);
     return sb.toString();
   }
 
   @Override
   public String toJson() {
     return CatalogGsonHelper.toJson(this, PartitionDesc.class);
-
   }
 
   public static PartitionDesc fromJson(String strVal) {

@@ -21,6 +21,7 @@ package org.apache.tajo.client;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.FileUtil;
@@ -43,6 +44,16 @@ public class TestDDLBuilder {
 
     TableDesc desc = new TableDesc("table1", schema, meta, new Path("/table1"));
 
-    assertEquals(FileUtil.readTextFile(new File("src/test/resources/results/testBuildDDL.result")), DDLBuilder.buildDDL(desc));
+    Schema expressionSchema = new Schema();
+    expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);
+    PartitionMethodDesc partitionMethod = new PartitionMethodDesc(
+        "table1",
+        CatalogProtos.PartitionType.COLUMN,
+        "key",
+        expressionSchema);
+    desc.setPartitionMethod(partitionMethod);
+
+    assertEquals(FileUtil.readTextFile(new File("src/test/resources/results/testBuildDDL.result")),
+        DDLBuilder.buildDDL(desc));
   }
 }

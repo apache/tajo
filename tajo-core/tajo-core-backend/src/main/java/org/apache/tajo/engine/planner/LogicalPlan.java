@@ -277,7 +277,7 @@ public class LogicalPlan {
       // Trying to find columns from other relations in other blocks
       for (QueryBlock eachBlock : queryBlocks.values()) {
         for (RelationNode rel : eachBlock.getRelations()) {
-          Column found = rel.getOutSchema().getColumnByName(columnRef.getName());
+          Column found = rel.getTableSchema().getColumnByName(columnRef.getName());
           if (found != null) {
             candidates.add(found);
           }

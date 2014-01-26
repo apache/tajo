@@ -266,7 +266,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-hdfs</artifactId>
-      <scope>test</scope>
+      <type>test-jar</type>
       <exclusions>
         <exclusion>
           <groupId>commons-el</groupId>

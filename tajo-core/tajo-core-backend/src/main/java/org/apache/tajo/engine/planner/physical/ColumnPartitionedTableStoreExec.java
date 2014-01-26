@@ -28,16 +28,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.InsertNode;
+import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
@@ -49,8 +47,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionsType;
 
 /**
  * This class is a physical operator to store at column partitioned table.
@@ -71,6 +67,10 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
 
+    if (plan.getType() == NodeType.CREATE_TABLE) {
+      this.outSchema = ((CreateTableNode)plan).getTableSchema();
+    }
+
     // set table meta
     if (this.plan.hasOptions()) {
       meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
@@ -78,23 +78,21 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
-    // Rewrite a output schema because we don't have to store field values
-    // corresponding to partition key columns.
-    if (plan.getPartitions() != null && plan.getPartitions().getPartitionsType() == PartitionsType.COLUMN) {
-      rewriteColumnPartitionedTableSchema();
-    }
-
     // Find column index to name subpartition directory path
-    int partitionKeyNum = this.plan.getPartitions().getColumns().size();
+    int partitionKeyNum = this.plan.getPartitionMethod().getExpressionSchema().getColumnNum();
     partitionColumnIndices = new int[partitionKeyNum];
     partitionColumnNames = new String[partitionKeyNum];
     for (int i = 0; i < partitionKeyNum; i++) {
-      Column column = this.plan.getPartitions().getColumns().get(i);
+      Column column = this.plan.getPartitionMethod().getExpressionSchema().getColumn(i);
       partitionColumnNames[i] = column.getColumnName();
 
       if (this.plan.getType() == NodeType.INSERT) {
         InsertNode insertNode = ((InsertNode)plan);
         int idx = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
+        partitionColumnIndices[i] = idx;
+      } else if (this.plan.getType() == NodeType.CREATE_TABLE) {
+        CreateTableNode createTable = (CreateTableNode) plan;
+        int idx = createTable.getLogicalSchema().getColumnId(column.getQualifiedName());
         partitionColumnIndices[i] = idx;
       } else {
         // We can get partition column from a logical schema.
@@ -102,23 +100,6 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
         partitionColumnIndices[i] = plan.getOutSchema().getColumnId(column.getQualifiedName());
       }
     }
-  }
-
-  /**
-   * This method rewrites an input schema of column-partitioned table because
-   * there are no actual field values in data file in a column-partitioned table.
-   * So, this method removes partition key columns from the input schema.
-   */
-  private void rewriteColumnPartitionedTableSchema() {
-    PartitionDesc partitionDesc = plan.getPartitions();
-    Schema columnPartitionSchema = (Schema) partitionDesc.getSchema().clone();
-    String qualifier = plan.getTableName();
-
-    outSchema = PlannerUtil.rewriteColumnPartitionedTableSchema(
-                                             partitionDesc,
-                                             columnPartitionSchema,
-                                             outSchema,
-                                             qualifier);
   }
 
   public void init() throws IOException {

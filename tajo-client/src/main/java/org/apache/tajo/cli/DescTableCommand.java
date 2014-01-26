@@ -20,9 +20,10 @@ package org.apache.tajo.cli;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.partition.Specifier;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -99,36 +100,14 @@ public class DescTableCommand extends TajoShellCommand {
     }
 
     sb.append("\n");
-    sb.append("Partitions: \n");
-    if (desc.getPartitions() != null) {
-      sb.append("type:").append(desc.getPartitions().getPartitionsType().name()).append("\n");
-      if (desc.getPartitions().getNumPartitions() > 0)
-        sb.append("numbers:").append(desc.getPartitions().getNumPartitions()).append("\n");
+    if (desc.getPartitionMethod() != null) {
+      PartitionMethodDesc partition = desc.getPartitionMethod();
+      sb.append("Partitions: \n");
 
-      sb.append("columns:").append("\n");
-      for(Column eachColumn: desc.getPartitions().getColumns()) {
-        sb.append("  ");
-        sb.append(eachColumn.getColumnName()).append("\t").append(eachColumn.getDataType().getType());
-        if (eachColumn.getDataType().hasLength()) {
-          sb.append("(").append(eachColumn.getDataType().getLength()).append(")");
-        }
-        sb.append("\n");
-      }
+      sb.append("type:").append(partition.getPartitionType().name()).append("\n");
 
-      if (desc.getPartitions().getSpecifiers() != null) {
-        sb.append("specifier:").append("\n");
-        for(Specifier specifier :desc.getPartitions().getSpecifiers()) {
-          sb.append("  ");
-          sb.append("name:").append(specifier.getName());
-          if (!specifier.getExpressions().equals("")) {
-            sb.append(", expressions:").append(specifier.getExpressions());
-          } else {
-            if (desc.getPartitions().getPartitionsType().name().equals("RANGE"));
-            sb.append(" expressions: MAXVALUE");
-          }
-          sb.append("\n");
-        }
-      }
+      sb.append("columns:").append(":");
+      sb.append(TUtil.arrayToString(partition.getExpressionSchema().toArray()));
     }
 
     return sb.toString();

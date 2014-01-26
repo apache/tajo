@@ -23,8 +23,9 @@ package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
 import java.io.IOException;
@@ -33,8 +34,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MemStore implements CatalogStore {
-  private final Map<String,TableDesc> tables = Maps.newHashMap();
-  private final Map<String, FunctionDesc> functions = Maps.newHashMap();
+  private final Map<String,CatalogProtos.TableDescProto> tables = Maps.newHashMap();
+  private final Map<String, CatalogProtos.FunctionDescProto> functions = Maps.newHashMap();
   private final Map<String, IndexDescProto> indexes = Maps.newHashMap();
   private final Map<String, IndexDescProto> indexesByColumn = Maps.newHashMap();
   
@@ -55,9 +56,10 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#addTable(TableDesc)
    */
   @Override
-  public void addTable(TableDesc desc) throws IOException {
+  public void addTable(CatalogProtos.TableDescProto desc) throws IOException {
     synchronized(tables) {
-      tables.put(desc.getName(), desc);
+      String tableId = desc.getId().toLowerCase();
+      tables.put(tableId, desc);
     }
   }
 
@@ -67,7 +69,8 @@ public class MemStore implements CatalogStore {
   @Override
   public boolean existTable(String name) throws IOException {
     synchronized(tables) {
-      return tables.containsKey(name);
+      String tableId = name.toLowerCase();
+      return tables.containsKey(tableId);
     }
   }
 
@@ -77,7 +80,8 @@ public class MemStore implements CatalogStore {
   @Override
   public void deleteTable(String name) throws IOException {
     synchronized(tables) {
-      tables.remove(name);
+      String tableId = name.toLowerCase();
+      tables.remove(tableId);
     }
   }
 
@@ -85,8 +89,16 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getTable(java.lang.String)
    */
   @Override
-  public TableDesc getTable(String name) throws IOException {
-    return tables.get(name);
+  public CatalogProtos.TableDescProto getTable(String name) throws IOException {
+    String tableId = name.toLowerCase();
+    CatalogProtos.TableDescProto unqualified = tables.get(tableId);
+    if(unqualified == null)
+      return null;
+    CatalogProtos.TableDescProto.Builder builder = CatalogProtos.TableDescProto.newBuilder();
+    CatalogProtos.SchemaProto schemaProto = CatalogUtil.getQualfiedSchema(tableId, unqualified.getSchema());
+    builder.mergeFrom(unqualified);
+    builder.setSchema(schemaProto);
+    return builder.build();
   }
 
   /* (non-Javadoc)
@@ -95,6 +107,60 @@ public class MemStore implements CatalogStore {
   @Override
   public List<String> getAllTableNames() throws IOException {
     return new ArrayList<String>(tables.keySet());
+  }
+
+  @Override
+  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException {
+    String tableId = tableName.toLowerCase();
+    CatalogProtos.TableDescProto table = tables.get(tableId);
+    return (table != null && table.hasPartition()) ? table.getPartition() : null;
+  }
+
+  @Override
+  public boolean existPartitionMethod(String tableName) throws IOException {
+    String tableId = tableName.toLowerCase();
+    CatalogProtos.TableDescProto table = tables.get(tableId);
+    return (table != null && table.hasPartition());
+  }
+
+  @Override
+  public void delPartitionMethod(String tableName) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public void addPartitions(CatalogProtos.PartitionsProto partitionDescList) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public void addPartition(CatalogProtos.PartitionDescProto partitionDesc) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public void delPartition(String partitionName) throws IOException {
+    throw new IOException("not supported!");
+  }
+
+  @Override
+  public void delPartitions(String tableName) throws IOException {
+    throw new IOException("not supported!");
   }
 
   /* (non-Javadoc)

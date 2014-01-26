@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
@@ -56,6 +57,7 @@ public interface CatalogService {
    */
   boolean addTable(TableDesc desc);
 
+
   /**
    * Drop a table by name
    *
@@ -65,6 +67,10 @@ public interface CatalogService {
   boolean deleteTable(String name);
 
   boolean existsTable(String tableId);
+
+  PartitionMethodDesc getPartitionMethod(String tableId);
+
+  boolean existPartitionMethod(String tableId);
 
   boolean addIndex(IndexDesc index);
 

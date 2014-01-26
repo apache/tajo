@@ -32,7 +32,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
@@ -277,12 +277,12 @@ public class GlobalEngine extends AbstractService {
       createTable.setPath(tablePath);
     }
 
-    return createTableOnPath(createTable.getTableName(), createTable.getSchema(), meta,
-        createTable.getPath(), !createTable.isExternal(), createTable.getPartitions());
+    return createTableOnPath(createTable.getTableName(), createTable.getTableSchema(), meta,
+        createTable.getPath(), !createTable.isExternal(), createTable.getPartitionMethod());
   }
 
   public TableDesc createTableOnPath(String tableName, Schema schema, TableMeta meta,
-                                     Path path, boolean isCreated, PartitionDesc partitionDesc)
+                                     Path path, boolean isCreated, PartitionMethodDesc partitionDesc)
       throws IOException {
     if (catalog.existsTable(tableName)) {
       throw new AlreadyExistsTableException(tableName);
@@ -312,7 +312,7 @@ public class GlobalEngine extends AbstractService {
     TableDesc desc = CatalogUtil.newTableDesc(tableName, schema, meta, path);
     desc.setStats(stats);
     if (partitionDesc != null) {
-      desc.setPartitions(partitionDesc);
+      desc.setPartitionMethod(partitionDesc);
     }
     catalog.addTable(desc);
 
@@ -388,8 +388,8 @@ public class GlobalEngine extends AbstractService {
       String tableName = createTableNode.getTableName();
       queryContext.setOutputTable(tableName);
       queryContext.setOutputPath(new Path(TajoConf.getWarehouseDir(context.getConf()), tableName));
-      if(createTableNode.getPartitions() != null) {
-        queryContext.setPartitions(createTableNode.getPartitions());
+      if(createTableNode.getPartitionMethod() != null) {
+        queryContext.setPartitionMethod(createTableNode.getPartitionMethod());
       }
       queryContext.setCreateTable();
     }
@@ -410,7 +410,6 @@ public class GlobalEngine extends AbstractService {
 
       // Set QueryContext settings, such as output table name and output path.
       // It also remove data files if overwrite is true.
-      String outputTableName;
       Path outputPath;
       if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
         queryContext.setOutputTable(insertNode.getTableName());

@@ -28,7 +28,6 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.CSVFile;
 
@@ -966,9 +965,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (checkIfExist(ctx.table_partitioning_clauses())) {
-      PartitionDescExpr partitionDesc =
+      PartitionMethodDescExpr partitionMethodDesc =
           parseTablePartitioningClause(ctx.table_partitioning_clauses());
-      createTable.setPartition(partitionDesc);
+      createTable.setPartitionMethod(partitionMethodDesc);
     }
     return createTable;
   }
@@ -985,7 +984,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return elements;
   }
 
-  public PartitionDescExpr parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
+  public PartitionMethodDescExpr parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
 
     if (checkIfExist(ctx.range_partitions())) { // For Range Partition
       Range_partitionsContext rangePartitionsContext = ctx.range_partitions();

@@ -30,7 +30,8 @@ import org.apache.hcatalog.data.Pair;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -38,6 +39,8 @@ import org.apache.tajo.exception.InternalException;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -95,7 +98,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final TableDesc getTable(final String name) throws IOException {
+  public final CatalogProtos.TableDescProto getTable(final String name) throws IOException {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
     org.apache.hadoop.hive.ql.metadata.Table table = null;
@@ -105,7 +108,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     org.apache.tajo.catalog.Schema schema = null;
     Options options = null;
     TableStats stats = null;
-    PartitionDesc partitions = null;
+    PartitionMethodDesc partitions = null;
 
     // get db name and table name.
     try {
@@ -183,15 +186,24 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
       // set partition keys
       if (table.getPartitionKeys() != null) {
+        Schema expressionSchema = new Schema();
+        StringBuilder sb = new StringBuilder();
         if (table.getPartitionKeys().size() > 0) {
-          partitions = new PartitionDesc();
           List<FieldSchema> partitionKeys = table.getPartitionKeys();
           for(int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
-            partitions.addColumn(new Column(fieldSchema.getName(), dataType));
+            expressionSchema.addColumn(new Column(fieldSchema.getName(), dataType));
+            if (i > 0) {
+              sb.append(",");
+            }
+            sb.append(fieldSchema.getName());
           }
-          partitions.setPartitionsType(CatalogProtos.PartitionsType.COLUMN);
+          partitions = new PartitionMethodDesc(
+              tableName,
+              PartitionType.COLUMN,
+              sb.toString(),
+              expressionSchema);
         }
       }
     } finally {
@@ -204,9 +216,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       tableDesc.setStats(stats);
     }
     if (partitions != null) {
-      tableDesc.setPartitions(partitions);
+      tableDesc.setPartitionMethod(partitions);
     }
-    return tableDesc;
+    return tableDesc.getProto();
   }
 
 
@@ -247,14 +259,14 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final void addTable(final TableDesc tableDesc) throws IOException {
+  public final void addTable(final CatalogProtos.TableDescProto tableDesc) throws IOException {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
     HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     // get db name and table name.
     try {
-      tablePair = HCatUtil.getDbAndTableName(tableDesc.getName());
+      tablePair = HCatUtil.getDbAndTableName(tableDesc.getId());
       dbName = tablePair.first;
       tableName = tablePair.second;
     } catch (IOException ioe) {
@@ -281,12 +293,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         //sd.setLocation(tableDesc.getPath().toString());
 
         // set column information
-        ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(tableDesc.getSchema().getColumns
-            ().size());
-        for (Column col : tableDesc.getSchema().getColumns()) {
-          cols.add(new FieldSchema(col.getColumnName(), HCatalogUtil.getHiveFieldType(col
-              .getDataType
-                  ().getType().name()), ""));
+        ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(tableDesc.getSchema().getFieldsCount());
+        for (CatalogProtos.ColumnProto col : tableDesc.getSchema().getFieldsList()) {
+          cols.add(new FieldSchema(
+              col.getColumnName(),
+              HCatalogUtil.getHiveFieldType(col.getDataType().getType().name()),
+              ""));
         }
         sd.setCols(cols);
 
@@ -350,6 +362,57 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       client.release();
     }
   }
+
+  @Override
+  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException {
+    return null;  // TODO - not implemented yet
+  }
+
+  @Override
+  public boolean existPartitionMethod(String tableName) throws IOException {
+    return false;  // TODO - not implemented yet
+  }
+
+  @Override
+  public void delPartitionMethod(String tableName) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public void addPartition(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException {
+    return null; // TODO - not implemented yet
+  }
+
+  @Override
+  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException {
+    return null; // TODO - not implemented yet
+  }
+
+  @Override
+  public void delPartition(String partitionName) throws IOException {
+    // TODO - not implemented yet
+  }
+
+  @Override
+  public void delPartitions(String tableName) throws IOException {
+    // TODO - not implemented yet
+  }
+
   @Override
   public final void addFunction(final FunctionDesc func) throws IOException {
     // TODO - not implemented yet

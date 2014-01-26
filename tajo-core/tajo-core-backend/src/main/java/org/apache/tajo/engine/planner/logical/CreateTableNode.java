@@ -34,12 +34,22 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     super(pid, NodeType.CREATE_TABLE);
   }
 
-  public void setSchema(Schema schema) {
+  public void setTableSchema(Schema schema) {
     this.schema = schema;
   }
     
-  public Schema getSchema() {
+  public Schema getTableSchema() {
     return this.schema;
+  }
+
+  public Schema getLogicalSchema() {
+    if (hasPartition()) {
+      Schema logicalSchema = new Schema(schema);
+      logicalSchema.addColumns(getPartitionMethod().getExpressionSchema());
+      return logicalSchema;
+    } else {
+      return schema;
+    }
   }
 
   public boolean hasPath() {

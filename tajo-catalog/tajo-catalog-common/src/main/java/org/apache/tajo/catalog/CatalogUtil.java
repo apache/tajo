@@ -19,6 +19,8 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
@@ -88,6 +90,10 @@ public class CatalogUtil {
     return new TableDesc(proto);
   }
 
+  public static PartitionMethodDesc newPartitionMethodDesc(CatalogProtos.PartitionMethodProto proto) {
+    return new PartitionMethodDesc(proto);
+  }
+
   public static TableDesc newTableDesc(String tableName, Schema schema, StoreType type, Options options, Path path) {
     return new TableDesc(tableName, schema, type, options, path);
   }
@@ -140,6 +146,15 @@ public class CatalogUtil {
 
   public static DataType newDataTypeWithLen(Type type, int length) {
     return DataType.newBuilder().setType(type).setLength(length).build();
+  }
+
+  public static String columnToDDLString(Column column) {
+    StringBuilder sb = new StringBuilder(column.getColumnName());
+    sb.append(" ").append(column.getDataType().getType());
+    if (column.getDataType().hasLength()) {
+      sb.append(" (").append(column.getDataType().getLength()).append(")");
+    }
+    return sb.toString();
   }
 
   public static void closeSQLWrapper(Wrapper... wrapper) {

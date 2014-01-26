@@ -26,12 +26,13 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
 public class ScanNode extends RelationNode implements Projectable {
 	@Expose protected TableDesc tableDesc;
   @Expose protected String alias;
-  @Expose protected Schema renamedSchema;
+  @Expose protected Schema logicalSchema;
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
 
@@ -45,13 +46,16 @@ public class ScanNode extends RelationNode implements Projectable {
     this.tableDesc = desc;
     this.setInSchema(tableDesc.getSchema());
     this.setOutSchema(tableDesc.getSchema());
+    logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, null);
   }
   
 	public ScanNode(int pid, TableDesc desc, String alias) {
     this(pid, desc);
     this.alias = PlannerUtil.normalizeTableName(alias);
-    renamedSchema = getOutSchema();
-    renamedSchema.setQualifier(this.alias);
+    this.setInSchema(tableDesc.getSchema());
+    this.getInSchema().setQualifier(alias);
+    this.setOutSchema(new Schema(getInSchema()));
+    logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, alias);
 	}
 	
 	public String getTableName() {
@@ -67,7 +71,11 @@ public class ScanNode extends RelationNode implements Projectable {
   }
 
   public Schema getTableSchema() {
-    return hasAlias() ? renamedSchema : tableDesc.getSchema();
+    return logicalSchema;
+  }
+
+  public Schema getPhysicalSchema() {
+    return getInSchema();
   }
 	
 	public boolean hasQual() {

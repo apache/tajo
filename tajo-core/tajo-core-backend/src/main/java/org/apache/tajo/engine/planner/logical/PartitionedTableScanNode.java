@@ -35,7 +35,7 @@ public class PartitionedTableScanNode extends ScanNode {
     this.setInSchema(scanNode.getInSchema());
     this.setOutSchema(scanNode.getOutSchema());
     this.alias = scanNode.alias;
-    this.renamedSchema = scanNode.renamedSchema;
+    this.logicalSchema = scanNode.logicalSchema;
     this.qual = scanNode.qual;
     this.targets = scanNode.targets;
     this.inputPaths = inputPaths;

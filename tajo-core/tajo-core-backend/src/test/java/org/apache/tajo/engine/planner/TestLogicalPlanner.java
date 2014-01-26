@@ -628,7 +628,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.CREATE_TABLE, root.getChild().getType());
     CreateTableNode createTable = root.getChild();
 
-    Schema def = createTable.getSchema();
+    Schema def = createTable.getTableSchema();
     assertEquals("name", def.getColumn(0).getColumnName());
     assertEquals(Type.TEXT, def.getColumn(0).getDataType().getType());
     assertEquals("age", def.getColumn(1).getColumnName());

@@ -241,7 +241,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testGetTable() throws Exception {
-    TableDesc table = store.getTable(DB_NAME + "." + CUSTOMER);
+    TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + CUSTOMER));
 
     List<Column> columns = table.getSchema().getColumns();
     assertEquals(DB_NAME + "." + CUSTOMER, table.getName());
@@ -262,9 +262,9 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(6).getDataType().getType());
     assertEquals("c_comment", columns.get(7).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(7).getDataType().getType());
-    assertNull(table.getPartitions());
+    assertNull(table.getPartitionMethod());
 
-    table = store.getTable(DB_NAME + "." + NATION);
+    table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
     columns = table.getSchema().getColumns();
     assertEquals(DB_NAME + "." + NATION, table.getName());
     assertEquals(5, columns.size());
@@ -278,9 +278,9 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(3).getDataType().getType());
     assertEquals("type", columns.get(4).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(4).getDataType().getType());
-    assertNotNull(table.getPartitions());
-    assertEquals("type", table.getPartitions().getSchema().getColumn(0).getColumnName());
-    assertEquals(CatalogProtos.PartitionsType.COLUMN, table.getPartitions().getPartitionsType());
+    assertNotNull(table.getPartitionMethod());
+    assertEquals("type", table.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName());
+    assertEquals(CatalogProtos.PartitionType.COLUMN, table.getPartitionMethod().getPartitionType());
   }
 
   @Test
@@ -293,10 +293,10 @@ public class TestHCatalogStore {
 
   @Test
   public void testDeleteTable() throws Exception {
-    TableDesc table = store.getTable(DB_NAME + "." + CUSTOMER);
+    TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + CUSTOMER));
     Path customerPath = table.getPath();
 
-    table = store.getTable(DB_NAME + "." + NATION);
+    table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
     Path nationPath = table.getPath();
 
     store.deleteTable(DB_NAME + "." + CUSTOMER);

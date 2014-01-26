@@ -120,7 +120,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return Objects.hashCode(getName(), getTableId(), getColumn(), 
         getIndexMethod(), isUnique(), isClustered(), isAscending());
   }
-  
+
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
     desc.name = name;
@@ -130,7 +130,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;
     desc.isAscending = isAscending;
-    return desc; 
+    return desc;
   }
   
   public String toString() {

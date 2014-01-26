@@ -125,6 +125,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-475: Table partition catalog recap. (Min Zhou and hyunsik)
+
     TAJO-539: Change some EvalNode::eval to directly return a Datum value.
     (hyunsik)
 

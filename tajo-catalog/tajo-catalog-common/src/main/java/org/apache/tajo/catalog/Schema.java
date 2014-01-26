@@ -199,10 +199,10 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 
   public boolean contains(String name) {
-    if (fieldsByQualifiedName.containsKey(name)) {
+    if (fieldsByQualifiedName.containsKey(name.toLowerCase())) {
       return true;
     }
-    if (fieldsByName.containsKey(name)) {
+    if (fieldsByName.containsKey(name.toLowerCase())) {
       if (fieldsByName.size() > 1) {
         throw new RuntimeException("Ambiguous Column name");
       }

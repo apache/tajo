@@ -19,7 +19,7 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
 import java.io.Closeable;
@@ -27,16 +27,48 @@ import java.io.IOException;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
-  void addTable(TableDesc desc) throws IOException;
+  /*************************** TABLE ******************************/
+  void addTable(CatalogProtos.TableDescProto desc) throws IOException;
   
   boolean existTable(String name) throws IOException;
   
   void deleteTable(String name) throws IOException;
   
-  TableDesc getTable(String name) throws IOException;
+  CatalogProtos.TableDescProto getTable(String name) throws IOException;
   
   List<String> getAllTableNames() throws IOException;
-  
+
+
+  /************************ PARTITION METHOD **************************/
+  void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws IOException;
+
+  CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException;
+
+  boolean existPartitionMethod(String tableName) throws IOException;
+
+  void delPartitionMethod(String tableName) throws IOException;
+
+
+  /************************** PARTITIONS *****************************/
+  void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws IOException;
+
+  void addPartition(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException;
+
+  /**
+   * Get all partitions of a table
+   * @param tableName the table name
+   * @return
+   * @throws IOException
+   */
+  CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException;
+
+  CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException;
+
+  void delPartition(String partitionName) throws IOException;
+
+  void delPartitions(String tableName) throws IOException;
+
+  /**************************** INDEX *******************************/
   void addIndex(IndexDescProto proto) throws IOException;
   
   void delIndex(String indexName) throws IOException;
@@ -49,7 +81,8 @@ public interface CatalogStore extends Closeable {
   boolean existIndex(String indexName) throws IOException;
   
   boolean existIndex(String tableName, String columnName) throws IOException;
-  
+
+  /************************** FUNCTION *****************************/
   IndexDescProto [] getIndexes(String tableName) throws IOException;
   
   void addFunction(FunctionDesc func) throws IOException;

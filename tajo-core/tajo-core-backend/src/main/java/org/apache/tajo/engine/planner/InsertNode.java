@@ -44,13 +44,17 @@ public class InsertNode extends StoreTableNode implements Cloneable {
 
   public void setTargetTable(TableDesc desc) {
     setTableName(desc.getName());
-    tableSchema = desc.getSchema();
+    if (desc.hasPartition()) {
+      tableSchema = desc.getLogicalSchema();
+    } else {
+      tableSchema = desc.getSchema();
+    }
     setPath(desc.getPath());
     setOptions(desc.getMeta().getOptions());
     setStorageType(desc.getMeta().getStoreType());
 
-    if (desc.hasPartitions()) {
-      this.setPartitions(desc.getPartitions());
+    if (desc.hasPartition()) {
+      this.setPartitionMethod(desc.getPartitionMethod());
     }
   }
 

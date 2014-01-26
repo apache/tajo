@@ -199,11 +199,8 @@ public class CatalogServer extends AbstractService {
         if (!store.existTable(tableId)) {
           throw new NoSuchTableException(tableId);
         }
-        TableDesc desc = store.getTable(tableId);
-        SchemaProto schemaProto = desc.getSchema().getProto();
-        SchemaProto qualifiedSchema = CatalogUtil.getQualfiedSchema(tableId, schemaProto);
-        desc.setSchema(new Schema(qualifiedSchema));
-        return desc.getProto();
+
+        return store.getTable(tableId);
       } catch (IOException ioe) {
         // TODO - handle exception
         LOG.error(ioe);
@@ -244,32 +241,21 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public BoolProto addTable(RpcController controller, TableDescProto tableDesc)
+    public BoolProto addTable(RpcController controller, TableDescProto proto)
         throws ServiceException {
 
       wlock.lock();
       try {
-        if (store.existTable(tableDesc.getId())) {
-          throw new AlreadyExistsTableException(tableDesc.getId());
+        if (store.existTable(proto.getId().toLowerCase())) {
+          throw new AlreadyExistsTableException(proto.getId());
         }
-
-        // rewrite schema
-        TableDescProto.Builder descBuilder = TableDescProto.newBuilder(tableDesc);
-        descBuilder.setMeta(tableDesc.getMeta());
-        descBuilder.setSchema(tableDesc.getSchema());
-
-        if( tableDesc.getPartitions() != null
-            && !tableDesc.getPartitions().toString().isEmpty()) {
-          descBuilder.setPartitions(tableDesc.getPartitions());
-        }
-
-        store.addTable(new TableDesc(descBuilder.build()));
+        store.addTable(proto);
       } catch (IOException ioe) {
         LOG.error(ioe.getMessage(), ioe);
         return BOOL_FALSE;
       } finally {
         wlock.unlock();
-        LOG.info("Table " + tableDesc.getId() + " is added to the catalog ("
+        LOG.info("Table " + proto.getId() + " is added to the catalog ("
             + bindAddressStr + ")");
       }
 
@@ -310,6 +296,78 @@ public class CatalogServer extends AbstractService {
         LOG.error(e);
         throw new ServiceException(e);
       }
+    }
+
+    @Override
+    public PartitionMethodProto getPartitionMethodByTableName(RpcController controller,
+                                                              StringProto name)
+        throws ServiceException {
+      rlock.lock();
+      try {
+        String tableId = name.getValue().toLowerCase();
+        return store.getPartitionMethod(tableId);
+      } catch (IOException ioe) {
+        // TODO - handle exception
+        LOG.error(ioe);
+        return null;
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public BoolProto existPartitionMethod(RpcController controller, StringProto tableName)
+        throws ServiceException {
+      rlock.lock();
+      try {
+        String tableId = tableName.getValue().toLowerCase();
+        return BoolProto.newBuilder().setValue(
+            store.existPartitionMethod(tableId)).build();
+      } catch (IOException e) {
+        LOG.error(e);
+        return BoolProto.newBuilder().setValue(false).build();
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public BoolProto delPartitionMethod(RpcController controller, StringProto request)
+        throws ServiceException {
+      return null;
+    }
+
+    @Override
+    public BoolProto addPartitions(RpcController controller, PartitionsProto request)
+        throws ServiceException {
+
+      return null;
+    }
+
+    @Override
+    public BoolProto addPartition(RpcController controller, PartitionDescProto request)
+        throws ServiceException {
+      return null;
+    }
+
+    @Override
+    public PartitionDescProto getPartitionByPartitionName(RpcController controller,
+                                                          StringProto request)
+        throws ServiceException {
+      return null;
+    }
+
+    @Override
+    public PartitionsProto getPartitionsByTableName(RpcController controller,
+                                                    StringProto request)
+        throws ServiceException {
+      return null;
+    }
+
+    @Override
+    public PartitionsProto delAllPartitions(RpcController controller, StringProto request)
+        throws ServiceException {
+      return null;
     }
 
     @Override

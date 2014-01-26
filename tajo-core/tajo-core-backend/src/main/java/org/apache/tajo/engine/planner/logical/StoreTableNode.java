@@ -19,12 +19,13 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public class StoreTableNode extends PersistentStoreNode implements Cloneable {
-  @Expose private PartitionDesc partitionDesc;
+  @Expose protected String tableName;
+  @Expose private PartitionMethodDesc partitionDesc;
 
   public StoreTableNode(int pid) {
     super(pid, NodeType.STORE);
@@ -34,15 +35,27 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     super(pid, nodeType);
   }
 
+  public boolean hasTargetTable() {
+    return tableName != null;
+  }
+
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
+  }
+
+  public final String getTableName() {
+    return this.tableName;
+  }
+
   public boolean hasPartition() {
     return this.partitionDesc != null;
   }
 
-  public PartitionDesc getPartitions() {
+  public PartitionMethodDesc getPartitionMethod() {
     return partitionDesc;
   }
 
-  public void setPartitions(PartitionDesc partitionDesc) {
+  public void setPartitionMethod(PartitionMethodDesc partitionDesc) {
     this.partitionDesc = partitionDesc;
   }
 
@@ -60,6 +73,7 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     if (obj instanceof StoreTableNode) {
       StoreTableNode other = (StoreTableNode) obj;
       boolean eq = super.equals(other);
+      eq = eq && this.tableName.equals(other.tableName);
       eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
       return eq;
     } else {
@@ -70,7 +84,8 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     StoreTableNode store = (StoreTableNode) super.clone();
-    store.partitionDesc = partitionDesc;
+    store.tableName = tableName;
+    store.partitionDesc = partitionDesc != null ? (PartitionMethodDesc) partitionDesc.clone() : null;
     return store;
   }
 

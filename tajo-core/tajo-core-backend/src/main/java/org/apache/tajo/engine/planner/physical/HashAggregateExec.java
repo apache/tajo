@@ -44,7 +44,7 @@ public class HashAggregateExec extends AggregationExec {
     hashTable = new HashMap<Tuple, FunctionContext []>(100000);
     this.tuple = new VTuple(plan.getOutSchema().getColumnNum());
   }
-  
+
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;

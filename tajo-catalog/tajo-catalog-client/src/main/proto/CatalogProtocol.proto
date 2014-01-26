@@ -27,18 +27,30 @@ import "PrimitiveProtos.proto";
 service CatalogProtocolService {
   rpc getTableDesc(StringProto) returns (TableDescProto);
   rpc getAllTableNames(NullProto) returns (GetAllTableNamesResponse);
-  rpc getFunctions(NullProto) returns (GetFunctionsResponse);
   rpc addTable(TableDescProto) returns (BoolProto);
   rpc deleteTable(StringProto) returns (BoolProto);
   rpc existsTable(StringProto) returns (BoolProto);
+
+  rpc getPartitionMethodByTableName(StringProto) returns (PartitionMethodProto);
+  rpc existPartitionMethod(StringProto) returns (BoolProto);
+  rpc delPartitionMethod(StringProto) returns (BoolProto);
+
+  rpc addPartitions(PartitionsProto) returns (BoolProto);
+  rpc addPartition(PartitionDescProto) returns (BoolProto);
+  rpc getPartitionByPartitionName(StringProto) returns (PartitionDescProto);
+  rpc getPartitionsByTableName(StringProto) returns (PartitionsProto);
+  rpc delAllPartitions(StringProto) returns (PartitionsProto);
+
   rpc addIndex(IndexDescProto) returns (BoolProto);
   rpc existIndexByName(StringProto) returns (BoolProto);
   rpc existIndex(GetIndexRequest) returns (BoolProto);
   rpc getIndexByName(StringProto) returns (IndexDescProto);
   rpc getIndex(GetIndexRequest) returns (IndexDescProto);
   rpc delIndex(StringProto) returns (BoolProto);
+
   rpc createFunction(FunctionDescProto) returns (BoolProto);
   rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);
+  rpc getFunctions(NullProto) returns (GetFunctionsResponse);
   rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionDescProto);
   rpc containFunction(ContainFunctionRequest) returns (BoolProto);
 }

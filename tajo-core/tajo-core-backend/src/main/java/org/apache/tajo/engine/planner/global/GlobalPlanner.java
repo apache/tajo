@@ -27,7 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
@@ -433,10 +433,10 @@ public class GlobalPlanner {
                                         ExecutionBlock childBlock,
                                         StoreTableNode currentNode) 
     throws PlanningException {
-    PartitionDesc partitionDesc = currentNode.getPartitions();
+    PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
 
     // if result table is not a partitioned table, directly store it
-    if(partitionDesc == null) {
+    if(partitionMethod == null) {
 
       if (childBlock.getPlan() == null) { // when the below is union
         for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlock)) {
@@ -463,24 +463,22 @@ public class GlobalPlanner {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
     DataChannel channel;
-    CatalogProtos.PartitionsType partitionsType = partitionDesc.getPartitionsType();
+    CatalogProtos.PartitionType partitionsType = partitionMethod.getPartitionType();
 
-    if(partitionsType == CatalogProtos.PartitionsType.COLUMN) {
+    if(partitionsType == CatalogProtos.PartitionType.COLUMN) {
       channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
-      Column[] columns = new Column[partitionDesc.getColumns().size()];
-
       if (currentNode.getType() == NodeType.INSERT) {
         InsertNode insertNode = (InsertNode) currentNode;
         channel.setSchema(((InsertNode)currentNode).getProjectedSchema());
-        Column [] shuffleKeys = new Column[partitionDesc.getColumns().size()];
+        Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().getColumnNum()];
         int i = 0;
-        for (Column column : partitionDesc.getColumns()) {
+        for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
           int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
           shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
         }
         channel.setShuffleKeys(shuffleKeys);
       } else {
-        channel.setShuffleKeys(partitionDesc.getColumns().toArray(columns));
+        channel.setShuffleKeys(partitionMethod.getExpressionSchema().toArray());
       }
       channel.setSchema(childNode.getOutSchema());
       channel.setStoreType(storeType);

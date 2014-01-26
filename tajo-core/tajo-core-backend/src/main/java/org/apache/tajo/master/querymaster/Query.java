@@ -18,8 +18,8 @@
 
 package org.apache.tajo.master.querymaster;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
@@ -35,9 +35,9 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.InsertNode;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
@@ -47,6 +47,7 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -293,61 +294,78 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public static class SubQueryCompletedTransition implements
-      MultipleArcTransition<Query, QueryEvent, QueryState> {
+  public static class SubQueryCompletedTransition implements MultipleArcTransition<Query, QueryEvent, QueryState> {
+
+    private boolean hasNext(Query query) {
+      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
+      ExecutionBlock nextBlock = cursor.peek();
+      return !query.getPlan().isTerminal(nextBlock);
+    }
+
+    private QueryState executeNextBlock(Query query) {
+      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
+      ExecutionBlock nextBlock = cursor.nextBlock();
+      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
+      nextSubQuery.setPriority(query.priority--);
+      query.addSubQuery(nextSubQuery);
+      nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));
+
+      LOG.info("Scheduling SubQuery:" + nextSubQuery.getId());
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
+        LOG.debug("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
+      }
+
+      return query.checkQueryForCompleted();
+    }
+
+    private QueryState finalizeQuery(Query query, SubQueryCompletedEvent event) {
+      MasterPlan masterPlan = query.getPlan();
+
+      if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
+        ExecutionBlock terminal = query.getPlan().getTerminalBlock();
+        DataChannel finalChannel = masterPlan.getChannel(event.getExecutionBlockId(), terminal.getId());
+        Path finalOutputDir = commitOutputData(query);
+
+        QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
+        try {
+          hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(),
+              finalOutputDir);
+        } catch (Exception e) {
+          query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
+          return QueryState.QUERY_FAILED;
+        } finally {
+          query.setFinishTime();
+        }
+        query.finished(QueryState.QUERY_SUCCEEDED);
+        query.eventHandler.handle(new QueryFinishEvent(query.getId()));
+      }
+
+      return QueryState.QUERY_SUCCEEDED;
+    }
 
     @Override
     public QueryState transition(Query query, QueryEvent event) {
       // increase the count for completed subqueries
       query.completedSubQueryCount++;
+
       SubQueryCompletedEvent castEvent = (SubQueryCompletedEvent) event;
-      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
-      MasterPlan masterPlan = query.getPlan();
+
       // if the subquery is succeeded
       if (castEvent.getFinalState() == SubQueryState.SUCCEEDED) {
-        ExecutionBlock nextBlock = cursor.nextBlock();
-        if (!query.getPlan().isTerminal(nextBlock)) {
-          SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
-          nextSubQuery.setPriority(query.priority--);
-          query.addSubQuery(nextSubQuery);
-          nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));
-          LOG.info("Scheduling SubQuery:" + nextSubQuery.getId());
-          if(LOG.isDebugEnabled()) {
-            LOG.debug("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
-            LOG.debug("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
-          }
-          return query.checkQueryForCompleted();
-
-        } else { // Finish a query
-          if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
-            DataChannel finalChannel = masterPlan.getChannel(castEvent.getExecutionBlockId(), nextBlock.getId());
-            Path finalOutputDir = commitOutputData(query);
-            TableDesc finalTableDesc = buildOrUpdateResultTableDesc(query, castEvent.getExecutionBlockId(),
-                finalOutputDir);
-
-            QueryContext queryContext = query.context.getQueryContext();
-            CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
-
-            if (queryContext.hasOutputTable()) { // TRUE only if a query command is 'CREATE TABLE' OR 'INSERT INTO'
-              if (queryContext.isOutputOverwrite()) { // TRUE only if a query is 'INSERT OVERWRITE INTO'
-                catalog.deleteTable(finalTableDesc.getName());
-              }
-              catalog.addTable(finalTableDesc);
-            }
-            query.setResultDesc(finalTableDesc);
-            query.finished(QueryState.QUERY_SUCCEEDED);
-            query.eventHandler.handle(new QueryFinishEvent(query.getId()));
-          }
-
-          return QueryState.QUERY_SUCCEEDED;
+        if (hasNext(query)) { // if there is next block
+          return executeNextBlock(query);
+        } else {
+          return finalizeQuery(query, castEvent);
         }
-      } else if (castEvent.getFinalState() == SubQueryState.ERROR) {
-        query.setFinishTime();
-        return QueryState.QUERY_ERROR;
       } else {
-        // if at least one subquery is failed, the query is also failed.
         query.setFinishTime();
-        return QueryState.QUERY_FAILED;
+
+        if (castEvent.getFinalState() == SubQueryState.ERROR) {
+          return QueryState.QUERY_ERROR;
+        } else {
+          return QueryState.QUERY_FAILED;
+        }
       }
     }
 
@@ -374,63 +392,152 @@ public class Query implements EventHandler<QueryEvent> {
       return finalOutputDir;
     }
 
-    /**
-     * It builds a table desc and update the table desc if necessary.
-     */
-    public TableDesc buildOrUpdateResultTableDesc(Query query, ExecutionBlockId finalExecBlockId,
-                                                  Path finalOutputDir) {
-      // Determine the output table name
-      SubQuery subQuery = query.getSubQuery(finalExecBlockId);
+    private static interface QueryHook {
+      boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir);
+      void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext, Query query,
+                   ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception;
+    }
 
-      String outputTableName;
-      PartitionDesc partitionDesc = null;
-      QueryContext queryContext = query.context.getQueryContext();
-      if (subQuery.getBlock().getPlan().getType() == NodeType.CREATE_TABLE) {
-        CreateTableNode createTableNode = (CreateTableNode) subQuery.getBlock().getPlan();
-        outputTableName = createTableNode.getTableName();
+    private class QueryHookExecutor {
+      private List<QueryHook> hookList = TUtil.newList();
+      private QueryMaster.QueryMasterContext context;
+
+      public QueryHookExecutor(QueryMaster.QueryMasterContext context) {
+        this.context = context;
+        hookList.add(new MaterializedResultHook());
+        hookList.add(new CreateTableHook());
+        hookList.add(new InsertTableHook());
+      }
+
+      public void execute(QueryContext queryContext, Query query,
+                          ExecutionBlockId finalExecBlockId,
+                          Path finalOutputDir) throws Exception {
+        for (QueryHook hook : hookList) {
+          if (hook.isEligible(queryContext, query, finalExecBlockId, finalOutputDir)) {
+            hook.execute(context, queryContext, query, finalExecBlockId, finalOutputDir);
+          }
+        }
+      }
+    }
+
+    private class MaterializedResultHook implements QueryHook {
+
+      @Override
+      public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
+                                Path finalOutputDir) {
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        NodeType type = lastStage.getBlock().getPlan().getType();
+        return type != NodeType.CREATE_TABLE && type != NodeType.INSERT;
+      }
+
+      @Override
+      public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext, Query query,
+                          ExecutionBlockId finalExecBlockId,
+                          Path finalOutputDir) throws Exception {
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        TableMeta meta = lastStage.getTableMeta();
+        TableStats stats = lastStage.getTableStat();
+
+        TableDesc resultTableDesc =
+            new TableDesc(
+                query.getId().toString(),
+                lastStage.getSchema(),
+                meta,
+                finalOutputDir);
+
+        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        resultTableDesc.setStats(stats);
+        query.setResultDesc(resultTableDesc);
+      }
+    }
+
+    private class CreateTableHook implements QueryHook {
+
+      @Override
+      public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
+                                Path finalOutputDir) {
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        return lastStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE;
+      }
+
+      @Override
+      public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext, Query query,
+                          ExecutionBlockId finalExecBlockId,
+                          Path finalOutputDir) throws Exception {
+        CatalogService catalog = context.getWorkerContext().getCatalog();
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        TableMeta meta = lastStage.getTableMeta();
+        TableStats stats = lastStage.getTableStat();
+
+        CreateTableNode createTableNode = (CreateTableNode) lastStage.getBlock().getPlan();
+
+        TableDesc tableDescTobeCreated =
+            new TableDesc(
+                createTableNode.getTableName(),
+                createTableNode.getTableSchema(),
+                meta,
+                finalOutputDir);
+
         if (createTableNode.hasPartition()) {
-          partitionDesc = createTableNode.getPartitions();
+          tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
-      } else {
-        if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
-          outputTableName = queryContext.getOutputTable();
-        } else { // SELECT STATEMENT
-          outputTableName = query.getId().toString();
-        }
-        if(queryContext.hasPartitions()) {
-          partitionDesc = queryContext.getPartitions();
-        }
+
+        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        tableDescTobeCreated.setStats(stats);
+        query.setResultDesc(tableDescTobeCreated);
+
+        catalog.addTable(tableDescTobeCreated);
+      }
+    }
+
+    private class InsertTableHook implements QueryHook {
+
+      @Override
+      public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
+                                Path finalOutputDir) {
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        return lastStage.getBlock().getPlan().getType() == NodeType.INSERT;
       }
 
-      TableMeta meta = subQuery.getTableMeta();
-      TableStats stats = subQuery.getTableStat();
-      try {
-        FileSystem fs = finalOutputDir.getFileSystem(query.systemConf);
-        ContentSummary directorySummary = fs.getContentSummary(finalOutputDir);
-        stats.setNumBytes(directorySummary.getLength());
-      } catch (IOException e) {
-        LOG.error(e.getMessage(), e);
-      }
-      TableDesc outputTableDesc = new TableDesc(outputTableName, subQuery.getSchema(), meta, finalOutputDir);
-      outputTableDesc.setStats(stats);
-      TableDesc finalTableDesc = outputTableDesc;
+      @Override
+      public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext, Query query,
+                          ExecutionBlockId finalExecBlockId,
+                          Path finalOutputDir)
+          throws Exception {
 
-      // If a query has a target table, a TableDesc is updated.
-      if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
-        if (queryContext.isOutputOverwrite()) {
-          CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
-          Preconditions.checkNotNull(catalog, "CatalogService is NULL");
-          TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
-          updatingTable.setStats(stats);
-          finalTableDesc = updatingTable;
+        CatalogService catalog = context.getWorkerContext().getCatalog();
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        TableMeta meta = lastStage.getTableMeta();
+        TableStats stats = lastStage.getTableStat();
+
+        InsertNode insertNode = (InsertNode) lastStage.getBlock().getPlan();
+
+        TableDesc finalTable;
+        if (insertNode.hasTargetTable()) {
+          String tableName = insertNode.getTableName();
+          finalTable = catalog.getTableDesc(tableName);
+        } else {
+          String tableName = query.getId().toString();
+          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir);
         }
-      }
 
-      if (partitionDesc != null) {
-        finalTableDesc.setPartitions(partitionDesc);
-      }
+        long volume = getTableVolume(query.systemConf, finalOutputDir);
+        stats.setNumBytes(volume);
+        finalTable.setStats(stats);
 
-      return finalTableDesc;
+        if (insertNode.hasTargetTable()) {
+          catalog.deleteTable(insertNode.getTableName());
+          catalog.addTable(finalTable);
+        }
+
+        query.setResultDesc(finalTable);
+      }
+    }
+
+    private long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
+      FileSystem fs = tablePath.getFileSystem(systemConf);
+      ContentSummary directorySummary = fs.getContentSummary(tablePath);
+      return directorySummary.getLength();
     }
   }
 

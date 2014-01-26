@@ -29,7 +29,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
@@ -644,7 +644,7 @@ public class PlannerUtil {
   }
 
   public static Schema rewriteColumnPartitionedTableSchema(
-                               PartitionDesc partitionDesc,
+                               PartitionMethodDesc partitionDesc,
                                Schema columnPartitionSchema,
                                Schema sourceSchema,
                                String qualifier) {
