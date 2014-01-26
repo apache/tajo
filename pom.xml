@@ -157,7 +157,7 @@
                     exit -1
                     fi
                   </echo>
-                  <exec executable="sh" dir="${project.build.directory}" failonerror="true">
+                  <exec executable="bash" dir="${project.build.directory}" failonerror="true">
                     <arg line="./verify-protocbuf.sh"/>
                   </exec>
                 </target>
