@@ -189,4 +189,9 @@ public class MetaDataTuple implements Tuple {
   public Tuple clone() throws CloneNotSupportedException {
     throw new UnsupportedException("clone");
   }
+
+  @Override
+  public Datum[] getValues(){
+    throw new UnsupportedException();
+  }
 }

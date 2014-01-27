@@ -33,6 +33,7 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.IndexMethod;
 import org.apache.tajo.storage.index.IndexWriter;
 import org.apache.tajo.storage.index.OrderIndexReader;
+import org.apache.tajo.util.Bytes;
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -245,13 +246,6 @@ public class BSTIndex implements IndexMethod {
         keySet.clear();
         rootCollector.clear();
       }
-
-      if (out != null) {
-        out = null;
-      }
-      if (rootOut != null) {
-        rootOut = null;
-      }
     }
 
     private class KeyOffsetCollector {
@@ -305,7 +299,7 @@ public class BSTIndex implements IndexMethod {
     private int offsetCursor;
 
     // mutex
-    private final Integer mutex = 0;
+    private final Object mutex = new Object();
 
     /**
      *
@@ -336,7 +330,8 @@ public class BSTIndex implements IndexMethod {
       // schema
       int schemaByteSize = indexIn.readInt();
       byte [] schemaBytes = new byte[schemaByteSize];
-      indexIn.read(schemaBytes);
+      Bytes.readFully(indexIn, schemaBytes, 0, schemaByteSize);
+
       SchemaProto.Builder builder = SchemaProto.newBuilder();
       builder.mergeFrom(schemaBytes);
       SchemaProto proto = builder.build();
@@ -345,7 +340,8 @@ public class BSTIndex implements IndexMethod {
       // comparator
       int compByteSize = indexIn.readInt();
       byte [] compBytes = new byte[compByteSize];
-      indexIn.read(compBytes);
+      Bytes.readFully(indexIn, compBytes, 0, compByteSize);
+
       TupleComparatorProto.Builder compProto = TupleComparatorProto.newBuilder();
       compProto.mergeFrom(compBytes);
       this.comparator = new TupleComparator(compProto.build());
@@ -356,10 +352,11 @@ public class BSTIndex implements IndexMethod {
       this.entryNum = indexIn.readInt();
       if (entryNum > 0) { // if there is no any entry, do not read firstKey/lastKey values
         byte [] minBytes = new byte[indexIn.readInt()];
-        indexIn.read(minBytes);
+        Bytes.readFully(indexIn, minBytes, 0, minBytes.length);
         this.firstKey = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, minBytes);
+
         byte [] maxBytes = new byte[indexIn.readInt()];
-        indexIn.read(maxBytes);
+        Bytes.readFully(indexIn, maxBytes, 0, maxBytes.length);
         this.lastKey = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, maxBytes);
       }
     }
@@ -483,7 +480,7 @@ public class BSTIndex implements IndexMethod {
         for (int i = 0; i < entryNum; i++) {
           counter++;
           buf = new byte[in.readInt()];
-          in.read(buf);
+          Bytes.readFully(in, buf, 0, buf.length);
           dataSubIndex[i] = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
 
           int offsetNum = in.readInt();
@@ -505,7 +502,7 @@ public class BSTIndex implements IndexMethod {
         byte[] buf;
         for (int i = 0; i < counter; i++) {
           buf = new byte[in.readInt()];
-          in.read(buf);
+          Bytes.readFully(in, buf, 0, buf.length);
           dataSubIndex[i] = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
 
           int offsetNum = in.readInt();
@@ -534,7 +531,7 @@ public class BSTIndex implements IndexMethod {
       byte[] buf;
       for (int i = 0; i < entryNum; i++) {
         buf = new byte[in.readInt()];
-        in.read(buf);
+        Bytes.readFully(in, buf, 0, buf.length);
         keyTuple = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
         dataIndex[i] = keyTuple;
         this.offsetIndex[i] = in.readLong();
@@ -574,7 +571,9 @@ public class BSTIndex implements IndexMethod {
       int offset = -1;
       int start = startPos;
       int end = endPos;
-      int centerPos = (start + end) / 2;
+
+      //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6412541
+      int centerPos = (start + end) >>> 1;
       while (true) {
         if (comparator.compare(arr[centerPos], key) > 0) {
           if (centerPos == 0) {

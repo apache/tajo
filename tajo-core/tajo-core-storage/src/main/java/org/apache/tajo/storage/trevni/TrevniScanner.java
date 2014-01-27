@@ -41,7 +41,6 @@ import java.nio.ByteBuffer;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class TrevniScanner extends FileScanner {
-  private boolean inited = false;
   private ColumnFileReader reader;
   private int [] projectionMap;
   private ColumnValues [] columns;

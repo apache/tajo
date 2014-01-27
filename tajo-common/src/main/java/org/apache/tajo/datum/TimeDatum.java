@@ -31,7 +31,7 @@ public class TimeDatum extends Datum {
   /** ISO 8601/SQL standard format - ex) 07:37:16-08 */
   public static final String DEFAULT_FORMAT_STRING = "HH:mm:ss";
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private LocalTime time;
+  private final LocalTime time;
 
   public TimeDatum(long value) {
     super(TajoDataTypes.Type.TIME);

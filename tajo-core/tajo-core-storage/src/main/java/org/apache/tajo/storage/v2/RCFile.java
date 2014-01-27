@@ -18,37 +18,24 @@
 
 package org.apache.tajo.storage.v2;
 
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.rmi.server.UID;
-import java.security.MessageDigest;
-import java.util.Arrays;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.ChecksumException;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.Metadata;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.VersionMismatchException;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.rcfile.*;
+import org.apache.tajo.util.Bytes;
+
+import java.io.*;
+import java.rmi.server.UID;
+import java.security.MessageDigest;
+import java.util.Arrays;
 
 /**
  * <code>RCFile</code>s, short of Record Columnar File, are flat files
@@ -311,6 +298,16 @@ public class RCFile {
       throw new RuntimeException("compareTo not supported in class "
           + this.getClass().getName());
     }
+
+    @Override
+    public boolean equals(Object obj){
+      return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode(){
+      return super.hashCode();
+    }
   }
 
   /**
@@ -488,7 +485,7 @@ public class RCFile {
         }
 
         if (skipTotal != 0) {
-          in.skipBytes(skipTotal);
+          Bytes.skipFully(in, skipTotal);
           skipTotal = 0;
         }
 
@@ -515,7 +512,7 @@ public class RCFile {
       }
 
       if (skipTotal != 0) {
-        in.skipBytes(skipTotal);
+        Bytes.skipFully(in, skipTotal);
       }
     }
 
@@ -550,6 +547,16 @@ public class RCFile {
     public int compareTo(Object arg0) {
       throw new RuntimeException("compareTo not supported in class "
           + this.getClass().getName());
+    }
+
+    @Override
+    public boolean equals(Object obj){
+      return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode(){
+      return super.hashCode();
     }
   }
 
@@ -604,7 +611,7 @@ public class RCFile {
     // the max size of memory for buffering records before writes them out
     private int columnsBufferSize = 4 * 1024 * 1024; // 4M
     // the conf string for COLUMNS_BUFFER_SIZE
-    public static String COLUMNS_BUFFER_SIZE_CONF_STR = "hive.io.rcfile.record.buffer.size";
+    public static final String COLUMNS_BUFFER_SIZE_CONF_STR = "hive.io.rcfile.record.buffer.size";
 
     // how many records already buffered
     private int bufferedRecords = 0;
@@ -624,7 +631,7 @@ public class RCFile {
     /*
      * used for buffering appends before flush them out
      */
-    class ColumnBuffer {
+    static class ColumnBuffer {
       // used for buffer a column's values
       NonSyncDataOutputBuffer columnValBuffer;
       // used to store each value's length
@@ -917,34 +924,39 @@ public class RCFile {
         deflateOut = new DataOutputStream(deflateFilter);
       }
 
-      for (int columnIndex = 0; columnIndex < columnNumber; columnIndex++) {
-        ColumnBuffer currentBuf = columnBuffers[columnIndex];
-        currentBuf.flushGroup();
+      try {
+        for (int columnIndex = 0; columnIndex < columnNumber; columnIndex++) {
+          ColumnBuffer currentBuf = columnBuffers[columnIndex];
+          currentBuf.flushGroup();
 
-        NonSyncDataOutputBuffer columnValue = currentBuf.columnValBuffer;
-        int colLen;
-        int plainLen = columnValuePlainLength[columnIndex];
+          NonSyncDataOutputBuffer columnValue = currentBuf.columnValBuffer;
+          int colLen;
+          int plainLen = columnValuePlainLength[columnIndex];
 
-        if (isCompressed) {
-          if (deflateFilter instanceof SchemaAwareCompressionOutputStream) {
-            ((SchemaAwareCompressionOutputStream)deflateFilter).
-              setColumnIndex(columnIndex);
+          if (isCompressed) {
+            if (deflateFilter instanceof SchemaAwareCompressionOutputStream) {
+              ((SchemaAwareCompressionOutputStream) deflateFilter).
+                  setColumnIndex(columnIndex);
+            }
+            deflateFilter.resetState();
+            deflateOut.write(columnValue.getData(), 0, columnValue.getLength());
+            deflateOut.flush();
+            deflateFilter.finish();
+            // find how much compressed data was added for this column
+            colLen = valueBuffer.getLength() - valueLength;
+          } else {
+            colLen = columnValuePlainLength[columnIndex];
           }
-          deflateFilter.resetState();
-          deflateOut.write(columnValue.getData(), 0, columnValue.getLength());
-          deflateOut.flush();
-          deflateFilter.finish();
-          // find how much compressed data was added for this column
-          colLen = valueBuffer.getLength() - valueLength;
-        } else {
-          colLen = columnValuePlainLength[columnIndex];
+          valueLength += colLen;
+          key.setColumnLenInfo(colLen, currentBuf.valLenBuffer, plainLen,
+              columnIndex);
+          plainTotalColumnLength[columnIndex] += plainLen;
+          comprTotalColumnLength[columnIndex] += colLen;
+          columnValuePlainLength[columnIndex] = 0;
         }
-        valueLength += colLen;
-        key.setColumnLenInfo(colLen, currentBuf.valLenBuffer, plainLen,
-          columnIndex);
-        plainTotalColumnLength[columnIndex] += plainLen;
-        comprTotalColumnLength[columnIndex] += colLen;
-        columnValuePlainLength[columnIndex] = 0;
+      } catch (IOException e) {
+        IOUtils.cleanup(LOG, deflateOut);
+        throw e;
       }
 
       int keyLength = key.getSize();
@@ -1020,7 +1032,7 @@ public class RCFile {
       }
     }
 
-    public synchronized void close() throws IOException {
+    public void close() throws IOException {
       if (bufferedRecords > 0) {
         flushRecords();
       }
@@ -1297,7 +1309,7 @@ public class RCFile {
     }
 
     /** Return the current byte position in the input file. */
-    public synchronized long getPosition() throws IOException {
+    public long getPosition() throws IOException {
       return sin.getPos();
     }
 
@@ -1311,7 +1323,7 @@ public class RCFile {
      * words, the current seek can only seek to the end of the file. For other
      * positions, use {@link org.apache.tajo.storage.v2.RCFile.Reader#sync(long)}.
      */
-    public synchronized void seek(long position) throws IOException {
+    public void seek(long position) throws IOException {
       sin.seek(position);
       sin.readNext(128 * 1024);
     }
@@ -1323,13 +1335,13 @@ public class RCFile {
      * Otherwise, the seek or sync will have no effect, it will continue to get rows from the
      * buffer built up from the call to next.
      */
-    public synchronized void resetBuffer() {
+    public void resetBuffer() {
       readRowsIndexInBuffer = 0;
       recordsNumInValBuffer = 0;
     }
 
     /** Seek to the next sync mark past a given position. */
-    public synchronized void sync(long position) throws IOException {
+    public void sync(long position) throws IOException {
       if (position + SYNC_SIZE >= end) {
         seek(end);
         return;
@@ -1393,7 +1405,7 @@ public class RCFile {
      * @return the length of the next record or -1 if there is no next record
      * @throws java.io.IOException
      */
-    private synchronized int readRecordLength() throws IOException {
+    private int readRecordLength() throws IOException {
     	if (sin.getPos() >= end) {
         return -1;
       }
@@ -1422,7 +1434,7 @@ public class RCFile {
         return;
       }
       if (!currentValue.inited) {
-        sin.skip(currentRecordLength - currentKeyLength);
+        IOUtils.skipFully(sin, currentRecordLength - currentKeyLength);
       }
     }
 
@@ -1578,7 +1590,7 @@ public class RCFile {
      */
     @SuppressWarnings("unused")
     @Deprecated
-    public synchronized boolean nextColumnsBatch() throws IOException {
+    public boolean nextColumnsBatch() throws IOException {
       passedRowsNum += (recordsNumInValBuffer - readRowsIndexInBuffer);
       return nextKeyBuffer() > 0;
     }
@@ -1593,7 +1605,7 @@ public class RCFile {
      * @return next row number
      * @throws java.io.IOException
      */
-    public synchronized boolean next(LongWritable readRows) throws IOException {
+    public boolean next(LongWritable readRows) throws IOException {
       if (hasRecordsInBuffer()) {
         readRows.set(passedRowsNum);
         readRowsIndexInBuffer++;
@@ -1656,7 +1668,7 @@ public class RCFile {
      *
      * @throws java.io.IOException
      */
-    public synchronized void getCurrentRow(BytesRefArrayWritable ret) throws IOException {
+    public void getCurrentRow(BytesRefArrayWritable ret) throws IOException {
 
       if (!keyInit || rowFetched) {
         return;

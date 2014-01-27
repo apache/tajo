@@ -25,12 +25,12 @@ import org.apache.tajo.datum.exception.InvalidCastException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-public class VTuple implements Tuple {
+public class VTuple implements Tuple, Cloneable {
 	@Expose public Datum [] values;
 	@Expose private long offset;
 	
 	public VTuple(int size) {
-		values = new Datum [size];
+		values = new Datum[size];
 	}
 
   public VTuple(Tuple tuple) {
@@ -169,7 +169,11 @@ public class VTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return new VTuple(this);
+    VTuple tuple = (VTuple) super.clone();
+
+    tuple.values = new Datum[size()];
+    System.arraycopy(values, 0, tuple.values, 0, size()); //shallow copy
+    return tuple;
   }
 
   public String toString() {
@@ -207,15 +211,16 @@ public class VTuple implements Tuple {
 	}
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof VTuple) {
-      VTuple other = (VTuple) obj;
-      return Arrays.equals(values, other.values);
-    } else if (obj instanceof LazyTuple) {
-      LazyTuple other = (LazyTuple) obj;
-      return Arrays.equals(values, other.toArray());
-    }
+  public Datum[] getValues() {
+    return values;
+  }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Tuple) {
+      Tuple other = (Tuple) obj;
+      return Arrays.equals(getValues(), other.getValues());
+    }
     return false;
   }
 }

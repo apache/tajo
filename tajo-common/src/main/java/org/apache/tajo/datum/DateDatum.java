@@ -31,7 +31,7 @@ public class DateDatum extends Datum {
   /** ISO 8601/SQL standard format - ex) 1997-12-17 */
   public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd";
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private LocalDate date;
+  private final LocalDate date;
 
   public DateDatum(int value) {
     super(TajoDataTypes.Type.DATE);

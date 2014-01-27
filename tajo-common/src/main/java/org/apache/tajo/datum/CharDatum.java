@@ -27,16 +27,12 @@ import java.util.Arrays;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CharDatum extends Datum {
-  @Expose private int size;
-  @Expose private byte[] bytes;
+  @Expose private final int size;
+  @Expose private final byte[] bytes;
   private String chars = null;
 
-	public CharDatum() {
-		super(Type.CHAR);
-	}
-
 	public CharDatum(byte val) {
-    this();
+    super(Type.CHAR);
     this.size = 1;
     bytes = new byte[size];
     bytes[0] = val;
@@ -47,7 +43,7 @@ public class CharDatum extends Datum {
   }
 
   public CharDatum(byte [] bytes) {
-    this();
+    super(Type.CHAR);
     this.bytes = bytes;
     this.size = bytes.length;
   }

@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class StorageManagerV2 extends AbstractStorageManager {
+public final class StorageManagerV2 extends AbstractStorageManager {
   private final Log LOG = LogFactory.getLog(StorageManagerV2.class);
 
 	private Queue<FileScannerV2> scanQueue = new LinkedList<FileScannerV2>();

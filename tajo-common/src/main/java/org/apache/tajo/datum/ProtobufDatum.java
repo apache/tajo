@@ -21,18 +21,10 @@ import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes;
 
 public class ProtobufDatum extends Datum {
-  private Message value;
-
-  public ProtobufDatum() {
-    super(TajoDataTypes.Type.PROTOBUF);
-  }
+  private final Message value;
 
   public ProtobufDatum(Message message) {
     super(TajoDataTypes.Type.PROTOBUF);
-    this.value = message;
-  }
-
-  public void set(Message message) {
     this.value = message;
   }
 

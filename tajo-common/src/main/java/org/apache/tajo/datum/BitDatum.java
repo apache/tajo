@@ -25,14 +25,10 @@ import org.apache.tajo.util.NumberUtil;
 
 public class BitDatum extends Datum {
   private static final int size = 1;
-  @Expose	byte val;
-	
-	public BitDatum() {
-		super(TajoDataTypes.Type.BIT);
-	}
+  @Expose	final byte val;
 	
 	public BitDatum(byte val) {
-		this();
+		super(TajoDataTypes.Type.BIT);
 		this.val = val;
 	}
 

@@ -235,4 +235,24 @@ public class TestLazyTuple {
       assertEquals(NullDatum.get(), tuple.get(i));
     }
   }
+
+  @Test
+  public void testClone() throws CloneNotSupportedException {
+    int colNum = schema.getColumnNum();
+    LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
+
+    t1.put(0, DatumFactory.createInt4(1));
+    t1.put(1, DatumFactory.createInt4(2));
+    t1.put(3, DatumFactory.createInt4(2));
+    t1.put(4, DatumFactory.createText("str"));
+
+    LazyTuple t2 = (LazyTuple) t1.clone();
+    assertNotSame(t1, t2);
+    assertEquals(t1, t2);
+
+    assertSame(t1.get(4), t2.get(4));
+
+    t1.clear();
+    assertFalse(t1.equals(t2));
+  }
 }

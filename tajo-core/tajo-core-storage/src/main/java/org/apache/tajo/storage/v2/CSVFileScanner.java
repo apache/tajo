@@ -27,20 +27,15 @@ import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Bytes;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class CSVFileScanner extends FileScannerV2 {
   public static final String DELIMITER = "csvfile.delimiter";
@@ -165,7 +160,7 @@ public class CSVFileScanner extends FileScannerV2 {
 
   @Override
   public boolean isStopScanScheduling() {
-    if(sin != null && sin.IsEndOfStream()) {
+    if(sin != null && sin.isEndOfStream()) {
       return true;
     } else {
       return false;

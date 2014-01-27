@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.v2;
 
+import com.google.common.base.Objects;
+
 public class DiskMountInfo implements Comparable<DiskMountInfo> {
 	private String mountPath;
 	
@@ -58,6 +60,19 @@ public class DiskMountInfo implements Comparable<DiskMountInfo> {
 		return deviceId;
 	}
 
+  @Override
+  public boolean equals(Object obj){
+    if (!(obj instanceof DiskMountInfo)) return false;
+
+    if (compareTo((DiskMountInfo) obj) == 0) return true;
+    else return false;
+  }
+
+  @Override
+  public int hashCode(){
+    return Objects.hashCode(mountPath);
+  }
+
 	@Override
 	public int compareTo(DiskMountInfo other) {
 		String path1 = mountPath;
@@ -76,7 +91,7 @@ public class DiskMountInfo implements Comparable<DiskMountInfo> {
 			
 			if(path1Length < path2Length) {
 				return 1;
-			} else if(path1Length > path1Length) {
+			} else if(path1Length > path2Length) {
 				return -1;
 			} else {
 				return path1.compareTo(path2);

@@ -32,19 +32,15 @@ import java.nio.ByteBuffer;
 
 public class Float8Datum extends NumericDatum {
   private static final int size = 8;
-  @Expose private double val;
-
-	public Float8Datum() {
-		super(TajoDataTypes.Type.FLOAT8);
-	}
+  @Expose private final double val;
 
 	public Float8Datum(double val) {
-		this();
+    super(TajoDataTypes.Type.FLOAT8);
 		this.val = val;
 	}
 
   public Float8Datum(byte[] bytes) {
-    this();
+    super(TajoDataTypes.Type.FLOAT8);
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getDouble();
   }
@@ -294,7 +290,7 @@ public class Float8Datum extends NumericDatum {
   }
 
   @Override
-  public void inverseSign() {
-    this.val = -val;
+  public NumericDatum inverseSign() {
+    return new Float8Datum(-val);
   }
 }

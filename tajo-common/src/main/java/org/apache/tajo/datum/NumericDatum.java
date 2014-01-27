@@ -35,5 +35,5 @@ public abstract class NumericDatum extends Datum {
   
   public abstract Datum divide(Datum datum);
   
-  public abstract void inverseSign();
+  public abstract NumericDatum inverseSign();
 }

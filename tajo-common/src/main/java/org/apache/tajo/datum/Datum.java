@@ -27,11 +27,7 @@ import org.apache.tajo.json.GsonObject;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public abstract class Datum implements Comparable<Datum>, GsonObject {
-  @Expose	private Type type;
-
-  @SuppressWarnings("unused")
-  private Datum() {
-  }
+  @Expose	private final Type type;
 
   public Datum(Type type) {
     this.type = type;

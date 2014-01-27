@@ -18,15 +18,10 @@
 
 package org.apache.tajo.storage.v2;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileScanRunner extends Thread {
   private static final Log LOG = LogFactory.getLog(FileScanRunner.class);
@@ -55,8 +50,8 @@ public class FileScanRunner extends Thread {
 
 	public void run() {
     try {
-      long startTime = System.currentTimeMillis();
-      boolean fetching = fileScanner.isFetchProcessing();
+//      long startTime = System.currentTimeMillis();
+//      boolean fetching = fileScanner.isFetchProcessing();
       fileScanner.scan(maxReadBytes);
 //      if(diskFileScanScheduler.getDiskId() == 1) {
 //        LOG.info("========>" + diskFileScanScheduler.getDiskId() + "," + fileScanner.getId() +

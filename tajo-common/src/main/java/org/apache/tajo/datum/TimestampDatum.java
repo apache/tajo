@@ -33,7 +33,7 @@ public class TimestampDatum extends Datum {
   public static final String FRACTION_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss.SSS";
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
   private static final DateTimeFormatter FRACTION_FORMATTER = DateTimeFormat.forPattern(FRACTION_FORMAT_STRING);
-  private DateTime dateTime;
+  private final DateTime dateTime;
 
   public TimestampDatum(int timestamp) {
     super(TajoDataTypes.Type.TIMESTAMP);

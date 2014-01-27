@@ -57,7 +57,7 @@ public class SignedEval extends EvalNode implements Cloneable {
   public Datum eval(Schema schema, Tuple tuple) {
     NumericDatum result = childEval.eval(schema, tuple);
     if (negative) {
-      result.inverseSign();
+      return result.inverseSign();
     }
     return result;
   }

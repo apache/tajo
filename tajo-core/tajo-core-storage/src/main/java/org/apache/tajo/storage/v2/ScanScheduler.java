@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
-public class ScanScheduler extends Thread {
+public final class ScanScheduler extends Thread {
   private static final Log LOG = LogFactory.getLog(ScanScheduler.class);
 
   private final Object scanQueueLock;

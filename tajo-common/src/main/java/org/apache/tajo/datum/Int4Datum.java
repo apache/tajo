@@ -28,19 +28,15 @@ import java.nio.ByteBuffer;
 
 public class Int4Datum extends NumericDatum {
   private static final int size = 4;
-  @Expose private int val;
-
-	public Int4Datum() {
-		super(Type.INT4);
-	}
+  @Expose private final int val;
 
 	public Int4Datum(int val) {
-		this();
+    super(Type.INT4);
 		this.val = val;
 	}
 
   public Int4Datum(byte[] bytes) {
-    this();
+    super(Type.INT4);
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getInt();
   }
@@ -297,7 +293,7 @@ public class Int4Datum extends NumericDatum {
   }
 
   @Override
-  public void inverseSign() {
-    this.val = - val;
+  public NumericDatum inverseSign() {
+    return new Int4Datum(-val);
   }
 }

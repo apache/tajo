@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.rcfile;
 
+import com.google.common.base.Objects;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableFactories;
 import org.apache.hadoop.io.WritableFactory;
@@ -151,6 +152,10 @@ public class BytesRefArrayWritable implements Writable,
     return 0;
   }
 
+  @Override
+  public int hashCode(){
+    return Objects.hashCode(bytesRefWritables);
+  }
   /**
    * Returns <tt>true</tt> if this instance contains one or more the specified
    * BytesRefWritable.

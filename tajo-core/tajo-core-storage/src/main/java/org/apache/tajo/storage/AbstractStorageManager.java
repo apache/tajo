@@ -198,7 +198,6 @@ public abstract class AbstractStorageManager {
 
   public FileFragment[] splitBroadcastTable(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
-    TableMeta meta = getTableMeta(tablePath);
     List<FileFragment> listTablets = new ArrayList<FileFragment>();
     FileFragment tablet;
 
@@ -227,7 +226,6 @@ public abstract class AbstractStorageManager {
       throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
 
-    TableMeta meta = getTableMeta(tablePath);
     long defaultBlockSize = size;
     List<FileFragment> listTablets = new ArrayList<FileFragment>();
     FileFragment tablet;
@@ -613,9 +611,24 @@ public abstract class AbstractStorageManager {
     return splits;
   }
 
-  private class InvalidInputException extends IOException {
-    public InvalidInputException(
-        List<IOException> errors) {
+  private static class InvalidInputException extends IOException {
+    List<IOException> errors;
+    public InvalidInputException(List<IOException> errors) {
+      this.errors = errors;
+    }
+
+    @Override
+    public String getMessage(){
+       StringBuffer sb = new StringBuffer();
+      int messageLimit = Math.min(errors.size(), 10);
+      for (int i = 0; i < messageLimit ; i ++) {
+        sb.append(errors.get(i).getMessage()).append("\n");
+      }
+
+      if(messageLimit < errors.size())
+        sb.append("skipped .....").append("\n");
+
+      return sb.toString();
     }
   }
 

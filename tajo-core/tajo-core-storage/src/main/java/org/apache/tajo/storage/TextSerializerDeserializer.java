@@ -31,8 +31,8 @@ import java.io.OutputStream;
 
 //Compatibility with Apache Hive
 public class TextSerializerDeserializer implements SerializerDeserializer {
-  public static byte[] trueBytes = "true".getBytes();
-  public static byte[] falseBytes = "false".getBytes();
+  public static final byte[] trueBytes = "true".getBytes();
+  public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
 

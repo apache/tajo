@@ -34,7 +34,7 @@ import java.io.IOException;
 public class BytesRefWritable implements Writable, Comparable<BytesRefWritable> {
 
   private static final byte[] EMPTY_BYTES = new byte[0];
-  public static BytesRefWritable ZeroBytesRefWritable = new BytesRefWritable();
+  public static final BytesRefWritable ZeroBytesRefWritable = new BytesRefWritable();
 
   int start = 0;
   int length = 0;

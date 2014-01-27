@@ -31,29 +31,25 @@ import java.util.Arrays;
 import static org.apache.tajo.common.TajoDataTypes.Type.BLOB;
 
 public class BlobDatum extends Datum {
-	@Expose private byte [] val;
+	@Expose private final byte [] val;
 	private ByteBuffer bb = null;
 
-	public BlobDatum() {
-		super(BLOB);
-	}
-	
 	public BlobDatum(byte[] val) {
-		this();
+    super(BLOB);
 		this.val = val;
 		this.bb = ByteBuffer.wrap(val);	
 		bb.flip();
 	}
 
   public BlobDatum(byte[] val, int offset, int length) {
-    this();
+    super(BLOB);
     this.val = val;
     this.bb = ByteBuffer.wrap(val, offset, length);
     bb.flip();
   }
 	
 	public BlobDatum(ByteBuffer val) {
-		this();
+    super(BLOB);
 		this.val = val.array();
 		this.bb = val.duplicate();
 		bb.flip();

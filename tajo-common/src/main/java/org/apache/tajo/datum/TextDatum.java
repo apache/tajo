@@ -28,18 +28,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
-  @Expose private int size;
-  @Expose private byte [] bytes;
+  @Expose private final int size;
+  @Expose private final byte[] bytes;
 
   public static final TextDatum EMPTY_TEXT = new TextDatum("");
   public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 
-  public TextDatum() {
-    super(TajoDataTypes.Type.TEXT);
-  }
-
   public TextDatum(byte[] bytes) {
-    this();
+    super(TajoDataTypes.Type.TEXT);
     this.bytes = bytes;
     this.size = bytes.length;
   }

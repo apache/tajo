@@ -35,6 +35,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
+import org.apache.tajo.util.Bytes;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -64,7 +65,6 @@ public class RowFile {
     private ByteBuffer buffer;
     private final int tupleHeaderSize;
     private BitArray nullFlags;
-    private int numBitsOfNullFlags;
     private long bufferStartPos;
 
     public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
@@ -74,9 +74,9 @@ public class RowFile {
       SYNC_INTERVAL =
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
               SYNC_SIZE * 100);
-      numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
-      nullFlags = new BitArray(numBitsOfNullFlags);
-      tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE/8);
+
+      nullFlags = new BitArray(schema.getColumnNum());
+      tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE / 8);
       this.start = fragment.getStartKey();
       this.end = this.start + fragment.getEndKey();
     }
@@ -122,7 +122,7 @@ public class RowFile {
 
     private void readHeader() throws IOException {
       SYNC_INTERVAL = in.readInt();
-      in.read(this.sync, 0, SYNC_HASH_SIZE);
+      Bytes.readFully(in, this.sync, 0, SYNC_HASH_SIZE);
     }
 
     /**
@@ -320,8 +320,6 @@ public class RowFile {
     private ByteBuffer buffer;
 
     private BitArray nullFlags;
-    private int numBitsOfNullFlags;
-
     // statistics
     private TableStatistics stats;
 
@@ -361,8 +359,7 @@ public class RowFile {
 
       buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 
-      numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
-      nullFlags = new BitArray(numBitsOfNullFlags);
+      nullFlags = new BitArray(schema.getColumnNum());
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
@@ -436,6 +433,7 @@ public class RowFile {
               break;
             case INET6:
               buffer.put(t.getIPv6Bytes(i));
+              break;
             case NULL_TYPE:
               nullFlags.set(i);
               break;
@@ -490,7 +488,7 @@ public class RowFile {
       }
     }
 
-    synchronized void checkAndWriteSync() throws IOException {
+    private void checkAndWriteSync() throws IOException {
       if (out.getPos() >= lastSyncPos + SYNC_INTERVAL) {
         sync();
       }

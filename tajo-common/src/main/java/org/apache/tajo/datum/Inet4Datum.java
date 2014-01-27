@@ -27,37 +27,33 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class Inet4Datum extends Datum {
   private static final int size = 4;
-  @Expose private int address;
-
-	public Inet4Datum() {
-		super(Type.INET4);
-	}
+  @Expose private final int address;
 
 	public Inet4Datum(String addr) {
-		this();
+    super(Type.INET4);
 		String [] elems = addr.split("\\.");
-		address  = Integer.valueOf(elems[3]) & 0xFF;
-    address |= ((Integer.valueOf(elems[2]) << 8) & 0xFF00);
-    address |= ((Integer.valueOf(elems[1]) << 16) & 0xFF0000);
-    address |= ((Integer.valueOf(elems[0]) << 24) & 0xFF000000);
-	}
+    address = Integer.valueOf(elems[3]) & 0xFF
+        | ((Integer.valueOf(elems[2]) << 8) & 0xFF00)
+        | ((Integer.valueOf(elems[1]) << 16) & 0xFF0000)
+        | ((Integer.valueOf(elems[0]) << 24) & 0xFF000000);
+  }
 
 	public Inet4Datum(byte[] addr) {
-		this();
+    super(Type.INET4);
 		Preconditions.checkArgument(addr.length == size);
-		address  = addr[3] & 0xFF;
-    address |= ((addr[2] << 8) & 0xFF00);
-    address |= ((addr[1] << 16) & 0xFF0000);
-    address |= ((addr[0] << 24) & 0xFF000000);
-	}
+    address = addr[3] & 0xFF
+        | ((addr[2] << 8) & 0xFF00)
+        | ((addr[1] << 16) & 0xFF0000)
+        | ((addr[0] << 24) & 0xFF000000);
+  }
 
   public Inet4Datum(byte[] addr, int offset, int length) {
-    this();
+    super(Type.INET4);
     Preconditions.checkArgument(length == size);
-    address  = addr[offset + 3] & 0xFF;
-    address |= ((addr[offset + 2] << 8) & 0xFF00);
-    address |= ((addr[offset + 1] << 16) & 0xFF0000);
-    address |= ((addr[offset] << 24) & 0xFF000000);
+    address = addr[offset + 3] & 0xFF
+        | ((addr[offset + 2] << 8) & 0xFF00)
+        | ((addr[offset + 1] << 16) & 0xFF0000)
+        | ((addr[offset] << 24) & 0xFF000000);
   }
 
 	@Override

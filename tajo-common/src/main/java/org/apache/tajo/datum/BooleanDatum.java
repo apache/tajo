@@ -23,7 +23,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
 public class BooleanDatum extends Datum {
-  @Expose private boolean val;
+  @Expose private final boolean val;
   public static final String TRUE_STRING ="t";
   public static final String FALSE_STRING ="f";
   public static final BooleanDatum TRUE = new BooleanDatum(true);
@@ -54,10 +54,6 @@ public class BooleanDatum extends Datum {
       new Datum [] {NullDatum.get(), TRUE, FALSE          }  // false
   };
 
-  protected BooleanDatum() {
-    super(TajoDataTypes.Type.BOOLEAN);
-  }
-
   protected BooleanDatum(boolean val) {
     super(TajoDataTypes.Type.BOOLEAN);
     this.val = val;
@@ -69,7 +65,7 @@ public class BooleanDatum extends Datum {
   }
 
   protected BooleanDatum(int byteVal) {
-    this();
+    super(TajoDataTypes.Type.BOOLEAN);
     this.val = byteVal == TRUE_INT;
   }
 

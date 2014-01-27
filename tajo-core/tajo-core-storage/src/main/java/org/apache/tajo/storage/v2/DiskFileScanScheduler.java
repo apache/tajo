@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
-public class DiskFileScanScheduler extends Thread {
+public final class DiskFileScanScheduler extends Thread {
   private static final Log LOG = LogFactory.getLog(DiskFileScanScheduler.class);
 
 	private Queue<FileScannerV2> requestQueue = new LinkedList<FileScannerV2>();

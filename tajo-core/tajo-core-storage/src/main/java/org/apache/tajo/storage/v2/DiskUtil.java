@@ -32,7 +32,9 @@ import java.util.TreeSet;
 
 public class DiskUtil {
 
-	public enum OSType {
+  static String UNIX_DISK_DEVICE_PATH = "/proc/partitions";
+
+  public enum OSType {
 		OS_TYPE_UNIX, OS_TYPE_WINXP, OS_TYPE_SOLARIS, OS_TYPE_MAC
 	}
 
@@ -70,7 +72,7 @@ public class DiskUtil {
 	private static List<DiskDeviceInfo> getUnixDiskDeviceInfos() {
 		List<DiskDeviceInfo> infos = new ArrayList<DiskDeviceInfo>();
 		
-		File file = new File("/proc/partitions");
+		File file = new File(UNIX_DISK_DEVICE_PATH);
 		if(!file.exists()) {
 			System.out.println("No partition file:" + file.getAbsolutePath());
 			return getDefaultDiskDeviceInfos();
@@ -78,7 +80,7 @@ public class DiskUtil {
 		
 		BufferedReader reader = null;
 		try {
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/partitions")));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(UNIX_DISK_DEVICE_PATH)));
 			String line = null;
 			
 			int count = 0;

@@ -34,7 +34,7 @@ import java.util.List;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FileFragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class FileFragment implements Fragment, Comparable<FileFragment> {
+public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
   @Expose private Long startOffset; // required

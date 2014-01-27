@@ -54,8 +54,9 @@ public class RCFileScanner extends FileScannerV2 {
   private ScheduledInputStream sin;
   private boolean first = true;
   private int maxBytesPerSchedule;
-  SerializerDeserializer serde;
-  byte[] nullChars;
+  private SerializerDeserializer serde;
+  private byte[] nullChars;
+  private Object lock = new Object();
 
   public RCFileScanner(final Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
       throws IOException {
@@ -105,17 +106,18 @@ public class RCFileScanner extends FileScannerV2 {
   }
 
   private Tuple makeTuple() throws IOException {
-    column.resetValid(schema.getColumnNum());
     Tuple tuple = new VTuple(schema.getColumnNum());
-    int tid; // target column id
-    for (int i = 0; i < projectionMap.length; i++) {
-      tid = projectionMap[i];
+    synchronized (lock) {
+      column.resetValid(schema.getColumnNum());
+      int tid; // target column id
+      for (int i = 0; i < projectionMap.length; i++) {
+        tid = projectionMap[i];
 
-      byte[] bytes = column.get(tid).getBytesCopy();
-      Datum datum = serde.deserialize(targets[i], bytes, 0, bytes.length, nullChars);
-      tuple.put(tid, datum);
+        byte[] bytes = column.get(tid).getBytesCopy();
+        Datum datum = serde.deserialize(targets[i], bytes, 0, bytes.length, nullChars);
+        tuple.put(tid, datum);
+      }
     }
-
     return tuple;
   }
 
@@ -183,7 +185,7 @@ public class RCFileScanner extends FileScannerV2 {
 
   @Override
   protected boolean initFirstScan(int maxBytesPerSchedule) throws IOException {
-    synchronized(this) {
+    synchronized(lock) {
       first = true;
       this.maxBytesPerSchedule = maxBytesPerSchedule;
       if(sin == null) {
@@ -217,7 +219,7 @@ public class RCFileScanner extends FileScannerV2 {
 
   @Override
   public boolean isStopScanScheduling() {
-    if(sin != null && sin.IsEndOfStream()) {
+    if(sin != null && sin.isEndOfStream()) {
       return true;
     } else {
       return false;
@@ -226,7 +228,7 @@ public class RCFileScanner extends FileScannerV2 {
 
   @Override
   protected boolean scanNext(int length) throws IOException {
-    synchronized(this) {
+    synchronized(lock) {
       if(isClosed()) {
         return false;
       }

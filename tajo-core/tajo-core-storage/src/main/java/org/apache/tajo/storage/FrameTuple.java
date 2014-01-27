@@ -33,7 +33,7 @@ import java.net.InetAddress;
  * It contains two tuples and pretends to be one instance of Tuple for
  * join qual evaluatations.
  */
-public class FrameTuple implements Tuple {
+public class FrameTuple implements Tuple, Cloneable {
   private int size;
   private int leftSize;
   
@@ -199,7 +199,14 @@ public class FrameTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return new FrameTuple(this.left.clone(), this.right.clone());
+    FrameTuple frameTuple = (FrameTuple) super.clone();
+    frameTuple.set(this.left.clone(), this.right.clone());
+    return frameTuple;
+  }
+
+  @Override
+  public Datum[] getValues(){
+    throw new UnsupportedException();
   }
 
   public String toString() {

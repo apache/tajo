@@ -441,7 +441,7 @@ public class ScheduledInputStream extends InputStream implements Seekable, Close
 	public char readChar() throws IOException {
     int val1 = read();
     int val2 = read();
-    if ((val1 | val1) < 0) {
+    if ((val1 | val2) < 0) {
         throw new EOFException();
     }
     return (char)((val1 << 8) + (val2 << 0));
@@ -496,7 +496,7 @@ public class ScheduledInputStream extends InputStream implements Seekable, Close
 		return eof;
 	}
 
-	public boolean IsEndOfStream() {
+	public boolean isEndOfStream() {
 		return endOfStream;
 	}
 

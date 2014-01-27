@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -111,6 +112,11 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
       }
     }
     return 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(sortKeyIds);
   }
 
   @Override

@@ -25,7 +25,7 @@ import org.apache.tajo.datum.exception.InvalidCastException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-public class LazyTuple implements Tuple {
+public class LazyTuple implements Tuple, Cloneable {
   private long offset;
   private Datum[] values;
   private byte[][] textBytes;
@@ -47,12 +47,12 @@ public class LazyTuple implements Tuple {
   }
 
   public LazyTuple(LazyTuple tuple) {
-    this.values = new Datum[tuple.size()];
-    System.arraycopy(tuple.values, 0, values, 0, tuple.size());
+    this.values = tuple.getValues();
     this.offset = tuple.offset;
     this.schema = tuple.schema;
-    this.textBytes = tuple.textBytes.clone();
+    this.textBytes = new byte[size()][];
     this.nullBytes = tuple.nullBytes;
+    this.serializeDeserialize = tuple.serializeDeserialize;
   }
 
   @Override
@@ -262,7 +262,8 @@ public class LazyTuple implements Tuple {
     return hashCode;
   }
 
-  public Datum[] toArray() {
+  @Override
+  public Datum[] getValues() {
     Datum[] datums = new Datum[values.length];
     for (int i = 0; i < values.length; i++) {
       datums[i] = get(i);
@@ -272,17 +273,18 @@ public class LazyTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return new LazyTuple(this);
+    LazyTuple lazyTuple = (LazyTuple) super.clone();
+
+    lazyTuple.values = getValues(); //shallow copy
+    lazyTuple.textBytes = new byte[size()][];
+    return lazyTuple;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof LazyTuple) {
-      LazyTuple other = (LazyTuple) obj;
-      return Arrays.equals(toArray(), other.toArray());
-    } else if (obj instanceof VTuple) {
-      VTuple other = (VTuple) obj;
-      return Arrays.equals(toArray(), other.values);
+    if (obj instanceof Tuple) {
+      Tuple other = (Tuple) obj;
+      return Arrays.equals(getValues(), other.getValues());
     }
     return false;
   }
