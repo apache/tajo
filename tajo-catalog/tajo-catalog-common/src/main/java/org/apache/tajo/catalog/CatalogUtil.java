@@ -46,7 +46,7 @@ public class CatalogUtil {
     sb.append("(");
     int i = 0;
     for (DataType type : paramTypes) {
-      sb.append(type.getType());
+      sb.append(type.getType().name().toLowerCase());
       if(i < paramTypes.length - 1) {
         sb.append(",");
       }

@@ -231,7 +231,10 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-552: Fix Bug verify-protocbuf.sh runs with bash. 
+    TAJO-372: When an exception except for network issues occurs, the
+    operation should not be repeated. (hyunsik)
+
+    TAJO-552: Fix Bug verify-protocbuf.sh runs with bash.
     (DaeMyung Kang via jihoon)
 
     TAJO-551: Fix bug getFunction can get wrong function that have invalid 

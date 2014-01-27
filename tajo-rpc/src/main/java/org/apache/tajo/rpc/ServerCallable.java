@@ -94,18 +94,20 @@ public abstract class ServerCallable<T> {
           client = RpcConnectionPool.getPool(tajoConf).getConnection(addr, protocol, asyncMode);
         }
         return call(client);
-      } catch (Throwable t) {
+      } catch (IOException ioe) {
         if(!closeConn) {
           RpcConnectionPool.getPool(tajoConf).closeConnection(client);
           client = null;
         }
-        exceptions.add(t);
+        exceptions.add(ioe);
         if(abort) {
-          throw new ServiceException(t.getMessage(), t);
+          throw new ServiceException(ioe.getMessage(), ioe);
         }
         if (tries == numRetries - 1) {
-          throw new ServiceException("Giving up after tries=" + tries, t);
+          throw new ServiceException("Giving up after tries=" + tries, ioe);
         }
+      } catch (Throwable t) {
+        throw new ServiceException(t);
       } finally {
         afterCall();
         if(closeConn) {

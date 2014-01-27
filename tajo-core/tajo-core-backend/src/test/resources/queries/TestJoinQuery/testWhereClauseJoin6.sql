@@ -2,7 +2,7 @@ select
 	s_acctbal,
 	s_name,
 	p_partkey,
-	n_name,
+	n_name
 from
 	part,
 	supplier,

@@ -26,8 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class TestCatalogUtil {
   @Test
   public final void testGetCanonicalName() {
-    String canonical = CatalogUtil.getCanonicalName("sum",
-        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
-    assertEquals("sum(INT4,INT8)", canonical);
+    String canonical = CatalogUtil.getCanonicalName("sum", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
+    assertEquals("sum(int4,int8)", canonical);
   }
 }

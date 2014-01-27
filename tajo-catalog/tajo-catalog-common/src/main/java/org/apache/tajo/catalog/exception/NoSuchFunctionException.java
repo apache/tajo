@@ -18,12 +18,19 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.common.TajoDataTypes;
+
+import java.util.Collection;
+
 public class NoSuchFunctionException extends RuntimeException {
 	private static final long serialVersionUID = 5062193018697228028L;
 
-	public NoSuchFunctionException() {}
+  public NoSuchFunctionException(String funcName, TajoDataTypes.DataType [] parameters) {
+    super("function " + CatalogUtil.getCanonicalName(funcName, parameters) + " does not exist");
+  }
 
-	public NoSuchFunctionException(String funcName) {
-		super("No Such GeneralFunction in Catalog: "+funcName);
+	public NoSuchFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
+		super("function " + CatalogUtil.getCanonicalName(funcName, parameters) + " does not exist");
 	}
 }

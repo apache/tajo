@@ -118,7 +118,7 @@ public class AsyncRpcServer extends NettyServerBase {
         RemoteCallException callException = (RemoteCallException) e.getCause();
         e.getChannel().write(callException.getResponse());
       }
-      throw new RemoteException(e.getCause());
+      throw new RemoteException(serviceName, e.getCause());
     }
   }
 }

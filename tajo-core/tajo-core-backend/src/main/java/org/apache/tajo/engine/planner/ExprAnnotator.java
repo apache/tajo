@@ -390,12 +390,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new NoSuchFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
     if (funcDesc == null) {
-      throw new NoSuchFunctionException(CatalogUtil.getCanonicalName(expr.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
     }
     try {
     CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
@@ -429,8 +429,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc countRows = catalog.getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[] {});
     if (countRows == null) {
-      throw new NoSuchFunctionException(CatalogUtil.
-          getCanonicalName(countRows.getSignature(), new TajoDataTypes.DataType[]{}));
+      throw new NoSuchFunctionException(countRows.getSignature(), new TajoDataTypes.DataType[]{});
     }
 
     try {
@@ -439,8 +438,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
           new EvalNode[] {});
     } catch (InternalException e) {
-      throw new NoSuchFunctionException(CatalogUtil.
-          getCanonicalName(countRows.getSignature(), new TajoDataTypes.DataType[]{}));
+      throw new NoSuchFunctionException(countRows.getSignature(), new TajoDataTypes.DataType[]{});
     }
   }
 
@@ -462,7 +460,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(CatalogUtil. getCanonicalName(setFunction.getSignature(), paramTypes));
+      throw new NoSuchFunctionException(setFunction.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
