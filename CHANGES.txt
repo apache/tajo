@@ -231,6 +231,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-556: java.lang.NoSuchFieldError: IS_SECURITY_ENABLED. (jaehwa)
+
     TAJO-372: When an exception except for network issues occurs, the
     operation should not be repeated. (hyunsik)
 
