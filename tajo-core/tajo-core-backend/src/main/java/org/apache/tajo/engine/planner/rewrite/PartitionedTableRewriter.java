@@ -150,6 +150,7 @@ public class PartitionedTableRewriter implements RewriteRule {
       filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
 
+    LOG.info("Filtered directory or files: " + filteredPaths.length);
     return filteredPaths;
   }
 
@@ -234,9 +235,6 @@ public class PartitionedTableRewriter implements RewriteRule {
 
   private Path [] findFilteredPartitionPaths(ScanNode scanNode) throws IOException {
     TableDesc table = scanNode.getTableDesc();
-    FileSystem fs = table.getPath().getFileSystem(systemConf);
-    LOG.info("Partitioned Table Dir: " + table.getPath());
-    LOG.info("Summary: " + fs.getContentSummary(table.getPath()).getDirectoryCount());
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
     Schema paritionValuesSchema = new Schema();

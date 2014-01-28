@@ -231,6 +231,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-565: FilterPushDown rewrite rule does not push filters on
+    partitioned scans. (hyunsik)
+
     TAJO-560: CTAS PARTITION BY with UNION can cause invalid global plan.
     (hyunsik)
 

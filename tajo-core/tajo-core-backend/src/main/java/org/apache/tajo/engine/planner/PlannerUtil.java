@@ -314,7 +314,7 @@ public class PlannerUtil {
 
       for (Column col : columnRefs) {
         if (scan.getCanonicalName().equals(col.getQualifier())) {
-          Column found = node.getInSchema().getColumnByName(col.getColumnName());
+          Column found = scan.getTableSchema().getColumnByName(col.getColumnName());
           if (found == null) {
             return false;
           }

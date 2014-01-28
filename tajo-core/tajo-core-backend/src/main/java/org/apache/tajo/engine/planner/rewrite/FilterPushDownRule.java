@@ -23,10 +23,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 
@@ -199,7 +196,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {
-      if (PlannerUtil.canBeEvaluated(eval, joinNode)) {
+      if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, stack.peek().getType() != NodeType.JOIN)) {
         matched.add(eval);
       }
     }
@@ -232,7 +229,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {
-      if (PlannerUtil.canBeEvaluated(eval, scanNode)) {
+      if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {
         matched.add(eval);
       }
     }

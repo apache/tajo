@@ -1076,7 +1076,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     BinaryNode setOp;
     if (setOperation.getType() == OpType.Union) {
-      setOp = new UnionNode(plan.newPID());
+      setOp = block.getNodeFromExpr(setOperation);
     } else if (setOperation.getType() == OpType.Except) {
       setOp = new ExceptNode(plan.newPID(), leftChild, rightChild);
     } else if (setOperation.getType() == OpType.Intersect) {
