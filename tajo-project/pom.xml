@@ -615,7 +615,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core-storage</artifactId>
+        <artifactId>tajo-storage</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>

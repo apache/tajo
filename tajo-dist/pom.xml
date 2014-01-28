@@ -54,6 +54,11 @@
       <artifactId>tajo-core-backend</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -105,6 +110,7 @@
                       run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
                       run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}/* .
+                      run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .
                       run cp -r ${project.basedir}/src/main/bin .
                       run cp -r ${project.basedir}/src/main/conf .
                       run rm -rf lib/tajo-*-${project.version}.jar

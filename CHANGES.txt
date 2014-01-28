@@ -386,6 +386,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-520: Move tajo-core-storage to tajo-storage. (jinho)
+
     TAJO-536: Fix warnings in tajo-core-storage. (jinho)
 
     TAJO-545: MySQLStore Documentation. (jaehwa)

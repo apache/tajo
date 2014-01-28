@@ -93,7 +93,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-core-storage</artifactId>
+      <artifactId>tajo-storage</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
