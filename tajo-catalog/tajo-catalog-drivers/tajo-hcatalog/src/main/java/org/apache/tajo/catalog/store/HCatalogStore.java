@@ -138,10 +138,23 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       schema = new org.apache.tajo.catalog.Schema();
       HCatSchema tableSchema = HCatUtil.getTableSchemaWithPtnCols(table);
       List<HCatFieldSchema> fieldSchemaList = tableSchema.getFields();
+      boolean isPartitionKey = false;
       for (HCatFieldSchema eachField : fieldSchemaList) {
-        String fieldName = tableName + "." + eachField.getName();
-        TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(eachField.getType().toString());
-        schema.addColumn(fieldName, dataType);
+        isPartitionKey = false;
+
+        if (table.getPartitionKeys() != null) {
+          for(FieldSchema partitionKey: table.getPartitionKeys()) {
+            if (partitionKey.getName().equals(eachField.getName())) {
+              isPartitionKey = true;
+            }
+          }
+        }
+
+        if (!isPartitionKey) {
+          String fieldName = dbName + "." + tableName + "." + eachField.getName();
+          TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(eachField.getType().toString());
+          schema.addColumn(fieldName, dataType);
+        }
       }
 
       // validate field schema.
@@ -193,7 +206,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           for(int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
-            expressionSchema.addColumn(new Column(fieldSchema.getName(), dataType));
+            expressionSchema.addColumn(new Column(dbName + "." + tableName + "." + fieldSchema.getName(), dataType));
             if (i > 0) {
               sb.append(",");
             }

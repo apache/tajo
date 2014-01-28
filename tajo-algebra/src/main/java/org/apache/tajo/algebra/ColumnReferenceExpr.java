@@ -54,7 +54,11 @@ public class ColumnReferenceExpr extends Expr {
 
   public void setName(String qualifiedName) {
     String [] parts = qualifiedName.toLowerCase().split("\\.");
-    if (parts.length == 2) {
+
+    if (parts.length == 3) {
+      qualifier = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+      name = qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1, qualifiedName.length());
+    } else if (parts.length == 2) {
       qualifier = parts[0];
       name = parts[1];
     } else {

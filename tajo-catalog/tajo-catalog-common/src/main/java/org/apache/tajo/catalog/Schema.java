@@ -164,7 +164,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	
 	public int getColumnId(String name) {
     String [] parts = name.split("\\.");
-    if (parts.length == 2) {
+    if (parts.length == 2 || parts.length == 3) {
       if (fieldsByQualifiedName.containsKey(name)) {
         return fieldsByQualifiedName.get(name);
       } else {
