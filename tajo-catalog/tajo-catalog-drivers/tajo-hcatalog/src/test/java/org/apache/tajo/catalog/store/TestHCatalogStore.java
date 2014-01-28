@@ -267,7 +267,7 @@ public class TestHCatalogStore {
     table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
     columns = table.getSchema().getColumns();
     assertEquals(DB_NAME + "." + NATION, table.getName());
-    assertEquals(5, columns.size());
+    assertEquals(4, columns.size());
     assertEquals("n_nationkey", columns.get(0).getColumnName());
     assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());
     assertEquals("n_name", columns.get(1).getColumnName());
@@ -276,8 +276,6 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.INT4, columns.get(2).getDataType().getType());
     assertEquals("n_comment", columns.get(3).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(3).getDataType().getType());
-    assertEquals("type", columns.get(4).getColumnName());
-    assertEquals(TajoDataTypes.Type.TEXT, columns.get(4).getDataType().getType());
     assertNotNull(table.getPartitionMethod());
     assertEquals("type", table.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName());
     assertEquals(CatalogProtos.PartitionType.COLUMN, table.getPartitionMethod().getPartitionType());
