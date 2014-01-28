@@ -271,7 +271,34 @@ public class GlobalPlanner {
 
   public boolean hasUnionChild(UnaryNode node) {
 
-    if (node.getChild().getType() == NodeType.TABLE_SUBQUERY) {
+    // there are two cases:
+    //
+    // The first case is:
+    //
+    //  create table [tbname] as select * from ( select ... UNION select ...) T
+    //
+    // We can generalize this case as 'a store operator on the top of union'.
+    // In this case, a store operator determines a shuffle method.
+    //
+    // The second case is:
+    //
+    // select avg(..) from (select ... UNION select ) T
+    //
+    // We can generalize this case as 'a shuffle required operator on the top of union'.
+
+    if (node.getChild() instanceof UnaryNode) { // first case
+      UnaryNode child = node.getChild();
+
+      if (child.getChild().getType() == NodeType.PROJECTION) {
+        child = child.getChild();
+      }
+
+      if (child.getChild().getType() == NodeType.TABLE_SUBQUERY) {
+        TableSubQueryNode tableSubQuery = child.getChild();
+        return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
+      }
+
+    } else if (node.getChild().getType() == NodeType.TABLE_SUBQUERY) { // second case
       TableSubQueryNode tableSubQuery = node.getChild();
       return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
     }
@@ -279,7 +306,7 @@ public class GlobalPlanner {
     return false;
   }
 
-  private static ExecutionBlock buildGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
+  private ExecutionBlock buildGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
                                                   GroupbyNode firstPhaseGroupBy, GroupbyNode secondPhaseGroupBy) {
     DataChannel lastDataChannel = null;
 
@@ -428,75 +455,130 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
-
+  /**
+   * It builds a distributed execution block for CTAS, InsertNode, and StoreTableNode.
+   */
   private ExecutionBlock buildStorePlan(GlobalPlanContext context,
-                                        ExecutionBlock childBlock,
-                                        StoreTableNode currentNode) 
-    throws PlanningException {
-    PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
+                                        ExecutionBlock lastBlock,
+                                        StoreTableNode currentNode) throws PlanningException {
 
-    // if result table is not a partitioned table, directly store it
-    if(partitionMethod == null) {
 
-      if (childBlock.getPlan() == null) { // when the below is union
-        for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlock)) {
-          StoreTableNode copy = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
-          copy.setChild(grandChildBlock.getPlan());
-          grandChildBlock.setPlan(copy);
-        }
-        return childBlock;
-      } else {
-        currentNode.setChild(childBlock.getPlan());
-        currentNode.setInSchema(childBlock.getPlan().getOutSchema());
-        childBlock.setPlan(currentNode);
-        return childBlock;
+    if(currentNode.hasPartition()) { // if a target table is a partitioned table
+
+      // Verify supported partition types
+      PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
+      if (partitionMethod.getPartitionType() != CatalogProtos.PartitionType.COLUMN) {
+        throw new PlanningException(String.format("Not supported partitionsType :%s",
+            partitionMethod.getPartitionType()));
       }
+
+      if (hasUnionChild(currentNode)) { // if it has union children
+        return buildShuffleAndStorePlanToPartitionedTableWithUnion(context, currentNode, lastBlock);
+      } else { // otherwise
+        return buildShuffleAndStorePlanToPartitionedTable(context, currentNode, lastBlock);
+      }
+    } else { // if result table is not a partitioned table, directly store it
+      return buildNoPartitionedStorePlan(context, currentNode, lastBlock);
     }
+  }
 
-    // if result table is a partitioned table
-    // 1. replace StoreTableNode with its child node,
-    //    old execution block ends at the child node
-    LogicalNode childNode = currentNode.getChild();
-    childBlock.setPlan(childNode);
+  /**
+   * It makes a plan to store directly union plans into a non-partitioned table.
+   */
+  private ExecutionBlock buildShuffleAndStorePlanNoPartitionedTableWithUnion(GlobalPlanContext context,
+                                                                             StoreTableNode currentNode,
+                                                                             ExecutionBlock childBlock) {
+    for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlock)) {
+      StoreTableNode copy = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
+      copy.setChild(grandChildBlock.getPlan());
+      grandChildBlock.setPlan(copy);
+    }
+    return childBlock;
+  }
 
-    // 2. create a new execution block, pipeline 2 exec blocks through a DataChannel
+  /**
+   * It inserts shuffle and adds store plan on a partitioned table,
+   * and it push downs those plans into child unions.
+   */
+  private ExecutionBlock buildShuffleAndStorePlanToPartitionedTableWithUnion(GlobalPlanContext context,
+                                                                             StoreTableNode currentNode,
+                                                                             ExecutionBlock lastBlock)
+      throws PlanningException {
+
     MasterPlan masterPlan = context.plan;
-    ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
-    DataChannel channel;
-    CatalogProtos.PartitionType partitionsType = partitionMethod.getPartitionType();
-
-    if(partitionsType == CatalogProtos.PartitionType.COLUMN) {
-      channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
-      if (currentNode.getType() == NodeType.INSERT) {
-        InsertNode insertNode = (InsertNode) currentNode;
-        channel.setSchema(((InsertNode)currentNode).getProjectedSchema());
-        Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().getColumnNum()];
-        int i = 0;
-        for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
-          int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
-          shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
-        }
-        channel.setShuffleKeys(shuffleKeys);
-      } else {
-        channel.setShuffleKeys(partitionMethod.getExpressionSchema().toArray());
-      }
-      channel.setSchema(childNode.getOutSchema());
+    DataChannel lastChannel = null;
+    for (DataChannel channel : masterPlan.getIncomingChannels(lastBlock.getId())) {
+      ExecutionBlock childBlock = masterPlan.getExecBlock(channel.getSrcId());
+      setShuffleKeysFromPartitionedTableStore(currentNode, channel);
+      channel.setSchema(childBlock.getPlan().getOutSchema());
       channel.setStoreType(storeType);
-
-    } else {
-      throw new PlanningException(String.format("Not Supported PartitionsType :%s", partitionsType));
+      lastChannel = channel;
     }
 
-    // 3. create a ScanNode for scanning shuffle data
-    //    StoreTableNode as the root node of the new execution block
+    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), lastChannel);
+    currentNode.setChild(scanNode);
+    currentNode.setInSchema(scanNode.getOutSchema());
+    lastBlock.setPlan(currentNode);
+    return lastBlock;
+  }
+
+  /**
+   * It inserts shuffle and adds store plan on a partitioned table.
+   */
+  private ExecutionBlock buildShuffleAndStorePlanToPartitionedTable(GlobalPlanContext context,
+                                                                    StoreTableNode currentNode,
+                                                                    ExecutionBlock lastBlock)
+      throws PlanningException {
+    MasterPlan masterPlan = context.plan;
+
+    ExecutionBlock nextBlock = masterPlan.newExecutionBlock();
+    DataChannel channel = new DataChannel(lastBlock, nextBlock, HASH_SHUFFLE, 32);
+    setShuffleKeysFromPartitionedTableStore(currentNode, channel);
+    channel.setSchema(lastBlock.getPlan().getOutSchema());
+    channel.setStoreType(storeType);
+
     ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
     currentNode.setChild(scanNode);
     currentNode.setInSchema(scanNode.getOutSchema());
-    currentBlock.setPlan(currentNode);
+    nextBlock.setPlan(currentNode);
 
     masterPlan.addConnect(channel);
 
-    return currentBlock;
+    return nextBlock;
+  }
+
+  private ExecutionBlock buildNoPartitionedStorePlan(GlobalPlanContext context,
+                                                     StoreTableNode currentNode,
+                                                     ExecutionBlock childBlock) {
+    if (hasUnionChild(currentNode)) { // when the below is union
+      return buildShuffleAndStorePlanNoPartitionedTableWithUnion(context, currentNode, childBlock);
+    } else {
+      currentNode.setChild(childBlock.getPlan());
+      currentNode.setInSchema(childBlock.getPlan().getOutSchema());
+      childBlock.setPlan(currentNode);
+      return childBlock;
+    }
+  }
+
+  private void setShuffleKeysFromPartitionedTableStore(StoreTableNode node, DataChannel channel) {
+    Preconditions.checkState(node.hasTargetTable(), "A target table must be a partitioned table.");
+    PartitionMethodDesc partitionMethod = node.getPartitionMethod();
+
+    if (node.getType() == NodeType.INSERT) {
+      InsertNode insertNode = (InsertNode) node;
+      channel.setSchema(((InsertNode)node).getProjectedSchema());
+      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().getColumnNum()];
+      int i = 0;
+      for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
+        int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
+        shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
+      }
+      channel.setShuffleKeys(shuffleKeys);
+    } else {
+      channel.setShuffleKeys(partitionMethod.getExpressionSchema().toArray());
+    }
+    channel.setShuffleType(HASH_SHUFFLE);
+    channel.setShuffleOutputNum(32);
   }
 
   public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext, LogicalNode> {

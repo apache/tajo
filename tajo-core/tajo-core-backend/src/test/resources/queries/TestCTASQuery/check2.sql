@@ -1,0 +1,1 @@
+select distinct * from testCtasWithColumnedPartition where (key = 45.0 or key = 38.0);

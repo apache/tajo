@@ -231,6 +231,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-560: CTAS PARTITION BY with UNION can cause invalid global plan.
+    (hyunsik)
+
     TAJO-558: HCatalogStore can't scan columns. (jaehwa)
 
     TAJO-556: java.lang.NoSuchFieldError: IS_SECURITY_ENABLED. (jaehwa)

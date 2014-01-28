@@ -22,17 +22,15 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
 
@@ -44,36 +42,23 @@ import static org.junit.Assert.assertTrue;
  * Test CREATE TABLE AS SELECT statements
  */
 @Category(IntegrationTest.class)
-public class TestCTASQuery {
-  private static TpchTestBase tpch;
-  public TestCTASQuery() throws IOException {
-    super();
-  }
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    tpch = TpchTestBase.getInstance();
-  }
+public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithoutTableDefinition() throws Exception {
-    String tableName ="testCtasWithoutTableDefinition";
-    tpch.execute(
-        "create table " + tableName
-            + " partition by column(key float8) "
-            + " as select l_orderkey as col1, l_partkey as col2, l_quantity as key from lineitem");
+    ResultSet res = executeQuery();
 
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    TableDesc desc = catalog.getTableDesc(tableName);
-    assertTrue(catalog.existsTable(tableName));
+    res.close();
+    CatalogService catalog = testingCluster.getTestingCluster().getMaster().getCatalog();
+    TableDesc desc = catalog.getTableDesc("testCtasWithoutTableDefinition");
+    assertTrue(catalog.existsTable("testCtasWithoutTableDefinition"));
 
     assertTrue(desc.getSchema().contains("testCtasWithoutTableDefinition.col1"));
     PartitionMethodDesc partitionDesc = desc.getPartitionMethod();
     assertEquals(partitionDesc.getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals("key", partitionDesc.getExpressionSchema().getColumns().get(0).getColumnName());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(testingCluster.getTestingCluster().getConfiguration());
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
@@ -83,40 +68,36 @@ public class TestCTASQuery {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    ResultSet res = tpch.execute(
-        "select distinct * from " + tableName + " where (key = 45.0 or key = 38.0)");
+    ResultSet res2 = executeQuery("check1.sql");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
 
     int i = 0;
-    while(res.next()) {
-      assertEquals(resultRows1.get(res.getDouble(3))[0], res.getInt(1));
-      assertEquals(resultRows1.get(res.getDouble(3))[1], res.getInt(2));
+    while(res2.next()) {
+      assertEquals(resultRows1.get(res2.getDouble(3))[0], res2.getInt(1));
+      assertEquals(resultRows1.get(res2.getDouble(3))[1], res2.getInt(2));
       i++;
     }
-    res.close();
+    res2.close();
     assertEquals(2, i);
   }
 
   @Test
   public final void testCtasWithColumnedPartition() throws Exception {
-    String tableName ="testCtasWithColumnedPartition";
-    tpch.execute(
-        "create table " + tableName
-            + " (col1 int4, col2 int4) partition by column(key float8) "
-            + " as select l_orderkey as col1, l_partkey as col2, l_quantity as key from lineitem");
+    ResultSet res = executeQuery();
+    res.close();
 
-    TajoTestingCluster cluster = tpch.getTestingCluster();
+    TajoTestingCluster cluster = testingCluster.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
-    TableDesc desc = catalog.getTableDesc(tableName);
-    assertTrue(catalog.existsTable(tableName));
+    TableDesc desc = catalog.getTableDesc("testCtasWithColumnedPartition");
+    assertTrue(catalog.existsTable("testCtasWithColumnedPartition"));
     PartitionMethodDesc partitionDesc = desc.getPartitionMethod();
     assertEquals(partitionDesc.getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals("key", partitionDesc.getExpressionSchema().getColumns().get(0).getColumnName());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(cluster.getConfiguration());
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
@@ -126,21 +107,59 @@ public class TestCTASQuery {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    ResultSet res = tpch.execute(
-        "select distinct * from " + tableName + " where (key = 45.0 or key = 38.0)");
+    ResultSet res2 = executeQuery("check2.sql");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
 
     int i = 0;
-    while(res.next()) {
-      assertEquals(resultRows1.get(res.getDouble(3))[0], res.getInt(1));
-      assertEquals(resultRows1.get(res.getDouble(3))[1], res.getInt(2));
+    while(res2.next()) {
+      assertEquals(resultRows1.get(res2.getDouble(3))[0], res2.getInt(1));
+      assertEquals(resultRows1.get(res2.getDouble(3))[1], res2.getInt(2));
       i++;
     }
-    res.close();
+    res2.close();
     assertEquals(2, i);
   }
 
+  @Test
+  public final void testCtasWithGroupby() throws Exception {
+    ResultSet res = executeQuery("CtasWithGroupby.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    assertResultSet(res2);
+    res2.close();
+  }
+
+  @Test
+  public final void testCtasWithOrderby() throws Exception {
+    ResultSet res = executeQuery("CtasWithOrderby.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    assertResultSet(res2);
+    res2.close();
+  }
+
+  @Test
+  public final void testCtasWithLimit() throws Exception {
+    ResultSet res = executeQuery("CtasWithLimit.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    assertResultSet(res2);
+    res2.close();
+  }
+
+  @Test
+  public final void testCtasWithUnion() throws Exception {
+    ResultSet res = executeQuery("CtasWithUnion.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    resultSetToString(res2);
+    res2.close();
+  }
 }

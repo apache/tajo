@@ -88,7 +88,24 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testSelectAsterik() throws Exception {
+  public final void testSelectAsterisk1() throws Exception {
+    // select * from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelectAsterisk2() throws Exception {
+    // select * from lineitem where l_orderkey = 2;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelectAsterisk3() throws Exception {
+    // select * from lineitem where l_orderkey % 2 = 0;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

@@ -1,0 +1,1 @@
+select * from testCtasWithLimit order by key;
