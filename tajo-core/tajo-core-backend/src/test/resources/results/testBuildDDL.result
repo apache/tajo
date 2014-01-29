@@ -2,4 +2,4 @@
 -- Name: table1; Type: TABLE; Storage: CSV
 -- Path: /table1
 --
-CREATE EXTERNAL TABLE table1 (name BLOB, addr TEXT) USING CSV WITH ('csv.delimiter'='|', 'compression.codec'='org.apache.hadoop.io.compress.GzipCodec') PARTITION BY COLUMN(key INT4) LOCATION '/table1';
+CREATE EXTERNAL TABLE table1 (name BLOB, addr TEXT) USING CSV WITH ('csv.delimiter'='|', 'compression.codec'='org.apache.hadoop.io.compress.GzipCodec') PARTITION BY COLUMN(key INT4, key2 TEXT) LOCATION '/table1';

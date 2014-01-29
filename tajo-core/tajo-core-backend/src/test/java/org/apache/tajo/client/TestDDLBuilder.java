@@ -46,10 +46,11 @@ public class TestDDLBuilder {
 
     Schema expressionSchema = new Schema();
     expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);
+    expressionSchema.addColumn("key2", TajoDataTypes.Type.TEXT);
     PartitionMethodDesc partitionMethod = new PartitionMethodDesc(
         "table1",
         CatalogProtos.PartitionType.COLUMN,
-        "key",
+        "key,key2",
         expressionSchema);
     desc.setPartitionMethod(partitionMethod);
 

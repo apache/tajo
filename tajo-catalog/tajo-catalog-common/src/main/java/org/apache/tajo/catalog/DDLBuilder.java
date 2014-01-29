@@ -102,8 +102,10 @@ public class DDLBuilder {
 
     // columns
     sb.append("(");
+    String prefix = "";
     for (Column column : partitionDesc.getExpressionSchema().toArray()) {
-      sb.append(CatalogUtil.columnToDDLString(column));
+      sb.append(prefix).append(CatalogUtil.columnToDDLString(column));
+      prefix = ", ";
     }
     sb.append(")");
   }
