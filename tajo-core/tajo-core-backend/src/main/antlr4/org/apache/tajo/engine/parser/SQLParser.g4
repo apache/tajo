@@ -59,16 +59,16 @@ schema_statement
   ;
 
 index_statement
-  : CREATE (u=UNIQUE)? INDEX n=Identifier ON t=table_name (m=method_specifier)?
+  : CREATE (u=UNIQUE)? INDEX n=identifier ON t=table_name (m=method_specifier)?
     LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?
   ;
 
 create_table_statement
-  : CREATE EXTERNAL TABLE table_name table_elements USING file_type=Identifier
+  : CREATE EXTERNAL TABLE table_name table_elements USING file_type=identifier
     (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)
-  | CREATE TABLE table_name table_elements (USING file_type=Identifier)?
+  | CREATE TABLE table_name table_elements (USING file_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
-  | CREATE TABLE table_name (USING file_type=Identifier)?
+  | CREATE TABLE table_name (USING file_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
   ;
 
@@ -77,7 +77,7 @@ table_elements
   ;
 
 field_element
-  : name=Identifier field_type
+  : name=identifier field_type
   ;
 
 field_type
@@ -93,7 +93,7 @@ param
   ;
 
 method_specifier
-  : USING m=Identifier
+  : USING m=identifier
   ;
 
 table_space_specifier
@@ -101,7 +101,7 @@ table_space_specifier
   ;
 
 table_space_name
-  : Identifier
+  : identifier
   ;
 
 table_partitioning_clauses
@@ -158,7 +158,7 @@ column_partitions
   ;
 
 partition_name
-  : Identifier
+  : identifier
   ;
 
 /*
@@ -169,6 +169,135 @@ partition_name
 
 drop_table_statement
   : DROP TABLE table_name (PURGE)?
+  ;
+
+/*
+===============================================================================
+  5.2 <token and separator>
+
+  Specifying lexical units (tokens and separators) that participate in SQL language
+===============================================================================
+*/
+
+identifier
+  : Identifier
+  | nonreserved_keywords
+  ;
+
+nonreserved_keywords
+  : AVG
+  | BETWEEN
+  | BY
+  | CENTURY
+  | CHARACTER
+  | COALESCE
+  | COLLECT
+  | COLUMN
+  | COUNT
+  | CUBE
+  | DAY
+  | DEC
+  | DECADE
+  | DOW
+  | DOY
+  | DROP
+  | EPOCH
+  | EVERY
+  | EXISTS
+  | EXTERNAL
+  | EXTRACT
+  | FILTER
+  | FIRST
+  | FORMAT
+  | FUSION
+  | GROUPING
+  | HASH
+  | INDEX
+  | INSERT
+  | INTERSECTION
+  | ISODOW
+  | ISOYEAR
+  | LAST
+  | LESS
+  | LIST
+  | LOCATION
+  | MAX
+  | MAXVALUE
+  | MICROSECONDS
+  | MILLENNIUM
+  | MILLISECONDS
+  | MIN
+  | MINUTE
+  | MONTH
+  | NATIONAL
+  | NULLIF
+  | OVERWRITE
+  | PARTITION
+  | PARTITIONS
+  | PRECISION
+  | PURGE
+  | QUARTER
+  | RANGE
+  | REGEXP
+  | RLIKE
+  | ROLLUP
+  | SECOND
+  | SET
+  | SIMILAR
+  | STDDEV_POP
+  | STDDEV_SAMP
+  | SUBPARTITION
+  | SUM
+  | TABLESPACE
+  | THAN
+  | TIMEZONE
+  | TIMEZONE_HOUR
+  | TIMEZONE_MINUTE
+  | TRIM
+  | TO
+  | UNKNOWN
+  | VALUES
+  | VAR_POP
+  | VAR_SAMP
+  | VARYING
+  | WEEK
+  | YEAR
+  | ZONE
+
+  | BIGINT
+  | BIT
+  | BLOB
+  | BOOL
+  | BOOLEAN
+  | BYTEA
+  | CHAR
+  | DATE
+  | DECIMAL
+  | DOUBLE
+  | FLOAT
+  | FLOAT4
+  | FLOAT8
+  | INET4
+  | INT
+  | INT1
+  | INT2
+  | INT4
+  | INT8
+  | INTEGER
+  | NCHAR
+  | NUMERIC
+  | NVARCHAR
+  | REAL
+  | SMALLINT
+  | TEXT
+  | TIME
+  | TIMESTAMP
+  | TIMESTAMPTZ
+  | TIMETZ
+  | TINYINT
+  | VARBINARY
+  | VARBIT
+  | VARCHAR
   ;
 
 /*
@@ -773,12 +902,12 @@ named_columns_join
   ;
 
 table_primary
-  : table_or_query_name ((AS)? alias=Identifier)? (LEFT_PAREN column_name_list RIGHT_PAREN)?
-  | derived_table (AS)? name=Identifier (LEFT_PAREN column_name_list RIGHT_PAREN)?
+  : table_or_query_name ((AS)? alias=identifier)? (LEFT_PAREN column_name_list RIGHT_PAREN)?
+  | derived_table (AS)? name=identifier (LEFT_PAREN column_name_list RIGHT_PAREN)?
   ;
 
 column_name_list
-  :  Identifier  ( COMMA Identifier  )*
+  :  identifier  ( COMMA identifier  )*
   ;
 
 derived_table
@@ -812,23 +941,27 @@ grouping_element_list
   ;
 
 grouping_element
-  : ordinary_grouping_set
-  | rollup_list
+  : rollup_list
   | cube_list
   | empty_grouping_set
+  | ordinary_grouping_set
   ;
 
 ordinary_grouping_set
-  : row_value_predicand_list
+  : row_value_predicand
   | LEFT_PAREN row_value_predicand_list RIGHT_PAREN
   ;
 
+ordinary_grouping_set_list
+  : ordinary_grouping_set (COMMA ordinary_grouping_set)*
+  ;
+
 rollup_list
-  : ROLLUP LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN
+  : ROLLUP LEFT_PAREN c=ordinary_grouping_set_list RIGHT_PAREN
   ;
 
 cube_list
-  : CUBE LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN
+  : CUBE LEFT_PAREN c=ordinary_grouping_set_list RIGHT_PAREN
   ;
 
 empty_grouping_set
@@ -895,11 +1028,11 @@ explicit_table
 
 table_or_query_name
   : table_name
-  | Identifier
+  | identifier
   ;
 
 table_name
-  : Identifier  ( DOT  Identifier (  DOT Identifier )? )?
+  : identifier  ( DOT  identifier (  DOT identifier )? )?
   ;
 
 query_specification
@@ -913,7 +1046,7 @@ select_list
 
 select_sublist
   : derived_column
-  | asterisked_qualifier=Identifier DOT MULTIPLY
+  | asterisked_qualifier=identifier DOT MULTIPLY
   ;
 
 set_qualifier
@@ -926,11 +1059,11 @@ derived_column
   ;
 
 column_reference
-  : (tb_name=Identifier DOT)? name=Identifier
+  : (tb_name=identifier DOT)? name=identifier
   ;
 
 as_clause
-  : (AS)? Identifier
+  : (AS)? identifier
   ;
 
 column_reference_list
@@ -1156,7 +1289,7 @@ function_names_for_reserved_words
   ;
 
 function_name
-  : Identifier
+  : identifier
   | function_names_for_reserved_words
   ;
 
@@ -1204,5 +1337,5 @@ null_ordering
 
 insert_statement
   : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
-  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=Identifier (param_clause)?)? query_expression
+  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=identifier (param_clause)?)? query_expression
   ;

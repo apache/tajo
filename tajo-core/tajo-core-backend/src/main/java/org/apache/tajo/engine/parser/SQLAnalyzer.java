@@ -31,9 +31,7 @@ import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.CSVFile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
@@ -275,23 +273,37 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     // If grouping group is not empty
     if (ctx.grouping_element_list().grouping_element().get(0).empty_grouping_set() == null) {
-      GroupElement [] groups = new GroupElement[ctx.grouping_element_list().
-          grouping_element().size()];
-      for (int i = 0; i < groups.length; i++) {
+      int elementSize = ctx.grouping_element_list().grouping_element().size();
+      ArrayList<GroupElement> groups = new ArrayList<GroupElement>(elementSize + 1);
+      ArrayList<Expr> ordinaryExprs = null;
+      int groupSize = 1;
+      groups.add(null);
+
+      for (int i = 0; i < elementSize; i++) {
         SQLParser.Grouping_elementContext element =
             ctx.grouping_element_list().grouping_element().get(i);
         if (element.ordinary_grouping_set() != null) {
-          groups[i] = new GroupElement(GroupType.OrdinaryGroup,
-              getRowValuePredicands(element.ordinary_grouping_set().row_value_predicand_list()));
+          if (ordinaryExprs == null) {
+            ordinaryExprs = new ArrayList<Expr>();
+          }
+          Collections.addAll(ordinaryExprs, getRowValuePredicandsFromOrdinaryGroupingSet(element.ordinary_grouping_set()));
         } else if (element.rollup_list() != null) {
-          groups[i] = new GroupElement(GroupType.Rollup,
-              getRowValuePredicands(element.rollup_list().c.row_value_predicand_list()));
+          groupSize++;
+          groups.add(new GroupElement(GroupType.Rollup,
+              getRowValuePredicandsFromOrdinaryGroupingSetList(element.rollup_list().c)));
         } else if (element.cube_list() != null) {
-          groups[i] = new GroupElement(GroupType.Cube,
-              getRowValuePredicands(element.cube_list().c.row_value_predicand_list()));
+          groupSize++;
+          groups.add(new GroupElement(GroupType.Cube,
+              getRowValuePredicandsFromOrdinaryGroupingSetList(element.cube_list().c)));
         }
       }
-      clause.setGroups(groups);
+
+      if (ordinaryExprs != null) {
+        groups.set(0, new GroupElement(GroupType.OrdinaryGroup, ordinaryExprs.toArray(new Expr[ordinaryExprs.size()])));
+        clause.setGroups(groups.subList(0, groupSize).toArray(new GroupElement[groupSize]));
+      } else if (groupSize > 1) {
+        clause.setGroups(groups.subList(1, groupSize).toArray(new GroupElement[groupSize - 1]));
+      }
     }
 
     return clause;
@@ -382,6 +394,25 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     join.setRight(visitTable_primary(ctx.right));
     return join;
+  }
+
+  private Expr [] getRowValuePredicandsFromOrdinaryGroupingSetList(Ordinary_grouping_set_listContext ctx) {
+    ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
+    for (int i = 0; i < ctx.ordinary_grouping_set().size(); i++) {
+      Collections.addAll(rowValuePredicands, getRowValuePredicandsFromOrdinaryGroupingSet(ctx.ordinary_grouping_set(i)));
+    }
+    return rowValuePredicands.toArray(new Expr[rowValuePredicands.size()]);
+  }
+
+  private Expr [] getRowValuePredicandsFromOrdinaryGroupingSet(Ordinary_grouping_setContext ctx) {
+    ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
+    if (ctx.row_value_predicand() != null) {
+      rowValuePredicands.add(visitRow_value_predicand(ctx.row_value_predicand()));
+    }
+    if (ctx.row_value_predicand_list() != null) {
+      Collections.addAll(rowValuePredicands, getRowValuePredicands(ctx.row_value_predicand_list()));
+    }
+    return rowValuePredicands.toArray(new Expr[rowValuePredicands.size()]);
   }
 
   private Expr [] getRowValuePredicands(Row_value_predicand_listContext ctx) {
@@ -833,7 +864,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public NamedExpr visitDerived_column(SQLParser.Derived_columnContext ctx) {
     NamedExpr target = new NamedExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
-      target.setAlias(ctx.as_clause().Identifier().getText());
+      target.setAlias(ctx.as_clause().identifier().getText());
     }
     return target;
   }
@@ -1197,9 +1228,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       insertExpr.setTableName(ctx.table_name().getText());
 
       if (ctx.column_name_list() != null) {
-        String [] targetColumns = new String[ctx.column_name_list().Identifier().size()];
+        String [] targetColumns = new String[ctx.column_name_list().identifier().size()];
         for (int i = 0; i < targetColumns.length; i++) {
-          targetColumns[i] = ctx.column_name_list().Identifier().get(i).getText();
+          targetColumns[i] = ctx.column_name_list().identifier().get(i).getText();
         }
 
         insertExpr.setTargetColumns(targetColumns);

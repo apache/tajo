@@ -136,60 +136,36 @@ ELSE : E L S E;
 EXCEPT : E X C E P T;
 
 FALSE : F A L S E;
-FILTER : F I L T E R;
-FIRST : F I R S T;
-FORMAT : F O R M A T;
 FULL : F U L L;
 FROM : F R O M;
 
 GROUP : G R O U P;
-GROUPING : G R O U P I N G;
 
 HAVING : H A V I N G;
-HASH : H A S H;
 
 ILIKE : I L I K E;
 IN : I N;
-INDEX : I N D E X;
 INNER : I N N E R;
-INSERT : I N S E R T;
 INTERSECT : I N T E R S E C T;
 INTO : I N T O;
 IS : I S;
 
 JOIN : J O I N;
 
-LAST : L A S T;
 LEADING : L E A D I N G;
 LEFT : L E F T;
 LIKE : L I K E;
 LIMIT : L I M I T;
-LIST : L I S T;
-LOCATION : L O C A T I O N;
 
-NATIONAL : N A T I O N A L;
 NATURAL : N A T U R A L;
 NOT : N O T;
 NULL : N U L L;
-NULLIF : N U L L I F;
-
-MAX : M A X;
-MIN : M I N;
 
 ON : O N;
 OUTER : O U T E R;
 OR : O R;
 ORDER : O R D E R;
-OVERWRITE : O V E R W R I T E;
-
-PRECISION : P R E C I S I ON;
-
-RANGE : R A N G E;
-REGEXP : R E G E X P;
 RIGHT : R I G H T;
-RLIKE : R L I K E;
-
-SET : S E T;
 SELECT : S E L E C T;
 SOME : S O M E;
 SYMMETRIC : S Y M M E T R I C;
@@ -201,18 +177,11 @@ TRUE : T R U E;
 
 UNION : U N I O N;
 UNIQUE : U N I Q U E;
-UNKNOWN : U N K N O W N;
 USING : U S I N G;
-
-VAR_SAMP : V A R UNDERLINE S A M P;
-VAR_POP : V A R UNDERLINE P O P;
-VARYING : V A R Y I N G;
 
 WHEN : W H E N;
 WHERE : W H E R E;
 WITH : W I T H;
-
-ZONE : Z O N E;
 
 /*
 ===============================================================================
@@ -245,32 +214,56 @@ EXISTS : E X I S T S;
 EXTERNAL : E X T E R N A L;
 EXTRACT : E X T R A C T;
 
-LESS : L E S S;
 
+FILTER : F I L T E R;
+FIRST : F I R S T;
+FORMAT : F O R M A T;
 FUSION : F U S I O N;
 
+GROUPING : G R O U P I N G;
+
+HASH : H A S H;
 HOUR : H O U R;
 
+INDEX : I N D E X;
+INSERT : I N S E R T;
 INTERSECTION : I N T E R S E C T I O N;
 ISODOW : I S O D O W;
 ISOYEAR : I S O Y E A R;
 
+LAST : L A S T;
+LESS : L E S S;
+LIST : L I S T;
+LOCATION : L O C A T I O N;
+
+MAX : M A X;
 MAXVALUE : M A X V A L U E;
 MICROSECONDS : M I C R O S E C O N D S;
 MILLENNIUM : M I L L E N N I U M;
 MILLISECONDS : M I L L I S E C O N D S;
+MIN : M I N;
 MINUTE : M I N U T E;
 MONTH : M O N T H;
 
+NATIONAL : N A T I O N A L;
+NULLIF : N U L L I F;
+
+OVERWRITE : O V E R W R I T E;
+
 PARTITION : P A R T I T I O N;
 PARTITIONS : P A R T I T I O N S;
+PRECISION : P R E C I S I O N;
 PURGE : P U R G E;
 
 QUARTER : Q U A R T E R;
 
+RANGE : R A N G E;
+REGEXP : R E G E X P;
+RLIKE : R L I K E;
 ROLLUP : R O L L U P;
 
 SECOND : S E C O N D;
+SET : S E T;
 SIMILAR : S I M I L A R;
 STDDEV_POP : S T D D E V UNDERLINE P O P;
 STDDEV_SAMP : S T D D E V UNDERLINE S A M P;
@@ -285,77 +278,19 @@ TIMEZONE_MINUTE: T I M E Z O N E UNDERLINE M I N U T E;
 TRIM : T R I M;
 TO : T O;
 
+UNKNOWN : U N K N O W N;
+
 VALUES : V A L U E S;
+VAR_SAMP : V A R UNDERLINE S A M P;
+VAR_POP : V A R UNDERLINE P O P;
+VARYING : V A R Y I N G;
 
 WEEK : W E E K;
 
 YEAR : Y E A R;
 
-Nonreserved_keywords
-  : AVG
-  | BETWEEN
-  | BY
+ZONE : Z O N E;
 
-  | CENTURY
-  | CHARACTER
-  | COALESCE
-  | COLLECT
-  | COLUMN
-  | COUNT
-  | CUBE
-  | DAY
-  | DEC
-  | DECADE
-  | DOW
-  | DOY
-  | DROP
-  | EPOCH
-  | EVERY
-  | EXISTS
-  | EXTERNAL
-  | EXTRACT
-  | FUSION
-  | HASH
-  | INTERSECTION
-  | ISODOW
-  | ISOYEAR
-
-  | LESS
-  | LIST
-
-  | MAXVALUE
-  | MICROSECONDS
-  | MILLENNIUM
-  | MILLISECONDS
-  | MINUTE
-  | MONTH
-
-  | PARTITION
-  | PARTITIONS
-  | QUARTER
-  | ROLLUP
-
-  | SECOND
-  | SIMILAR
-  | STDDEV_POP
-  | STDDEV_SAMP
-  | SUBPARTITION
-  | SUM
-
-  | TABLESPACE
-  | THAN
-  | TIMEZONE
-  | TIMEZONE_HOUR
-  | TIMEZONE_MINUTE
-  | TRIM
-  | TO
-
-  | VALUES
-
-  | WEEK
-
-  | YEAR
-  ;
 
 /*
 ===============================================================================
@@ -469,8 +404,7 @@ LineComment
 */
 
 Identifier
-  : Nonreserved_keywords
-  | Regular_Identifier
+  : Regular_Identifier
   ;
 
 fragment
