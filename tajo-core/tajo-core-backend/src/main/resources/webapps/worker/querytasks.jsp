@@ -126,10 +126,11 @@
     <input type="hidden" name="sortOrder" value="<%=sortOrder%>"/>
   </form>
   <table border="1" width="100%" class="border_table">
-    <tr><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th><a href='<%=url%>startTime'>Start Time</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
+    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th><a href='<%=url%>startTime'>Start Time</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
     <%
       QueryUnit[] queryUnits = subQuery.getQueryUnits();
       JSPUtil.sortQueryUnit(queryUnits, sort, sortOrder);
+      int rowNo = 1;
       for(QueryUnit eachQueryUnit: queryUnits) {
           if(!"ALL".equals(status)) {
             if(!status.equals(eachQueryUnit.getState().toString())) {
@@ -154,6 +155,7 @@
 
     %>
     <tr>
+      <td><%=rowNo%></td>
       <td><a href="<%=queryUnitDetailUrl%>"><%=eachQueryUnit.getId()%></a></td>
       <td><%=eachQueryUnit.getState()%></td>
       <td><%=eachQueryUnit.getLaunchTime() == 0 ? "-" : df.format(eachQueryUnit.getLaunchTime())%></td>
@@ -161,6 +163,7 @@
       <td><%=queryUnitHost%></td>
     </tr>
     <%
+        rowNo++;
       }
     %>
   </table>

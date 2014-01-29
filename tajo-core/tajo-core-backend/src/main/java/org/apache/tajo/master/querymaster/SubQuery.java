@@ -275,6 +275,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
+  public int getCompletedObjectCount() {
+    return completedObjectCount;
+  }
+
+  public int getTotalScheduledObjectsCount() {
+    return totalScheduledObjectsCount;
+  }
+
   public ExecutionBlock getBlock() {
     return block;
   }

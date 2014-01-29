@@ -188,4 +188,9 @@ public class JSPUtil {
       }
     });
   }
+
+  static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.0");
+  public static String percentFormat(float value) {
+    return PERCENT_FORMAT.format(value * 100.0f);
+  }
 }

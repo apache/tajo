@@ -125,6 +125,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-564: Show execution block's progress in querydetail.jsp.
+    (hyoungjunkim via hyunsik)
+
     TAJO-497: Rearrange reserved and non-reserved keywords. (sirpkt via hyunsik)
 
     TAJO-475: Table partition catalog recap. (Min Zhou and hyunsik)

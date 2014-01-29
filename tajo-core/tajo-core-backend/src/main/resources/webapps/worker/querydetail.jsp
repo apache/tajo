@@ -59,16 +59,20 @@
   <h3><%=queryId.toString()%> <a href='queryplan.jsp?queryId=<%=queryId%>'>[Query Plan]</a></h3>
 
   <table width="100%" border="1" class="border_table">
-    <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th></tr>
+    <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th><th>Progress</th><th>Tasks</th></tr>
 <%
 for(SubQuery eachSubQuery: subQueries) {
+    eachSubQuery.getCompletedObjectCount();
+    String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachSubQuery.getId();
 %>
   <tr>
-    <td><a href='querytasks.jsp?queryId=<%=queryId%>&ebid=<%=eachSubQuery.getId()%>'><%=eachSubQuery.getId()%></a></td>
+    <td><a href='<%=detailLink%>'><%=eachSubQuery.getId()%></a></td>
     <td><%=eachSubQuery.getState()%></td>
     <td><%=df.format(eachSubQuery.getStartTime())%></td>
     <td><%=eachSubQuery.getFinishTime() == 0 ? "-" : df.format(eachSubQuery.getFinishTime())%></td>
     <td><%=JSPUtil.getElapsedTime(eachSubQuery.getStartTime(), eachSubQuery.getFinishTime())%></td>
+    <td align='center'><%=JSPUtil.percentFormat(eachSubQuery.getProgress())%>%</td>
+    <td align='center'><a href='<%=detailLink%>&status=SUCCEEDED'><%=eachSubQuery.getCompletedObjectCount()%></a>/<a href='<%=detailLink%>&status=ALL'><%=eachSubQuery.getTotalScheduledObjectsCount()%></a></td>
   </tr>
   <%
 }  //end of for
