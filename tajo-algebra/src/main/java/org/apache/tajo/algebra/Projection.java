@@ -60,7 +60,7 @@ public class Projection extends UnaryOperator implements Cloneable {
   }
 
   public int hashCode() {
-    return Objects.hashCode(all, distinct, targets, getChild());
+    return Objects.hashCode(all, distinct, Objects.hashCode(targets), getChild());
   }
 
   @Override

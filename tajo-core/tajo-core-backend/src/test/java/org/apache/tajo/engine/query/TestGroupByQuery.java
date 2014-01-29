@@ -84,6 +84,31 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupByWithExpressionKeys1() throws Exception {
+    // select upper(lower(l_orderkey::text)) as key, count(1) as total from lineitem
+    // group by key order by upper(lower(l_orderkey::text)), total;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithExpressionKeys2() throws Exception {
+    // select upper(lower(l_orderkey::text)) as key, count(1) as total from lineitem
+    // group by upper(lower(l_orderkey::text)) order by upper(l_orderkey::text), total;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithConstantKeys1() throws Exception {
+    ResultSet res = executeQuery();
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testCountDistinct() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;

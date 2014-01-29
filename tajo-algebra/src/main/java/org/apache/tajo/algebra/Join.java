@@ -70,7 +70,7 @@ public class Join extends BinaryOperator {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(joinType, joinQual, joinColumns, natural);
+    return Objects.hashCode(joinType, joinQual, Objects.hashCode(joinColumns), natural);
   }
 
   boolean equalsTo(Expr expr) {

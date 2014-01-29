@@ -47,7 +47,7 @@ public class TablePrimarySubQuery extends Relation {
   }
 
   public int hashCode() {
-    return Objects.hashCode(subquery, columnNames);
+    return Objects.hashCode(subquery, Objects.hashCode(columnNames));
   }
 
   @Override

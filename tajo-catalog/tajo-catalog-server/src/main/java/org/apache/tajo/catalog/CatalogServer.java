@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -640,7 +641,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public int hashCode() {
-      return com.google.common.base.Objects.hashCode(signature, type, arguments);
+      return Objects.hashCode(signature, type, Objects.hashCode(arguments));
     }
 
     @Override

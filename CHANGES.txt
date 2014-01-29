@@ -233,6 +233,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-567: Expression projection bugs. (hyunsik)
+
     TAJO-565: FilterPushDown rewrite rule does not push filters on
     partitioned scans. (hyunsik)
 

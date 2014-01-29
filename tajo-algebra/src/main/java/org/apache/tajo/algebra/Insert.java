@@ -114,7 +114,10 @@ public class Insert extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(overwrite, tableName, subquery, storageType, location, params);
+    return Objects.hashCode(
+        overwrite, tableName, Objects.hashCode(targetColumns),
+        subquery, storageType, location,
+        params);
   }
 
   @Override
@@ -122,6 +125,7 @@ public class Insert extends Expr {
     Insert another = (Insert) expr;
     return overwrite == another.overwrite &&
         TUtil.checkEquals(tableName, another.tableName) &&
+        TUtil.checkEquals(targetColumns, another.targetColumns) &&
         TUtil.checkEquals(subquery, another.subquery) &&
         TUtil.checkEquals(storageType, another.storageType) &&
         TUtil.checkEquals(location, another.location) &&

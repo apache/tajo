@@ -171,10 +171,12 @@ public class NamedExprsManager {
   }
 
   public void resolveExpr(String name, EvalNode evalNode) throws PlanningException {
-    if (evalNode.getType() == EvalType.CONST) {
-      return;
-    }
     String normalized = name.toLowerCase();
+
+    if (evalNode.getType() == EvalType.CONST) {
+      resolvedFlags.put(normalized, true);
+    }
+
     nameToEvalMap.put(normalized, evalNode);
     evalToNameMap.put(evalNode, normalized);
     resolvedFlags.put(normalized, true);
@@ -212,7 +214,14 @@ public class NamedExprsManager {
   public Target getTarget(String name, boolean unresolved) {
     String normalized = name;
     if (!unresolved && resolvedFlags.containsKey(normalized) && resolvedFlags.get(normalized)) {
-      return new Target(new FieldEval(normalized, nameToEvalMap.get(normalized).getValueType()));
+      EvalNode evalNode = nameToEvalMap.get(normalized);
+      EvalNode referredEval;
+      if (evalNode.getType() == EvalType.CONST) {
+        referredEval = evalNode;
+      } else {
+        referredEval = new FieldEval(normalized, evalNode.getValueType());
+      }
+      return new Target(referredEval, name);
     } else {
       if (nameToEvalMap.containsKey(normalized)) {
         return new Target(nameToEvalMap.get(normalized), name);

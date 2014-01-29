@@ -174,6 +174,7 @@ public class ProjectionPushDownRule extends
     public void resolve(Target target) {
       EvalNode evalNode = target.getEvalTree();
       if (evalNode.getType() == EvalType.CONST) { // if constant value
+        resolvedFlags.put(name, true);
         return; // keep it raw always
       }
       if (!evalToNameMap.containsKey(evalNode)) {

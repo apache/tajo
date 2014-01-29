@@ -140,7 +140,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(signature, params);
+    return Objects.hashCode(signature, Objects.hashCode(params));
   }
   
   @Override

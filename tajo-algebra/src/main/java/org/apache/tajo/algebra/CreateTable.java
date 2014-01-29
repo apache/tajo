@@ -130,7 +130,9 @@ public class CreateTable extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(external, tableName, tableElements, storageType, subquery, location, params, partition);
+    return Objects.hashCode(
+        external, tableName, Objects.hashCode(tableElements),
+        storageType, subquery, location, params, partition);
   }
 
   @Override
@@ -225,7 +227,7 @@ public class CreateTable extends Expr {
     }
 
     public int hashCode() {
-      return Objects.hashCode(type, columns, specifiers);
+      return Objects.hashCode(type, Objects.hashCode(columns), specifiers);
     }
 
     public boolean equals(Object object) {
@@ -310,7 +312,7 @@ public class CreateTable extends Expr {
     }
 
     public int hashCode() {
-      return Objects.hashCode(columns, specifiers);
+      return Objects.hashCode(Objects.hashCode(columns), specifiers);
     }
 
     public boolean equals(Object object) {
@@ -343,7 +345,7 @@ public class CreateTable extends Expr {
     }
 
     public int hashCode() {
-      return Objects.hashCode(columns, isOmitValues);
+      return Objects.hashCode(Objects.hashCode(columns), isOmitValues);
     }
 
     public boolean equals(Object object) {

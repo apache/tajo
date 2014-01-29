@@ -51,7 +51,7 @@ public class Aggregation extends UnaryOperator {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(namedExprs, groups, getChild());
+    return Objects.hashCode(Objects.hashCode(namedExprs), Objects.hashCode(groups), getChild());
   }
 
   @Override
@@ -91,14 +91,14 @@ public class Aggregation extends UnaryOperator {
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(group_type, grouping_sets);
+      return Objects.hashCode(group_type, Objects.hashCode(grouping_sets));
     }
 
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof GroupElement) {
         GroupElement other = (GroupElement) obj;
-        return group_type.equals(other) &&
+        return group_type.equals(other.group_type) &&
             TUtil.checkEquals(grouping_sets, other.grouping_sets);
       }
 

@@ -65,7 +65,7 @@ public class FunctionExpr extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(signature, params);
+    return Objects.hashCode(signature, Objects.hashCode(params));
   }
 
   @Override
