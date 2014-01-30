@@ -56,35 +56,7 @@ public class CastEval extends EvalNode {
       return operandDatum;
     }
 
-    switch (target.getType()) {
-      case BOOLEAN:
-        return DatumFactory.createBool(operandDatum.asBool());
-      case CHAR:
-        return DatumFactory.createChar(operandDatum.asChar());
-      case INT1:
-      case INT2:
-        return DatumFactory.createInt2(operandDatum.asInt2());
-      case INT4:
-        return DatumFactory.createInt4(operandDatum.asInt4());
-      case INT8:
-        return DatumFactory.createInt8(operandDatum.asInt8());
-      case FLOAT4:
-        return DatumFactory.createFloat4(operandDatum.asFloat4());
-      case FLOAT8:
-        return DatumFactory.createFloat8(operandDatum.asFloat8());
-      case TEXT:
-        return DatumFactory.createText(operandDatum.asTextBytes());
-      case DATE:
-        return DatumFactory.createDate(operandDatum);
-      case TIME:
-        return DatumFactory.createTime(operandDatum);
-      case TIMESTAMP:
-        return DatumFactory.createTimestamp(operandDatum);
-      case BLOB:
-        return DatumFactory.createBlob(operandDatum.asByteArray());
-      default:
-      throw new InvalidCastException("Cannot cast " + operand.getValueType().getType() + " to " + target.getType());
-    }
+    return DatumFactory.cast(operandDatum, target);
   }
 
   public String toString() {

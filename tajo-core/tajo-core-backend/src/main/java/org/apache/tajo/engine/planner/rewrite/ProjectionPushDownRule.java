@@ -295,7 +295,7 @@ public class ProjectionPushDownRule extends
 
       if (context.targetListMgr.isResolved(referenceName)) {
         finalTargets.add(new Target(new FieldEval(target.getNamedColumn())));
-      } else if (LogicalPlanner.checkIfBeEvaluateAtThis(target.getEvalTree(), node)) {
+      } else if (LogicalPlanner.checkIfBeEvaluatedAtThis(target.getEvalTree(), node)) {
         finalTargets.add(target);
         context.targetListMgr.resolve(target);
         resolvingCount++;

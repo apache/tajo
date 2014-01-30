@@ -113,6 +113,18 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeftOuterJoinWithConstantExpr3() throws Exception {
+    // outer join with constant projections
+    //
+    // select a.c_custkey, 123::INT8 as const_val, b.min_name from customer a
+    // left outer join ( select c_custkey, min(c_name) as min_name from customer group by c_custkey) b
+    // on a.c_custkey = b.c_custkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testRightOuterJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

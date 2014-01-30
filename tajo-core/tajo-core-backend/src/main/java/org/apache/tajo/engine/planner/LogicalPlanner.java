@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -1423,29 +1422,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Util SECTION
   ===============================================================================================*/
 
-  public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode groupbyNode) {
+  public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
 
-    if (!groupbyNode.getInSchema().containsAll(columnRefs)) {
-      return false;
-    }
-
-    Set<String> tableIds = Sets.newHashSet();
-    // getting distinct table references
-    for (Column col : columnRefs) {
-      if (!tableIds.contains(col.getQualifier())) {
-        tableIds.add(col.getQualifier());
-      }
-    }
-
-    if (tableIds.size() > 1) {
+    if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }
 
     return true;
   }
 
-  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode joinNode,
+  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,
                                                  boolean isTopMostJoin) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
 
@@ -1453,7 +1440,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
-    if (!joinNode.getInSchema().containsAll(columnRefs)) {
+    if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }
 
@@ -1461,14 +1448,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (checkCaseWhenWithOuterJoin(block, evalNode, isTopMostJoin)) {
-      return true;
-    } else {
+    if (!checkIfCaseWhenWithOuterJoinBeEvaluated(block, evalNode, isTopMostJoin)) {
       return false;
     }
+
+    return true;
   }
 
-  private static boolean checkCaseWhenWithOuterJoin(QueryBlock block, EvalNode evalNode, boolean isTopMostJoin) {
+  private static boolean checkIfCaseWhenWithOuterJoinBeEvaluated(QueryBlock block, EvalNode evalNode,
+                                                                 boolean isTopMostJoin) {
     if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
       Collection<CaseWhenEval> caseWhenEvals = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
       if (caseWhenEvals.size() > 0 && !isTopMostJoin) {
@@ -1478,32 +1466,38 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return true;
   }
 
+  /**
+   * It checks if evalNode can be evaluated at this @{link RelationNode}.
+   */
   public static boolean checkIfBeEvaluatedAtRelation(QueryBlock block, EvalNode evalNode, RelationNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
 
+    // aggregation functions cannot be evaluated in scan node
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
       return false;
     }
 
-    if (node.getTableSchema().containsAll(columnRefs)) {
-      // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
-      if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-        Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
-        if (found.size() > 0) {
-          return false;
-        }
-      }
-      return true;
-    } else {
+    if (columnRefs.size() > 0 && !node.getTableSchema().containsAll(columnRefs)) {
       return false;
     }
+
+    // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
+    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
+      Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+      if (found.size() > 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  public static boolean checkIfBeEvaluateAtThis(EvalNode evalNode, LogicalNode node) {
+  public static boolean checkIfBeEvaluatedAtThis(EvalNode evalNode, LogicalNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
-    if (!node.getInSchema().containsAll(columnRefs)) {
+    if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }
+
     return true;
   }
 }

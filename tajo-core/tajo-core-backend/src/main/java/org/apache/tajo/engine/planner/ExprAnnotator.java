@@ -487,7 +487,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitCastExpr(Context ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
     EvalNode child = super.visitCastExpr(ctx, stack, expr);
-    return new CastEval(child, LogicalPlanner.convertDataType(expr.getTarget()));
+
+    if (child.getType() == EvalType.CONST) { // if it is a casting operation for a constant value
+      ConstEval constEval = (ConstEval) child; // it will be pre-computed and casted to a constant value
+      return new ConstEval(DatumFactory.cast(constEval.getValue(), LogicalPlanner.convertDataType(expr.getTarget())));
+    } else {
+      return new CastEval(child, LogicalPlanner.convertDataType(expr.getTarget()));
+    }
   }
 
   @Override
