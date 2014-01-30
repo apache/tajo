@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-569: Add max(TEXT) function. (hyunsik)
+
     TAJO-449: Implement extract() function. (Keuntae Park)
 
     TAJO-482: Implements listing functions and describing a specified
@@ -127,6 +129,8 @@ Release 0.8.0 - unreleased
 
     TAJO-564: Show execution block's progress in querydetail.jsp.
     (hyoungjunkim via hyunsik)
+
+    TAJO-569: Add max(TEXT) function. (hyunsik)
 
     TAJO-497: Rearrange reserved and non-reserved keywords. (sirpkt via hyunsik)
 

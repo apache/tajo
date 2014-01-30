@@ -44,6 +44,20 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   }
 
   @Test
+  public void testMaxString() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testMinString() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public void testCount() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
