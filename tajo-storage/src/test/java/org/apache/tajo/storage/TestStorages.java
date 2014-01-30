@@ -245,6 +245,7 @@ public class TestStorages {
         assertEquals(tuple.get(i), retrieved.get(i));
       }
     }
+    scanner.close();
   }
 
   @Test
@@ -308,6 +309,7 @@ public class TestStorages {
         assertEquals(tuple.get(i), retrieved.get(i));
       }
     }
+    scanner.close();
   }
 
   @Test
@@ -370,6 +372,47 @@ public class TestStorages {
       for (int i = 0; i < tuple.size(); i++) {
         assertEquals(tuple.get(i), retrieved.get(i));
       }
+    }
+    scanner.close();
+  }
+
+  @Test
+  public void testTime() throws IOException {
+    if (storeType == StoreType.CSV || storeType == StoreType.RAW) {
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.DATE);
+      schema.addColumn("col2", Type.TIME);
+      schema.addColumn("col3", Type.TIMESTAMP);
+
+      Options options = new Options();
+      TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+
+      Path tablePath = new Path(testDir, "testTime.data");
+      Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+      appender.init();
+
+      Tuple tuple = new VTuple(3);
+      tuple.put(new Datum[]{
+          DatumFactory.createDate("1980-04-01"),
+          DatumFactory.createTime("12:34:56"),
+          DatumFactory.createTimeStamp((int) System.currentTimeMillis() / 1000)
+      });
+      appender.addTuple(tuple);
+      appender.flush();
+      appender.close();
+
+      FileStatus status = fs.getFileStatus(tablePath);
+      FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+      scanner.init();
+
+      Tuple retrieved;
+      while ((retrieved = scanner.next()) != null) {
+        for (int i = 0; i < tuple.size(); i++) {
+          assertEquals(tuple.get(i), retrieved.get(i));
+        }
+      }
+      scanner.close();
     }
   }
 }

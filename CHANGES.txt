@@ -236,6 +236,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-506: RawFile cannot support DATE type. (jinho)
+
     TAJO-566: BIN/TAJO_DUMP makes wrong ddl script. (hyoungjunkim via hyunsik)
 
     TAJO-567: Expression projection bugs. (hyunsik)

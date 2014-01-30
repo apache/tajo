@@ -30,7 +30,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
-import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
@@ -212,10 +211,6 @@ public class RawFile {
             tuple.put(i, DatumFactory.createText(new String(strBytes2)));
             break;
 
-          case TIMESTAMP:
-            tuple.put(i, DatumFactory.createTimeStampFromMillis(buffer.getLong()));
-            break;
-
           case BLOB : {
             //byte [] rawBytes = getColumnBytes();
             int byteSize = buffer.getInt();
@@ -244,6 +239,25 @@ public class RawFile {
             tuple.put(i, DatumFactory.createInet4(ipv4Bytes));
             break;
 
+          case DATE: {
+            int val = buffer.getInt();
+            if (val < Integer.MIN_VALUE + 1) {
+              tuple.put(i, DatumFactory.createNullDatum());
+            } else {
+              tuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
+            }
+            break;
+          }
+          case TIME:
+          case TIMESTAMP: {
+            long val = buffer.getLong();
+            if (val < Long.MIN_VALUE + 1) {
+              tuple.put(i, DatumFactory.createNullDatum());
+            } else {
+              tuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
+            }
+            break;
+          }
           case NULL_TYPE:
             tuple.put(i, NullDatum.get());
             break;
@@ -442,10 +456,6 @@ public class RawFile {
             buffer.put(strBytes2);
             break;
 
-          case TIMESTAMP:
-            buffer.putLong(((TimestampDatum)t.get(i)).getMillis());
-            break;
-
           case BLOB : {
             byte [] rawBytes = t.get(i).asByteArray();
             if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
@@ -480,7 +490,13 @@ public class RawFile {
           case INET4 :
             buffer.put(t.get(i).asByteArray());
             break;
-
+          case DATE:
+            buffer.putInt(t.get(i).asInt4());
+            break;
+          case TIME:
+          case TIMESTAMP:
+            buffer.putLong(t.get(i).asInt8());
+            break;
           default:
             throw new IOException("Cannot support data type: " + columnTypes[i].getType());
         }

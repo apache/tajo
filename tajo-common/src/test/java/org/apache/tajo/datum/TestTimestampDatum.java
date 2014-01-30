@@ -48,10 +48,11 @@ public class TestTimestampDatum {
     d.asInt4();
 	}
 
-  @Test(expected = InvalidCastException.class)
+  @Test
 	public final void testAsInt8() {
     Datum d = DatumFactory.createTimeStamp(timestamp);
-    assertEquals(timestamp, d.asInt8());
+    long javaTime = timestamp * 1000l;
+    assertEquals(javaTime, d.asInt8());
 	}
 
   @Test(expected = InvalidCastException.class)

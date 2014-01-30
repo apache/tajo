@@ -123,6 +123,11 @@ public class TimestampDatum extends Datum {
     return dateTime.getWeekOfWeekyear();
   }
 
+  @Override
+  public long asInt8() {
+    return dateTime.getMillis();
+  }
+
   public String toString() {
     return asChars();
   }

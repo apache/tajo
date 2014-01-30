@@ -87,6 +87,13 @@ public abstract class RangePartitionAlgorithm {
       case TEXT:
         columnCard = new BigDecimal(end.asChars().charAt(0) - start.asChars().charAt(0));
         break;
+      case DATE:
+        columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+        break;
+      case TIME:
+      case TIMESTAMP:
+        columnCard = new BigDecimal(end.asInt8() - start.asInt8());
+        break;
       default:
         throw new UnsupportedOperationException(dataType + " is not supported yet");
     }

@@ -93,4 +93,14 @@ public class TestSortQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testSortWithDate() throws Exception {
+    //select col1, col2, l_comment from table1 order by col1, col2;
+    executeDDL("create_table_with_date_ddl.sql", "table1.tbl");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
