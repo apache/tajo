@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
@@ -75,7 +77,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (execPlan instanceof StoreTableExec
           || execPlan instanceof RangeShuffleFileWriteExec
           || execPlan instanceof HashShuffleFileWriteExec
-          || execPlan instanceof ColumnPartitionedTableStoreExec) {
+          || execPlan instanceof ColPartitionStoreExec) {
         return execPlan;
       } else if (context.getDataChannel() != null) {
         return buildOutputOperator(context, logicalPlan, execPlan);
@@ -677,13 +679,70 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     if (plan.getPartitionMethod() != null) {
       switch (plan.getPartitionMethod().getPartitionType()) {
       case COLUMN:
-        return new ColumnPartitionedTableStoreExec(ctx, plan, subOp);
+        return createColumnPartitionStorePlan(ctx, plan, subOp);
       default:
         throw new IllegalStateException(plan.getPartitionMethod().getPartitionType() + " is not supported yet.");
       }
     } else {
       return new StoreTableExec(ctx, plan, subOp);
     }
+  }
+
+  private PhysicalExec createColumnPartitionStorePlan(TaskAttemptContext context,
+                                                      StoreTableNode storeTableNode,
+                                                      PhysicalExec child) throws IOException {
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, storeTableNode);
+    if (property != null) {
+      ColumnPartitionAlgorithm algorithm = property.getColumnPartition().getAlgorithm();
+      switch (algorithm) {
+      case HASH_PARTITION:
+        return createHashColumnPartitionStorePlan(context, storeTableNode, child);
+      case SORT_PARTITION: // default algorithm
+      default:
+        return createSortBasedColumnPartitionStorePlan(context, storeTableNode, child);
+      }
+    } else { // default algorithm is sorted-based column partition
+      return createSortBasedColumnPartitionStorePlan(context, storeTableNode, child);
+    }
+  }
+
+  private PhysicalExec createHashColumnPartitionStorePlan(TaskAttemptContext context,
+                                                          StoreTableNode storeTableNode,
+                                                          PhysicalExec child) throws IOException {
+    LOG.info("The planner chooses [Hash-based Column Partitioned Store] algorithm");
+    return new HashBasedColPartitionStoreExec(context, storeTableNode, child);
+  }
+
+  private PhysicalExec createSortBasedColumnPartitionStorePlan(TaskAttemptContext context,
+                                                               StoreTableNode storeTableNode,
+                                                               PhysicalExec child) throws IOException {
+
+    Column[] partitionKeyColumns = storeTableNode.getPartitionMethod().getExpressionSchema().toArray();
+    SortSpec[] sortSpecs = new SortSpec[partitionKeyColumns.length];
+
+    if (storeTableNode.getType() == NodeType.INSERT) {
+      InsertNode insertNode = (InsertNode) storeTableNode;
+      for (int i = 0; i < partitionKeyColumns.length; i++) {
+        for (Column column : partitionKeyColumns) {
+          int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
+          sortSpecs[i++] = new SortSpec(insertNode.getProjectedSchema().getColumn(id), true, false);
+        }
+      }
+    } else {
+      for (int i = 0; i < partitionKeyColumns.length; i++) {
+        sortSpecs[i] = new SortSpec(partitionKeyColumns[i], true, false);
+      }
+    }
+
+    SortNode sortNode = new SortNode(-1);
+    sortNode.setSortSpecs(sortSpecs);
+    sortNode.setInSchema(child.getSchema());
+    sortNode.setOutSchema(child.getSchema());
+
+    ExternalSortExec sortExec = new ExternalSortExec(context, sm, sortNode, child);
+    LOG.info("The planner chooses [Sort-based Column Partitioned Store] algorithm");
+    return new SortBasedColPartitionStoreExec(context, storeTableNode, sortExec);
   }
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode) throws IOException {
@@ -716,8 +775,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new HashAggregateExec(ctx, groupbyNode, subOp);
   }
 
-  private PhysicalExec createSortAggregation(TaskAttemptContext ctx, EnforceProperty property, GroupbyNode groupbyNode, PhysicalExec subOp)
-      throws IOException {
+  private PhysicalExec createSortAggregation(TaskAttemptContext ctx, EnforceProperty property, GroupbyNode groupbyNode,
+                                             PhysicalExec subOp) throws IOException {
 
     Column[] grpColumns = groupbyNode.getGroupingColumns();
     SortSpec[] sortSpecs = new SortSpec[grpColumns.length];
@@ -832,6 +891,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       type = EnforceType.GROUP_BY;
     } else if (node.getType() == NodeType.SORT) {
       type = EnforceType.SORT;
+    } else if (node instanceof StoreTableNode
+        && ((StoreTableNode)node).hasPartition()
+        && ((StoreTableNode)node).getPartitionMethod().getPartitionType() == PartitionType.COLUMN) {
+      type = EnforceType.COLUMN_PARTITION;
     } else {
       return null;
     }
@@ -845,6 +908,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         } else if (type == EnforceType.GROUP_BY && property.getGroupby().getPid() == node.getPID()) {
           found = property;
         } else if (type == EnforceType.SORT && property.getSort().getPid() == node.getPID()) {
+          found = property;
+        } else if (type == EnforceType.COLUMN_PARTITION && property.getColumnPartition().getPid() == node.getPID()) {
           found = property;
         }
       }

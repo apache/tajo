@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-574: Add a sort-based physical executor for column partition store.
+    (hyunsik)
+
     TAJO-569: Add max(TEXT) function. (hyunsik)
 
     TAJO-449: Implement extract() function. (Keuntae Park)

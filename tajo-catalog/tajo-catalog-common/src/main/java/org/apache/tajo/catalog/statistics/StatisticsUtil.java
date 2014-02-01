@@ -42,6 +42,49 @@ public class StatisticsUtil {
     return aggregated;
   }
 
+  /**
+   * Aggregate one table stats and accumulated stats, and then store it to the result stats.
+   *
+   * @param result It stores the aggregated stats
+   * @param stats The TableStats to be aggregated
+   */
+  public static void aggregateTableStat(TableStats result, TableStats stats) {
+
+    if (stats.getColumnStats().size() > 0) {
+      if (result.getColumnStats().size() == 0) {
+        for (int i = 0; i < stats.getColumnStats().size(); i++) {
+          result.addColumnStat(stats.getColumnStats().get(i));
+        }
+      } else {
+        // aggregate column stats for each table
+        for (int i = 0; i < stats.getColumnStats().size(); i++) {
+          ColumnStats cs = stats.getColumnStats().get(i);
+          ColumnStats agg = result.getColumnStats().get(i);
+          if (cs == null) {
+            LOG.warn("ERROR: One of column stats is NULL (expected column: " + agg.getColumn() + ")");
+            continue;
+          }
+
+          agg.setNumDistVals(agg.getNumDistValues() + cs.getNumDistValues());
+          agg.setNumNulls(agg.getNumNulls() + cs.getNumNulls());
+          if (!cs.minIsNotSet() && (agg.minIsNotSet() ||
+              agg.getMinValue().compareTo(cs.getMinValue()) > 0)) {
+            agg.setMinValue(cs.getMinValue());
+          }
+          if (!cs.maxIsNotSet() && (agg.maxIsNotSet() ||
+              agg.getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
+            agg.setMaxValue(stats.getColumnStats().get(i).getMaxValue());
+          }
+        }
+      }
+    }
+
+    result.setNumRows(result.getNumRows() + stats.getNumRows());
+    result.setNumBytes(result.getNumBytes() + stats.getNumBytes());
+    result.setNumBlocks(result.getNumBlocks() + stats.getNumBlocks());
+    result.setNumShuffleOutputs(result.getNumShuffleOutputs() + stats.getNumShuffleOutputs());
+  }
+
   public static TableStats aggregateTableStat(List<TableStats> tableStatses) {
     TableStats aggregated = new TableStats();
 

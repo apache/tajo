@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce.SortAlgorithm;
 import static org.junit.Assert.*;
@@ -350,8 +351,9 @@ public class TestPhysicalPlanner {
   }
 
   private String[] CreateTableAsStmts = {
-      "create table grouped1 as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
-      "create table grouped2 using rcfile as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
+      "create table grouped1 as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 0
+      "create table grouped2 using rcfile as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 1
+      "create table grouped3 partition by column (dept text,  class text) as select sum(score), max(score), min(score), deptName, class from score group by deptName, class", // 2
   };
 
   @Test
@@ -433,6 +435,70 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(10, ctx.getResultStats().getNumRows().longValue());
+  }
+
+  @Test
+  public final void testEnforceForDefaultColumnPartitionStorePlan() throws IOException, PlanningException {
+    FileFragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(new Path(workDir, "grouped3"));
+
+    Expr context = analyzer.parse(CreateTableAsStmts[2]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = optimizer.optimize(plan);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    assertTrue(exec instanceof SortBasedColPartitionStoreExec);
+  }
+
+  @Test
+  public final void testEnforceForHashBasedColumnPartitionStorePlan() throws IOException, PlanningException {
+
+    Expr context = analyzer.parse(CreateTableAsStmts[2]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalRootNode rootNode = (LogicalRootNode) optimizer.optimize(plan);
+    CreateTableNode createTableNode = rootNode.getChild();
+    Enforcer enforcer = new Enforcer();
+    enforcer.enforceColumnPartitionAlgorithm(createTableNode.getPID(), ColumnPartitionAlgorithm.HASH_PARTITION);
+
+    FileFragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(enforcer);
+    ctx.setOutputPath(new Path(workDir, "grouped4"));
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    assertTrue(exec instanceof HashBasedColPartitionStoreExec);
+  }
+
+  @Test
+  public final void testEnforceForSortBasedColumnPartitionStorePlan() throws IOException, PlanningException {
+
+    Expr context = analyzer.parse(CreateTableAsStmts[2]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalRootNode rootNode = (LogicalRootNode) optimizer.optimize(plan);
+    CreateTableNode createTableNode = rootNode.getChild();
+    Enforcer enforcer = new Enforcer();
+    enforcer.enforceColumnPartitionAlgorithm(createTableNode.getPID(), ColumnPartitionAlgorithm.SORT_PARTITION);
+
+    FileFragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(enforcer);
+    ctx.setOutputPath(new Path(workDir, "grouped5"));
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    assertTrue(exec instanceof SortBasedColPartitionStoreExec);
   }
 
   @Test

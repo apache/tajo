@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
 
@@ -146,6 +147,17 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
 
     builder.setType(EnforceType.BROADCAST);
     builder.setBroadcast(enforce);
+    TUtil.putToNestedList(properties, builder.getType(), builder.build());
+  }
+
+  public void enforceColumnPartitionAlgorithm(int pid, ColumnPartitionAlgorithm algorithm) {
+    EnforceProperty.Builder builder = newProperty();
+    ColumnPartitionEnforcer.Builder enforce = ColumnPartitionEnforcer.newBuilder();
+    enforce.setPid(pid);
+    enforce.setAlgorithm(algorithm);
+
+    builder.setType(EnforceType.COLUMN_PARTITION);
+    builder.setColumnPartition(enforce);
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 

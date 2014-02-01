@@ -170,6 +170,7 @@ message EnforceProperty {
     JOIN = 3;
     SORT = 4;
     BROADCAST = 5;
+    COLUMN_PARTITION = 6;
   }
 
   // Identifies which field is filled in.
@@ -182,6 +183,7 @@ message EnforceProperty {
   optional JoinEnforce join = 5;
   optional SortEnforce sort = 6;
   optional BroadcastEnforce broadcast = 7;
+  optional ColumnPartitionEnforcer columnPartition = 8;
 }
 
 message SortedInputEnforce {
@@ -228,6 +230,16 @@ message SortEnforce {
 
 message BroadcastEnforce {
   required string tableName = 1;
+}
+
+message ColumnPartitionEnforcer {
+  enum ColumnPartitionAlgorithm {
+    HASH_PARTITION = 0;
+    SORT_PARTITION = 1;
+  }
+
+  required int32 pid = 1;
+  required ColumnPartitionAlgorithm algorithm = 2;
 }
 
 message EnforcerProto {

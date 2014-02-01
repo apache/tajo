@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- *
- */
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
@@ -26,19 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.planner.InsertNode;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -51,65 +41,18 @@ import java.util.Map;
 /**
  * This class is a physical operator to store at column partitioned table.
  */
-public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
-  private static Log LOG = LogFactory.getLog(ColumnPartitionedTableStoreExec.class);
+public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
+  private static Log LOG = LogFactory.getLog(HashBasedColPartitionStoreExec.class);
 
-  private final TableMeta meta;
-  private final StoreTableNode plan;
-  private Tuple tuple;
-  private Path storeTablePath;
   private final Map<String, Appender> appenderMap = new HashMap<String, Appender>();
-  private int[] partitionColumnIndices;
-  private String[] partitionColumnNames;
 
-  public ColumnPartitionedTableStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
+  public HashBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child);
-    this.plan = plan;
-
-    if (plan.getType() == NodeType.CREATE_TABLE) {
-      this.outSchema = ((CreateTableNode)plan).getTableSchema();
-    }
-
-    // set table meta
-    if (this.plan.hasOptions()) {
-      meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
-    } else {
-      meta = CatalogUtil.newTableMeta(plan.getStorageType());
-    }
-
-    // Find column index to name subpartition directory path
-    int partitionKeyNum = this.plan.getPartitionMethod().getExpressionSchema().getColumnNum();
-    partitionColumnIndices = new int[partitionKeyNum];
-    partitionColumnNames = new String[partitionKeyNum];
-    for (int i = 0; i < partitionKeyNum; i++) {
-      Column column = this.plan.getPartitionMethod().getExpressionSchema().getColumn(i);
-      partitionColumnNames[i] = column.getColumnName();
-
-      if (this.plan.getType() == NodeType.INSERT) {
-        InsertNode insertNode = ((InsertNode)plan);
-        int idx = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
-        partitionColumnIndices[i] = idx;
-      } else if (this.plan.getType() == NodeType.CREATE_TABLE) {
-        CreateTableNode createTable = (CreateTableNode) plan;
-        int idx = createTable.getLogicalSchema().getColumnId(column.getQualifiedName());
-        partitionColumnIndices[i] = idx;
-      } else {
-        // We can get partition column from a logical schema.
-        // Don't use output schema because it is rewritten.
-        partitionColumnIndices[i] = plan.getOutSchema().getColumnId(column.getQualifiedName());
-      }
-    }
+    super(context, plan, child);
   }
 
   public void init() throws IOException {
     super.init();
-
-    storeTablePath = context.getOutputPath();
-    FileSystem fs = storeTablePath.getFileSystem(context.getConf());
-    if (!fs.exists(storeTablePath.getParent())) {
-      fs.mkdirs(storeTablePath.getParent());
-    }
   }
 
   private Appender getAppender(String partition) throws IOException {
@@ -142,25 +85,22 @@ public class ColumnPartitionedTableStoreExec extends UnaryPhysicalExec {
     return appender;
   }
 
-  private Path getDataFile(String partition) {
-    return StorageUtil.concatPath(storeTablePath.getParent(), partition, storeTablePath.getName());
-  }
-
   /* (non-Javadoc)
    * @see PhysicalExec#next()
    */
   @Override
   public Tuple next() throws IOException {
+    Tuple tuple;
     StringBuilder sb = new StringBuilder();
     while((tuple = child.next()) != null) {
       // set subpartition directory name
       sb.delete(0, sb.length());
-      if (partitionColumnIndices != null) {
-        for(int i = 0; i < partitionColumnIndices.length; i++) {
-          Datum datum = tuple.get(partitionColumnIndices[i]);
+      if (keyIds != null) {
+        for(int i = 0; i < keyIds.length; i++) {
+          Datum datum = tuple.get(keyIds[i]);
           if(i > 0)
             sb.append("/");
-          sb.append(partitionColumnNames[i]).append("=");
+          sb.append(keyNames[i]).append("=");
           sb.append(datum.asChars());
         }
       }

@@ -31,14 +31,14 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitBNLJoin(context, (BNLJoinExec) exec, stack);
     } else if (exec instanceof BSTIndexScanExec) {
       return visitBSTIndexScan(context, (BSTIndexScanExec) exec, stack);
-    } else if (exec instanceof ColumnPartitionedTableStoreExec) {
-      return visitColumnPartitionedTableStore(context, (ColumnPartitionedTableStoreExec) exec, stack);
     } else if (exec instanceof EvalExprExec) {
       return visitEvalExpr(context, (EvalExprExec) exec, stack);
     } else if (exec instanceof ExternalSortExec) {
       return visitExternalSort(context, (ExternalSortExec) exec, stack);
     } else if (exec instanceof HashAggregateExec) {
       return visitHashAggregate(context, (HashAggregateExec) exec, stack);
+    } else if (exec instanceof HashBasedColPartitionStoreExec) {
+      return visitHashBasedColPartitionStore(context, (HashBasedColPartitionStoreExec) exec, stack);
     } else if (exec instanceof HashFullOuterJoinExec) {
       return visitHashFullOuterJoin(context, (HashFullOuterJoinExec) exec, stack);
     } else if (exec instanceof HashJoinExec) {
@@ -77,6 +77,8 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitSeqScan(context, (SeqScanExec) exec, stack);
     } else if (exec instanceof SortAggregateExec) {
       return visitSortAggregate(context, (SortAggregateExec) exec, stack);
+    } else if (exec instanceof SortBasedColPartitionStoreExec) {
+      return visitSortBasedColPartitionStore(context, (SortBasedColPartitionStoreExec) exec, stack);
     } else if (exec instanceof StoreTableExec) {
       return visitStoreTable(context, (StoreTableExec) exec, stack);
     }
@@ -84,7 +86,7 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
     throw new PhysicalPlanningException("Unsupported Type: " + exec.getClass().getSimpleName());
   }
 
-  private RESULT visitUnaryExecutor(UnaryPhysicalExec exec, Stack<PhysicalExec> stack, CONTEXT context)
+  private RESULT visitUnaryExecutor(CONTEXT context, UnaryPhysicalExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
     stack.push(exec);
     RESULT r = visit(exec.getChild(), stack, context);
@@ -92,7 +94,7 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
     return r;
   }
 
-  private RESULT visitBinaryExecutor(BinaryPhysicalExec exec, Stack<PhysicalExec> stack, CONTEXT context)
+  private RESULT visitBinaryExecutor(CONTEXT context, BinaryPhysicalExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
     stack.push(exec);
     RESULT r = visit(exec.getLeftChild(), stack, context);
@@ -104,17 +106,12 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   @Override
   public RESULT visitBNLJoin(CONTEXT context, BNLJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitBSTIndexScan(CONTEXT context, BSTIndexScanExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
-  }
-
-  @Override
-  public RESULT visitColumnPartitionedTableStore(CONTEXT context, ColumnPartitionedTableStoreExec exec, Stack<PhysicalExec> stack) throws PhysicalPlanningException {
     return null;
   }
 
@@ -127,115 +124,121 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   @Override
   public RESULT visitExternalSort(CONTEXT context, ExternalSortExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashAggregate(CONTEXT context, HashAggregateExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
+  }
+
+  @Override
+  public RESULT visitHashBasedColPartitionStore(CONTEXT context, HashBasedColPartitionStoreExec exec,
+                                                Stack<PhysicalExec> stack) throws PhysicalPlanningException {
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashFullOuterJoin(CONTEXT context, HashFullOuterJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashJoin(CONTEXT context, HashJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitBinaryExecutor(exec, stack, context);
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashLeftAntiJoin(CONTEXT context, HashLeftAntiJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitBinaryExecutor(exec, stack, context);
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashLeftOuterJoin(CONTEXT context, HashLeftOuterJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitLeftHashSemiJoin(CONTEXT context, HashLeftSemiJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitBinaryExecutor(exec, stack, context);
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHashShuffleFileWrite(CONTEXT context, HashShuffleFileWriteExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitHaving(CONTEXT context, HavingExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitLimit(CONTEXT context, LimitExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitUnaryExecutor(exec, stack, context);
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitMemSort(CONTEXT context, MemSortExec exec, Stack<PhysicalExec> stack) throws
       PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitMergeFullOuterJoin(CONTEXT context, MergeFullOuterJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitMergeJoin(CONTEXT context, MergeJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitBinaryExecutor(exec, stack, context);
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitNLJoin(CONTEXT context, NLJoinExec exec, Stack<PhysicalExec> stack) throws
       PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitNLLeftOuterJoin(CONTEXT context, NLLeftOuterJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitProjection(CONTEXT context, ProjectionExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitUnaryExecutor(exec, stack, context);
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitRangeShuffleFileWrite(CONTEXT context, RangeShuffleFileWriteExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitRightOuterMergeJoin(CONTEXT context, RightOuterMergeJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return null;
+    return visitBinaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitSelection(CONTEXT context, SelectionExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitUnaryExecutor(exec, stack, context);
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
@@ -246,11 +249,17 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   @Override
   public RESULT visitSortAggregate(CONTEXT context, SortAggregateExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitUnaryExecutor(exec, stack, context);
+    return visitUnaryExecutor(context, exec, stack);
+  }
+
+  @Override
+  public RESULT visitSortBasedColPartitionStore(CONTEXT context, SortBasedColPartitionStoreExec exec,
+                                                Stack<PhysicalExec> stack) throws PhysicalPlanningException {
+    return visitUnaryExecutor(context, exec, stack);
   }
 
   @Override
   public RESULT visitStoreTable(CONTEXT context, StoreTableExec exec, Stack<PhysicalExec> stack) throws PhysicalPlanningException {
-    return null;
+    return visitUnaryExecutor(context, exec, stack);
   }
 }

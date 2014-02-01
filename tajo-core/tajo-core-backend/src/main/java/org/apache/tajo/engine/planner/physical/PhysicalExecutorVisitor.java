@@ -28,9 +28,6 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
   RESULT visitBSTIndexScan(CONTEXT context, BSTIndexScanExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
-  RESULT visitColumnPartitionedTableStore(CONTEXT context, ColumnPartitionedTableStoreExec exec,
-                                          Stack<PhysicalExec> stack) throws PhysicalPlanningException;
-
   RESULT visitEvalExpr(CONTEXT context, EvalExprExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
@@ -38,6 +35,10 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
       throws PhysicalPlanningException;
 
   RESULT visitHashAggregate(CONTEXT context, HashAggregateExec exec, Stack<PhysicalExec> stack)
+      throws PhysicalPlanningException;
+
+  RESULT visitHashBasedColPartitionStore(CONTEXT context, HashBasedColPartitionStoreExec exec,
+                                         Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
   RESULT visitHashFullOuterJoin(CONTEXT context, HashFullOuterJoinExec exec, Stack<PhysicalExec> stack)
@@ -95,6 +96,10 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
       throws PhysicalPlanningException;
 
   RESULT visitSortAggregate(CONTEXT context, SortAggregateExec exec, Stack<PhysicalExec> stack)
+      throws PhysicalPlanningException;
+
+  RESULT visitSortBasedColPartitionStore(CONTEXT context, SortBasedColPartitionStoreExec exec,
+                                         Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
   RESULT visitStoreTable(CONTEXT context, StoreTableExec exec, Stack<PhysicalExec> stack)
