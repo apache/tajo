@@ -254,7 +254,7 @@ public abstract class AbstractStorageManager {
   }
 
   public static FileFragment[] splitNG(Configuration conf, String tableName, TableMeta meta,
-                                   Path tablePath, long size)
+                                       Path tablePath, long size)
       throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
 
@@ -409,16 +409,14 @@ public abstract class AbstractStorageManager {
     return scanner.isSplittable();
   }
 
-  @Deprecated
+
   protected long computeSplitSize(long blockSize, long minSize,
                                   long maxSize) {
     return Math.max(minSize, Math.min(maxSize, blockSize));
   }
 
-  @Deprecated
   private static final double SPLIT_SLOP = 1.1;   // 10% slop
 
-  @Deprecated
   protected int getBlockIndex(BlockLocation[] blkLocations,
                               long offset) {
     for (int i = 0; i < blkLocations.length; i++) {
@@ -443,14 +441,19 @@ public abstract class AbstractStorageManager {
     return new FileFragment(fragmentId, file, start, length);
   }
 
+  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
+                                   String[] hosts) {
+    return new FileFragment(fragmentId, file, start, length, hosts);
+  }
+
   protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, BlockLocation blockLocation,
-                               int[] diskIds) throws IOException {
+                                   int[] diskIds) throws IOException {
     return new FileFragment(fragmentId, file, blockLocation, diskIds);
   }
 
   // for Non Splittable. eg, compressed gzip TextFile
   protected FileFragment makeNonSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
-                                  BlockLocation[] blkLocations) throws IOException {
+                                      BlockLocation[] blkLocations) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<String, Integer>();
     for (BlockLocation blockLocation : blkLocations) {
@@ -486,10 +489,8 @@ public abstract class AbstractStorageManager {
    *
    * @return the maximum number of bytes a split can include
    */
-  @Deprecated
-  public static long getMaxSplitSize() {
-    // TODO - to be configurable
-    return 536870912L;
+  public long getMaxSplitSize() {
+    return conf.getLongVar(TajoConf.ConfVars.MAXIMUM_SPLIT_SIZE);
   }
 
   /**
@@ -497,10 +498,8 @@ public abstract class AbstractStorageManager {
    *
    * @return the minimum number of bytes that can be in a split
    */
-  @Deprecated
-  public static long getMinSplitSize() {
-    // TODO - to be configurable
-    return 67108864L;
+  public long getMinSplitSize() {
+    return conf.getLongVar(TajoConf.ConfVars.MINIMUM_SPLIT_SIZE);
   }
 
   /**
@@ -557,6 +556,9 @@ public abstract class AbstractStorageManager {
   public List<FileFragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
     // generate splits'
 
+    long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize());
+    long maxSize = getMaxSplitSize();
+
     List<FileFragment> splits = new ArrayList<FileFragment>();
     FileSystem fs = inputPath.getFileSystem(conf);
     List<FileStatus> files;
@@ -594,8 +596,21 @@ public abstract class AbstractStorageManager {
 
         } else {
           if (splittable) {
-            for (BlockLocation blockLocation : blkLocations) {
-              splits.add(makeSplit(tableName, meta, path, blockLocation, null));
+            // for s3
+            long blockSize = file.getBlockSize();
+            long splitSize = computeSplitSize(blockSize, minSize, maxSize);
+
+            long bytesRemaining = length;
+            while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
+              int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+              splits.add(makeSplit(tableName, meta, path, length-bytesRemaining, splitSize,
+                  blkLocations[blkIndex].getHosts()));
+              bytesRemaining -= splitSize;
+            }
+            if (bytesRemaining != 0) {
+              int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+              splits.add(makeSplit(tableName, meta, path, length-bytesRemaining, bytesRemaining,
+                  blkLocations[blkIndex].getHosts()));
             }
           } else { // Non splittable
             splits.add(makeNonSplit(tableName, meta, path, 0, length, blkLocations));
@@ -619,7 +634,7 @@ public abstract class AbstractStorageManager {
 
     @Override
     public String getMessage(){
-       StringBuffer sb = new StringBuffer();
+      StringBuffer sb = new StringBuffer();
       int messageLimit = Math.min(errors.size(), 10);
       for (int i = 0; i < messageLimit ; i ++) {
         sb.append(errors.get(i).getMessage()).append("\n");

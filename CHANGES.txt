@@ -243,6 +243,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-577: Support S3FileSystem split. (Yongjun Park via jihoon)
+
     TAJO-568: Union query with the same alias names cause NPE. (hyunsik)
 
     TAJO-570: InvalidOperationException in outer join with constant values.

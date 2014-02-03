@@ -141,6 +141,8 @@ public class TajoConf extends Configuration {
     // Storage Configuration
     //////////////////////////////////
     RAWFILE_SYNC_INTERVAL("rawfile.sync.interval", null),
+    MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 536870912),
+    MAXIMUM_SPLIT_SIZE("tajo.max.split.size", (long) 67108864),
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
 
@@ -416,7 +418,7 @@ public class TajoConf extends Configuration {
   public static Path getTajoRootDir(TajoConf conf) {
     String rootPath = conf.getVar(ConfVars.ROOT_DIR);
     Preconditions.checkNotNull(rootPath,
-          ConfVars.ROOT_DIR.varname + " must be set before a Tajo Cluster starts up");
+        ConfVars.ROOT_DIR.varname + " must be set before a Tajo Cluster starts up");
     return new Path(rootPath);
   }
 

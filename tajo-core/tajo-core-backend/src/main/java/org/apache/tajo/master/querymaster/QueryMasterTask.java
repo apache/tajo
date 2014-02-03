@@ -355,7 +355,7 @@ public class QueryMasterTask extends CompositeService {
       FileStatus fsStatus = defaultFS.getFileStatus(stagingDir);
       String owner = fsStatus.getOwner();
 
-      if (!(owner.equals(currentUser) || owner.equals(realUser))) {
+      if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
         throw new IOException("The ownership on the user's query " +
             "directory " + stagingDir + " is not as expected. " +
             "It is owned by " + owner + ". The directory must " +

@@ -37,6 +37,26 @@
     <description></description>
   </property>
 
+  <property>
+    <name>fs.block.size</name>
+    <value>10</value>
+  </property>
+
+  <property>
+    <name>fs.local.block.size</name>
+    <value>10</value>
+  </property>
+
+  <property>
+    <name>tajo.min.split.size</name>
+    <value>10</value>
+  </property>
+
+  <property>
+    <name>fs.s3.impl</name>
+    <value>org.apache.tajo.storage.s3.SmallBlockS3FileSystem</value>
+  </property>
+  
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
