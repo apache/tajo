@@ -250,7 +250,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     PreprocessContext newContext;
     // Note: TableSubQuery always has a table name.
     // SELECT .... FROM (SELECT ...) TB_NAME <-
-    newContext = new PreprocessContext(ctx, ctx.plan.newAndGetBlock(expr.getName()));
+    newContext = new PreprocessContext(ctx, ctx.plan.newQueryBlock());
     LogicalNode child = super.visitTableSubQuery(newContext, stack, expr);
 
     // a table subquery should be dealt as a relation.

@@ -85,8 +85,8 @@ public class TestLogicalPlan {
   public final void testQueryBlockGraph() {
     LogicalPlan plan = new LogicalPlan(planner);
     LogicalPlan.QueryBlock root = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
-    LogicalPlan.QueryBlock new1 = plan.newAndGetBlock("@new1");
-    LogicalPlan.QueryBlock new2 = plan.newAndGetBlock("@new2");
+    LogicalPlan.QueryBlock new1 = plan.newQueryBlock();
+    LogicalPlan.QueryBlock new2 = plan.newQueryBlock();
 
     plan.getQueryBlockGraph().addEdge(new1.getName(), root.getName(),
         new LogicalPlan.BlockEdge(new1, root, BlockType.TableSubQuery));
