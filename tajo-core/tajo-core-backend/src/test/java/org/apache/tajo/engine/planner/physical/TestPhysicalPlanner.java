@@ -341,9 +341,9 @@ public class TestPhysicalPlanner {
     exec.rescan();
     i = 0;
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt4()); // sum
-      assertEquals(3, tuple.getInt(3).asInt4()); // max
-      assertEquals(1, tuple.getInt(4).asInt4()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     exec.close();
@@ -806,7 +806,7 @@ public class TestPhysicalPlanner {
         "name_1", "name_2", "name_3", "name_4", "name_5");
     exec.init();
     while ((tuple = exec.next()) != null) {
-      assertTrue(expected.contains(tuple.getString(0).asChars()));
+      assertTrue(expected.contains(tuple.get(0).asChars()));
       cnt++;
     }
     exec.close();

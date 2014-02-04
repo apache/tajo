@@ -16,11 +16,11 @@ package org.apache.tajo.jdbc; /**
  * limitations under the License.
  */
 
-import org.apache.tajo.datum.*;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,7 +76,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public Datum get(int fieldId) {
-    return getText(fieldId);
+    return values.get(fieldId);
   }
 
   @Override
@@ -90,99 +90,53 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
-  public BooleanDatum getBoolean(int fieldId) {
-    throw new UnsupportedException("getBoolean");
+  public boolean getBool(int fieldId) {
+    throw new UnsupportedException("getBool");
   }
 
   @Override
-  public BitDatum getByte(int fieldId) {
+  public byte getByte(int fieldId) {
     throw new UnsupportedException("getByte");
   }
 
   @Override
-  public CharDatum getChar(int fieldId) {
-    throw new UnsupportedException("getBoolean");
+  public char getChar(int fieldId) {
+    throw new UnsupportedException("getChar");
   }
 
   @Override
-  public BlobDatum getBytes(int fieldId) {
+  public byte [] getBytes(int fieldId) {
     throw new UnsupportedException("BlobDatum");
   }
 
   @Override
-  public Int2Datum getShort(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new Int2Datum((short)Integer.parseInt(values.get(fieldId).toString()));
+  public short getInt2(int fieldId) {
+    return (short)Integer.parseInt(values.get(fieldId).toString());
   }
 
   @Override
-  public Int4Datum getInt(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new Int4Datum(Integer.parseInt(values.get(fieldId).toString()));
+  public int getInt4(int fieldId) {
+    return Integer.parseInt(values.get(fieldId).toString());
   }
 
   @Override
-  public Int8Datum getLong(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new Int8Datum(Long.parseLong(values.get(fieldId).toString()));
+  public long getInt8(int fieldId) {
+    return Long.parseLong(values.get(fieldId).toString());
   }
 
   @Override
-  public Float4Datum getFloat(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new Float4Datum(Float.parseFloat(values.get(fieldId).toString()));
+  public float getFloat4(int fieldId) {
+    return Float.parseFloat(values.get(fieldId).toString());
   }
 
   @Override
-  public Float8Datum getDouble(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new Float8Datum(Float.parseFloat(values.get(fieldId).toString()));
+  public double getFloat8(int fieldId) {
+    return Float.parseFloat(values.get(fieldId).toString());
   }
 
   @Override
-  public Inet4Datum getIPv4(int fieldId) {
-    throw new UnsupportedException("getIPv4");
-  }
-
-  @Override
-  public byte[] getIPv4Bytes(int fieldId) {
-    throw new UnsupportedException("getIPv4Bytes");
-  }
-
-  @Override
-  public InetAddress getIPv6(int fieldId) {
-    throw new UnsupportedException("getIPv6");
-  }
-
-  @Override
-  public byte[] getIPv6Bytes(int fieldId) {
-    throw new UnsupportedException("getIPv6Bytes");
-  }
-
-  @Override
-  public TextDatum getString(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new TextDatum(values.get(fieldId).toString());
-  }
-
-  @Override
-  public TextDatum getText(int fieldId) {
-    if(isNull(fieldId)) {
-      return null;
-    }
-    return new TextDatum(values.get(fieldId).toString());
+  public String getText(int fieldId) {
+    return values.get(fieldId).toString();
   }
 
   @Override

@@ -127,9 +127,9 @@ public class TestLazyTuple {
     assertTrue(t1.contains(0));
     assertTrue(t1.contains(1));
 
-    assertEquals(t1.getString(0).toString(), "str");
-    assertEquals(t1.getInt(1).asInt4(), 2);
-    assertTrue(t1.getFloat(11).asFloat4() == 0.76f);
+    assertEquals(t1.getText(0), "str");
+    assertEquals(t1.get(1).asInt4(), 2);
+    assertTrue(t1.get(11).asFloat4() == 0.76f);
   }
 
   @Test

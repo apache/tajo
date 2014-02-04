@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- *
- */
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;

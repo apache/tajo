@@ -56,10 +56,8 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-
-  private final int numTuple = 1000000;
+  private final int numTuple = 100000;
   private Random rnd = new Random(System.currentTimeMillis());
-
 
   private TableDesc employee;
 
@@ -69,12 +67,14 @@ public class TestExternalSortExec {
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     Schema schema = new Schema();
     schema.addColumn("managerId", Type.INT4);
     schema.addColumn("empId", Type.INT4);
     schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("text_field", Type.TEXT);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
@@ -83,15 +83,19 @@ public class TestExternalSortExec {
     appender.init();
     Tuple tuple = new VTuple(schema.getColumnNum());
     for (int i = 0; i < numTuple; i++) {
-      tuple.put(new Datum[] { DatumFactory.createInt4(rnd.nextInt(50)),
+      tuple.put(new Datum[] {
+          DatumFactory.createInt4(rnd.nextInt(50)),
           DatumFactory.createInt4(rnd.nextInt(100)),
-          DatumFactory.createText("dept_" + 123) });
+          DatumFactory.createText("dept_" + i),
+          DatumFactory.createText("f_" + i)
+      });
       appender.addTuple(tuple);
     }
     appender.flush();
     appender.close();
 
-    System.out.println("Total Rows: " + appender.getStats().getNumRows());
+    System.out.println(appender.getStats().getNumRows() + " rows (" + (appender.getStats().getNumBytes() / 1048576) +
+        " MB)");
 
     employee = new TableDesc("employee", schema, employeeMeta, employeePath);
     catalog.addTable(employee);
@@ -101,16 +105,17 @@ public class TestExternalSortExec {
 
   @After
   public void tearDown() throws Exception {
+    CommonTestingUtil.cleanupTestDir(TEST_PATH);
     util.shutdownCatalogCluster();
   }
 
   String[] QUERIES = {
-      "select managerId, empId, deptName from employee order by managerId, empId desc"
+      "select managerId, empId from employee order by managerId, empId"
   };
 
   @Test
   public final void testNext() throws IOException, PlanningException {
-    FileFragment[] frags = sm.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    FileFragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
@@ -120,15 +125,15 @@ public class TestExternalSortExec {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     
     ProjectionExec proj = (ProjectionExec) exec;
 
     // TODO - should be planed with user's optimization hint
     if (!(proj.getChild() instanceof ExternalSortExec)) {
-      UnaryPhysicalExec sortExec = (UnaryPhysicalExec) proj.getChild();
-      SeqScanExec scan = (SeqScanExec)sortExec.getChild();
+      UnaryPhysicalExec sortExec = proj.getChild();
+      SeqScanExec scan = sortExec.getChild();
 
       ExternalSortExec extSort = new ExternalSortExec(ctx, sm,
           ((MemSortExec)sortExec).getPlan(), scan);
@@ -136,22 +141,26 @@ public class TestExternalSortExec {
     }
 
     Tuple tuple;
-    Datum preVal = null;
-    Datum curVal;
+    Tuple preVal = null;
+    Tuple curVal;
     int cnt = 0;
     exec.init();
     long start = System.currentTimeMillis();
+    TupleComparator comparator = new TupleComparator(proj.getSchema(),
+        new SortSpec[]{
+            new SortSpec(new Column("managerId", Type.INT4)),
+            new SortSpec(new Column("empId", Type.INT4))
+        });
 
     while ((tuple = exec.next()) != null) {
-      curVal = tuple.get(0);
+      curVal = tuple;
       if (preVal != null) {
-        assertTrue(preVal.lessThanEqual(curVal).asBool());
+        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
       preVal = curVal;
       cnt++;
     }
     long end = System.currentTimeMillis();
-    exec.close();
     assertEquals(numTuple, cnt);
 
     // for rescan test
@@ -159,9 +168,9 @@ public class TestExternalSortExec {
     exec.rescan();
     cnt = 0;
     while ((tuple = exec.next()) != null) {
-      curVal = tuple.get(0);
+      curVal = tuple;
       if (preVal != null) {
-        assertTrue(preVal.lessThanEqual(curVal).asBool());
+        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
       preVal = curVal;
       cnt++;

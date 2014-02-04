@@ -115,7 +115,7 @@ public class ExprTestBase {
       vtuple = new VTuple(inputSchema.getColumnNum());
       for (int i = 0; i < inputSchema.getColumnNum(); i++) {
         // If null value occurs, null datum is manually inserted to an input tuple.
-        if (lazyTuple.get(i) instanceof TextDatum && lazyTuple.getText(i).asChars().equals("")) {
+        if (lazyTuple.get(i) instanceof TextDatum && lazyTuple.get(i).asChars().equals("")) {
           vtuple.put(i, NullDatum.get());
         } else {
           vtuple.put(i, lazyTuple.get(i));

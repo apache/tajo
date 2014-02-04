@@ -37,12 +37,18 @@ public class CommonTestingUtil {
   public static Path getTestDir(String dir) throws IOException {
     Path path = new Path(dir);
     FileSystem fs = FileSystem.getLocal(new Configuration());
-    if(fs.exists(path))
-      fs.delete(path, true);
-
+    cleanupTestDir(dir);
     fs.mkdirs(path);
 
     return fs.makeQualified(path);
+  }
+
+  public static void cleanupTestDir(String dir) throws IOException {
+    Path path = new Path(dir);
+    FileSystem fs = FileSystem.getLocal(new Configuration());
+    if(fs.exists(path)) {
+      fs.delete(path, true);
+    }
   }
 
   public static Path getTestDir() throws IOException {

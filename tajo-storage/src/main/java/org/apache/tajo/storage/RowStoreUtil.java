@@ -191,10 +191,10 @@ public class RowStoreUtil {
             bb.put(bytes);
             break;
           case INET4:
-            byte [] ipBytes = tuple.getIPv4Bytes(i);
+            byte [] ipBytes = tuple.get(i).asByteArray();
             bb.put(ipBytes);
             break;
-          case INET6: bb.put(tuple.getIPv6Bytes(i)); break;
+          case INET6: bb.put(tuple.get(i).asByteArray()); break;
           default:
         }
       }

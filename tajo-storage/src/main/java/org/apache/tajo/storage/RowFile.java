@@ -243,14 +243,6 @@ public class RowFile {
               tuple.put(i, datum);
               break;
 
-//            case TEXT :
-//              short len = buffer.getShort();
-//              byte[] buf = new byte[len];
-//              buffer.get(buf, 0, len);
-//              datum = DatumFactory.createText(buf);
-//              tuple.put(i, datum);
-//              break;
-
             case TEXT:
               short bytelen = buffer.getShort();
               byte[] strbytes = new byte[bytelen];
@@ -392,47 +384,47 @@ public class RowFile {
           col = schema.getColumn(i);
           switch (col.getDataType().getType()) {
             case BOOLEAN:
-              buffer.put(t.getBoolean(i).asByte());
+              buffer.put(t.get(i).asByte());
               break;
             case BIT:
-              buffer.put(t.getByte(i).asByte());
+              buffer.put(t.get(i).asByte());
               break;
             case CHAR:
-              byte[] src = t.getChar(i).asByteArray();
+              byte[] src = t.get(i).asByteArray();
               byte[] dst = Arrays.copyOf(src, col.getDataType().getLength());
               buffer.putInt(src.length);
               buffer.put(dst);
               break;
             case TEXT:
-              byte [] strbytes = t.getText(i).asByteArray();
+              byte [] strbytes = t.get(i).asByteArray();
               buffer.putShort((short)strbytes.length);
               buffer.put(strbytes, 0, strbytes.length);
               break;
             case INT2:
-              buffer.putShort(t.getShort(i).asInt2());
+              buffer.putShort(t.get(i).asInt2());
               break;
             case INT4:
-              buffer.putInt(t.getInt(i).asInt4());
+              buffer.putInt(t.get(i).asInt4());
               break;
             case INT8:
-              buffer.putLong(t.getLong(i).asInt8());
+              buffer.putLong(t.get(i).asInt8());
               break;
             case FLOAT4:
-              buffer.putFloat(t.getFloat(i).asFloat4());
+              buffer.putFloat(t.get(i).asFloat4());
               break;
             case FLOAT8:
-              buffer.putDouble(t.getDouble(i).asFloat8());
+              buffer.putDouble(t.get(i).asFloat8());
               break;
             case BLOB:
-              byte [] bytes = t.getBytes(i).asByteArray();
+              byte [] bytes = t.get(i).asByteArray();
               buffer.putShort((short)bytes.length);
               buffer.put(bytes);
               break;
             case INET4:
-              buffer.put(t.getIPv4Bytes(i));
+              buffer.put(t.get(i).asByteArray());
               break;
             case INET6:
-              buffer.put(t.getIPv6Bytes(i));
+              buffer.put(t.get(i).asByteArray());
               break;
             case NULL_TYPE:
               nullFlags.set(i);

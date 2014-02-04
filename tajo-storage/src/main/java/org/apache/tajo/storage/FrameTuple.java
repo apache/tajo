@@ -22,11 +22,9 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
-
-import java.net.InetAddress;
 
 /**
  * An instance of FrameTuple is an immutable tuple.
@@ -123,78 +121,53 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public BooleanDatum getBoolean(int fieldId) {
-    return (BooleanDatum) get(fieldId);
+  public boolean getBool(int fieldId) {
+    return get(fieldId).asBool();
   }
 
   @Override
-  public BitDatum getByte(int fieldId) {
-    return (BitDatum) get(fieldId);
+  public byte getByte(int fieldId) {
+    return get(fieldId).asByte();
   }
 
   @Override
-  public CharDatum getChar(int fieldId) {
-    return (CharDatum) get(fieldId);
+  public char getChar(int fieldId) {
+    return get(fieldId).asChar();
   }
 
   @Override
-  public BlobDatum getBytes(int fieldId) {
-    return (BlobDatum) get(fieldId);
-  }
-
-  @Override
-  public Int2Datum getShort(int fieldId) {
-    return (Int2Datum) get(fieldId);
-  }
-
-  @Override
-  public Int4Datum getInt(int fieldId) {
-    return (Int4Datum) get(fieldId);
-  }
-
-  @Override
-  public Int8Datum getLong(int fieldId) {
-    return (Int8Datum) get(fieldId);
-  }
-
-  @Override
-  public Float4Datum getFloat(int fieldId) {
-    return (Float4Datum) get(fieldId);
-  }
-
-  @Override
-  public Float8Datum getDouble(int fieldId) {
-    return (Float8Datum) get(fieldId);
-  }
-
-  @Override
-  public Inet4Datum getIPv4(int fieldId) {
-    return (Inet4Datum) get(fieldId);
-  }
-
-  @Override
-  public byte[] getIPv4Bytes(int fieldId) { 
+  public byte [] getBytes(int fieldId) {
     return get(fieldId).asByteArray();
   }
 
   @Override
-  public InetAddress getIPv6(int fieldId) {
-    throw new UnimplementedException();
-  }
-  
-  @Override
-  public byte[] getIPv6Bytes(int fieldId) {
-    throw new UnimplementedException();
+  public short getInt2(int fieldId) {
+    return get(fieldId).asInt2();
   }
 
   @Override
-  public TextDatum getString(int fieldId) {
-    return (TextDatum) get(fieldId);
+  public int getInt4(int fieldId) {
+    return get(fieldId).asInt4();
   }
 
   @Override
-  public TextDatum getText(int fieldId) {
-    return (TextDatum) get(fieldId);
+  public long getInt8(int fieldId) {
+    return get(fieldId).asInt8();
+  }
+
+  @Override
+  public float getFloat4(int fieldId) {
+    return get(fieldId).asFloat4();
+  }
+
+  @Override
+  public double getFloat8(int fieldId) {
+    return get(fieldId).asFloat8();
+  }
+
+  @Override
+  public String getText(int fieldId) {
+    return get(fieldId).asChars();
   }
 
   @Override

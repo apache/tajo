@@ -176,10 +176,10 @@ public class TestMergeJoinExec {
     exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
-      assertTrue(i == tuple.getInt(0).asInt4());
-      assertTrue(i == tuple.getInt(1).asInt4());
-      assertTrue(("dept_" + i).equals(tuple.getString(2).asChars()));
-      assertTrue((10 + i) == tuple.getInt(3).asInt4());
+      assertTrue(i == tuple.get(0).asInt4());
+      assertTrue(i == tuple.get(1).asInt4());
+      assertTrue(("dept_" + i).equals(tuple.get(2).asChars()));
+      assertTrue((10 + i) == tuple.get(3).asInt4());
 
       i += 2;
     }

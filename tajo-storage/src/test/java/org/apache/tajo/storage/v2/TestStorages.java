@@ -176,8 +176,8 @@ public class TestStorages {
       if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI || storeType == StoreType.CSV) {
         assertTrue(tuple.get(0) == null || tuple.get(0) instanceof NullDatum);
       }
-      assertEquals(DatumFactory.createInt8(tupleCnt + 2), tuple.getLong(1));
-      assertEquals(DatumFactory.createFloat4(tupleCnt + 3), tuple.getFloat(2));
+      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
       tupleCnt++;
     }
     scanner.close();

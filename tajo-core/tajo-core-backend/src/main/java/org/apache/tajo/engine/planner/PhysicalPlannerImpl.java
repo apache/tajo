@@ -845,17 +845,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public SortExec createBestSortPlan(TaskAttemptContext context, SortNode sortNode,
                                      PhysicalExec child) throws IOException {
-    String [] outerLineage = PlannerUtil.getRelationLineage(sortNode.getChild());
-    long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = 1048576 * 2000;
-
-    // if the relation size is less than the reshold,
-    // the in-memory sort will be used.
-    if (estimatedSize <= threshold) {
-      return new MemSortExec(context, sortNode, child);
-    } else {
-      return new ExternalSortExec(context, sm, sortNode, child);
-    }
+    return new ExternalSortExec(context, sm, sortNode, child);
   }
 
   public PhysicalExec createIndexScanExec(TaskAttemptContext ctx,

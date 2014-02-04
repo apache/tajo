@@ -18,63 +18,51 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.datum.*;
-
-import java.net.InetAddress;
+import org.apache.tajo.datum.Datum;
 
 public interface Tuple extends Cloneable {
-
-  public int size();
-
-  public boolean contains(int fieldid);
+  
+	public int size();
+	
+	public boolean contains(int fieldid);
 
   public boolean isNull(int fieldid);
+	
+	public void clear();
+	
+	public void put(int fieldId, Datum value);
 
-  public void clear();
-
-  public void put(int fieldId, Datum value);
-
-  public void put(int fieldId, Datum [] values);
+  public void put(int fieldId, Datum[] values);
 
   public void put(int fieldId, Tuple tuple);
+	
+	public void put(Datum[] values);
+	
+	public Datum get(int fieldId);
+	
+	public void setOffset(long offset);
+	
+	public long getOffset();
 
-  public void put(Datum [] values);
+	public boolean getBool(int fieldId);
 
-  public Datum get(int fieldId);
+	public byte getByte(int fieldId);
 
-  public void setOffset(long offset);
-
-  public long getOffset();
-
-  public BooleanDatum getBoolean(int fieldId);
-
-  public BitDatum getByte(int fieldId);
-
-  public CharDatum getChar(int fieldId);
-
-  public BlobDatum getBytes(int fieldId);
-
-  public Int2Datum getShort(int fieldId);
-
-  public Int4Datum getInt(int fieldId);
-
-  public Int8Datum getLong(int fieldId);
-
-  public Float4Datum getFloat(int fieldId);
-
-  public Float8Datum getDouble(int fieldId);
-
-  public Inet4Datum getIPv4(int fieldId);
-
-  public byte [] getIPv4Bytes(int fieldId);
-
-  public InetAddress getIPv6(int fieldId);
-
-  public byte [] getIPv6Bytes(int fieldId);
-
-  public TextDatum getString(int fieldId);
-
-  public TextDatum getText(int fieldId);
+  public char getChar(int fieldId);
+	
+	public byte [] getBytes(int fieldId);
+	
+	public short getInt2(int fieldId);
+	
+	public int getInt4(int fieldId);
+	
+	public long getInt8(int fieldId);
+	
+	public float getFloat4(int fieldId);
+	
+	public double getFloat8(int fieldId);
+	
+	public String getText(int fieldId);
 
   public Tuple clone() throws CloneNotSupportedException;
 

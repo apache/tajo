@@ -407,7 +407,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         Collections.sort(resultTables, new Comparator<MetaDataTuple> () {
           @Override
           public int compare(MetaDataTuple table1, MetaDataTuple table2) {
-            return table1.getString(2).compareTo(table2.getString(2));
+            return table1.getText(2).compareTo(table2.getText(2));
           }
         });
       } catch (Exception e) {

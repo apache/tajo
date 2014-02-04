@@ -35,10 +35,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.RangeShuffleFileWriteExec;
-import org.apache.tajo.engine.planner.physical.MemSortExec;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.engine.planner.physical.ProjectionExec;
+import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -142,12 +139,12 @@ public class TestRangeRetrieverHandler {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    MemSortExec sort = null;
+    ExternalSortExec sort = null;
     if (exec instanceof ProjectionExec) {
       ProjectionExec projExec = (ProjectionExec) exec;
       sort = projExec.getChild();
-    } else if (exec instanceof MemSortExec) {
-      sort = (MemSortExec) exec;
+    } else if (exec instanceof ExternalSortExec) {
+      sort = (ExternalSortExec) exec;
     } else {
       assertTrue(false);
     }
@@ -263,12 +260,12 @@ public class TestRangeRetrieverHandler {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    MemSortExec sort = null;
+    ExternalSortExec sort = null;
     if (exec instanceof ProjectionExec) {
       ProjectionExec projExec = (ProjectionExec) exec;
       sort = projExec.getChild();
-    } else if (exec instanceof MemSortExec) {
-      sort = (MemSortExec) exec;
+    } else if (exec instanceof ExternalSortExec) {
+      sort = (ExternalSortExec) exec;
     } else {
       assertTrue(false);
     }

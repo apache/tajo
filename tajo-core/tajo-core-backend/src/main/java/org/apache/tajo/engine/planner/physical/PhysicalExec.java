@@ -18,12 +18,15 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.commons.logging.Log;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public abstract class PhysicalExec implements SchemaObject {
   protected final TaskAttemptContext context;
@@ -50,4 +53,20 @@ public abstract class PhysicalExec implements SchemaObject {
   public abstract void rescan() throws IOException;
 
   public abstract void close() throws IOException;
+
+  protected void info(Log log, String message) {
+    log.info("["+ context.getTaskId() + "] " + message);
+  }
+
+  protected void warn(Log log, String message) {
+    log.warn("[" + context.getTaskId() + "] " + message);
+  }
+
+  protected void fatal(Log log, String message) {
+    log.fatal("[" + context.getTaskId() + "] " + message);
+  }
+
+  protected Path getExecutorTmpDir() {
+    return new Path(UUID.randomUUID().toString());
+  }
 }

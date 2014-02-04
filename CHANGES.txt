@@ -130,6 +130,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-36: Improve ExternalSortExec with N-merge sort and final pass
+    omission. (hyunsik)
+
     TAJO-564: Show execution block's progress in querydetail.jsp.
     (hyoungjunkim via hyunsik)
 

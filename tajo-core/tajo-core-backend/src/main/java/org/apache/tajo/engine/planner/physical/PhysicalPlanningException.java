@@ -25,7 +25,7 @@ public class PhysicalPlanningException extends IOException {
     super(message);
   }
 
-  public PhysicalPlanningException(IOException ioe) {
+  public PhysicalPlanningException(Exception ioe) {
     super(ioe);
   }
 }

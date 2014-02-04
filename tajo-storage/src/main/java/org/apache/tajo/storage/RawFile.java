@@ -37,10 +37,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 
 public class RawFile {
   private static final Log LOG = LogFactory.getLog(RawFile.class);
@@ -72,10 +70,14 @@ public class RawFile {
     }
 
     public void init() throws IOException {
-      //Preconditions.checkArgument(FileUtil.isLocalPath(path));
-      // TODO - to make it unified one.
-      URI uri = path.toUri();
-      fis = new FileInputStream(new File(uri));
+      File file;
+      if (path.toUri().getScheme() != null) {
+        file = new File(path.toUri());
+      } else {
+        file = new File(path.toString());
+      }
+
+      fis = new FileInputStream(file);
       channel = fis.getChannel();
       fileSize = channel.size();
 
@@ -132,6 +134,88 @@ public class RawFile {
       }
     }
 
+    /**
+     * Decode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
+     * into values that can be efficiently encoded with varint.  (Otherwise,
+     * negative values must be sign-extended to 64 bits to be varint encoded,
+     * thus always taking 10 bytes on the wire.)
+     *
+     * @param n An unsigned 32-bit integer, stored in a signed int because
+     *          Java has no explicit unsigned support.
+     * @return A signed 32-bit integer.
+     */
+    public static int decodeZigZag32(final int n) {
+      return (n >>> 1) ^ -(n & 1);
+    }
+
+    /**
+     * Decode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
+     * into values that can be efficiently encoded with varint.  (Otherwise,
+     * negative values must be sign-extended to 64 bits to be varint encoded,
+     * thus always taking 10 bytes on the wire.)
+     *
+     * @param n An unsigned 64-bit integer, stored in a signed int because
+     *          Java has no explicit unsigned support.
+     * @return A signed 64-bit integer.
+     */
+    public static long decodeZigZag64(final long n) {
+      return (n >>> 1) ^ -(n & 1);
+    }
+
+
+    /**
+     * Read a raw Varint from the stream.  If larger than 32 bits, discard the
+     * upper bits.
+     */
+    public int readRawVarint32() throws IOException {
+      byte tmp = buffer.get();
+      if (tmp >= 0) {
+        return tmp;
+      }
+      int result = tmp & 0x7f;
+      if ((tmp = buffer.get()) >= 0) {
+        result |= tmp << 7;
+      } else {
+        result |= (tmp & 0x7f) << 7;
+        if ((tmp = buffer.get()) >= 0) {
+          result |= tmp << 14;
+        } else {
+          result |= (tmp & 0x7f) << 14;
+          if ((tmp = buffer.get()) >= 0) {
+            result |= tmp << 21;
+          } else {
+            result |= (tmp & 0x7f) << 21;
+            result |= (tmp = buffer.get()) << 28;
+            if (tmp < 0) {
+              // Discard upper 32 bits.
+              for (int i = 0; i < 5; i++) {
+                if (buffer.get() >= 0) {
+                  return result;
+                }
+              }
+              throw new IOException("Invalid Variable int32");
+            }
+          }
+        }
+      }
+      return result;
+    }
+
+    /** Read a raw Varint from the stream. */
+    public long readRawVarint64() throws IOException {
+      int shift = 0;
+      long result = 0;
+      while (shift < 64) {
+        final byte b = buffer.get();
+        result |= (long)(b & 0x7F) << shift;
+        if ((b & 0x80) == 0) {
+          return result;
+        }
+        shift += 7;
+      }
+      throw new IOException("Invalid Variable int64");
+    }
+
     @Override
     public Tuple next() throws IOException {
       if(eof) return null;
@@ -175,11 +259,10 @@ public class RawFile {
             break;
 
           case CHAR :
-            int realLen = buffer.getInt();
-            byte[] buf = new byte[columnTypes[i].getLength()];
+            int realLen = readRawVarint32();
+            byte[] buf = new byte[realLen];
             buffer.get(buf);
-            byte[] charBuf = Arrays.copyOf(buf, realLen);
-            tuple.put(i, DatumFactory.createChar(charBuf));
+            tuple.put(i, DatumFactory.createChar(buf));
             break;
 
           case INT2 :
@@ -187,11 +270,11 @@ public class RawFile {
             break;
 
           case INT4 :
-            tuple.put(i, DatumFactory.createInt4(buffer.getInt()));
+            tuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
             break;
 
           case INT8 :
-            tuple.put(i, DatumFactory.createInt8(buffer.getLong()));
+            tuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
             break;
 
           case FLOAT4 :
@@ -202,28 +285,25 @@ public class RawFile {
             tuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
             break;
 
-          case TEXT :
-            // TODO - shoud use CharsetEncoder / CharsetDecoder
-            //byte [] rawBytes = getColumnBytes();
-            int strSize2 = buffer.getInt();
-            byte [] strBytes2 = new byte[strSize2];
-            buffer.get(strBytes2);
-            tuple.put(i, DatumFactory.createText(new String(strBytes2)));
+          case TEXT : {
+            int len = readRawVarint32();
+            byte [] strBytes = new byte[len];
+            buffer.get(strBytes);
+            tuple.put(i, DatumFactory.createText(new String(strBytes)));
             break;
+          }
 
           case BLOB : {
-            //byte [] rawBytes = getColumnBytes();
-            int byteSize = buffer.getInt();
-            byte [] rawBytes = new byte[byteSize];
+            int len = readRawVarint32();
+            byte [] rawBytes = new byte[len];
             buffer.get(rawBytes);
             tuple.put(i, DatumFactory.createBlob(rawBytes));
             break;
           }
 
           case PROTOBUF: {
-            //byte [] rawBytes = getColumnBytes();
-            int byteSize = buffer.getInt();
-            byte [] rawBytes = new byte[byteSize];
+            int len = readRawVarint32();
+            byte [] rawBytes = new byte[len];
             buffer.get(rawBytes);
 
             ProtobufDatumFactory factory = ProtobufDatumFactory.get(columnTypes[i]);
@@ -324,9 +404,13 @@ public class RawFile {
     }
 
     public void init() throws IOException {
-      // TODO - RawFile only works on Local File System.
-      //Preconditions.checkArgument(FileUtil.isLocalPath(path));
-      File file = new File(path.toUri());
+      File file;
+      if (path.toUri().getScheme() != null) {
+        file = new File(path.toUri());
+      } else {
+        file = new File(path.toString());
+      }
+
       randomAccessFile = new RandomAccessFile(file, "rw");
       channel = randomAccessFile.getChannel();
       pos = 0;
@@ -383,6 +467,78 @@ public class RawFile {
       }
     }
 
+    /**
+     * Encode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
+     * into values that can be efficiently encoded with varint.  (Otherwise,
+     * negative values must be sign-extended to 64 bits to be varint encoded,
+     * thus always taking 10 bytes on the wire.)
+     *
+     * @param n A signed 32-bit integer.
+     * @return An unsigned 32-bit integer, stored in a signed int because
+     *         Java has no explicit unsigned support.
+     */
+    public static int encodeZigZag32(final int n) {
+      // Note:  the right-shift must be arithmetic
+      return (n << 1) ^ (n >> 31);
+    }
+
+    /**
+     * Encode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
+     * into values that can be efficiently encoded with varint.  (Otherwise,
+     * negative values must be sign-extended to 64 bits to be varint encoded,
+     * thus always taking 10 bytes on the wire.)
+     *
+     * @param n A signed 64-bit integer.
+     * @return An unsigned 64-bit integer, stored in a signed int because
+     *         Java has no explicit unsigned support.
+     */
+    public static long encodeZigZag64(final long n) {
+      // Note:  the right-shift must be arithmetic
+      return (n << 1) ^ (n >> 63);
+    }
+
+    /**
+     * Encode and write a varint.  {@code value} is treated as
+     * unsigned, so it won't be sign-extended if negative.
+     */
+    public void writeRawVarint32(int value) throws IOException {
+      while (true) {
+        if ((value & ~0x7F) == 0) {
+          buffer.put((byte) value);
+          return;
+        } else {
+          buffer.put((byte) ((value & 0x7F) | 0x80));
+          value >>>= 7;
+        }
+      }
+    }
+
+    /**
+     * Compute the number of bytes that would be needed to encode a varint.
+     * {@code value} is treated as unsigned, so it won't be sign-extended if
+     * negative.
+     */
+    public static int computeRawVarint32Size(final int value) {
+      if ((value & (0xffffffff <<  7)) == 0) return 1;
+      if ((value & (0xffffffff << 14)) == 0) return 2;
+      if ((value & (0xffffffff << 21)) == 0) return 3;
+      if ((value & (0xffffffff << 28)) == 0) return 4;
+      return 5;
+    }
+
+    /** Encode and write a varint. */
+    public void writeRawVarint64(long value) throws IOException {
+      while (true) {
+        if ((value & ~0x7FL) == 0) {
+          buffer.put((byte) value);
+          return;
+        } else {
+          buffer.put((byte) ((value & 0x7F) | 0x80));
+          value >>>= 7;
+        }
+      }
+    }
+
     @Override
     public void addTuple(Tuple t) throws IOException {
 
@@ -417,86 +573,73 @@ public class RawFile {
 
           case BOOLEAN:
           case BIT:
-            buffer.put(t.get(i).asByte());
-            break;
-
-          case CHAR :
-            byte[] src = t.getChar(i).asByteArray();
-            byte[] dst = Arrays.copyOf(src, columnTypes[i].getLength());
-            buffer.putInt(src.length);
-            buffer.put(dst);
+            buffer.put(t.getByte(i));
             break;
 
           case INT2 :
-            buffer.putShort(t.get(i).asInt2());
+            buffer.putShort(t.getInt2(i));
             break;
 
           case INT4 :
-            buffer.putInt(t.get(i).asInt4());
+            writeRawVarint32(encodeZigZag32(t.getInt4(i)));
             break;
 
           case INT8 :
-            buffer.putLong(t.get(i).asInt8());
+            writeRawVarint64(encodeZigZag64(t.getInt8(i)));
             break;
 
           case FLOAT4 :
-            buffer.putFloat(t.get(i).asFloat4());
+            buffer.putFloat(t.getFloat4(i));
             break;
 
           case FLOAT8 :
-            buffer.putDouble(t.get(i).asFloat8());
+            buffer.putDouble(t.getFloat8(i));
             break;
 
-          case TEXT:
-            byte [] strBytes2 = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, strBytes2.length + 4)) {
+          case CHAR:
+          case TEXT: {
+            byte [] strBytes = t.getBytes(i);
+            if (flushBufferAndReplace(recordOffset, strBytes.length + computeRawVarint32Size(strBytes.length))) {
               recordOffset = 0;
             }
-            buffer.putInt(strBytes2.length);
-            buffer.put(strBytes2);
+            writeRawVarint32(strBytes.length);
+            buffer.put(strBytes);
             break;
+          }
+
+        case DATE:
+          buffer.putInt(t.getInt4(i));
+          break;
+
+        case TIME:
+        case TIMESTAMP:
+          buffer.putLong(t.getInt8(i));
+          break;
 
           case BLOB : {
-            byte [] rawBytes = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
+            byte [] rawBytes = t.getBytes(i);
+            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
               recordOffset = 0;
             }
-            buffer.putInt(rawBytes.length);
+            writeRawVarint32(rawBytes.length);
             buffer.put(rawBytes);
             break;
           }
 
           case PROTOBUF: {
-            // TODO - to be fixed
-//            byte [] lengthByte = new byte[4];
-//            byte [] byteArray = t.get(i).asByteArray();
-//            CodedOutputStream outputStream = CodedOutputStream.newInstance(lengthByte);
-//            outputStream.writeUInt32NoTag(byteArray.length);
-//            outputStream.flush();
-//            int legnthByteLength = CodedOutputStream.computeInt32SizeNoTag(byteArray.length);
-//            if (flushBufferAndReplace(recordOffset, byteArray.length + legnthByteLength)) {
-//              recordOffset = 0;
-//            }
-//            buffer.put(lengthByte, 0, legnthByteLength);
-            byte [] rawBytes = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
+            byte [] rawBytes = t.getBytes(i);
+            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
               recordOffset = 0;
             }
-            buffer.putInt(rawBytes.length);
+            writeRawVarint32(rawBytes.length);
             buffer.put(rawBytes);
             break;
           }
 
           case INET4 :
-            buffer.put(t.get(i).asByteArray());
+            buffer.put(t.getBytes(i));
             break;
-          case DATE:
-            buffer.putInt(t.get(i).asInt4());
-            break;
-          case TIME:
-          case TIMESTAMP:
-            buffer.putLong(t.get(i).asInt8());
-            break;
+
           default:
             throw new IOException("Cannot support data type: " + columnTypes[i].getType());
         }
