@@ -19,9 +19,14 @@
     <Class name="~org.apache.tajo.engine.parser.*"/>
   </Match>
 
+  <!-- Generated code -->
   <Match>
     <Class name="~org\.apache\.tajo\..*Proto.*"/>
   </Match>
+  <Match>
+    <Class name="~org.apache.tajo.common.TajoDataTypes.*"/>
+  </Match>
+  <!---->
 
   <Match>
     <!--

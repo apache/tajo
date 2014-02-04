@@ -18,6 +18,8 @@
 
 package org.apache.tajo.util;
 
+import com.google.common.base.Objects;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TUtil {
   /**
-   * check two objects as equals. 
+   * check two objects as equals.
    * It will return true even if they are all null.
    *
    * @param s1 the first object to be compared.
@@ -35,13 +37,7 @@ public class TUtil {
    * @return true if they are equal or all null
    */
   public static boolean checkEquals(Object s1, Object s2) {
-    if (s1 == null ^ s2 == null) {
-      return false;
-    } else if (s1 == null && s2 == null) {
-      return true;
-    } else {
-      return s1.equals(s2);
-    }
+    return Objects.equal(s1, s2);
   }
 
   /**
@@ -61,7 +57,7 @@ public class TUtil {
       return Arrays.equals(s1, s2);
     }
   }
-  
+
   public static <T> T[] concat(T[] first, T[] second) {
     T[] result = Arrays.copyOf(first, first.length + second.length);
     System.arraycopy(second, 0, result, first.length, second.length);

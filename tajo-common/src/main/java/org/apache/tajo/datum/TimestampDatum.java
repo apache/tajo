@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.base.Objects;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
@@ -177,6 +178,7 @@ public class TimestampDatum extends Datum {
     }
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof TimestampDatum) {
       TimestampDatum another = (TimestampDatum) obj;
@@ -184,5 +186,10 @@ public class TimestampDatum extends Datum {
     } else {
       throw new InvalidOperationException();
     }
+  }
+
+  @Override
+  public int hashCode(){
+     return Objects.hashCode(dateTime);
   }
 }

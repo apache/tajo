@@ -72,9 +72,9 @@ public class TimeRange implements Comparable<TimeRange>{
 		bb.putLong(this.begin);
 		return bb.hashCode();
 	}
-	
-	@Override
-	public String toString() {
-		return new String("(" + begin + ", " + end + ")");
-	}
+
+  @Override
+  public String toString() {
+    return "(" + begin + ", " + end + ")";
+  }
 }

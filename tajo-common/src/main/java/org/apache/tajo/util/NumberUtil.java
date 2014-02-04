@@ -55,16 +55,24 @@ public class NumberUtil {
   private static void benchmark(int num){
     System.out.println("Start benchmark. # of :" + num);
     long start =  System.currentTimeMillis();
+
+    byte[] bytes;
+    long size = 0;
     for (int i = 0; i < num; i ++){
-      String.valueOf(i).getBytes();
+      bytes = String.valueOf(i).getBytes();
+      size += bytes.length;
     }
 
     long end =  System.currentTimeMillis();
-    System.out.println("JDK getBytes() \t\t\t\t" + (end - start) + " ms");
+    System.out.println("JDK getBytes() \t\t\t\t" + (end - start) + " ms, " + "Total: " + size / (1024 * 1024) + "MB");
+    size = 0;
+
     for (int i = 0; i < num; i ++){
-      toAsciiBytes(i);
+      bytes = toAsciiBytes(i);
+      size += bytes.length;
     }
-    System.out.println( "NumberUtil toByte() \t" + (System.currentTimeMillis() - end) + " ms");
+    System.out.println( "NumberUtil toByte() \t" + (System.currentTimeMillis() - end)
+        + " ms, " + "Total: " + size / (1024 * 1024) + "MB");
   }
 
   public static void main(String[] args) throws Exception {

@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class QueryIdFactory {
   public static final QueryId NULL_QUERY_ID = newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0), 0);
 
-  public static DecimalFormat ID_FORMAT = new DecimalFormat("0000");
+  public static final DecimalFormat ID_FORMAT = new DecimalFormat("0000");
 
-  public static DecimalFormat EB_ID_FORMAT = new DecimalFormat("000000");
+  public static final  DecimalFormat EB_ID_FORMAT = new DecimalFormat("000000");
 
-  public static DecimalFormat QU_ID_FORMAT = new DecimalFormat("000000");
+  public static final  DecimalFormat QU_ID_FORMAT = new DecimalFormat("000000");
 
-  public static DecimalFormat ATTEMPT_ID_FORMAT = new DecimalFormat("00");
+  public static final  DecimalFormat ATTEMPT_ID_FORMAT = new DecimalFormat("00");
 
   private static Map<String, AtomicInteger> queryNexIdMap = new HashMap<String, AtomicInteger>();
 

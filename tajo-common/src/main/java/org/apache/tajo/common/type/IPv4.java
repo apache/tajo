@@ -155,13 +155,13 @@ public class IPv4 implements Writable, Comparable<IPv4> {
 	
 	@Override
 	public String toString() {
-		String str = "";
+		StringBuilder sb = new StringBuilder();
 		int i;
 		for (i = 0; i < 3; i++) {
-			str += (((int)ipBytes[i] << 24) >> 24 & 0xFF) + ".";
+			sb.append(((int)ipBytes[i] << 24) >> 24 & 0xFF).append(".");
 		}
-		str += (((int)ipBytes[i] << 24) >> 24 & 0xFF);
-		return str;
+		sb.append(((int)ipBytes[i] << 24) >> 24 & 0xFF);
+		return sb.toString();
 	}
 	
 	@Override

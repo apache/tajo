@@ -26,6 +26,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -447,16 +448,11 @@ public class TajoConf extends Configuration {
     return path.indexOf("file:/") == 0 || path.indexOf("hdfs:/") == 0;
   }
 
-  public static Path getStagingDir(TajoConf conf) {
+  public static Path getStagingDir(TajoConf conf) throws IOException {
     String stagingDirString = conf.getVar(ConfVars.STAGING_ROOT_DIR);
     if (!hasScheme(stagingDirString)) {
       Path warehousePath = getWarehouseDir(conf);
-      FileSystem fs;
-      try {
-        fs = warehousePath.getFileSystem(conf);
-      } catch (Throwable e) {
-        throw null;
-      }
+      FileSystem fs = warehousePath.getFileSystem(conf);
       Path path = new Path(fs.getUri().toString(), stagingDirString);
       conf.setVar(ConfVars.STAGING_ROOT_DIR, path.toString());
       return path;

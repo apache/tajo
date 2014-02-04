@@ -41,7 +41,7 @@ public class TestTimestampDatum {
 		Datum d = DatumFactory.createTimeStamp(timestamp);
     assertEquals(Type.TIMESTAMP, d.type());
 	}
-	
+
 	@Test(expected = InvalidCastException.class)
 	public final void testAsInt4() {
     Datum d = DatumFactory.createTimeStamp(timestamp);

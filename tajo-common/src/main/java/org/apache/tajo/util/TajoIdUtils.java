@@ -26,7 +26,7 @@ import org.apache.tajo.QueryUnitId;
 import java.text.DecimalFormat;
 
 public class TajoIdUtils {
-  public static DecimalFormat MASTER_ID_FORMAT = new DecimalFormat("0000000000000");
+  public static final DecimalFormat MASTER_ID_FORMAT = new DecimalFormat("0000000000000");
 
   public static ExecutionBlockId createExecutionBlockId(String idStr) {
     String[] tokens = idStr.split("_");

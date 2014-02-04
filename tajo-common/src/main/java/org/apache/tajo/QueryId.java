@@ -19,7 +19,7 @@
 package org.apache.tajo;
 
 public class QueryId implements Comparable<QueryId> {
-  public static String SEPARATOR = "_";
+  public static final String SEPARATOR = "_";
   public static final String QUERY_ID_PREFIX = "q";
 
   private String id;
