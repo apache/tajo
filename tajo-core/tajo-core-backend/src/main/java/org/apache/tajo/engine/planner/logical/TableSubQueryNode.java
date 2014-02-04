@@ -54,14 +54,25 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
   @Override
   public Schema getTableSchema() {
-    return getOutSchema();
+    // an output schema can be determined by targets. So, an input schema of
+    // TableSubQueryNode is only eligible for table schema.
+    //
+    // TODO - but, a derived table can have column alias. For that, we should improve here.
+    //
+    // example) select * from (select col1, col2, col3 from t1) view (c1, c2);
+
+    return getInSchema();
   }
 
   public void setSubQuery(LogicalNode node) {
     this.subQuery = node;
     setInSchema((Schema) this.subQuery.getOutSchema().clone());
     getInSchema().setQualifier(this.tableName);
-    setOutSchema((Schema) this.subQuery.getOutSchema().clone());
+    if (hasTargets()) {
+      setOutSchema(PlannerUtil.targetToSchema(targets));
+    } else {
+      setOutSchema((Schema) this.subQuery.getOutSchema().clone());
+    }
     getOutSchema().setQualifier(this.tableName);
   }
 

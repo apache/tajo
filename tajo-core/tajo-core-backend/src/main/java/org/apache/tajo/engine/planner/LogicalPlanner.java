@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
@@ -72,14 +73,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // transient data for each query block
     QueryBlock queryBlock;
 
-    public PlanContext(LogicalPlan plan, QueryBlock block) {
+    boolean debugOrUnitTests;
+
+    public PlanContext(LogicalPlan plan, QueryBlock block, boolean debugOrUnitTests) {
       this.plan = plan;
       this.queryBlock = block;
+      this.debugOrUnitTests = debugOrUnitTests;
     }
 
     public PlanContext(PlanContext context, QueryBlock block) {
       this.plan = context.plan;
       this.queryBlock = block;
+      this.debugOrUnitTests = context.debugOrUnitTests;
     }
 
     public String toString() {
@@ -95,6 +100,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return A logical plan
    */
   public LogicalPlan createPlan(Expr expr) throws PlanningException {
+    return createPlan(expr, false);
+  }
+
+  @VisibleForTesting
+  public LogicalPlan createPlan(Expr expr, boolean debug) throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
 
@@ -102,14 +112,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     PreprocessContext preProcessorCtx = new PreprocessContext(plan, rootBlock);
     preprocessor.visit(preProcessorCtx, new Stack<Expr>(), expr);
 
-    PlanContext context = new PlanContext(plan, plan.getRootBlock());
+    PlanContext context = new PlanContext(plan, plan.getRootBlock(), debug);
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
 
     // Add Root Node
     LogicalRootNode root = new LogicalRootNode(plan.newPID());
     root.setInSchema(topMostNode.getOutSchema());
-    root.setOutSchema(topMostNode.getOutSchema());
     root.setChild(topMostNode);
+    root.setOutSchema(topMostNode.getOutSchema());
     plan.getRootBlock().setRoot(root);
 
     return plan;
@@ -205,22 +215,23 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Set ProjectionNode
     projectionNode = context.queryBlock.getNodeFromExpr(projection);
-    projectionNode.setTargets(targets);
-    projectionNode.setOutSchema(PlannerUtil.targetToSchema(projectionNode.getTargets()));
     projectionNode.setInSchema(child.getOutSchema());
+    projectionNode.setTargets(targets);
     projectionNode.setChild(child);
 
     if (projection.isDistinct() && block.hasNode(NodeType.GROUP_BY)) {
       throw new VerifyException("Cannot support grouping and distinct at the same time yet");
     } else {
       if (projection.isDistinct()) {
-        insertDistinctOperator(context, projectionNode, child);
+        insertDistinctOperator(context, projectionNode, child, stack);
       }
     }
 
     // It's for debugging and unit tests purpose.
     // It sets raw targets, all of them are raw expressions instead of references.
-    setRawTargets(context, targets, referenceNames, projection);
+    if (context.debugOrUnitTests) {
+      setRawTargets(context, targets, referenceNames, projection);
+    }
 
     verifyProjectedFields(block, projectionNode);
     return projectionNode;
@@ -246,16 +257,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
-  private void insertDistinctOperator(PlanContext context, ProjectionNode projectionNode, LogicalNode child) {
+  private void insertDistinctOperator(PlanContext context, ProjectionNode projectionNode, LogicalNode child,
+                                      Stack<Expr> stack) throws PlanningException {
     LogicalPlan plan = context.plan;
+    QueryBlock block = context.queryBlock;
 
     Schema outSchema = projectionNode.getOutSchema();
     GroupbyNode dupRemoval = new GroupbyNode(plan.newPID());
-    dupRemoval.setGroupingColumns(outSchema.toArray());
-    dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
-    dupRemoval.setInSchema(projectionNode.getInSchema());
-    dupRemoval.setOutSchema(outSchema);
     dupRemoval.setChild(child);
+    dupRemoval.setInSchema(projectionNode.getInSchema());
+    dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+    dupRemoval.setGroupingColumns(outSchema.toArray());
+
+    block.registerNode(dupRemoval);
+    postHook(context, stack, null, dupRemoval);
+
     projectionNode.setChild(dupRemoval);
     projectionNode.setInSchema(dupRemoval.getOutSchema());
   }
@@ -345,7 +361,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
-  private static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
+  public static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
     if (projectable instanceof ProjectionNode && block.hasNode(NodeType.GROUP_BY)) {
       for (Target target : projectable.getTargets()) {
         Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
@@ -403,6 +419,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
     GroupbyNode groupbyNode = new GroupbyNode(plan.newPID());
+    groupbyNode.setChild(child);
+    groupbyNode.setInSchema(child.getOutSchema());
+
     groupbyNode.setGroupingColumns(new Column[] {});
 
     Set<String> aggEvalNames = new LinkedHashSet<String>();
@@ -421,12 +440,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } catch (VerifyException ve) {
       }
     }
+
     groupbyNode.setDistinct(includeDistinctFunction);
     groupbyNode.setAggFunctions(aggEvals.toArray(new AggregationFunctionCallEval[aggEvals.size()]));
     Target [] targets = ProjectionPushDownRule.buildGroupByTarget(groupbyNode, aggEvalNames.toArray(new String[aggEvalNames.size()]));
     groupbyNode.setTargets(targets);
-    groupbyNode.setChild(child);
-    groupbyNode.setInSchema(child.getOutSchema());
 
     // this inserted group-by node doesn't pass through preprocessor. So manually added.
     block.registerNode(groupbyNode);
@@ -515,9 +533,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ////////////////////////////////////////////////////////
 
     SortNode sortNode = block.getNodeFromExpr(sort);
+    sortNode.setChild(child);
     sortNode.setInSchema(child.getOutSchema());
     sortNode.setOutSchema(child.getOutSchema());
-    sortNode.setChild(child);
+
 
     // Building sort keys
     Column column;
@@ -557,9 +576,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ////////////////////////////////////////////////////////
 
     HavingNode having = new HavingNode(context.plan.newPID());
+    having.setChild(child);
     having.setInSchema(child.getOutSchema());
     having.setOutSchema(child.getOutSchema());
-    having.setChild(child);
 
     EvalNode havingCondition;
     if (block.namedExprsMgr.isResolved(referName)) {
@@ -861,6 +880,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
+    Schema merged = SchemaUtil.merge(left.getOutSchema(), right.getOutSchema());
+    JoinNode join = new JoinNode(plan.newPID(), JoinType.CROSS, left, right);
+    join.setInSchema(merged);
+
     EvalNode evalNode;
     List<Expr> newlyEvaluatedExprs = TUtil.newList();
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getUnresolvedExprs(); it.hasNext();) {
@@ -874,15 +897,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } catch (VerifyException ve) {}
     }
 
-    Schema merged = SchemaUtil.merge(left.getOutSchema(), right.getOutSchema());
     List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
     for (Expr newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-
-    JoinNode join = new JoinNode(plan.newPID(), JoinType.CROSS, left, right);
     join.setTargets(targets.toArray(new Target[targets.size()]));
-    join.setInSchema(merged);
     return join;
   }
 
@@ -1092,8 +1111,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Target [] leftStrippedTargets = PlannerUtil.stripTarget(
         PlannerUtil.schemaToTargets(leftBlock.getRoot().getOutSchema()));
 
-    Schema outSchema = PlannerUtil.targetToSchema(leftStrippedTargets);
     setOp.setInSchema(leftChild.getOutSchema());
+    Schema outSchema = PlannerUtil.targetToSchema(leftStrippedTargets);
     setOp.setOutSchema(outSchema);
 
     return setOp;

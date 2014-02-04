@@ -692,9 +692,9 @@ public class GlobalPlanner {
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildGroupBy(context, childBlock, node);
-      context.execBlockMap.put(node.getPID(), newExecBlock);
+      context.execBlockMap.put(newExecBlock.getPlan().getPID(), newExecBlock);
 
-      return node;
+      return newExecBlock.getPlan();
     }
 
     @Override
@@ -730,8 +730,11 @@ public class GlobalPlanner {
     public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
                                   UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
       stack.push(node);
-      LogicalNode leftChild = visit(context, plan, queryBlock, node.getLeftChild(), stack);
-      LogicalNode rightChild = visit(context, plan, queryBlock, node.getRightChild(), stack);
+      LogicalPlan.QueryBlock leftQueryBlock = plan.getBlock(node.getLeftChild());
+      LogicalNode leftChild = visit(context, plan, leftQueryBlock, leftQueryBlock.getRoot(), stack);
+
+      LogicalPlan.QueryBlock rightQueryBlock = plan.getBlock(node.getRightChild());
+      LogicalNode rightChild = visit(context, plan, rightQueryBlock, rightQueryBlock.getRoot(), stack);
       stack.pop();
 
       List<ExecutionBlock> unionBlocks = Lists.newArrayList();
@@ -801,6 +804,7 @@ public class GlobalPlanner {
                                           LogicalPlan.QueryBlock queryBlock,
                                           TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
       LogicalNode child = super.visitTableSubQuery(context, plan, queryBlock, node, stack);
+      node.setSubQuery(child);
 
       ExecutionBlock currentBlock = context.execBlockMap.remove(child.getPID());
 

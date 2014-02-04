@@ -180,6 +180,9 @@ public class LogicalPlan {
   public String getNormalizedColumnName(QueryBlock block, ColumnReferenceExpr columnRef)
       throws PlanningException {
     Column found = resolveColumn(block, columnRef);
+    if (found == null) {
+      throw new NoSuchColumnException(columnRef.getCanonicalName());
+    }
     return found.getQualifiedName();
   }
 
@@ -242,6 +245,13 @@ public class LogicalPlan {
 
       // Trying to find the column within the current block
 
+      if (block.currentNode != null) {
+        Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
+        if (found != null) {
+          return found;
+        }
+      }
+
       if (block.getLatestNode() != null) {
         Column found = block.getLatestNode().getOutSchema().getColumnByName(columnRef.getName());
         if (found != null) {
@@ -264,7 +274,7 @@ public class LogicalPlan {
 
       // Trying to find columns from other relations in the current block
       for (RelationNode rel : block.getRelations()) {
-        Column found = rel.getOutSchema().getColumnByName(columnRef.getName());
+        Column found = rel.getTableSchema().getColumnByName(columnRef.getName());
         if (found != null) {
           candidates.add(found);
         }

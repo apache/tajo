@@ -49,7 +49,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
 
     res.close();
-    CatalogService catalog = testingCluster.getTestingCluster().getMaster().getCatalog();
+    CatalogService catalog = testBase.getTestingCluster().getMaster().getCatalog();
     TableDesc desc = catalog.getTableDesc("testCtasWithoutTableDefinition");
     assertTrue(catalog.existsTable("testCtasWithoutTableDefinition"));
 
@@ -58,7 +58,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertEquals(partitionDesc.getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals("key", partitionDesc.getExpressionSchema().getColumns().get(0).getColumnName());
 
-    FileSystem fs = FileSystem.get(testingCluster.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
@@ -89,7 +89,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     res.close();
 
-    TajoTestingCluster cluster = testingCluster.getTestingCluster();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
     TableDesc desc = catalog.getTableDesc("testCtasWithColumnedPartition");
     assertTrue(catalog.existsTable("testCtasWithColumnedPartition"));

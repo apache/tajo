@@ -190,10 +190,10 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCreateAfterSelect() throws Exception {
-    ResultSet res = testingCluster.execute(
+    ResultSet res = testBase.execute(
         "create table orderkeys as select l_orderkey from lineitem");
     res.close();
-    TajoTestingCluster cluster = testingCluster.getTestingCluster();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable("orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc("orderkeys");

@@ -195,8 +195,10 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitUnion(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
                            Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    RESULT result = visit(context, plan, block, node.getLeftChild(), stack);
-    visit(context, plan, block, node.getRightChild(), stack);
+    LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
+    RESULT result = visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
+    LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
+    visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
     stack.pop();
     return result;
   }
@@ -225,7 +227,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitTableSubQuery(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    RESULT result = visit(context, plan, plan.getBlock(node.getSubQuery()), node.getSubQuery(), stack);
+    LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
+    RESULT result = visit(context, plan, childBlock, childBlock.getRoot(), new Stack<LogicalNode>());
     stack.pop();
     return result;
   }

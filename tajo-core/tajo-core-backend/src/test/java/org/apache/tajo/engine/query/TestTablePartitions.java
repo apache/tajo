@@ -25,11 +25,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
+import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -37,78 +36,64 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-public class TestTablePartitions {
+public class TestTablePartitions extends QueryTestCaseBase {
 
-  private static TpchTestBase tpch;
+
   public TestTablePartitions() throws IOException {
     super();
-  }
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    tpch = TpchTestBase.getInstance();
   }
 
   @Test
   public final void testCreateColumnPartitionedTable() throws Exception {
     String tableName ="testCreateColumnPartitionedTable";
-    ResultSet res = tpch.execute(
-        "create table " + tableName +" (col1 int4, col2 int4) partition by column(key float8) ");
+    ResultSet res = execute(
+        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
     assertEquals(2, catalog.getTableDesc(tableName).getSchema().getColumnNum());
     assertEquals(3, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
 
-    res = tpch.execute("insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
+    res = testBase.execute(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
   }
 
   @Test
   public final void testCreateColumnPartitionedTableWithSelectedColumns() throws Exception {
     String tableName ="testCreateColumnPartitionedTableWithSelectedColumns";
-    ResultSet res = tpch.execute(
-        "create table " + tableName +" (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    ResultSet res = execute(
+        "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
     assertEquals(3, catalog.getTableDesc(tableName).getSchema().getColumnNum());
     assertEquals(4, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
 
-    res = tpch.execute("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
+    res = execute("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, " +
+        "l_partkey, l_quantity from lineitem");
     res.close();
   }
 
   @Test
   public final void testColumnPartitionedTableByOneColumn() throws Exception {
     String tableName ="testColumnPartitionedTableByOneColumn";
-    ResultSet res = tpch.execute(
-        "create table " + tableName +" (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    ResultSet res = execute(
+        "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute("insert overwrite into " + tableName
+    res = execute("insert overwrite into " + tableName
         + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
 
     TableDesc desc = catalog.getTableDesc(tableName);
-    Path path = desc.getPath();
+    assertPartitionDirectories(desc);
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
-    assertTrue(fs.isDirectory(path));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=38.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
-    assertEquals(5, desc.getStats().getNumRows().intValue());
-
-    res = tpch.execute(
+    res = execute(
         "select distinct * from " + tableName + " where (key = 45.0 or key = 38.0) and null_col is null");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
@@ -123,24 +108,62 @@ public class TestTablePartitions {
     res.close();
   }
 
+  private void assertPartitionDirectories(TableDesc desc) throws IOException {
+    FileSystem fs = FileSystem.get(conf);
+    Path path = desc.getPath();
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=38.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
+    assertEquals(5, desc.getStats().getNumRows().intValue());
+  }
+
+  @Test
+  public final void testQueryCasesOnColumnPartitionedTable() throws Exception {
+    String tableName ="testQueryCasesOnColumnPartitionedTable";
+    ResultSet res = execute(
+        "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(tableName));
+
+    res = execute(
+        "insert overwrite into " + tableName
+            + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(tableName);
+    assertPartitionDirectories(desc);
+
+    res = executeQuery("case1.sql");
+    assertResultSet(res, "case1.result");
+    res.close();
+
+    res = executeQuery("case2.sql");
+    assertResultSet(res, "case2.result");
+    res.close();
+  }
+
   @Test
   public final void testColumnPartitionedTableByThreeColumns() throws Exception {
     String tableName ="testColumnPartitionedTableByThreeColumns";
-    ResultSet res = tpch.execute(
+    ResultSet res = testBase.execute(
         "create table " + tableName +" (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute("insert overwrite into " + tableName
+    res = execute("insert overwrite into " + tableName
         + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
 
     TableDesc desc = catalog.getTableDesc(tableName);
     Path path = desc.getPath();
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
@@ -155,7 +178,7 @@ public class TestTablePartitions {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    res = tpch.execute("select * from " + tableName + " where col2 = 2");
+    res = execute("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -175,7 +198,7 @@ public class TestTablePartitions {
     resultRows2.put(45.0d, new int[]{3, 2});
     resultRows2.put(38.0d, new int[]{2, 2});
 
-    res = tpch.execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+    res = execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
 
     for (int i = 0; i < 3; i++) {
       assertTrue(res.next());
@@ -188,24 +211,22 @@ public class TestTablePartitions {
   @Test
   public final void testColumnPartitionedTableByOneColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByOneColumnsWithCompression";
-    ResultSet res = tpch.execute(
+    ResultSet res = execute(
         "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "PARTITION BY column(col1 int4)");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute(
+    res = execute(
         "insert overwrite into " + tableName + " select l_partkey, l_quantity, l_orderkey from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(desc.getPath()));
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
@@ -224,24 +245,23 @@ public class TestTablePartitions {
   @Test
   public final void testColumnPartitionedTableByTwoColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByTwoColumnsWithCompression";
-    ResultSet res = tpch.execute("create table " + tableName + " (col3 float8, col4 text) USING csv " +
+    ResultSet res = execute("create table " + tableName + " (col3 float8, col4 text) USING csv " +
         "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "PARTITION by column(col1 int4, col2 int4)");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute(
+    res = execute(
         "insert overwrite into " + tableName +
             " select  l_quantity, l_returnflag, l_orderkey, l_partkey from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(desc.getPath()));
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
@@ -267,25 +287,24 @@ public class TestTablePartitions {
   @Test
   public final void testColumnPartitionedTableByThreeColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByThreeColumnsWithCompression";
-    ResultSet res = tpch.execute(
+    ResultSet res = execute(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "partition by column(col1 int4, col2 int4, col3 float8)");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute(
+    res = execute(
         "insert overwrite into " + tableName +
             " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(desc.getPath()));
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
@@ -314,7 +333,7 @@ public class TestTablePartitions {
       }
     }
 
-    res = tpch.execute("select * from " + tableName + " where col2 = 2");
+    res = execute("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -334,7 +353,7 @@ public class TestTablePartitions {
     resultRows2.put(45.0d, new int[]{3, 2});
     resultRows2.put(38.0d, new int[]{2, 2});
 
-    res = tpch.execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+    res = execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
     i = 0;
     while(res.next()) {
       assertEquals(resultRows2.get(res.getDouble(4))[0], res.getInt(2));
@@ -349,25 +368,24 @@ public class TestTablePartitions {
   @Test
   public final void testColumnPartitionedTableNoMatchedPartition() throws Exception {
     String tableName = "testColumnPartitionedTableNoMatchedPartition";
-    ResultSet res = tpch.execute(
+    ResultSet res = execute(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "partition by column(col1 int4, col2 int4, col3 float8)");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
+
     assertTrue(catalog.existsTable(tableName));
 
-    res = tpch.execute(
+    res = execute(
         "insert overwrite into " + tableName +
             " select l_returnflag , l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(desc.getPath()));
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
     Path path = desc.getPath();
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
@@ -396,7 +414,7 @@ public class TestTablePartitions {
       }
     }
 
-    res = tpch.execute("select * from " + tableName + " where col2 = 9");
+    res = execute("select * from " + tableName + " where col2 = 9");
     assertFalse(res.next());
     res.close();
   }

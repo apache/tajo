@@ -25,6 +25,7 @@ import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.DropTable;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -117,9 +118,11 @@ import static org.junit.Assert.*;
  */
 public class QueryTestCaseBase {
 
-  protected static final TpchTestBase testingCluster;
+  protected static final TpchTestBase testBase;
+  protected static final TajoTestingCluster testingCluster;
   protected static TajoConf conf;
   protected static TajoClient client;
+  protected static CatalogService catalog;
   protected static SQLAnalyzer sqlParser = new SQLAnalyzer();
 
   /** the base path of dataset directories */
@@ -130,8 +133,10 @@ public class QueryTestCaseBase {
   protected static final Path resultBasePath;
 
   static {
-    testingCluster = TpchTestBase.getInstance();
-    conf = testingCluster.getTestingCluster().getConfiguration();
+    testBase = TpchTestBase.getInstance();
+    testingCluster = testBase.getTestingCluster();
+    conf = testBase.getTestingCluster().getConfiguration();
+    catalog = testBase.getTestingCluster().getMaster().getCatalog();
     URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
     datasetBasePath = new Path(datasetBaseURL.toString());
     URL queryBaseURL = ClassLoader.getSystemResource("queries");
@@ -152,7 +157,7 @@ public class QueryTestCaseBase {
 
   @BeforeClass
   public static void setUpClass() throws IOException {
-    conf = testingCluster.getTestingCluster().getConfiguration();
+    conf = testBase.getTestingCluster().getConfiguration();
     client = new TajoClient(conf);
   }
 
@@ -171,6 +176,10 @@ public class QueryTestCaseBase {
     currentQueryPath = new Path(queryBasePath, className);
     currentResultPath = new Path(resultBasePath, className);
     currentDatasetPath = new Path(datasetBasePath, className);
+  }
+
+  protected ResultSet execute(String sql) throws Exception {
+    return testBase.execute(sql);
   }
 
   /**
@@ -192,9 +201,9 @@ public class QueryTestCaseBase {
    */
   public ResultSet executeQuery(String queryFileName) throws Exception {
     Path queryFilePath = getQueryFilePath(queryFileName);
-    FileSystem fs = currentQueryPath.getFileSystem(testingCluster.getTestingCluster().getConfiguration());
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
-    ResultSet result = testingCluster.execute(FileUtil.readTextFile(new File(queryFilePath.toUri())));
+    ResultSet result = testBase.execute(FileUtil.readTextFile(new File(queryFilePath.toUri())));
     assertNotNull("Query succeeded test", result);
     return result;
   }
@@ -228,7 +237,7 @@ public class QueryTestCaseBase {
    * @param result Query result to be compared.
    */
   public final void assertResultSet(String message, ResultSet result, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testingCluster.getTestingCluster().getConfiguration());
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = getResultFile(resultFileName);
     assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
     try {

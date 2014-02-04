@@ -189,7 +189,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetContainExprs() throws CloneNotSupportedException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(expr, true);
     Target [] targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
@@ -267,7 +267,7 @@ public class TestEvalTreeUtil {
     assertTrue(7.0d == node.eval(null, null).asFloat8());
 
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(expr, true);
     targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =

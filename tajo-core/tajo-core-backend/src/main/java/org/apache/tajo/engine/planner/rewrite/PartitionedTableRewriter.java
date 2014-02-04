@@ -357,7 +357,13 @@ public class PartitionedTableRewriter implements RewriteRule {
         PartitionedTableScanNode rewrittenScanNode =
             new PartitionedTableScanNode(plan.newPID(), scanNode, filteredPaths);
         updateTableStat(rewrittenScanNode);
-        PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
+
+        // if it is topmost node, set it as the rootnode of this block.
+        if (stack.empty()) {
+          block.setRoot(rewrittenScanNode);
+        } else {
+          PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
+        }
       } catch (IOException e) {
         throw new PlanningException("Partitioned Table Rewrite Failed: \n" + e.getMessage());
       }
