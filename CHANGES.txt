@@ -246,6 +246,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-582: Invalid split calculation. (jinho)
+
     TAJO-581: Inline view on column partitioned table causes NPE. (hyunsik)
 
     TAJO-577: Support S3FileSystem split. (Yongjun Park via jihoon)

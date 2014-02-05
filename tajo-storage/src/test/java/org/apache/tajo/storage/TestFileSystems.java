@@ -21,6 +21,8 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.s3.S3FileSystem;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -32,7 +34,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.s3.InMemoryFileSystemStore;
 import org.apache.tajo.storage.s3.SmallBlockS3FileSystem;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,6 +45,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestFileSystems {
@@ -58,10 +60,13 @@ public class TestFileSystems {
 
   public TestFileSystems(FileSystem fs) throws IOException {
     conf = new TajoConf();
-    sm = StorageManagerFactory.getStorageManager(conf);
 
+    if(fs instanceof S3FileSystem){
+      conf.set(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, "10");
+      fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
+    }
     this.fs = fs;
-    fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
+    sm = StorageManagerFactory.getStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
   }
 
@@ -73,10 +78,6 @@ public class TestFileSystems {
     fs.mkdirs(path);
 
     return fs.makeQualified(path);
-  }
-
-  @After
-  public void tearDown() throws Exception {
   }
 
   @Parameterized.Parameters
@@ -119,9 +120,10 @@ public class TestFileSystems {
 
     List<FileFragment> splits = sm.getSplits("table", meta, schema, path);
     int splitSize = (int) Math.ceil(fileStatus.getLen() / (double) fileStatus.getBlockSize());
-    assertEquals(splits.size(), splitSize);
+    assertEquals(splitSize, splits.size());
 
+    for (FileFragment fragment : splits) {
+      assertTrue(fragment.getEndKey() <= fileStatus.getBlockSize());
+    }
   }
-
-
 }

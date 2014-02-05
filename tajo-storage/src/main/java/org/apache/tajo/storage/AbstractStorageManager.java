@@ -384,15 +384,6 @@ public abstract class AbstractStorageManager {
   }
 
   /**
-   * Get the lower bound on split size imposed by the format.
-   *
-   * @return the number of bytes of the minimal split for this format
-   */
-  protected long getFormatMinSplitSize() {
-    return 1;
-  }
-
-  /**
    * Is the given filename splitable? Usually, true, but if the file is
    * stream compressed, it will not be.
    * <p/>
@@ -485,15 +476,6 @@ public abstract class AbstractStorageManager {
   }
 
   /**
-   * Get the maximum split size.
-   *
-   * @return the maximum number of bytes a split can include
-   */
-  public long getMaxSplitSize() {
-    return conf.getLongVar(TajoConf.ConfVars.MAXIMUM_SPLIT_SIZE);
-  }
-
-  /**
    * Get the minimum split size
    *
    * @return the minimum number of bytes that can be in a split
@@ -556,9 +538,6 @@ public abstract class AbstractStorageManager {
   public List<FileFragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
     // generate splits'
 
-    long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize());
-    long maxSize = getMaxSplitSize();
-
     List<FileFragment> splits = new ArrayList<FileFragment>();
     FileSystem fs = inputPath.getFileSystem(conf);
     List<FileStatus> files;
@@ -596,20 +575,23 @@ public abstract class AbstractStorageManager {
 
         } else {
           if (splittable) {
-            // for s3
-            long blockSize = file.getBlockSize();
-            long splitSize = computeSplitSize(blockSize, minSize, maxSize);
 
+            long minSize = Math.max(getMinSplitSize(), 1);
+
+            long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
+            long splitSize = Math.max(minSize, blockSize);
             long bytesRemaining = length;
-            while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
-              int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
-              splits.add(makeSplit(tableName, meta, path, length-bytesRemaining, splitSize,
+
+            // for s3
+            while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
+              int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+              splits.add(makeSplit(tableName, meta, path, length - bytesRemaining, splitSize,
                   blkLocations[blkIndex].getHosts()));
               bytesRemaining -= splitSize;
             }
-            if (bytesRemaining != 0) {
-              int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
-              splits.add(makeSplit(tableName, meta, path, length-bytesRemaining, bytesRemaining,
+            if (bytesRemaining > 0) {
+              int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+              splits.add(makeSplit(tableName, meta, path, length - bytesRemaining, bytesRemaining,
                   blkLocations[blkIndex].getHosts()));
             }
           } else { // Non splittable
