@@ -549,7 +549,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       TajoConf conf = subQuery.context.getConf();
       subQuery.schedulerContext = new TaskSchedulerContext(subQuery.context,
           subQuery.getMasterPlan().isLeaf(subQuery.getId()), subQuery.getId());
-      subQuery.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
       subQuery.taskScheduler = TaskSchedulerFactory.get(conf, subQuery.schedulerContext, subQuery);
       subQuery.taskScheduler.init(conf);
       LOG.info(subQuery.taskScheduler.getName() + " is chosen for the task scheduling");
@@ -786,9 +785,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
 
       SubQuery.scheduleFragments(subQuery, fragments);
-      int estimatedTaskNum = (int) Math.ceil((double)table.getStats().getNumBytes() /
-          (double)subQuery.schedulerContext.getTaskSize());
-      subQuery.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
+      if (subQuery.getTaskScheduler() instanceof DefaultTaskScheduler) {
+        //Leaf task of DefaultTaskScheduler should be fragment size
+        // EstimatedTaskNum determined number of initial container
+        subQuery.schedulerContext.setTaskSize(fragments.size());
+        subQuery.schedulerContext.setEstimatedTaskNum(fragments.size());
+      } else {
+        TajoConf conf = subQuery.context.getConf();
+        subQuery.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
+        int estimatedTaskNum = (int) Math.ceil((double) table.getStats().getNumBytes() /
+            (double) subQuery.schedulerContext.getTaskSize());
+        subQuery.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
+      }
     }
   }
 
@@ -888,17 +896,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                            SubQueryEvent event) {
       SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
       QueryUnit task = subQuery.getQueryUnit(taskEvent.getTaskId());
-      QueryUnitAttempt taskAttempt = task.getSuccessfulAttempt();
-      if (task.isLeafTask()) {
-        subQuery.completedObjectCount += task.getTotalFragmentNum();
-      } else {
-        subQuery.completedObjectCount ++;
-      }
-      subQuery.completedTaskCount++;
 
       if (task == null) { // task failed
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_FAILED));
       } else {
+        QueryUnitAttempt taskAttempt = task.getSuccessfulAttempt();
+        if (task.isLeafTask()) {
+          subQuery.completedObjectCount += task.getTotalFragmentNum();
+        } else {
+          subQuery.completedObjectCount++;
+        }
+        subQuery.completedTaskCount++;
+
         LOG.info(subQuery.getId() + " SubQuery Succeeded " + subQuery.completedTaskCount + "/"
             + subQuery.schedulerContext.getEstimatedTaskNum() + " on " + taskAttempt.getHost() + ":" + taskAttempt.getPort());
         if (subQuery.taskScheduler.remainingScheduledObjectNum() == 0

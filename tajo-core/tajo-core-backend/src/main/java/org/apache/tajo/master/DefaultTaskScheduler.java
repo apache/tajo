@@ -92,13 +92,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       public void run() {
 
         while(!stopEventHandling && !Thread.currentThread().isInterrupted()) {
+          schedule();
           try {
-            Thread.sleep(100);
+            synchronized (schedulingThread){
+              schedulingThread.wait(100);
+            }
           } catch (InterruptedException e) {
             break;
           }
-
-          schedule();
         }
         LOG.info("TaskScheduler schedulingThread stopped");
       }
@@ -127,8 +128,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void stop() {
     stopEventHandling = true;
+
     if (schedulingThread != null) {
-      schedulingThread.interrupt();
+      synchronized (schedulingThread) {
+        schedulingThread.notifyAll();
+      }
     }
 
     // Return all of request callbacks instantly.
@@ -221,6 +225,15 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     taskRequests.handle(event);
+    int hosts = scheduledRequests.leafTaskHostMapping.size();
+
+    // if available cluster resource are large then tasks, the scheduler thread are working immediately.
+    if(remainingScheduledObjectNum() > 0 &&
+        (remainingScheduledObjectNum() <= hosts || hosts / 2 < taskRequests.size())){
+      synchronized (schedulingThread){
+        schedulingThread.notifyAll();
+      }
+    }
   }
 
   @Override
@@ -433,6 +446,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             attemptId = tId;
             //LOG.info(attemptId + " Assigned based on host match " + hostName);
             hostLocalAssigned++;
+            totalAssigned++;
             break;
           }
         }
@@ -448,8 +462,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             if (leafTasks.contains(tId)) {
               leafTasks.remove(tId);
               attemptId = tId;
-              //LOG.info(attemptId + "Assigned based on rack match " + rack);
+
               rackLocalAssigned++;
+              totalAssigned++;
+
+              LOG.info(String.format("Assigned Local/Rack/Total: (%d/%d/%d), Locality: %.2f%%, Rack host: %s",
+                  hostLocalAssigned, rackLocalAssigned, totalAssigned,
+                  ((double) hostLocalAssigned / (double) totalAssigned) * 100, host));
               break;
             }
           }
@@ -483,16 +502,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               host, container.getTaskPort()));
           assignedRequest.add(attemptId);
 
-          totalAssigned++;
           scheduledObjectNum -= task.getAllFragments().size();
           taskRequest.getCallback().run(taskAssign.getProto());
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
         }
       }
-
-      LOG.debug("HostLocalAssigned / Total: " + hostLocalAssigned + " / " + totalAssigned);
-      LOG.debug("RackLocalAssigned: " + rackLocalAssigned + " / " + totalAssigned);
     }
 
     private boolean checkIfInterQuery(MasterPlan masterPlan, ExecutionBlock block) {

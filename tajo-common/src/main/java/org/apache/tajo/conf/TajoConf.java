@@ -202,7 +202,7 @@ public class TajoConf extends Configuration {
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f),
-    TASK_DEFAULT_SIZE("tajo.task.size-mb", 64),
+    TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
     //////////////////////////////////
 
     // Metrics

@@ -246,6 +246,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-588: In some case, leaf task of DefaultTaskScheduler are not 
+    distributed execution. (jinho)
+
     TAJO-586: containFunction shouldn't throw NoSuchFunctionException. (jinho)
 
     TAJO-582: Invalid split calculation. (jinho)
