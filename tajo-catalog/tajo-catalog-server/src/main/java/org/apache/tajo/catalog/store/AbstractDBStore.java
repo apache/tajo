@@ -974,7 +974,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       proto = resultToIndexDescProto(res);
     } catch (SQLException se) {
-      new IOException(se);
+      throw new IOException(se);
     } finally {
       CatalogUtil.closeSQLWrapper(res, stmt);
     }

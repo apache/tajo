@@ -363,8 +363,13 @@ public abstract class AbstractCatalogClient implements CatalogService {
           }
         }
       }.withRetries();
-    } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
+    } catch(ServiceException e) {
+      // this is not good. we need to define user massage exception
+      if(e.getCause() instanceof NoSuchFunctionException){
+        LOG.debug(e.getMessage());
+      } else {
+        LOG.error(e.getMessage(), e);
+      }
     }
 
     if (descProto == null) {

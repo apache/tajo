@@ -394,9 +394,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
-    if (funcDesc == null) {
-      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
-    }
+
     try {
     CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
     if (functionType == CatalogProtos.FunctionType.GENERAL

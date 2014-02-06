@@ -59,6 +59,10 @@ public class TestCatalog {
     server.init(conf);
     server.start();
     catalog = new LocalCatalogWrapper(server);
+
+    for(String table : catalog.getAllTableNames()){
+      catalog.deleteTable(table);
+    }
 	}
 	
 	@AfterClass
@@ -87,7 +91,7 @@ public class TestCatalog {
     catalog.deleteTable("getTable");
     assertFalse(catalog.existsTable("getTable"));
 	}
-	
+
 	@Test
 	public void testAddTableNoName() throws Exception {
 	  schema1 = new Schema();
@@ -98,9 +102,9 @@ public class TestCatalog {
 	  TableMeta info = CatalogUtil.newTableMeta(StoreType.CSV);
 	  TableDesc desc = new TableDesc();
 	  desc.setMeta(info);
-	  
-	  assertFalse(catalog.addTable(desc));
-	}
+
+    assertFalse(catalog.addTable(desc));
+  }
 
   static IndexDesc desc1;
   static IndexDesc desc2;
@@ -123,7 +127,7 @@ public class TestCatalog {
 	@Test
 	public void testAddAndDelIndex() throws Exception {
 	  TableDesc desc = TestDBStore.prepareTable();
-	  catalog.addTable(desc);
+	  assertTrue(catalog.addTable(desc));
 	  
 	  assertFalse(catalog.existIndex(desc1.getName()));
 	  assertFalse(catalog.existIndex("indexed", "id"));
@@ -143,7 +147,8 @@ public class TestCatalog {
 	  assertFalse(catalog.existIndex(desc2.getName()));
 	  
 	  catalog.deleteTable(desc.getName());
-	}
+    assertFalse(catalog.existsTable(desc.getName()));
+  }
 	
 	public static class TestFunc1 extends Function {
 		public TestFunc1() {
@@ -173,23 +178,23 @@ public class TestCatalog {
     }
   }
 
-  @Test(expected = NoSuchFunctionException.class)
-	public final void testRegisterAndFindFunc() throws Exception { 
-		assertFalse(catalog.containFunction("test10", FunctionType.GENERAL));
-		FunctionDesc meta = new FunctionDesc("test10", TestFunc2.class, FunctionType.GENERAL,
+  @Test
+  public final void testRegisterAndFindFunc() throws Exception {
+    assertFalse(catalog.containFunction("test10", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("test10", TestFunc2.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
     catalog.createFunction(meta);
-		assertTrue(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB)));
-		FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
+    assertTrue(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB)));
+    FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
-		assertEquals(retrived.getSignature(),"test10");
-		assertEquals(retrived.getFuncClass(),TestFunc2.class);
-		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
+    assertEquals(retrived.getSignature(), "test10");
+    assertEquals(retrived.getFuncClass(), TestFunc2.class);
+    assertEquals(retrived.getFuncType(), FunctionType.GENERAL);
 
-		catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4));
-	}
+    assertFalse(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4)));
+  }
   
 
 	@Test
@@ -208,9 +213,17 @@ public class TestCatalog {
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 
-  @Test(expected = NoSuchFunctionException.class)
+  @Test
   public final void testSuchFunctionException() throws Exception {
-    catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
+    try {
+      assertFalse(catalog.containFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
+      catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
+      fail();
+    } catch (NoSuchFunctionException nsfe) {
+      // succeed test
+    } catch (Throwable e) {
+      fail(e.getMessage());
+    }
   }
 
   @Test

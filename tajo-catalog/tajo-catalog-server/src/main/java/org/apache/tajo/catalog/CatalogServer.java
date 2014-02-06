@@ -99,11 +99,11 @@ public class CatalogServer extends AbstractService {
   }
 
   @Override
-  public void init(Configuration _conf) {
-    this.conf = (TajoConf)_conf;
+  public void init(Configuration conf) {
 
     Constructor<?> cons;
     try {
+      this.conf = (TajoConf) conf;
       Class<?> storeClass = this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
 
       LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
@@ -509,7 +509,7 @@ public class CatalogServer extends AbstractService {
           }
         }
       }
-      throw new NoSuchFunctionException(signature, params);
+      return null;
     }
 
     private FunctionDescProto findFunction(String signature, FunctionType type, List<DataType> params) {
@@ -520,7 +520,7 @@ public class CatalogServer extends AbstractService {
           }
         }
       }
-      throw new NoSuchFunctionException(signature, params);
+      return null;
     }
 
     private FunctionDescProto findFunction(FunctionDescProto target) {
@@ -533,13 +533,9 @@ public class CatalogServer extends AbstractService {
       FunctionSignature signature = FunctionSignature.create(funcDesc);
 
       if (functions.containsKey(funcDesc.getSignature())) {
-        try {
-          FunctionDescProto found = findFunction(funcDesc);
-          if (found != null) {
-            throw new AlreadyExistsFunctionException(signature.toString());
-          }
-        } catch (NoSuchFunctionException e) {
-          //create function
+        FunctionDescProto found = findFunction(funcDesc);
+        if (found != null) {
+          throw new AlreadyExistsFunctionException(signature.toString());
         }
       }
 
@@ -568,15 +564,18 @@ public class CatalogServer extends AbstractService {
     @Override
     public FunctionDescProto getFunctionMeta(RpcController controller, GetFunctionMetaRequest request)
         throws ServiceException {
+      FunctionDescProto function = null;
       if (request.hasFunctionType()) {
         if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
-          FunctionDescProto desc = findFunction(request.getSignature(), request.getFunctionType(),
-              request.getParameterTypesList());
-          return desc;
+          function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList());
         }
+      } else {
+        function = findFunction(request.getSignature(), request.getParameterTypesList());
+      }
+
+      if (function == null) {
         throw new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList());
       } else {
-        FunctionDescProto function = findFunction(request.getSignature(), request.getParameterTypesList());
         return function;
       }
     }
@@ -591,7 +590,6 @@ public class CatalogServer extends AbstractService {
       } else {
         returnValue = containFunction(request.getSignature(), request.getParameterTypesList());
       }
-
       return BoolProto.newBuilder().setValue(returnValue).build();
     }
   }
