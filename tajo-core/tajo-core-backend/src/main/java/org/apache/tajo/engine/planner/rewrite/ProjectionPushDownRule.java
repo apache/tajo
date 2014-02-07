@@ -529,6 +529,7 @@ public class ProjectionPushDownRule extends
     String joinQualReference = null;
     if (node.hasJoinQual()) {
       joinQualReference = newContext.addExpr(node.getJoinQual());
+      newContext.addNecessaryReferences(node.getJoinQual());
     }
 
     String [] referenceNames = null;

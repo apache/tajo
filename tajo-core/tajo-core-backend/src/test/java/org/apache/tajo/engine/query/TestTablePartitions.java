@@ -48,7 +48,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testCreateColumnPartitionedTable() throws Exception {
     String tableName ="testCreateColumnPartitionedTable";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
     res.close();
 
@@ -64,7 +64,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testCreateColumnPartitionedTableWithSelectedColumns() throws Exception {
     String tableName ="testCreateColumnPartitionedTableWithSelectedColumns";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
 
@@ -72,7 +72,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(3, catalog.getTableDesc(tableName).getSchema().getColumnNum());
     assertEquals(4, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
 
-    res = execute("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, " +
+    res = executeString("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, " +
         "l_partkey, l_quantity from lineitem");
     res.close();
   }
@@ -80,20 +80,20 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByOneColumn() throws Exception {
     String tableName ="testColumnPartitionedTableByOneColumn";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
 
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute("insert overwrite into " + tableName
+    res = executeString("insert overwrite into " + tableName
         + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
 
     TableDesc desc = catalog.getTableDesc(tableName);
     assertPartitionDirectories(desc);
 
-    res = execute(
+    res = executeString(
         "select distinct * from " + tableName + " where (key = 45.0 or key = 38.0) and null_col is null");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
@@ -123,13 +123,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testQueryCasesOnColumnPartitionedTable() throws Exception {
     String tableName ="testQueryCasesOnColumnPartitionedTable";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
 
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute(
+    res = executeString(
         "insert overwrite into " + tableName
             + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
@@ -137,12 +137,16 @@ public class TestTablePartitions extends QueryTestCaseBase {
     TableDesc desc = catalog.getTableDesc(tableName);
     assertPartitionDirectories(desc);
 
-    res = executeQuery("case1.sql");
+    res = executeFile("case1.sql");
     assertResultSet(res, "case1.result");
     res.close();
 
-    res = executeQuery("case2.sql");
+    res = executeFile("case2.sql");
     assertResultSet(res, "case2.result");
+    res.close();
+
+    res = executeFile("case3.sql");
+    assertResultSet(res, "case3.result");
     res.close();
   }
 
@@ -156,7 +160,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute("insert overwrite into " + tableName
+    res = executeString("insert overwrite into " + tableName
         + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
 
@@ -178,7 +182,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    res = execute("select * from " + tableName + " where col2 = 2");
+    res = executeString("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -198,7 +202,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     resultRows2.put(45.0d, new int[]{3, 2});
     resultRows2.put(38.0d, new int[]{2, 2});
 
-    res = execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+    res = executeString("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
 
     for (int i = 0; i < 3; i++) {
       assertTrue(res.next());
@@ -211,14 +215,14 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByOneColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByOneColumnsWithCompression";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "PARTITION BY column(col1 int4)");
     res.close();
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute(
+    res = executeString(
         "insert overwrite into " + tableName + " select l_partkey, l_quantity, l_orderkey from lineitem");
     res.close();
     TableDesc desc = catalog.getTableDesc(tableName);
@@ -245,14 +249,14 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByTwoColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByTwoColumnsWithCompression";
-    ResultSet res = execute("create table " + tableName + " (col3 float8, col4 text) USING csv " +
+    ResultSet res = executeString("create table " + tableName + " (col3 float8, col4 text) USING csv " +
         "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "PARTITION by column(col1 int4, col2 int4)");
     res.close();
 
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute(
+    res = executeString(
         "insert overwrite into " + tableName +
             " select  l_quantity, l_returnflag, l_orderkey, l_partkey from lineitem");
     res.close();
@@ -287,7 +291,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByThreeColumnsWithCompression() throws Exception {
     String tableName = "testColumnPartitionedTableByThreeColumnsWithCompression";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "partition by column(col1 int4, col2 int4, col3 float8)");
@@ -295,7 +299,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute(
+    res = executeString(
         "insert overwrite into " + tableName +
             " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
@@ -333,7 +337,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       }
     }
 
-    res = execute("select * from " + tableName + " where col2 = 2");
+    res = executeString("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -353,7 +357,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     resultRows2.put(45.0d, new int[]{3, 2});
     resultRows2.put(38.0d, new int[]{2, 2});
 
-    res = execute("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+    res = executeString("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
     i = 0;
     while(res.next()) {
       assertEquals(resultRows2.get(res.getDouble(4))[0], res.getInt(2));
@@ -368,7 +372,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableNoMatchedPartition() throws Exception {
     String tableName = "testColumnPartitionedTableNoMatchedPartition";
-    ResultSet res = execute(
+    ResultSet res = executeString(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
             "partition by column(col1 int4, col2 int4, col3 float8)");
@@ -376,7 +380,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     assertTrue(catalog.existsTable(tableName));
 
-    res = execute(
+    res = executeString(
         "insert overwrite into " + tableName +
             " select l_returnflag , l_orderkey, l_partkey, l_quantity from lineitem");
     res.close();
@@ -414,7 +418,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       }
     }
 
-    res = execute("select * from " + tableName + " where col2 = 9");
+    res = executeString("select * from " + tableName + " where col2 = 9");
     assertFalse(res.next());
     res.close();
   }

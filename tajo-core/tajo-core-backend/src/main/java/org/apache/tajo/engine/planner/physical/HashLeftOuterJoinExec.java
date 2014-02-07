@@ -62,7 +62,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   protected final Projector projector;
 
   private int rightNumCols;
-  private int leftNumCols;
   private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
 
   public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
@@ -94,7 +93,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     outTuple = new VTuple(outSchema.getColumnNum());
     leftKeyTuple = new VTuple(leftKeyList.length);
 
-    leftNumCols = leftChild.getSchema().getColumnNum();
     rightNumCols = rightChild.getSchema().getColumnNum();
   }
 

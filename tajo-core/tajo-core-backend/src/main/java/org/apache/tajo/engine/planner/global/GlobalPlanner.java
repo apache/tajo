@@ -30,10 +30,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
@@ -42,6 +39,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import java.io.IOException;
 import java.util.*;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
 
 /**
@@ -55,7 +53,7 @@ public class GlobalPlanner {
 
   public GlobalPlanner(final TajoConf conf, final AbstractStorageManager sm) throws IOException {
     this.conf = conf;
-    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(TajoConf.ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
+    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
     Preconditions.checkArgument(storeType != null);
   }
 
@@ -137,6 +135,42 @@ public class GlobalPlanner {
     return channel;
   }
 
+  /**
+   * It calculates the total volume of all descendent relation nodes.
+   */
+  public static long computeDescendentVolume(LogicalNode node) throws PlanningException {
+
+    if (node instanceof RelationNode) {
+      switch (node.getType()) {
+      case SCAN:
+      case PARTITIONS_SCAN:
+        ScanNode scanNode = (ScanNode) node;
+        if (scanNode.getTableDesc().getStats() == null) {
+          // TODO - this case means that data is not located in HDFS. So, we need additional
+          // broadcast method.
+          return Long.MAX_VALUE;
+        } else {
+          return scanNode.getTableDesc().getStats().getNumBytes();
+        }
+      case TABLE_SUBQUERY:
+        return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());
+      default:
+        throw new IllegalArgumentException("Not RelationNode");
+      }
+    } else if (node instanceof UnaryNode) {
+      return computeDescendentVolume(((UnaryNode) node).getChild());
+    } else if (node instanceof BinaryNode) {
+      BinaryNode binaryNode = (BinaryNode) node;
+      return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
+    }
+
+    throw new PlanningException("Invalid State");
+  }
+
+  private static boolean checkIfCanBeOneOfBroadcastJoin(LogicalNode node) {
+    return node.getType() == NodeType.SCAN || node.getType() == NodeType.PARTITIONS_SCAN;
+  }
+
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock)
       throws PlanningException {
@@ -149,7 +183,7 @@ public class GlobalPlanner {
     boolean leftBroadcasted = false;
     boolean rightBroadcasted = false;
 
-    if (leftNode.getType() == NodeType.SCAN && rightNode.getType() == NodeType.SCAN ) {
+    if (checkIfCanBeOneOfBroadcastJoin(leftNode) && checkIfCanBeOneOfBroadcastJoin(rightNode)) {
       ScanNode leftScan = (ScanNode) leftNode;
       ScanNode rightScan = (ScanNode) rightNode;
 
@@ -169,9 +203,13 @@ public class GlobalPlanner {
         currentBlock.setPlan(joinNode);
         if (leftBroadcasted) {
           currentBlock.addBroadcastTable(leftScan.getCanonicalName());
+          LOG.info("The left table " + rightScan.getCanonicalName() + " ("
+              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
         }
         if (rightBroadcasted) {
           currentBlock.addBroadcastTable(rightScan.getCanonicalName());
+          LOG.info("The right table " + rightScan.getCanonicalName() + " ("
+              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
         }
 
         context.execBlockMap.remove(leftScan.getPID());

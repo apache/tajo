@@ -251,7 +251,9 @@ public class TajoTestingCluster {
   }
 
   public void shutdownCatalogCluster() {
-    this.catalogServer.shutdown();
+    if (catalogServer != null) {
+      this.catalogServer.shutdown();
+    }
   }
 
   public MiniCatalogServer getMiniCatalogCluster() {

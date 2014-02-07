@@ -12,4 +12,6 @@ left outer join (
   group by
     c_custkey)
   b
-on a.c_custkey = b.c_custkey;
+on a.c_custkey = b.c_custkey
+order by
+  c_custkey;

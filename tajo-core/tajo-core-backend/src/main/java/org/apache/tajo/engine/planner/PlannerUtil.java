@@ -34,6 +34,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.TUtil;
 
@@ -162,39 +163,79 @@ public class PlannerUtil {
       this.tobeReplaced = tobeReplaced;
     }
 
+    /**
+     * If this node can have child, it returns TRUE. Otherwise, it returns FALSE.
+     */
+    private static boolean checkIfVisitable(LogicalNode node) {
+      return node instanceof UnaryNode || node instanceof BinaryNode;
+    }
+
     @Override
     public LogicalNode visit(ReplacerContext context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block,
                              LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
-      LogicalNode child = super.visit(context, plan, null, node, stack);
+      LogicalNode left = null;
+      LogicalNode right = null;
 
-      if (node.deepEquals(target)) {
-        LogicalNode parent = stack.peek();
-
-        if (parent instanceof BinaryNode) {
-          BinaryNode binaryParent = (BinaryNode) parent;
-          if (binaryParent.getLeftChild().deepEquals(target)) {
-            binaryParent.setLeftChild(tobeReplaced);
-          }
-          if (binaryParent.getRightChild().deepEquals(target)) {
-            binaryParent.setRightChild(tobeReplaced);
-          }
-        } else if (parent instanceof UnaryNode) {
-          UnaryNode unaryParent = (UnaryNode) parent;
-          unaryParent.setChild(tobeReplaced);
+      if (node instanceof UnaryNode) {
+        UnaryNode unaryNode = (UnaryNode) node;
+        if (unaryNode.getChild().deepEquals(target)) {
+          unaryNode.setChild(tobeReplaced);
+          left = tobeReplaced;
+          context.updateSchemaFlag = true;
+        } else if (checkIfVisitable(unaryNode.getChild())) {
+          left = visit(context, plan, null, unaryNode.getChild(), stack);
+        }
+      } else if (node instanceof BinaryNode) {
+        BinaryNode binaryNode = (BinaryNode) node;
+        if (binaryNode.getLeftChild().deepEquals(target)) {
+          binaryNode.setLeftChild(tobeReplaced);
+          left = tobeReplaced;
+          context.updateSchemaFlag = true;
+        } else if (checkIfVisitable(binaryNode.getLeftChild())) {
+          left = visit(context, plan, null, binaryNode.getLeftChild(), stack);
+        } else {
+          left = binaryNode.getLeftChild();
         }
 
-        context.updateSchemaFlag = true;
+        if (binaryNode.getRightChild().deepEquals(target)) {
+          binaryNode.setRightChild(tobeReplaced);
+          right = tobeReplaced;
+          context.updateSchemaFlag = true;
+        } else if (checkIfVisitable(binaryNode.getRightChild())) {
+          right = visit(context, plan, null, binaryNode.getRightChild(), stack);
+        } else {
+          right = binaryNode.getRightChild();
+        }
       }
 
-      if (context.updateSchemaFlag && !node.deepEquals(target)) {
+      // update schemas of nodes except for leaf node (i.e., RelationNode)
+      if (context.updateSchemaFlag) {
         if (node instanceof Projectable) {
-          node.setInSchema(child.getOutSchema());
+          if (node instanceof BinaryNode) {
+            node.setInSchema(SchemaUtil.merge(left.getOutSchema(), right.getOutSchema()));
+          } else {
+            node.setInSchema(left.getOutSchema());
+          }
           context.updateSchemaFlag = false;
         } else {
-          node.setInSchema(child.getOutSchema());
-          node.setOutSchema(child.getOutSchema());
+          node.setInSchema(left.getOutSchema());
+          node.setOutSchema(left.getOutSchema());
         }
       }
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
+                                 Stack<LogicalNode> stack) throws PlanningException {
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitPartitionedTableScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.
+        QueryBlock block,PartitionedTableScanNode node, Stack<LogicalNode> stack)
+
+        throws PlanningException {
       return node;
     }
   }
@@ -632,7 +673,11 @@ public class PlannerUtil {
   public static <T extends LogicalNode> T clone(LogicalPlan plan, LogicalNode node) {
     try {
       T copy = (T) node.clone();
-      copy.setPID(plan.newPID());
+      if (plan == null) {
+        copy.setPID(-1);
+      } else {
+        copy.setPID(plan.newPID());
+      }
       return copy;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);

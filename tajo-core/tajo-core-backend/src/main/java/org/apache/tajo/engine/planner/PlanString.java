@@ -96,4 +96,18 @@ public class PlanString {
       currentDetail = null;
     }
   }
+
+  public String toString() {
+    StringBuilder output = new StringBuilder();
+    output.append(getTitle()).append("\n");
+
+    for (String str : getExplanations()) {
+      output.append("  => ").append(str).append("\n");
+    }
+
+    for (String str : getDetails()) {
+      output.append("  => ").append(str).append("\n");
+    }
+    return output.toString();
+  }
 }

@@ -68,7 +68,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    ResultSet res2 = executeQuery("check1.sql");
+    ResultSet res2 = executeFile("check1.sql");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -107,7 +107,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     assertEquals(5, desc.getStats().getNumRows().intValue());
 
-    ResultSet res2 = executeQuery("check2.sql");
+    ResultSet res2 = executeFile("check2.sql");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
@@ -125,7 +125,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithGroupby() throws Exception {
-    ResultSet res = executeQuery("CtasWithGroupby.sql");
+    ResultSet res = executeFile("CtasWithGroupby.sql");
     res.close();
 
     ResultSet res2 = executeQuery();
@@ -135,7 +135,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithOrderby() throws Exception {
-    ResultSet res = executeQuery("CtasWithOrderby.sql");
+    ResultSet res = executeFile("CtasWithOrderby.sql");
     res.close();
 
     ResultSet res2 = executeQuery();
@@ -145,7 +145,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithLimit() throws Exception {
-    ResultSet res = executeQuery("CtasWithLimit.sql");
+    ResultSet res = executeFile("CtasWithLimit.sql");
     res.close();
 
     ResultSet res2 = executeQuery();
@@ -155,7 +155,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithUnion() throws Exception {
-    ResultSet res = executeQuery("CtasWithUnion.sql");
+    ResultSet res = executeFile("CtasWithUnion.sql");
     res.close();
 
     ResultSet res2 = executeQuery();

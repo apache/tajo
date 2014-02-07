@@ -26,6 +26,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -65,15 +66,28 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     visit(cnf, plan, block, selNode.getChild(), stack);
     stack.pop();
 
-    // remove the selection operator if there is no search condition
-    // after selection push.
-    if(cnf.size() == 0) {
+    if(cnf.size() == 0) { // remove the selection operator if there is no search condition after selection push.
       LogicalNode node = stack.peek();
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
         unary.setChild(selNode.getChild());
       } else {
         throw new InvalidQueryException("Unexpected Logical Query Plan");
+      }
+    } else { // if there remain search conditions
+
+      // check if it can be evaluated here
+      Set<EvalNode> matched = TUtil.newHashSet();
+      for (EvalNode eachEval : cnf) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)) {
+          matched.add(eachEval);
+        }
+      }
+
+      // if there are search conditions which can be evaluated here, push down them and remove them from cnf.
+      if (matched.size() > 0) {
+        selNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(matched.toArray(new EvalNode[matched.size()])));
+        cnf.removeAll(matched);
       }
     }
 

@@ -25,6 +25,7 @@ import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.DropTable;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -92,7 +93,7 @@ import static org.junit.Assert.*;
  * <code>QueryTestCaseBase</code> basically provides the following methods:
  * <ul>
  *  <li><code>{@link #executeQuery()}</code> - executes a corresponding query and returns an ResultSet instance</li>
- *  <li><code>{@link #executeQuery(String)}</code> - executes a given query file included in the corresponding query
+ *  <li><code>{@link #executeFile(String)}</code> - executes a given query file included in the corresponding query
  *  file in the current class's query directory</li>
  *  <li><code>assertResultSet()</code> - check if the query result is equivalent to the expected result included
  *  in the corresponding result file in the current class's result directory.</li>
@@ -178,7 +179,7 @@ public class QueryTestCaseBase {
     currentDatasetPath = new Path(datasetBasePath, className);
   }
 
-  protected ResultSet execute(String sql) throws Exception {
+  protected ResultSet executeString(String sql) throws Exception {
     return testBase.execute(sql);
   }
 
@@ -189,7 +190,7 @@ public class QueryTestCaseBase {
    * @return ResultSet of query execution.
    */
   public ResultSet executeQuery() throws Exception {
-    return executeQuery(name.getMethodName() + ".sql");
+    return executeFile(name.getMethodName() + ".sql");
   }
 
   /**
@@ -199,7 +200,7 @@ public class QueryTestCaseBase {
    * @param queryFileName The file name to be used to execute a query.
    * @return ResultSet of query execution.
    */
-  public ResultSet executeQuery(String queryFileName) throws Exception {
+  public ResultSet executeFile(String queryFileName) throws Exception {
     Path queryFilePath = getQueryFilePath(queryFileName);
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
@@ -312,6 +313,10 @@ public class QueryTestCaseBase {
     return StorageUtil.concatPath(currentDatasetPath, fileName);
   }
 
+  public String executeDDL(String ddlFileName, @Nullable String [] args) throws Exception {
+    return executeDDL(ddlFileName, null, true, args);
+  }
+
   /**
    *
    * Execute a data definition language (DDL) template. A general SQL DDL statement can be included in this file. But,
@@ -331,11 +336,14 @@ public class QueryTestCaseBase {
    * @param args A list of arguments, each of which is used to replace corresponding variable which has a form of ${i}.
    * @return The table name created
    */
-  public String executeDDL(String ddlFileName, String dataFileName, String ... args) throws Exception {
+  public String executeDDL(String ddlFileName, @Nullable String dataFileName, @Nullable String ... args)
+      throws Exception {
+
     return executeDDL(ddlFileName, dataFileName, true, args);
   }
 
-  private String executeDDL(String ddlFileName, String dataFileName, boolean isLocalTable, String ... args)
+  private String executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
+                            @Nullable String [] args)
       throws Exception {
 
     Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
@@ -386,7 +394,7 @@ public class QueryTestCaseBase {
    * @param args The list argument to replace each corresponding format string ${i}. ${i} uses zero-based index.
    * @return A string compiled
    */
-  private String compileTemplate(String template, String dataFileName, String... args) {
+  private String compileTemplate(String template, @Nullable String dataFileName, @Nullable String ... args) {
     String result;
     if (dataFileName != null) {
       result = template.replace("${table.path}", "\'" + dataFileName + "'");
@@ -394,8 +402,10 @@ public class QueryTestCaseBase {
       result = template;
     }
 
-    for (int i = 0; i < args.length; i++) {
-      result = result.replace("${" + i + "}", args[i]);
+    if (args != null) {
+      for (int i = 0; i < args.length; i++) {
+        result = result.replace("${" + i + "}", args[i]);
+      }
     }
     return result;
   }

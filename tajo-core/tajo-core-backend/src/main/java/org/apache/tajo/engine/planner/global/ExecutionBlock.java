@@ -108,12 +108,9 @@ public class ExecutionBlock {
     return hasUnionPlan;
   }
 
-  public void addBroadcastTables(Collection<String> tableNames) {
-    broadcasted.addAll(tableNames);
-  }
-
   public void addBroadcastTable(String tableName) {
     broadcasted.add(tableName);
+    enforcer.addBroadcast(tableName);
   }
 
   public boolean isBroadcastTable(String tableName) {

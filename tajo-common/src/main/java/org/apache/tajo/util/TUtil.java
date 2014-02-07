@@ -168,7 +168,7 @@ public class TUtil {
   }
 
   public static String collectionToString(Collection objects) {
-    boolean first = false;
+    boolean first = true;
     StringBuilder sb = new StringBuilder();
     for(Object object : objects) {
       if (first) {
