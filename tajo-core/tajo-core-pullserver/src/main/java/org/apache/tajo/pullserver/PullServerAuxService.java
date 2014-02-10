@@ -51,7 +51,6 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TajoIdUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -608,7 +607,7 @@ public class PullServerAuxService extends AuxiliaryService {
       startOffset = idxReader.find(start);
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: "
+          + "[" + start + ", " + end +")" + ", idx min: "
           + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
       throw ioe;
@@ -620,7 +619,7 @@ public class PullServerAuxService extends AuxiliaryService {
       }
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: "
+          + "[" + start + ", " + end +")" + ", idx min: "
           + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
       throw ioe;
@@ -633,7 +632,7 @@ public class PullServerAuxService extends AuxiliaryService {
         startOffset = idxReader.find(start, true);
       } catch (IOException ioe) {
         LOG.error("State Dump (the requested range: "
-            + new TupleRange(keySchema, start, end) + ", idx min: "
+            + "[" + start + ", " + end +")" + ", idx min: "
             + idxReader.getFirstKey() + ", idx max: "
             + idxReader.getLastKey());
         throw ioe;
@@ -643,7 +642,7 @@ public class PullServerAuxService extends AuxiliaryService {
     if (startOffset == -1) {
       throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
           "State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+          + "[" + start + ", " + end +")" + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
     }
 

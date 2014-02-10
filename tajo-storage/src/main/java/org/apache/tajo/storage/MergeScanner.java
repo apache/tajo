@@ -18,18 +18,15 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,25 +43,23 @@ public class MergeScanner implements Scanner {
   private boolean selectable = false;
   private Schema target;
 
-  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, Collection<FileFragment> rawFragmentList)
+  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<FileFragment> rawFragmentList)
       throws IOException {
     this(conf, schema, meta, rawFragmentList, schema);
   }
 
-  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, Collection<FileFragment> rawFragmentList,
+  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<FileFragment> rawFragmentList,
                       Schema target)
       throws IOException {
     this.conf = conf;
     this.schema = schema;
     this.meta = meta;
-    this.fragments = Lists.newArrayList();
-    for (Fragment f : rawFragmentList) {
-      fragments.add((FileFragment) f);
-    }
-    Collections.sort(fragments);
-
     this.target = target;
+
+    // it should keep the input order. Otherwise, it causes wrong result of sort queries.
+    this.fragments = ImmutableList.copyOf(rawFragmentList);
     this.reset();
+
     if (currentScanner != null) {
       this.projectable = currentScanner.isProjectable();
       this.selectable = currentScanner.isSelectable();
@@ -118,9 +113,6 @@ public class MergeScanner implements Scanner {
       currentScanner.close();
     }
     iterator = null;
-    if(fragments != null) {
-      fragments.clear();
-    }
   }
 
   @Override

@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.Test;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -29,10 +29,7 @@ import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.worker.dataserver.HttpUtil;
-
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
+import org.junit.Test;
 
 import static org.junit.Assert.*;
 
@@ -80,6 +77,7 @@ public class TestTupleUtil {
     Tuple eTuple = new VTuple(7);
 
     Schema schema = new Schema();
+
     schema.addColumn("numByte", Type.BIT);
     schema.addColumn("numChar", Type.CHAR);
     schema.addColumn("numShort", Type.INT2);
@@ -87,6 +85,8 @@ public class TestTupleUtil {
     schema.addColumn("numLong", Type.INT8);
     schema.addColumn("numFloat", Type.FLOAT4);
     schema.addColumn("numDouble", Type.FLOAT4);
+
+    SortSpec[] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
     sTuple.put(0, DatumFactory.createBit((byte) 44));
     sTuple.put(1, DatumFactory.createChar('a'));
@@ -104,7 +104,8 @@ public class TestTupleUtil {
     eTuple.put(5, DatumFactory.createFloat4(150));
     eTuple.put(6, DatumFactory.createFloat8(170));
 
-    RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, new TupleRange(schema, sTuple, eTuple));
+    RangePartitionAlgorithm partitioner = new UniformRangePartition(new TupleRange(sortSpecs, sTuple, eTuple),
+        sortSpecs);
     TupleRange [] ranges = partitioner.partition(5);
     assertTrue(5 <= ranges.length);
     TupleComparator comp = new TupleComparator(schema, PlannerUtil.schemaToSortSpecs(schema));
@@ -113,119 +114,6 @@ public class TestTupleUtil {
       assertTrue(comp.compare(prev.getStart(), ranges[i].getStart()) < 0);
       assertTrue(comp.compare(prev.getEnd(), ranges[i].getEnd()) < 0);
       prev = ranges[i];
-    }
-  }
-
-  @Test
-  public void testQueryToRange() throws UnsupportedEncodingException {
-    Schema schema = new Schema();
-    schema.addColumn("intval", Type.INT4);
-    schema.addColumn("floatval", Type.FLOAT4);
-
-    Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createInt4(5));
-    s.put(1, DatumFactory.createFloat4(10));
-
-    Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createInt4(10));
-    e.put(1, DatumFactory.createFloat4(20));
-
-    TupleRange expected = new TupleRange(schema, s, e);
-    int card = (int) TupleUtil.computeCardinality(schema, expected);
-    assertEquals(66, card);
-    int partNum = TupleUtil.getPartitions(schema, 5, expected).length;
-    assertEquals(5, partNum);
-
-    // TODO - partition should be improved to consider all fields
-    //partNum = TupleUtil.partition(schema, 10, expected).length;
-    //assertEquals(10, partNum);
-
-    String query = TupleUtil.rangeToQuery(schema, expected, true, false);
-
-    TupleRange range = TupleUtil.queryToRange(schema, query);
-    assertEquals(expected, range);
-
-    query = TupleUtil.rangeToQuery(schema, expected, true, true);
-    Map<String,String> params = HttpUtil.getParamsFromQuery(query);
-    assertTrue(params.containsKey("final"));
-    range = TupleUtil.queryToRange(schema, query);
-    assertEquals(expected, range);
-  }
-
-  @Test
-  public void testQueryToRangeWithOneRange() throws UnsupportedEncodingException {
-    Schema schema = new Schema();
-    schema.addColumn("partkey", Type.FLOAT4);
-
-    Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createFloat4(28082));
-    Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createFloat4(28082));
-
-    TupleRange expected = new TupleRange(schema, s, e);
-    int card = (int) TupleUtil.computeCardinality(schema, expected);
-    assertEquals(1, card);
-    int partNum = TupleUtil.getPartitions(schema, card, expected).length;
-    assertEquals(1, partNum);
-
-    String query = TupleUtil.rangeToQuery(schema, expected, true, false);
-
-    TupleRange range = TupleUtil.queryToRange(schema, query);
-    assertEquals(expected, range);
-
-    query = TupleUtil.rangeToQuery(schema, expected, true, true);
-    Map<String,String> params = HttpUtil.getParamsFromQuery(query);
-    assertTrue(params.containsKey("final"));
-    range = TupleUtil.queryToRange(schema, query);
-    assertEquals(expected, range);
-  }
-
-  @Test
-  /**
-   * It verifies NTA-805.
-   */
-  public void testRangeToQueryHeavyTest() throws UnsupportedEncodingException {
-    Schema schema = new Schema();
-    schema.addColumn("c_custkey", Type.INT4);
-    Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createInt4(4));
-    Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createInt4(149995));
-    TupleRange expected = new TupleRange(schema, s, e);
-    TupleRange [] ranges = TupleUtil.getPartitions(schema, 31, expected);
-
-    String query;
-    for (TupleRange range : ranges) {
-      query = TupleUtil.rangeToQuery(schema, range, true, false);
-      TupleRange result = TupleUtil.queryToRange(schema, query);
-      assertEquals(range, result);
-    }
-  }
-
-  @Test
-  /**
-   * It verifies NTA-807
-   */
-  public void testRangeToQueryTest() throws UnsupportedEncodingException {
-    Schema schema = new Schema();
-    schema.addColumn("l_returnflag", Type.TEXT);
-    schema.addColumn("l_linestatus", Type.TEXT);
-    Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createText("A"));
-    s.put(1, DatumFactory.createText("F"));
-    Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createText("R"));
-    e.put(1, DatumFactory.createText("O"));
-    TupleRange expected = new TupleRange(schema, s, e);
-
-    RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, expected, true);
-    TupleRange [] ranges = partitioner.partition(31);
-
-    String query;
-    for (TupleRange range : ranges) {
-      query = TupleUtil.rangeToQuery(schema, range, true, false);
-      TupleRange result = TupleUtil.queryToRange(schema, query);
-      assertEquals(range, result);
     }
   }
 

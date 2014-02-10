@@ -46,6 +46,10 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   private Datum right;
   private int compVal;
 
+  /**
+   * @param schema The schema of input tuples
+   * @param sortKeys The description of sort keys
+   */
   public TupleComparator(Schema schema, SortSpec[] sortKeys) {
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified.");

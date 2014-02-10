@@ -19,9 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -34,20 +33,21 @@ import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.LocalTajoTestingUtility;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class TestLeftOuterNLJoinExec {
   private TajoConf conf;
@@ -251,6 +251,7 @@ public class TestLeftOuterNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestLeftOuterNLJoinExec0");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -292,6 +293,7 @@ public class TestLeftOuterNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestLeftOuter_NLJoinExec1");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -302,7 +304,7 @@ public class TestLeftOuterNLJoinExec {
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
-      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      HashLeftOuterJoinExec join = proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
@@ -335,6 +337,7 @@ public class TestLeftOuterNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestLeftOuter_NLJoinExec2");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -345,7 +348,7 @@ public class TestLeftOuterNLJoinExec {
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
-      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      HashLeftOuterJoinExec join = proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
@@ -379,6 +382,7 @@ public class TestLeftOuterNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestLeftOuter_NLJoinExec3");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -389,7 +393,7 @@ public class TestLeftOuterNLJoinExec {
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
-      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      HashLeftOuterJoinExec join = proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
@@ -422,6 +426,7 @@ public class TestLeftOuterNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestLeftOuter_NLJoinExec4");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -432,7 +437,7 @@ public class TestLeftOuterNLJoinExec {
     //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof HashLeftOuterJoinExec) {
-      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      HashLeftOuterJoinExec join = proj.getChild();
       NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;

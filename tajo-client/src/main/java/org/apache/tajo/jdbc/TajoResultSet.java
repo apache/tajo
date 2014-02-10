@@ -18,6 +18,7 @@
 
 package org.apache.tajo.jdbc;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,7 +26,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.FileScanner;
@@ -37,7 +37,6 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -63,7 +62,7 @@ public class TajoResultSet extends TajoResultSetBase {
       fs = FileScanner.getFileSystem(conf, desc.getPath());
       this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
 
-      Collection<FileFragment> frags = getFragments(desc.getMeta(), desc.getPath());
+      List<FileFragment> frags = getFragments(desc.getPath());
       scanner = new MergeScanner(conf, schema, desc.getMeta(), frags);
     }
     init();
@@ -75,23 +74,30 @@ public class TajoResultSet extends TajoResultSetBase {
     curRow = 0;
   }
 
-  static class FileNameComparator implements Comparator<FileStatus> {
+  public static class FileNameComparator implements Comparator<FileStatus> {
 
     @Override
     public int compare(FileStatus f1, FileStatus f2) {
-      return f2.getPath().getName().compareTo(f1.getPath().getName());
+      return f1.getPath().getName().compareTo(f2.getPath().getName());
     }
   }
 
-  private Collection<FileFragment> getFragments(TableMeta meta, Path tablePath)
+  private List<FileFragment> getFragments(Path tablePath)
       throws IOException {
-    List<FileFragment> fraglist = Lists.newArrayList();
+    List<FileFragment> fragments = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
       @Override
       public boolean accept(Path path) {
         return path.getName().charAt(0) != '.';
       }
     });
+
+
+    // The files must be sorted in an ascending order of file names
+    // in order to guarantee the order of a sort operation.
+    // This is because our distributed sort algorithm outputs
+    // a sequence of sorted data files, each of which contains sorted rows
+    // within each file.
     Arrays.sort(files, new FileNameComparator());
 
     String tbname = tablePath.getName();
@@ -99,9 +105,9 @@ public class TajoResultSet extends TajoResultSetBase {
       if (files[i].getLen() == 0) {
         continue;
       }
-      fraglist.add(new FileFragment(tbname + "_" + i, files[i].getPath(), 0l, files[i].getLen()));
+      fragments.add(new FileFragment(tbname + "_" + i, files[i].getPath(), 0l, files[i].getLen()));
     }
-    return fraglist;
+    return ImmutableList.copyOf(fragments);
   }
 
   @Override

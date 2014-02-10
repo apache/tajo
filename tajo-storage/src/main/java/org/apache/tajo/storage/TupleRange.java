@@ -19,39 +19,33 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 
 import java.util.Comparator;
 
+/**
+ * It represents a pair of start and end tuples.
+ */
 public class TupleRange implements Comparable<TupleRange> {
-  private final Schema schema;
   private final Tuple start;
   private final Tuple end;
   private final TupleComparator comp;
 
-  public TupleRange(final Schema schema, final Tuple start, final Tuple end) {
-    this.comp = new TupleComparator(schema, schemaToSortSpecs(schema));
+  public TupleRange(final SortSpec [] sortSpecs, final Tuple start, final Tuple end) {
+    this.comp = new TupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
     // if there is only one value, start == end
-    Preconditions.checkArgument(comp.compare(start, end) <= 0, ("start=" + start) + ", end=" + end);
-    this.schema = schema;
     this.start = start;
     this.end = end;
   }
 
-  public static SortSpec[] schemaToSortSpecs(Schema schema) {
-    SortSpec[] specs = new SortSpec[schema.getColumnNum()];
-
-    for (int i = 0; i < schema.getColumnNum(); i++) {
-      specs[i] = new SortSpec(schema.getColumn(i), true, false);
+  public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
+    Schema schema = new Schema();
+    for (SortSpec spec : sortSpecs) {
+      schema.addColumn(spec.getSortKey());
     }
 
-    return specs;
-  }
-
-  public final Schema getSchema() {
-    return this.schema;
+    return schema;
   }
 
   public final Tuple getStart() {

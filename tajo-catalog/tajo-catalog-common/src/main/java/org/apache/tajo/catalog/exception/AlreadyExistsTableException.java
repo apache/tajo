@@ -26,6 +26,6 @@ public class AlreadyExistsTableException extends CatalogException {
 	}
 
 	public AlreadyExistsTableException(String tableName) {
-		super("Already Exists Table: "+tableName);
+		super("Already exists table: "+tableName);
 	}
 }

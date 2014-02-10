@@ -140,13 +140,15 @@ public class TestSortExec {
   public void testTAJO_946() {
     Schema schema = new Schema();
     schema.addColumn("l_orderkey", Type.INT8);
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(1);
     s.put(0, DatumFactory.createInt8(0));
     Tuple e = new VTuple(1);
     e.put(0, DatumFactory.createInt8(6000000000l));
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
     RangePartitionAlgorithm partitioner
-        = new UniformRangePartition(schema, expected, true);
+        = new UniformRangePartition(expected, sortSpecs, true);
     TupleRange [] ranges = partitioner.partition(967);
 
     TupleRange prev = null;

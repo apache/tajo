@@ -58,11 +58,11 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
 
   @Override
   public Expr visitRelation(VerificationState state, Stack<Expr> stack, Relation expr) throws PlanningException {
-    checkRelationExistence(state, expr.getName());
+    assertRelationExistence(state, expr.getName());
     return expr;
   }
 
-  private boolean checkRelationExistence(VerificationState state, String name) {
+  private boolean assertRelationExistence(VerificationState state, String name) {
     if (!catalog.existsTable(name)) {
       state.addVerification(String.format("relation \"%s\" does not exist", name));
       return false;
@@ -70,15 +70,34 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
     return true;
   }
 
+  private boolean assertRelationNoExistence(VerificationState state, String name) {
+    if (catalog.existsTable(name)) {
+      state.addVerification(String.format("relation \"%s\" already exists", name));
+      return false;
+    }
+    return true;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Data Definition Language Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public Expr visitCreateTable(VerificationState state, Stack<Expr> stack, CreateTable expr) throws PlanningException {
+    super.visitCreateTable(state, stack, expr);
+    assertRelationNoExistence(state, expr.getTableName());
+    return expr;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public Expr visitInsert(VerificationState context, Stack<Expr> stack, Insert expr) throws PlanningException {
-    Expr child = super.visitInsert(context, stack, expr);
+  public Expr visitInsert(VerificationState state, Stack<Expr> stack, Insert expr) throws PlanningException {
+    Expr child = super.visitInsert(state, stack, expr);
 
     if (expr.hasTableName()) {
-      checkRelationExistence(context, expr.getTableName());
+      assertRelationExistence(state, expr.getTableName());
     }
 
     if (child != null && child.getType() == OpType.Projection) {
@@ -88,9 +107,9 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
         int targetColumnNum = expr.getTargetColumns().length;
 
         if (targetColumnNum > projectColumnNum)  {
-          context.addVerification("INSERT has more target columns than expressions");
+          state.addVerification("INSERT has more target columns than expressions");
         } else if (targetColumnNum < projectColumnNum) {
-          context.addVerification("INSERT has more expressions than target columns");
+          state.addVerification("INSERT has more expressions than target columns");
         }
       }
     }

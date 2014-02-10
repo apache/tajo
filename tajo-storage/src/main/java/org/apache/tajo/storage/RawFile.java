@@ -71,10 +71,14 @@ public class RawFile {
 
     public void init() throws IOException {
       File file;
-      if (path.toUri().getScheme() != null) {
-        file = new File(path.toUri());
-      } else {
-        file = new File(path.toString());
+      try {
+        if (path.toUri().getScheme() != null) {
+          file = new File(path.toUri());
+        } else {
+          file = new File(path.toString());
+        }
+      } catch (IllegalArgumentException iae) {
+        throw new IOException(iae);
       }
 
       fis = new FileInputStream(file);
@@ -405,10 +409,14 @@ public class RawFile {
 
     public void init() throws IOException {
       File file;
-      if (path.toUri().getScheme() != null) {
-        file = new File(path.toUri());
-      } else {
-        file = new File(path.toString());
+      try {
+        if (path.toUri().getScheme() != null) {
+          file = new File(path.toUri());
+        } else {
+          file = new File(path.toString());
+        }
+      } catch (IllegalArgumentException iae) {
+        throw new IOException(iae);
       }
 
       randomAccessFile = new RandomAccessFile(file, "rw");

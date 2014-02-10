@@ -166,7 +166,7 @@ public class Task {
       this.shuffleType = context.getDataChannel().getShuffleType();
 
       if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
-        SortNode sortNode = (SortNode) PlannerUtil.findTopNode(plan, NodeType.SORT);
+        SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }

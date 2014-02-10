@@ -44,14 +44,20 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
   }
 
   public void init() throws IOException {
-    child.init();
+    if (child != null) {
+      child.init();
+    }
   }
 
   public void rescan() throws IOException {
-    child.rescan();
+    if (child != null) {
+      child.rescan();
+    }
   }
 
   public void close() throws IOException {
-    child.close();
+    if (child != null) {
+      child.close();
+    }
   }
 }

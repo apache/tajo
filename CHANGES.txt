@@ -130,6 +130,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-584: Improve distributed merge sort. (hyunsik)
+
     TAJO-36: Improve ExternalSortExec with N-merge sort and final pass
     omission. (hyunsik)
 

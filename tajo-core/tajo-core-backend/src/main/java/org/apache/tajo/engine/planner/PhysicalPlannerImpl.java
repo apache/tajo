@@ -35,6 +35,7 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -45,6 +46,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Stack;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
@@ -73,7 +75,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     PhysicalExec execPlan;
 
     try {
-      execPlan = createPlanRecursive(context, logicalPlan);
+      execPlan = createPlanRecursive(context, logicalPlan, new Stack<LogicalNode>());
       if (execPlan instanceof StoreTableExec
           || execPlan instanceof RangeShuffleFileWriteExec
           || execPlan instanceof HashShuffleFileWriteExec
@@ -103,7 +105,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return outExecPlan;
   }
 
-  private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode) throws IOException {
+  private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode, Stack<LogicalNode> stack)
+      throws IOException {
     PhysicalExec leftExec;
     PhysicalExec rightExec;
 
@@ -111,7 +114,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
       case ROOT:
         LogicalRootNode rootNode = (LogicalRootNode) logicalNode;
-        return createPlanRecursive(ctx, rootNode.getChild());
+        stack.push(rootNode);
+        leftExec = createPlanRecursive(ctx, rootNode.getChild(), stack);
+        stack.pop();
+        return leftExec;
 
       case EXPRS:
         EvalExprNode evalExpr = (EvalExprNode) logicalNode;
@@ -121,61 +127,81 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       case INSERT:
       case STORE:
         StoreTableNode storeNode = (StoreTableNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, storeNode.getChild());
+        stack.push(storeNode);
+        leftExec = createPlanRecursive(ctx, storeNode.getChild(), stack);
+        stack.pop();
         return createStorePlan(ctx, storeNode, leftExec);
 
       case SELECTION:
         SelectionNode selNode = (SelectionNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, selNode.getChild());
+        stack.push(selNode);
+        leftExec = createPlanRecursive(ctx, selNode.getChild(), stack);
+        stack.pop();
         return new SelectionExec(ctx, selNode, leftExec);
 
       case PROJECTION:
         ProjectionNode prjNode = (ProjectionNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, prjNode.getChild());
+        stack.push(prjNode);
+        leftExec = createPlanRecursive(ctx, prjNode.getChild(), stack);
+        stack.pop();
         return new ProjectionExec(ctx, prjNode, leftExec);
 
       case TABLE_SUBQUERY: {
         TableSubQueryNode subQueryNode = (TableSubQueryNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, subQueryNode.getSubQuery());
-        ProjectionExec projectionExec = new ProjectionExec(ctx, subQueryNode, leftExec);
-        return projectionExec;
+        stack.push(subQueryNode);
+        leftExec = createPlanRecursive(ctx, subQueryNode.getSubQuery(), stack);
+        stack.pop();
+        return new ProjectionExec(ctx, subQueryNode, leftExec);
+
       }
 
       case PARTITIONS_SCAN:
       case SCAN:
-        leftExec = createScanPlan(ctx, (ScanNode) logicalNode);
+        leftExec = createScanPlan(ctx, (ScanNode) logicalNode, stack);
         return leftExec;
 
       case GROUP_BY:
         GroupbyNode grpNode = (GroupbyNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, grpNode.getChild());
+        stack.push(grpNode);
+        leftExec = createPlanRecursive(ctx, grpNode.getChild(), stack);
+        stack.pop();
         return createGroupByPlan(ctx, grpNode, leftExec);
 
       case HAVING:
         HavingNode havingNode = (HavingNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, havingNode.getChild());
+        stack.push(havingNode);
+        leftExec = createPlanRecursive(ctx, havingNode.getChild(), stack);
+        stack.pop();
         return new HavingExec(ctx, havingNode, leftExec);
 
       case SORT:
         SortNode sortNode = (SortNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, sortNode.getChild());
+        stack.push(sortNode);
+        leftExec = createPlanRecursive(ctx, sortNode.getChild(), stack);
+        stack.pop();
         return createSortPlan(ctx, sortNode, leftExec);
 
       case JOIN:
         JoinNode joinNode = (JoinNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, joinNode.getLeftChild());
-        rightExec = createPlanRecursive(ctx, joinNode.getRightChild());
+        stack.push(joinNode);
+        leftExec = createPlanRecursive(ctx, joinNode.getLeftChild(), stack);
+        rightExec = createPlanRecursive(ctx, joinNode.getRightChild(), stack);
+        stack.pop();
         return createJoinPlan(ctx, joinNode, leftExec, rightExec);
 
       case UNION:
         UnionNode unionNode = (UnionNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, unionNode.getLeftChild());
-        rightExec = createPlanRecursive(ctx, unionNode.getRightChild());
+        stack.push(unionNode);
+        leftExec = createPlanRecursive(ctx, unionNode.getLeftChild(), stack);
+        rightExec = createPlanRecursive(ctx, unionNode.getRightChild(), stack);
+        stack.pop();
         return new UnionExec(ctx, leftExec, rightExec);
 
       case LIMIT:
         LimitNode limitNode = (LimitNode) logicalNode;
-        leftExec = createPlanRecursive(ctx, limitNode.getChild());
+        stack.push(limitNode);
+        leftExec = createPlanRecursive(ctx, limitNode.getChild(), stack);
+        stack.pop();
         return new LimitExec(ctx, limitNode.getInSchema(),
             limitNode.getOutSchema(), leftExec, limitNode);
 
@@ -745,41 +771,65 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new SortBasedColPartitionStoreExec(context, storeTableNode, sortExec);
   }
 
-  public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode) throws IOException {
-    Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
-        "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");
-
+  private boolean checkIfSortEquivalance(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node) {
     Enforcer enforcer = ctx.getEnforcer();
+    List<EnforceProperty> property = enforcer.getEnforceProperties(EnforceType.SORTED_INPUT);
+    if (property != null && property.size() > 0 && node.peek().getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) node.peek();
+      TajoWorkerProtocol.SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
 
-    // check if this table is broadcasted one or not.
-    boolean broadcastFlag = false;
-    if (enforcer != null && enforcer.hasEnforceProperty(EnforceType.BROADCAST)) {
-      List<EnforceProperty> properties = enforcer.getEnforceProperties(EnforceType.BROADCAST);
-      for (EnforceProperty property : properties) {
-        broadcastFlag |= scanNode.getCanonicalName().equals(property.getBroadcast().getTableName());
-      }
+      boolean condition = scanNode.getTableName().equals(sortEnforcer.getTableName());
+      SortSpec [] sortSpecs = PlannerUtil.convertSortSpecs(sortEnforcer.getSortSpecsList());
+      return condition && TUtil.checkEquals(sortNode.getSortKeys(), sortSpecs);
+    } else {
+      return false;
     }
+  }
 
-    if (scanNode instanceof PartitionedTableScanNode
-        && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
-        ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
+  public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
+      throws IOException {
+    Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
+        "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");    
 
-      if (scanNode instanceof PartitionedTableScanNode) {
-        if (broadcastFlag) {
-          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<FileFragment> fileFragments = TUtil.newList();
-          for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(TUtil.newList(sm.split(scanNode.getCanonicalName(), path)));
-          }
+    // check if an input is sorted in the same order to the subsequence sort operator.
+    // TODO - it works only if input files are raw files. We should check the file format.
+    // Since the default intermediate file format is raw file, it is not problem right now.
+    if (checkIfSortEquivalance(ctx, scanNode, node)) {
+      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+      return new ExternalSortExec(ctx, sm, (SortNode) node.peek(), fragments);
+    } else {
+      Enforcer enforcer = ctx.getEnforcer();
 
-          return new PartitionMergeScanExec(ctx, sm, scanNode,
-              FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()])));
+      // check if this table is broadcasted one or not.
+      boolean broadcastFlag = false;
+      if (enforcer != null && enforcer.hasEnforceProperty(EnforceType.BROADCAST)) {
+        List<EnforceProperty> properties = enforcer.getEnforceProperties(EnforceType.BROADCAST);
+        for (EnforceProperty property : properties) {
+          broadcastFlag |= scanNode.getCanonicalName().equals(property.getBroadcast().getTableName());
         }
       }
-    }
 
-    FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
-    return new SeqScanExec(ctx, sm, scanNode, fragments);
+      if (scanNode instanceof PartitionedTableScanNode
+          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
+          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
+
+        if (scanNode instanceof PartitionedTableScanNode) {
+          if (broadcastFlag) {
+            PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
+            List<FileFragment> fileFragments = TUtil.newList();
+            for (Path path : partitionedTableScanNode.getInputPaths()) {
+              fileFragments.addAll(TUtil.newList(sm.split(scanNode.getCanonicalName(), path)));
+            }
+
+            return new PartitionMergeScanExec(ctx, sm, scanNode,
+                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()])));
+          }
+        }
+      }
+
+      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+      return new SeqScanExec(ctx, sm, scanNode, fragments);
+    }
   }
 
   public PhysicalExec createGroupByPlan(TaskAttemptContext context,GroupbyNode groupbyNode, PhysicalExec subOp)
@@ -858,6 +908,17 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createSortPlan(TaskAttemptContext context, SortNode sortNode,
                                      PhysicalExec child) throws IOException {
+
+    // check if it is a distributed merge sort
+    // If so, it does need to create a sort executor because
+    // the sort executor is created at the scan planning
+    if (child instanceof SortExec) {
+      SortExec childSortExec = (SortExec) child;
+      if (TUtil.checkEquals(sortNode.getSortKeys(), childSortExec.getSortSpecs())) {
+        return child;
+      }
+    }
+
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, sortNode);
     if (property != null) {

@@ -269,14 +269,19 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   @Override
   public RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws PlanningException {
     stack.push(expr);
-    if (!expr.isAllProjected()) {
-      for (NamedExpr target : expr.getNamedExprs()) {
-        visit(ctx, stack, target);
+    try {
+      if (!expr.isAllProjected()) {
+        for (NamedExpr target : expr.getNamedExprs()) {
+          visit(ctx, stack, target);
+        }
       }
+      if (expr.hasChild()) {
+        return visit(ctx, stack, expr.getChild());
+      }
+    } finally {
+      stack.pop();
     }
-    RESULT result = visit(ctx, stack, expr.getChild());
-    stack.pop();
-    return result;
+    return null;
   }
 
   @Override

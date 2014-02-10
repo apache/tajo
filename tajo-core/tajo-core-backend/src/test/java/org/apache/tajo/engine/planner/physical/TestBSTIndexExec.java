@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Stack;
 
 import static org.junit.Assert.assertEquals;
 
@@ -191,7 +192,7 @@ public class TestBSTIndexExec {
     }
 
     @Override
-    public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
+    public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> stack)
         throws IOException {
       Preconditions.checkNotNull(ctx.getTable(scanNode.getTableName()),
           "Error: There is no table matched to %s", scanNode.getTableName());

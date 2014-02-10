@@ -308,8 +308,8 @@ public class Repartitioner {
 
     // calculate the number of maximum query ranges
     TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
-    TupleRange mergedRange = TupleUtil.columnStatToRange(channel.getSchema(), sortSchema, totalStat.getColumnStats());
-    RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
+    TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats());
+    RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
     BigDecimal card = partitioner.getTotalCardinality();
 
     // if the number of the range cardinality is less than the desired number of tasks,
@@ -355,8 +355,8 @@ public class Repartitioner {
       for (int i = 0; i < ranges.length; i++) {
         uris = new HashSet<URI>();
         for (String uri: basicFetchURIs) {
-          String rangeParam = TupleUtil.rangeToQuery(sortSchema, ranges[i],
-              ascendingFirstKey, ascendingFirstKey ? i == (ranges.length - 1) : i == 0);
+          String rangeParam =
+              TupleUtil.rangeToQuery(sortSchema, ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0);
           URI finalUri = URI.create(uri + "&" + rangeParam);
           uris.add(finalUri);
         }

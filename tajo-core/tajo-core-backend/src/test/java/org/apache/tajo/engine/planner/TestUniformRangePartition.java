@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.catalog.SortSpec;
 import org.junit.Test;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -39,6 +40,9 @@ public class TestUniformRangePartition {
     Schema schema = new Schema()
     .addColumn("l_returnflag", Type.TEXT)
     .addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec[] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(2);
     s.put(0, DatumFactory.createText("A"));
     s.put(1, DatumFactory.createText("A"));
@@ -46,11 +50,10 @@ public class TestUniformRangePartition {
     e.put(0, DatumFactory.createText("D"));
     e.put(1, DatumFactory.createText("C"));
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner =
-        new UniformRangePartition(schema, expected);
-    assertEquals(12, TupleUtil.computeCardinality(schema, expected));
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    assertEquals(12, partitioner.getTotalCardinality().intValue());
 
     String [] result = new String[12];
     result[0] = "AA";
@@ -84,6 +87,9 @@ public class TestUniformRangePartition {
     Schema schema = new Schema()
     .addColumn("l_returnflag", Type.TEXT)
     .addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(2);
     s.put(0, DatumFactory.createText("A"));
     s.put(1, DatumFactory.createText("A"));
@@ -91,11 +97,10 @@ public class TestUniformRangePartition {
     e.put(0, DatumFactory.createText("D"));
     e.put(1, DatumFactory.createText("C"));
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner =
-        new UniformRangePartition(schema, expected);
-    assertEquals(12, TupleUtil.computeCardinality(schema, expected));
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    assertEquals(12, partitioner.getTotalCardinality().intValue());
 
     String [] result = new String[12];
     result[0] = "AA";
@@ -129,6 +134,8 @@ public class TestUniformRangePartition {
     .addColumn("l_linestatus", Type.TEXT)
     .addColumn("final", Type.TEXT);
 
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(3);
     s.put(0, DatumFactory.createText("A"));
     s.put(1, DatumFactory.createText("A"));
@@ -138,11 +145,10 @@ public class TestUniformRangePartition {
     e.put(1, DatumFactory.createText("B")); //  2
     e.put(2, DatumFactory.createText("C")); // x3 = 24
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner =
-        new UniformRangePartition(schema, expected);
-    assertEquals(24, TupleUtil.computeCardinality(schema, expected));
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    assertEquals(24, partitioner.getTotalCardinality().intValue());
 
     Tuple overflowBefore = partitioner.increment(s, 5, 2);
     assertEquals("A", overflowBefore.get(0).asChars());
@@ -159,6 +165,9 @@ public class TestUniformRangePartition {
     Schema schema = new Schema()
     .addColumn("l_orderkey", Type.INT8)
     .addColumn("l_linenumber", Type.INT8);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(2);
     s.put(0, DatumFactory.createInt8(10));
     s.put(1, DatumFactory.createInt8(20));
@@ -166,10 +175,9 @@ public class TestUniformRangePartition {
     e.put(0, DatumFactory.createInt8(19));
     e.put(1, DatumFactory.createInt8(39));
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner =
-        new UniformRangePartition(schema, expected);
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(200, partitioner.getTotalCardinality().longValue());
 
     Tuple range2 = partitioner.increment(s, 100, 1);
@@ -185,6 +193,9 @@ public class TestUniformRangePartition {
     .addColumn("l_orderkey", Type.INT8)
     .addColumn("l_linenumber", Type.INT8)
     .addColumn("final", Type.INT8);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(3);
     s.put(0, DatumFactory.createInt8(1));
     s.put(1, DatumFactory.createInt8(1));
@@ -194,10 +205,9 @@ public class TestUniformRangePartition {
     e.put(1, DatumFactory.createInt8(2)); // 2
     e.put(2, DatumFactory.createInt8(3)); //x3 = 24
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner
-        = new UniformRangePartition(schema, expected);
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
     Tuple beforeOverflow = partitioner.increment(s, 5, 2);
@@ -216,6 +226,9 @@ public class TestUniformRangePartition {
       .addColumn("l_orderkey", Type.FLOAT8)
       .addColumn("l_linenumber", Type.FLOAT8)
       .addColumn("final", Type.FLOAT8);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(3);
     s.put(0, DatumFactory.createFloat8(1.1d));
     s.put(1, DatumFactory.createFloat8(1.1d));
@@ -225,10 +238,9 @@ public class TestUniformRangePartition {
     e.put(1, DatumFactory.createFloat8(2.1d)); // 2
     e.put(2, DatumFactory.createFloat8(3.1d)); //x3 = 24
 
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
 
-    UniformRangePartition partitioner =
-        new UniformRangePartition(schema, expected);
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
     Tuple beforeOverflow = partitioner.increment(s, 5, 2);
@@ -246,15 +258,18 @@ public class TestUniformRangePartition {
     Schema schema = new Schema();
     schema.addColumn("l_returnflag", Type.TEXT);
     schema.addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(2);
     s.put(0, DatumFactory.createText("A"));
     s.put(1, DatumFactory.createText("F"));
     Tuple e = new VTuple(2);
     e.put(0, DatumFactory.createText("R"));
     e.put(1, DatumFactory.createText("O"));
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
     RangePartitionAlgorithm partitioner
-        = new UniformRangePartition(schema, expected, true);
+        = new UniformRangePartition(expected, sortSpecs, true);
     TupleRange [] ranges = partitioner.partition(31);
 
 
@@ -273,15 +288,18 @@ public class TestUniformRangePartition {
     Schema schema = new Schema()
       .addColumn("l_returnflag", Type.TEXT)
       .addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
     Tuple s = new VTuple(2);
     s.put(0, DatumFactory.createText("A"));
     s.put(1, DatumFactory.createText("F"));
     Tuple e = new VTuple(2);
     e.put(0, DatumFactory.createText("R"));
     e.put(1, DatumFactory.createText("O"));
-    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
     RangePartitionAlgorithm partitioner =
-        new UniformRangePartition(schema, expected, true);
+        new UniformRangePartition(expected, sortSpecs, true);
     TupleRange [] ranges = partitioner.partition(1);
 
     assertEquals(expected, ranges[0]);

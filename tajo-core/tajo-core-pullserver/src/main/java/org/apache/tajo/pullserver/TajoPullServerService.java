@@ -48,7 +48,6 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -587,13 +586,6 @@ public class TajoPullServerService extends AbstractService {
           + ", decoded byte size: " + endBytes.length, t);
     }
 
-
-    if(!comparator.isAscendingFirstKey()) {
-      Tuple tmpKey = start;
-      start = end;
-      end = tmpKey;
-    }
-
     LOG.info("GET Request for " + data.getAbsolutePath() + " (start="+start+", end="+ end +
         (last ? ", last=true" : "") + ")");
 
@@ -615,7 +607,7 @@ public class TajoPullServerService extends AbstractService {
       startOffset = idxReader.find(start);
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: "
+          + "[" + start + ", " + end +")" + ", idx min: "
           + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
       throw ioe;
@@ -627,7 +619,7 @@ public class TajoPullServerService extends AbstractService {
       }
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: "
+          + "[" + start + ", " + end +")" + ", idx min: "
           + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
       throw ioe;
@@ -640,7 +632,7 @@ public class TajoPullServerService extends AbstractService {
         startOffset = idxReader.find(start, true);
       } catch (IOException ioe) {
         LOG.error("State Dump (the requested range: "
-            + new TupleRange(keySchema, start, end) + ", idx min: "
+            + "[" + start + ", " + end +")" + ", idx min: "
             + idxReader.getFirstKey() + ", idx max: "
             + idxReader.getLastKey());
         throw ioe;
@@ -650,7 +642,7 @@ public class TajoPullServerService extends AbstractService {
     if (startOffset == -1) {
       throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
           "State Dump (the requested range: "
-          + new TupleRange(keySchema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+          + "[" + start + ", " + end +")" + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
           + idxReader.getLastKey());
     }
 
@@ -659,6 +651,8 @@ public class TajoPullServerService extends AbstractService {
         && comparator.compare(idxReader.getLastKey(), end) < 0)) {
       endOffset = data.length();
     }
+
+    idxReader.close();
 
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);
     LOG.info("Retrieve File Chunk: " + chunk);

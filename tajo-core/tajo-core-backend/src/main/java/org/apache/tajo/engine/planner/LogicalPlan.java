@@ -245,7 +245,7 @@ public class LogicalPlan {
 
       // Trying to find the column within the current block
 
-      if (block.currentNode != null) {
+      if (block.currentNode != null && block.currentNode.getInSchema() != null) {
         Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
         if (found != null) {
           return found;
