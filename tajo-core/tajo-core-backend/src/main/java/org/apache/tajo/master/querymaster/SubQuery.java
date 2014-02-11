@@ -598,7 +598,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       GroupbyNode grpNode = null;
       if (parent != null) {
-        grpNode = PlannerUtil.findTopNode(parent.getPlan(), NodeType.GROUP_BY);
+        grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
       }
 
       // Is this subquery the first step of join?

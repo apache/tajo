@@ -274,6 +274,26 @@ public class PlannerUtil {
   }
 
   /**
+   * Find the most bottom logical node matched to type from the given node
+   *
+   * @param node start node
+   * @param type to find
+   * @return a found logical node
+   */
+  public static <T extends LogicalNode> T findMostBottomNode(LogicalNode node, NodeType type) {
+    Preconditions.checkNotNull(node);
+    Preconditions.checkNotNull(type);
+
+    LogicalNodeFinder finder = new LogicalNodeFinder(type);
+    node.preOrder(finder);
+
+    if (finder.getFoundNodes().size() == 0) {
+      return null;
+    }
+    return (T) finder.getFoundNodes().get(finder.getFoundNodes().size() - 1);
+  }
+
+  /**
    * Find the all logical node matched to type from the given node
    *
    * @param node start node

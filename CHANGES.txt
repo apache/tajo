@@ -248,6 +248,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-593: outer groupby and groupby in derived table causes only one
+    shuffle output number. (hyunsik)
+
     TAJO-583: Broadcast join does not work on partitioned tables. (hyunsik)
 
     TAJO-588: In some case, leaf task of DefaultTaskScheduler are not
