@@ -121,11 +121,11 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case INT2:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt2(new String(bytes, offset, length));
+            : DatumFactory.createInt2((short) Bytes.parseInt(bytes, offset, length));
         break;
       case INT4:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt4(new String(bytes, offset, length));
+            : DatumFactory.createInt4(Bytes.parseInt(bytes, offset, length));
         break;
       case INT8:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
@@ -137,7 +137,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case FLOAT8:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createFloat8(new String(bytes, offset, length));
+            : DatumFactory.createFloat8(Bytes.parseDouble(bytes, offset, length));
         break;
       case TEXT: {
         byte[] chars = new byte[length];

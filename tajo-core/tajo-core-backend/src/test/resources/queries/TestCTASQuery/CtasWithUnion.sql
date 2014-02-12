@@ -1,4 +1,4 @@
-create table testCtasWithUnion (col1 int4, col2 int4) partition by column(key float8) as
+create table testCtasWithUnion (col1 float, col2 float) partition by column(key float8) as
 
 select
   *
