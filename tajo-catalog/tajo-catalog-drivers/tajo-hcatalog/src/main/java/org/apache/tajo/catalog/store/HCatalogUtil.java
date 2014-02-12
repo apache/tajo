@@ -19,6 +19,8 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
+import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatException;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
@@ -128,11 +130,12 @@ public class HCatalogUtil {
 
     String inputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
 
-    if(inputFormatClass.equals("HiveIgnoreKeyTextOutputFormat")) {
+    if(inputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.CSV.name();
+    } else if(inputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
+        return CatalogProtos.StoreType.RCFILE.name();
     } else {
-      //TODO: other file format
-      return null;
+      throw new InternalException("Not supported file output format. - file output format:" + fileFormat);
     }
   }
 

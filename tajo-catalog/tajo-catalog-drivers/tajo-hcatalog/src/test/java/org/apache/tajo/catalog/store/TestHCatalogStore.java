@@ -148,9 +148,16 @@ public class TestHCatalogStore {
     sd.getSerdeInfo().setName(tableName);
     sd.getSerdeInfo().setParameters(new HashMap<String, String>());
     sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, "1");
-    sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, "|");
-    sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
-    sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
+
+    if (tableName.equals(CUSTOMER)) {
+      sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
+      sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
+      sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
+    } else {
+      sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
+      sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
+    }
+
 
     Table table = new Table();
     table.setDbName(DB_NAME);
@@ -263,6 +270,8 @@ public class TestHCatalogStore {
     assertEquals("c_comment", columns.get(7).getColumnName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(7).getDataType().getType());
     assertNull(table.getPartitionMethod());
+    assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.RCFILE.name());
+
 
     table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
     columns = table.getSchema().getColumns();
@@ -279,6 +288,10 @@ public class TestHCatalogStore {
     assertNotNull(table.getPartitionMethod());
     assertEquals("type", table.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName());
     assertEquals(CatalogProtos.PartitionType.COLUMN, table.getPartitionMethod().getPartitionType());
+
+    assertEquals(table.getMeta().getOption(HCatalogStore.CVSFILE_DELIMITER), "\\001");
+    assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.CSV.name());
+
   }
 
   @Test

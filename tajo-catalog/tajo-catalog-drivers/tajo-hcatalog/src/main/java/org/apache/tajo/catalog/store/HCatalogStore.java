@@ -43,12 +43,12 @@ import java.util.*;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
+  public static final String CVSFILE_DELIMITER = "csvfile.delimiter";
+
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
   private static final int CLIENT_POOL_SIZE = 5;
   private final HCatalogStoreClientPool clientPool = new HCatalogStoreClientPool(0);
-
-  private Map<Pair<String, String>, Table> tableMap = new HashMap<Pair<String, String>, Table>();
 
   public HCatalogStore(final Configuration conf)
       throws InternalException {
@@ -171,17 +171,21 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       if (properties != null) {
         // set field delimiter
         String fieldDelimiter = "", fileOutputformat = "";
-        if (properties.getProperty("field.delim") != null) {
-          fieldDelimiter = properties.getProperty("field.delim");
+        if (properties.getProperty(serdeConstants.FIELD_DELIM) != null) {
+          fieldDelimiter = properties.getProperty(serdeConstants.FIELD_DELIM);
+        } else {
+          // if hive table used default row format delimiter, Properties doesn't have it.
+          // So, Tajo must set as follows:
+          fieldDelimiter = "\\001";
         }
+
         // set file output format
         fileOutputformat = properties.getProperty("file.outputformat");
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat,
             fieldDelimiter));
 
-        // TODO: another stored file
-        if (storeType.equals(CatalogProtos.StoreType.CSV) && fieldDelimiter != null) {
-          options.put("csvfile.delimiter", fieldDelimiter);
+        if (storeType.equals(CatalogProtos.StoreType.CSV) ) {
+          options.put(CVSFILE_DELIMITER, fieldDelimiter);
         }
 
         // set data size
@@ -290,8 +294,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       try {
         client = clientPool.getClient();
 
-        org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api
-            .Table();
+        org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api.Table();
 
         table.setDbName(dbName);
         table.setTableName(tableName);
@@ -315,28 +318,41 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
         sd.setCols(cols);
 
-        // TODO: compression tyoe
-        // n table type
         sd.setCompressed(false);
+        if (tableDesc.getMeta().hasParams()) {
+          for (CatalogProtos.KeyValueProto entry: tableDesc.getMeta().getParams().getKeyvalList()) {
+            if (entry.getKey().equals("compression.codec")) {
+              sd.setCompressed(true);
+            } else if (entry.getKey().equals(CVSFILE_DELIMITER)) {
+              sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, entry.getValue());
+            }
+          }
+        }
 
         sd.setParameters(new HashMap<String, String>());
         sd.setSerdeInfo(new SerDeInfo());
         sd.getSerdeInfo().setName(table.getTableName());
 
-        // TODO: another Serialization librarys
-        sd.getSerdeInfo().setSerializationLib(
-            org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
+        if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+          sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
+        } else {
+          sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
+        }
 
         sd.getSerdeInfo().setParameters(new HashMap<String, String>());
 //      sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, "1");
-        sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, "|");
 
-        // TODO: another input format classes
-        sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
+        if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+          sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
+        } else {
+          sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
+        }
 
-        // TODO: another output format classes
-        sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName
-            ());
+        if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+          sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
+        } else {
+          sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
+        }
 
         sd.setSortCols(new ArrayList<Order>());
 
