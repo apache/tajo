@@ -126,7 +126,8 @@ public class TestLogicalPlanner {
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8 as res1, 8 * 9 as res2, 10 * 10 as res3", // 10
       "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)", // 11
-      "select name, score from employee, score order by score limit 3" // 12
+      "select name, score from employee, score order by score limit 3", // 12
+      "select length(name), length(deptname), *, empid+10 from employee where empId > 500", // 13
   };
 
   @Test
@@ -566,6 +567,28 @@ public class TestLogicalPlanner {
     assertEquals("res2", col.getColumnName());
     col = it.next();
     assertEquals("res3", col.getColumnName());
+  }
+
+  @Test
+  public final void testAsterisk() throws CloneNotSupportedException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(QUERIES[13]);
+    LogicalPlan planNode = planner.createPlan(expr);
+    LogicalNode plan = planNode.getRootBlock().getRoot();
+    assertEquals(NodeType.ROOT, plan.getType());
+    TestLogicalNode.testCloneLogicalNode(plan);
+    LogicalRootNode root = (LogicalRootNode) plan;
+    testJsonSerDerObject(root);
+
+    assertEquals(NodeType.PROJECTION, root.getChild().getType());
+    ProjectionNode projNode = root.getChild();
+    assertEquals(6, projNode.getOutSchema().getColumnNum());
+
+    assertEquals(NodeType.SELECTION, projNode.getChild().getType());
+    SelectionNode selNode = projNode.getChild();
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    assertEquals("employee", scanNode.getTableName());
   }
 
   static final String ALIAS [] = {

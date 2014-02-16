@@ -84,6 +84,30 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testAsterisk1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_1.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testAsterisk2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_2.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testAsterisk3() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_3.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testAsterisk4() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_4.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
   public void testGroupby1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_1.sql"));
     parseQuery(sql);

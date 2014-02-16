@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,48 +21,44 @@ package org.apache.tajo.algebra;
 import com.google.common.base.Objects;
 import org.apache.tajo.util.TUtil;
 
-public class Projection extends UnaryOperator implements Cloneable {
-  private boolean distinct = false;
+public class QualifiedAsteriskExpr extends Expr {
+  private final static String ASTERISK = "*";
+  private String qualifier;
 
-  private NamedExpr[] targets;
-
-  public Projection() {
-    super(OpType.Projection);
+  public QualifiedAsteriskExpr() {
+    super(OpType.Asterisk);
   }
 
-  public int size() {
-    return targets.length;
+  public QualifiedAsteriskExpr(String qualifier) {
+    this();
+    setQualifier(qualifier);
   }
 
-  public boolean isDistinct() {
-    return distinct;
+  public boolean hasQualifier() {
+    return this.qualifier != null;
   }
 
-  public void setDistinct() {
-    distinct = true;
+  public void setQualifier(String qualifier) {
+    this.qualifier = qualifier.toLowerCase();
   }
 
-	public NamedExpr[] getNamedExprs() {
-	  return this.targets;
-	}
-
-  public void setNamedExprs(NamedExpr[] targets) {
-    this.targets = targets;
-  }
-
+  @Override
   public int hashCode() {
-    return Objects.hashCode(distinct, Objects.hashCode(targets), getChild());
+    return Objects.hashCode(qualifier, ASTERISK);
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    Projection another = (Projection) expr;
-    return distinct == another.distinct &&
-        TUtil.checkEquals(targets, another.targets);
+    QualifiedAsteriskExpr another = (QualifiedAsteriskExpr) expr;
+    return TUtil.checkEquals(this.qualifier, another.qualifier);
+  }
+
+  public String getQualifier() {
+    return qualifier;
   }
 
   @Override
-  public String toJson() {
-    return JsonHelper.toJson(this);
+  public String toString() {
+    return hasQualifier() ? qualifier + "." + ASTERISK : ASTERISK;
   }
 }

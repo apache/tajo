@@ -211,8 +211,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   /**
    * <pre>
    *   select_list
-   *   : MULTIPLY
-   *   | select_sublist (COMMA select_sublist)*
+   *   : select_sublist (COMMA select_sublist)*
    *   ;
    * </pre>
    * @param ctx
@@ -221,15 +220,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Projection visitSelect_list(SQLParser.Select_listContext ctx) {
     Projection projection = new Projection();
-    if (ctx.MULTIPLY() != null) {
-      projection.setAll();
-    } else {
-      NamedExpr[] targets = new NamedExpr[ctx.select_sublist().size()];
-      for (int i = 0; i < targets.length; i++) {
-        targets[i] = visitSelect_sublist(ctx.select_sublist(i));
-      }
-      projection.setNamedExprs(targets);
+    NamedExpr[] targets = new NamedExpr[ctx.select_sublist().size()];
+    for (int i = 0; i < targets.length; i++) {
+      targets[i] = visitSelect_sublist(ctx.select_sublist(i));
     }
+    projection.setNamedExprs(targets);
 
     return projection;
   }
@@ -238,7 +233,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    * <pre>
    *   select_sublist
    *   : derived_column
-   *   | asterisked_qualifier=Identifier DOT MULTIPLY
+   *   | asterisked_qualifier
    *   ;
    * </pre>
    * @param ctx
@@ -246,8 +241,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    */
   @Override
   public NamedExpr visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
-    if (ctx.asterisked_qualifier != null) {
-      return new NamedExpr(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
+    if (ctx.qualified_asterisk() != null) {
+      return visitQualified_asterisk(ctx.qualified_asterisk());
     } else {
       return visitDerived_column(ctx.derived_column());
     }
@@ -861,7 +856,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public NamedExpr visitDerived_column(SQLParser.Derived_columnContext ctx) {
+  public NamedExpr visitDerived_column(Derived_columnContext ctx) {
     NamedExpr target = new NamedExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
       target.setAlias(ctx.as_clause().identifier().getText());
@@ -869,7 +864,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return target;
   }
 
+  @Override
+  public NamedExpr visitQualified_asterisk(Qualified_asteriskContext ctx) {
+    QualifiedAsteriskExpr target = new QualifiedAsteriskExpr();
+    if (ctx.tb_name != null) {
+      target.setQualifier(ctx.tb_name.getText());
+    }
 
+    return new NamedExpr(target);
+  }
 
   @Override
   public Expr visitCharacter_string_type(SQLParser.Character_string_typeContext ctx) {

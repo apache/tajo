@@ -27,12 +27,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.engine.parser.HiveParser.TableAllColumnsContext;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   private static final Log LOG = LogFactory.getLog(HiveConverter.class.getName());
@@ -90,7 +91,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       select = (Projection) visitSelectClause(ctx.selectClause());
       if (ctx.selectClause().KW_DISTINCT() != null) {
         select.setDistinct();
-        ;
       }
 
     }
@@ -158,9 +158,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     if (current != null)
       projection.setChild(current);
 
-    if (select.isAllProjected())
-      projection.setAll();
-
     if (select.isDistinct())
       projection.setDistinct();
 
@@ -193,7 +190,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
         select = (Projection) visitSelectClause(ctx.selectClause());
         if (ctx.selectClause().KW_DISTINCT() != null) {
           select.setDistinct();
-          ;
         }
 
       }
@@ -258,9 +254,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       if (current != null)
         projection.setChild(current);
 
-      if (select.isAllProjected())
-        projection.setAll();
-
       if (select.isDistinct())
         projection.setDistinct();
 
@@ -312,7 +305,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
     if (ctx.selectClause().KW_DISTINCT() != null) {
       select.setDistinct();
-      ;
     }
 
     Expr from = visitFromClause(ctx.fromClause());
@@ -372,9 +364,6 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
     if (current != null)
       projection.setChild(current);
-
-    if (select.isAllProjected())
-      projection.setAll();
 
     if (select.isDistinct())
       projection.setDistinct();
@@ -498,7 +487,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       String tableAlias = "";
       for (int i = 0; i < ctx.subQuerySource().getChildCount(); i++) {
         if (ctx.subQuerySource().getChild(i) instanceof HiveParser.IdentifierContext) {
-          tableAlias = ((HiveParser.IdentifierContext) ctx.subQuerySource().getChild(i)).getText();
+          tableAlias = (ctx.subQuerySource().getChild(i)).getText();
         }
       }
 
@@ -547,56 +536,23 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       targets[i] = visitSelectItem(ctx.selectItem(i));
     }
 
-    if (targets.length == 1) {
-      if (targets[0].getExpr().getType().equals(OpType.Column)) {
-        ColumnReferenceExpr columnReferenceExprs = (ColumnReferenceExpr) targets[0].getExpr();
-        if (columnReferenceExprs.getQualifier() == null && columnReferenceExprs.getName().equals("*"))
-          projection.setAll();
-        ;
-      }
-    }
-
-    if (!projection.isAllProjected())
-      projection.setNamedExprs(targets);
-
+    projection.setNamedExprs(targets);
     current = projection;
     return current;
   }
 
   @Override
   public NamedExpr visitSelectItem(HiveParser.SelectItemContext ctx) {
-    ColumnReferenceExpr columnReference;
     NamedExpr target = null;
 
-    String tableName = "", itemName = "", alias = "";
-
-    String[] selectItem = ctx.getText().split("\\.");
-
-    if (selectItem.length == 2) {
-      tableName = selectItem[0];
-      itemName = selectItem[1];
-    } else if (selectItem.length == 1) {
-      itemName = selectItem[0];
-    } else {
-      itemName = ctx.getText();
-    }
-
-    columnReference = new ColumnReferenceExpr(itemName);
-    if (!tableName.equals(""))
-      columnReference.setQualifier(tableName);
-
     if (ctx.selectExpression() != null) {
-      if (ctx.selectExpression().expression() != null) {
-        target = new NamedExpr(visitSelectExpression(ctx.selectExpression()));
-      } else {
-        target = new NamedExpr(columnReference);
-      }
+      target = new NamedExpr(visitSelectExpression(ctx.selectExpression()));
+    } else if (ctx.window_specification() != null) {
+      // TODO: if there is a window specification clause, we should handle it properly.
     }
 
-    if (ctx.identifier().size() > 0) {
-      alias = ctx.identifier(0).getText();
-      if (!alias.equals(itemName))
-        target.setAlias(alias);
+    if (ctx.identifier().size() > 0 && target != null) {
+      target.setAlias(ctx.identifier(0).getText());
     }
     return target;
   }
@@ -606,7 +562,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     Expr current = null;
 
     if (ctx.tableAllColumns() != null) {
-      visitTableAllColumns(ctx.tableAllColumns());
+      current = visitTableAllColumns(ctx.tableAllColumns());
     } else {
       if (ctx.expression() != null) {
         current = visitExpression(ctx.expression());
@@ -614,6 +570,16 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     }
 
     return current;
+  }
+
+  @Override
+  public Expr visitTableAllColumns(TableAllColumnsContext ctx) {
+    QualifiedAsteriskExpr target = new QualifiedAsteriskExpr();
+    if (ctx.tableName() != null) {
+      target.setQualifier(ctx.tableName().getText());
+    }
+
+    return target;
   }
 
   @Override

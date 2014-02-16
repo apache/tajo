@@ -87,6 +87,7 @@ public enum OpType {
   Column(ColumnReferenceExpr.class),
   Target(NamedExpr.class),
   Function(FunctionExpr.class),
+  Asterisk(QualifiedAsteriskExpr.class),
 
   // Set Functions
   CountRowsFunction(CountRowsFunctionExpr.class),

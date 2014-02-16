@@ -1,0 +1,1 @@
+select length(l_comment), l_extendedprice * l_discount, *, l_tax * 10 from lineitem;

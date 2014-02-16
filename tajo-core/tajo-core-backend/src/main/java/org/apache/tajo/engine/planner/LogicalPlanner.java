@@ -183,13 +183,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     String [] referenceNames;
-    if (projection.isAllProjected()) {
-      referenceNames = null;
-    } else {
-      // in prephase, insert all target list into NamedExprManagers.
-      // Then it gets reference names, each of which points an expression in target list.
-      referenceNames = doProjectionPrephase(context, projection);
-    }
+    // in prephase, insert all target list into NamedExprManagers.
+    // Then it gets reference names, each of which points an expression in target list.
+    referenceNames = doProjectionPrephase(context, projection);
 
     ////////////////////////////////////////////////////////
     // Visit and Build Child Plan
@@ -206,12 +202,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     ProjectionNode projectionNode;
     Target [] targets;
-    if (projection.isAllProjected()) {
-      // should takes all columns except for generated columns whose names are prefixed with '$'.
-      targets = PlannerUtil.schemaToTargetsWithGeneratedFields(child.getOutSchema());
-    } else {
-      targets = buildTargets(plan, block, referenceNames);
-    }
+    targets = buildTargets(plan, block, referenceNames);
 
     // Set ProjectionNode
     projectionNode = context.queryBlock.getNodeFromExpr(projection);
@@ -242,19 +233,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    if (projection.isAllProjected()) {
-      block.setRawTargets(targets);
-    } else {
-      // It's for debugging or unit tests.
-      Target [] rawTargets = new Target[projection.getNamedExprs().length];
-      for (int i = 0; i < targets.length; i++) {
-        NamedExpr namedExpr = projection.getNamedExprs()[i];
-        EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
-        rawTargets[i] = new Target(evalNode, referenceNames[i]);
-      }
-      // it's for debugging or unit testing
-      block.setRawTargets(rawTargets);
+    // It's for debugging or unit tests.
+    Target [] rawTargets = new Target[projection.getNamedExprs().length];
+    for (int i = 0; i < projection.getNamedExprs().length; i++) {
+      NamedExpr namedExpr = projection.getNamedExprs()[i];
+      EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
+      rawTargets[i] = new Target(evalNode, referenceNames[i]);
     }
+    // it's for debugging or unit testing
+    block.setRawTargets(rawTargets);
   }
 
   private void insertDistinctOperator(PlanContext context, ProjectionNode projectionNode, LogicalNode child,

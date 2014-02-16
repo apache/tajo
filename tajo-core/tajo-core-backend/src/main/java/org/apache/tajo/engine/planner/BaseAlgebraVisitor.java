@@ -201,6 +201,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case Function:
       current = visitFunction(ctx, stack, (FunctionExpr) expr);
       break;
+    case Asterisk:
+      current = visitQualifiedAsterisk(ctx, stack, (QualifiedAsteriskExpr) expr);
+      break;
 
 
     case CountRowsFunction:
@@ -270,10 +273,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws PlanningException {
     stack.push(expr);
     try {
-      if (!expr.isAllProjected()) {
-        for (NamedExpr target : expr.getNamedExprs()) {
-          visit(ctx, stack, target);
-        }
+      for (NamedExpr target : expr.getNamedExprs()) {
+        visit(ctx, stack, target);
       }
       if (expr.hasChild()) {
         return visit(ctx, stack, expr.getChild());
@@ -620,6 +621,11 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     }
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitQualifiedAsterisk(CONTEXT ctx, Stack<Expr> stack, QualifiedAsteriskExpr expr) throws PlanningException {
+    return null;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

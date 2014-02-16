@@ -105,6 +105,14 @@ public class TestSortQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testAsterisk() throws Exception {
+    //select *, length(l_comment) as len_comment from lineitem order by len_comment;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSortWithAscDescKeys() throws Exception {
     executeDDL("create_table_with_asc_desc_keys.sql", "table2.tbl");
 
@@ -112,5 +120,4 @@ public class TestSortQuery extends QueryTestCaseBase {
     System.out.println(resultSetToString(res));
     cleanupQuery(res);
   }
-
 }

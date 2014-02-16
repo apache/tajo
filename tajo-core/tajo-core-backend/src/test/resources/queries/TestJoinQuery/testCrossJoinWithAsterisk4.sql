@@ -1,0 +1,1 @@
+select length(r_comment), *, c_custkey*10 from customer, region;

@@ -252,6 +252,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-554: LogicalPlanner should allow additional expressions with asterisk 
+    in select list. (jihoon)
+
     TAJO-593: outer groupby and groupby in derived table causes only one
     shuffle output number. (hyunsik)
 

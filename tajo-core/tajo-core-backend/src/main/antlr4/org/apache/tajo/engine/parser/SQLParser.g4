@@ -1040,22 +1040,25 @@ query_specification
   ;
 
 select_list
-  : MULTIPLY
-  | select_sublist (COMMA select_sublist)*
+  : select_sublist (COMMA select_sublist)*
   ;
 
 select_sublist
   : derived_column
-  | asterisked_qualifier=identifier DOT MULTIPLY
+  | qualified_asterisk
+  ;
+
+derived_column
+  : value_expression as_clause?
+  ;
+
+qualified_asterisk
+  : (tb_name=Identifier DOT)? MULTIPLY
   ;
 
 set_qualifier
   : DISTINCT
   | ALL
-  ;
-
-derived_column
-  : value_expression as_clause?
   ;
 
 column_reference

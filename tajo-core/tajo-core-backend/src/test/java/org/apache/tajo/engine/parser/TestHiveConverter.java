@@ -171,6 +171,38 @@ public class TestHiveConverter {
   }
 
   @Test
+  public void testAsterisk1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_1.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testAsterisk2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_2.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testAsterisk3() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_3.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testAsterisk4() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/asterisk_4.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
   public void testGroupby1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_1.sql"));
     Expr expr = parseQuery(sql);

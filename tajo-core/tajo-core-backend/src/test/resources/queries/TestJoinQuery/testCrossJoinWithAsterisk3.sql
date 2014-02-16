@@ -1,0 +1,1 @@
+select * from customer, region;
