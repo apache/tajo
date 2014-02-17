@@ -432,14 +432,15 @@ public class GlobalPlanner {
         }
 
         firstPhaseEvals[i].setFirstPhase();
-        firstPhaseEvalNames[i] = plan.newGeneratedFieldName(firstPhaseEvals[i]);
+        firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
         FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
         secondPhaseEvals[i].setArgs(new EvalNode[] {param});
       }
 
       secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);
       firstPhaseGroupBy.setAggFunctions(firstPhaseEvals);
-      Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, firstPhaseEvalNames);
+      Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, null,
+          firstPhaseEvalNames);
       firstPhaseGroupBy.setTargets(firstPhaseTargets);
       secondPhaseGroupBy.setInSchema(PlannerUtil.targetToSchema(firstPhaseTargets));
     }

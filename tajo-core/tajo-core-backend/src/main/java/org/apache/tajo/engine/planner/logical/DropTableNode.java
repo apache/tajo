@@ -43,7 +43,7 @@ public class DropTableNode extends LogicalNode {
 
   @Override
   public PlanString getPlanString() {
-    return new PlanString("DropTable " + (purge ? " (PURGE)" : ""));
+    return new PlanString(this).appendTitle(purge ? " (PURGE)" : "");
   }
 
   public boolean equals(Object obj) {

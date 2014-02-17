@@ -61,7 +61,7 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Store");
+    PlanString planStr = new PlanString(this);
     planStr.appendTitle(" into ").appendTitle(tableName);
     planStr.addExplan("Store type: " + storageType);
 

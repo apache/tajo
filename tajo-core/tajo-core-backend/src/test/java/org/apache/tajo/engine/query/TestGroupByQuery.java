@@ -84,6 +84,22 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupByWithSameExprs1() throws Exception {
+    // select sum(l_orderkey) + sum(l_orderkey) as total from lineitem group by l_orderkey + l_partkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithSameExprs2() throws Exception {
+    // select sum(l_orderkey) as total1, sum(l_orderkey) as total2 from lineitem group by l_orderkey + l_partkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testGroupByWithExpressionKeys1() throws Exception {
     // select upper(lower(l_orderkey::text)) as key, count(1) as total from lineitem
     // group by key order by upper(lower(l_orderkey::text)), total;
@@ -159,7 +175,6 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
-
 
   @Test
   public final void testHavingWithAggFunction() throws Exception {

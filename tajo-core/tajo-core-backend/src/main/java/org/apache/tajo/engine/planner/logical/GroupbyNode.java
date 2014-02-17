@@ -165,7 +165,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Aggregation");
+    PlanString planStr = new PlanString(this);
 
     StringBuilder sb = new StringBuilder();
     sb.append("(");

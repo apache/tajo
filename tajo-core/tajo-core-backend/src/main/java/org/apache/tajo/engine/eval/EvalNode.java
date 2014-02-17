@@ -26,6 +26,10 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 
+/**
+ * An annotated expression which includes actual data domains.
+ * It is also used for evaluation.
+ */
 public abstract class EvalNode implements Cloneable, GsonObject {
 	@Expose protected EvalType type;
 	@Expose protected EvalNode leftExpr;

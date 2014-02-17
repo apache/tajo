@@ -39,7 +39,7 @@ public class SelectionNode extends UnaryNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Filter");
+    PlanString planStr = new PlanString(this);
     planStr.addExplan("Search Cond: " + getQual());
     return planStr;
   }

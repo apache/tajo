@@ -31,7 +31,7 @@ public class UnionNode extends BinaryNode {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Union");
+    PlanString planStr = new PlanString(this);
     return planStr;
   }
 

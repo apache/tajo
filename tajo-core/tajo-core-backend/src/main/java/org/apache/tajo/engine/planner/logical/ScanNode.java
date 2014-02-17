@@ -192,7 +192,7 @@ public class ScanNode extends RelationNode implements Projectable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Scan on ").appendTitle(getTableName());
+    PlanString planStr = new PlanString(this).appendTitle(" on ").appendTitle(getTableName());
     if (hasAlias()) {
       planStr.appendTitle(" as ").appendTitle(alias);
     }

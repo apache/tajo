@@ -87,20 +87,50 @@ public class LogicalPlan {
     return newAndGetBlock(NONAME_BLOCK_PREFIX + (noNameBlockId++));
   }
 
-  private String generateFieldName(String prefix) {
+  /**
+   * It generates an unique column name from EvalNode. It is usually used for an expression or predicate without
+   * a specified name (i.e., alias).
+   */
+  public String generateUniqueColumnName(EvalNode evalNode) {
+    String prefix = evalNode.getName();
+    return attachSeqIdToGeneratedColumnName(prefix).toLowerCase();
+  }
+
+  /**
+   * It generates an unique column name from Expr. It is usually used for an expression or predicate without
+   * a specified name (i.e., alias).
+   */
+  public String generateUniqueColumnName(Expr expr) {
+    String generatedName;
+    if (expr.getType() == OpType.Column) {
+      generatedName = ((ColumnReferenceExpr) expr).getCanonicalName();
+    } else { // if a generated column name
+      generatedName = attachSeqIdToGeneratedColumnName(getGeneratedPrefixFromExpr(expr));
+    }
+    return generatedName.toLowerCase();
+  }
+
+  /**
+   * It attaches a generated column name with a sequence id. It always keeps generated names unique.
+   */
+  private String attachSeqIdToGeneratedColumnName(String prefix) {
     int sequence = noNameColumnId++;
     return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + (sequence > 0 ? "_" + sequence : "");
   }
 
-  public String newGeneratedFieldName(EvalNode evalNode) {
-    String prefix = evalNode.getName();
-    return generateFieldName(prefix);
-  }
-
-  public String newGeneratedFieldName(Expr expr) {
+  /**
+   * It generates a column reference prefix name. It is usually used for an expression or predicate without
+   * a specified name (i.e., alias). For example, a predicate in WHERE does not have any alias name.
+   * It just returns a prefix name. In other words, it always returns the same prefix for the same type of expressions.
+   * So, you must add some suffix to the returned name in order to distinguish reference names.
+   */
+  private static String getGeneratedPrefixFromExpr(Expr expr) {
     String prefix;
 
     switch (expr.getType()) {
+    case Column:
+      prefix = ((ColumnReferenceExpr) expr).getCanonicalName();
+      break;
     case CountRowsFunction:
       prefix = "count";
       break;
@@ -115,7 +145,7 @@ public class LogicalPlan {
     default:
       prefix = expr.getType().name();
     }
-    return generateFieldName(prefix);
+    return prefix;
   }
 
   public QueryBlock getRootBlock() {

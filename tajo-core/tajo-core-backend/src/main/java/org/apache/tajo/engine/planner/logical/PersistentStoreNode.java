@@ -61,7 +61,7 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Store");
+    PlanString planStr = new PlanString(this);
     planStr.addExplan("Store type: " + storageType);
 
     return planStr;

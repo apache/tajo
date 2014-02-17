@@ -184,7 +184,7 @@ public class InsertNode extends StoreTableNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planString = new PlanString("INSERT");
+    PlanString planString = new PlanString(this);
     planString.appendTitle(" INTO ");
     if (hasTargetTable()) {
       planString.appendTitle(getTableName());

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,10 @@ public class PlanString {
 
   StringBuilder currentExplanation;
   StringBuilder currentDetail;
+
+  public PlanString(LogicalNode node) {
+    this.title = new StringBuilder(node.getType().name() + "(" + node.getPID() + ")");
+  }
 
   public PlanString(String title) {
     this.title = new StringBuilder(title);

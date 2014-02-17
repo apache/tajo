@@ -243,10 +243,13 @@ public class GlobalEngine extends AbstractService {
     }
 
     LogicalPlan plan = planner.createPlan(expression);
+    LOG.info("=============================================");
+    LOG.info("Non Optimized Query: \n" + plan.toString());
+    LOG.info("=============================================");
     optimizer.optimize(plan);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("LogicalPlan:\n" + plan.getRootBlock().getRoot());
-    }
+    LOG.info("=============================================");
+    LOG.info("Optimized Query: \n" + plan.toString());
+    LOG.info("=============================================");
 
     annotatedPlanVerifier.visit(state, plan, plan.getRootBlock());
 

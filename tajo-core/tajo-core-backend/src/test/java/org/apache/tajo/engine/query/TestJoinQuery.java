@@ -139,7 +139,22 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testJoinRefEval() throws Exception {
+  public void testJoinCoReferredEvals1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testJoinCoReferredEvalsWithSameExprs1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testJoinCoReferredEvalsWithSameExprs2() throws Exception {
+    // including grouping operator
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

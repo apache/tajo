@@ -142,7 +142,7 @@ public class PartitionedTableScanNode extends ScanNode {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Scan on ").appendTitle(getTableName());
+    PlanString planStr = new PlanString(this).appendTitle(" on " + getTableName());
     if (hasAlias()) {
       planStr.appendTitle(" as ").appendTitle(alias);
     }

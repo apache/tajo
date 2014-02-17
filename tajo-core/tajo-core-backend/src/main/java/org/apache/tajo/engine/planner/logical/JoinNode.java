@@ -93,8 +93,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Join (type : ")
-        .appendTitle(joinType +")");
+    PlanString planStr = new PlanString(this).appendTitle("(").appendTitle(joinType.name()).appendTitle(")");
     if (hasJoinQual()) {
       planStr.addExplan("Join Cond: " + joinQual.toString());
     }

@@ -20,7 +20,9 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.util.TUtil;
 
+import java.util.Set;
 import java.util.Stack;
 
 public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationState, Expr> {
@@ -30,9 +32,23 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
     this.catalog = catalog;
   }
 
+  public Expr visitProjection(VerificationState state, Stack<Expr> stack, Projection expr) throws PlanningException {
+    Set<String> names = TUtil.newHashSet();
+    for (NamedExpr namedExpr : expr.getNamedExprs()) {
+      if (namedExpr.hasAlias()) {
+        if (names.contains(namedExpr.getAlias())) {
+          state.addVerification(String.format("column name \"%s\" specified more than once", namedExpr.getAlias()));
+        } else {
+          names.add(namedExpr.getAlias());
+        }
+      }
+    }
+    return expr;
+  }
+
   @Override
   public Expr visitGroupBy(VerificationState ctx, Stack<Expr> stack, Aggregation expr) throws PlanningException {
-    Expr child = super.visitGroupBy(ctx, stack, expr);
+    super.visitGroupBy(ctx, stack, expr);
 
     // Enforcer only ordinary grouping set.
     for (Aggregation.GroupElement groupingElement : expr.getGroupSet()) {

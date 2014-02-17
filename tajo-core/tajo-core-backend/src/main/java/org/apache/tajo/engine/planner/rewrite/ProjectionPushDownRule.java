@@ -18,8 +18,10 @@
 
 package org.apache.tajo.engine.planner.rewrite;
 
+import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -31,6 +33,12 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
+/**
+ * ProjectionPushDownRule deploys expressions in a selection list to proper
+ * {@link org.apache.tajo.engine.planner.logical.Projectable}
+ * nodes. In this process, the expressions are usually pushed down into as lower as possible.
+ * It also enables scanners to read only necessary columns.
+ */
 public class ProjectionPushDownRule extends
     BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements RewriteRule {
   /** Class Logger */
@@ -67,121 +75,221 @@ public class ProjectionPushDownRule extends
     return plan;
   }
 
+  /**
+   * <h2>What is TargetListManager?</h2>
+   * It manages all expressions used in a query block, and their reference names.
+   * TargetListManager provides a way to find an expression by a reference name.
+   * It keeps a set of expressions, and one or more reference names can point to
+   * the same expression.
+   *
+   * Also, TargetListManager keeps the evaluation state of each expression.
+   * The evaluation state is a boolean state to indicate whether the expression
+   * was evaluated in descendant node or not. If an expression is evaluated,
+   * the evaluation state is changed to TRUE. It also means that
+   * the expression can be referred by an column reference instead of evaluating the expression.
+   *
+   * Consider an example query:
+   *
+   * SELECT sum(l_orderkey + 1) from lineitem where l_partkey > 1;
+   *
+   * In this case, an expression sum(l_orderkey + 1) is divided into two sub expressions:
+   * <ul>
+   *  <li>$1 <- l_orderkey + 1</li>
+   *  <li>$2 <- sum($1)</li>
+   * </ul>
+   *
+   * <code>$1</code> is a simple arithmetic operation, and $2 is an aggregation function.
+   * <code>$1</code> is evaluated in ScanNode because it's just a simple arithmetic operation.
+   * So, the evaluation state of l_orderkey + 1 initially
+   * is false, but the state will be true after ScanNode.
+   *
+   * In contrast, sum($1) is evaluated at GroupbyNode. So, its evaluation state is changed
+   * after GroupByNode.
+   *
+   * <h2>Why is TargetListManager necessary?</h2>
+   *
+   * Expressions used in a query block can be divided into various categories according to
+   * the possible {@link Projectable} nodes. Their references become available depending on
+   * the Projectable node at which expressions are evaluated. It manages the expressions and
+   * references for optimized places of expressions. It performs duplicated removal and enables
+   * common expressions to be shared with two or more Projectable nodes. It also helps Projectable
+   * nodes to find correct column references.
+   */
   public static class TargetListManager {
-    private LinkedHashMap<String, EvalNode> nameToEvalMap;
-    private LinkedHashMap<EvalNode, String> evalToNameMap;
-    private LinkedHashMap<String, Boolean> resolvedFlags;
+    private Integer seqId = 0;
+
+    /**
+     * Why should we use LinkedHashMap for those maps ?
+     *
+     * These maps are mainly by the target list of each projectable node
+     * (i.e., ProjectionNode, GroupbyNode, JoinNode, and ScanNode).
+     * The projection node removal occurs only when the projection node's output
+     * schema and its child's output schema are equivalent to each other.
+     *
+     * If we keep the inserted order of all expressions. It would make the possibility
+     * of projection node removal higher.
+     **/
+
+    /** A Map: Name -> Id */
+    private LinkedHashMap<String, Integer> nameToIdBiMap;
+    /** Map: Id <-> EvalNode */
+    private BiMap<Integer, EvalNode> idToEvalBiMap;
+    /** Map: Id -> Names */
+    private LinkedHashMap<Integer, List<String>> idToNamesMap;
+    /** Map: Name -> Boolean */
+    private LinkedHashMap<String, Boolean> evaluationStateMap;
+
     private LogicalPlan plan;
 
     public TargetListManager(LogicalPlan plan) {
       this.plan = plan;
-      nameToEvalMap = new LinkedHashMap<String, EvalNode>();
-      evalToNameMap = new LinkedHashMap<EvalNode, String>();
-      resolvedFlags = new LinkedHashMap<String, Boolean>();
+      nameToIdBiMap = Maps.newLinkedHashMap();
+      idToEvalBiMap = HashBiMap.create();
+      idToNamesMap = Maps.newLinkedHashMap();
+      evaluationStateMap = Maps.newLinkedHashMap();
     }
 
-    public TargetListManager(TargetListManager targetListMgr) {
-      this.plan = targetListMgr.plan;
-      nameToEvalMap = new LinkedHashMap<String, EvalNode>(targetListMgr.nameToEvalMap);
-      evalToNameMap = new LinkedHashMap<EvalNode, String>(targetListMgr.evalToNameMap);
-      resolvedFlags = new LinkedHashMap<String, Boolean>(targetListMgr.resolvedFlags);
+    private int getNextSeqId() {
+      return seqId++;
     }
 
-    private String add(String name, EvalNode evalNode) throws PlanningException {
-      if (evalNode.getType() == EvalType.CONST) {
-        nameToEvalMap.put(name, evalNode);
-        resolvedFlags.put(name, false);
-        return name;
-      }
-      if (evalToNameMap.containsKey(evalNode)) {
-        name = evalToNameMap.get(evalNode);
-      } else {
+    /**
+     * Add an expression with a specified name, which is usually an alias.
+     * Later, you can refer this expression by the specified name.
+     */
+    private String add(String specifiedName, EvalNode evalNode) throws PlanningException {
 
-        // Name can be conflicts between a column reference and an aliased EvalNode.
-        // Example, a SQL statement 'select l_orderkey + l_partkey as total ...' leads to
-        // two EvalNodes: a column reference total and an EvalNode (+, l_orderkey, l_partkey)
-        // If they are inserted into here, their names are conflict to each other, and one of them is removed.
-        // In this case, we just keep an original eval node instead of a column reference.
-        // This is because a column reference that points to an aliased EvalNode can be restored from the given alias.
-        if (nameToEvalMap.containsKey(name)) {
-          EvalNode storedEvalNode = nameToEvalMap.get(name);
-          if (!storedEvalNode.equals(evalNode)) {
-            if (storedEvalNode.getType() != EvalType.FIELD && evalNode.getType() != EvalType.FIELD) {
-              throw new PlanningException("Duplicate alias: " + evalNode);
-            }
-            if (storedEvalNode.getType() == EvalType.FIELD) {
-              nameToEvalMap.put(name, evalNode);
-            }
+      // if a name already exists, it only just keeps an actual
+      // expression instead of a column reference.
+      if (nameToIdBiMap.containsKey(specifiedName)) {
+        int refId = nameToIdBiMap.get(specifiedName);
+        EvalNode found = idToEvalBiMap.get(refId);
+        if (found != null && !evalNode.equals(found)) {
+          if (found.getType() != EvalType.FIELD && evalNode.getType() != EvalType.FIELD) {
+            throw new PlanningException("Duplicate alias: " + evalNode);
           }
-        } else {
-          nameToEvalMap.put(name, evalNode);
-        }
-
-        evalToNameMap.put(evalNode, name);
-        resolvedFlags.put(name, false);
-
-        for (Column column : EvalTreeUtil.findDistinctRefColumns(evalNode)) {
-          add(new FieldEval(column));
+          if (found.getType() == EvalType.FIELD) {
+            idToEvalBiMap.forcePut(refId, evalNode);
+          }
         }
       }
-      return name;
+
+      int refId;
+      if (idToEvalBiMap.inverse().containsKey(evalNode)) {
+        refId = idToEvalBiMap.inverse().get(evalNode);
+      } else {
+        refId = getNextSeqId();
+        idToEvalBiMap.put(refId, evalNode);
+      }
+
+      nameToIdBiMap.put(specifiedName, refId);
+      TUtil.putToNestedList(idToNamesMap, refId, specifiedName);
+      evaluationStateMap.put(specifiedName, false);
+
+      for (Column column : EvalTreeUtil.findDistinctRefColumns(evalNode)) {
+        add(new FieldEval(column));
+      }
+
+      return specifiedName;
+    }
+
+    /**
+     * Adds an expression without any name. It returns an automatically
+     * generated name. It can be also used for referring this expression.
+     */
+    public String add(EvalNode evalNode) throws PlanningException {
+      String name;
+
+      if (idToEvalBiMap.inverse().containsKey(evalNode)) {
+        int refId = idToEvalBiMap.inverse().get(evalNode);
+        return getPrimaryName(refId);
+      }
+
+      if (evalNode.getType() == EvalType.FIELD) {
+        FieldEval fieldEval = (FieldEval) evalNode;
+        name = fieldEval.getName();
+      } else {
+        name = plan.generateUniqueColumnName(evalNode);
+      }
+
+      return add(name, evalNode);
     }
 
     public Collection<String> getNames() {
-      return nameToEvalMap.keySet();
+      return nameToIdBiMap.keySet();
     }
 
     public String add(Target target) throws PlanningException {
       return add(target.getCanonicalName(), target.getEvalTree());
     }
 
-    public String add(EvalNode evalNode) throws PlanningException {
-      String name;
-      if (evalToNameMap.containsKey(evalNode)) {
-        name = evalToNameMap.get(evalNode);
+    /**
+     * Each expression can have one or more names.
+     * We call a name added with an expression firstly as the primary name.
+     * It has a special meaning. Since duplicated expression in logical planning are removed,
+     * the primary name is only used for each expression during logical planning.
+     *
+     * @param refId The identifier of an expression
+     * @param name The name to check if it is the primary name.
+     * @return True if this name is the primary added name. Otherwise, False.
+     */
+    private boolean isPrimaryName(int refId, String name) {
+      if (idToNamesMap.get(refId).size() > 0) {
+        return getPrimaryName(refId).equals(name);
       } else {
-        if (evalNode.getType() == EvalType.FIELD) {
-          FieldEval fieldEval = (FieldEval) evalNode;
-          name = fieldEval.getName();
-        } else {
-          name = plan.newGeneratedFieldName(evalNode);
-        }
-        add(name, evalNode);
+        return false;
       }
-      return name;
+    }
+
+    private String getPrimaryName(int refId) {
+      return idToNamesMap.get(refId).get(0);
     }
 
     public Target getTarget(String name) {
-      if (!nameToEvalMap.containsKey(name)) {
+      if (!nameToIdBiMap.containsKey(name)) {
         throw new RuntimeException("No Such target name: " + name);
       }
-      EvalNode evalNode = nameToEvalMap.get(name);
+      int id = nameToIdBiMap.get(name);
+      EvalNode evalNode = idToEvalBiMap.get(id);
+
+      // if it is a constant value, just returns a constant because it can be evaluated everywhere.
+      if (evalNode.getType() == EvalType.CONST) {
+        return new Target(evalNode, name);
+      }
+
+      // if a name is not the primary name, it means that its expression may be already evaluated and
+      // can just refer a value. Consider an example as follows:
+      //
+      // select l_orderkey + 1 as total1, l_orderkey + 1 as total2 from lineitem
+      //
+      // In this case, total2 will meet the following condition. Then, total2 can
+      // just refer the result of total1 rather than calculating l_orderkey + 1.
+      if (!isPrimaryName(id, name) && isEvaluated(getPrimaryName(id))) {
+        evalNode = new FieldEval(getPrimaryName(id), evalNode.getValueType());
+      }
+
+      // if it is a column reference itself, just returns a column reference without any alias.
       if (evalNode.getType() == EvalType.FIELD && evalNode.getName().equals(name)) {
         return new Target((FieldEval)evalNode);
-      } else {
+      } else { // otherwise, it returns an expression.
         return new Target(evalNode, name);
       }
     }
 
-    public boolean isResolved(String name) {
-      if (!nameToEvalMap.containsKey(name)) {
+    public boolean isEvaluated(String name) {
+      if (!nameToIdBiMap.containsKey(name)) {
         throw new RuntimeException("No Such target name: " + name);
       }
-
-      return resolvedFlags.get(name);
+      return evaluationStateMap.get(name);
     }
 
-    public void resolve(Target target) {
+    public void markAsEvaluated(Target target) {
+      int refId = nameToIdBiMap.get(target.getCanonicalName());
       EvalNode evalNode = target.getEvalTree();
-      if (evalNode.getType() == EvalType.CONST) { // if constant value
-        resolvedFlags.put(name, true);
-        return; // keep it raw always
-      }
-      if (!evalToNameMap.containsKey(evalNode)) {
+      if (!idToNamesMap.containsKey(refId)) {
         throw new RuntimeException("No such eval: " + evalNode);
       }
-      String name = evalToNameMap.get(evalNode);
-      resolvedFlags.put(name, true);
+      evaluationStateMap.put(target.getCanonicalName(), true);
     }
 
     public Iterator<Target> getFilteredTargets(Set<String> required) {
@@ -192,9 +300,9 @@ public class ProjectionPushDownRule extends
       List<Target> filtered = TUtil.newList();
 
       public FilteredTargetIterator(Set<String> required) {
-        for (Map.Entry<String,EvalNode> entry : nameToEvalMap.entrySet()) {
-          if (required.contains(entry.getKey())) {
-            filtered.add(getTarget(entry.getKey()));
+        for (String name : nameToIdBiMap.keySet()) {
+          if (required.contains(name)) {
+            filtered.add(getTarget(name));
           }
         }
       }
@@ -215,13 +323,13 @@ public class ProjectionPushDownRule extends
     }
 
     public String toString() {
-      int resolved = 0;
-      for (Boolean flag: resolvedFlags.values()) {
+      int evaluated = 0;
+      for (Boolean flag: evaluationStateMap.values()) {
         if (flag) {
-          resolved++;
+          evaluated++;
         }
       }
-      return "eval=" + resolvedFlags.size() + ", resolved=" + resolved;
+      return "eval=" + evaluationStateMap.size() + ", evaluated=" + evaluated;
     }
   }
 
@@ -281,30 +389,37 @@ public class ProjectionPushDownRule extends
   public LogicalNode visitProjection(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
     Context newContext = new Context(context);
-    String [] referenceNames = new String[node.getTargets().length];
-    for (int i = 0; i < node.getTargets().length; i++) {
-      referenceNames[i] = newContext.addExpr(node.getTargets()[i]);
+    Target [] targets = node.getTargets();
+    int targetNum = targets.length;
+    String [] referenceNames = new String[targetNum];
+    for (int i = 0; i < targetNum; i++) {
+      referenceNames[i] = newContext.addExpr(targets[i]);
     }
 
     LogicalNode child = super.visitProjection(newContext, plan, block, node, stack);
 
-    int resolvingCount = 0;
+    node.setInSchema(child.getOutSchema());
+
+    int evaluationCount = 0;
     List<Target> finalTargets = TUtil.newList();
     for (String referenceName : referenceNames) {
       Target target = context.targetListMgr.getTarget(referenceName);
 
-      if (context.targetListMgr.isResolved(referenceName)) {
+      if (context.targetListMgr.isEvaluated(referenceName)) {
         finalTargets.add(new Target(new FieldEval(target.getNamedColumn())));
       } else if (LogicalPlanner.checkIfBeEvaluatedAtThis(target.getEvalTree(), node)) {
         finalTargets.add(target);
-        context.targetListMgr.resolve(target);
-        resolvingCount++;
+        context.targetListMgr.markAsEvaluated(target);
+        evaluationCount++;
       }
     }
 
+    node.setTargets(finalTargets.toArray(new Target[finalTargets.size()]));
+    LogicalPlanner.verifyProjectedFields(block, node);
+
     // Removing ProjectionNode
     // TODO - Consider INSERT and CTAS statement, and then remove the check of stack.empty.
-    if (resolvingCount == 0 && PlannerUtil.targetToSchema(finalTargets).equals(child.getOutSchema())) {
+    if (evaluationCount == 0 && PlannerUtil.targetToSchema(finalTargets).equals(child.getOutSchema())) {
       if (stack.empty()) {
         // if it is topmost, set it as the root of this block.
         block.setRoot(child);
@@ -344,8 +459,6 @@ public class ProjectionPushDownRule extends
       return child;
 
     } else {
-      node.setInSchema(child.getOutSchema());
-      node.setTargets(finalTargets.toArray(new Target[finalTargets.size()]));
       return node;
     }
   }
@@ -391,11 +504,11 @@ public class ProjectionPushDownRule extends
     node.setOutSchema(child.getOutSchema());
 
     Target target = context.targetListMgr.getTarget(referenceName);
-    if (newContext.targetListMgr.isResolved(referenceName)) {
+    if (newContext.targetListMgr.isEvaluated(referenceName)) {
       node.setQual(new FieldEval(target.getNamedColumn()));
     } else {
       node.setQual(target.getEvalTree());
-      newContext.targetListMgr.resolve(target);
+      newContext.targetListMgr.markAsEvaluated(target);
     }
 
     return node;
@@ -436,6 +549,7 @@ public class ProjectionPushDownRule extends
 
     node.setInSchema(child.getOutSchema());
 
+    List<Target> targets = Lists.newArrayList();
     if (groupingKeyNum > 0) {
       // Restoring grouping key columns
       final Column [] groupingColumns = new Column[groupingKeyNum];
@@ -443,11 +557,14 @@ public class ProjectionPushDownRule extends
         String groupingKey = groupingKeyNames[i];
 
         Target target = context.targetListMgr.getTarget(groupingKey);
-        if (context.targetListMgr.isResolved(groupingKey)) {
+        if (context.targetListMgr.isEvaluated(groupingKey)) {
           groupingColumns[i] = target.getNamedColumn();
+          targets.add(new Target(new FieldEval(target.getNamedColumn())));
         } else {
           if (target.getEvalTree().getType() == EvalType.FIELD) {
-            groupingColumns[i] = target.getNamedColumn();
+            groupingColumns[i] = ((FieldEval)target.getEvalTree()).getColumnRef();
+            targets.add(target);
+            context.targetListMgr.markAsEvaluated(target);
           } else {
             throw new PlanningException("Cannot evaluate this expression in grouping keys: " + target.getEvalTree());
           }
@@ -467,27 +584,37 @@ public class ProjectionPushDownRule extends
 
         if (LogicalPlanner.checkIfBeEvaluatedAtGroupBy(target.getEvalTree(), node)) {
           aggEvals[i++] = target.getEvalTree();
-          context.targetListMgr.resolve(target);
+          context.targetListMgr.markAsEvaluated(target);
         }
       }
       if (aggEvals.length > 0) {
         node.setAggFunctions(aggEvals);
       }
     }
-    Target [] targets = buildGroupByTarget(node, aggEvalNames);
-    node.setTargets(targets);
+    Target [] finalTargets = buildGroupByTarget(node, targets, aggEvalNames);
+    node.setTargets(finalTargets);
+
+    LogicalPlanner.verifyProjectedFields(block, node);
 
     return node;
   }
 
-  public static Target [] buildGroupByTarget(GroupbyNode groupbyNode, String [] aggEvalNames) {
-    final int groupingKeyNum = groupbyNode.getGroupingColumns().length;
+  public static Target [] buildGroupByTarget(GroupbyNode groupbyNode, @Nullable List<Target> groupingKeyTargets,
+                                             String [] aggEvalNames) {
+    final int groupingKeyNum =
+        groupingKeyTargets == null ? groupbyNode.getGroupingColumns().length : groupingKeyTargets.size();
     final int aggrFuncNum = aggEvalNames != null ? aggEvalNames.length : 0;
     EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions();
     Target [] targets = new Target[groupingKeyNum + aggrFuncNum];
 
-    for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-      targets[groupingKeyIdx] = new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx]));
+    if (groupingKeyTargets != null) {
+      for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
+        targets[groupingKeyIdx] = groupingKeyTargets.get(groupingKeyIdx);
+      }
+    } else {
+      for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
+        targets[groupingKeyIdx] = new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx]));
+      }
     }
 
     if (aggEvalNames != null) {
@@ -512,11 +639,11 @@ public class ProjectionPushDownRule extends
     node.setOutSchema(child.getOutSchema());
 
     Target target = context.targetListMgr.getTarget(referenceName);
-    if (newContext.targetListMgr.isResolved(referenceName)) {
+    if (newContext.targetListMgr.isEvaluated(referenceName)) {
       node.setQual(new FieldEval(target.getNamedColumn()));
     } else {
       node.setQual(target.getEvalTree());
-      newContext.targetListMgr.resolve(target);
+      newContext.targetListMgr.markAsEvaluated(target);
     }
 
     return node;
@@ -553,21 +680,21 @@ public class ProjectionPushDownRule extends
 
     if (node.hasJoinQual()) {
       Target target = context.targetListMgr.getTarget(joinQualReference);
-      if (newContext.targetListMgr.isResolved(joinQualReference)) {
+      if (newContext.targetListMgr.isEvaluated(joinQualReference)) {
         throw new PlanningException("Join condition must be evaluated in the proper Join Node: " + joinQualReference);
       } else {
         node.setJoinQual(target.getEvalTree());
-        newContext.targetListMgr.resolve(target);
+        newContext.targetListMgr.markAsEvaluated(target);
       }
     }
 
-    List<Target> projectedTargets = TUtil.newList();
+    LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();
     for (Iterator<String> it = getFilteredReferences(context.targetListMgr.getNames(),
         context.requiredSet); it.hasNext();) {
       String referenceName = it.next();
       Target target = context.targetListMgr.getTarget(referenceName);
 
-      if (context.targetListMgr.isResolved(referenceName)) {
+      if (context.targetListMgr.isEvaluated(referenceName)) {
         Target fieldReference = new Target(new FieldEval(target.getNamedColumn()));
         if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, fieldReference.getEvalTree(), node,
             stack.peek().getType() != NodeType.JOIN)) {
@@ -576,12 +703,12 @@ public class ProjectionPushDownRule extends
       } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, target.getEvalTree(), node,
           stack.peek().getType() != NodeType.JOIN)) {
         projectedTargets.add(target);
-        context.targetListMgr.resolve(target);
+        context.targetListMgr.markAsEvaluated(target);
       }
     }
 
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
-
+    LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
 
@@ -703,7 +830,7 @@ public class ProjectionPushDownRule extends
       targets = PlannerUtil.schemaToTargets(node.getTableSchema());
     }
 
-    List<Target> projectedTargets = TUtil.newList();
+    LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();
     for (Iterator<Target> it = getFilteredTarget(targets, newContext.requiredSet); it.hasNext();) {
       Target target = it.next();
       newContext.addExpr(target);
@@ -714,11 +841,12 @@ public class ProjectionPushDownRule extends
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {
         projectedTargets.add(target);
-        newContext.targetListMgr.resolve(target);
+        newContext.targetListMgr.markAsEvaluated(target);
       }
     }
 
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
+    LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
 
@@ -736,7 +864,7 @@ public class ProjectionPushDownRule extends
       targets = PlannerUtil.schemaToTargets(node.getOutSchema());
     }
 
-    List<Target> projectedTargets = TUtil.newList();
+    LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();
     for (Iterator<Target> it = getFilteredTarget(targets, newContext.requiredSet); it.hasNext();) {
       Target target = it.next();
       newContext.addExpr(target);
@@ -747,11 +875,12 @@ public class ProjectionPushDownRule extends
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {
         projectedTargets.add(target);
-        newContext.targetListMgr.resolve(target);
+        newContext.targetListMgr.markAsEvaluated(target);
       }
     }
 
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
+    LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
 
@@ -773,7 +902,7 @@ public class ProjectionPushDownRule extends
       targets = PlannerUtil.schemaToTargets(node.getOutSchema());
     }
 
-    List<Target> projectedTargets = TUtil.newList();
+    LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();
     for (Iterator<Target> it = getFilteredTarget(targets, newContext.requiredSet); it.hasNext();) {
       Target target = it.next();
       childContext.addExpr(target);
@@ -784,7 +913,7 @@ public class ProjectionPushDownRule extends
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {
         projectedTargets.add(target);
-        childContext.targetListMgr.resolve(target);
+        childContext.targetListMgr.markAsEvaluated(target);
       }
     }
 

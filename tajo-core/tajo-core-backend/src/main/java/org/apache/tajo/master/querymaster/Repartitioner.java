@@ -153,9 +153,12 @@ public class Repartitioner {
         }
       }
 
+      // hashEntries can be zero if there are no input data.
+      // In the case, it will cause the zero divided exception.
+      // it avoids this problem.
       int [] avgSize = new int[2];
-      avgSize[0] = (int) (stats[0] / hashEntries.size());
-      avgSize[1] = (int) (stats[1] / hashEntries.size());
+      avgSize[0] = hashEntries.size() == 0 ? 0 : (int) (stats[0] / hashEntries.size());
+      avgSize[1] = hashEntries.size() == 0 ? 0 : (int) (stats[1] / hashEntries.size());
       int bothFetchSize = avgSize[0] + avgSize[1];
 
       // Getting the desire number of join tasks according to the volumn

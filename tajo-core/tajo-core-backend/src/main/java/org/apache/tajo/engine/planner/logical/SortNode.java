@@ -62,7 +62,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Sort");
+    PlanString planStr = new PlanString(this);
     StringBuilder sb = new StringBuilder("Sort Keys: ");
     for (int i = 0; i < sortKeys.length; i++) {
       sb.append(sortKeys[i].getSortKey().getColumnName()).append(" ")

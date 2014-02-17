@@ -21,14 +21,53 @@ package org.apache.tajo.engine.planner.logical;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.Target;
 
+/**
+ * Projectable is an interface for a LogicalNode which has a list of targets.
+ * What a logical node has a list of targets means that the node evaluated a list of expressions.
+ * For example, {@link org.apache.tajo.engine.planner.logical.ScanNode},
+ * {@link org.apache.tajo.engine.planner.logical.JoinNode},
+ * {@link org.apache.tajo.engine.planner.logical.GroupbyNode}, and
+ * {@link org.apache.tajo.engine.planner.logical.ProjectionNode} are all <i>Projectable</i> nodes.
+ * The expression evaluation occurs only at those projectable nodes.
+ */
 public interface Projectable {
+
+  /**
+   * Get a PlanNode Id
+   * @return PlanNodeId
+   */
+  int getPID();
+
+  /**
+   * check if this node has a target list
+   * @return TRUE if this node has a target list. Otherwise, FALSE.
+   */
   boolean hasTargets();
 
+  /**
+   * Set a target list
+   *
+   * @param targets The array of targets
+   */
   void setTargets(Target[] targets);
 
+  /**
+   * Get a list of targets
+   *
+   * @return The array of targets
+   */
   Target [] getTargets();
 
+  /**
+   * Get an input schema
+   * @return The input schema
+   */
   public Schema getInSchema();
 
+  /**
+   * Get an output schema
+   *
+   * @return The output schema
+   */
   public Schema getOutSchema();
 }

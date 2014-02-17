@@ -33,7 +33,7 @@ public class ExceptNode extends BinaryNode {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Except");
+    PlanString planStr = new PlanString(this);
     planStr.appendTitle(" (L - " + ((TableSubQueryNode)getLeftChild()).getTableName());
     planStr.appendTitle(", R - " + ((TableSubQueryNode)getRightChild()).getTableName());
     planStr.appendTitle(")");

@@ -58,7 +58,7 @@ public class HavingNode extends UnaryNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    return new PlanString("Having: ").appendTitle(qual.toString());
+    return new PlanString(this).appendTitle(" (").appendTitle(qual.toString()).appendTitle(")");
   }
 
   public String toString() {

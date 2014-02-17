@@ -57,4 +57,10 @@ public class LiteralValue extends Expr {
 
     return a && b;
   }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder(valueType == LiteralType.String ? "'" + value + "'" : value);
+    sb.append("(").append(valueType).append(")");
+    return sb.toString();
+  }
 }

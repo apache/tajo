@@ -311,7 +311,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	  for(Column col : fields) {
 	    sb.append(col);
 	    if (i < fields.size() - 1) {
-	      sb.append(",");
+	      sb.append(", ");
 	    }
 	    i++;
 	  }

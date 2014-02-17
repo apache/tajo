@@ -21,10 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.CountRowsFunctionExpr;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.GeneralSetFunctionExpr;
-import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -502,13 +499,9 @@ public class PlannerUtil {
     List<Target> targets = TUtil.newList();
 
     FieldEval eval;
-    Column column;
     for (int i = 0; i < schema.getColumnNum(); i++) {
-      column = schema.getColumn(i);
-      if (column.getColumnName().charAt(0) != LogicalPlan.NONAMED_COLUMN_PREFIX) {
-        eval = new FieldEval(schema.getColumn(i));
-        targets.add(new Target(eval));
-      }
+      eval = new FieldEval(schema.getColumn(i));
+      targets.add(new Target(eval));
     }
     return targets.toArray(new Target[targets.size()]);
   }

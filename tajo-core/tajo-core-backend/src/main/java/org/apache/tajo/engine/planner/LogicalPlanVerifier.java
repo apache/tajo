@@ -36,14 +36,41 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
     this.catalog = catalog;
   }
 
+  /**
+   * It checks if an output schema of a projectable node and target's output data types are equivalent to each other.
+   */
+  private static void verifyProjectableOutputSchema(Projectable node) throws PlanningException {
+
+    Schema outputSchema = node.getOutSchema();
+    Schema targetSchema = PlannerUtil.targetToSchema(node.getTargets());
+
+    if (outputSchema.getColumnNum() != node.getTargets().length) {
+      throw new PlanningException(String.format("Output schema and Target's schema are mismatched at Node (%d)",
+          + node.getPID()));
+    }
+
+    for (int i = 0; i < outputSchema.getColumnNum(); i++) {
+      if (!outputSchema.getColumn(i).getDataType().equals(targetSchema.getColumn(i).getDataType())) {
+        Column targetColumn = targetSchema.getColumn(i);
+        Column insertColumn = outputSchema.getColumn(i);
+        throw new PlanningException("ERROR: " +
+            insertColumn.getColumnName() + " is of type " + insertColumn.getDataType().getType().name() +
+            ", but target column '" + targetColumn.getColumnName() + "' is of type " +
+            targetColumn.getDataType().getType().name());
+      }
+    }
+  }
+
   @Override
   public LogicalNode visitProjection(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node.getChild(), stack);
+    super.visitProjection(state, plan, block, node, stack);
 
     for (Target target : node.getTargets()) {
-      ExprsVerifier.verify(state, target.getEvalTree());
+      ExprsVerifier.verify(state, node, target.getEvalTree());
     }
+
+    verifyProjectableOutputSchema(node);
 
     return node;
   }
@@ -51,8 +78,8 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   @Override
   public LogicalNode visitLimit(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                 LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitLimit(state, plan, block, node, stack);
 
-    visit(state, plan, block, node.getChild(), stack);
     if (node.getFetchFirstNum() < 0) {
       state.addVerification("LIMIT must not be negative");
     }
@@ -63,7 +90,9 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   @Override
   public LogicalNode visitGroupBy(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                   GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node.getChild(), stack);
+    super.visitGroupBy(state, plan, block, node, stack);
+
+    verifyProjectableOutputSchema(node);
     return node;
   }
 
@@ -71,7 +100,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   public LogicalNode visitFilter(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
     visit(state, plan, block, node.getChild(), stack);
-    ExprsVerifier.verify(state, node.getQual());
+    ExprsVerifier.verify(state, node, node.getQual());
     return node;
   }
 
@@ -82,8 +111,10 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
     visit(state, plan, block, node.getRightChild(), stack);
 
     if (node.hasJoinQual()) {
-      ExprsVerifier.verify(state, node.getJoinQual());
+      ExprsVerifier.verify(state, node, node.getJoinQual());
     }
+
+    verifyProjectableOutputSchema(node);
 
     return node;
   }
@@ -114,8 +145,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   @Override
   public LogicalNode visitUnion(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                 UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node.getLeftChild(), stack);
-    visit(state, plan, block, node.getRightChild(), stack);
+    super.visitUnion(state, plan, block, node, stack);
     verifySetStatement(state, node);
     return node;
   }
@@ -123,7 +153,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   @Override
   public LogicalNode visitExcept(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  ExceptNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node, stack);
+    super.visitExcept(state, plan, block, node, stack);
     verifySetStatement(state, node);
     return node;
   }
@@ -131,8 +161,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
   @Override
   public LogicalNode visitIntersect(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                     IntersectNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node.getLeftChild(), stack);
-    visit(state, plan, block, node.getRightChild(), stack);
+    super.visitIntersect(state, plan, block, node, stack);
     verifySetStatement(state, node);
     return node;
   }
@@ -142,30 +171,31 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
                                Stack<LogicalNode> stack) throws PlanningException {
     if (node.hasTargets()) {
       for (Target target : node.getTargets()) {
-        ExprsVerifier.verify(state, target.getEvalTree());
+        ExprsVerifier.verify(state, node, target.getEvalTree());
       }
     }
 
     if (node.hasQual()) {
-      ExprsVerifier.verify(state, node.getQual());
+      ExprsVerifier.verify(state, node, node.getQual());
     }
+
+    verifyProjectableOutputSchema(node);
+
     return node;
   }
 
   @Override
   public LogicalNode visitStoreTable(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
-    visit(state, plan, block, node.getChild(), stack);
-
+    super.visitStoreTable(state, plan, block, node, stack);
     return node;
   }
 
   @Override
   public LogicalNode visitInsert(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
-    LogicalNode child = visit(state, plan, block, node.getChild(), stack);
-
-    return child;
+    super.visitInsert(state, plan, block, node, stack);
+    return node;
   }
 
   /**
@@ -187,7 +217,9 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
 
   @Override
   public LogicalNode visitCreateTable(VerificationState state, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                      CreateTableNode node, Stack<LogicalNode> stack) {
+                                      CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitCreateTable(state, plan, block, node, stack);
+
     if (catalog.existsTable(node.getTableName())) {
       state.addVerification("relation \"" + node.getTableName() + "\" already exists");
     }

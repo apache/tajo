@@ -36,6 +36,6 @@ public class LogicalRootNode extends UnaryNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    return new PlanString("Root");
+    return new PlanString(this);
   }
 }

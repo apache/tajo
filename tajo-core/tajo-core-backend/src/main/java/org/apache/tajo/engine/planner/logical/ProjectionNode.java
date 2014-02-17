@@ -24,8 +24,6 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
-
 public class ProjectionNode extends UnaryNode implements Projectable {
   /**
    * the targets are always filled even if the query is 'select *'
@@ -101,7 +99,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("Projection: ");
+    PlanString planStr = new PlanString(this);
 
     if (distinct) {
       planStr.appendTitle(" (distinct)");

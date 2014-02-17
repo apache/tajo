@@ -78,7 +78,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    return new PlanString("CreateTable");
+    return new PlanString(this);
   }
   
   @Override
