@@ -87,30 +87,73 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private List<DataLocation> dataLocations = Lists.newArrayList();
 
+  private static final AttemptKilledTransition ATTEMPT_KILLED_TRANSITION = new AttemptKilledTransition();
+
   protected static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
-      new StateMachineFactory
-          <QueryUnit, TaskState, TaskEventType, TaskEvent>(TaskState.NEW)
+      new StateMachineFactory <QueryUnit, TaskState, TaskEventType, TaskEvent>(TaskState.NEW)
 
-      .addTransition(TaskState.NEW, TaskState.SCHEDULED,
-          TaskEventType.T_SCHEDULE, new InitialScheduleTransition())
+          // Transitions from NEW state
+          .addTransition(TaskState.NEW, TaskState.SCHEDULED,
+              TaskEventType.T_SCHEDULE,
+              new InitialScheduleTransition())
+          .addTransition(TaskState.NEW, TaskState.KILLED,
+              TaskEventType.T_KILL,
+              new KillNewTaskTransition())
 
-       .addTransition(TaskState.SCHEDULED, TaskState.RUNNING,
-           TaskEventType.T_ATTEMPT_LAUNCHED, new AttemptLaunchedTransition())
+          // Transitions from SCHEDULED state
+          .addTransition(TaskState.SCHEDULED, TaskState.RUNNING,
+              TaskEventType.T_ATTEMPT_LAUNCHED,
+              new AttemptLaunchedTransition())
+          .addTransition(TaskState.SCHEDULED, TaskState.KILL_WAIT,
+              TaskEventType.T_KILL,
+              new KillTaskTransition())
 
-        .addTransition(TaskState.RUNNING, TaskState.RUNNING,
-           TaskEventType.T_ATTEMPT_LAUNCHED)
+          // Transitions from RUNNING state
+          .addTransition(TaskState.RUNNING, TaskState.RUNNING,
+              TaskEventType.T_ATTEMPT_LAUNCHED)
+          .addTransition(TaskState.RUNNING, TaskState.SUCCEEDED,
+              TaskEventType.T_ATTEMPT_SUCCEEDED,
+              new AttemptSucceededTransition())
+          .addTransition(TaskState.RUNNING, TaskState.KILL_WAIT,
+              TaskEventType.T_KILL,
+              new KillTaskTransition())
+          .addTransition(TaskState.RUNNING,
+              EnumSet.of(TaskState.RUNNING, TaskState.FAILED),
+              TaskEventType.T_ATTEMPT_FAILED,
+              new AttemptFailedOrRetryTransition())
 
-       .addTransition(TaskState.RUNNING, TaskState.SUCCEEDED,
-           TaskEventType.T_ATTEMPT_SUCCEEDED, new AttemptSucceededTransition())
+          // Transitions from KILL_WAIT state
+          .addTransition(TaskState.KILL_WAIT, TaskState.KILLED,
+              TaskEventType.T_ATTEMPT_KILLED,
+              ATTEMPT_KILLED_TRANSITION)
+          .addTransition(TaskState.KILL_WAIT, TaskState.KILL_WAIT,
+              TaskEventType.T_ATTEMPT_LAUNCHED,
+              new KillTaskTransition())
+          .addTransition(TaskState.KILL_WAIT, TaskState.FAILED,
+              TaskEventType.T_ATTEMPT_FAILED,
+              new AttemptFailedTransition())
+          .addTransition(TaskState.KILL_WAIT, TaskState.KILLED,
+              TaskEventType.T_ATTEMPT_SUCCEEDED,
+              ATTEMPT_KILLED_TRANSITION)
+              // Ignore-able transitions.
+          .addTransition(TaskState.KILL_WAIT, TaskState.KILL_WAIT,
+              EnumSet.of(
+                  TaskEventType.T_KILL,
+                  TaskEventType.T_SCHEDULE))
 
-       .addTransition(TaskState.RUNNING,
-            EnumSet.of(TaskState.RUNNING, TaskState.FAILED),
-            TaskEventType.T_ATTEMPT_FAILED, new AttemptFailedTransition())
+          // Transitions from SUCCEEDED state
+          // Ignore-able transitions
+          .addTransition(TaskState.SUCCEEDED, TaskState.SUCCEEDED,
+              EnumSet.of(TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED))
 
+          // Transitions from FAILED state
+          // Ignore-able transitions
+          .addTransition(TaskState.FAILED, TaskState.FAILED,
+              EnumSet.of(TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED))
 
+          .installTopology();
 
-      .installTopology();
   private final StateMachine<TaskState, TaskEventType, TaskEvent> stateMachine;
 
 
@@ -406,6 +449,36 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
+  private void finishTask() {
+    this.finishTime = System.currentTimeMillis();
+  }
+
+  private static class KillNewTaskTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+
+    @Override
+    public void transition(QueryUnit task, TaskEvent taskEvent) {
+      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
+    }
+  }
+
+  private static class KillTaskTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+
+    @Override
+    public void transition(QueryUnit task, TaskEvent taskEvent) {
+      task.finishTask();
+      task.eventHandler.handle(new TaskAttemptEvent(task.lastAttemptId, TaskAttemptEventType.TA_KILL));
+    }
+  }
+
+  private static class AttemptKilledTransition implements SingleArcTransition<QueryUnit, TaskEvent>{
+
+    @Override
+    public void transition(QueryUnit task, TaskEvent event) {
+      task.finishTask();
+      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
+    }
+  }
+
   private static class AttemptSucceededTransition
       implements SingleArcTransition<QueryUnit, TaskEvent>{
 
@@ -413,15 +486,14 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     public void transition(QueryUnit task,
                            TaskEvent event) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      QueryUnitAttempt attempt = task.attempts.get(
-          attemptEvent.getTaskAttemptId());
+      QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
       task.succeededHost = attempt.getHost();
-      task.finishTime = System.currentTimeMillis();
       task.succeededPullServerPort = attempt.getPullServerPort();
-      task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(),
-          SubQueryEventType.SQ_TASK_COMPLETED));
+
+      task.finishTask();
+      task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
     }
   }
 
@@ -430,14 +502,28 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     public void transition(QueryUnit task,
                            TaskEvent event) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      QueryUnitAttempt attempt = task.attempts.get(
-          attemptEvent.getTaskAttemptId());
+      QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
       task.succeededHost = attempt.getHost();
     }
   }
 
-  private static class AttemptFailedTransition implements
+  private static class AttemptFailedTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+    @Override
+    public void transition(QueryUnit task, TaskEvent event) {
+      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
+      LOG.info("=============================================================");
+      LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + " <<<");
+      LOG.info("=============================================================");
+      task.failedAttempts++;
+      task.finishedAttempts++;
+
+      task.finishTask();
+      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.FAILED));
+    }
+  }
+
+  private static class AttemptFailedOrRetryTransition implements
     MultipleArcTransition<QueryUnit, TaskEvent, TaskState> {
 
     @Override
@@ -454,8 +540,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
           task.addAndScheduleAttempt();
         }
       } else {
-        task.eventHandler.handle(
-            new SubQueryTaskEvent(task.getId(), SubQueryEventType.SQ_FAILED));
+        task.finishTask();
+        task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.FAILED));
         return TaskState.FAILED;
       }
 

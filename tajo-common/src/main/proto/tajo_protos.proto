@@ -30,8 +30,9 @@ enum QueryState {
   QUERY_SUCCEEDED = 5;
   QUERY_FAILED = 6;
   QUERY_KILLED = 7;
-  QUERY_ERROR = 8;
-  QUERY_NOT_ASSIGNED = 9;
+  QUERY_KILL_WAIT = 8;
+  QUERY_ERROR = 9;
+  QUERY_NOT_ASSIGNED = 10;
 }
 
 enum TaskAttemptState {
@@ -42,5 +43,6 @@ enum TaskAttemptState {
   TA_RUNNING = 4;
   TA_SUCCEEDED = 5;
   TA_FAILED = 6;
-  TA_KILLED = 7;
+  TA_KILL_WAIT = 7;
+  TA_KILLED = 8;
 }

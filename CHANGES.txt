@@ -130,6 +130,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-305: Implement killQuery feature. (hyunsik)
+
     TAJO-598: Refactoring Tajo RPC. (jinho)
 
     TAJO-592: HCatalogStore should supports RCFile and default hive field delimiter. (jaehwa)

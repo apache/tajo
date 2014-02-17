@@ -130,7 +130,7 @@ public class TajoWorkerClientService extends AbstractService {
             RpcController controller,
             ClientProtos.GetQueryResultRequest request) throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      Query query = workerContext.getQueryMaster().getQuery(queryId);
+      Query query = workerContext.getQueryMaster().getQueryMasterTask(queryId, true).getQuery();
 
       ClientProtos.GetQueryResultResponse.Builder builder = ClientProtos.GetQueryResultResponse.newBuilder();
       try {
@@ -171,31 +171,35 @@ public class TajoWorkerClientService extends AbstractService {
         builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
         QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
+
         builder.setResultCode(ClientProtos.ResultCode.OK);
         builder.setQueryMasterHost(bindAddr.getHostName());
         builder.setQueryMasterPort(bindAddr.getPort());
 
-        if (queryMasterTask != null) {
-          queryMasterTask.touchSessionTime();
-          Query query = queryMasterTask.getQuery();
-
-          builder.setState(query.getState());
-          builder.setProgress(query.getProgress());
-          builder.setSubmitTime(query.getAppSubmitTime());
-          builder.setHasResult(
-              !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
-                  queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())
-          );
-          if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-            builder.setFinishTime(query.getFinishTime());
-          } else {
-            builder.setFinishTime(System.currentTimeMillis());
-          }
-        } else {
+        if (queryMasterTask == null) {
+          queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId, true);
+        }
+        if (queryMasterTask == null) {
           builder.setState(TajoProtos.QueryState.QUERY_NOT_ASSIGNED);
+          return builder.build();
+        }
+
+        queryMasterTask.touchSessionTime();
+        Query query = queryMasterTask.getQuery();
+
+        builder.setState(query.getState());
+        builder.setProgress(query.getProgress());
+        builder.setSubmitTime(query.getAppSubmitTime());
+        builder.setHasResult(
+            !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
+                queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())
+        );
+        if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+          builder.setFinishTime(query.getFinishTime());
+        } else {
+          builder.setFinishTime(System.currentTimeMillis());
         }
       }
-
       return builder.build();
     }
 
@@ -205,12 +209,6 @@ public class TajoWorkerClientService extends AbstractService {
             TajoIdProtos.QueryIdProto request) throws ServiceException {
       final QueryId queryId = new QueryId(request);
       LOG.info("Stop Query:" + queryId);
-      Thread t = new Thread() {
-        public void run() {
-          workerContext.getQueryMaster().getContext().stopQuery(queryId);
-        }
-      };
-      t.start();
       return BOOL_TRUE;
     }
   }

@@ -25,6 +25,7 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -58,6 +59,25 @@ public class TajoContainerProxy extends ContainerProxy {
         container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
 
     assignExecutionBlock(executionBlockId, container);
+  }
+
+  /**
+   * It sends a kill RPC request to a corresponding worker.
+   *
+   * @param taskAttemptId The TaskAttemptId to be killed.
+   */
+  public void killTaskAttempt(QueryUnitAttemptId taskAttemptId) {
+    NettyClientBase tajoWorkerRpc = null;
+    try {
+      InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
+      tajoWorkerRpc = RpcConnectionPool.getPool(context.getConf()).getConnection(addr, TajoWorkerProtocol.class, true);
+      TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+      tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    } finally {
+      RpcConnectionPool.getPool(context.getConf()).releaseConnection(tajoWorkerRpc);
+    }
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, Container container) {

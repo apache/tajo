@@ -37,5 +37,6 @@ service QueryMasterProtocolService {
   rpc done (TaskCompletionReport) returns (BoolProto);
 
   //from TajoMaster's QueryJobManager
+  rpc killQuery(QueryIdProto) returns (BoolProto);
   rpc executeQuery(QueryExecutionRequestProto) returns (BoolProto);
 }

@@ -18,26 +18,22 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.master.TaskState;
+import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.QueryId;
 
-/**
- * Event Class: From Task to SubQuery
- */
-public class SubQueryTaskEvent extends SubQueryEvent {
-  private QueryUnitId taskId;
-  private TaskState state;
-  public SubQueryTaskEvent(QueryUnitId taskId, TaskState state) {
-    super(taskId.getExecutionBlockId(), SubQueryEventType.SQ_TASK_COMPLETED);
-    this.taskId = taskId;
-    this.state = state;
+public class QueryMasterQueryCompletedEvent extends AbstractEvent<QueryMasterQueryCompletedEvent.EventType> {
+  public enum EventType {
+    QUERY_FINISH
   }
 
-  public QueryUnitId getTaskId() {
-    return this.taskId;
+  private final QueryId queryId;
+
+  public QueryMasterQueryCompletedEvent(QueryId queryId) {
+    super(EventType.QUERY_FINISH);
+    this.queryId = queryId;
   }
 
-  public TaskState getState() {
-    return state;
+  public QueryId getQueryId() {
+    return this.queryId;
   }
 }

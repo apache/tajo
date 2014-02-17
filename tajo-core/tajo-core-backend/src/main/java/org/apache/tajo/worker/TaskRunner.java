@@ -81,8 +81,7 @@ public class TaskRunner extends AbstractService {
   // for Fetcher
   private final ExecutorService fetchLauncher;
   // It keeps all of the query unit attempts while a TaskRunner is running.
-  private final Map<QueryUnitAttemptId, Task> tasks =
-      new ConcurrentHashMap<QueryUnitAttemptId, Task>();
+  private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<QueryUnitAttemptId, Task>();
 
   private final Map<QueryUnitAttemptId, TaskHistory> taskHistories =
       new ConcurrentHashMap<QueryUnitAttemptId, TaskHistory>();

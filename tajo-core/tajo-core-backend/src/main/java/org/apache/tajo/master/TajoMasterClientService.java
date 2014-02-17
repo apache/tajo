@@ -43,6 +43,7 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.querymaster.QueryJobEvent;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.BlockingRpcServer;
@@ -296,15 +297,15 @@ public class TajoMasterClientService extends AbstractService {
       return builder.build();
     }
 
+    /**
+     * It is invoked by TajoContainerProxy.
+     */
     @Override
-    public BoolProto killQuery(RpcController controller,
-                               TajoIdProtos.QueryIdProto request)
-        throws ServiceException {
+    public BoolProto killQuery(RpcController controller, TajoIdProtos.QueryIdProto request) throws ServiceException {
       QueryId queryId = new QueryId(request);
       QueryJobManager queryJobManager = context.getQueryJobManager();
-      //TODO KHJ, change QueryJobManager to event handler
-      //queryJobManager.handle(new QueryEvent(queryId, QueryEventType.KILL));
-
+      queryJobManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
+          new QueryInfo(queryId)));
       return BOOL_TRUE;
     }
 

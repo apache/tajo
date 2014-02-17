@@ -62,7 +62,7 @@
     <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th><th>Progress</th><th>Tasks</th></tr>
 <%
 for(SubQuery eachSubQuery: subQueries) {
-    eachSubQuery.getCompletedObjectCount();
+    eachSubQuery.getSucceededObjectCount();
     String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachSubQuery.getId();
 %>
   <tr>
@@ -72,7 +72,7 @@ for(SubQuery eachSubQuery: subQueries) {
     <td><%=eachSubQuery.getFinishTime() == 0 ? "-" : df.format(eachSubQuery.getFinishTime())%></td>
     <td><%=JSPUtil.getElapsedTime(eachSubQuery.getStartTime(), eachSubQuery.getFinishTime())%></td>
     <td align='center'><%=JSPUtil.percentFormat(eachSubQuery.getProgress())%>%</td>
-    <td align='center'><a href='<%=detailLink%>&status=SUCCEEDED'><%=eachSubQuery.getCompletedObjectCount()%></a>/<a href='<%=detailLink%>&status=ALL'><%=eachSubQuery.getTotalScheduledObjectsCount()%></a></td>
+    <td align='center'><a href='<%=detailLink%>&status=SUCCEEDED'><%=eachSubQuery.getSucceededObjectCount()%></a>/<a href='<%=detailLink%>&status=ALL'><%=eachSubQuery.getTotalScheduledObjectsCount()%></a></td>
   </tr>
   <%
 }  //end of for

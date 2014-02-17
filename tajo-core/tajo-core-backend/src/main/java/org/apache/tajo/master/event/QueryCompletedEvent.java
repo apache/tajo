@@ -18,26 +18,25 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.master.TaskState;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.querymaster.SubQueryState;
 
-/**
- * Event Class: From Task to SubQuery
- */
-public class SubQueryTaskEvent extends SubQueryEvent {
-  private QueryUnitId taskId;
-  private TaskState state;
-  public SubQueryTaskEvent(QueryUnitId taskId, TaskState state) {
-    super(taskId.getExecutionBlockId(), SubQueryEventType.SQ_TASK_COMPLETED);
-    this.taskId = taskId;
-    this.state = state;
+public class QueryCompletedEvent extends QueryEvent {
+  private final ExecutionBlockId executionBlockId;
+  private final SubQueryState finalState;
+
+  public QueryCompletedEvent(final ExecutionBlockId executionBlockId,
+                             SubQueryState finalState) {
+    super(executionBlockId.getQueryId(), QueryEventType.QUERY_COMPLETED);
+    this.executionBlockId = executionBlockId;
+    this.finalState = finalState;
   }
 
-  public QueryUnitId getTaskId() {
-    return this.taskId;
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
 
-  public TaskState getState() {
-    return state;
+  public SubQueryState getState() {
+    return finalState;
   }
 }

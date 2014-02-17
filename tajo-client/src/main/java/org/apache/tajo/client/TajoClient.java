@@ -476,25 +476,22 @@ public class TajoClient {
 
       long currentTimeMillis = System.currentTimeMillis();
       long timeKillIssued = currentTimeMillis;
-      while ((currentTimeMillis < timeKillIssued + 10000L) && (status.getState()
-          != QueryState.QUERY_KILLED)) {
+      while ((currentTimeMillis < timeKillIssued + 10000L) && (status.getState() != QueryState.QUERY_KILLED)) {
         try {
-          Thread.sleep(1000L);
+          Thread.sleep(100L);
         } catch(InterruptedException ie) {
-          /** interrupted, just break */
           break;
         }
         currentTimeMillis = System.currentTimeMillis();
         status = getQueryStatus(queryId);
       }
+      return status.getState() == QueryState.QUERY_KILLED;
     } catch(Exception e) {
       LOG.debug("Error when checking for application status", e);
       return false;
     } finally {
       connPool.releaseConnection(tmClient);
     }
-
-    return true;
   }
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {

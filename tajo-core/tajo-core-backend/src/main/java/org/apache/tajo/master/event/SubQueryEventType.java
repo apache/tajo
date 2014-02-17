@@ -27,6 +27,8 @@ public enum SubQueryEventType {
   SQ_INIT,
   SQ_START,
   SQ_CONTAINER_ALLOCATED,
+  SQ_KILL,
+  SQ_LAUNCH,
 
   // Producer: QueryUnit
   SQ_TASK_COMPLETED,

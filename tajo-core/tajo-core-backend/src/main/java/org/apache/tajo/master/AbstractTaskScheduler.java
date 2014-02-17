@@ -24,8 +24,7 @@ import org.apache.tajo.master.event.TaskRequestEvent;
 import org.apache.tajo.master.event.TaskSchedulerEvent;
 
 
-public abstract class AbstractTaskScheduler extends AbstractService
-    implements EventHandler<TaskSchedulerEvent> {
+public abstract class AbstractTaskScheduler extends AbstractService implements EventHandler<TaskSchedulerEvent> {
 
   /**
    * Construct the service.

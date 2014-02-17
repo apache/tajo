@@ -38,6 +38,7 @@ public class QueryJobEvent extends AbstractEvent<QueryJobEvent.Type> {
     QUERY_JOB_HEARTBEAT,
     QUERY_JOB_FINISH,
     QUERY_MASTER_START,
-    QUERY_MASTER_STOP
+    QUERY_MASTER_STOP,
+    QUERY_JOB_KILL
   }
 }

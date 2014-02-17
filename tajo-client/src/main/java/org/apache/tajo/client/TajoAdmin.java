@@ -25,6 +25,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -58,9 +59,10 @@ public class TajoAdmin {
     options = new Options();
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
-    options.addOption("list", "list", false, "Show Tajo query list");
-    options.addOption("cluster", "cluster", false, "Show Cluster Info");
-    options.addOption("desc", "desc", false, "Show Query Description");
+    options.addOption("list", null, false, "Show Tajo query list");
+    options.addOption("cluster", null, false, "Show Cluster Info");
+    options.addOption("desc", null, false, "Show Query Description");
+    options.addOption("kill", null, true, "Kill a running query");
   }
 
   private static void printUsage() {
@@ -98,12 +100,17 @@ public class TajoAdmin {
       port = Integer.parseInt(cmd.getOptionValue("p"));
     }
 
+    String queryId = null;
+
     if (cmd.hasOption("list")) {
       cmdType = 1;
     } else if (cmd.hasOption("desc")) {
       cmdType = 2;
     } else if (cmd.hasOption("cluster")) {
       cmdType = 3;
+    } else if (cmd.hasOption("kill")) {
+      cmdType = 4;
+      queryId = cmd.getOptionValue("kill");
     }
 
     // if there is no "-h" option,
@@ -148,6 +155,9 @@ public class TajoAdmin {
         break;
       case 3:
         processCluster(writer, client);
+        break;
+      case 4:
+        processKill(writer, client, queryId);
         break;
       default:
         printUsage();
@@ -375,7 +385,7 @@ public class TajoAdmin {
     writer.write(line);
 
     for (BriefQueryInfo queryInfo : queryList) {
-        String queryId = String.format("q-%s-%04d",
+        String queryId = String.format("q_%s_%04d",
                                        queryInfo.getQueryId().getId(),
                                        queryInfo.getQueryId().getSeq());
         String state = getQueryState(queryInfo.getState());
@@ -384,6 +394,16 @@ public class TajoAdmin {
         String sql = StringUtils.abbreviate(queryInfo.getQuery(), 30);
         line = String.format(fmt, queryId, state, startTime, sql);
         writer.write(line);
+    }
+  }
+
+  public static void processKill(Writer writer, TajoClient client, String queryIdStr)
+      throws IOException, ServiceException {
+    boolean killedSuccessfully = client.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
+    if (killedSuccessfully) {
+      writer.write(queryIdStr + " is killed successfully.\n");
+    } else {
+      writer.write("killing query is failed.");
     }
   }
 }

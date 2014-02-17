@@ -20,6 +20,7 @@ package org.apache.tajo.master.querymaster;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -96,7 +97,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
   private static final InternalErrorTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
   private static final ContainerLaunchTransition CONTAINER_LAUNCH_TRANSITION = new ContainerLaunchTransition();
-  private static final FailedTransition FAILED_TRANSITION = new FailedTransition();
+  private static final TaskCompletedTransition TASK_COMPLETED_TRANSITION = new TaskCompletedTransition();
+  private static final AllocatedContainersCancelTransition CONTAINERS_CANCEL_TRANSITION =
+      new AllocatedContainersCancelTransition();
+  private static final SubQueryCompleteTransition SUBQUERY_COMPLETED_TRANSITION =
+      new SubQueryCompleteTransition();
   private StateMachine<SubQueryState, SubQueryEventType, SubQueryEvent> stateMachine;
 
   protected static final StateMachineFactory<SubQuery, SubQueryState,
@@ -106,38 +111,28 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
           // Transitions from NEW state
           .addTransition(SubQueryState.NEW,
-              EnumSet.of(SubQueryState.INIT, SubQueryState.ERROR, SubQueryState.SUCCEEDED),
-              SubQueryEventType.SQ_INIT, new InitAndRequestContainer())
+              EnumSet.of(SubQueryState.INITED, SubQueryState.ERROR, SubQueryState.SUCCEEDED),
+              SubQueryEventType.SQ_INIT,
+              new InitAndRequestContainer())
           .addTransition(SubQueryState.NEW, SubQueryState.NEW,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
+          .addTransition(SubQueryState.NEW, SubQueryState.KILLED,
+              SubQueryEventType.SQ_KILL)
           .addTransition(SubQueryState.NEW, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from INIT state
-          .addTransition(SubQueryState.INIT, SubQueryState.CONTAINER_ALLOCATED,
+          // Transitions from INITED state
+          .addTransition(SubQueryState.INITED, SubQueryState.RUNNING,
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
-          .addTransition(SubQueryState.INIT, SubQueryState.INIT,
+          .addTransition(SubQueryState.INITED, SubQueryState.INITED,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.NEW, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
-
-          // Transitions from CONTAINER_ALLOCATED state
-          .addTransition(SubQueryState.CONTAINER_ALLOCATED,
-              EnumSet.of(SubQueryState.RUNNING, SubQueryState.FAILED, SubQueryState.SUCCEEDED),
-              SubQueryEventType.SQ_START,
-              new StartTransition())
-          .addTransition(SubQueryState.CONTAINER_ALLOCATED, SubQueryState.CONTAINER_ALLOCATED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
-              CONTAINER_LAUNCH_TRANSITION)
-          .addTransition(SubQueryState.CONTAINER_ALLOCATED, SubQueryState.CONTAINER_ALLOCATED,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.CONTAINER_ALLOCATED, SubQueryState.ERROR,
+          .addTransition(SubQueryState.INITED, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_KILL)
+          .addTransition(SubQueryState.INITED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
@@ -146,67 +141,112 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
           .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_START)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
               SubQueryEventType.SQ_TASK_COMPLETED,
-              new TaskCompletedTransition())
-          .addTransition(SubQueryState.RUNNING, SubQueryState.SUCCEEDED,
+              TASK_COMPLETED_TRANSITION)
+          .addTransition(SubQueryState.RUNNING,
+              EnumSet.of(SubQueryState.SUCCEEDED, SubQueryState.FAILED),
               SubQueryEventType.SQ_SUBQUERY_COMPLETED,
-              new SubQueryCompleteTransition())
+              SUBQUERY_COMPLETED_TRANSITION)
+          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
+              SubQueryEventType.SQ_FAILED,
+              TASK_COMPLETED_TRANSITION)
           .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.FAILED,
-              SubQueryEventType.SQ_FAILED,
-              FAILED_TRANSITION)
+          .addTransition(SubQueryState.RUNNING, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_KILL,
+              new KillTasksTransition())
           .addTransition(SubQueryState.RUNNING, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-
-          // Transitions from SUCCEEDED state
-          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
+          // Ignore-able Transition
+          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
               SubQueryEventType.SQ_START)
+
+          // Transitions from KILL_WAIT state
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+              CONTAINERS_CANCEL_TRANSITION)
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
+              EnumSet.of(SubQueryEventType.SQ_KILL))
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_TASK_COMPLETED,
+              TASK_COMPLETED_TRANSITION)
+          .addTransition(SubQueryState.KILL_WAIT,
+              EnumSet.of(SubQueryState.SUCCEEDED, SubQueryState.FAILED, SubQueryState.KILLED),
+              SubQueryEventType.SQ_SUBQUERY_COMPLETED,
+              SUBQUERY_COMPLETED_TRANSITION)
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+              DIAGNOSTIC_UPDATE_TRANSITION)
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
+              SubQueryEventType.SQ_FAILED,
+              TASK_COMPLETED_TRANSITION)
+          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.ERROR,
+              SubQueryEventType.SQ_INTERNAL_ERROR,
+              INTERNAL_ERROR_TRANSITION)
+
+              // Transitions from SUCCEEDED state
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED)
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+              CONTAINERS_CANCEL_TRANSITION)
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
+              // Ignore-able events
+          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
+              EnumSet.of(
+                  SubQueryEventType.SQ_START,
+                  SubQueryEventType.SQ_KILL,
+                  SubQueryEventType.SQ_CONTAINER_ALLOCATED))
 
           // Transitions from FAILED state
           .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+              CONTAINERS_CANCEL_TRANSITION)
+          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_START)
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED)
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_FAILED)
           .addTransition(SubQueryState.FAILED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
+          // Ignore-able transitions
+          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+              EnumSet.of(
+                  SubQueryEventType.SQ_START,
+                  SubQueryEventType.SQ_KILL,
+                  SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+                  SubQueryEventType.SQ_FAILED))
 
           // Transitions from FAILED state
           .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+              CONTAINERS_CANCEL_TRANSITION)
+          .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
+          // Ignore-able transitions
           .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
-              SubQueryEventType.SQ_FAILED)
-          .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR)
+              EnumSet.of(
+                  SubQueryEventType.SQ_START,
+                  SubQueryEventType.SQ_KILL,
+                  SubQueryEventType.SQ_FAILED,
+                  SubQueryEventType.SQ_INTERNAL_ERROR))
 
           .installTopology();
-
 
   private final Lock readLock;
   private final Lock writeLock;
 
   private int totalScheduledObjectsCount;
-  private int completedObjectCount = 0;
+  private int succeededObjectCount = 0;
   private int completedTaskCount = 0;
+  private int succeededTaskCount = 0;
+  private int killedObjectCount = 0;
+  private int failedObjectCount = 0;
   private TaskSchedulerContext schedulerContext;
 
   public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block, AbstractStorageManager sm) {
@@ -223,8 +263,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   public static boolean isRunningState(SubQueryState state) {
-    return state == SubQueryState.INIT || state == SubQueryState.NEW ||
-        state == SubQueryState.CONTAINER_ALLOCATED || state == SubQueryState.RUNNING;
+    return state == SubQueryState.INITED || state == SubQueryState.NEW || state == SubQueryState.RUNNING;
   }
 
   public QueryMasterTask.QueryMasterTaskContext getContext() {
@@ -271,15 +310,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (getState() == SubQueryState.NEW) {
         return 0;
       } else {
-        return (float)(completedObjectCount) / (float)totalScheduledObjectsCount;
+        return (float)(succeededObjectCount) / (float)totalScheduledObjectsCount;
       }
     } finally {
       readLock.unlock();
     }
   }
 
-  public int getCompletedObjectCount() {
-    return completedObjectCount;
+  public int getSucceededObjectCount() {
+    return succeededObjectCount;
   }
 
   public int getTotalScheduledObjectsCount() {
@@ -294,15 +333,29 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     tasks.put(task.getId(), task);
   }
 
-  public void abortSubQuery(SubQueryState finalState) {
+  /**
+   * It finalizes this subquery. It is only invoked when the subquery is succeeded.
+   */
+  public void complete() {
+    cleanup();
+    finalizeStats();
+    setFinishTime();
+    eventHandler.handle(new SubQueryCompletedEvent(getId(), SubQueryState.SUCCEEDED));
+  }
+
+  /**
+   * It finalizes this subquery. Unlike {@link SubQuery#complete()},
+   * it is invoked when a subquery is abnormally finished.
+   *
+   * @param finalState The final subquery state
+   */
+  public void abort(SubQueryState finalState) {
     // TODO -
     // - committer.abortSubQuery(...)
     // - record SubQuery Finish Time
     // - CleanUp Tasks
     // - Record History
-
-    stopScheduler();
-    releaseContainers();
+    cleanup();
     setFinishTime();
     eventHandler.handle(new SubQueryCompletedEvent(getId(), finalState));
   }
@@ -394,7 +447,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  public static TableStats computeStatFromUnionBlock(SubQuery subQuery) {
+  private static TableStats computeStatFromUnionBlock(SubQuery subQuery) {
     TableStats stat = new TableStats();
     TableStats childStat;
     long avgRows = 0, numBytes = 0, numRows = 0;
@@ -443,10 +496,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private void releaseContainers() {
     // If there are still live TaskRunners, try to kill the containers.
-    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP ,getId(), containers.values()));
+    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
   }
 
-  private void finish() {
+  /**
+   * It computes all stats and sets the intermediate result.
+   */
+  private void finalizeStats() {
     TableStats stats;
     if (block.hasUnion()) {
       stats = computeStatFromUnionBlock(this);
@@ -466,9 +522,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     schema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(storeType, new Options());
     statistics = stats;
-    setFinishTime();
-
-    eventHandler.handle(new SubQuerySucceeEvent(getId()));
   }
 
   @Override
@@ -516,7 +569,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       try {
         // Union operator does not require actual query processing. It is performed logically.
         if (execBlock.hasUnion()) {
-          subQuery.finish();
+          subQuery.finalizeStats();
           state = SubQueryState.SUCCEEDED;
         } else {
           ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
@@ -529,12 +582,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
           if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
             subQuery.stopScheduler();
-            subQuery.finish();
+            subQuery.finalizeStats();
+            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
             return SubQueryState.SUCCEEDED;
           } else {
             subQuery.taskScheduler.start();
             allocateContainers(subQuery);
-            return SubQueryState.INIT;
+            return SubQueryState.INITED;
           }
         }
       } catch (Exception e) {
@@ -826,7 +880,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return unit;
   }
 
-  int i = 0;
   private static class ContainerLaunchTransition
       implements SingleArcTransition<SubQuery, SubQueryEvent> {
 
@@ -838,42 +891,51 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         for (Container container : allocationEvent.getAllocatedContainer()) {
           ContainerId cId = container.getId();
           if (subQuery.containers.containsKey(cId)) {
-            LOG.info(">>>>>>>>>>>> Duplicate Container! <<<<<<<<<<<");
+            subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+                "Duplicated containers are allocated: " + cId.toString()));
+            subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
           }
           subQuery.containers.put(cId, container);
-          // TODO - This is debugging message. Should be removed
-          subQuery.i++;
         }
-        LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.i + " containers!");
+        LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
         subQuery.eventHandler.handle(
             new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
                 subQuery.getId(), allocationEvent.getAllocatedContainer()));
 
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
       } catch (Throwable t) {
-
+        subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+            ExceptionUtils.getStackTrace(t)));
+        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
       }
     }
   }
 
-  private static class StartTransition implements
-      MultipleArcTransition<SubQuery, SubQueryEvent, SubQueryState> {
-
+  /**
+   * It is used in KILL_WAIT state against Contained Allocated event.
+   * It just returns allocated containers to resource manager.
+   */
+  private static class AllocatedContainersCancelTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
     @Override
-    public SubQueryState transition(SubQuery subQuery,
-                           SubQueryEvent subQueryEvent) {
-      // schedule tasks
+    public void transition(SubQuery subQuery, SubQueryEvent event) {
       try {
-        return  SubQueryState.RUNNING;
-      } catch (Exception e) {
-        LOG.warn("SubQuery (" + subQuery.getId() + ") failed", e);
-        return SubQueryState.FAILED;
+        SubQueryContainerAllocationEvent allocationEvent =
+            (SubQueryContainerAllocationEvent) event;
+        subQuery.eventHandler.handle(
+            new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP,
+                subQuery.getId(), allocationEvent.getAllocatedContainer()));
+        LOG.info(String.format("[%s] %d allocated containers are canceled",
+            subQuery.getId().toString(),
+            allocationEvent.getAllocatedContainer().size()));
+      } catch (Throwable t) {
+        subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+            ExceptionUtils.getStackTrace(t)));
+        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
       }
     }
   }
 
-  private static class TaskCompletedTransition
-      implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class TaskCompletedTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
 
     @Override
     public void transition(SubQuery subQuery,
@@ -882,39 +944,101 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       QueryUnit task = subQuery.getQueryUnit(taskEvent.getTaskId());
 
       if (task == null) { // task failed
+        LOG.error(String.format("Task %s is absent", taskEvent.getTaskId()));
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_FAILED));
       } else {
-        QueryUnitAttempt taskAttempt = task.getSuccessfulAttempt();
-        if (task.isLeafTask()) {
-          subQuery.completedObjectCount += task.getTotalFragmentNum();
-        } else {
-          subQuery.completedObjectCount++;
-        }
         subQuery.completedTaskCount++;
 
-        LOG.info(subQuery.getId() + " SubQuery Succeeded " + subQuery.completedTaskCount + "/"
-            + subQuery.schedulerContext.getEstimatedTaskNum() + " on " + taskAttempt.getHost() + ":" + taskAttempt.getPort());
-        if (subQuery.taskScheduler.remainingScheduledObjectNum() == 0
-            && subQuery.totalScheduledObjectsCount == subQuery.completedObjectCount) {
-          subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
-              SubQueryEventType.SQ_SUBQUERY_COMPLETED));
+        if (taskEvent.getState() == TaskState.SUCCEEDED) {
+          if (task.isLeafTask()) {
+            subQuery.succeededObjectCount += task.getTotalFragmentNum();
+          } else {
+            subQuery.succeededObjectCount++;
+          }
+        } else if (task.getState() == TaskState.KILLED) {
+          if (task.isLeafTask()) {
+            subQuery.killedObjectCount += task.getTotalFragmentNum();
+          } else {
+            subQuery.killedObjectCount++;
+          }
+        } else if (task.getState() == TaskState.FAILED) {
+          if (task.isLeafTask()) {
+            subQuery.failedObjectCount+= task.getTotalFragmentNum();
+          } else {
+            subQuery.failedObjectCount++;
+          }
+
+          // if at least one task is failed, try to kill all tasks.
+          subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
+        }
+
+        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d",
+            subQuery.getId(),
+            subQuery.getTotalScheduledObjectsCount(),
+            subQuery.succeededObjectCount,
+            subQuery.killedObjectCount,
+            subQuery.failedObjectCount));
+
+        if (subQuery.totalScheduledObjectsCount ==
+            subQuery.succeededObjectCount + subQuery.killedObjectCount + subQuery.failedObjectCount) {
+          subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_SUBQUERY_COMPLETED));
         }
       }
     }
   }
 
-  private static class SubQueryCompleteTransition
-      implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class KillTasksTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
 
     @Override
     public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
+      subQuery.getTaskScheduler().stop();
+      for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
+        subQuery.eventHandler.handle(new TaskEvent(queryUnit.getId(), TaskEventType.T_KILL));
+      }
+    }
+  }
+
+  private void cleanup() {
+    stopScheduler();
+    releaseContainers();
+  }
+
+  private static class SubQueryCompleteTransition
+      implements MultipleArcTransition<SubQuery, SubQueryEvent, SubQueryState> {
+
+    @Override
+    public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
       // TODO - Commit subQuery & do cleanup
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
-      LOG.info("SubQuery finished:" + subQuery.getId());
-      subQuery.stopScheduler();
-      subQuery.releaseContainers();
-      subQuery.finish();
+      try {
+        LOG.info(String.format("subQuery completed - %s (total=%d, success=%d, killed=%d)",
+            subQuery.getId().toString(),
+            subQuery.getTotalScheduledObjectsCount(),
+            subQuery.getSucceededObjectCount(),
+            subQuery.killedObjectCount));
+
+        if (subQuery.killedObjectCount > 0 || subQuery.failedObjectCount > 0) {
+          if (subQuery.failedObjectCount > 0) {
+            subQuery.abort(SubQueryState.FAILED);
+            return SubQueryState.FAILED;
+          } else if (subQuery.killedObjectCount > 0) {
+            subQuery.abort(SubQueryState.KILLED);
+            return SubQueryState.KILLED;
+          } else {
+            LOG.error("Invalid State " + subQuery.getState() + " State");
+            subQuery.abort(SubQueryState.ERROR);
+            return SubQueryState.ERROR;
+          }
+        } else {
+          subQuery.complete();
+          return SubQueryState.SUCCEEDED;
+        }
+      } catch (Throwable t) {
+        LOG.error(t);
+        subQuery.abort(SubQueryState.ERROR);
+        return SubQueryState.ERROR;
+      }
     }
   }
 
@@ -928,14 +1052,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private static class InternalErrorTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
     @Override
     public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.abortSubQuery(SubQueryState.ERROR);
-    }
-  }
-
-  private static class FailedTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
-    @Override
-    public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.abortSubQuery(SubQueryState.FAILED);
+      subQuery.abort(SubQueryState.ERROR);
     }
   }
 }

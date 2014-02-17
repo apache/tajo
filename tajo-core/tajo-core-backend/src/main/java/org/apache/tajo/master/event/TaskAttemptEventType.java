@@ -29,9 +29,11 @@ public enum TaskAttemptEventType {
 
   //Producer:Client, Task
   TA_KILL,
+  TA_LOCAL_KILLED,
 
   //Producer:Scheduler
   TA_ASSIGNED,
+  TA_SCHEDULE_CANCELED,
 
   //Producer:Scheduler
   TA_LAUNCHED,

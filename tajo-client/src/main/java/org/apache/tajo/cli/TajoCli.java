@@ -286,7 +286,22 @@ public class TajoCli {
       } else if (cmds[0].equalsIgnoreCase("detach") && cmds.length > 1 && cmds[1].equalsIgnoreCase("table")) {
         // this command should be moved to GlobalEngine
         invokeCommand(cmds);
-
+      } else if (cmds[0].equalsIgnoreCase("explain") && cmds.length > 1) {
+        String sql = stripped.substring(8);
+        ClientProtos.ExplainQueryResponse response = client.explainQuery(sql);
+        if (response == null) {
+          sout.println("response is null");
+        } else {
+          if (response.hasExplain()) {
+            sout.println(response.getExplain());
+          } else {
+            if (response.hasErrorMessage()) {
+              sout.println(response.getErrorMessage());
+            } else {
+              sout.println("No Explain");
+            }
+          }
+        }
       } else { // submit a query to TajoMaster
         ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
         if (response == null) {
@@ -299,7 +314,7 @@ public class TajoCli {
             if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
               sout.println("OK");
             } else {
-              getQueryResult(queryId);
+              waitForQueryCompleted(queryId);
             }
           } finally {
             if(queryId != null) {
@@ -316,11 +331,7 @@ public class TajoCli {
     return 0;
   }
 
-  private boolean isFailed(QueryState state) {
-    return state == QueryState.QUERY_ERROR || state == QueryState.QUERY_FAILED;
-  }
-
-  private void getQueryResult(QueryId queryId) {
+  private void waitForQueryCompleted(QueryId queryId) {
     // if query is empty string
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return;
@@ -341,14 +352,15 @@ public class TajoCli {
           continue;
         }
 
-        if (status.getState() == QueryState.QUERY_RUNNING ||
-            status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (status.getState() == QueryState.QUERY_RUNNING || status.getState() == QueryState.QUERY_SUCCEEDED) {
           sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
               + "%, response time: " + ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0) + " sec");
           sout.flush();
         }
 
-        if (status.getState() != QueryState.QUERY_RUNNING && status.getState() != QueryState.QUERY_NOT_ASSIGNED) {
+        if (status.getState() != QueryState.QUERY_RUNNING &&
+            status.getState() != QueryState.QUERY_NOT_ASSIGNED &&
+            status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));

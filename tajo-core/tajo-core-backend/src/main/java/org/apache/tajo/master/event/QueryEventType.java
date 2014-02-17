@@ -19,9 +19,18 @@
 package org.apache.tajo.master.event;
 
 public enum QueryEventType {
+
+  // Producer: TajoMaster
   START,
-  INTERNAL_ERROR,
-  SUBQUERY_COMPLETED,
   KILL,
+
+  // Producer: SubQuery
+  SUBQUERY_COMPLETED,
+
+  // Producer: Query
+  QUERY_COMPLETED,
+
+  // Producer: Any component
   DIAGNOSTIC_UPDATE,
+  INTERNAL_ERROR,
 }

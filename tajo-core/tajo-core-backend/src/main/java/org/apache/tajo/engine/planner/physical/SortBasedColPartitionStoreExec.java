@@ -135,9 +135,11 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
   @Override
   public void close() throws IOException {
-    appender.close();
-    StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
-    context.setResultStats(aggregated);
+    if (appender != null) {
+      appender.close();
+      StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
+      context.setResultStats(aggregated);
+    }
   }
 
   @Override

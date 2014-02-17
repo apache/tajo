@@ -20,6 +20,7 @@ package org.apache.tajo.master.querymaster;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryUnitAttemptId;
@@ -51,6 +52,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   private final QueryUnit queryUnit;
   final EventHandler eventHandler;
 
+  private ContainerId containerId;
   private String hostName;
   private int port;
   private int expire;
@@ -68,44 +70,87 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
       (TaskAttemptState.TA_NEW)
 
+      // Transitions from TA_NEW state
       .addTransition(TaskAttemptState.TA_NEW, TaskAttemptState.TA_UNASSIGNED,
           TaskAttemptEventType.TA_SCHEDULE, new TaskAttemptScheduleTransition())
       .addTransition(TaskAttemptState.TA_NEW, TaskAttemptState.TA_UNASSIGNED,
           TaskAttemptEventType.TA_RESCHEDULE, new TaskAttemptScheduleTransition())
+      .addTransition(TaskAttemptState.TA_NEW, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_KILL,
+          new TaskKilledCompleteTransition())
 
+      // Transitions from TA_UNASSIGNED state
       .addTransition(TaskAttemptState.TA_UNASSIGNED, TaskAttemptState.TA_ASSIGNED,
-          TaskAttemptEventType.TA_ASSIGNED, new LaunchTransition())
+          TaskAttemptEventType.TA_ASSIGNED,
+          new LaunchTransition())
+      .addTransition(TaskAttemptState.TA_UNASSIGNED, TaskAttemptState.TA_KILL_WAIT,
+          TaskAttemptEventType.TA_KILL,
+          new KillUnassignedTaskTransition())
 
-      // from assigned
+      // Transitions from TA_ASSIGNED state
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_ASSIGNED,
           TaskAttemptEventType.TA_ASSIGNED, new AlreadyAssignedTransition())
+      .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_KILL_WAIT,
+          TaskAttemptEventType.TA_KILL,
+          new KillTaskTransition())
       .addTransition(TaskAttemptState.TA_ASSIGNED,
           EnumSet.of(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_KILLED),
           TaskAttemptEventType.TA_UPDATE, new StatusUpdateTransition())
-
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_DONE, new SucceededTransition())
-
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
 
-      // from running
+      // Transitions from TA_RUNNING state
       .addTransition(TaskAttemptState.TA_RUNNING,
           EnumSet.of(TaskAttemptState.TA_RUNNING),
           TaskAttemptEventType.TA_UPDATE, new StatusUpdateTransition())
-
+      .addTransition(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_KILL_WAIT,
+          TaskAttemptEventType.TA_KILL,
+          new KillTaskTransition())
       .addTransition(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_DONE, new SucceededTransition())
-
       .addTransition(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
 
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_LOCAL_KILLED,
+          new TaskKilledCompleteTransition())
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_KILL_WAIT,
+          TaskAttemptEventType.TA_ASSIGNED,
+          new KillTaskTransition())
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_SCHEDULE_CANCELED,
+          new TaskKilledCompleteTransition())
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_DONE,
+          new TaskKilledCompleteTransition())
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_FAILED,
+          TaskAttemptEventType.TA_FATAL_ERROR)
+      .addTransition(TaskAttemptState.TA_KILL_WAIT, TaskAttemptState.TA_KILL_WAIT,
+          EnumSet.of(
+              TaskAttemptEventType.TA_KILL,
+              TaskAttemptEventType.TA_DIAGNOSTICS_UPDATE,
+              TaskAttemptEventType.TA_UPDATE))
+
+      // Transitions from TA_SUCCEEDED state
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_UPDATE)
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_DONE, new AlreadyDoneTransition())
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
+       // Ignore-able transitions
+      .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
+          TaskAttemptEventType.TA_KILL)
+
+      // Transitions from TA_KILLED state
+      .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_DIAGNOSTICS_UPDATE)
+      // Ignore-able transitions
+      .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
+          EnumSet.of(
+              TaskAttemptEventType.TA_UPDATE))
 
       .installTopology();
 
@@ -158,6 +203,10 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     return this.port;
   }
 
+  public void setContainerId(ContainerId containerId) {
+    this.containerId = containerId;
+  }
+
   public void setHost(String host) {
     this.hostName = host;
   }
@@ -204,13 +253,23 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   }
 
   private static class TaskAttemptScheduleTransition implements
-    SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+      SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt,
-                           TaskAttemptEvent taskAttemptEvent) {
+    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
       taskAttempt.eventHandler.handle(new QueryUnitAttemptScheduleEvent(
           EventType.T_SCHEDULE, taskAttempt.getQueryUnit().getId().getExecutionBlockId(),
+          taskAttempt.scheduleContext, taskAttempt));
+    }
+  }
+
+  private static class KillUnassignedTaskTransition implements
+      SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+
+    @Override
+    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
+      taskAttempt.eventHandler.handle(new QueryUnitAttemptScheduleEvent(
+          EventType.T_SCHEDULE_CANCEL, taskAttempt.getQueryUnit().getId().getExecutionBlockId(),
           taskAttempt.scheduleContext, taskAttempt));
     }
   }
@@ -222,11 +281,23 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     public void transition(QueryUnitAttempt taskAttempt,
                            TaskAttemptEvent event) {
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
+      taskAttempt.containerId = castEvent.getContainerId();
       taskAttempt.setHost(castEvent.getHostName());
       taskAttempt.setPullServerPort(castEvent.getPullServerPort());
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),
               TaskEventType.T_ATTEMPT_LAUNCHED));
+    }
+  }
+
+  private static class TaskKilledCompleteTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+
+    @Override
+    public void transition(QueryUnitAttempt taskAttempt,
+                           TaskAttemptEvent event) {
+      taskAttempt.getQueryUnit().handle(new TaskEvent(taskAttempt.getId().getQueryUnitId(),
+          TaskEventType.T_ATTEMPT_KILLED));
+      LOG.info(taskAttempt.getId() + " Received TA_KILLED Status from LocalTask");
     }
   }
 
@@ -236,14 +307,12 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public TaskAttemptState transition(QueryUnitAttempt taskAttempt,
                                        TaskAttemptEvent event) {
-      TaskAttemptStatusUpdateEvent updateEvent =
-          (TaskAttemptStatusUpdateEvent) event;
+      TaskAttemptStatusUpdateEvent updateEvent = (TaskAttemptStatusUpdateEvent) event;
 
       switch (updateEvent.getStatus().getState()) {
         case TA_PENDING:
         case TA_RUNNING:
           return TaskAttemptState.TA_RUNNING;
-
         default:
           return taskAttempt.getState();
       }
@@ -289,6 +358,15 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     }
   }
 
+  private static class KillTaskTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+
+    @Override
+    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent event) {
+      taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(), taskAttempt.containerId,
+          LocalTaskEventType.KILL));
+    }
+  }
+
   private static class FailedTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
     @Override
     public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent event) {
@@ -302,8 +380,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   @Override
   public void handle(TaskAttemptEvent event) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Processing " + event.getTaskAttemptId() + " of type "
-          + event.getType());
+      LOG.debug("Processing " + event.getTaskAttemptId() + " of type " + event.getType());
     }
     try {
       writeLock.lock();

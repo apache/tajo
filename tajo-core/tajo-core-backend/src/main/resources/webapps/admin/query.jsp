@@ -69,7 +69,7 @@
   } else {
 %>
   <table width="100%" border="1" class='border_table'>
-    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>sql</th></tr>
+    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>Status</th></th><th>sql</th></tr>
     <%
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
@@ -82,6 +82,7 @@
       <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
       <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
       <td><%=StringUtils.formatTime(time)%></td>
+      <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
     </tr>
     <%

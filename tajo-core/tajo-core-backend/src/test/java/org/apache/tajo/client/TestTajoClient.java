@@ -24,14 +24,12 @@ import com.sun.org.apache.commons.logging.Log;
 import com.sun.org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.BackendTestingUtil;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.BeforeClass;
@@ -65,6 +63,15 @@ public class TestTajoClient {
     Path tablePath = StorageUtil.concatPath(testDir, tableName);
     BackendTestingUtil.writeTmpTable(conf, tablePath);
     return tablePath;
+  }
+
+  @Test
+  public final void testKillQuery() throws IOException, ServiceException, InterruptedException {
+    ClientProtos.GetQueryStatusResponse res = client.executeQuery("select sleep(1) from lineitem");
+    Thread.sleep(1000);
+    QueryId queryId = new QueryId(res.getQueryId());
+    client.killQuery(queryId);
+    assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId).getState());
   }
 
   @Test

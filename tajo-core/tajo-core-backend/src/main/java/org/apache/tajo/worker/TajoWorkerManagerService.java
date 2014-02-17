@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -133,6 +134,13 @@ public class TajoWorkerManagerService extends CompositeService
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
+  }
+
+  @Override
+  public void killTaskAttempt(RpcController controller, TajoIdProtos.QueryUnitAttemptIdProto request,
+                              RpcCallback<PrimitiveProtos.BoolProto> done) {
+    workerContext.getTaskRunnerManager().findTaskByQueryUnitAttemptId(new QueryUnitAttemptId(request)).kill();
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override

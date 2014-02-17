@@ -25,7 +25,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 public abstract class TaskSchedulerEvent extends AbstractEvent<EventType> {
   public enum EventType {
     T_SCHEDULE,
-    T_SUBQUERY_COMPLETED
+    T_SCHEDULE_CANCEL
   }
 
   protected final ExecutionBlockId executionBlockId;

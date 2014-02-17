@@ -45,6 +45,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.TajoAsyncDispatcher;
+import org.apache.tajo.master.TajoContainerProxy;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.rpc.CallFuture;
@@ -63,6 +64,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.tajo.TajoProtos.QueryState;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -135,8 +138,9 @@ public class QueryMasterTask extends CompositeService {
       dispatcher.register(SubQueryEventType.class, new SubQueryEventDispatcher());
       dispatcher.register(TaskEventType.class, new TaskEventDispatcher());
       dispatcher.register(TaskAttemptEventType.class, new TaskAttemptEventDispatcher());
-      dispatcher.register(QueryFinishEvent.EventType.class, new QueryFinishEventHandler());
+      dispatcher.register(QueryMasterQueryCompletedEvent.EventType.class, new QueryFinishEventHandler());
       dispatcher.register(TaskSchedulerEvent.EventType.class, new TaskSchedulerDispatcher());
+      dispatcher.register(LocalTaskEventType.class, new LocalTaskEventHandler());
 
       initStagingDir();
 
@@ -247,12 +251,38 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  private static class QueryFinishEventHandler implements EventHandler<QueryFinishEvent> {
+  private class LocalTaskEventHandler implements EventHandler<LocalTaskEvent> {
     @Override
-    public void handle(QueryFinishEvent event) {
+    public void handle(LocalTaskEvent event) {
+      TajoContainerProxy proxy = (TajoContainerProxy) resourceAllocator.getContainers().get(event.getContainerId());
+      proxy.killTaskAttempt(event.getTaskAttemptId());
+    }
+  }
+
+  private class QueryFinishEventHandler implements EventHandler<QueryMasterQueryCompletedEvent> {
+    @Override
+    public void handle(QueryMasterQueryCompletedEvent event) {
       QueryId queryId = event.getQueryId();
-      LOG.info("Query end notification started for QueryId : " + queryId);
-      //QueryMaster must be lived until client fetching all query result data.
+      LOG.info("Query completion notified from " + queryId);
+
+      while (!isTerminatedState(query.getState())) {
+        try {
+          synchronized (this) {
+            wait(10);
+          }
+        } catch (InterruptedException e) {
+          LOG.error(e);
+        }
+      }
+      LOG.info("Query final state: " + query.getState());
+      queryMasterContext.stopQuery(queryId);
+    }
+
+    private boolean isTerminatedState(QueryState state) {
+      return
+          state == QueryState.QUERY_SUCCEEDED ||
+          state == QueryState.QUERY_FAILED ||
+          state == QueryState.QUERY_KILLED;
     }
   }
 
@@ -307,7 +337,6 @@ public class QueryMasterTask extends CompositeService {
 
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(masterPlan);
-      //this.masterPlan = queryMasterContext.getGlobalOptimizer().optimize(masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);
@@ -437,9 +466,9 @@ public class QueryMasterTask extends CompositeService {
     return queryId;
   }
 
-  public TajoProtos.QueryState getState() {
+  public QueryState getState() {
     if(query == null) {
-      return TajoProtos.QueryState.QUERY_NOT_ASSIGNED;
+      return QueryState.QUERY_NOT_ASSIGNED;
     } else {
       return query.getState();
     }
@@ -513,5 +542,4 @@ public class QueryMasterTask extends CompositeService {
       return queryMetrics;
     }
   }
-
 }

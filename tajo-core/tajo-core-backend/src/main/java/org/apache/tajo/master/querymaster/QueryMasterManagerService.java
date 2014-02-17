@@ -26,10 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -128,13 +125,12 @@ public class QueryMasterManagerService extends CompositeService
     try {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
       QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(ebId.getQueryId());
-      ContainerId cid =
-          queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
 
       if(queryMasterTask.isStopped()) {
-        LOG.debug("getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
         done.run(LazyTaskScheduler.stopTaskRunnerReq);
       } else {
+        ContainerId cid =
+            queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
         LOG.debug("getTask:" + cid + ", ebId:" + ebId);
         queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(cid, ebId, done));
       }
@@ -147,10 +143,26 @@ public class QueryMasterManagerService extends CompositeService
   public void statusUpdate(RpcController controller, TajoWorkerProtocol.TaskStatusProto request,
                            RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
-      QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
-          new QueryId(request.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
-      queryMasterTask.getEventHandler().handle(
-          new TaskAttemptStatusUpdateEvent(new QueryUnitAttemptId(request.getId()), request));
+      QueryId queryId = new QueryId(request.getId().getQueryUnitId().getExecutionBlockId().getQueryId());
+      QueryUnitAttemptId attemptId = new QueryUnitAttemptId(request.getId());
+      LOG.info("statusUpdate from " + attemptId);
+      QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
+      if (queryMasterTask == null) {
+        queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
+      }
+      SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
+      QueryUnit task = sq.getQueryUnit(attemptId.getQueryUnitId());
+      QueryUnitAttempt attempt = task.getAttempt(attemptId.getId());
+      LOG.info(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
+      if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
+        LOG.info(attemptId + " Killed");
+        attempt.handle(
+            new TaskAttemptEvent(new QueryUnitAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
+      } else {
+        LOG.info(attemptId + " updated");
+        queryMasterTask.getEventHandler().handle(
+            new TaskAttemptStatusUpdateEvent(new QueryUnitAttemptId(request.getId()), request));
+      }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -191,6 +203,14 @@ public class QueryMasterManagerService extends CompositeService
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
+  }
+
+  @Override
+  public void killQuery(RpcController controller, TajoIdProtos.QueryIdProto request,
+                        RpcCallback<PrimitiveProtos.BoolProto> done) {
+    QueryId queryId = new QueryId(request);
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
+    queryMasterTask.getQuery().handle(new QueryEvent(queryId, QueryEventType.KILL));
   }
 
   @Override

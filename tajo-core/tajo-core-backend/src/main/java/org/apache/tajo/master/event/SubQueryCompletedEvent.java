@@ -36,7 +36,7 @@ public class SubQueryCompletedEvent extends QueryEvent {
     return executionBlockId;
   }
 
-  public SubQueryState getFinalState() {
+  public SubQueryState getState() {
     return finalState;
   }
 }

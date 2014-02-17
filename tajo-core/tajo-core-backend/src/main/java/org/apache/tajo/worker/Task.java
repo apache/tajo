@@ -91,9 +91,10 @@ public class Task {
   private final Reporter reporter;
   private Path inputTableBaseDir;
 
-  private static int completed = 0;
-  private static int failed = 0;
-  private static int succeeded = 0;
+  private static int completedTasksNum = 0;
+  private static int succeededTasksNum = 0;
+  private static int killedTasksNum = 0;
+  private static int failedTasksNum = 0;
 
   private long startTime;
   private long finishTime;
@@ -282,7 +283,6 @@ public class Task {
   public void kill() {
     killed = true;
     context.stop();
-    context.setState(TaskAttemptState.TA_KILLED);
     setProgressFlag();
     releaseChannelFactory();
   }
@@ -290,7 +290,6 @@ public class Task {
   public void abort() {
     aborted = true;
     context.stop();
-    context.setState(TaskAttemptState.TA_FAILED);
     releaseChannelFactory();
   }
 
@@ -372,7 +371,7 @@ public class Task {
         this.executor = taskRunnerContext.getTQueryEngine().
             createPlan(context, plan);
         this.executor.init();
-        while(executor.next() != null && !killed) {
+        while(!killed && executor.next() != null) {
           ++progress;
         }
         this.executor.close();
@@ -386,21 +385,25 @@ public class Task {
     } finally {
       setProgressFlag();
       stopped = true;
-      completed++;
+      completedTasksNum++;
 
       if (killed || aborted) {
         context.setProgress(0.0f);
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
+          masterProxy.statusUpdate(null, getReport(), NullCallback.get());
+          killedTasksNum++;
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
-        }
-
-        TaskFatalErrorReport.Builder errorBuilder =
-            TaskFatalErrorReport.newBuilder()
-            .setId(getId().getProto());
-        if (errorMessage != null) {
+          TaskFatalErrorReport.Builder errorBuilder =
+              TaskFatalErrorReport.newBuilder()
+                  .setId(getId().getProto());
+          if (errorMessage != null) {
             errorBuilder.setErrorMessage(errorMessage);
+          }
+
+          masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
+          failedTasksNum++;
         }
 
         // stopping the status report
@@ -409,9 +412,6 @@ public class Task {
         } catch (InterruptedException e) {
           LOG.warn(e);
         }
-
-        masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
-        failed++;
 
       } else {
         // if successful
@@ -427,14 +427,14 @@ public class Task {
 
         TaskCompletionReport report = getTaskCompletionReport();
         masterProxy.done(null, report, NullCallback.get());
-        succeeded++;
+        succeededTasksNum++;
       }
 
       finishTime = System.currentTimeMillis();
 
       cleanupTask();
-      LOG.info("Task Counter - total:" + completed + ", succeeded: " + succeeded
-          + ", failed: " + failed);
+      LOG.info("Task Counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
+          + ", killed: " + killedTasksNum + ", failed: " + failedTasksNum);
     }
   }
 
