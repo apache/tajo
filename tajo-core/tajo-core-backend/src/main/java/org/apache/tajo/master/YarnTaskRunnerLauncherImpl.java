@@ -129,7 +129,7 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
     }
   }
 
-  private class StopContainerRunner implements Runnable {
+  private static class StopContainerRunner implements Runnable {
     private final ContainerProxy proxy;
     private final ContainerId id;
     public StopContainerRunner(ContainerId id, ContainerProxy proxy) {

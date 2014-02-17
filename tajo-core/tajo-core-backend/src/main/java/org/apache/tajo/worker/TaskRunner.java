@@ -78,12 +78,8 @@ public class TaskRunner extends AbstractService {
 
   private TajoQueryEngine queryEngine;
 
-  // TODO - this should be configurable
-  private final int coreNum = 4;
-
   // for Fetcher
-  private final ExecutorService fetchLauncher =
-      Executors.newFixedThreadPool(coreNum * 4);
+  private final ExecutorService fetchLauncher;
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final Map<QueryUnitAttemptId, Task> tasks =
       new ConcurrentHashMap<QueryUnitAttemptId, Task>();
@@ -118,7 +114,8 @@ public class TaskRunner extends AbstractService {
 
     this.taskRunnerManager = taskRunnerManager;
     this.connPool = RpcConnectionPool.getPool(conf);
-
+    this.fetchLauncher = Executors.newFixedThreadPool(
+        conf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM));
     try {
       final ExecutionBlockId executionBlockId = TajoIdUtils.createExecutionBlockId(args[1]);
 
@@ -220,6 +217,9 @@ public class TaskRunner extends AbstractService {
       }
     }
 
+    tasks.clear();
+    fetchLauncher.shutdown();
+    this.queryEngine = null;
 //    if(client != null) {
 //      client.close();
 //      client = null;
@@ -352,7 +352,7 @@ public class TaskRunner extends AbstractService {
                 }
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
-                LOG.warn("Timeout GetTask:" + getId() + ", but retry", te);
+                LOG.info("Retry assigning task:" + getId());
                 continue;
               }
 
@@ -400,8 +400,6 @@ public class TaskRunner extends AbstractService {
                 }
               }
             } catch (Throwable t) {
-              connPool.closeConnection(qmClient);
-              qmClient = null;
               t.printStackTrace();
             } finally {
               connPool.releaseConnection(qmClient);
@@ -410,8 +408,6 @@ public class TaskRunner extends AbstractService {
         }
       });
       taskLauncher.start();
-      taskLauncher.join();
-
     } catch (Throwable t) {
       LOG.fatal("Unhandled exception. Starting shutdown.", t);
     } finally {

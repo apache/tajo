@@ -109,5 +109,7 @@ public class HashAggregateExec extends AggregationExec {
   public void close() throws IOException {
     super.close();
     hashTable.clear();
+    hashTable = null;
+    iterator = null;
   }
 }

@@ -47,8 +47,8 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   private Tuple outTuple = null;
   private Tuple outerNext = null;
 
-  private final List<Tuple> outerTupleSlots;
-  private final List<Tuple> innerTupleSlots;
+  private List<Tuple> outerTupleSlots;
+  private List<Tuple> innerTupleSlots;
   private Iterator<Tuple> outerIterator;
   private Iterator<Tuple> innerIterator;
 
@@ -60,7 +60,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   private boolean end = false;
 
   // projection
-  private final Projector projector;
+  private Projector projector;
 
   public MergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner, SortSpec[] outerSortKey, SortSpec[] innerSortKey) {
@@ -175,5 +175,19 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     innerTupleSlots.clear();
     outerIterator = outerTupleSlots.iterator();
     innerIterator = innerTupleSlots.iterator();
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+
+    outerTupleSlots.clear();
+    innerTupleSlots.clear();
+    outerTupleSlots = null;
+    innerTupleSlots = null;
+    outerIterator = null;
+    innerIterator = null;
+    joinQual = null;
+    projector = null;
   }
 }

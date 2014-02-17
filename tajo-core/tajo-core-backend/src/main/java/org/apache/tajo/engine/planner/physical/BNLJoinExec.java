@@ -34,12 +34,12 @@ import java.util.List;
 
 public class BNLJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private final JoinNode plan;
+  private JoinNode plan;
   private final boolean hasJoinQual;
-  private final EvalNode joinQual;
+  private EvalNode joinQual;
 
-  private final List<Tuple> leftTupleSlots;
-  private final List<Tuple> rightTupleSlots;
+  private List<Tuple> leftTupleSlots;
+  private List<Tuple> rightTupleSlots;
   private Iterator<Tuple> leftIterator;
   private Iterator<Tuple> rightIterator;
 
@@ -55,7 +55,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   private final int TUPLE_SLOT_SIZE = 10000;
 
   // projection
-  private final Projector projector;
+  private Projector projector;
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
@@ -204,5 +204,20 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     leftTupleSlots.clear();
     rightIterator = rightTupleSlots.iterator();
     leftIterator = leftTupleSlots.iterator();
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+
+    rightTupleSlots.clear();
+    leftTupleSlots.clear();
+    rightTupleSlots = null;
+    leftTupleSlots = null;
+    rightIterator = null;
+    leftIterator = null;
+    plan = null;
+    joinQual = null;
+    projector = null;
   }
 }

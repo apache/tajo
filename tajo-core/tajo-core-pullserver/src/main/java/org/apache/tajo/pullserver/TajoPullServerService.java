@@ -19,7 +19,6 @@
 package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,6 +44,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.retriever.FileChunk;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -54,7 +54,6 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.handler.ssl.SslHandler;
@@ -73,8 +72,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
@@ -116,7 +113,7 @@ public class TajoPullServerService extends AbstractService {
 
   private static final Map<String,String> userRsrc =
     new ConcurrentHashMap<String,String>();
-  private static String userName;
+  private String userName;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
@@ -194,7 +191,7 @@ public class TajoPullServerService extends AbstractService {
   }
 
   @Override
-  public synchronized void init(Configuration conf) {
+  public void init(Configuration conf) {
     try {
       manageOsCache = conf.getBoolean(SHUFFLE_MANAGE_OS_CACHE,
           DEFAULT_SHUFFLE_MANAGE_OS_CACHE);
@@ -202,16 +199,10 @@ public class TajoPullServerService extends AbstractService {
       readaheadLength = conf.getInt(SHUFFLE_READAHEAD_BYTES,
           DEFAULT_SHUFFLE_READAHEAD_BYTES);
 
-      ThreadFactory bossFactory = new ThreadFactoryBuilder()
-          .setNameFormat("PullServerAuxService Netty Boss #%d")
-          .build();
-      ThreadFactory workerFactory = new ThreadFactoryBuilder()
-          .setNameFormat("PullServerAuxService Netty Worker #%d")
-          .build();
+      int workerNum = conf.getInt("tajo.shuffle.rpc.server.io-thread-num",
+          Runtime.getRuntime().availableProcessors() * 2);
 
-      selector = new NioServerSocketChannelFactory(
-          Executors.newCachedThreadPool(bossFactory),
-          Executors.newCachedThreadPool(workerFactory));
+      selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
@@ -228,7 +219,6 @@ public class TajoPullServerService extends AbstractService {
   public synchronized void start() {
     Configuration conf = getConfig();
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
-    bootstrap.setOption("tcpNoDelay", true);
 
     try {
       pipelineFact = new HttpPipelineFactory(conf);

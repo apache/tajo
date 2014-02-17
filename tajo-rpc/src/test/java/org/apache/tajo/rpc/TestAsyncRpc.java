@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 public class TestAsyncRpc {
   private static Log LOG = LogFactory.getLog(TestAsyncRpc.class);
@@ -56,7 +55,7 @@ public class TestAsyncRpc {
   public void setUp() throws Exception {
     service = new DummyProtocolAsyncImpl();
     server = new AsyncRpcServer(DummyProtocol.class,
-        service, new InetSocketAddress("127.0.0.1", 0));
+        service, new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
     client = new AsyncRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()));

@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class MemSortExec extends SortExec {
-  private final SortNode plan;
+  private SortNode plan;
   private List<Tuple> tupleSlots;
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
@@ -72,6 +72,15 @@ public class MemSortExec extends SortExec {
     super.rescan();
     this.iterator = tupleSlots.iterator();
     sorted = true;
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    tupleSlots.clear();
+    tupleSlots = null;
+    iterator = null;
+    plan = null;
   }
 
   public SortNode getPlan() {

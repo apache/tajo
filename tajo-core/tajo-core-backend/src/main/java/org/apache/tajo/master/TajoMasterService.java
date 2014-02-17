@@ -63,8 +63,9 @@ public class TajoMasterService extends AbstractService {
   public void start() {
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
+    int workerNum = conf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
     try {
-      server = new AsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa);
+      server = new AsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa, workerNum);
     } catch (Exception e) {
       LOG.error(e);
     }

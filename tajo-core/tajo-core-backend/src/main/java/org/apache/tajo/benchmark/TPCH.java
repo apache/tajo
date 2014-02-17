@@ -38,14 +38,14 @@ public class TPCH extends BenchmarkSet {
   private final Log LOG = LogFactory.getLog(TPCH.class);
   private final String BENCHMARK_DIR = "benchmark/tpch";
 
-  public static String LINEITEM = "lineitem";
-  public static String CUSTOMER = "customer";
-  public static String NATION = "nation";
-  public static String PART = "part";
-  public static String REGION = "region";
-  public static String ORDERS = "orders";
-  public static String PARTSUPP = "partsupp";
-  public static String SUPPLIER = "supplier";
+  public static final String LINEITEM = "lineitem";
+  public static final String CUSTOMER = "customer";
+  public static final String NATION = "nation";
+  public static final String PART = "part";
+  public static final String REGION = "region";
+  public static final String ORDERS = "orders";
+  public static final String PARTSUPP = "partsupp";
+  public static final String SUPPLIER = "supplier";
 
   public static final Map<String, Long> tableVolumes = Maps.newHashMap();
 

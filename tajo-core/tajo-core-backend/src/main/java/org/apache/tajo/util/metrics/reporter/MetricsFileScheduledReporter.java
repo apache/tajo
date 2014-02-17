@@ -52,6 +52,7 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
       this.setDateFormat(null);
     } catch (FileNotFoundException e) {
       LOG.warn("Can't open metrics file:" + fileName);
+      this.close();
     }
   }
 }

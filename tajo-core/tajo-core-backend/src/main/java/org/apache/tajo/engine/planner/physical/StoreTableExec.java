@@ -36,7 +36,7 @@ import java.io.IOException;
  * This is a physical executor to store a table part into a specified storage.
  */
 public class StoreTableExec extends UnaryPhysicalExec {
-  private final PersistentStoreNode plan;
+  private PersistentStoreNode plan;
   private Appender appender;
   private Tuple tuple;
 
@@ -88,11 +88,15 @@ public class StoreTableExec extends UnaryPhysicalExec {
   public void close() throws IOException {
     super.close();
 
-    appender.flush();
-    appender.close();
+    if(appender != null){
+      appender.flush();
+      appender.close();
+      // Collect statistics data
+      context.setResultStats(appender.getStats());
+      context.addShuffleFileOutput(0, context.getTaskId().toString());
+    }
 
-    // Collect statistics data
-    context.setResultStats(appender.getStats());
-    context.addShuffleFileOutput(0, context.getTaskId().toString());
+    appender = null;
+    plan = null;
   }
 }

@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
@@ -117,12 +118,14 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     super.close();
 
     appender.flush();
-    appender.close();
+    IOUtils.cleanup(LOG, appender);
     indexWriter.flush();
-    indexWriter.close();
+    IOUtils.cleanup(LOG, indexWriter);
 
     // Collect statistics data
     context.setResultStats(appender.getStats());
     context.addShuffleFileOutput(0, context.getTaskId().toString());
+    appender = null;
+    indexWriter = null;
   }
 }

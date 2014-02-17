@@ -59,7 +59,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   protected boolean shouldGetLeftTuple = true;
 
   // projection
-  protected final Projector projector;
+  protected Projector projector;
 
   private int rightNumCols;
   private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
@@ -192,8 +192,16 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     shouldGetLeftTuple = true;
   }
 
+
+  @Override
   public void close() throws IOException {
+    super.close();
     tupleSlots.clear();
+    tupleSlots = null;
+    iterator = null;
+    plan = null;
+    joinQual = null;
+    projector = null;
   }
 
   public JoinNode getPlan() {

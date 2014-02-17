@@ -179,8 +179,17 @@ public class HashJoinExec extends BinaryPhysicalExec {
     shouldGetLeftTuple = true;
   }
 
+  @Override
   public void close() throws IOException {
-    tupleSlots.clear();
+    super.close();
+    if (tupleSlots != null) {
+      tupleSlots.clear();
+      tupleSlots = null;
+    }
+
+    iterator = null;
+    plan = null;
+    joinQual = null;
   }
 
   public JoinNode getPlan() {

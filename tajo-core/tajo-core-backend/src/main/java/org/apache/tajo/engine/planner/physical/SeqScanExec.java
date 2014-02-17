@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -43,7 +44,7 @@ import java.util.Set;
 
 
 public class SeqScanExec extends PhysicalExec {
-  private final ScanNode plan;
+  private ScanNode plan;
   private Scanner scanner = null;
 
   private EvalNode qual = null;
@@ -186,7 +187,11 @@ public class SeqScanExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
-    scanner.close();
+    IOUtils.cleanup(null, scanner);
+    scanner = null;
+    plan = null;
+    qual = null;
+    projector = null;
   }
 
   public String getTableName() {

@@ -29,6 +29,7 @@ import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -59,7 +60,12 @@ public class BlockingRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   BlockingRpcClient(final Class<?> protocol,
-                           final InetSocketAddress addr)
+                 final InetSocketAddress addr) throws Exception {
+    this(protocol, addr, RpcChannelFactory.getSharedClientChannelFactory());
+  }
+
+  BlockingRpcClient(final Class<?> protocol,
+                           final InetSocketAddress addr, ClientSocketChannelFactory factory)
       throws Exception {
 
     this.protocol = protocol;
@@ -72,8 +78,8 @@ public class BlockingRpcClient extends NettyClientBase {
     this.handler = new ClientChannelUpstreamHandler();
     pipeFactory = new ProtoPipelineFactory(handler,
         RpcResponse.getDefaultInstance());
-    super.init(addr, pipeFactory);
-    rpcChannel = new ProxyRpcChannel(getChannel());
+    super.init(addr, pipeFactory, factory);
+    rpcChannel = new ProxyRpcChannel();
 
     this.key = new RpcConnectionKey(addr, protocol, false);
   }
@@ -97,12 +103,12 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   private class ProxyRpcChannel implements BlockingRpcChannel {
-    private final Channel channel;
+
     private final ClientChannelUpstreamHandler handler;
 
-    public ProxyRpcChannel(Channel channel) {
-      this.channel = channel;
-      this.handler = channel.getPipeline().
+    public ProxyRpcChannel() {
+
+      this.handler = getChannel().getPipeline().
           get(ClientChannelUpstreamHandler.class);
 
       if (handler == null) {
@@ -124,7 +130,7 @@ public class BlockingRpcClient extends NettyClientBase {
       ProtoCallFuture callFuture =
           new ProtoCallFuture(controller, responsePrototype);
       requests.put(nextSeqId, callFuture);
-      channel.write(rpcRequest);
+      getChannel().write(rpcRequest);
 
       try {
         return callFuture.get();

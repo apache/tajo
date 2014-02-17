@@ -118,7 +118,7 @@ public abstract class TajoMetricsScheduledReporter extends TajoMetricsReporter i
     this.filter = filterList;
 
     this.period = 60;
-    if(metricsProperties != null && metricsProperties.get(metricsPropertyKey + PERIOD_KEY) != null) {
+    if(metricsProperties.get(metricsPropertyKey + PERIOD_KEY) != null) {
       this.period = Integer.parseInt(metricsProperties.get(metricsPropertyKey + PERIOD_KEY));
     }
     afterInit();

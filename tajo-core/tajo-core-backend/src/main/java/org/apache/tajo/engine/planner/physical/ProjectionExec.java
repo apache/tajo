@@ -30,7 +30,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class ProjectionExec extends UnaryPhysicalExec {
-  private final Projectable plan;
+  private Projectable plan;
 
   // for projection
   private Tuple outTuple;
@@ -59,5 +59,11 @@ public class ProjectionExec extends UnaryPhysicalExec {
 
     projector.eval(tuple, outTuple);
     return outTuple;
+  }
+
+  @Override
+  public void close() throws IOException{
+    super.close();
+    plan = null;
   }
 }

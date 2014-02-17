@@ -64,5 +64,6 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   @Override
   public void close() throws IOException {
     super.close();
+    plan = null;
   }
 }

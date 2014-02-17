@@ -26,6 +26,7 @@ import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 
 public class AsyncRpcClient extends NettyClientBase {
-  private static final Log LOG = LogFactory.getLog(RpcProtos.class);
+  private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
 
   private final ChannelUpstreamHandler handler;
   private final ChannelPipelineFactory pipeFactory;
@@ -56,7 +57,12 @@ public class AsyncRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   AsyncRpcClient(final Class<?> protocol,
-                        final InetSocketAddress addr)
+                 final InetSocketAddress addr) throws Exception {
+    this(protocol, addr, RpcChannelFactory.getSharedClientChannelFactory());
+  }
+
+  AsyncRpcClient(final Class<?> protocol,
+                        final InetSocketAddress addr, ClientSocketChannelFactory factory)
       throws Exception {
 
     this.protocol = protocol;
@@ -68,8 +74,8 @@ public class AsyncRpcClient extends NettyClientBase {
     this.handler = new ClientChannelUpstreamHandler();
     pipeFactory = new ProtoPipelineFactory(handler,
         RpcResponse.getDefaultInstance());
-    super.init(addr, pipeFactory);
-    rpcChannel = new ProxyRpcChannel(getChannel());
+    super.init(addr, pipeFactory, factory);
+    rpcChannel = new ProxyRpcChannel();
     this.key = new RpcConnectionKey(addr, protocol, true);
   }
 
@@ -92,12 +98,10 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   private class ProxyRpcChannel implements RpcChannel {
-    private final Channel channel;
     private final ClientChannelUpstreamHandler handler;
 
-    public ProxyRpcChannel(Channel channel) {
-      this.channel = channel;
-      this.handler = channel.getPipeline()
+    public ProxyRpcChannel() {
+      this.handler = getChannel().getPipeline()
           .get(ClientChannelUpstreamHandler.class);
 
       if (handler == null) {
@@ -119,7 +123,7 @@ public class AsyncRpcClient extends NettyClientBase {
       handler.registerCallback(nextSeqId,
           new ResponseCallback(controller, responseType, done));
 
-      channel.write(rpcRequest);
+      getChannel().write(rpcRequest);
     }
 
     private Message buildRequest(int seqId,
@@ -214,7 +218,6 @@ public class AsyncRpcClient extends NettyClientBase {
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
       LOG.error(getRemoteAddress() + "," + protocol + "," + e.getCause().getMessage(), e.getCause());
-      e.getChannel().close();
 
       for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {
         ResponseCallback callback = callbackEntry.getValue();

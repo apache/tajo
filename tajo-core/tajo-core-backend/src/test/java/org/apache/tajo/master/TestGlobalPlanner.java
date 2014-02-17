@@ -36,6 +36,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -85,6 +86,11 @@ public class TestGlobalPlanner {
     optimizer = new LogicalOptimizer(util.getConfiguration());
     globalPlanner = new GlobalPlanner(util.getConfiguration(),
         StorageManagerFactory.getStorageManager(util.getConfiguration()));
+  }
+
+  @AfterClass
+  public static void tearDown() {
+    util.shutdownCatalogCluster();
   }
 
   private MasterPlan buildPlan(String sql) throws PlanningException, IOException {

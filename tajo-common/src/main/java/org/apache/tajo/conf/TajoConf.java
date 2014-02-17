@@ -137,6 +137,7 @@ public class TajoConf extends Configuration {
     PULLSERVER_PORT("tajo.pullserver.port", 0),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
+    SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num", 2),
 
     //////////////////////////////////
     // Storage Configuration
@@ -184,7 +185,31 @@ public class TajoConf extends Configuration {
     // RPC
     //////////////////////////////////
     RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
-    RPC_CLIENT_SOCKET_IO_THREADS("tajo.rpc.client.socket-io-threads", 0),
+
+    //Internal RPC Client
+    INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM("tajo.internal.rpc.client.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+
+    //Internal RPC Server
+    MASTER_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+    QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM("tajo.querymaster.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+    WORKER_RPC_SERVER_WORKER_THREAD_NUM("tajo.worker.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+    CATALOG_RPC_SERVER_WORKER_THREAD_NUM("tajo.catalog.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+    SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM("tajo.shuffle.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 2),
+
+    // Client RPC
+    RPC_CLIENT_WORKER_THREAD_NUM("tajo.rpc.client.worker-thread-num", 4),
+
+    //Client service RPC Server
+    MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.service.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 1),
+    WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.worker.service.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 1),
 
     //////////////////////////////////
     // The Below is reserved

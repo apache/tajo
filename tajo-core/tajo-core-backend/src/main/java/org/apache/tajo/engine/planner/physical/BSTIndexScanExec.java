@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -38,7 +39,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   private EvalNode qual;
   private BSTIndex.BSTIndexReader reader;
   
-  private final Projector projector;
+  private Projector projector;
   
   private Datum[] datum = null;
   
@@ -125,8 +126,11 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
-    reader.close();
-    fileScanner.close();
+    IOUtils.cleanup(null, reader, fileScanner);
+    reader = null;
+    fileScanner = null;
+    scanNode = null;
+    qual = null;
+    projector = null;
   }
-
 }

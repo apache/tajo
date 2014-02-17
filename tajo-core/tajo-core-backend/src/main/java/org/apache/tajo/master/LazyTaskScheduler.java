@@ -340,10 +340,12 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
           "containerId=" + taskRequest.getContainerId());
       ContainerProxy container = context.getMasterContext().getResourceAllocator().
           getContainer(taskRequest.getContainerId());
-      String host = container.getTaskHostName();
+
       if(container == null) {
         continue;
       }
+
+      String host = container.getTaskHostName();
       QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext(container.containerID,
           host, taskRequest.getCallback());
       QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);

@@ -178,7 +178,7 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
     try {
       FinalApplicationStatus appStatus = FinalApplicationStatus.UNDEFINED;
       QueryInProgress queryInProgress = masterContext.getQueryJobManager().getQueryInProgress(queryId);
-      if(queryInProgress != null) {
+      if(queryInProgress == null) {
         return;
       }
       TajoProtos.QueryState state = queryInProgress.getQueryInfo().getQueryState();

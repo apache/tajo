@@ -27,8 +27,9 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.TestEvalTree.TestSum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -38,6 +39,7 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,6 +50,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -59,7 +62,22 @@ public class TestEvalTreeUtil {
   static EvalNode expr3;
   static SQLAnalyzer analyzer;
   static LogicalPlanner planner;
+  public static class TestSum extends GeneralFunction {
+    private Integer x;
+    private Integer y;
 
+    public TestSum() {
+      super(new Column[] { new Column("arg1", INT4),
+          new Column("arg2", INT4) });
+    }
+
+    @Override
+    public Datum eval(Tuple params) {
+      x =  params.get(0).asInt4();
+      y =  params.get(1).asInt4();
+      return DatumFactory.createInt4(x + y);
+    }
+  }
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -88,9 +106,15 @@ public class TestEvalTreeUtil {
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
 
-    expr1 = getRootSelection(TestEvalTree.QUERIES[0]);
-    expr2 = getRootSelection(TestEvalTree.QUERIES[1]);
-    expr3 = getRootSelection(TestEvalTree.QUERIES[2]);
+    String[] QUERIES = {
+        "select name, score, age from people where score > 30", // 0
+        "select name, score, age from people where score * age", // 1
+        "select name, score, age from people where test_sum(score * age, 50)", // 2
+    };
+
+    expr1 = getRootSelection(QUERIES[0]);
+    expr2 = getRootSelection(QUERIES[1]);
+    expr3 = getRootSelection(QUERIES[2]);
   }
 
   @AfterClass

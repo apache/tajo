@@ -93,12 +93,10 @@ public class QueryInProgress extends CompositeService {
 
   @Override
   public void stop() {
-    synchronized(stopped) {
-      if(stopped.get()) {
-        return;
-      }
-      stopped.set(true);
+    if(stopped.getAndSet(true)) {
+      return;
     }
+
     LOG.info("=========================================================");
     LOG.info("Stop query:" + queryId);
 
@@ -113,10 +111,13 @@ public class QueryInProgress extends CompositeService {
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
+        break;
       }
 
       try {
-        Thread.sleep(1000);
+        synchronized (this){
+          wait(100);
+        }
       } catch (InterruptedException e) {
         break;
       }
@@ -126,11 +127,10 @@ public class QueryInProgress extends CompositeService {
       }
     }
 
-    super.stop();
-
     if(queryMasterRpc != null) {
       RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
     }
+    super.stop();
   }
 
   @Override

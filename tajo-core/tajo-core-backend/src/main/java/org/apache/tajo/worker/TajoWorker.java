@@ -43,6 +43,7 @@ import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.v2.DiskDeviceInfo;
@@ -68,8 +69,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
 public class TajoWorker extends CompositeService {
-  public static PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
-  public static PrimitiveProtos.BoolProto FALSE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
+  public static final PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
+  public static final PrimitiveProtos.BoolProto FALSE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
   public static final String WORKER_MODE_YARN_TASKRUNNER = "tr";
   public static final String WORKER_MODE_YARN_QUERYMASTER = "qm";
@@ -304,10 +305,10 @@ public class TajoWorker extends CompositeService {
 
   @Override
   public void stop() {
-    if(stopped.get()) {
+    if(stopped.getAndSet(true)) {
       return;
     }
-    stopped.set(true);
+
     if(webServer != null) {
       try {
         webServer.stop();
@@ -316,7 +317,9 @@ public class TajoWorker extends CompositeService {
       }
     }
     if(workerHeartbeatThread != null) {
-      workerHeartbeatThread.interrupt();
+      synchronized (workerHeartbeatThread){
+        workerHeartbeatThread.notifyAll();
+      }
     }
 
     if (catalogClient != null) {
@@ -324,7 +327,8 @@ public class TajoWorker extends CompositeService {
     }
 
     if(connPool != null) {
-      connPool.close();
+      connPool.shutdown();
+      RpcChannelFactory.shutdown();
     }
 
     if(webServer != null && webServer.isAlive()) {
@@ -570,7 +574,7 @@ public class TajoWorker extends CompositeService {
         clientPort = workerContext.getTajoWorkerClientService().getBindAddr().getPort();
       }
 
-      while(true) {
+      while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
           getDiskUsageInfos();
         }
@@ -626,15 +630,15 @@ public class TajoWorker extends CompositeService {
         } catch (InterruptedException e) {
           break;
         } catch (Exception e) {
-          connPool.closeConnection(tmClient);
-          tmClient = null;
           LOG.error(e.getMessage(), e);
         } finally {
           connPool.releaseConnection(tmClient);
         }
 
         try {
-          Thread.sleep(10 * 1000);
+          synchronized (workerHeartbeatThread){
+            wait(10 * 1000);
+          }
         } catch (InterruptedException e) {
           break;
         }

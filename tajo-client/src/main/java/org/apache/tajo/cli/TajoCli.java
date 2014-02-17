@@ -202,8 +202,8 @@ public class TajoCli {
         continue;
 
       } else if (line.charAt(0) == '\\') { // command mode
-        executeCommand(line);
         ((PersistentHistory)reader.getHistory()).flush();
+        executeCommand(line);
 
       } else if (line.endsWith(";") && !line.endsWith("\\;")) {
 
@@ -330,11 +330,14 @@ public class TajoCli {
     try {
 
       QueryStatus status;
+      int initRetries = 0;
+      int progressRetries = 0;
       while (true) {
-        // TODO - configurable
-        Thread.sleep(1000);
+        // TODO - configurabl
         status = client.getQueryStatus(queryId);
         if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
+          Thread.sleep(Math.min(20 * initRetries, 1000));
+          initRetries++;
           continue;
         }
 
@@ -347,6 +350,9 @@ public class TajoCli {
 
         if (status.getState() != QueryState.QUERY_RUNNING && status.getState() != QueryState.QUERY_NOT_ASSIGNED) {
           break;
+        } else {
+          Thread.sleep(Math.min(200 * progressRetries, 1000));
+          progressRetries += 2;
         }
       }
 

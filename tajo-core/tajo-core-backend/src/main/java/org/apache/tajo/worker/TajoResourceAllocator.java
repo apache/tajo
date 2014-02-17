@@ -100,8 +100,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
                                            int memoryMBPerTask) {
     //TODO consider disk slot
     TajoMasterProtocol.ClusterResourceSummary clusterResource = workerContext.getClusterResource();
-    int clusterSlots = clusterResource == null ? 0 : clusterResource.getTotalMemoryMB()/memoryMBPerTask;
-    return clusterSlots == 0 ? 1: Math.min(numTasks, clusterSlots);
+    int clusterSlots = clusterResource == null ? 0 : clusterResource.getTotalMemoryMB() / memoryMBPerTask;
+    clusterSlots =  Math.max(1, clusterSlots - 1); // reserve query master slot
+    return  Math.min(numTasks, clusterSlots);
   }
 
   @Override
@@ -117,10 +118,10 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
   @Override
   public synchronized void stop() {
-    if(stopped.get()) {
+    if (stopped.getAndSet(true)) {
       return;
     }
-    stopped.set(true);
+
     executorService.shutdownNow();
 
     Map<ContainerId, ContainerProxy> containers = queryTaskContext.getResourceAllocator().getContainers();
@@ -177,7 +178,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     }
   }
 
-  protected class LaunchRunner implements Runnable {
+  protected static class LaunchRunner implements Runnable {
     private final ContainerProxy proxy;
     private final ContainerId id;
     public LaunchRunner(ContainerId id, ContainerProxy proxy) {
@@ -198,7 +199,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     }
   }
 
-  private class StopContainerRunner implements Runnable {
+  private static class StopContainerRunner implements Runnable {
     private final ContainerProxy proxy;
     private final ContainerId id;
     public StopContainerRunner(ContainerId id, ContainerProxy proxy) {
@@ -256,8 +257,6 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
         masterClientService.allocateWorkerResources(null, request, callBack);
       } catch (Exception e) {
-        connPool.closeConnection(tmClient);
-        tmClient = null;
         LOG.error(e.getMessage(), e);
       } finally {
         connPool.releaseConnection(tmClient);

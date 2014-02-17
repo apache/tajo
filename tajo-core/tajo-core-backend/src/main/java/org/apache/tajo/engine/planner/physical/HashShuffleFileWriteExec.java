@@ -46,11 +46,11 @@ import java.util.Map;
  */
 public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(HashShuffleFileWriteExec.class);
-  private final ShuffleFileWriteNode plan;
+  private ShuffleFileWriteNode plan;
   private final TableMeta meta;
-  private final Partitioner partitioner;
+  private Partitioner partitioner;
   private final Path storeTablePath;
-  private final Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
+  private Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
   
@@ -142,5 +142,17 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   @Override
   public void rescan() throws IOException {
     // nothing to do   
+  }
+
+  @Override
+  public void close() throws IOException{
+    super.close();
+    if (appenderMap != null) {
+      appenderMap.clear();
+      appenderMap = null;
+    }
+
+    partitioner = null;
+    plan = null;
   }
 }

@@ -140,13 +140,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   @Override
   public void stop() {
-    synchronized(queryMasterStop) {
-      if(queryMasterStop.get()) {
-         return;
-      }
-
-      queryMasterStop.set(true);
-      queryMasterStop.notifyAll();
+    if(queryMasterStop.getAndSet(true)){
+      return;
     }
 
     if(queryHeartbeatThread != null) {
@@ -183,8 +178,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
       } catch (Exception e) {
-        connPool.closeConnection(rpc);
-        rpc = null;
         LOG.error(e.getMessage());
       } finally {
         connPool.releaseConnection(rpc);
@@ -208,8 +201,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
       TajoMasterProtocol.WorkerResourcesRequest workerResourcesRequest = callBack.get(2, TimeUnit.SECONDS);
       return workerResourcesRequest.getWorkerResourcesList();
     } catch (Exception e) {
-      connPool.closeConnection(rpc);
-      rpc = null;
       LOG.error(e.getMessage(), e);
     } finally {
       connPool.releaseConnection(rpc);
@@ -238,8 +229,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       masterClientService.heartbeat(callBack.getController(), queryHeartbeatBuilder.build(), callBack);
     } catch (Exception e) {
-      connPool.closeConnection(tmClient);
-      tmClient = null;
       LOG.error(e.getMessage(), e);
     } finally {
       connPool.releaseConnection(tmClient);
@@ -338,9 +327,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
               TajoMasterProtocol.class, true);
           TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
           masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
-        } catch (Exception e) {
-          connPool.closeConnection(tmClient);
-          tmClient = null;
+        }  catch (Exception e) {
+          //this function will be closed in new thread.
+          //When tajo do stop cluster, tajo master maybe throw closed connection exception
+
           LOG.error(e.getMessage(), e);
         } finally {
           connPool.releaseConnection(tmClient);

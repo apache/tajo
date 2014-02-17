@@ -48,10 +48,12 @@ import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.ApplicationIdUtils;
+import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,16 +71,16 @@ public class Task {
   private final TajoConf systemConf;
   private final QueryContext queryContext;
   private final FileSystem localFS;
-  private final TaskRunner.TaskRunnerContext taskRunnerContext;
+  private TaskRunner.TaskRunnerContext taskRunnerContext;
   private final QueryMasterProtocolService.Interface masterProxy;
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
   private final Path taskDir;
   private final QueryUnitRequest request;
-  private final TaskAttemptContext context;
+  private TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
-  private final LogicalNode plan;
+  private LogicalNode plan;
   private final Map<String, TableDesc> descs = Maps.newHashMap();
   private PhysicalExec executor;
   private boolean interQuery;
@@ -107,6 +109,7 @@ public class Task {
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
+  private ClientSocketChannelFactory channelFactory = null;
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
@@ -281,12 +284,14 @@ public class Task {
     context.stop();
     context.setState(TaskAttemptState.TA_KILLED);
     setProgressFlag();
+    releaseChannelFactory();
   }
 
   public void abort() {
     aborted = true;
     context.stop();
     context.setState(TaskAttemptState.TA_FAILED);
+    releaseChannelFactory();
   }
 
   public void cleanUp() {
@@ -294,7 +299,6 @@ public class Task {
 
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
       try {
-        // context.getWorkDir() 지우기
         localFS.delete(context.getWorkDir(), true);
         synchronized (taskRunnerContext.getTasks()) {
           taskRunnerContext.getTasks().remove(this.getId());
@@ -348,6 +352,7 @@ public class Task {
       FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.updateAssignedFragments(inputTable, frags);
     }
+    releaseChannelFactory();
   }
 
   public void run() {
@@ -371,6 +376,7 @@ public class Task {
           ++progress;
         }
         this.executor.close();
+        this.executor = null;
       }
     } catch (Exception e) {
       // errorMessage will be sent to master.
@@ -435,6 +441,13 @@ public class Task {
   public void cleanupTask() {
     taskRunnerContext.addTaskHistory(getId(), getTaskHistory());
     taskRunnerContext.getTasks().remove(getId());
+    taskRunnerContext = null;
+
+    fetcherRunners.clear();
+    executor = null;
+    plan = null;
+    context = null;
+    releaseChannelFactory();
   }
 
   public TaskHistory getTaskHistory() {
@@ -515,7 +528,7 @@ public class Task {
     return tablets;
   }
 
-  private class FetchRunner implements Runnable {
+  private static class FetchRunner implements Runnable {
     private final TaskAttemptContext ctx;
     private final Fetcher fetcher;
 
@@ -538,7 +551,7 @@ public class Task {
             } catch (InterruptedException e) {
               LOG.error(e);
             }
-            LOG.info("Retry on the fetch: " + fetcher.getURI() + " (" + retryNum + ")");
+            LOG.warn("Retry on the fetch: " + fetcher.getURI() + " (" + retryNum + ")");
           }
           try {
             File fetched = fetcher.get();
@@ -560,10 +573,24 @@ public class Task {
     }
   }
 
+  private void releaseChannelFactory(){
+    if(channelFactory != null) {
+      channelFactory.shutdown();
+      channelFactory.releaseExternalResources();
+      channelFactory = null;
+    }
+  }
+
   private List<Fetcher> getFetchRunners(TaskAttemptContext ctx,
                                         List<Fetch> fetches) throws IOException {
 
     if (fetches.size() > 0) {
+
+      releaseChannelFactory();
+
+
+      int workerNum = ctx.getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
+      channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
       Path inputDir = lDirAllocator.
           getLocalPathToRead(
               getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
@@ -578,7 +605,7 @@ public class Task {
           storeDir.mkdirs();
         }
         storeFile = new File(storeDir, "in_" + i);
-        Fetcher fetcher = new Fetcher(URI.create(f.getUrls()), storeFile);
+        Fetcher fetcher = new Fetcher(URI.create(f.getUrls()), storeFile, channelFactory);
         runnerList.add(fetcher);
         i++;
       }
@@ -589,74 +616,74 @@ public class Task {
     }
   }
 
-  protected class Reporter implements Runnable {
+  protected class Reporter {
     private QueryMasterProtocolService.Interface masterStub;
     private Thread pingThread;
-    private Object lock = new Object();
+    private AtomicBoolean stop = new AtomicBoolean(false);
     private static final int PROGRESS_INTERVAL = 3000;
 
     public Reporter(QueryMasterProtocolService.Interface masterStub) {
       this.masterStub = masterStub;
     }
 
-    @Override
-    public void run() {
-      final int MAX_RETRIES = 3;
-      int remainingRetries = MAX_RETRIES;
+    Runnable createReporterThread() {
 
-      while (!stopped) {
-        try {
-          synchronized (lock) {
-            if (stopped) {
-              break;
+      return new Runnable() {
+        final int MAX_RETRIES = 3;
+        int remainingRetries = MAX_RETRIES;
+        @Override
+        public void run() {
+          while (!stop.get() && !stopped) {
+            try {
+
+              resetProgressFlag();
+
+              if (getProgressFlag()) {
+                resetProgressFlag();
+                masterStub.statusUpdate(null, getReport(), NullCallback.get());
+              } else {
+                masterStub.ping(null, taskId.getProto(), NullCallback.get());
+              }
+              synchronized (pingThread) {
+                pingThread.wait(PROGRESS_INTERVAL);
+              }
+
+            } catch (Throwable t) {
+
+              LOG.info("Communication exception: " + StringUtils
+                  .stringifyException(t));
+              remainingRetries -=1;
+              if (remainingRetries == 0) {
+                ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
+                LOG.warn("Last retry, killing ");
+                System.exit(65);
+              }
             }
-            lock.wait(PROGRESS_INTERVAL);
-          }
-          if (stopped) {
-            break;
-          }
-          resetProgressFlag();
-
-          if (getProgressFlag()) {
-            resetProgressFlag();
-            masterStub.statusUpdate(null, getReport(), NullCallback.get());
-          } else {
-            masterStub.ping(null, taskId.getProto(), NullCallback.get());
-          }
-
-        } catch (Throwable t) {
-
-          LOG.info("Communication exception: " + StringUtils
-              .stringifyException(t));
-          remainingRetries -=1;
-          if (remainingRetries == 0) {
-            ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
-            LOG.warn("Last retry, killing ");
-            System.exit(65);
           }
         }
-      }
+      };
     }
 
     public void startCommunicationThread() {
       if (pingThread == null) {
-        pingThread = new Thread(this, "communication thread");
-        pingThread.setDaemon(true);
+        pingThread = new Thread(createReporterThread());
+        pingThread.setName("communication thread");
         pingThread.start();
       }
     }
 
     public void stopCommunicationThread() throws InterruptedException {
+      if(stop.getAndSet(true)){
+        return;
+      }
+
       if (pingThread != null) {
         // Intent of the lock is to not send an interupt in the middle of an
         // umbilical.ping or umbilical.statusUpdate
-        synchronized(lock) {
+        synchronized(pingThread) {
           //Interrupt if sleeping. Otherwise wait for the RPC call to return.
-          lock.notify();
+          pingThread.notifyAll();
         }
-
-        pingThread.interrupt();
-        pingThread.join();
       }
     }
   }

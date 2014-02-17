@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -29,6 +30,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.master.querymaster.Query;
@@ -51,7 +53,7 @@ public class TajoWorkerClientService extends AbstractService {
   private InetSocketAddress bindAddr;
   private String addr;
   private int port;
-  private Configuration conf;
+  private TajoConf conf;
   private TajoWorker.WorkerContext workerContext;
   private TajoWorkerClientProtocolServiceHandler serviceHandler;
 
@@ -64,7 +66,8 @@ public class TajoWorkerClientService extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
-    this.conf = conf;
+    Preconditions.checkArgument(conf instanceof TajoConf);
+    this.conf = (TajoConf) conf;
     this.serviceHandler = new TajoWorkerClientProtocolServiceHandler();
 
     // init RPC Server in constructor cause Heartbeat Thread use bindAddr
@@ -77,7 +80,8 @@ public class TajoWorkerClientService extends AbstractService {
       }
 
       // TODO blocking/non-blocking??
-      this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa);
+      int workerNum = this.conf.getIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
+      this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa, workerNum);
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());

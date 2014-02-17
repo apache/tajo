@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -61,7 +62,7 @@ public class ExternalSortExec extends SortExec {
   /** Class logger */
   private static final Log LOG = LogFactory.getLog(ExternalSortExec.class);
 
-  private final SortNode plan;
+  private SortNode plan;
   private final TableMeta meta;
   /** the defaultFanout of external sort */
   private final int defaultFanout;
@@ -70,9 +71,9 @@ public class ExternalSortExec extends SortExec {
   /** the number of available cores */
   private final int allocatedCoreNum;
   /** If there are available multiple cores, it tries parallel merge. */
-  private final ExecutorService executorService;
+  private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private final List<Tuple> inMemoryTable;
+  private List<Tuple> inMemoryTable;
   /** temporal dir */
   private final Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -512,8 +513,8 @@ public class ExternalSortExec extends SortExec {
    * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
    */
   private class PairWiseMerger implements Scanner {
-    private final Scanner leftScan;
-    private final Scanner rightScan;
+    private Scanner leftScan;
+    private Scanner rightScan;
 
     private Tuple leftTuple;
     private Tuple rightTuple;
@@ -564,9 +565,11 @@ public class ExternalSortExec extends SortExec {
       init();
     }
 
+    @Override
     public void close() throws IOException {
-      leftScan.close();
-      rightScan.close();
+      IOUtils.cleanup(LOG, leftScan, rightScan);
+      leftScan = null;
+      rightScan = null;
     }
 
     @Override
@@ -602,6 +605,7 @@ public class ExternalSortExec extends SortExec {
   public void close() throws IOException {
     if (result != null) {
       result.close();
+      result = null;
     }
 
     if (finalOutputFiles != null) {
@@ -610,7 +614,18 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    inMemoryTable.clear();
+    if(inMemoryTable != null){
+      inMemoryTable.clear();
+      inMemoryTable = null;
+    }
+
+    if(executorService != null){
+      executorService.shutdown();
+      executorService = null;
+    }
+
+    plan = null;
+    super.close();
   }
 
   @Override

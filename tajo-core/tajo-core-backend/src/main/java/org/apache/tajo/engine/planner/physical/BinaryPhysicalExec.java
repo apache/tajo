@@ -18,14 +18,14 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 public abstract class BinaryPhysicalExec extends PhysicalExec {
-  protected final PhysicalExec leftChild;
-  protected final PhysicalExec rightChild;
+  protected PhysicalExec leftChild;
+  protected PhysicalExec rightChild;
 
   public BinaryPhysicalExec(final TaskAttemptContext context,
                             final Schema inSchema, final Schema outSchema,
@@ -59,5 +59,7 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
   public void close() throws IOException {
     leftChild.close();
     rightChild.close();
+    leftChild = null;
+    rightChild = null;
   }
 }

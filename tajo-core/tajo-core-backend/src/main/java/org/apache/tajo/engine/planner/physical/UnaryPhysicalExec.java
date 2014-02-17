@@ -58,6 +58,7 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
   public void close() throws IOException {
     if (child != null) {
       child.close();
+      child = null;
     }
   }
 }

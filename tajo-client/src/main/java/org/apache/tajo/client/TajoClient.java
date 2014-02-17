@@ -73,8 +73,9 @@ public class TajoClient {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
     this.tajoMasterAddr = addr;
-
-    connPool = RpcConnectionPool.getPool(conf);
+    int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
+    //Don't share connection pool per client
+    connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
   }
 
   public TajoClient(InetSocketAddress addr) throws IOException {
@@ -87,7 +88,7 @@ public class TajoClient {
 
   public void close() {
     if(connPool != null) {
-      connPool.close();
+      connPool.shutdown();
     }
     queryMasterMap.clear();
   }
@@ -193,7 +194,7 @@ public class TajoClient {
       } catch (Exception e) {
         throw new ServiceException(e.getMessage(), e);
       } finally {
-        connPool.closeConnection(qmClient);
+        connPool.releaseConnection(qmClient);
       }
     } else {
       NettyClientBase tmClient = null;
@@ -217,13 +218,13 @@ public class TajoClient {
           } catch (Exception e) {
             throw new ServiceException(e.getMessage(), e);
           } finally {
-            connPool.closeConnection(qmClient);
+            connPool.releaseConnection(qmClient);
           }
         }
       } catch (Exception e) {
         throw new ServiceException(e.getMessage(), e);
       } finally {
-        connPool.closeConnection(tmClient);
+        connPool.releaseConnection(tmClient);
       }
     }
     return new QueryStatus(res);
@@ -307,7 +308,7 @@ public class TajoClient {
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     } finally {
-      connPool.closeConnection(client);
+      connPool.releaseConnection(client);
     }
   }
 
@@ -490,7 +491,7 @@ public class TajoClient {
       LOG.debug("Error when checking for application status", e);
       return false;
     } finally {
-      connPool.closeConnection(tmClient);
+      connPool.releaseConnection(tmClient);
     }
 
     return true;

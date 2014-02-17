@@ -48,7 +48,7 @@ public class TestBlockingRpc {
   public void setUp() throws Exception {
     service = new DummyProtocolBlockingImpl();
     server = new BlockingRpcServer(DummyProtocol.class, service,
-        new InetSocketAddress("127.0.0.1", 0));
+        new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
     client = new BlockingRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()));

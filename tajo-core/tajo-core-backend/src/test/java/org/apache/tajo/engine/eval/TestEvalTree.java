@@ -18,102 +18,20 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.*;
 
 public class TestEvalTree extends ExprTestBase{
-  private static TajoTestingCluster util;
-  private static CatalogService cat;
-  private static Tuple [] tuples = new Tuple[3];
-  
-  @BeforeClass
-  public static void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.startCatalogCluster();
-    cat = util.getMiniCatalogCluster().getCatalog();
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      cat.createFunction(funcDesc);
-    }
-
-    Schema schema = new Schema();
-    schema.addColumn("name", TEXT);
-    schema.addColumn("score", INT4);
-    schema.addColumn("age", INT4);
-
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    TableDesc desc = new TableDesc("people", schema, meta, CommonTestingUtil.getTestDir());
-    cat.addTable(desc);
-
-    FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newSimpleDataType(INT4),
-        CatalogUtil.newSimpleDataTypeArray(INT4, INT4));
-    cat.createFunction(funcMeta);
-    
-    tuples[0] = new VTuple(3);
-    tuples[0].put(new Datum[] {
-        DatumFactory.createText("aabc"),
-        DatumFactory.createInt4(100),
-        DatumFactory.createInt4(10)});
-    tuples[1] = new VTuple(3);
-    tuples[1].put(new Datum[] {
-        DatumFactory.createText("aaba"),
-        DatumFactory.createInt4(200),
-        DatumFactory.createInt4(20)});
-    tuples[2] = new VTuple(3);
-    tuples[2].put(new Datum[] {
-        DatumFactory.createText("kabc"),
-        DatumFactory.createInt4(300),
-        DatumFactory.createInt4(30)});
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
-  }
-
-  public static class TestSum extends GeneralFunction {
-    private Integer x;
-    private Integer y;
-
-    public TestSum() {
-      super(new Column[] { new Column("arg1", INT4),
-          new Column("arg2", INT4) });
-    }
-
-    @Override
-    public Datum eval(Tuple params) {
-      x =  params.get(0).asInt4();
-      y =  params.get(1).asInt4();
-      return DatumFactory.createInt4(x + y);
-    }
-  }
-
-  static String[] QUERIES = {
-      "select name, score, age from people where score > 30", // 0
-      "select name, score, age from people where score * age", // 1
-      "select name, score, age from people where test_sum(score * age, 50)", // 2
-      "select 2+3", // 3
-      "select sum(score) from people", // 4
-      "select name from people where NOT (20 > 30)", // 5
-  };
-  
   @Test
   public void testTupleEval() throws CloneNotSupportedException {
     ConstEval e1 = new ConstEval(DatumFactory.createInt4(1));

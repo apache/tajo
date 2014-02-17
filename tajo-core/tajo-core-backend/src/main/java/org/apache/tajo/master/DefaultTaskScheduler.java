@@ -48,6 +48,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -58,7 +59,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private SubQuery subQuery;
 
   private Thread schedulingThread;
-  private volatile boolean stopEventHandling;
+  private AtomicBoolean stopEventHandling = new AtomicBoolean(false);
 
   private ScheduledRequests scheduledRequests;
   private TaskRequests taskRequests;
@@ -91,7 +92,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     this.schedulingThread = new Thread() {
       public void run() {
 
-        while(!stopEventHandling && !Thread.currentThread().isInterrupted()) {
+        while(!stopEventHandling.get() && !Thread.currentThread().isInterrupted()) {
           schedule();
           try {
             synchronized (schedulingThread){
@@ -127,7 +128,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void stop() {
-    stopEventHandling = true;
+    if(stopEventHandling.getAndSet(true)){
+      return;
+    }
 
     if (schedulingThread != null) {
       synchronized (schedulingThread) {
@@ -224,6 +227,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
+
     taskRequests.handle(event);
     int hosts = scheduledRequests.leafTaskHostMapping.size();
 
@@ -248,7 +252,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     @Override
     public void handle(TaskRequestEvent event) {
       LOG.info("TaskRequest: " + event.getContainerId() + "," + event.getExecutionBlockId());
-      if(stopEventHandling) {
+      if(stopEventHandling.get()) {
         event.getCallback().run(stopTaskRunnerReq);
         return;
       }

@@ -82,9 +82,6 @@ public class TajoContainerProxy extends ContainerProxy {
 
       tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());
     } catch (Exception e) {
-      //TODO retry
-      RpcConnectionPool.getPool(context.getConf()).closeConnection(tajoWorkerRpc);
-      tajoWorkerRpc = null;
       LOG.error(e.getMessage(), e);
     } finally {
       RpcConnectionPool.getPool(context.getConf()).releaseConnection(tajoWorkerRpc);
@@ -150,8 +147,6 @@ public class TajoContainerProxy extends ContainerProxy {
               .build(),
           NullCallback.get());
     } catch (Exception e) {
-      connPool.closeConnection(tmClient);
-      tmClient = null;
       LOG.error(e.getMessage(), e);
     } finally {
       connPool.releaseConnection(tmClient);

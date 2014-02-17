@@ -48,8 +48,8 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   private Tuple outTuple = null;
   private Tuple leftNext = null;
 
-  private final List<Tuple> leftTupleSlots;
-  private final List<Tuple> rightTupleSlots;
+  private List<Tuple> leftTupleSlots;
+  private List<Tuple> rightTupleSlots;
 
   private JoinTupleComparator joincomparator = null;
   private TupleComparator[] tupleComparator = null;
@@ -59,7 +59,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   private boolean end = false;
 
   // projection
-  private final Projector projector;
+  private Projector projector;
 
   private int rightNumCols;
   private int leftNumCols;
@@ -319,5 +319,17 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
     rightTupleSlots.clear();
     posRightTupleSlots = -1;
     posLeftTupleSlots = -1;
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    leftTupleSlots.clear();
+    rightTupleSlots.clear();
+    leftTupleSlots = null;
+    rightTupleSlots = null;
+    joinNode = null;
+    joinQual = null;
+    projector = null;
   }
 }

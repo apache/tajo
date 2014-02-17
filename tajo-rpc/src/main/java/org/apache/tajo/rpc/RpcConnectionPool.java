@@ -18,55 +18,95 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.common.base.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.TUtil;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class RpcConnectionPool {
   private static final Log LOG = LogFactory.getLog(RpcConnectionPool.class);
 
-  private Map<RpcConnectionKey, NettyClientBase> connections = TUtil.newConcurrentHashMap();
+  private ConcurrentMap<RpcConnectionKey, NettyClientBase> connections =
+      new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
+  private ChannelGroup accepted = new DefaultChannelGroup();
 
   private static RpcConnectionPool instance;
+  private final ClientSocketChannelFactory channelFactory;
+  private final TajoConf conf;
 
-  private TajoConf conf;
-
-  private RpcConnectionPool(TajoConf conf) {
+  private RpcConnectionPool(TajoConf conf, ClientSocketChannelFactory channelFactory) {
     this.conf = conf;
+    this.channelFactory =  channelFactory;
   }
 
   public synchronized static RpcConnectionPool getPool(TajoConf conf) {
     if(instance == null) {
-      instance = new RpcConnectionPool(conf);
+      instance = new RpcConnectionPool(conf, RpcChannelFactory.getSharedClientChannelFactory());
     }
-
     return instance;
   }
 
+  public synchronized static RpcConnectionPool newPool(TajoConf conf, String poolName, int workerNum) {
+    return new RpcConnectionPool(conf, RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
+  }
+
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey) throws Exception {
+    NettyClientBase client;
     if(rpcConnectionKey.asyncMode) {
-      return new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr);
+      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory);
     } else {
-      return new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr);
+      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory);
     }
+    accepted.add(client.getChannel());
+    return client;
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr,
-      Class protocolClass, boolean asyncMode) throws Exception {
+                                       Class protocolClass, boolean asyncMode) throws Exception {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
-    synchronized(connections) {
-      if(!connections.containsKey(key)) {
-        connections.put(key, makeConnection(key));
+    NettyClientBase client = connections.get(key);
+
+    if (client == null) {
+      client = makeConnection(key);
+      boolean added = connections.putIfAbsent(key, client) == null;
+
+      if (!added) {
+        client.close();
+        client = connections.get(key);
       }
-      return connections.get(key);
     }
+
+    if (!client.getChannel().isOpen() || !client.getChannel().isConnected()) {
+      LOG.warn("Try to reconnect : " + addr);
+      client.connect(addr);
+    }
+    return client;
   }
 
   public void releaseConnection(NettyClientBase client) {
+    if (client == null) return;
+
+    try {
+      if (!client.getChannel().isOpen()) {
+        connections.remove(client.getKey());
+        client.close();
+      }
+
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("Current Connections [" + connections.size() + "] Accepted: " + accepted.size());
+
+      }
+    } catch (Exception e) {
+      LOG.error("Can't close connection:" + client.getKey() + ":" + e.getMessage(), e);
+    }
   }
 
   public void closeConnection(NettyClientBase client) {
@@ -76,12 +116,12 @@ public class RpcConnectionPool {
 
     try {
       if(LOG.isDebugEnabled()) {
-        LOG.debug("CloseConnection [" + client.getKey() + "]");
+        LOG.debug("Close connection [" + client.getKey() + "]");
       }
-      synchronized(connections) {
-        connections.remove(client.getKey());
-      }
+
+      connections.remove(client.getKey());
       client.close();
+
     } catch (Exception e) {
       LOG.error("Can't close connection:" + client.getKey() + ":" + e.getMessage(), e);
     }
@@ -99,7 +139,20 @@ public class RpcConnectionPool {
           LOG.error("close client pool error", e);
         }
       }
-      connections.clear();
+    }
+
+    connections.clear();
+    try {
+      accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+    } catch (Throwable t) {
+      LOG.error(t);
+    }
+  }
+
+  public synchronized void shutdown(){
+    close();
+    if(channelFactory != null){
+      channelFactory.releaseExternalResources();
     }
   }
 
@@ -117,7 +170,7 @@ public class RpcConnectionPool {
 
     @Override
     public String toString() {
-      return protocolClass + "," + addr + "," + asyncMode;
+      return "["+ protocolClass + "] " + addr + "," + asyncMode;
     }
 
     @Override
@@ -131,7 +184,7 @@ public class RpcConnectionPool {
 
     @Override
     public int hashCode() {
-      return toString().hashCode();
+      return Objects.hashCode(addr, asyncMode);
     }
   }
 }

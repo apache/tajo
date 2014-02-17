@@ -149,10 +149,9 @@ public class CatalogServer extends AbstractService {
   public void start() {
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
+    int workerNum = conf.getIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM);
     try {
-      this.rpcServer = new BlockingRpcServer(
-          CatalogProtocol.class,
-          handler, initIsa);
+      this.rpcServer = new BlockingRpcServer(CatalogProtocol.class, handler, initIsa, workerNum);
       this.rpcServer.start();
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
@@ -175,7 +174,7 @@ public class CatalogServer extends AbstractService {
     try {
       store.close();
     } catch (IOException ioe) {
-      LOG.error(ioe);
+      LOG.error(ioe.getMessage(), ioe);
     }
     super.stop();
   }
