@@ -23,73 +23,72 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
 import java.io.Closeable;
-import java.io.IOException;
+import org.apache.tajo.catalog.exception.CatalogException;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
   /*************************** TABLE ******************************/
-  void addTable(CatalogProtos.TableDescProto desc) throws IOException;
+  void addTable(CatalogProtos.TableDescProto desc) throws CatalogException;
   
-  boolean existTable(String name) throws IOException;
+  boolean existTable(String name) throws CatalogException;
   
-  void deleteTable(String name) throws IOException;
+  void deleteTable(String name) throws CatalogException;
   
-  CatalogProtos.TableDescProto getTable(String name) throws IOException;
+  CatalogProtos.TableDescProto getTable(String name) throws CatalogException;
   
-  List<String> getAllTableNames() throws IOException;
+  List<String> getAllTableNames() throws CatalogException;
 
 
   /************************ PARTITION METHOD **************************/
-  void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws IOException;
+  void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException;
 
-  CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException;
+  CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws CatalogException;
 
-  boolean existPartitionMethod(String tableName) throws IOException;
+  boolean existPartitionMethod(String tableName) throws CatalogException;
 
-  void delPartitionMethod(String tableName) throws IOException;
+  void delPartitionMethod(String tableName) throws CatalogException;
 
 
   /************************** PARTITIONS *****************************/
-  void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws IOException;
+  void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws CatalogException;
 
-  void addPartition(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException;
+  void addPartition(CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException;
 
   /**
    * Get all partitions of a table
    * @param tableName the table name
    * @return
-   * @throws IOException
+   * @throws CatalogException
    */
-  CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException;
+  CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException;
 
-  CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException;
+  CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException;
 
-  void delPartition(String partitionName) throws IOException;
+  void delPartition(String partitionName) throws CatalogException;
 
-  void delPartitions(String tableName) throws IOException;
+  void delPartitions(String tableName) throws CatalogException;
 
   /**************************** INDEX *******************************/
-  void addIndex(IndexDescProto proto) throws IOException;
+  void addIndex(IndexDescProto proto) throws CatalogException;
   
-  void delIndex(String indexName) throws IOException;
+  void delIndex(String indexName) throws CatalogException;
   
-  IndexDescProto getIndex(String indexName) throws IOException;
+  IndexDescProto getIndex(String indexName) throws CatalogException;
   
-  IndexDescProto getIndex(String tableName, String columnName) 
-      throws IOException;
+  IndexDescProto getIndex(String tableName, String columnName) throws CatalogException;
   
-  boolean existIndex(String indexName) throws IOException;
+  boolean existIndex(String indexName) throws CatalogException;
   
-  boolean existIndex(String tableName, String columnName) throws IOException;
+  boolean existIndex(String tableName, String columnName) throws CatalogException;
 
   /************************** FUNCTION *****************************/
-  IndexDescProto [] getIndexes(String tableName) throws IOException;
+  IndexDescProto [] getIndexes(String tableName) throws CatalogException;
   
-  void addFunction(FunctionDesc func) throws IOException;
+  void addFunction(FunctionDesc func) throws CatalogException;
   
-  void deleteFunction(FunctionDesc func) throws IOException;
+  void deleteFunction(FunctionDesc func) throws CatalogException;
   
-  void existFunction(FunctionDesc func) throws IOException;
+  void existFunction(FunctionDesc func) throws CatalogException;
   
-  List<String> getAllFunctionNames() throws IOException;
+  List<String> getAllFunctionNames() throws CatalogException;
 }

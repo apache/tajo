@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.partition;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -104,6 +105,10 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     this.path = path;
   }
 
+  public int hashCode() {
+    return Objects.hashCode(tableId, partitionName, ordinalPosition, partitionValue, path);
+  }
+
   public boolean equals(Object o) {
     if (o instanceof PartitionDesc) {
       PartitionDesc another = (PartitionDesc) o;
@@ -160,4 +165,17 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   public static PartitionDesc fromJson(String strVal) {
     return strVal != null ? CatalogGsonHelper.fromJson(strVal, PartitionDesc.class) : null;
   }
+
+  public Object clone() throws CloneNotSupportedException {
+    PartitionDesc desc = (PartitionDesc) super.clone();
+    desc.builder = CatalogProtos.PartitionDescProto.newBuilder();
+    desc.tableId = tableId;
+    desc.partitionName = partitionName;
+    desc.ordinalPosition = ordinalPosition;
+    desc.partitionValue = partitionValue;
+    desc.path = path;
+
+    return desc;
+  }
+
 }

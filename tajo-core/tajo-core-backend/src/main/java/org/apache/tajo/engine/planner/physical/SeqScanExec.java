@@ -31,6 +31,7 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -73,7 +74,7 @@ public class SeqScanExec extends PhysicalExec {
    */
   private void rewriteColumnPartitionedTableSchema() throws IOException {
     PartitionMethodDesc partitionDesc = plan.getTableDesc().getPartitionMethod();
-    Schema columnPartitionSchema = (Schema) partitionDesc.getExpressionSchema().clone();
+    Schema columnPartitionSchema = SchemaUtil.clone(partitionDesc.getExpressionSchema());
     String qualifier = inSchema.getColumn(0).getQualifier();
     columnPartitionSchema.setQualifier(qualifier);
 

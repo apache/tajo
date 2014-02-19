@@ -43,10 +43,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -103,7 +100,12 @@ public class CatalogServer extends AbstractService {
 
     Constructor<?> cons;
     try {
-      this.conf = (TajoConf) conf;
+      if (conf instanceof TajoConf) {
+        this.conf = (TajoConf) conf;
+      } else {
+        throw new CatalogException();
+      }
+
       Class<?> storeClass = this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
 
       LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
@@ -201,9 +203,9 @@ public class CatalogServer extends AbstractService {
         }
 
         return store.getTable(tableId);
-      } catch (IOException ioe) {
+      } catch (Exception e) {
         // TODO - handle exception
-        LOG.error(ioe);
+        LOG.error(e);
         return null;
       } finally {
         rlock.unlock();
@@ -222,8 +224,9 @@ public class CatalogServer extends AbstractService {
           builder.addTableName(iterator.next());
         }
         return builder.build();
-      } catch (IOException ioe) {
+      } catch (Exception e) {
         // TODO - handle exception
+        LOG.error(e);
         return null;
       }
     }
@@ -250,8 +253,8 @@ public class CatalogServer extends AbstractService {
           throw new AlreadyExistsTableException(proto.getId());
         }
         store.addTable(proto);
-      } catch (IOException ioe) {
-        LOG.error(ioe.getMessage(), ioe);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
         return BOOL_FALSE;
       } finally {
         wlock.unlock();
@@ -272,8 +275,8 @@ public class CatalogServer extends AbstractService {
           throw new NoSuchTableException(tableId);
         }
         store.deleteTable(tableId);
-      } catch (IOException ioe) {
-        LOG.error(ioe.getMessage(), ioe);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
         return BOOL_FALSE;
       } finally {
         wlock.unlock();
@@ -292,7 +295,7 @@ public class CatalogServer extends AbstractService {
         } else {
           return BOOL_FALSE;
         }
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error(e);
         throw new ServiceException(e);
       }
@@ -306,9 +309,9 @@ public class CatalogServer extends AbstractService {
       try {
         String tableId = name.getValue().toLowerCase();
         return store.getPartitionMethod(tableId);
-      } catch (IOException ioe) {
+      } catch (Exception e) {
         // TODO - handle exception
-        LOG.error(ioe);
+        LOG.error(e);
         return null;
       } finally {
         rlock.unlock();
@@ -323,7 +326,7 @@ public class CatalogServer extends AbstractService {
         String tableId = tableName.getValue().toLowerCase();
         return BoolProto.newBuilder().setValue(
             store.existPartitionMethod(tableId)).build();
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error(e);
         return BoolProto.newBuilder().setValue(false).build();
       } finally {
@@ -379,10 +382,10 @@ public class CatalogServer extends AbstractService {
           throw new AlreadyExistsIndexException(indexDesc.getName());
         }
         store.addIndex(indexDesc);
-      } catch (IOException ioe) {
-        LOG.error("ERROR : cannot add index " + indexDesc.getName(), ioe);
+      } catch (Exception e) {
+        LOG.error("ERROR : cannot add index " + indexDesc.getName(), e);
         LOG.error(indexDesc);
-        throw new ServiceException(ioe);
+        throw new ServiceException(e);
       } finally {
         rlock.unlock();
       }
@@ -398,7 +401,7 @@ public class CatalogServer extends AbstractService {
       try {
         return BoolProto.newBuilder().setValue(
             store.existIndex(indexName.getValue())).build();
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error(e);
         return BoolProto.newBuilder().setValue(false).build();
       } finally {
@@ -415,7 +418,7 @@ public class CatalogServer extends AbstractService {
         return BoolProto.newBuilder().setValue(
             store.existIndex(request.getTableName(),
                 request.getColumnName())).build();
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error(e);
         return BoolProto.newBuilder().setValue(false).build();
       } finally {
@@ -433,8 +436,8 @@ public class CatalogServer extends AbstractService {
           throw new NoSuchIndexException(indexName.getValue());
         }
         return store.getIndex(indexName.getValue());
-      } catch (IOException ioe) {
-        LOG.error("ERROR : cannot get index " + indexName, ioe);
+      } catch (Exception e) {
+        LOG.error("ERROR : cannot get index " + indexName, e);
         return null;
       } finally {
         rlock.unlock();
@@ -452,9 +455,9 @@ public class CatalogServer extends AbstractService {
               + request.getColumnName());
         }
         return store.getIndex(request.getTableName(), request.getColumnName());
-      } catch (IOException ioe) {
+      } catch (Exception e) {
         LOG.error("ERROR : cannot get index " + request.getTableName() + "."
-            + request.getColumnName(), ioe);
+            + request.getColumnName(), e);
         return null;
       } finally {
         rlock.unlock();
@@ -470,7 +473,7 @@ public class CatalogServer extends AbstractService {
           throw new NoSuchIndexException(indexName.getValue());
         }
         store.delIndex(indexName.getValue());
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error(e);
       } finally {
         wlock.unlock();
@@ -593,7 +596,7 @@ public class CatalogServer extends AbstractService {
     }
   }
 
-  private static class FunctionSignature implements Comparable<FunctionSignature> {
+  private static class FunctionSignature {
     private String signature;
     private FunctionType type;
     private DataType [] arguments;
@@ -637,37 +640,23 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      } else if (o == null || getClass() != o.getClass()) {
+        return false;
+      } else {
+        return (signature.equals(((FunctionSignature) o).signature)
+            && type.equals(((FunctionSignature) o).type)
+            && Arrays.equals(arguments, ((FunctionSignature) o).arguments));
+      }
+    }
+
+    @Override
     public int hashCode() {
       return Objects.hashCode(signature, type, Objects.hashCode(arguments));
     }
 
-    @Override
-    public int compareTo(FunctionSignature o) {
-      int signatureCmp = signature.compareTo(o.signature);
-      if (signatureCmp != 0) {
-        return signatureCmp;
-      }
-
-      int typeCmp = type.compareTo(o.type);
-      if (typeCmp != 0) {
-        return typeCmp;
-      }
-
-      int min = Math.min(arguments.length, o.arguments.length);
-      int argCmp = 0;
-      for (int i = 0; i < min; i++) {
-        if (arguments.length < min && o.arguments.length < min) {
-          argCmp = arguments[i].getType().compareTo(o.arguments[i].getType());
-
-          if (argCmp != 0) {
-            return argCmp;
-          }
-        } else {
-          argCmp = arguments.length - o.arguments.length;
-        }
-      }
-      return argCmp;
-    }
   }
 
   public static void main(String[] args) throws Exception {

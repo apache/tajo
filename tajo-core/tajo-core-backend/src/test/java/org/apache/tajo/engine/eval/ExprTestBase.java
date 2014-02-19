@@ -30,6 +30,7 @@ import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
@@ -102,7 +103,7 @@ public class ExprTestBase {
     VTuple vtuple  = null;
     Schema inputSchema = null;
     if (schema != null) {
-      inputSchema = (Schema) schema.clone();
+      inputSchema = SchemaUtil.clone(schema);
       inputSchema.setQualifier(tableName);
 
       int targetIdx [] = new int[inputSchema.getColumnNum()];

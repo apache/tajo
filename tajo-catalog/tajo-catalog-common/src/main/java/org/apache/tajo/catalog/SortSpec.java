@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.ProtoObject;
@@ -82,6 +83,11 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
     key.nullFirst = nullFirst;
 
     return key;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(Objects.hashCode(sortKey), ascending, nullFirst);
   }
 
   @Override

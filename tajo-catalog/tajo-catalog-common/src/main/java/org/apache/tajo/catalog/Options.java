@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueProto;
@@ -98,8 +99,14 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
 	public String delete(String key) {
 		return keyVals.remove(key);
 	}
-	
-	@Override
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(keyVals);
+
+  }
+
+    @Override
 	public boolean equals(Object object) {
 		if(object instanceof Options) {
 			Options other = (Options)object;

@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
@@ -36,8 +37,8 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     this.tableName = PlannerUtil.normalizeTableName(tableName);
     if (subQuery != null) {
       this.subQuery = subQuery;
-      setOutSchema((Schema) this.subQuery.getOutSchema().clone());
-      setInSchema((Schema) this.subQuery.getOutSchema().clone());
+      setOutSchema(SchemaUtil.clone(this.subQuery.getOutSchema()));
+      setInSchema(SchemaUtil.clone(this.subQuery.getOutSchema()));
       getInSchema().setQualifier(this.tableName);
       getOutSchema().setQualifier(this.tableName);
     }
@@ -66,12 +67,12 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
   public void setSubQuery(LogicalNode node) {
     this.subQuery = node;
-    setInSchema((Schema) this.subQuery.getOutSchema().clone());
+    setInSchema(SchemaUtil.clone(this.subQuery.getOutSchema()));
     getInSchema().setQualifier(this.tableName);
     if (hasTargets()) {
       setOutSchema(PlannerUtil.targetToSchema(targets));
     } else {
-      setOutSchema((Schema) this.subQuery.getOutSchema().clone());
+      setOutSchema(SchemaUtil.clone(this.subQuery.getOutSchema()));
     }
     getOutSchema().setQualifier(this.tableName);
   }

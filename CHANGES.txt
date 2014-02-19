@@ -449,6 +449,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-530: Fix warnings in tajo-catalog. (jaehwa)
+
     TAJO-532: Fix warnings in tajo-common. (jinho)
 
     TAJO-520: Move tajo-core-storage to tajo-storage. (jinho)

@@ -208,13 +208,17 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   }
 
   public static String dataTypesToStr(List<DataType> parameterTypesList) {
-    String result = "";
-    String prefix = "";
-    for(DataType eachType: parameterTypesList) {
-      result += prefix + eachType.getType().toString();
-      prefix = ",";
+    StringBuilder result = new StringBuilder();
+    for (int i = 0; i < parameterTypesList.size(); i++) {
+      DataType eachType = parameterTypesList.get(i);
+
+      if (i > 0) {
+        result.append(",");
+      }
+      result.append(eachType.getType().toString());
+
     }
 
-    return result;
+    return result.toString();
   }
 }

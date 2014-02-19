@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
@@ -138,6 +139,10 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 
   public void setPartitionMethod(PartitionMethodDesc partitionMethodDesc) {
     this.partitionMethodDesc = partitionMethodDesc;
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(tableName, schema, meta, uri, stats, partitionMethodDesc);
   }
 
   public boolean equals(Object object) {

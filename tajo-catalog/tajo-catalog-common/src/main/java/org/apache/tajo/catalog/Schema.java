@@ -18,12 +18,14 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.ProtoObject;
@@ -279,6 +281,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(fields, fieldsByQualifiedName, fieldsByName);
+  }
+
+  @Override
 	public boolean equals(Object o) {
 		if (o instanceof Schema) {
 		  Schema other = (Schema) o;
@@ -288,8 +295,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
   @Override
-  public Object clone() {
-    Schema schema = new Schema(toArray());
+  public Object clone() throws CloneNotSupportedException {
+    Schema schema = null;
+
+    schema = (Schema) super.clone();
+    schema.builder = CatalogProtos.SchemaProto.newBuilder();
+    schema.init();
+    for(Column column: this.fields) {
+      schema.addColumn(column);
+    }
     return schema;
   }
 
@@ -311,7 +325,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	  for(Column col : fields) {
 	    sb.append(col);
 	    if (i < fields.size() - 1) {
-	      sb.append(", ");
+	      sb.append(",");
 	    }
 	    i++;
 	  }

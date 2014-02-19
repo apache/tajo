@@ -18,9 +18,11 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatSetProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatSetProtoOrBuilder;
@@ -67,7 +69,11 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
     initStats();
     return stats.values();
   }
-  
+
+  public int hashCode() {
+    return Objects.hashCode(viaProto, stats);
+  }
+
   public boolean equals(Object obj) {
     if (obj instanceof StatSet) {
       StatSet other = (StatSet) obj;
@@ -83,7 +89,18 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
   }
   
   public Object clone() throws CloneNotSupportedException {
-    return new StatSet(this.getProto());
+    StatSet statSet = (StatSet) super.clone();
+    statSet.builder = CatalogProtos.StatSetProto.newBuilder();
+    statSet.viaProto = viaProto;
+
+    statSet.stats = Maps.newHashMap();
+    for (Entry<StatType, Stat> entry : stats.entrySet()) {
+      StatType type = (StatType)entry.getKey();
+      Stat stat = (Stat)entry.getValue().clone();
+      statSet.stats.put(type, stat);
+    }
+
+    return statSet;
   }
 
   private void initStats() {

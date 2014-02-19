@@ -23,9 +23,9 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.Map;
 
@@ -49,151 +49,185 @@ public class MySQLStore extends AbstractDBStore  {
 
   // TODO - DDL and index statements should be renamed
   @Override
-  protected void createBaseTable() throws IOException {
-    int result;
+  protected void createBaseTable() throws CatalogException {
     Statement stmt = null;
-    Connection conn = getConnection();
+    Connection conn = null;
 
     try {
+      conn = getConnection();
       stmt = conn.createStatement();
+
+      StringBuilder sql = new StringBuilder();
       // META
       if (!baseTableMaps.get(TB_META)) {
-        String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
+        sql.append("CREATE TABLE ").append(TB_META).append(" (version int NOT NULL)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(meta_ddl);
+          LOG.debug(sql.toString());
         }
-        result = stmt.executeUpdate(meta_ddl);
+
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_META + " is created.");
       }
 
       // TABLES
       if (!baseTableMaps.get(TB_TABLES)) {
-        String tables_ddl = "CREATE TABLE "
-            + TB_TABLES + " ("
-            + "TID int NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-            + C_TABLE_ID + " VARCHAR(255) NOT NULL UNIQUE, "
-            + "path TEXT, "
-            + "store_type CHAR(16)"
-            + ")";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_TABLES).append("(");
+        sql.append("TID int NOT NULL AUTO_INCREMENT PRIMARY KEY, ");
+        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL UNIQUE, ");
+        sql.append("path TEXT, ").append("store_type CHAR(16)").append(")");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(tables_ddl);
+          LOG.debug(sql.toString());
         }
 
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_TABLES + "' is created.");
-        result = stmt.executeUpdate(tables_ddl);
       }
 
       // COLUMNS
       if (!baseTableMaps.get(TB_COLUMNS)) {
-        String columns_ddl =
-            "CREATE TABLE " + TB_COLUMNS + " ("
-                + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
-                + "column_id INT NOT NULL,"
-                + "column_name VARCHAR(255) NOT NULL, " + "data_type CHAR(16), " + "type_length INTEGER, "
-                + "UNIQUE KEY(" + C_TABLE_ID + ", column_name),"
-                + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_COLUMNS).append("(");
+        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
+        sql.append("column_id INT NOT NULL,");
+        sql.append("column_name VARCHAR(255) NOT NULL, ");
+        sql.append("data_type CHAR(16), ");
+        sql.append("type_length INTEGER, ");
+        sql.append("UNIQUE KEY(").append(C_TABLE_ID).append(", column_name),");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID).append(") REFERENCES ");
+        sql.append(TB_TABLES).append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(columns_ddl);
+          LOG.debug(sql.toString());
         }
 
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_COLUMNS + " is created.");
-        result = stmt.executeUpdate(columns_ddl);
       }
 
       // OPTIONS
       if (!baseTableMaps.get(TB_OPTIONS)) {
-        String options_ddl =
-            "CREATE TABLE " + TB_OPTIONS + " ("
-                + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
-                + "key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL,"
-                + "INDEX("+C_TABLE_ID+", key_),"
-                + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_OPTIONS).append("(");
+        sql.append(C_TABLE_ID).append( " VARCHAR(255) NOT NULL,");
+        sql.append("key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL,");
+        sql.append("INDEX(").append(C_TABLE_ID).append(", key_),");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
+        sql.append(") REFERENCES ").append(TB_TABLES);
+        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(options_ddl);
+          LOG.debug(sql.toString());
         }
+
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_OPTIONS + " is created.");
-        result = stmt.executeUpdate(options_ddl);
       }
 
       // INDEXES
       if (!baseTableMaps.get(TB_INDEXES)) {
-        String indexes_ddl = "CREATE TABLE " + TB_INDEXES + "("
-            + "index_name VARCHAR(255) NOT NULL PRIMARY KEY, "
-            + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
-            + "column_name VARCHAR(255) NOT NULL, "
-            + "data_type VARCHAR(255) NOT NULL, "
-            + "index_type CHAR(32) NOT NULL, "
-            + "is_unique BOOLEAN NOT NULL, "
-            + "is_clustered BOOLEAN NOT NULL, "
-            + "is_ascending BOOLEAN NOT NULL,"
-            + "INDEX(" + C_TABLE_ID + ", column_name),"
-            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_INDEXES).append("(");
+        sql.append("index_name VARCHAR(255) NOT NULL PRIMARY KEY, ");
+        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
+        sql.append("column_name VARCHAR(255) NOT NULL, ");
+        sql.append("data_type VARCHAR(255) NOT NULL, ");
+        sql.append("index_type CHAR(32) NOT NULL, ");
+        sql.append("is_unique BOOLEAN NOT NULL, ");
+        sql.append("is_clustered BOOLEAN NOT NULL, ");
+        sql.append("is_ascending BOOLEAN NOT NULL,");
+        sql.append("INDEX(").append(C_TABLE_ID).append(", column_name),");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
+        sql.append(") REFERENCES ").append(TB_TABLES);
+        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(indexes_ddl);
+          LOG.debug(sql.toString());
         }
+
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_INDEXES + "' is created.");
-        result = stmt.executeUpdate(indexes_ddl);
       }
 
       if (!baseTableMaps.get(TB_STATISTICS)) {
-        String stats_ddl = "CREATE TABLE " + TB_STATISTICS + "("
-            + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
-            + "num_rows BIGINT, "
-            + "num_bytes BIGINT,"
-            + "INDEX("+C_TABLE_ID+"),"
-            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_STATISTICS).append("(");
+        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
+        sql.append("num_rows BIGINT, ");
+        sql.append("num_bytes BIGINT,");
+        sql.append("INDEX(").append(C_TABLE_ID).append("),");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
+        sql.append(") REFERENCES ").append(TB_TABLES);
+        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(stats_ddl);
+          LOG.debug(sql.toString());
         }
+
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_STATISTICS + "' is created.");
-        result = stmt.executeUpdate(stats_ddl);
       }
 
       // PARTITION_METHODS
       if (!baseTableMaps.get(TB_PARTITION_METHODS)) {
-        String partition_method_ddl = "CREATE TABLE " + TB_PARTITION_METHODS + " ("
-            + C_TABLE_ID + " VARCHAR(255) PRIMARY KEY,"
-            + "partition_type VARCHAR(10) NOT NULL,"
-            + "expression TEXT NOT NULL,"
-            + "expression_schema VARBINARY(1024) NOT NULL, "
-            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_PARTITION_METHODS).append("(");
+        sql.append(C_TABLE_ID).append(" VARCHAR(255) PRIMARY KEY,");
+        sql.append("partition_type VARCHAR(10) NOT NULL,");
+        sql.append("expression TEXT NOT NULL,");
+        sql.append("expression_schema VARBINARY(1024) NOT NULL, ");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
+        sql.append(") REFERENCES ").append(TB_TABLES);
+        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(partition_method_ddl);
+          LOG.debug(sql.toString());
         }
+
+        stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_PARTITION_METHODS + "' is created.");
-        result = stmt.executeUpdate(partition_method_ddl);
       }
 
       // PARTITIONS
       if (!baseTableMaps.get(TB_PARTTIONS)) {
-        String partition_ddl = "CREATE TABLE " + TB_PARTTIONS + " ("
-            + "PID int NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-            + C_TABLE_ID + " VARCHAR(255) NOT NULL,"
-            + "partition_name VARCHAR(255), "
-            + "ordinal_position INT NOT NULL,"
-            + "partition_value TEXT,"
-            + "path TEXT,"
-            + "cache_nodes VARCHAR(255), "
-            + "UNIQUE KEY(" + C_TABLE_ID + ", partition_name),"
-            + "FOREIGN KEY("+C_TABLE_ID+") REFERENCES "+TB_TABLES+"("+C_TABLE_ID+") ON DELETE CASCADE)";
+        sql.delete(0, sql.length());
+        sql.append("CREATE TABLE ").append(TB_PARTTIONS).append("(");
+        sql.append("PID int NOT NULL AUTO_INCREMENT PRIMARY KEY, ");
+        sql.append(C_TABLE_ID).append( " VARCHAR(255) NOT NULL,");
+        sql.append("partition_name VARCHAR(255), ");
+        sql.append("ordinal_position INT NOT NULL,");
+        sql.append("partition_value TEXT,");
+        sql.append("path TEXT,");
+        sql.append("cache_nodes VARCHAR(255), ");
+        sql.append("UNIQUE KEY(").append(C_TABLE_ID).append(", partition_name),");
+        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
+        sql.append(") REFERENCES ").append(TB_TABLES);
+        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+
         if (LOG.isDebugEnabled()) {
-          LOG.debug(partition_ddl);
+          LOG.debug(sql.toString());
         }
+
+        stmt.executeUpdate(sql.toString());
+
         LOG.info("Table '" + TB_PARTTIONS + "' is created.");
-        result = stmt.executeUpdate(partition_ddl);
       }
     } catch (SQLException se) {
-      throw new IOException(se);
+      throw new CatalogException(se);
     } finally {
-      CatalogUtil.closeSQLWrapper(stmt);
+      CatalogUtil.closeQuietly(conn, stmt);
     }
   }
 
   @Override
-  protected boolean isInitialized() throws IOException {
+  protected boolean isInitialized() throws CatalogException {
+    Connection conn = null;
     ResultSet res = null;
-    Connection conn = getConnection();
+
     try {
+      conn = getConnection();
       res = conn.getMetaData().getTables(null, null, null,
           new String[]{"TABLE"});
 
@@ -212,20 +246,20 @@ public class MySQLStore extends AbstractDBStore  {
       while (res.next()) {
         baseTableMaps.put(res.getString("TABLE_NAME"), true);
       }
-    } catch(SQLException se) {
-      throw new IOException(se);
-    } finally {
-      CatalogUtil.closeSQLWrapper(res);
-    }
 
-    for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
-      if (!entry.getValue()) {
-        return false;
+      for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
+        if (!entry.getValue()) {
+          return false;
+        }
       }
+
+    } catch(SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(conn, res);
     }
 
     return  true;
-//    return false;
   }
 
 }

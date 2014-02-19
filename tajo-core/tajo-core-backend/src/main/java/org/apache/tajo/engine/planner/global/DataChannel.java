@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.utils.SchemaUtil;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -175,7 +176,7 @@ public class DataChannel {
   }
 
   public void setSchema(Schema schema) {
-    this.schema = (Schema) schema.clone();
+    this.schema = SchemaUtil.clone(schema);
   }
 
   public Schema getSchema() {

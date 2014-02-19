@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.catalog.store;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
@@ -25,23 +26,20 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatException;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.InternalException;
-
-import java.io.IOException;
 
 public class HCatalogUtil {
   protected final Log LOG = LogFactory.getLog(getClass());
 
-  public static void validateHCatTableAndTajoSchema(HCatSchema tblSchema) throws InternalException {
+  public static void validateHCatTableAndTajoSchema(HCatSchema tblSchema) throws CatalogException {
     for (HCatFieldSchema hcatField : tblSchema.getFields()) {
       validateHCatFieldAndTajoSchema(hcatField);
     }
   }
 
-  private static void validateHCatFieldAndTajoSchema(HCatFieldSchema fieldSchema) throws
-      InternalException {
+  private static void validateHCatFieldAndTajoSchema(HCatFieldSchema fieldSchema) throws CatalogException {
     try {
       HCatFieldSchema.Type fieldType = fieldSchema.getType();
       switch (fieldType) {
@@ -53,15 +51,14 @@ public class HCatalogUtil {
           throw new HCatException("Tajo cannot support map field type.");
       }
     } catch (HCatException e) {
-      throw new InternalException("incompatible hcatalog types when assigning to tajo type. - " +
-          "HCatFieldSchema:" + fieldSchema, e);
+      throw new CatalogException("incompatible hcatalog types when assigning to tajo type. - " +
+          "HCatFieldSchema:" + fieldSchema);
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String fieldType) throws IOException {
-    if(fieldType == null) {
-      throw new InternalException("Hive field type is null.");
-    }
+  public static TajoDataTypes.Type getTajoFieldType(String fieldType)  {
+    Preconditions.checkNotNull(fieldType);
+
     String typeStr = null;
 
     if(fieldType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME))
@@ -86,14 +83,12 @@ public class HCatalogUtil {
     try {
       return Enum.valueOf(TajoDataTypes.Type.class, typeStr);
     } catch (IllegalArgumentException iae) {
-      throw new InternalException("Cannot find a matched type aginst from '" + typeStr + "'");
+      throw new CatalogException("Cannot find a matched type aginst from '" + typeStr + "'");
     }
   }
 
-  public static String getHiveFieldType(String fieldType) throws IOException {
-    if(fieldType == null) {
-      throw new InternalException("Tajo field type is null.");
-    }
+  public static String getHiveFieldType(String fieldType) {
+    Preconditions.checkNotNull(fieldType);
     String typeStr = null;
 
     if(fieldType.equalsIgnoreCase("INT4"))
@@ -118,14 +113,12 @@ public class HCatalogUtil {
     return typeStr;
   }
 
-  public static String getStoreType(String fileFormat, String delimiter) throws IOException{
-    if(fileFormat == null) {
-      throw new InternalException("Hive file output format is null.");
-    }
+  public static String getStoreType(String fileFormat) {
+    Preconditions.checkNotNull(fileFormat);
 
     String[] fileFormatArrary = fileFormat.split("\\.");
     if(fileFormatArrary.length < 1) {
-      throw new InternalException("Hive file output format is wrong. - file output format:" + fileFormat);
+      throw new CatalogException("Hive file output format is wrong. - file output format:" + fileFormat);
     }
 
     String inputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
@@ -135,7 +128,7 @@ public class HCatalogUtil {
     } else if(inputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
         return CatalogProtos.StoreType.RCFILE.name();
     } else {
-      throw new InternalException("Not supported file output format. - file output format:" + fileFormat);
+      throw new CatalogException("Not supported file output format. - file output format:" + fileFormat);
     }
   }
 

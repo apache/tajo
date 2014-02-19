@@ -20,6 +20,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.log4j.Logger;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Manages a pool of HiveMetaStoreClient connections. If the connection pool is empty
@@ -29,7 +30,7 @@ public class HCatalogStoreClientPool {
   private static final Logger LOG = Logger.getLogger(HCatalogStoreClientPool.class);
   private final ConcurrentLinkedQueue<HCatalogStoreClient> clientPool =
       new ConcurrentLinkedQueue<HCatalogStoreClient>();
-  private Boolean poolClosed = false;
+  private AtomicBoolean poolClosed = new AtomicBoolean(false);
   private final HiveConf hiveConf;
 
   /**
@@ -42,7 +43,9 @@ public class HCatalogStoreClientPool {
 
     private HCatalogStoreClient(HiveConf hiveConf) {
       try {
-        LOG.debug("Creating MetaStoreClient. Pool Size = " + clientPool.size());
+
+        LOG.info("Creating MetaStoreClient. Pool Size = " + clientPool.size());
+
         this.hiveClient = new HiveMetaStoreClient(hiveConf);
       } catch (Exception e) {
         // Turn in to an unchecked exception
@@ -69,15 +72,15 @@ public class HCatalogStoreClientPool {
       // This lock is needed to ensure proper behavior when a thread reads poolClosed
       // is false, but a call to pool.close() comes in immediately afterward.
       synchronized (poolClosed) {
-        if (poolClosed) {
+//        if (poolClosed.get()) {
           hiveClient.close();
-        } else {
+//        } else {
           // TODO: Currently the pool does not work properly because we cannot
           // reuse MetastoreClient connections. No reason to add this client back
           // to the pool. See HIVE-5181.
-          // clientPool.add(this);
-          hiveClient.close();
-        }
+//          clientPool.add(this);
+//          hiveClient.close();
+//        }
       }
     }
 
@@ -122,11 +125,6 @@ public class HCatalogStoreClientPool {
     // The pool was empty so create a new client and return that.
     if (client == null) {
       client = new HCatalogStoreClient(hiveConf);
-    } else {
-      // TODO: Due to Hive Metastore bugs, there is leftover state from previous client
-      // connections so we are unable to reuse the same connection. For now simply
-      // reconnect each time. One possible culprit is HIVE-5181.
-      client = new HCatalogStoreClient(hiveConf);
     }
     client.markInUse();
     return client;
@@ -139,10 +137,10 @@ public class HCatalogStoreClientPool {
   public void close() {
     // Ensure no more items get added to the pool once close is called.
     synchronized (poolClosed) {
-      if (poolClosed) {
+      if (poolClosed.get()) {
         return;
       }
-      poolClosed = true;
+      poolClosed.set(true);
     }
 
     HCatalogStoreClient client = null;

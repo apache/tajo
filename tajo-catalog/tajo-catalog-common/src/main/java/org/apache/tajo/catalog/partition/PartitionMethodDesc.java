@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.partition;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
@@ -99,6 +100,11 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
     }
 
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(tableId, partitionType, expression, expressionSchema);
   }
 
   @Override

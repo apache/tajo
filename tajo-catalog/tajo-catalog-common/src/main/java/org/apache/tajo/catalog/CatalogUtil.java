@@ -26,11 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.Wrapper;
+import java.sql.*;
 import java.util.Collection;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -157,21 +153,55 @@ public class CatalogUtil {
     return sb.toString();
   }
 
-  public static void closeSQLWrapper(Wrapper... wrapper) {
-    if(wrapper == null) return;
+  public static void closeQuietly(Connection conn) {
+    try {
+      if (conn != null)
+        conn.close();
+    } catch (SQLException se) {
+    }
+  }
 
-    for(Wrapper w : wrapper){
-      try{
-        if(w instanceof Statement){
-          ((Statement)w).close();
-        } else if(w instanceof PreparedStatement){
-            ((PreparedStatement)w).close();
-        } else if(w instanceof ResultSet){
-          ((ResultSet)w).close();
-        } else if(w instanceof Connection){
-          ((Connection)w).close();
-        }
-      } catch (Exception e){}
+  public static void closeQuietly(Statement stmt)  {
+    try {
+      if (stmt != null)
+        stmt.close();
+    } catch (SQLException se) {
+    }
+  }
+
+  public static void closeQuietly(ResultSet res) {
+    try {
+      if (res != null)
+        res.close();
+    } catch (SQLException se) {
+    }
+  }
+
+  public static void closeQuietly(Connection conn, Statement stmt)  {
+    try {
+      closeQuietly(stmt);
+    } finally {
+      closeQuietly(conn);
+    }
+  }
+
+  public static void closeQuietly(Connection conn, ResultSet res) {
+    try {
+      closeQuietly(res);
+    } finally {
+      closeQuietly(conn);
+    }
+  }
+
+  public static void closeQuietly(Connection conn, Statement stmt, ResultSet res) {
+    try {
+      closeQuietly(res);
+    } finally {
+      try {
+        closeQuietly(stmt);
+      } finally {
+        closeQuietly(conn);
+      }
     }
   }
 }

@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
@@ -56,7 +57,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#addTable(TableDesc)
    */
   @Override
-  public void addTable(CatalogProtos.TableDescProto desc) throws IOException {
+  public void addTable(CatalogProtos.TableDescProto desc) throws CatalogException {
     synchronized(tables) {
       String tableId = desc.getId().toLowerCase();
       tables.put(tableId, desc);
@@ -67,7 +68,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#existTable(java.lang.String)
    */
   @Override
-  public boolean existTable(String name) throws IOException {
+  public boolean existTable(String name) throws CatalogException {
     synchronized(tables) {
       String tableId = name.toLowerCase();
       return tables.containsKey(tableId);
@@ -78,7 +79,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#deleteTable(java.lang.String)
    */
   @Override
-  public void deleteTable(String name) throws IOException {
+  public void deleteTable(String name) throws CatalogException {
     synchronized(tables) {
       String tableId = name.toLowerCase();
       tables.remove(tableId);
@@ -89,7 +90,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getTable(java.lang.String)
    */
   @Override
-  public CatalogProtos.TableDescProto getTable(String name) throws IOException {
+  public CatalogProtos.TableDescProto getTable(String name) throws CatalogException {
     String tableId = name.toLowerCase();
     CatalogProtos.TableDescProto unqualified = tables.get(tableId);
     if(unqualified == null)
@@ -105,69 +106,69 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getAllTableNames()
    */
   @Override
-  public List<String> getAllTableNames() throws IOException {
+  public List<String> getAllTableNames() throws CatalogException {
     return new ArrayList<String>(tables.keySet());
   }
 
   @Override
-  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws IOException {
-    throw new IOException("not supported!");
+  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws IOException {
+  public CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws CatalogException {
     String tableId = tableName.toLowerCase();
     CatalogProtos.TableDescProto table = tables.get(tableId);
     return (table != null && table.hasPartition()) ? table.getPartition() : null;
   }
 
   @Override
-  public boolean existPartitionMethod(String tableName) throws IOException {
+  public boolean existPartitionMethod(String tableName) throws CatalogException {
     String tableId = tableName.toLowerCase();
     CatalogProtos.TableDescProto table = tables.get(tableId);
     return (table != null && table.hasPartition());
   }
 
   @Override
-  public void delPartitionMethod(String tableName) throws IOException {
-    throw new IOException("not supported!");
+  public void delPartitionMethod(String tableName) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public void addPartitions(CatalogProtos.PartitionsProto partitionDescList) throws IOException {
-    throw new IOException("not supported!");
+  public void addPartitions(CatalogProtos.PartitionsProto partitionDescList) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public void addPartition(CatalogProtos.PartitionDescProto partitionDesc) throws IOException {
-    throw new IOException("not supported!");
+  public void addPartition(CatalogProtos.PartitionDescProto partitionDesc) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws IOException {
-    throw new IOException("not supported!");
+  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws IOException {
-    throw new IOException("not supported!");
+  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public void delPartition(String partitionName) throws IOException {
-    throw new IOException("not supported!");
+  public void delPartition(String partitionName) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   @Override
-  public void delPartitions(String tableName) throws IOException {
-    throw new IOException("not supported!");
+  public void delPartitions(String tableName) throws CatalogException {
+    throw new RuntimeException("not supported!");
   }
 
   /* (non-Javadoc)
    * @see CatalogStore#addIndex(nta.catalog.proto.CatalogProtos.IndexDescProto)
    */
   @Override
-  public void addIndex(IndexDescProto proto) throws IOException {
+  public void addIndex(IndexDescProto proto) throws CatalogException {
     synchronized(indexes) {
       indexes.put(proto.getName(), proto);
       indexesByColumn.put(proto.getTableId() + "." 
@@ -179,7 +180,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#delIndex(java.lang.String)
    */
   @Override
-  public void delIndex(String indexName) throws IOException {
+  public void delIndex(String indexName) throws CatalogException {
     synchronized(indexes) {
       indexes.remove(indexName);
     }
@@ -189,7 +190,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getIndex(java.lang.String)
    */
   @Override
-  public IndexDescProto getIndex(String indexName) throws IOException {
+  public IndexDescProto getIndex(String indexName) throws CatalogException {
     return indexes.get(indexName);
   }
 
@@ -197,8 +198,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getIndex(java.lang.String, java.lang.String)
    */
   @Override
-  public IndexDescProto getIndex(String tableName, String columnName)
-      throws IOException {
+  public IndexDescProto getIndex(String tableName, String columnName) throws CatalogException {
     return indexesByColumn.get(tableName+"."+columnName);
   }
 
@@ -206,7 +206,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#existIndex(java.lang.String)
    */
   @Override
-  public boolean existIndex(String indexName) throws IOException {
+  public boolean existIndex(String indexName) throws CatalogException {
     return indexes.containsKey(indexName);
   }
 
@@ -214,8 +214,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#existIndex(java.lang.String, java.lang.String)
    */
   @Override
-  public boolean existIndex(String tableName, String columnName)
-      throws IOException {
+  public boolean existIndex(String tableName, String columnName) throws CatalogException {
     return indexesByColumn.containsKey(tableName + "." + columnName);
   }
 
@@ -223,7 +222,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getIndexes(java.lang.String)
    */
   @Override
-  public IndexDescProto[] getIndexes(String tableName) throws IOException {
+  public IndexDescProto[] getIndexes(String tableName) throws CatalogException {
     List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
     for (IndexDescProto proto : indexesByColumn.values()) {
       if (proto.getTableId().equals(tableName)) {
@@ -237,7 +236,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#addFunction(FunctionDesc)
    */
   @Override
-  public void addFunction(FunctionDesc func) throws IOException {
+  public void addFunction(FunctionDesc func) throws CatalogException {
     // to be implemented
   }
 
@@ -245,7 +244,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#deleteFunction(FunctionDesc)
    */
   @Override
-  public void deleteFunction(FunctionDesc func) throws IOException {
+  public void deleteFunction(FunctionDesc func) throws CatalogException {
     // to be implemented
   }
 
@@ -253,7 +252,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#existFunction(FunctionDesc)
    */
   @Override
-  public void existFunction(FunctionDesc func) throws IOException {
+  public void existFunction(FunctionDesc func) throws CatalogException {
     // to be implemented
   }
 
@@ -261,7 +260,7 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getAllFunctionNames()
    */
   @Override
-  public List<String> getAllFunctionNames() throws IOException {
+  public List<String> getAllFunctionNames() throws CatalogException {
     // to be implemented
     return null;
   }
