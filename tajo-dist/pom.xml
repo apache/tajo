@@ -184,7 +184,7 @@
                 </goals>
                 <configuration>
                   <classpathScope>test</classpathScope>
-                  <mainClass>org.apache.hadoop.yarn.util.VisualizeStateMachine</mainClass>
+                  <mainClass>org.apache.hadoop.yarn.state.VisualizeStateMachine</mainClass>
                   <arguments>
                     <argument>Tajo</argument>
                     <argument>org.apache.tajo.master.querymaster.Query,
