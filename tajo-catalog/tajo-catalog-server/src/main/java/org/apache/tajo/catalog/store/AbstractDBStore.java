@@ -867,7 +867,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       exist = res.next();
     } catch (SQLException se) {
       throw new CatalogException(se);
-    } finally {                           ㅁ
+    } finally {                           
       CatalogUtil.closeQuietly(conn, pstmt, res);
     }
     return exist;
