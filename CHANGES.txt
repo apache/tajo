@@ -258,6 +258,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-575: Worker's env.jsp has wrong URL which go to worker's index.jsp. (hyoungjunkim via jaehwa)
+
     TAJO-609: PlannerUtil::getRelationLineage ignores PartitionedTableScanNode.
     (hyunsik)
 

@@ -39,7 +39,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Worker: <a href='ndex.jsp'><%=tajoWorker.getWorkerContext().getWorkerName()%></a></h2>
+  <h2>Tajo Worker: <a href='index.jsp'><%=tajoWorker.getWorkerContext().getWorkerName()%></a></h2>
   <hr/>
   <h3>System Environment</h3>
   <table width="100%" class="border_table">
