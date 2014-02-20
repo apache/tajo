@@ -108,7 +108,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
   }
 
   public String toString() {
-    return "Sortkey (key="+sortKey + " "+(ascending ? "asc" : "desc")+")";
+    return sortKey + " ("+(ascending ? "asc" : "desc")+")";
   }
 
   @Override

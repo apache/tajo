@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.enforce;
 
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
@@ -192,5 +193,70 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     EnforcerProto.Builder builder = EnforcerProto.newBuilder();
     builder.addAllProperties(getProperties());
     return builder.build();
+  }
+
+  public static String toString(EnforceProperty property) {
+    StringBuilder sb = new StringBuilder();
+    switch (property.getType()) {
+    case GROUP_BY:
+      GroupbyEnforce groupby = property.getGroupby();
+      sb.append("type=GroupBy,alg=");
+      if (groupby.getAlgorithm() == GroupbyAlgorithm.HASH_AGGREGATION) {
+        sb.append("hash");
+      } else {
+        sb.append("sort");
+        sb.append(",keys=");
+        boolean first = true;
+        for (CatalogProtos.SortSpecProto sortSpec : groupby.getSortSpecsList()) {
+          if (first == true) {
+            first = false;
+          } else {
+            sb.append(", ");
+          }
+          sb.append(sortSpec.getColumn().getColumnName());
+          sb.append(" (").append(sortSpec.getAscending() ? "asc":"desc").append(")");
+        }
+      }
+      break;
+    case BROADCAST:
+      BroadcastEnforce broadcast = property.getBroadcast();
+      sb.append("type=Broadcast, tables=").append(broadcast.getTableName());
+      break;
+    case COLUMN_PARTITION:
+      ColumnPartitionEnforcer columnPartition = property.getColumnPartition();
+      sb.append("type=ColumnPartition, alg=");
+      if (columnPartition.getAlgorithm() == ColumnPartitionAlgorithm.SORT_PARTITION) {
+        sb.append("sort");
+      } else {
+        sb.append("hash");
+      }
+      break;
+    case JOIN:
+      JoinEnforce join = property.getJoin();
+      sb.append("type=Join,alg=");
+      if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.MERGE_JOIN) {
+        sb.append("merge_join");
+      } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.NESTED_LOOP_JOIN) {
+        sb.append("nested_loop");
+      } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN) {
+        sb.append("block_nested_loop");
+      } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.IN_MEMORY_HASH_JOIN) {
+        sb.append("in_memory_hash");
+      }
+      break;
+    case OUTPUT_DISTINCT:
+    case SORT:
+      SortEnforce sort = property.getSort();
+      sb.append("type=Sort,alg=");
+      if (sort.getAlgorithm() == SortEnforce.SortAlgorithm.IN_MEMORY_SORT) {
+        sb.append("in-memory");
+      } else {
+        sb.append("external");
+      }
+      break;
+    case SORTED_INPUT:
+    }
+
+    return sb.toString();
   }
 }

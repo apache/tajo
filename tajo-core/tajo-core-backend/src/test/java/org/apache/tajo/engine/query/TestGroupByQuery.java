@@ -125,7 +125,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testCountDistinct() throws Exception {
+  public final void testDistinctAggregation1() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;
     ResultSet res = executeQuery();
@@ -137,8 +137,52 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   /**
    * This is an unit test for a combination of aggregation and distinct aggregation functions.
    */
-  public final void testCountDistinct2() throws Exception {
+  public final void testDistinctAggregation2() throws Exception {
     // select l_orderkey, count(*) as cnt, count(distinct l_linenumber) as unique_key from lineitem group by l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregation3() throws Exception {
+    // select count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregation4() throws Exception {
+    // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey)
+    // from lineitem group by l_linenumber;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregation5() throws Exception {
+    // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
+    // from lineitem group by l_linenumber;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregationWithHaving1() throws Exception {
+    // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem
+    // group by l_linenumber having sum(distinct l_orderkey) >= 6;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregationWithUnion1() throws Exception {
+    // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
+    // from (select * from lineitem union select * from lineitem) group by l_linenumber;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

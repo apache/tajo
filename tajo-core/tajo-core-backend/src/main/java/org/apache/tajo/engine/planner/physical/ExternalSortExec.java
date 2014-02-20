@@ -545,7 +545,7 @@ public class ExternalSortExec extends SortExec {
           outTuple = rightTuple;
           rightTuple = rightScan.next();
         }
-        return new VTuple(outTuple);
+        return outTuple;
       }
 
       if (leftTuple == null) {

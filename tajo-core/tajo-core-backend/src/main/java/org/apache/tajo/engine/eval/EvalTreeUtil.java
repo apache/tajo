@@ -67,9 +67,12 @@ public class EvalTreeUtil {
       return evalNode;
     }
   }
-  
-  public static Set<Column> findDistinctRefColumns(EvalNode node) {
-    DistinctColumnRefFinder finder = new DistinctColumnRefFinder();
+
+  /**
+   * It finds unique columns from a EvalNode.
+   */
+  public static LinkedHashSet<Column> findUniqueColumns(EvalNode node) {
+    UniqueColumnFinder finder = new UniqueColumnFinder();
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
@@ -79,9 +82,6 @@ public class EvalTreeUtil {
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
-
-
-
   
   public static Schema getSchemaByTargets(Schema inputSchema, Target [] targets) 
       throws InternalException {
@@ -236,20 +236,20 @@ public class EvalTreeUtil {
     }
   }
   
-  public static class DistinctColumnRefFinder implements EvalNodeVisitor {
-    private Set<Column> colList = new HashSet<Column>(); 
+  public static class UniqueColumnFinder implements EvalNodeVisitor {
+    private LinkedHashSet<Column> columnSet = Sets.newLinkedHashSet();
     private FieldEval field = null;
     
     @Override
     public void visit(EvalNode node) {
       if (node.getType() == EvalType.FIELD) {
         field = (FieldEval) node;
-        colList.add(field.getColumnRef());
+        columnSet.add(field.getColumnRef());
       }
     }
     
-    public Set<Column> getColumnRefs() {
-      return this.colList;
+    public LinkedHashSet<Column> getColumnRefs() {
+      return this.columnSet;
     }
   }
   

@@ -111,7 +111,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       this.storageManager = StorageManagerFactory.getStorageManager(systemConf);
 
-      globalPlanner = new GlobalPlanner(systemConf, storageManager);
+      globalPlanner = new GlobalPlanner(systemConf, workerContext);
 
       dispatcher.register(QueryStartEvent.EventType.class, new QueryStartEventHandler());
 

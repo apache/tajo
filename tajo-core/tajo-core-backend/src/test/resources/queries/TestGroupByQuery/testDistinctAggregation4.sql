@@ -1,0 +1,1 @@
+select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem group by l_linenumber;

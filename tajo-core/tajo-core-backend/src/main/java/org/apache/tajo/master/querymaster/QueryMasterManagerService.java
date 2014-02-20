@@ -126,7 +126,7 @@ public class QueryMasterManagerService extends CompositeService
       ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
       QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(ebId.getQueryId());
 
-      if(queryMasterTask.isStopped()) {
+      if(queryMasterTask == null || queryMasterTask.isStopped()) {
         done.run(LazyTaskScheduler.stopTaskRunnerReq);
       } else {
         ContainerId cid =

@@ -125,11 +125,11 @@ public class SeqScanExec extends PhysicalExec {
       Set<Column> columnSet = new HashSet<Column>();
 
       if (plan.hasQual()) {
-        columnSet.addAll(EvalTreeUtil.findDistinctRefColumns(qual));
+        columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));
       }
 
       for (Target t : plan.getTargets()) {
-        columnSet.addAll(EvalTreeUtil.findDistinctRefColumns(t.getEvalTree()));
+        columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
       }
 
       for (Column column : inSchema.getColumns()) {

@@ -20,6 +20,7 @@ package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -197,5 +198,10 @@ public class TUtil {
     }
 
     return sb.toString();
+  }
+
+  public static <T> T [] toArray(Collection<T> collection, Class<T> type) {
+    T array = (T) Array.newInstance(type, collection.size());
+    return collection.toArray((T[]) array);
   }
 }

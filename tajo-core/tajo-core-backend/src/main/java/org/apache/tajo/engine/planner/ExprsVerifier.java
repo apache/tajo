@@ -45,7 +45,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   public static VerificationState verify(VerificationState state, LogicalNode currentNode, EvalNode expression)
       throws PlanningException {
     instance.visitChild(state, expression, new Stack<EvalNode>());
-    Set<Column> referredColumns = EvalTreeUtil.findDistinctRefColumns(expression);
+    Set<Column> referredColumns = EvalTreeUtil.findUniqueColumns(expression);
     for (Column referredColumn : referredColumns) {
       if (!currentNode.getInSchema().contains(referredColumn)) {
         throw new PlanningException("Invalid State: " + referredColumn + " cannot be referred at Node ("

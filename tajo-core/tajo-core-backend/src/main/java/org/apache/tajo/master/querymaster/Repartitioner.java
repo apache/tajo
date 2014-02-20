@@ -557,7 +557,7 @@ public class Repartitioner {
 
   public static SubQuery setShuffleOutputNumForTwoPhase(SubQuery subQuery, final int desiredNum, DataChannel channel) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    Column[] keys = null;
+    Column[] keys;
     // if the next query is join,
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
@@ -574,8 +574,7 @@ public class Repartitioner {
     // set the partition number for group by and sort
     if (channel.getShuffleType() == HASH_SHUFFLE) {
       if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
-        GroupbyNode groupby = (GroupbyNode) execBlock.getPlan();
-        keys = groupby.getGroupingColumns();
+        keys = channel.getShuffleKeys();
       }
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
       if (execBlock.getPlan().getType() == NodeType.SORT) {

@@ -23,6 +23,7 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -909,21 +910,29 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     if (property != null) {
       List<CatalogProtos.SortSpecProto> sortSpecProtos = property.getGroupby().getSortSpecsList();
-      SortSpec[] enforcedSortSpecs = new SortSpec[sortSpecProtos.size()];
-      int i = 0;
 
-      for (int j = 0; j < sortSpecProtos.size(); i++, j++) {
-        enforcedSortSpecs[i] = new SortSpec(sortSpecProtos.get(j));
+      List<SortSpec> enforcedSortSpecList = Lists.newArrayList();
+      int i = 0;
+      outer:
+      for (int j = 0; j < sortSpecProtos.size(); j++) {
+        SortSpec enforcedSortSpecs = new SortSpec(sortSpecProtos.get(j));
+
+        for (Column grpKey : grpColumns) { // if this sort key is included in grouping columns, skip it.
+          if (enforcedSortSpecs.getSortKey().equals(grpKey)) {
+            continue outer;
+          }
+        }
+
+        enforcedSortSpecList.add(enforcedSortSpecs);
       }
 
-      sortSpecs = ObjectArrays.concat(sortSpecs, enforcedSortSpecs, SortSpec.class);
+      sortSpecs = ObjectArrays.concat(sortSpecs, TUtil.toArray(enforcedSortSpecList, SortSpec.class), SortSpec.class);
     }
 
     SortNode sortNode = new SortNode(-1);
     sortNode.setSortSpecs(sortSpecs);
     sortNode.setInSchema(subOp.getSchema());
     sortNode.setOutSchema(subOp.getSchema());
-    // SortExec sortExec = new SortExec(sortNode, child);
     ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
     LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
     return new SortAggregateExec(ctx, groupbyNode, sortExec);

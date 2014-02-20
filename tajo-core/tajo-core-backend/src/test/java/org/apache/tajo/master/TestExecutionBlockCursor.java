@@ -80,7 +80,7 @@ public class TestExecutionBlockCursor {
     dispatcher = new AsyncDispatcher();
     dispatcher.init(conf);
     dispatcher.start();
-    planner = new GlobalPlanner(conf, sm);
+    planner = new GlobalPlanner(conf, catalog);
   }
 
   @AfterClass

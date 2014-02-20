@@ -130,6 +130,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-601: Improve distinct aggregation query processing.
+
     TAJO-305: Implement killQuery feature. (hyunsik)
 
     TAJO-598: Refactoring Tajo RPC. (jinho)

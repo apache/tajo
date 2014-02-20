@@ -29,12 +29,19 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
+import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TajoWorker;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,13 +55,36 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
-  private TajoConf conf;
-  private CatalogProtos.StoreType storeType;
+  private final TajoConf conf;
+  private final CatalogProtos.StoreType storeType;
+  private CatalogService catalog;
+  private TajoWorker.WorkerContext workerContext;
 
-  public GlobalPlanner(final TajoConf conf, final AbstractStorageManager sm) throws IOException {
+  public GlobalPlanner(final TajoConf conf, final CatalogService catalog) throws IOException {
     this.conf = conf;
+    this.catalog = catalog;
     this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
     Preconditions.checkArgument(storeType != null);
+  }
+
+  public GlobalPlanner(final TajoConf conf, final TajoWorker.WorkerContext workerContext) throws IOException {
+    this.conf = conf;
+    this.workerContext = workerContext;
+    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
+    Preconditions.checkArgument(storeType != null);
+  }
+
+  /**
+   * TODO: this is hack. it must be refactored at TAJO-602.
+   */
+  public CatalogService getCatalog() {
+    if (workerContext.getCatalog() != null) {
+      return workerContext.getCatalog();
+    } else if (catalog != null) {
+      return catalog;
+    } else {
+      throw new IllegalStateException("No Catalog Instance");
+    }
   }
 
   public class GlobalPlanContext {
@@ -111,7 +141,7 @@ public class GlobalPlanner {
 
   public static ScanNode buildInputExecutor(LogicalPlan plan, DataChannel channel) {
     Preconditions.checkArgument(channel.getSchema() != null,
-        "Channel schema (" + channel.getSrcId().getId() +" -> "+ channel.getTargetId().getId()+") is not initialized");
+        "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() + ") is not initialized");
     TableMeta meta = new TableMeta(channel.getStoreType(), new Options());
     TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
     return new ScanNode(plan.newPID(), desc);
@@ -237,52 +267,261 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
-  /**
-   * If a query contains a distinct aggregation function, the query does not
-   * perform pre-aggregation in the first phase. Instead, in the fist phase,
-   * the query performs only hash shuffle. Then, the query performs the
-   * sort aggregation in the second phase. At that time, the aggregation
-   * function should be executed as the first phase.
-   */
-  private ExecutionBlock buildDistinctGroupBy(GlobalPlanContext context, ExecutionBlock childBlock,
-                                              GroupbyNode groupbyNode) {
-    // setup child block
-    LogicalNode topMostOfFirstPhase = groupbyNode.getChild();
-    childBlock.setPlan(topMostOfFirstPhase);
+  private AggregationFunctionCallEval createSumFunction(EvalNode [] args) throws InternalException {
+    FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
+        args[0].getValueType());
+    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+  }
 
-    // setup current block
-    ExecutionBlock currentBlock = context.plan.newExecutionBlock();
-    LinkedHashSet<Column> columnsForDistinct = new LinkedHashSet<Column>();
-    for (AggregationFunctionCallEval function : groupbyNode.getAggFunctions()) {
-      if (function.isDistinct()) {
-        columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
+  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws InternalException {
+    FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
+        args[0].getValueType());
+    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+  }
+
+  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws InternalException {
+    FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
+        new TajoDataTypes.DataType[]{});
+    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+  }
+
+  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws InternalException {
+    FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
+        args[0].getValueType());
+    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+  }
+
+  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws InternalException {
+    FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
+        args[0].getValueType());
+    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+  }
+
+  /**
+   * It contains transformed functions and it related data.
+   * Each non-distinct function is transformed into two functions for both first and second stages.
+   */
+  private static class RewrittenFunctions {
+    AggregationFunctionCallEval [] firstStageEvals;
+    Target [] firstStageTargets;
+    AggregationFunctionCallEval secondStageEvals;
+
+    public RewrittenFunctions(int firstStageEvalNum) {
+      firstStageEvals = new AggregationFunctionCallEval[firstStageEvalNum];
+      firstStageTargets = new Target[firstStageEvalNum];
+    }
+  }
+
+  /**
+   * Tajo uses three execution blocks for an aggregation operator including distinct aggregations.
+   * We call this approach <i><b>three-phase aggregation</b></i>.
+   *
+   * In this case, non-distinct set functions (i.e., <code>count(1), sum(col1)</code>) should be rewritten
+   * to other forms. Please see the following example. This is a rewriting case for a query which includes distinct
+   * aggregation functions. In this example, <code>count(*)</code> functions are transformed into two
+   * functions: count(*) in the inner query and sum() in the outer query.
+   *
+   * <h2>Original query</h2>
+   * <pre>
+   * SELECT
+   *   grp1, grp2, count(*) as total, count(distinct grp3) as distinct_col
+   * from
+   *   rel1
+   * group by
+   *   grp1, grp2;
+   * </pre>
+   *
+   * <h2>Rewritten query</h2>
+   * <pre>
+   * SELECT grp1, grp2, sum(cnt) as total, count(grp3) as distinct_col from (
+   *   SELECT
+   *     grp1, grp2, grp3, count(*) as cnt
+   *   from
+   *     rel1
+   *   group by
+   *     grp1, grp2, grp3) tmp1
+   * group by
+   *   grp1, grp2
+   * ) table1;
+   * </pre>
+   *
+   * The main objective of this method is to transform non-distinct aggregation functions for three-phase aggregation.
+   */
+  private RewrittenFunctions rewriteAggFunctionsForDistinctAggregation(GlobalPlanContext context,
+                                                                       AggregationFunctionCallEval function)
+      throws PlanningException {
+
+    LogicalPlan plan = context.plan.getLogicalPlan();
+    RewrittenFunctions rewritten = null;
+
+    try {
+      if (function.getName().equalsIgnoreCase("count")) {
+        rewritten = new RewrittenFunctions(1);
+
+        if (function.getArgs().length == 0) {
+          rewritten.firstStageEvals[0] = createCountRowFunction(function.getArgs());
+        } else {
+          rewritten.firstStageEvals[0] = createCountFunction(function.getArgs());
+        }
+        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+        rewritten.firstStageTargets[0] = new Target(fieldEval);
+        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
+      } else if (function.getName().equalsIgnoreCase("sum")) {
+        rewritten = new RewrittenFunctions(1);
+
+        rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
+        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+        rewritten.firstStageTargets[0] = new Target(fieldEval);
+        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
+
+      } else if (function.getName().equals("max")) {
+        rewritten = new RewrittenFunctions(1);
+
+        rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
+        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+        rewritten.firstStageTargets[0] = new Target(fieldEval);
+        rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
+
+      } else if (function.getName().equals("min")) {
+
+        rewritten = new RewrittenFunctions(1);
+
+        rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
+        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+        rewritten.firstStageTargets[0] = new Target(fieldEval);
+        rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
+
       } else {
-        // See the comment of this method. the aggregation function should be executed as the first phase.
-        function.setFirstPhase();
+        throw new PlanningException("Cannot support a mix of other functions");
+      }
+    } catch (InternalException e) {
+      LOG.error(e);
+    }
+
+    return rewritten;
+  }
+
+  /**
+   * If there are at least one distinct aggregation function, a query works as if the query is rewritten as follows:
+   *
+   * <h2>Original query</h2>
+   * <pre>
+   * SELECT
+   *   grp1, grp2, count(*) as total, count(distinct grp3) as distinct_col
+   * from
+   *   rel1
+   * group by
+   *   grp1, grp2;
+   * </pre>
+   *
+   * The query will work as if the query is rewritten into two queries as follows:
+   *
+   * <h2>Rewritten query</h2>
+   * <pre>
+   * SELECT grp1, grp2, sum(cnt) as total, count(grp3) as distinct_col from (
+   *   SELECT
+   *     grp1, grp2, grp3, count(*) as cnt
+   *   from
+   *     rel1
+   *   group by
+   *     grp1, grp2, grp3) tmp1
+   * group by
+   *   grp1, grp2
+   * ) table1;
+   * </pre>
+   *
+   * In more detail, the first aggregation aggregates not only original grouping fields but also distinct columns.
+   * Non-distinct aggregation functions should be transformed to proper functions.
+   * Then, the second aggregation aggregates only original grouping fields with distinct aggregation functions and
+   * transformed non-distinct aggregation functions.
+   *
+   * As a result, although a no-distinct aggregation requires two stages, a distinct aggregation requires three
+   * execution blocks.
+   */
+  private ExecutionBlock buildGroupByIncludingDistinctFunctions(GlobalPlanContext context,
+                                                                ExecutionBlock latestExecBlock,
+                                                                GroupbyNode groupbyNode) throws PlanningException {
+
+    Column [] originalGroupingColumns = groupbyNode.getGroupingColumns();
+    LinkedHashSet<Column> firstStageGroupingColumns =
+        Sets.newLinkedHashSet(Arrays.asList(groupbyNode.getGroupingColumns()));
+    List<AggregationFunctionCallEval> firstStageAggFunctions = Lists.newArrayList();
+    List<AggregationFunctionCallEval> secondPhaseEvalNodes = Lists.newArrayList();
+    List<Target> firstPhaseEvalNodeTargets = Lists.newArrayList();
+
+    for (AggregationFunctionCallEval aggFunction : groupbyNode.getAggFunctions()) {
+
+      if (aggFunction.isDistinct()) {
+        // add distinct columns to first stage's grouping columns
+        firstStageGroupingColumns.addAll(EvalTreeUtil.findUniqueColumns(aggFunction));
+        // keep distinct aggregation functions for the second stage
+        secondPhaseEvalNodes.add(aggFunction);
+
+      } else {
+        // Rewrite non-distinct aggregation functions
+        RewrittenFunctions rewritten = rewriteAggFunctionsForDistinctAggregation(context, aggFunction);
+        firstStageAggFunctions.addAll(Lists.newArrayList(rewritten.firstStageEvals));
+        firstPhaseEvalNodeTargets.addAll(Lists.newArrayList(rewritten.firstStageTargets));
+
+        // keep rewritten non-aggregation functions for the second stage
+        secondPhaseEvalNodes.add(rewritten.secondStageEvals);
       }
     }
 
-    // Set sort aggregation enforcer to the second groupby node
-    Set<Column> existingColumns = Sets.newHashSet(groupbyNode.getGroupingColumns());
-    columnsForDistinct.removeAll(existingColumns); // remove existing grouping columns
-    SortSpec [] sortSpecs = PlannerUtil.columnsToSortSpec(columnsForDistinct);
-    currentBlock.getEnforcer().enforceSortAggregation(groupbyNode.getPID(), sortSpecs);
+    int firstStageAggFunctionNum = firstStageAggFunctions.size();
+    int firstStageGroupingKeyNum = firstStageGroupingColumns.size();
 
+    int i = 0;
+    Target [] firstStageTargets = new Target[firstStageGroupingKeyNum + firstStageAggFunctionNum];
+    for (Column column : firstStageGroupingColumns) {
+      Target target = new Target(new FieldEval(column));
+      firstStageTargets[i++] = target;
+    }
+    for (Target target : firstPhaseEvalNodeTargets) {
+      firstStageTargets[i++] = target;
+    }
+    // Create the groupby node for the first stage and set all necessary descriptions
+    GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
+    firstStageGroupby.setGroupingColumns(TUtil.toArray(firstStageGroupingColumns, Column.class));
+    firstStageGroupby.setAggFunctions(TUtil.toArray(firstStageAggFunctions, AggregationFunctionCallEval.class));
+    firstStageGroupby.setTargets(firstStageTargets);
+    firstStageGroupby.setChild(groupbyNode.getChild());
+    firstStageGroupby.setInSchema(groupbyNode.getInSchema());
 
-    // setup channel
+    // Makes two execution blocks for the first stage
+    ExecutionBlock firstStage = buildGroupBy(context, latestExecBlock, firstStageGroupby);
+
+    // Create the groupby node for the second stage.
+    GroupbyNode secondPhaseGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
+    secondPhaseGroupby.setGroupingColumns(originalGroupingColumns);
+    secondPhaseGroupby.setAggFunctions(TUtil.toArray(secondPhaseEvalNodes, AggregationFunctionCallEval.class));
+    secondPhaseGroupby.setTargets(groupbyNode.getTargets());
+
+    ExecutionBlock secondStage = context.plan.newExecutionBlock();
+    secondStage.setPlan(secondPhaseGroupby);
+    SortSpec [] sortSpecs = PlannerUtil.columnsToSortSpec(firstStageGroupingColumns);
+    secondStage.getEnforcer().enforceSortAggregation(secondPhaseGroupby.getPID(), sortSpecs);
+
+    // Create a data channel between the first and second stages
     DataChannel channel;
-    channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 32);
-    channel.setShuffleKeys(groupbyNode.getGroupingColumns());
-    channel.setSchema(topMostOfFirstPhase.getOutSchema());
+    channel = new DataChannel(firstStage, secondStage, HASH_SHUFFLE, 32);
+    channel.setShuffleKeys(secondPhaseGroupby.getGroupingColumns().clone());
+    channel.setSchema(firstStage.getPlan().getOutSchema());
     channel.setStoreType(storeType);
 
-    // setup current block with channel
+    // Setting for the second phase's logical plan
     ScanNode scanNode = buildInputExecutor(context.plan.getLogicalPlan(), channel);
-    groupbyNode.setChild(scanNode);
-    currentBlock.setPlan(groupbyNode);
+    secondPhaseGroupby.setChild(scanNode);
+    secondPhaseGroupby.setInSchema(scanNode.getOutSchema());
+    secondStage.setPlan(secondPhaseGroupby);
+
     context.plan.addConnect(channel);
 
-    return currentBlock;
+    return secondStage;
   }
 
   private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock lastBlock,
@@ -292,7 +531,7 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      return buildDistinctGroupBy(context, lastBlock, groupbyNode);
+      return buildGroupByIncludingDistinctFunctions(context, lastBlock, groupbyNode);
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 

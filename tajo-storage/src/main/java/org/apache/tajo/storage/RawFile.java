@@ -353,7 +353,7 @@ public class RawFile {
       if(!buffer.hasRemaining() && channel.position() == fileSize){
         eof = true;
       }
-      return tuple;
+      return new VTuple(tuple);
     }
 
     @Override

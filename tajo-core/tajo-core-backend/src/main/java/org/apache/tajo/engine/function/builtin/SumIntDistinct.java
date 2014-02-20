@@ -20,10 +20,13 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.Int8Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
@@ -33,19 +36,20 @@ import org.apache.tajo.storage.Tuple;
 /**
  * Function definition
  *
- * FLOAT8 sum(value FLOAT4)
+ * INT8 sum(distinct value INT4)
  */
 @Description(
   functionName = "sum",
-  description = "the sum of a set of numbers",
-  example = "> SELECT sum(expr);",
-  returnType = Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4})}
+  description = "the sum of a distinct and non-null values",
+  example = "> SELECT sum(distinct expr);",
+  returnType = Type.INT8,
+  paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
-public class SumFloat extends AggFunction<Datum> {
-  public SumFloat() {
+public class SumIntDistinct extends AggFunction<Datum> {
+
+  public SumIntDistinct() {
     super(new Column[] {
-        new Column("expr", Type.FLOAT4)
+        new Column("expr", Type.INT4)
     });
   }
 
@@ -56,25 +60,39 @@ public class SumFloat extends AggFunction<Datum> {
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    ((SumContext)ctx).sum += params.get(0).asFloat4();
+  }
+
+  @Override
+  public void merge(FunctionContext context, Tuple params) {
+    SumContext distinctContext = (SumContext) context;
+    Datum value = params.get(0);
+    if ((distinctContext.latest == null || (!distinctContext.latest.equals(value)) && !(value instanceof NullDatum))) {
+      distinctContext.latest = value;
+      distinctContext.sum += value.asInt4();
+    }
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((SumContext) ctx).sum);
+    return DatumFactory.createInt8(((SumContext) ctx).sum);
   }
 
   @Override
   public DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+    return CatalogUtil.newSimpleDataType(Type.INT8);
   }
 
   @Override
-  public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((SumContext) ctx).sum);
+  public Int8Datum terminate(FunctionContext ctx) {
+    return DatumFactory.createInt8(((SumContext) ctx).sum);
   }
 
   private class SumContext implements FunctionContext {
-    private double sum;
+    long sum;
+    Datum latest;
+  }
+
+  public CatalogProtos.FunctionType getFunctionType() {
+    return CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
   }
 }

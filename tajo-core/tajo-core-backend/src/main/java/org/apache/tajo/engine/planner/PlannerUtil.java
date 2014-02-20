@@ -29,7 +29,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.*;
@@ -336,7 +335,7 @@ public class PlannerUtil {
   }
 
   public static boolean canBeEvaluated(EvalNode eval, LogicalNode node) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(eval);
 
     if (node.getType() == NodeType.JOIN) {
       JoinNode joinNode = (JoinNode) node;
@@ -708,20 +707,6 @@ public class PlannerUtil {
 
   public static boolean isCommutativeJoin(JoinType joinType) {
     return joinType == JoinType.INNER;
-  }
-
-  public static Schema rewriteColumnPartitionedTableSchema(
-                               PartitionMethodDesc partitionDesc,
-                               Schema columnPartitionSchema,
-                               Schema sourceSchema,
-                               String qualifier) {
-    Schema schema = new Schema();
-    for (Column column : sourceSchema.toArray()) {
-      if (columnPartitionSchema.getColumnByName(column.getColumnName()) == null) {
-        schema.addColumn(column);
-      }
-    }
-    return schema;
   }
 
   public static boolean existsAggregationFunction(Expr expr) throws PlanningException {

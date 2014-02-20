@@ -352,7 +352,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
     if (projectable instanceof ProjectionNode && block.hasNode(NodeType.GROUP_BY)) {
       for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
         for (Column c : columns) {
           if (!projectable.getInSchema().contains(c)) {
             throw new PlanningException(c.getQualifiedName()
@@ -371,7 +371,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
       if (groupbyNode.hasAggFunctions()) {
         for (AggregationFunctionCallEval f : groupbyNode.getAggFunctions()) {
-          Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(f);
+          Set<Column> columns = EvalTreeUtil.findUniqueColumns(f);
           for (Column c : columns) {
             if (!projectable.getInSchema().contains(c)) {
               throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
@@ -383,7 +383,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
       for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
         for (Column c : columns) {
           if (!relationNode.getTableSchema().contains(c)) {
             throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
@@ -393,7 +393,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     } else {
       for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findDistinctRefColumns(target.getEvalTree());
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
         for (Column c : columns) {
           if (!projectable.getInSchema().contains(c)) {
             throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
@@ -1433,7 +1433,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   ===============================================================================================*/
 
   public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode node) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
@@ -1444,7 +1444,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,
                                                  boolean isTopMostJoin) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
       return false;
@@ -1480,7 +1480,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * It checks if evalNode can be evaluated at this @{link RelationNode}.
    */
   public static boolean checkIfBeEvaluatedAtRelation(QueryBlock block, EvalNode evalNode, RelationNode node) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     // aggregation functions cannot be evaluated in scan node
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
@@ -1503,7 +1503,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   public static boolean checkIfBeEvaluatedAtThis(EvalNode evalNode, LogicalNode node) {
-    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(evalNode);
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
     if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }

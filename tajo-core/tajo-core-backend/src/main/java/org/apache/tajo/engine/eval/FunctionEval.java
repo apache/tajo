@@ -93,7 +93,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 			if(i+1 < argEvals.length)
 				sb.append(",");
 		}
-		return funcDesc.getSignature()+"("+sb+")";
+		return funcDesc.getSignature() + "(" + (isDistinct() ? " distinct" : "") + sb+")";
 	}
 	
 	@Override

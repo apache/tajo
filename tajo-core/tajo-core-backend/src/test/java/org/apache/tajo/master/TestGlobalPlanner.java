@@ -33,7 +33,6 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.AfterClass;
@@ -84,8 +83,7 @@ public class TestGlobalPlanner {
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(util.getConfiguration());
-    globalPlanner = new GlobalPlanner(util.getConfiguration(),
-        StorageManagerFactory.getStorageManager(util.getConfiguration()));
+    globalPlanner = new GlobalPlanner(util.getConfiguration(), catalog);
   }
 
   @AfterClass

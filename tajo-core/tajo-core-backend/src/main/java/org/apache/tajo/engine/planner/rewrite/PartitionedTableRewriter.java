@@ -188,7 +188,7 @@ public class PartitionedTableRewriter implements RewriteRule {
       target = partitionColumns.getColumn(i);
 
       for (EvalNode expr : conjunctiveForms) {
-        if (EvalTreeUtil.findDistinctRefColumns(expr).contains(target)) {
+        if (EvalTreeUtil.findUniqueColumns(expr).contains(target)) {
           // Accumulate one qual per level
           accumulatedFilters.add(expr);
         }
@@ -281,7 +281,7 @@ public class PartitionedTableRewriter implements RewriteRule {
 
   private boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
     if (checkIfIndexablePredicate(evalNode) || checkIfDisjunctiveButOneVariable(evalNode)) {
-      Set<Column> variables = EvalTreeUtil.findDistinctRefColumns(evalNode);
+      Set<Column> variables = EvalTreeUtil.findUniqueColumns(evalNode);
       // if it contains only single variable matched to a target column
       return variables.size() == 1 && variables.contains(targetColumn);
     } else {
@@ -314,8 +314,8 @@ public class PartitionedTableRewriter implements RewriteRule {
               checkIfIndexablePredicate(evalNode.getRightExpr());
 
       boolean sameVariable =
-          EvalTreeUtil.findDistinctRefColumns(evalNode.getLeftExpr())
-          .equals(EvalTreeUtil.findDistinctRefColumns(evalNode.getRightExpr()));
+          EvalTreeUtil.findUniqueColumns(evalNode.getLeftExpr())
+          .equals(EvalTreeUtil.findUniqueColumns(evalNode.getRightExpr()));
 
       return indexable && sameVariable;
     } else {

@@ -151,20 +151,20 @@ public class TestEvalTreeUtil {
   public final void testChangeColumnRef() throws CloneNotSupportedException {
     EvalNode copy = (EvalNode)expr1.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.score", "newscore");
-    Set<Column> set = EvalTreeUtil.findDistinctRefColumns(copy);
+    Set<Column> set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(1, set.size());
     assertTrue(set.contains(new Column("newscore", TajoDataTypes.Type.INT4)));
 
     copy = (EvalNode)expr2.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
-    set = EvalTreeUtil.findDistinctRefColumns(copy);
+    set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(2, set.size());
     assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
 
     copy = (EvalNode)expr3.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
-    set = EvalTreeUtil.findDistinctRefColumns(copy);
+    set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(2, set.size());
     assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
@@ -172,16 +172,16 @@ public class TestEvalTreeUtil {
 
   @Test
   public final void testFindAllRefColumns() {    
-    Set<Column> set = EvalTreeUtil.findDistinctRefColumns(expr1);
+    Set<Column> set = EvalTreeUtil.findUniqueColumns(expr1);
     assertEquals(1, set.size());
     assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     
-    set = EvalTreeUtil.findDistinctRefColumns(expr2);
+    set = EvalTreeUtil.findUniqueColumns(expr2);
     assertEquals(2, set.size());
     assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));
     
-    set = EvalTreeUtil.findDistinctRefColumns(expr3);
+    set = EvalTreeUtil.findUniqueColumns(expr3);
     assertEquals(2, set.size());
     assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));

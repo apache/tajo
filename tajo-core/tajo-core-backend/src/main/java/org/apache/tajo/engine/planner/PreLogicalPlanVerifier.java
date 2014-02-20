@@ -18,10 +18,12 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.collect.ObjectArrays;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.Stack;
 
@@ -33,13 +35,55 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
   }
 
   public Expr visitProjection(VerificationState state, Stack<Expr> stack, Projection expr) throws PlanningException {
+    super.visitProjection(state, stack, expr);
+
     Set<String> names = TUtil.newHashSet();
+    Expr [] distinctValues = null;
+
     for (NamedExpr namedExpr : expr.getNamedExprs()) {
+
       if (namedExpr.hasAlias()) {
         if (names.contains(namedExpr.getAlias())) {
           state.addVerification(String.format("column name \"%s\" specified more than once", namedExpr.getAlias()));
         } else {
           names.add(namedExpr.getAlias());
+        }
+      }
+
+      // no two aggregations can have different DISTINCT columns.
+      //
+      // For example, the following query will work
+      // SELECT count(DISTINCT col1) and sum(DISTINCT col1) ..
+      //
+      // But, the following query will not work in this time
+      //
+      // SELECT count(DISTINCT col1) and SUM(DISTINCT col2) ..
+      Set<GeneralSetFunctionExpr> exprs = ExprFinder.finds(namedExpr.getExpr(), OpType.GeneralSetFunction);
+      if (exprs.size() > 0) {
+        for (GeneralSetFunctionExpr setFunction : exprs) {
+          if (distinctValues == null && setFunction.isDistinct()) {
+            distinctValues = setFunction.getParams();
+          } else if (distinctValues != null) {
+            if (!Arrays.equals(distinctValues, setFunction.getParams())) {
+              Expr [] differences = ObjectArrays.concat(distinctValues, setFunction.getParams(), Expr.class);
+              throw new PlanningException("different DISTINCT columns are not supported yet: "
+                  + TUtil.arrayToString(differences));
+            }
+          }
+        }
+      }
+
+      // Currently, avg functions with distinct aggregation are not supported.
+      // This code does not allow users to use avg functions with distinct aggregation.
+      if (distinctValues != null) {
+        for (GeneralSetFunctionExpr setFunction : exprs) {
+          if (setFunction.getSignature().equalsIgnoreCase("avg")) {
+            if (setFunction.isDistinct()) {
+              throw new PlanningException("avg(distinct) function is not supported yet.");
+            } else {
+              throw new PlanningException("avg() function with distinct aggregation functions is not supported yet.");
+            }
+          }
         }
       }
     }

@@ -186,7 +186,7 @@ public class ProjectionPushDownRule extends
       TUtil.putToNestedList(idToNamesMap, refId, specifiedName);
       evaluationStateMap.put(specifiedName, false);
 
-      for (Column column : EvalTreeUtil.findDistinctRefColumns(evalNode)) {
+      for (Column column : EvalTreeUtil.findUniqueColumns(evalNode)) {
         add(new FieldEval(column));
       }
 
@@ -365,7 +365,7 @@ public class ProjectionPushDownRule extends
     }
 
     private void addNecessaryReferences(EvalNode evalNode) {
-      for (Column column : EvalTreeUtil.findDistinctRefColumns(evalNode)) {
+      for (Column column : EvalTreeUtil.findUniqueColumns(evalNode)) {
         requiredSet.add(column.getQualifiedName());
       }
     }
