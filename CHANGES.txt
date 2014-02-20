@@ -456,6 +456,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-578: Update configuration for tajo-site.xml. (jaehwa)
+
     TAJO-530: Fix warnings in tajo-catalog. (jaehwa)
 
     TAJO-532: Fix warnings in tajo-common. (jinho)

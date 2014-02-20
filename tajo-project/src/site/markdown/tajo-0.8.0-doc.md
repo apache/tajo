@@ -231,6 +231,11 @@ Add the following configs to tajo-site.xml file.
   </property>
 
   <property>
+    <name>tajo.master.client-rpc.addres</name>
+    <value>hostname:26002</value>
+  </property>
+
+  <property>
     <name>tajo.catalog.client-rpc.address</name>
     <value>hostname:26005</value>
   </property>
