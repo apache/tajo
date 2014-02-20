@@ -21,7 +21,10 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.CountRowsFunctionExpr;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.GeneralSetFunctionExpr;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -54,13 +57,13 @@ public class PlannerUtil {
   }
 
   /**
-   * Get all scan nodes from a logical operator tree.
+   * Get all RelationNodes which are descendant of a given LogicalNode.
    *
-   * @param node a start node
-   * @return an array of relation names
+   * @param from The LogicalNode to start visiting LogicalNodes.
+   * @return an array of all descendant RelationNode of LogicalNode.
    */
-  public static String [] getRelationLineage(LogicalNode node) {
-    LogicalNode [] scans =  PlannerUtil.findAllNodes(node, NodeType.SCAN);
+  public static String [] getRelationLineage(LogicalNode from) {
+    LogicalNode [] scans = findAllNodes(from, NodeType.SCAN, NodeType.PARTITIONS_SCAN);
     String [] tableNames = new String[scans.length];
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
@@ -71,15 +74,16 @@ public class PlannerUtil {
   }
 
   /**
-   * Get all scan nodes from a logical operator tree within a query block
+   * Get all RelationNodes which are descendant of a given LogicalNode.
+   * The finding is restricted within a query block.
    *
-   * @param node a start node
-   * @return an array of relation names
+   * @param from The LogicalNode to start visiting LogicalNodes.
+   * @return an array of all descendant RelationNode of LogicalNode.
    */
-  public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode node)
+  public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode from)
       throws PlanningException {
     RelationFinderVisitor visitor = new RelationFinderVisitor();
-    visitor.visit(null, plan, null, node, new Stack<LogicalNode>());
+    visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
     return visitor.getFoundRelations();
   }
 
@@ -297,7 +301,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode [] findAllNodes(LogicalNode node, NodeType type) {
+  public static LogicalNode [] findAllNodes(LogicalNode node, NodeType...type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
 
@@ -438,6 +442,10 @@ public class PlannerUtil {
 
     public List<LogicalNode> getFoundNodes() {
       return list;
+    }
+
+    public LogicalNode [] getFoundNodeArray() {
+      return list.toArray(new LogicalNode[list.size()]);
     }
   }
   

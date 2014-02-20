@@ -21,8 +21,6 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -37,8 +35,10 @@ import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,8 +46,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestHashJoinExec {
   private TajoConf conf;
@@ -171,5 +170,100 @@ public class TestHashJoinExec {
     }
     exec.close();
     assertEquals(10 / 2, count);
+  }
+
+  @Test
+  public final void testCheckIfInMemoryInnerJoinIsPossible() throws IOException, PlanningException {
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+
+    JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
+    Enforcer enforcer = new Enforcer();
+    enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
+
+    FileFragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
+        Integer.MAX_VALUE);
+    FileFragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
+
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashInnerJoin");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+    ctx.setEnforcer(enforcer);
+
+    TajoConf localConf = new TajoConf(conf);
+    localConf.setLongVar(TajoConf.ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD, 100l);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(localConf, sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
+    ProjectionExec proj = (ProjectionExec) exec;
+    assertTrue(proj.getChild() instanceof HashJoinExec);
+    HashJoinExec joinExec = proj.getChild();
+
+    assertCheckInnerJoinRelatedFunctions(ctx, phyPlanner, joinNode, joinExec);
+  }
+
+  /**
+   * It checks inner-join related functions. It will return TRUE if left relations is smaller than right relations.
+   *
+   * The below unit tests will work according to which side is smaller. In this unit tests, we use two tables: p and e.
+   * The table p is 75 bytes, and the table e is 140 bytes. Since we cannot expect that which side is smaller,
+   * we use some boolean variable <code>leftSmaller</code> to indicate which side is small.
+   */
+  private static boolean assertCheckInnerJoinRelatedFunctions(TaskAttemptContext ctx,
+                                                       PhysicalPlannerImpl phyPlanner,
+                                                       JoinNode joinNode, BinaryPhysicalExec joinExec) throws
+      IOException {
+
+    String [] left = PlannerUtil.getRelationLineage(joinNode.getLeftChild());
+    String [] right = PlannerUtil.getRelationLineage(joinNode.getRightChild());
+
+    boolean leftSmaller;
+    if (left[0].equals("p")) {
+      leftSmaller = true;
+    } else {
+      leftSmaller = false;
+    }
+
+    long leftSize = phyPlanner.estimateSizeRecursive(ctx, left);
+    long rightSize = phyPlanner.estimateSizeRecursive(ctx, right);
+
+    // The table p is 75 bytes, and the table e is 140 bytes.
+    if (leftSmaller) { // if left one is smaller
+      assertEquals(75, leftSize);
+      assertEquals(140, rightSize);
+    } else { // if right one is smaller
+      assertEquals(140, leftSize);
+      assertEquals(75, rightSize);
+    }
+
+    if (leftSmaller) {
+      PhysicalExec [] ordered = phyPlanner.switchJoinSidesIfNecessary(ctx, joinNode, joinExec.getLeftChild(),
+          joinExec.getRightChild());
+      assertEquals(ordered[0], joinExec.getLeftChild());
+      assertEquals(ordered[1], joinExec.getRightChild());
+
+      assertEquals("p", left[0]);
+      assertEquals("e", right[0]);
+    } else {
+      PhysicalExec [] ordered = phyPlanner.switchJoinSidesIfNecessary(ctx, joinNode, joinExec.getLeftChild(),
+          joinExec.getRightChild());
+      assertEquals(ordered[1], joinExec.getLeftChild());
+      assertEquals(ordered[0], joinExec.getRightChild());
+
+      assertEquals("e", left[0]);
+      assertEquals("p", right[0]);
+    }
+
+    if (leftSmaller) {
+      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
+      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+    } else {
+      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
+      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+    }
+
+    return leftSmaller;
   }
 }

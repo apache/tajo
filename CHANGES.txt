@@ -256,6 +256,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-609: PlannerUtil::getRelationLineage ignores PartitionedTableScanNode.
+    (hyunsik)
+
     TAJO-606: Statemachine visualization fails. (Min Zhou via hyunsik)
 
     TAJO-595: The same expressions without different alias are not allowed.

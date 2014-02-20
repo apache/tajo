@@ -21,6 +21,7 @@
  */
 package org.apache.tajo.engine.planner;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
@@ -40,6 +41,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -50,6 +52,7 @@ import java.util.Stack;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
@@ -60,6 +63,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce;
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
   private static final int UNGENERATED_PID = -1;
+  private final long INNER_JOIN_INMEMORY_HASH_THRESHOLD;
 
   protected final TajoConf conf;
   protected final AbstractStorageManager sm;
@@ -67,6 +71,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   public PhysicalPlannerImpl(final TajoConf conf, final AbstractStorageManager sm) {
     this.conf = conf;
     this.sm = sm;
+
+    this.INNER_JOIN_INMEMORY_HASH_THRESHOLD = conf.getLongVar(ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD);
   }
 
   public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan)
@@ -215,7 +221,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) throws IOException {
+  @VisibleForTesting
+  public long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) throws IOException {
     long size = 0;
     for (String tableId : tableIds) {
       // TODO - CSV is a hack.
@@ -226,6 +233,21 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       }
     }
     return size;
+  }
+
+  @VisibleForTesting
+  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
+      throws IOException {
+    String [] lineage = PlannerUtil.getRelationLineage(node);
+    long volume = estimateSizeRecursive(context, lineage);
+    boolean inMemoryInnerJoinFlag = volume <= INNER_JOIN_INMEMORY_HASH_THRESHOLD;
+    LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
+        context.getTaskId().toString(),
+        (left ? "Left" : "Right"),
+        TUtil.arrayToString(lineage),
+        FileUtil.humanReadableByteCount(volume, false),
+        (inMemoryInnerJoinFlag ? "" : "not ")));
+    return inMemoryInnerJoinFlag;
   }
 
   public PhysicalExec createJoinPlan(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
@@ -307,7 +329,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new BNLJoinExec(context, plan, leftExec, rightExec);
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
-          return new HashJoinExec(context, plan, leftExec, rightExec);
+          // returns two PhysicalExec. smaller one is 0, and larger one is 1.
+          PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+          return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
         case MERGE_JOIN:
           LOG.info("Join (" + plan.getPID() +") chooses [Sort Merge Join]");
           return createMergeInnerJoin(context, plan, leftExec, rightExec);
@@ -318,42 +342,62 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
           return createMergeInnerJoin(context, plan, leftExec, rightExec);
       }
-
-
     } else {
       return createBestInnerJoinPlan(context, plan, leftExec, rightExec);
     }
   }
 
-  private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
-                                               PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+  /**
+   * It returns two {@link org.apache.tajo.engine.planner.physical.PhysicalExec}s sorted in an ascending order of
+   * their child relations' total volume. In other words, the smaller side is returned as 0's PhysicalExec, and
+   * the larger side is returned as 1's PhysicalExec.
+   */
+  @VisibleForTesting
+  public PhysicalExec [] switchJoinSidesIfNecessary(TaskAttemptContext context, JoinNode plan,
+                                                     PhysicalExec left, PhysicalExec right) throws IOException {
     String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long leftSize = estimateSizeRecursive(context, leftLineage);
     long rightSize = estimateSizeRecursive(context, rightLineage);
 
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD);
-
-    boolean hashJoin = false;
-    if (leftSize < threshold || rightSize < threshold) {
-      hashJoin = true;
+    PhysicalExec smaller;
+    PhysicalExec larger;
+    if (leftSize <= rightSize) {
+      smaller = left;
+      larger = right;
+      LOG.info(String.format("[%s] Left relations %s (%s) is smaller than Right relations %s (%s).",
+          context.getTaskId().toString(),
+          TUtil.arrayToString(leftLineage),
+          FileUtil.humanReadableByteCount(leftSize, false),
+          TUtil.arrayToString(rightLineage),
+          FileUtil.humanReadableByteCount(rightSize, false)));
+    } else {
+      smaller = right;
+      larger = left;
+      LOG.info(String.format("[%s] Right relations %s (%s) is smaller than Left relations %s (%s).",
+          context.getTaskId().toString(),
+          TUtil.arrayToString(rightLineage),
+          FileUtil.humanReadableByteCount(rightSize, false),
+          TUtil.arrayToString(leftLineage),
+          FileUtil.humanReadableByteCount(leftSize, false)));
     }
 
-    if (hashJoin) {
-      PhysicalExec selectedOuter;
-      PhysicalExec selectedInner;
+    return new PhysicalExec [] {smaller, larger};
+  }
 
-      // HashJoinExec loads the inner relation to memory.
-      if (leftSize <= rightSize) {
-        selectedInner = leftExec;
-        selectedOuter = rightExec;
-      } else {
-        selectedInner = rightExec;
-        selectedOuter = leftExec;
-      }
+  private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
+                                               PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+    boolean inMemoryHashJoin = false;
+    if (checkIfInMemoryInnerJoinIsPossible(context, plan.getLeftChild(), true)
+        || checkIfInMemoryInnerJoinIsPossible(context, plan.getRightChild(), false)) {
+      inMemoryHashJoin = true;
+    }
 
-      LOG.info("Join (" + plan.getPID() +") chooses [InMemory Hash Join]");
-      return new HashJoinExec(context, plan, selectedOuter, selectedInner);
+    if (inMemoryHashJoin) {
+      LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
+      // returns two PhysicalExec. smaller one is 0, and larger one is 1.
+      PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+      return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
     } else {
       return createMergeInnerJoin(context, plan, leftExec, rightExec);
     }
@@ -409,7 +453,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
 
-    if (rightTableVolume < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
+    if (rightTableVolume < conf.getLongVar(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -427,7 +471,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     // blocking, but merge join is blocking as well)
     String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getLeftChild());
     long outerSize = estimateSizeRecursive(context, outerLineage4);
-    if (outerSize < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
+    if (outerSize < conf.getLongVar(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {
@@ -894,7 +938,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     String [] outerLineage = PlannerUtil.getRelationLineage(groupbyNode.getChild());
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
+    final long threshold = conf.getLongVar(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.
