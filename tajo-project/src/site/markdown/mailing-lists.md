@@ -35,7 +35,7 @@ The Tajo user mailing list is : user@tajo.incubator.apache.org.
 
 If you'd like to contribute to Tajo, please subscribe to the Tajo developer mailing list.
 
-The HDFS developer mailing list is: dev@tajo.incubator.apache.org.
+The Tajo developer mailing list is: dev@tajo.incubator.apache.org.
 
 * [Subscribe to List] (mailto:dev-subscribe@tajo.incubator.apache.org)
 * [Unsubscribe from List] (mailto:dev-unsubscribe@tajo.incubator.apache.org)
