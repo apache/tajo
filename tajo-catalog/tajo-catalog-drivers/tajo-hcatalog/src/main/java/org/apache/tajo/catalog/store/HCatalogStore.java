@@ -320,7 +320,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(tableDesc.getSchema().getFieldsCount());
       for (CatalogProtos.ColumnProto col : tableDesc.getSchema().getFieldsList()) {
         cols.add(new FieldSchema(
-            col.getColumnName(),
+            col.getName(),
             HCatalogUtil.getHiveFieldType(col.getDataType().getType().name()),
             ""));
       }

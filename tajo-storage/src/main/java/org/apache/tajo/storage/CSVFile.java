@@ -84,7 +84,7 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
-      this.columnNum = schema.getColumnNum();
+      this.columnNum = schema.size();
       String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();

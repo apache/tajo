@@ -81,7 +81,7 @@ public class SortAggregateExec extends AggregationExec {
 
       } else { /** Finalization State */
         // finalize aggregate and return
-        outputTuple = new VTuple(outSchema.getColumnNum());
+        outputTuple = new VTuple(outSchema.size());
         int tupleIdx = 0;
 
         for(; tupleIdx < groupingKeyNum; tupleIdx++) {
@@ -102,7 +102,7 @@ public class SortAggregateExec extends AggregationExec {
     } // while loop
 
     if (!finished) {
-      outputTuple = new VTuple(outSchema.getColumnNum());
+      outputTuple = new VTuple(outSchema.size());
       int tupleIdx = 0;
       for(; tupleIdx < groupingKeyNum; tupleIdx++) {
         outputTuple.put(tupleIdx, lastKey.get(tupleIdx));

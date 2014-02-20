@@ -62,10 +62,10 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
     // for join
     needNextRightTuple = true;
     frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.size());
 
     foundAtLeastOneMatch = false;
-    rightNumCols = rightChild.getSchema().getColumnNum();
+    rightNumCols = rightChild.getSchema().size();
   }
 
   public JoinNode getPlan() {

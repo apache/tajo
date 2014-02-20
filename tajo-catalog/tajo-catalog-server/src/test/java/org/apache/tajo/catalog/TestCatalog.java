@@ -276,7 +276,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getName(), tableName);
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.HASH);
-    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName(), "id");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     catalog.deleteTable(tableName);
     assertFalse(catalog.existsTable(tableName));
@@ -315,7 +315,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getName(), tableName);
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.HASH);
-    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName(), "id");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     catalog.deleteTable(tableName);
     assertFalse(catalog.existsTable(tableName));
@@ -352,7 +352,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getName(), tableName);
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.LIST);
-    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName(), "id");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     catalog.deleteTable(tableName);
     assertFalse(catalog.existsTable(tableName));
@@ -390,7 +390,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getName(), tableName);
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.RANGE);
-    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName(), "id");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     catalog.deleteTable(tableName);
     assertFalse(catalog.existsTable(tableName));
@@ -427,7 +427,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getName(), tableName);
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
-    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getColumnName(), "id");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     catalog.deleteTable(tableName);
     assertFalse(catalog.existsTable(tableName));

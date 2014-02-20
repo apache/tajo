@@ -84,7 +84,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
     // for join
     frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
   }
 

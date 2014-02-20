@@ -45,8 +45,8 @@ public class SchemaUtil {
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
     Schema common = new Schema();
     for (Column outer : left.getColumns()) {
-      if (!common.containsByName(outer.getColumnName()) && right.containsByName(outer.getColumnName())) {
-        common.addColumn(new Column(outer.getColumnName(), outer.getDataType()));
+      if (!common.containsByName(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
+        common.addColumn(new Column(outer.getSimpleName(), outer.getDataType()));
       }
     }
     

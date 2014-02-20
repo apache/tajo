@@ -172,7 +172,7 @@ public class MemStore implements CatalogStore {
     synchronized(indexes) {
       indexes.put(proto.getName(), proto);
       indexesByColumn.put(proto.getTableId() + "." 
-          + proto.getColumn().getColumnName(), proto);
+          + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
     }
   }
 

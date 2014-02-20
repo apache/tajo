@@ -59,7 +59,7 @@ public class DDLBuilder {
         sb.append(", ");
       }
 
-      sb.append(column.getColumnName()).append(" ");
+      sb.append(column.getSimpleName()).append(" ");
       TajoDataTypes.DataType dataType = column.getDataType();
       sb.append(dataType.getType().name());
       if (column.getDataType().hasLength() && column.getDataType().getLength() > 0) {

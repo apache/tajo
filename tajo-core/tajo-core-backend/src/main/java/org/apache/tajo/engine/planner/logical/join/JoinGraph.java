@@ -51,8 +51,8 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     if (leftExpr.hasQualifier()) {
       relationNames[0] = leftExpr.getQualifier();
     } else {
-      if (namedExprsMgr.isAliasedName(leftExpr.getColumnName())) {
-        String columnName = namedExprsMgr.getOriginalName(leftExpr.getColumnName());
+      if (namedExprsMgr.isAliasedName(leftExpr.getSimpleName())) {
+        String columnName = namedExprsMgr.getOriginalName(leftExpr.getSimpleName());
         String [] parts = columnName.split("\\.");
 
         if (parts.length != 2) {
@@ -68,8 +68,8 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     if (rightExpr.hasQualifier()) {
       relationNames[1] = rightExpr.getQualifier();
     } else {
-      if (namedExprsMgr.isAliasedName(rightExpr.getColumnName())) {
-        String columnName = namedExprsMgr.getOriginalName(rightExpr.getColumnName());
+      if (namedExprsMgr.isAliasedName(rightExpr.getSimpleName())) {
+        String columnName = namedExprsMgr.getOriginalName(rightExpr.getSimpleName());
         String [] parts = columnName.split("\\.");
         if (parts.length != 2) {
           throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);

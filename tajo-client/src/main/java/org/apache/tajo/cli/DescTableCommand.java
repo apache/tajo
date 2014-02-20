@@ -90,9 +90,9 @@ public class DescTableCommand extends TajoShellCommand {
     sb.append("\n");
     sb.append("schema: \n");
 
-    for(int i = 0; i < desc.getSchema().getColumnNum(); i++) {
+    for(int i = 0; i < desc.getSchema().size(); i++) {
       Column col = desc.getSchema().getColumn(i);
-      sb.append(col.getColumnName()).append("\t").append(col.getDataType().getType());
+      sb.append(col.getSimpleName()).append("\t").append(col.getDataType().getType());
       if (col.getDataType().hasLength()) {
         sb.append("(").append(col.getDataType().getLength()).append(")");
       }

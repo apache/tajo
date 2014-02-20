@@ -114,7 +114,7 @@ public class TestPhysicalPlanner {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeeSchema,
         employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeSchema.getColumnNum());
+    Tuple tuple = new VTuple(employeeSchema.size());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {DatumFactory.createText("name_" + i),
           DatumFactory.createInt4(i), DatumFactory.createText("dept_" + i)});
@@ -131,7 +131,7 @@ public class TestPhysicalPlanner {
     appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc("score", scoreSchema, scoreMeta, scorePath);
-    tuple = new VTuple(scoreSchema.getColumnNum());
+    tuple = new VTuple(scoreSchema.size());
     int m = 0;
     for (int i = 1; i <= 5; i++) {
       for (int k = 3; k < 5; k++) {

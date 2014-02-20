@@ -116,7 +116,7 @@ public class EvalTreeUtil {
 
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;
-      return inputSchema.getColumnByFQN(fieldEval.getName()).getDataType();
+      return inputSchema.getColumn(fieldEval.getName()).getDataType();
 
       
     default:
@@ -180,7 +180,7 @@ public class EvalTreeUtil {
     switch (expr.getType()) {
     case FIELD:
       FieldEval field = (FieldEval) expr;
-      if (field.getColumnName().equals(target.getColumnName())) {
+      if (field.getColumnName().equals(target.getSimpleName())) {
         exprSet.add(field);
       }
       break;

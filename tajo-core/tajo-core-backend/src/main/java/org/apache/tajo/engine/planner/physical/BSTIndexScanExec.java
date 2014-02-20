@@ -98,7 +98,7 @@ public class BSTIndexScanExec extends PhysicalExec {
       }
     }
     Tuple tuple;
-    Tuple outTuple = new VTuple(this.outSchema.getColumnNum());
+    Tuple outTuple = new VTuple(this.outSchema.size());
     if (!scanNode.hasQual()) {
       if ((tuple = fileScanner.next()) != null) {
         projector.eval(tuple, outTuple);

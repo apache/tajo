@@ -56,14 +56,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       Column tobeAdded = new Column(colProto);
       fields.add(tobeAdded);
       if (tobeAdded.hasQualifier()) {
-        fieldsByQualifiedName.put(tobeAdded.getQualifier() + "." + tobeAdded.getColumnName(), fields.size() - 1);
+        fieldsByQualifiedName.put(tobeAdded.getQualifier() + "." + tobeAdded.getSimpleName(), fields.size() - 1);
       } else {
-        fieldsByQualifiedName.put(tobeAdded.getColumnName(), fields.size() - 1);
+        fieldsByQualifiedName.put(tobeAdded.getSimpleName(), fields.size() - 1);
       }
-      if (fieldsByName.containsKey(tobeAdded.getColumnName())) {
-        fieldsByName.get(tobeAdded.getColumnName()).add(fields.size() - 1);
+      if (fieldsByName.containsKey(tobeAdded.getSimpleName())) {
+        fieldsByName.get(tobeAdded.getSimpleName()).add(fields.size() - 1);
       } else {
-        fieldsByName.put(tobeAdded.getColumnName(), TUtil.newList(fields.size() - 1));
+        fieldsByName.put(tobeAdded.getSimpleName(), TUtil.newList(fields.size() - 1));
       }
     }
   }
@@ -96,13 +96,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    */
   public void setQualifier(String qualifier) {
     fieldsByQualifiedName.clear();
-    for (int i = 0; i < getColumnNum(); i++) {
-      fields.get(i).setQualifier(qualifier);
+    for (int i = 0; i < size(); i++) {
+      Column column = fields.get(i);
+      fields.set(i, new Column(qualifier + "." + column.getSimpleName(), column.getDataType()));
       fieldsByQualifiedName.put(fields.get(i).getQualifiedName(), i);
     }
   }
 	
-	public int getColumnNum() {
+	public int size() {
 		return this.fields.size();
 	}
 
@@ -117,26 +118,47 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     if (column.hasQualifier()) {
       return fields.get(fieldsByQualifiedName.get(column.getQualifiedName()));
     } else {
-      return fields.get(fieldsByName.get(column.getColumnName()).get(0));
+      return fields.get(fieldsByName.get(column.getSimpleName()).get(0));
     }
   }
 
+  /**
+   * Get a column by a given name.
+   *
+   * @param name The column name to be found.
+   * @return The column matched to a given column name.
+   */
   public Column getColumn(String name) {
     String [] parts = name.split("\\.");
     if (parts.length == 2) {
-      return getColumnByFQN(name);
+      return getColumnByQName(name);
     } else {
       return getColumnByName(name);
     }
   }
 
-	public Column getColumnByFQN(String qualifiedName) {
+  /**
+   * Find a column by a qualified name (e.g., table1.col1).
+   *
+   * @param qualifiedName The qualified name
+   * @return The Column matched to a given qualified name
+   */
+  private Column getColumnByQName(String qualifiedName) {
 		Integer cid = fieldsByQualifiedName.get(qualifiedName.toLowerCase());
 		return cid != null ? fields.get(cid) : null;
 	}
-	
-	public Column getColumnByName(String colName) {
-    String normalized = colName.toLowerCase();
+
+  /**
+   * Find a column by a name (e.g., col1).
+   * The same name columns can be exist in a schema. For example, table1.col1 and table2.col1 coexist in a schema.
+   * In this case, it will throw {@link java.lang.RuntimeException}. But, it occurs rarely because all column names
+   * except for alias have a qualified form.
+   *
+   * @param columnName The column name without qualifier
+   * @return The Column matched to a given name.
+   */
+	private Column getColumnByName(String columnName) {
+    String normalized = columnName.toLowerCase();
 	  List<Integer> list = fieldsByName.get(normalized);
 
     if (list == null || list.size() == 0) {
@@ -188,7 +210,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
   public int getColumnIdByName(String colName) {
     for (Column col : fields) {
-      if (col.getColumnName().equals(colName.toLowerCase())) {
+      if (col.getSimpleName().equals(colName.toLowerCase())) {
         String qualifiedName = col.getQualifiedName();
         return fieldsByQualifiedName.get(qualifiedName);
       }
@@ -218,13 +240,13 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     if (column.hasQualifier()) {
       return fieldsByQualifiedName.containsKey(column.getQualifiedName());
     } else {
-      if (fieldsByName.containsKey(column.getColumnName())) {
-        int num = fieldsByName.get(column.getColumnName()).size();
+      if (fieldsByName.containsKey(column.getSimpleName())) {
+        int num = fieldsByName.get(column.getSimpleName()).size();
         if (num == 0) {
-          throw new IllegalStateException("No such column name: " + column.getColumnName());
+          throw new IllegalStateException("No such column name: " + column.getSimpleName());
         }
         if (num > 1) {
-          throw new RuntimeException("Ambiguous column name: " + column.getColumnName());
+          throw new RuntimeException("Ambiguous column name: " + column.getSimpleName());
         }
         return true;
       }
@@ -265,7 +287,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 		Column newCol = new Column(normalized, dataType);
 		fields.add(newCol);
 		fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
-    fieldsByName.put(newCol.getColumnName(), TUtil.newList(fields.size() - 1));
+    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
 		
 		return this;
 	}
@@ -320,7 +342,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
-	  sb.append("{(").append(getColumnNum()).append(") ");
+	  sb.append("{(").append(size()).append(") ");
 	  int i = 0;
 	  for(Column col : fields) {
 	    sb.append(col);
@@ -337,7 +359,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   @Override
 	public String toJson() {
 	  return CatalogGsonHelper.toJson(this, Schema.class);
-		
 	}
 
   public Column [] toArray() {

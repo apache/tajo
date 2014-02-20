@@ -76,9 +76,8 @@ public class TestColumn {
 	@Test
 	public final void testQualifiedName() {
 	  Column col = new Column("table_1.id", Type.INT4);
-	  
 	  assertTrue(col.hasQualifier());
-	  assertEquals("id", col.getColumnName());
+	  assertEquals("id", col.getSimpleName());
 	  assertEquals("table_1.id", col.getQualifiedName());
 	  assertEquals("table_1", col.getQualifier());
 	}
@@ -88,7 +87,7 @@ public class TestColumn {
     Column col = new Column("database1.table_1.id", Type.INT4);
 
     assertTrue(col.hasQualifier());
-    assertEquals("id", col.getColumnName());
+    assertEquals("id", col.getSimpleName());
     assertEquals("database1.table_1.id", col.getQualifiedName());
     assertEquals("database1.table_1", col.getQualifier());
   }

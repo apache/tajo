@@ -213,7 +213,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
           } else {
             sb.append(", ");
           }
-          sb.append(sortSpec.getColumn().getColumnName());
+          sb.append(sortSpec.getColumn().getName());
           sb.append(" (").append(sortSpec.getAscending() ? "asc":"desc").append(")");
         }
       }

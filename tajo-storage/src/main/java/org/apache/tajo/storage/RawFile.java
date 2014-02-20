@@ -91,8 +91,8 @@ public class RawFile {
 
       buffer = ByteBuffer.allocateDirect(128 * 1024);
 
-      columnTypes = new DataType[schema.getColumnNum()];
-      for (int i = 0; i < schema.getColumnNum(); i++) {
+      columnTypes = new DataType[schema.size()];
+      for (int i = 0; i < schema.size(); i++) {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
@@ -102,7 +102,7 @@ public class RawFile {
       channel.read(buffer);
       buffer.flip();
 
-      nullFlags = new BitArray(schema.getColumnNum());
+      nullFlags = new BitArray(schema.size());
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       super.init();
@@ -423,8 +423,8 @@ public class RawFile {
       channel = randomAccessFile.getChannel();
       pos = 0;
 
-      columnTypes = new DataType[schema.getColumnNum()];
-      for (int i = 0; i < schema.getColumnNum(); i++) {
+      columnTypes = new DataType[schema.size()];
+      for (int i = 0; i < schema.size(); i++) {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
@@ -432,7 +432,7 @@ public class RawFile {
 
       // comput the number of bytes, representing the null flags
 
-      nullFlags = new BitArray(schema.getColumnNum());
+      nullFlags = new BitArray(schema.size());
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       if (enabledStats) {
@@ -559,7 +559,7 @@ public class RawFile {
       buffer.position(recordOffset + headerSize);
       // reset the null flags
       nullFlags.clear();
-      for (int i = 0; i < schema.getColumnNum(); i++) {
+      for (int i = 0; i < schema.size(); i++) {
         if (enabledStats) {
           stats.analyzeField(i, t.get(i));
         }

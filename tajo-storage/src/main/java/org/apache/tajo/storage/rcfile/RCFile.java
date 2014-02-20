@@ -705,7 +705,7 @@ public class RCFile {
 
       RECORD_INTERVAL = conf.getInt(RECORD_INTERVAL_CONF_STR, RECORD_INTERVAL);
       COLUMNS_BUFFER_SIZE = conf.getInt(COLUMNS_BUFFER_SIZE_CONF_STR, COLUMNS_BUFFER_SIZE);
-      columnNumber = schema.getColumnNum();
+      columnNumber = schema.size();
     }
 
     public void init() throws IOException {
@@ -867,7 +867,7 @@ public class RCFile {
      * @throws IOException
      */
     public void append(Tuple tuple) throws IOException {
-      int size = schema.getColumnNum();
+      int size = schema.size();
 
       for (int i = 0; i < size; i++) {
         Datum datum = tuple.get(i);
@@ -1179,7 +1179,7 @@ public class RCFile {
 
       targetColumnIndexes = new int[targets.length];
       for (int i = 0; i < targets.length; i++) {
-        targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getColumnName());
+        targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getSimpleName());
       }
       Arrays.sort(targetColumnIndexes);
 
@@ -1592,7 +1592,7 @@ public class RCFile {
         return null;
       }
 
-      Tuple tuple = new VTuple(schema.getColumnNum());
+      Tuple tuple = new VTuple(schema.size());
       getCurrentRow(tuple);
       return tuple;
     }

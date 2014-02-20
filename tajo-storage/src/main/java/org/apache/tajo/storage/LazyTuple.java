@@ -39,7 +39,7 @@ public class LazyTuple implements Tuple, Cloneable {
   public LazyTuple(Schema schema, byte[][] textBytes, long offset, byte[] nullBytes, SerializerDeserializer serde) {
     this.schema = schema;
     this.textBytes = textBytes;
-    this.values = new Datum[schema.getColumnNum()];
+    this.values = new Datum[schema.size()];
     this.offset = offset;
     this.nullBytes = nullBytes;
     this.serializeDeserialize = serde;

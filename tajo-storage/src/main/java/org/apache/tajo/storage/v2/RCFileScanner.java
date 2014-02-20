@@ -30,7 +30,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.BinarySerializerDeserializer;
+import org.apache.tajo.storage.SerializerDeserializer;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
@@ -106,9 +109,9 @@ public class RCFileScanner extends FileScannerV2 {
   }
 
   private Tuple makeTuple() throws IOException {
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
     synchronized (lock) {
-      column.resetValid(schema.getColumnNum());
+      column.resetValid(schema.size());
       int tid; // target column id
       for (int i = 0; i < projectionMap.length; i++) {
         tid = projectionMap[i];
@@ -136,7 +139,7 @@ public class RCFileScanner extends FileScannerV2 {
     projectionMap = new Integer[targets.length];
     int tid;
     for (int i = 0; i < targets.length; i++) {
-      tid = schema.getColumnIdByName(targets[i].getColumnName());
+      tid = schema.getColumnIdByName(targets[i].getSimpleName());
       projectionMap[i] = tid;
     }
     ArrayList<Integer> projectionIdList = new ArrayList<Integer>(TUtil.newList(projectionMap));

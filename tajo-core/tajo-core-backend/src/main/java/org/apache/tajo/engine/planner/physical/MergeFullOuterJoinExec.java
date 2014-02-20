@@ -92,10 +92,10 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
     // for join
     frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.size());
 
-    leftNumCols = leftChild.getSchema().getColumnNum();
-    rightNumCols = rightChild.getSchema().getColumnNum();
+    leftNumCols = leftChild.getSchema().size();
+    rightNumCols = rightChild.getSchema().size();
   }
 
   public JoinNode getPlan(){

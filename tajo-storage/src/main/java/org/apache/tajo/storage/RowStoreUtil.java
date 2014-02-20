@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 
 public class RowStoreUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
-    int[] targetIds = new int[outSchema.getColumnNum()];
+    int[] targetIds = new int[outSchema.size()];
     int i = 0;
     for (Column target : outSchema.getColumns()) {
       targetIds[i] = inSchema.getColumnId(target.getQualifiedName());
@@ -50,10 +50,10 @@ public class RowStoreUtil {
 
     public static Tuple toTuple(Schema schema, byte [] bytes) {
       ByteBuffer bb = ByteBuffer.wrap(bytes);
-      Tuple tuple = new VTuple(schema.getColumnNum());
+      Tuple tuple = new VTuple(schema.size());
       Column col;
       TajoDataTypes.DataType type;
-      for (int i =0; i < schema.getColumnNum(); i++) {
+      for (int i =0; i < schema.size(); i++) {
         col = schema.getColumn(i);
         type = col.getDataType();
         switch (type.getType()) {
@@ -164,7 +164,7 @@ public class RowStoreUtil {
       int size = StorageUtil.getRowByteSize(schema);
       ByteBuffer bb = ByteBuffer.allocate(size);
       Column col;
-      for (int i = 0; i < schema.getColumnNum(); i++) {
+      for (int i = 0; i < schema.size(); i++) {
         col = schema.getColumn(i);
         switch (col.getDataType().getType()) {
           case BOOLEAN: bb.put(tuple.get(i).asByte()); break;

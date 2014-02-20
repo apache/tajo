@@ -32,11 +32,7 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * It finds all relations for each block and builds base schema information.
@@ -116,7 +112,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
       }
 
       Schema schema = relationOp.getTableSchema();
-      Column[] resolvedColumns = new Column[schema.getColumnNum()];
+      Column[] resolvedColumns = new Column[schema.size()];
       return schema.getColumns().toArray(resolvedColumns);
     } else { // if a column reference is not qualified
       // columns of every relation should be resolved.
@@ -151,7 +147,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     List<NamedExpr> newTargetExprs = new ArrayList<NamedExpr>(columns.length);
     int i;
     for (i = 0; i < columns.length; i++) {
-      newTargetExprs.add(new NamedExpr(new ColumnReferenceExpr(columns[i].getQualifier(), columns[i].getColumnName())));
+      newTargetExprs.add(new NamedExpr(new ColumnReferenceExpr(columns[i].getQualifier(), columns[i].getSimpleName())));
     }
     return newTargetExprs;
   }

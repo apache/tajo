@@ -26,131 +26,114 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.util.TUtil;
 
 /**
- * It represents a column. It is usually used for relations.
+ * Describes a column. It is an immutable object.
  */
-public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
-	private ColumnProto.Builder builder = null;
+public class Column implements ProtoObject<ColumnProto>, GsonObject {
+	@Expose protected String name;
+	@Expose protected DataType dataType;
 
-  @Expose protected String qualifier; // optional
-	@Expose protected String name; // required
-	@Expose protected DataType dataType; // required
-	
-	public Column() {
-		this.builder = ColumnProto.newBuilder();
-	}
-	  
-	public Column(String columnName, DataType dataType) {
-	  this();
-		checkAndSetName(columnName.toLowerCase());
+  /**
+   *
+   * @param name Column name
+   * @param dataType Data Type with length
+   */
+	public Column(String name, DataType dataType) {
+    this.name = CatalogUtil.normalizeIdentifier(name);
 		this.dataType = dataType;
 	}
 
-  public Column(String columnName, TajoDataTypes.Type type) {
-    this(columnName, CatalogUtil.newSimpleDataType(type));
+  /**
+   *
+   * @param name Column name
+   * @param type Data Type without length
+   */
+  public Column(String name, TajoDataTypes.Type type) {
+    this(name, CatalogUtil.newSimpleDataType(type));
   }
 
-  public Column(String columnName, TajoDataTypes.Type type, int typeLength) {
-    this(columnName, CatalogUtil.newDataTypeWithLen(type, typeLength));
+  /**
+   *
+   * @param name Column name
+   * @param type Data Type
+   * @param typeLength The length of type
+   */
+  public Column(String name, TajoDataTypes.Type type, int typeLength) {
+    this(name, CatalogUtil.newDataTypeWithLen(type, typeLength));
   }
-	
+
 	public Column(ColumnProto proto) {
-    this();
-    name = proto.getColumnName().toLowerCase();
+    name = CatalogUtil.normalizeIdentifier(proto.getName());
     dataType = proto.getDataType();
-    if (proto.hasQualifier()) {
-      qualifier = proto.getQualifier().toLowerCase();
-    }
 	}
 
-  private void checkAndSetName(String qualifiedOrName) {
-    String [] splits = qualifiedOrName.split("\\.");
-    if (splits.length > 1) {
-      qualifier = qualifiedOrName.substring(0, qualifiedOrName.lastIndexOf("."));
-      name = qualifiedOrName.substring(qualifiedOrName.lastIndexOf(".") + 1, qualifiedOrName.length());
-    } else {
-      qualifier = null;
-      name = qualifiedOrName;
-    }
-  }
-
-	public String getQualifiedName() {
-    if (qualifier != null) {
-      return qualifier + "." + name;
-    } else {
-      return name;
-    }
-	}
-	
+  /**
+   *
+   * @return True if a column includes a table name. Otherwise, it returns False.
+   */
   public boolean hasQualifier() {
-    return qualifier != null;
+    return name.split(CatalogUtil.IDENTIFIER_DELIMITER_REGEXP).length > 1;
   }
 
-  public void setQualifier(String qualifier) {
-    this.qualifier = qualifier.toLowerCase();
-  }
-
-  public String getQualifier() {
-    if (qualifier != null) {
-      return qualifier;
-    } else {
-      return "";
-    }    
-  }
-
-  public String getColumnName() {
+  /**
+   *
+   * @return The full name of this column.
+   */
+	public String getQualifiedName() {
     return name;
-  }
-	
-	public void setName(String name) {
-    checkAndSetName(name.toLowerCase());
 	}
-	
+
+  /**
+   *
+   * @return The qualifier
+   */
+  public String getQualifier() {
+    return CatalogUtil.extractQualifier(name);
+  }
+
+  /**
+   *
+   * @return The simple name without qualifications
+   */
+  public String getSimpleName() {
+    return CatalogUtil.extractSimpleName(name);
+  }
+
+  /**
+   *
+   * @return DataType which includes domain type and scale.
+   */
 	public DataType getDataType() {
 		return this.dataType;
-	}
-	
-	public void setDataType(DataType dataType) {
-		this.dataType = dataType;
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column another = (Column)o;
-			return name.equals(another.name) &&
-          dataType.equals(another.dataType) &&
-          TUtil.checkEquals(qualifier, another.qualifier);
+			return name.equals(another.name) && dataType.equals(another.dataType);
     }
 		return false;
 	}
 	
   public int hashCode() {
-    return Objects.hashCode(name, dataType, qualifier);
+    return Objects.hashCode(name, dataType);
 
   }
   
   @Override
-  public Object clone() throws CloneNotSupportedException {
-    Column column = (Column) super.clone();
-    column.builder = ColumnProto.newBuilder();
-    column.name = name;
-    column.dataType = dataType;
-    column.qualifier = qualifier != null ? qualifier : null;
-    return column;
+  public Object clone() {
+    return this;
   }
 
+  /**
+   *
+   * @return The protocol buffer object for Column
+   */
 	@Override
 	public ColumnProto getProto() {
-    builder.setColumnName(this.name);
-    builder.setDataType(this.dataType);
-    if (qualifier != null) {
-      builder.setQualifier(qualifier);
-    }
-
-    return builder.build();
+    return ColumnProto.newBuilder().setName(this.name).setDataType(this.dataType).build();
 	}
 	
 	public String toString() {
@@ -167,4 +150,5 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	public String toJson() {
 		return CatalogGsonHelper.toJson(this, Column.class);
 	}
+
 }

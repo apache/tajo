@@ -213,12 +213,12 @@ public class TestDBStore {
 
   public static void assertSchemaOrder(Schema s1, Schema s2) {
     // Schema order check
-    assertEquals(s1.getColumnNum(),
-        s2.getColumnNum());
+    assertEquals(s1.size(),
+        s2.size());
 
-    for (int i = 0; i < s1.getColumnNum(); i++) {
-      assertEquals(s1.getColumn(i).getColumnName(),
-          s2.getColumn(i).getColumnName());
+    for (int i = 0; i < s1.size(); i++) {
+      assertEquals(s1.getColumn(i).getSimpleName(),
+          s2.getColumn(i).getSimpleName());
     }
   }
 

@@ -19,11 +19,15 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.catalog.*" %>
+<%@ page import="org.apache.tajo.catalog.CatalogService" %>
+<%@ page import="org.apache.tajo.catalog.Column" %>
+<%@ page import="org.apache.tajo.catalog.TableDesc" %>
+<%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.util.FileUtil" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="java.util.Collection" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   CatalogService catalog = master.getCatalog();
@@ -119,7 +123,7 @@
       out.write("<table border='1' class='border_table'><tr><th>No</th><th>Column name</th><th>Type</th></tr>");
       int columnIndex = 1;
       for(Column eachColumn: columns) {
-        out.write("<tr><td width='30' align='right'>" + columnIndex + "</td><td width='320'>" + eachColumn.getColumnName() + "</td><td width='150'>" + eachColumn.getDataType().getType() + "</td></tr>");
+        out.write("<tr><td width='30' align='right'>" + columnIndex + "</td><td width='320'>" + eachColumn.getSimpleName() + "</td><td width='150'>" + eachColumn.getDataType().getType() + "</td></tr>");
         columnIndex++;
       }
 

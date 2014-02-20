@@ -61,10 +61,10 @@ public class TrevniAppender extends FileAppender {
     fos = fs.create(path);
 
     ColumnMetaData [] trevniMetas =
-        new ColumnMetaData[schema.getColumnNum()];
+        new ColumnMetaData[schema.size()];
     int i = 0;
     for (Column column : schema.getColumns()) {
-      trevniMetas[i++] = new ColumnMetaData(column.getColumnName(),
+      trevniMetas[i++] = new ColumnMetaData(column.getSimpleName(),
           getType(column.getDataType().getType()));
     }
 
@@ -127,7 +127,7 @@ public class TrevniAppender extends FileAppender {
   public void addTuple(Tuple t) throws IOException {
     Column col;
     writer.startRow();
-    for (int i = 0; i < schema.getColumnNum(); i++) {
+    for (int i = 0; i < schema.size(); i++) {
       if (enabledStats) {
         stats.analyzeField(i, t.get(i));
       }

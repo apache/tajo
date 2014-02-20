@@ -75,7 +75,7 @@ public class RowFile {
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
               SYNC_SIZE * 100);
 
-      nullFlags = new BitArray(schema.getColumnNum());
+      nullFlags = new BitArray(schema.size());
       tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE / 8);
       this.start = fragment.getStartKey();
       this.end = this.start + fragment.getEndKey();
@@ -85,7 +85,7 @@ public class RowFile {
       // set default page size.
       fs = fragment.getPath().getFileSystem(conf);
       in = fs.open(fragment.getPath());
-      buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE * schema.getColumnNum());
+      buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE * schema.size());
       buffer.flip();
 
       readHeader();
@@ -180,7 +180,7 @@ public class RowFile {
       }
 
       int i;
-      tuple = new VTuple(schema.getColumnNum());
+      tuple = new VTuple(schema.size());
 
       int nullFlagSize = buffer.getShort();
       byte[] nullFlagBytes = new byte[nullFlagSize];
@@ -196,7 +196,7 @@ public class RowFile {
 
       Datum datum;
       Column col;
-      for (i = 0; i < schema.getColumnNum(); i++) {
+      for (i = 0; i < schema.size(); i++) {
         if (!nullFlags.get(i)) {
           col = schema.getColumn(i);
           switch (col.getDataType().getType()) {
@@ -351,7 +351,7 @@ public class RowFile {
 
       buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 
-      nullFlags = new BitArray(schema.getColumnNum());
+      nullFlags = new BitArray(schema.size());
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
@@ -373,7 +373,7 @@ public class RowFile {
       buffer.clear();
       nullFlags.clear();
 
-      for (int i = 0; i < schema.getColumnNum(); i++) {
+      for (int i = 0; i < schema.size(); i++) {
         if (enabledStats) {
           stats.analyzeField(i, t.get(i));
         }

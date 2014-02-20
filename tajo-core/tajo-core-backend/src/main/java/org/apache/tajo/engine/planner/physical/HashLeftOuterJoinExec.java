@@ -90,10 +90,10 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
     // for join
     frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
 
-    rightNumCols = rightChild.getSchema().getColumnNum();
+    rightNumCols = rightChild.getSchema().size();
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {

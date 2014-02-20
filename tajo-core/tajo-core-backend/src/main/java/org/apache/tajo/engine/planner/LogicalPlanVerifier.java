@@ -44,18 +44,18 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
     Schema outputSchema = node.getOutSchema();
     Schema targetSchema = PlannerUtil.targetToSchema(node.getTargets());
 
-    if (outputSchema.getColumnNum() != node.getTargets().length) {
+    if (outputSchema.size() != node.getTargets().length) {
       throw new PlanningException(String.format("Output schema and Target's schema are mismatched at Node (%d)",
           + node.getPID()));
     }
 
-    for (int i = 0; i < outputSchema.getColumnNum(); i++) {
+    for (int i = 0; i < outputSchema.size(); i++) {
       if (!outputSchema.getColumn(i).getDataType().equals(targetSchema.getColumn(i).getDataType())) {
         Column targetColumn = targetSchema.getColumn(i);
         Column insertColumn = outputSchema.getColumn(i);
         throw new PlanningException("ERROR: " +
-            insertColumn.getColumnName() + " is of type " + insertColumn.getDataType().getType().name() +
-            ", but target column '" + targetColumn.getColumnName() + "' is of type " +
+            insertColumn.getSimpleName() + " is of type " + insertColumn.getDataType().getType().name() +
+            ", but target column '" + targetColumn.getSimpleName() + "' is of type " +
             targetColumn.getDataType().getType().name());
       }
     }
@@ -126,7 +126,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
     Schema right = setNode.getRightChild().getOutSchema();
     NodeType type = setNode.getType();
 
-    if (left.getColumnNum() != right.getColumnNum()) {
+    if (left.size() != right.size()) {
       state.addVerification("each " + type.name() + " query must have the same number of columns");
       return;
     }
@@ -203,13 +203,13 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<VerificationSta
    */
   private static void ensureDomains(VerificationState state, Schema targetTableScheme, Schema schema)
       throws PlanningException {
-    for (int i = 0; i < schema.getColumnNum(); i++) {
+    for (int i = 0; i < schema.size(); i++) {
       if (!schema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
         Column insertColumn = schema.getColumn(i);
         state.addVerification("ERROR: " +
-            insertColumn.getColumnName() + " is of type " + insertColumn.getDataType().getType().name() +
-            ", but target column '" + targetColumn.getColumnName() + "' is of type " +
+            insertColumn.getSimpleName() + " is of type " + insertColumn.getDataType().getType().name() +
+            ", but target column '" + targetColumn.getSimpleName() + "' is of type " +
             targetColumn.getDataType().getType().name());
       }
     }

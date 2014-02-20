@@ -21,8 +21,6 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -37,8 +35,10 @@ import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,7 +96,7 @@ public class TestFullOuterHashJoinExec {
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
-    Tuple tuple = new VTuple(dep3Schema.getColumnNum());
+    Tuple tuple = new VTuple(dep3Schema.size());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createText("dept_" + i),
@@ -125,7 +125,7 @@ public class TestFullOuterHashJoinExec {
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
-    Tuple tuple2 = new VTuple(job3Schema.getColumnNum());
+    Tuple tuple2 = new VTuple(job3Schema.size());
     for (int i = 1; i < 4; i++) {
       int x = 100 + i;
       tuple2.put(new Datum[] { DatumFactory.createInt4(100 + i),
@@ -164,7 +164,7 @@ public class TestFullOuterHashJoinExec {
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = StorageManagerFactory.getStorageManager(conf).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
-    Tuple tuple3 = new VTuple(emp3Schema.getColumnNum());
+    Tuple tuple3 = new VTuple(emp3Schema.size());
 
     for (int i = 1; i < 4; i += 2) {
       int x = 10 + i;

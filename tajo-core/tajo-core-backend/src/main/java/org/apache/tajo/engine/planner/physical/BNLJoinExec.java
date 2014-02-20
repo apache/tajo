@@ -83,7 +83,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
     // for join
     frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.getColumnNum());
+    outputTuple = new VTuple(outSchema.size());
   }
 
   public JoinNode getPlan() {

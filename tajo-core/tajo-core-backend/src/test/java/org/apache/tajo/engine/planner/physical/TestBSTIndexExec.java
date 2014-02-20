@@ -23,9 +23,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -41,8 +38,11 @@ import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,7 +98,7 @@ public class TestBSTIndexExec {
     this.idxSchema = new Schema();
     idxSchema.addColumn("managerId", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
-    sortKeys[0] = new SortSpec(idxSchema.getColumnByFQN("managerId"), true, false);
+    sortKeys[0] = new SortSpec(idxSchema.getColumn("managerId"), true, false);
     this.comp = new TupleComparator(idxSchema, sortKeys);
 
     this.writer = new BSTIndex(conf).getIndexWriter(idxPath,
@@ -115,10 +115,10 @@ public class TestBSTIndexExec {
     FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema,
         tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 10000; i++) {
       
-      Tuple key = new VTuple(this.idxSchema.getColumnNum());
+      Tuple key = new VTuple(this.idxSchema.size());
       int rndKey = rnd.nextInt(250);
       if(this.randomValues.containsKey(rndKey)) {
         int t = this.randomValues.remove(rndKey) + 1;

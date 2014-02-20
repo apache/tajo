@@ -36,7 +36,10 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.*;
+import org.apache.tajo.engine.planner.physical.ExternalSortExec;
+import org.apache.tajo.engine.planner.physical.PhysicalExec;
+import org.apache.tajo.engine.planner.physical.ProjectionExec;
+import org.apache.tajo.engine.planner.physical.RangeShuffleFileWriteExec;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -52,7 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestRangeRetrieverHandler {
   private TajoTestingCluster util;
@@ -108,7 +112,7 @@ public class TestRangeRetrieverHandler {
     Appender appender = sm.getAppender(employeeMeta, schema, tableDir);
     appender.init();
 
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
     for (int i = 0; i < TEST_TUPLE; i++) {
       tuple.put(
           new Datum[] {
@@ -229,7 +233,7 @@ public class TestRangeRetrieverHandler {
     fs.mkdirs(tablePath.getParent());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {
       tuple.put(
           new Datum[] {

@@ -81,7 +81,7 @@ public class TestHashJoinExec {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeeSchema,
         employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeSchema.getColumnNum());
+    Tuple tuple = new VTuple(employeeSchema.size());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createInt4(i), DatumFactory.createInt4(10 + i),
@@ -103,7 +103,7 @@ public class TestHashJoinExec {
     Path peoplePath = new Path(testDir, "people.csv");
     appender = StorageManagerFactory.getStorageManager(conf).getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
-    tuple = new VTuple(peopleSchema.getColumnNum());
+    tuple = new VTuple(peopleSchema.size());
     for (int i = 1; i < 10; i += 2) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createInt4(10 + i),

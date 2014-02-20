@@ -18,14 +18,14 @@
 
 package org.apache.tajo.storage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,8 +66,8 @@ public class TestTupleComparator {
         DatumFactory.createInt4(4),
         DatumFactory.createText("abd")});
 
-    SortSpec sortKey1 = new SortSpec(schema.getColumnByFQN("col4"), true, false);
-    SortSpec sortKey2 = new SortSpec(schema.getColumnByFQN("col5"), true, false);
+    SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
+    SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);
 
     TupleComparator tc = new TupleComparator(schema,
         new SortSpec[] {sortKey1, sortKey2});

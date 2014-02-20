@@ -27,5 +27,7 @@ public class TajoConstants {
   public static final String SYSTEM_RESOURCE_DIR_NAME = "resource";
   public static final String RESULT_DIR_NAME="RESULT";
 
+  public static final String EMPTY_STRING = "";
+
   private TajoConstants() {}
 }

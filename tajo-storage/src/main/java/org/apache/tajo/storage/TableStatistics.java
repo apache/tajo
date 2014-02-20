@@ -42,14 +42,14 @@ public class TableStatistics {
 
   public TableStatistics(Schema schema) {
     this.schema = schema;
-    minValues = new VTuple(schema.getColumnNum());
-    maxValues = new VTuple(schema.getColumnNum());
+    minValues = new VTuple(schema.size());
+    maxValues = new VTuple(schema.size());
 
-    numNulls = new long[schema.getColumnNum()];
-    comparable = new boolean[schema.getColumnNum()];
+    numNulls = new long[schema.size()];
+    comparable = new boolean[schema.size()];
 
     DataType type;
-    for (int i = 0; i < schema.getColumnNum(); i++) {
+    for (int i = 0; i < schema.size(); i++) {
       type = schema.getColumn(i).getDataType();
       if (type.getType() == Type.PROTOBUF) {
         comparable[i] = false;
@@ -101,7 +101,7 @@ public class TableStatistics {
     TableStats stat = new TableStats();
 
     ColumnStats columnStats;
-    for (int i = 0; i < schema.getColumnNum(); i++) {
+    for (int i = 0; i < schema.size(); i++) {
       columnStats = new ColumnStats(schema.getColumn(i));
       columnStats.setNumNulls(numNulls[i]);
       columnStats.setMinValue(minValues.get(i));

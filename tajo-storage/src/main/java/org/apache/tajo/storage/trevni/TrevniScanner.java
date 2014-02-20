@@ -28,9 +28,9 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.FileScanner;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.trevni.ColumnFileReader;
 import org.apache.trevni.ColumnValues;
 import org.apache.trevni.avro.HadoopInput;
@@ -71,14 +71,14 @@ public class TrevniScanner extends FileScanner {
     projectionMap = new int[targets.length];
     int tid;
     for (int i = 0; i < targets.length; i++) {
-      tid = schema.getColumnIdByName(targets[i].getColumnName());
+      tid = schema.getColumnIdByName(targets[i].getSimpleName());
       projectionMap[i] = tid;
     }
   }
 
   @Override
   public Tuple next() throws IOException {
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
 
     if (!columns[0].hasNext()) {
       return null;

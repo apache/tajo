@@ -64,11 +64,11 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 	
 	public String getColumnName() {
-	  return column.getColumnName();
+	  return column.getSimpleName();
 	}
 	
 	public void replaceColumnRef(String columnName) {
-	  this.column.setName(columnName);
+	  this.column = new Column(columnName, this.column.getDataType());
 	}
 
 	@Override

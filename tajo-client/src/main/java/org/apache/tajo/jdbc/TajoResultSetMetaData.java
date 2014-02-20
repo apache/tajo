@@ -62,7 +62,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
     if(schema == null) {
       return 0;
     }
-    return schema.getColumnNum();
+    return schema.size();
   }
 
   @Override
@@ -77,7 +77,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public String getColumnName(int column) throws SQLException {
-    return schema.getColumn(column - 1).getColumnName();
+    return schema.getColumn(column - 1).getSimpleName();
   }
 
   @Override

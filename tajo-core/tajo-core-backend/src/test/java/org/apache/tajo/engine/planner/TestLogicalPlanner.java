@@ -154,10 +154,10 @@ public class TestLogicalPlanner {
   public static void assertSchema(Schema expected, Schema schema) {
     Column expectedColumn;
     Column column;
-    for (int i = 0; i < expected.getColumnNum(); i++) {
+    for (int i = 0; i < expected.size(); i++) {
       expectedColumn = expected.getColumn(i);
-      column = schema.getColumnByName(expectedColumn.getColumnName());
-      assertEquals(expectedColumn.getColumnName(), column.getColumnName());
+      column = schema.getColumn(expectedColumn.getSimpleName());
+      assertEquals(expectedColumn.getSimpleName(), column.getSimpleName());
       assertEquals(expectedColumn.getDataType(), column.getDataType());
     }
   }
@@ -179,9 +179,8 @@ public class TestLogicalPlanner {
     expectedSchema.addColumn("empid", Type.INT4);
     expectedSchema.addColumn("deptname", Type.TEXT);
     expectedSchema.addColumn("manager", Type.TEXT);
-    for (int i = 0; i < expectedSchema.getColumnNum(); i++) {
-      Column found = root.getOutSchema().getColumnByName(expectedSchema.getColumn(i).
-          getColumnName());
+    for (int i = 0; i < expectedSchema.size(); i++) {
+      Column found = root.getOutSchema().getColumn(expectedSchema.getColumn(i).getSimpleName());
       assertEquals(expectedSchema.getColumn(i).getDataType(), found.getDataType());
     }
 
@@ -562,11 +561,11 @@ public class TestLogicalPlanner {
 
     Iterator<Column> it = out.getColumns().iterator();
     Column col = it.next();
-    assertEquals("res1", col.getColumnName());
+    assertEquals("res1", col.getSimpleName());
     col = it.next();
-    assertEquals("res2", col.getColumnName());
+    assertEquals("res2", col.getSimpleName());
     col = it.next();
-    assertEquals("res3", col.getColumnName());
+    assertEquals("res3", col.getSimpleName());
   }
 
   @Test
@@ -581,7 +580,7 @@ public class TestLogicalPlanner {
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
-    assertEquals(6, projNode.getOutSchema().getColumnNum());
+    assertEquals(6, projNode.getOutSchema().size());
 
     assertEquals(NodeType.SELECTION, projNode.getChild().getType());
     SelectionNode selNode = projNode.getChild();
@@ -607,9 +606,9 @@ public class TestLogicalPlanner {
     Schema finalSchema = root.getOutSchema();
     Iterator<Column> it = finalSchema.getColumns().iterator();
     Column col = it.next();
-    assertEquals("deptname", col.getColumnName());
+    assertEquals("deptname", col.getSimpleName());
     col = it.next();
-    assertEquals("total", col.getColumnName());
+    assertEquals("total", col.getSimpleName());
 
     expr = sqlAnalyzer.parse(ALIAS[1]);
     plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -618,9 +617,9 @@ public class TestLogicalPlanner {
     finalSchema = root.getOutSchema();
     it = finalSchema.getColumns().iterator();
     col = it.next();
-    assertEquals("id", col.getColumnName());
+    assertEquals("id", col.getSimpleName());
     col = it.next();
-    assertEquals("total", col.getColumnName());
+    assertEquals("total", col.getSimpleName());
   }
 
   @Test
@@ -633,9 +632,9 @@ public class TestLogicalPlanner {
     Schema finalSchema = root.getOutSchema();
     Iterator<Column> it = finalSchema.getColumns().iterator();
     Column col = it.next();
-    assertEquals("id", col.getColumnName());
+    assertEquals("id", col.getSimpleName());
     col = it.next();
-    assertEquals("total", col.getColumnName());
+    assertEquals("total", col.getSimpleName());
   }
 
   static final String CREATE_TABLE [] = {
@@ -652,13 +651,13 @@ public class TestLogicalPlanner {
     CreateTableNode createTable = root.getChild();
 
     Schema def = createTable.getTableSchema();
-    assertEquals("name", def.getColumn(0).getColumnName());
+    assertEquals("name", def.getColumn(0).getSimpleName());
     assertEquals(Type.TEXT, def.getColumn(0).getDataType().getType());
-    assertEquals("age", def.getColumn(1).getColumnName());
+    assertEquals("age", def.getColumn(1).getSimpleName());
     assertEquals(Type.INT4, def.getColumn(1).getDataType().getType());
-    assertEquals("earn", def.getColumn(2).getColumnName());
+    assertEquals("earn", def.getColumn(2).getSimpleName());
     assertEquals(Type.INT8, def.getColumn(2).getDataType().getType());
-    assertEquals("score", def.getColumn(3).getColumnName());
+    assertEquals("score", def.getColumn(3).getSimpleName());
     assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
     assertEquals(StoreType.CSV, createTable.getStorageType());
     assertEquals("/tmp/data", createTable.getPath().toString());
@@ -825,8 +824,8 @@ public class TestLogicalPlanner {
     assertFalse(insertNode.isOverwrite());
     assertEquals("employee", insertNode.getTableName());
     assertTrue(insertNode.hasTargetSchema());
-    assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
-    assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
+    assertEquals(insertNode.getTargetSchema().getColumn(0).getSimpleName(), "name");
+    assertEquals(insertNode.getTargetSchema().getColumn(1).getSimpleName(), "deptname");
   }
 
   @Test
@@ -849,8 +848,8 @@ public class TestLogicalPlanner {
     assertTrue(insertNode.hasTargetTable());
     assertEquals("employee", insertNode.getTableName());
     assertTrue(insertNode.hasTargetSchema());
-    assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
-    assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
+    assertEquals(insertNode.getTargetSchema().getColumn(0).getSimpleName(), "name");
+    assertEquals(insertNode.getTargetSchema().getColumn(1).getSimpleName(), "deptname");
   }
 
   @Test

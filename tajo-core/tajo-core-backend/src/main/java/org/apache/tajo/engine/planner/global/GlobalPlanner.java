@@ -847,7 +847,7 @@ public class GlobalPlanner {
     if (node.getType() == NodeType.INSERT) {
       InsertNode insertNode = (InsertNode) node;
       channel.setSchema(((InsertNode)node).getProjectedSchema());
-      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().getColumnNum()];
+      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
       int i = 0;
       for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
         int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());

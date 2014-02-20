@@ -94,7 +94,7 @@ public class TestLazyTuple {
 
   @Test
   public void testContain() {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
 
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
     t1.put(0, DatumFactory.createInt4(1));
@@ -118,7 +118,7 @@ public class TestLazyTuple {
 
   @Test
   public void testPut() {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
     t1.put(0, DatumFactory.createText("str"));
     t1.put(1, DatumFactory.createInt4(2));
@@ -134,7 +134,7 @@ public class TestLazyTuple {
 
   @Test
   public void testEquals() {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
     LazyTuple t2 = new LazyTuple(schema, new byte[colNum][], -1);
 
@@ -161,7 +161,7 @@ public class TestLazyTuple {
 
   @Test
   public void testHashCode() {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
     LazyTuple t2 = new LazyTuple(schema, new byte[colNum][], -1);
 
@@ -195,7 +195,7 @@ public class TestLazyTuple {
 
   @Test
   public void testPutTuple() {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
 
     t1.put(0, DatumFactory.createInt4(1));
@@ -207,7 +207,7 @@ public class TestLazyTuple {
     schema2.addColumn("col1", TajoDataTypes.Type.INT8);
     schema2.addColumn("col2", TajoDataTypes.Type.INT8);
 
-    LazyTuple t2 = new LazyTuple(schema2, new byte[schema2.getColumnNum()][], -1);
+    LazyTuple t2 = new LazyTuple(schema2, new byte[schema2.size()][], -1);
     t2.put(0, DatumFactory.createInt4(4));
     t2.put(1, DatumFactory.createInt4(5));
 
@@ -238,7 +238,7 @@ public class TestLazyTuple {
 
   @Test
   public void testClone() throws CloneNotSupportedException {
-    int colNum = schema.getColumnNum();
+    int colNum = schema.size();
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
 
     t1.put(0, DatumFactory.createInt4(1));

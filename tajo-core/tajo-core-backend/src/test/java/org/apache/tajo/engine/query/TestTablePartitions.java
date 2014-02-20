@@ -36,7 +36,6 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestTablePartitions extends QueryTestCaseBase {
 
@@ -53,8 +52,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     assertTrue(catalog.existsTable(tableName));
-    assertEquals(2, catalog.getTableDesc(tableName).getSchema().getColumnNum());
-    assertEquals(3, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
+    assertEquals(2, catalog.getTableDesc(tableName).getSchema().size());
+    assertEquals(3, catalog.getTableDesc(tableName).getLogicalSchema().size());
 
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
@@ -69,8 +68,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     assertTrue(catalog.existsTable(tableName));
-    assertEquals(3, catalog.getTableDesc(tableName).getSchema().getColumnNum());
-    assertEquals(4, catalog.getTableDesc(tableName).getLogicalSchema().getColumnNum());
+    assertEquals(3, catalog.getTableDesc(tableName).getSchema().size());
+    assertEquals(4, catalog.getTableDesc(tableName).getLogicalSchema().size());
 
     res = executeString("insert overwrite into " + tableName + " (col1, col2, key) select l_orderkey, " +
         "l_partkey, l_quantity from lineitem");

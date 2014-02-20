@@ -136,7 +136,7 @@ public class CSVFileScanner extends FileScannerV2 {
 
     targetColumnIndexes = new int[targets.length];
     for (int i = 0; i < targets.length; i++) {
-      targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getColumnName());
+      targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getSimpleName());
     }
 
     if (LOG.isDebugEnabled()) {

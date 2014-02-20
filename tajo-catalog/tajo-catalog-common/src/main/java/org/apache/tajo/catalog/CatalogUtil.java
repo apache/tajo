@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -26,13 +27,66 @@ import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
+  public final static String IDENTIFIER_DELIMITER = ".";
+  public final static String IDENTIFIER_DELIMITER_REGEXP = "\\.";
+
+  /**
+   * Normalize an identifier
+   *
+   * @param identifier The identifier to be normalized
+   * @return The normalized identifier
+   */
+  public static String normalizeIdentifier(String identifier) {
+    return identifier.toLowerCase();
+  }
+
+  /**
+   * Extract a qualification name from an identifier.
+   *
+   * For example, consider a table identifier like 'database1.table1'.
+   * In this case, this method extracts 'database1'.
+   *
+   * @param name The identifier to be extracted
+   * @return The extracted qualifier
+   */
+  public static String extractQualifier(String name) {
+    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);
+    if (lastDelimiterIdx > -1) {
+      return name.substring(0, lastDelimiterIdx);
+    } else {
+      return TajoConstants.EMPTY_STRING;
+    }
+  }
+
+  /**
+   * Extract a simple name from an identifier.
+   *
+   * For example, consider a table identifier like 'database1.table1'.
+   * In this case, this method extracts 'table1'.
+   *
+   * @param name The identifier to be extracted
+   * @return The extracted simple name
+   */
+  public static String extractSimpleName(String name) {
+    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);
+    if (lastDelimiterIdx > -1) {
+      // plus one means skipping a delimiter.
+      return name.substring(lastDelimiterIdx + 1, name.length());
+    } else {
+      return name;
+    }
+  }
+
   public static String getCanonicalName(String signature, Collection<DataType> paramTypes) {
     DataType [] types = paramTypes.toArray(new DataType[paramTypes.size()]);
     return getCanonicalName(signature, types);
@@ -108,8 +162,7 @@ public class CatalogUtil {
     revisedSchema.clearFields();
     for (ColumnProto col : schema.getFieldsList()) {
       ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-      builder.setColumnName(col.getColumnName());
-      builder.setQualifier(tableName);
+      builder.setName(tableName + IDENTIFIER_DELIMITER + extractSimpleName(col.getName()));
       revisedSchema.addFields(builder.build());
     }
 
@@ -145,7 +198,7 @@ public class CatalogUtil {
   }
 
   public static String columnToDDLString(Column column) {
-    StringBuilder sb = new StringBuilder(column.getColumnName());
+    StringBuilder sb = new StringBuilder(column.getSimpleName());
     sb.append(" ").append(column.getDataType().getType());
     if (column.getDataType().hasLength()) {
       sb.append(" (").append(column.getDataType().getLength()).append(")");

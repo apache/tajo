@@ -26,9 +26,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,7 +78,7 @@ public abstract class FileScannerV2 implements Scanner {
     this.meta = meta;
     this.schema = schema;
     this.fragment = fragment;
-    this.columnNum = this.schema.getColumnNum();
+    this.columnNum = this.schema.size();
 
     this.fs = fragment.getPath().getFileSystem(conf);
 	}

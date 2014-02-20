@@ -39,7 +39,7 @@ public abstract class PhysicalExec implements SchemaObject {
     this.context = context;
     this.inSchema = inSchema;
     this.outSchema = outSchema;
-    this.outColumnNum = outSchema.getColumnNum();
+    this.outColumnNum = outSchema.size();
   }
 
   public final Schema getSchema() {

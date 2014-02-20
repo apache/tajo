@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -241,7 +242,7 @@ public class LogicalPlan {
       }
 
       Schema schema = relationOp.getTableSchema();
-      Column column = schema.getColumnByFQN(columnRef.getCanonicalName());
+      Column column = schema.getColumn(columnRef.getCanonicalName());
       if (column == null) {
         throw new NoSuchColumnException(columnRef.getCanonicalName());
       }
@@ -283,7 +284,7 @@ public class LogicalPlan {
       }
 
       if (block.getLatestNode() != null) {
-        Column found = block.getLatestNode().getOutSchema().getColumnByName(columnRef.getName());
+        Column found = block.getLatestNode().getOutSchema().getColumn(columnRef.getName());
         if (found != null) {
           return found;
         }
@@ -304,7 +305,7 @@ public class LogicalPlan {
 
       // Trying to find columns from other relations in the current block
       for (RelationNode rel : block.getRelations()) {
-        Column found = rel.getTableSchema().getColumnByName(columnRef.getName());
+        Column found = rel.getTableSchema().getColumn(columnRef.getName());
         if (found != null) {
           candidates.add(found);
         }
@@ -317,7 +318,7 @@ public class LogicalPlan {
       // Trying to find columns from other relations in other blocks
       for (QueryBlock eachBlock : queryBlocks.values()) {
         for (RelationNode rel : eachBlock.getRelations()) {
-          Column found = rel.getTableSchema().getColumnByName(columnRef.getName());
+          Column found = rel.getTableSchema().getColumn(columnRef.getName());
           if (found != null) {
             candidates.add(found);
           }
@@ -330,7 +331,7 @@ public class LogicalPlan {
 
       // Trying to find columns from schema in current block.
       if (block.getSchema() != null) {
-        Column found = block.getSchema().getColumnByName(columnRef.getName());
+        Column found = block.getSchema().getColumn(columnRef.getName());
         if (found != null) {
           candidates.add(found);
         }
@@ -528,15 +529,15 @@ public class LogicalPlan {
     }
 
     public boolean existsRelation(String name) {
-      return nameToRelationMap.containsKey(PlannerUtil.normalizeTableName(name));
+      return nameToRelationMap.containsKey(CatalogUtil.normalizeIdentifier(name));
     }
 
     public RelationNode getRelation(String name) {
-      return nameToRelationMap.get(PlannerUtil.normalizeTableName(name));
+      return nameToRelationMap.get(CatalogUtil.normalizeIdentifier(name));
     }
 
     public void addRelation(RelationNode relation) {
-      nameToRelationMap.put(PlannerUtil.normalizeTableName(relation.getCanonicalName()), relation);
+      nameToRelationMap.put(CatalogUtil.normalizeIdentifier(relation.getCanonicalName()), relation);
     }
 
     public Collection<RelationNode> getRelations() {

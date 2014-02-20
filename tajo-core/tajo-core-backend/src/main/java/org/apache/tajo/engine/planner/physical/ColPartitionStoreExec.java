@@ -58,13 +58,13 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     }
 
     // Find column index to name subpartition directory path
-    keyNum = this.plan.getPartitionMethod().getExpressionSchema().getColumnNum();
+    keyNum = this.plan.getPartitionMethod().getExpressionSchema().size();
 
     keyIds = new int[keyNum];
     keyNames = new String[keyNum];
     for (int i = 0; i < keyNum; i++) {
       Column column = this.plan.getPartitionMethod().getExpressionSchema().getColumn(i);
-      keyNames[i] = column.getColumnName();
+      keyNames[i] = column.getSimpleName();
 
       if (this.plan.getType() == NodeType.INSERT) {
         InsertNode insertNode = ((InsertNode)plan);

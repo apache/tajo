@@ -80,7 +80,7 @@ public class TestSortExec {
 
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.getColumnNum());
+    Tuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(rnd.nextInt(5)),

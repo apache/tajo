@@ -40,7 +40,7 @@ public class IndexUtil {
     builder.append(fragment.getPath().getName() + "_");
     builder.append(fragment.getStartKey() + "_" + fragment.getEndKey() + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
-      builder.append(keys[i].getSortKey().getColumnName()+"_");
+      builder.append(keys[i].getSortKey().getSimpleName()+"_");
     }
     builder.append("_index");
     return builder.toString();
@@ -51,7 +51,7 @@ public class IndexUtil {
     StringBuilder builder = new StringBuilder();
     builder.append(indexName + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
-      builder.append(keys[i].getSortKey().getColumnName() + "_");
+      builder.append(keys[i].getSortKey().getSimpleName() + "_");
     }
     return builder.toString();
   }

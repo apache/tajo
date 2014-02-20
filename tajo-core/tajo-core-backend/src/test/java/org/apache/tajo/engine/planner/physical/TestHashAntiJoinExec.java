@@ -21,8 +21,6 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -35,8 +33,10 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,7 +80,7 @@ public class TestHashAntiJoinExec {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeeSchema,
         employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeSchema.getColumnNum());
+    Tuple tuple = new VTuple(employeeSchema.size());
 
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] {
@@ -105,7 +105,7 @@ public class TestHashAntiJoinExec {
     Path peoplePath = new Path(testDir, "people.csv");
     appender = StorageManagerFactory.getStorageManager(conf).getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
-    tuple = new VTuple(peopleSchema.getColumnNum());
+    tuple = new VTuple(peopleSchema.size());
     for (int i = 1; i < 10; i += 2) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(i), // empid [1, 3, 5, 7, 9]

@@ -80,8 +80,8 @@ public class TupleUtil {
           "ERROR: Invalid Column Stats (column stats: " + colStats + ", there exists not target " + col);
     }
 
-    Tuple startTuple = new VTuple(target.getColumnNum());
-    Tuple endTuple = new VTuple(target.getColumnNum());
+    Tuple startTuple = new VTuple(target.size());
+    Tuple endTuple = new VTuple(target.size());
     int i = 0;
     for (Column col : target.getColumns()) {
       if (sortSpecs[i].isAscending()) {
@@ -173,13 +173,13 @@ public class TupleUtil {
     String [] columnValues = columnValuesPart.split("/");
 
     // true means this is a file.
-    if (beNullIfFile && partitionColumnSchema.getColumnNum() < columnValues.length) {
+    if (beNullIfFile && partitionColumnSchema.size() < columnValues.length) {
       return null;
     }
 
-    Tuple tuple = new VTuple(partitionColumnSchema.getColumnNum());
+    Tuple tuple = new VTuple(partitionColumnSchema.size());
     int i = 0;
-    for (; i < columnValues.length && i < partitionColumnSchema.getColumnNum(); i++) {
+    for (; i < columnValues.length && i < partitionColumnSchema.size(); i++) {
       String [] parts = columnValues[i].split("=");
       if (parts.length != 2) {
         return null;
@@ -188,7 +188,7 @@ public class TupleUtil {
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
       tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), parts[1]));
     }
-    for (; i < partitionColumnSchema.getColumnNum(); i++) {
+    for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());
     }
     return tuple;
@@ -203,7 +203,7 @@ public class TupleUtil {
    */
   private static String getColumnPartitionPathPrefix(Schema partitionColumn) {
     StringBuilder sb = new StringBuilder();
-    sb.append(partitionColumn.getColumn(0).getColumnName()).append("=");
+    sb.append(partitionColumn.getColumn(0).getSimpleName()).append("=");
     return sb.toString();
   }
 }

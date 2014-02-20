@@ -25,7 +25,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -102,9 +105,9 @@ public class TestResultSet {
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
     Schema schema = scoreSchema;
-    assertEquals(schema.getColumnNum(), meta.getColumnCount());
+    assertEquals(schema.size(), meta.getColumnCount());
     for (int i = 0; i < meta.getColumnCount(); i++) {
-      assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i + 1));
+      assertEquals(schema.getColumn(i).getSimpleName(), meta.getColumnName(i + 1));
       assertEquals(schema.getColumn(i).getQualifier(), meta.getTableName(i + 1));
     }
 

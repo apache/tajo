@@ -45,7 +45,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    this.outTuple = new VTuple(outSchema.getColumnNum());
+    this.outTuple = new VTuple(outSchema.size());
     this.projector = new Projector(inSchema, outSchema, this.plan.getTargets());
   }
 

@@ -97,8 +97,8 @@ public class TestSingleCSVFileBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -132,7 +132,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.close();
     fileScanner.close();
 
-    tuple = new VTuple(keySchema.getColumnNum());
+    tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
@@ -186,8 +186,8 @@ public class TestSingleCSVFileBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));

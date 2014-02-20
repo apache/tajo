@@ -494,14 +494,14 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
           TableDesc tableDesc = conn.getTajoClient().getTableDesc(table);
           int pos = 0;
           for (Column column: tableDesc.getSchema().getColumns()) {
-            if (column.getColumnName().matches(regcolumnNamePattern)) {
+            if (column.getSimpleName().matches(regcolumnNamePattern)) {
               MetaDataTuple tuple = new MetaDataTuple(22);
 
               int index = 0;
               tuple.put(index++, new TextDatum(catalog));  //TABLE_CAT
               tuple.put(index++, NullDatum.get());  //TABLE_SCHEM
               tuple.put(index++, new TextDatum(table));  //TABLE_NAME
-              tuple.put(index++, new TextDatum(column.getColumnName()));  //COLUMN_NAME
+              tuple.put(index++, new TextDatum(column.getSimpleName()));  //COLUMN_NAME
               // TODO - DATA_TYPE
               tuple.put(index++, new TextDatum("" + ResultSetUtil.tajoTypeToSqlType(column.getDataType())));
               tuple.put(index++, new TextDatum(ResultSetUtil.toSqlType(column.getDataType())));  //TYPE_NAME

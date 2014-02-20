@@ -90,9 +90,9 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
     // for join
     frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.size());
 
-    leftNumCols = outer.getSchema().getColumnNum();
+    leftNumCols = outer.getSchema().size();
   }
 
   public JoinNode getPlan() {

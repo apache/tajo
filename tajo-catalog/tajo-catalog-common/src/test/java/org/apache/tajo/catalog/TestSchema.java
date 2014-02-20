@@ -61,9 +61,9 @@ public class TestSchema {
 
 	@Test
 	public final void testGetColumnString() {
-		assertEquals(col1, schema.getColumnByFQN("name"));
-		assertEquals(col2, schema.getColumnByFQN("age"));
-		assertEquals(col3, schema.getColumnByFQN("addr"));
+		assertEquals(col1, schema.getColumn("name"));
+		assertEquals(col2, schema.getColumn("age"));
+		assertEquals(col3, schema.getColumn("addr"));
 	}
 
 	@Test
@@ -88,9 +88,9 @@ public class TestSchema {
 	public final void testGetProto() {
 		SchemaProto proto = schema.getProto();
 		
-		assertEquals("name", proto.getFields(0).getColumnName());
-		assertEquals("age", proto.getFields(1).getColumnName());
-		assertEquals("addr", proto.getFields(2).getColumnName());
+		assertEquals("name", proto.getFields(0).getName());
+		assertEquals("age", proto.getFields(1).getName());
+		assertEquals("addr", proto.getFields(2).getName());
 	}
 	
 	@Test
@@ -102,12 +102,12 @@ public class TestSchema {
 	  Schema schema2 = new Schema(schema.getProto());
 	  assertEquals(schema.getProto(), schema2.getProto());
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
-	  assertEquals(schema.getColumnNum(), schema2.getColumnNum());
+	  assertEquals(schema.size(), schema2.size());
 	  
 	  Schema schema3 = (Schema) schema.clone();
 	  assertEquals(schema.getProto(), schema3.getProto());
     assertEquals(schema.getColumn(0), schema3.getColumn(0));
-    assertEquals(schema.getColumnNum(), schema3.getColumnNum());
+    assertEquals(schema.size(), schema3.size());
 	}
 	
 	@Test(expected = AlreadyExistsFieldException.class)
@@ -141,32 +141,32 @@ public class TestSchema {
     schema2.setQualifier("test1");
     Column column = schema2.getColumn(1);
     assertEquals(1, schema2.getColumnIdByName("age"));
-    assertEquals(column, schema2.getColumnByName("age"));
-    assertEquals(column, schema2.getColumnByFQN("test1.age"));
+    assertEquals(column, schema2.getColumn("age"));
+    assertEquals(column, schema2.getColumn("test1.age"));
 
     Schema schema3 = new Schema();
     schema3.addColumn("tb1.col1", Type.INT4);
     schema3.addColumn("col2", Type.INT4);
     assertEquals("tb1", schema3.getColumn(0).getQualifier());
     assertEquals("tb1.col1", schema3.getColumn(0).getQualifiedName());
-    assertEquals("col1", schema3.getColumn(0).getColumnName());
+    assertEquals("col1", schema3.getColumn(0).getSimpleName());
     assertEquals("col2", schema3.getColumn(1).getQualifiedName());
 
-    assertEquals(schema3.getColumn(0), schema3.getColumnByName("col1"));
-    assertEquals(schema3.getColumn(0), schema3.getColumnByFQN("tb1.col1"));
-    assertEquals(schema3.getColumn(1), schema3.getColumnByName("col2"));
-    assertEquals(schema3.getColumn(1), schema3.getColumnByFQN("col2"));
+    assertEquals(schema3.getColumn(0), schema3.getColumn("col1"));
+    assertEquals(schema3.getColumn(0), schema3.getColumn("tb1.col1"));
+    assertEquals(schema3.getColumn(1), schema3.getColumn("col2"));
+    assertEquals(schema3.getColumn(1), schema3.getColumn("col2"));
 
     schema3.setQualifier("tb2");
     assertEquals("tb2", schema3.getColumn(0).getQualifier());
     assertEquals("tb2.col1", schema3.getColumn(0).getQualifiedName());
-    assertEquals("col1", schema3.getColumn(0).getColumnName());
+    assertEquals("col1", schema3.getColumn(0).getSimpleName());
     assertEquals("tb2.col2", schema3.getColumn(1).getQualifiedName());
 
-    assertEquals(schema3.getColumn(0), schema3.getColumnByName("col1"));
-    assertEquals(schema3.getColumn(0), schema3.getColumnByFQN("tb2.col1"));
-    assertEquals(schema3.getColumn(1), schema3.getColumnByName("col2"));
-    assertEquals(schema3.getColumn(1), schema3.getColumnByFQN("tb2.col2"));
+    assertEquals(schema3.getColumn(0), schema3.getColumn("col1"));
+    assertEquals(schema3.getColumn(0), schema3.getColumn("tb2.col1"));
+    assertEquals(schema3.getColumn(1), schema3.getColumn("col2"));
+    assertEquals(schema3.getColumn(1), schema3.getColumn("tb2.col2"));
 
   }
 }

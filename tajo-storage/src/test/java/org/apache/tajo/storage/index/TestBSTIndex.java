@@ -42,9 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestBSTIndex {
@@ -110,8 +108,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -146,7 +144,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    tuple = new VTuple(keySchema.getColumnNum());
+    tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + storeType + ".idx"), keySchema, comp);
     reader.open();
     scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema, tablet, schema);
@@ -184,8 +182,8 @@ public class TestBSTIndex {
     appender.init();
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -224,7 +222,7 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
-    tuple = new VTuple(keySchema.getColumnNum());
+    tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
@@ -276,8 +274,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, status.getLen());
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -347,8 +345,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -437,8 +435,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -517,8 +515,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -551,7 +549,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    tuple = new VTuple(keySchema.getColumnNum());
+    tuple = new VTuple(keySchema.size());
 
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
         keySchema, comp);
@@ -599,8 +597,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -704,8 +702,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -784,8 +782,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), false, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -820,7 +818,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    tuple = new VTuple(keySchema.getColumnNum());
+    tuple = new VTuple(keySchema.size());
 
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
         keySchema, comp);
@@ -875,8 +873,8 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), false, false);
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));

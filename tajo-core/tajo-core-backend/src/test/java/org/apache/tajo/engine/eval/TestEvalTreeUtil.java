@@ -204,9 +204,9 @@ public class TestEvalTreeUtil {
     Schema schema = EvalTreeUtil.getSchemaByTargets(null, targets);
     Column col1 = schema.getColumn(0);
     Column col2 = schema.getColumn(1);
-    assertEquals("plus", col1.getColumnName());
+    assertEquals("plus", col1.getSimpleName());
     assertEquals(TajoDataTypes.Type.INT4, col1.getDataType().getType());
-    assertEquals("mul", col2.getColumnName());
+    assertEquals("mul", col2.getSimpleName());
     assertEquals(TajoDataTypes.Type.FLOAT8, col2.getDataType().getType());
   }
 

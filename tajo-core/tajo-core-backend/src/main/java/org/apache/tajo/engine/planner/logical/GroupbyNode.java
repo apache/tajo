@@ -171,7 +171,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     sb.append("(");
     Column [] groupingColumns = this.groupingColumns;
     for (int j = 0; j < groupingColumns.length; j++) {
-      sb.append(groupingColumns[j].getColumnName());
+      sb.append(groupingColumns[j].getSimpleName());
       if(j < groupingColumns.length - 1) {
         sb.append(",");
       }

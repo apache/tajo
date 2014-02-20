@@ -48,7 +48,7 @@ public abstract class FileScanner implements Scanner {
     this.meta = meta;
     this.schema = schema;
     this.fragment = fragment;
-    this.columnNum = this.schema.getColumnNum();
+    this.columnNum = this.schema.size();
   }
 
   public void init() throws IOException {

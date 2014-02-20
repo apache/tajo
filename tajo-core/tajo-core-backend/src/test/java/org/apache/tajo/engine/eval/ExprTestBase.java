@@ -106,15 +106,15 @@ public class ExprTestBase {
       inputSchema = SchemaUtil.clone(schema);
       inputSchema.setQualifier(tableName);
 
-      int targetIdx [] = new int[inputSchema.getColumnNum()];
+      int targetIdx [] = new int[inputSchema.size()];
       for (int i = 0; i < targetIdx.length; i++) {
         targetIdx[i] = i;
       }
 
       lazyTuple =
           new LazyTuple(inputSchema, Bytes.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
-      vtuple = new VTuple(inputSchema.getColumnNum());
-      for (int i = 0; i < inputSchema.getColumnNum(); i++) {
+      vtuple = new VTuple(inputSchema.size());
+      for (int i = 0; i < inputSchema.size(); i++) {
         // If null value occurs, null datum is manually inserted to an input tuple.
         if (lazyTuple.get(i) instanceof TextDatum && lazyTuple.get(i).asChars().equals("")) {
           vtuple.put(i, NullDatum.get());

@@ -99,7 +99,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     while((tuple = child.next()) != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
-      keyTuple = new VTuple(keySchema.getColumnNum());
+      keyTuple = new VTuple(keySchema.size());
       RowStoreUtil.project(tuple, keyTuple, indexKeys);
       if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
         indexWriter.write(keyTuple, offset);
