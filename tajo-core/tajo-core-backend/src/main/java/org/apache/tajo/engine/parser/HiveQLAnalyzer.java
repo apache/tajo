@@ -27,7 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.parser.HiveParser.TableAllColumnsContext;
+import org.apache.tajo.engine.parser.HiveQLParser.TableAllColumnsContext;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -35,17 +35,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HiveConverter extends HiveParserBaseVisitor<Expr> {
-  private static final Log LOG = LogFactory.getLog(HiveConverter.class.getName());
-  private HiveParser parser;
+public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
+  private static final Log LOG = LogFactory.getLog(HiveQLAnalyzer.class.getName());
+  private HiveQLParser parser;
 
   public Expr parse(String sql) {
-    HiveLexer lexer = new HiveLexer(new ANTLRNoCaseStringStream(sql));
+    HiveQLLexer lexer = new HiveQLLexer(new ANTLRNoCaseStringStream(sql));
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    parser = new HiveParser(tokens);
+    parser = new HiveQLParser(tokens);
     parser.setBuildParseTree(true);
 
-    HiveParser.StatementContext context;
+    HiveQLParser.StatementContext context;
     try {
       context = parser.statement();
     } catch (SQLParseError e) {
@@ -56,12 +56,12 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitStatement(HiveParser.StatementContext ctx) {
+  public Expr visitStatement(HiveQLParser.StatementContext ctx) {
     return visitExecStatement(ctx.execStatement());
   }
 
   @Override
-  public Expr visitQueryStatement(HiveParser.QueryStatementContext ctx) {
+  public Expr visitQueryStatement(HiveQLParser.QueryStatementContext ctx) {
     Expr current = null;
 
     if (ctx.body != null) {
@@ -76,7 +76,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitBody(HiveParser.BodyContext ctx) {
+  public Expr visitBody(HiveQLParser.BodyContext ctx) {
 
     Expr current = null;
     Insert insert = null;
@@ -96,8 +96,8 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     }
 
     for (int i = 0; i < ctx.getParent().getChildCount(); i++) {
-      if (ctx.getParent().getChild(i) instanceof HiveParser.FromClauseContext) {
-        HiveParser.FromClauseContext fromClauseContext = (HiveParser.FromClauseContext) ctx.getParent().getChild(i);
+      if (ctx.getParent().getChild(i) instanceof HiveQLParser.FromClauseContext) {
+        HiveQLParser.FromClauseContext fromClauseContext = (HiveQLParser.FromClauseContext) ctx.getParent().getChild(i);
         Expr from = visitFromClause(fromClauseContext);
         current = from;
       }
@@ -173,7 +173,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitRegular_body(HiveParser.Regular_bodyContext ctx) {
+  public Expr visitRegular_body(HiveQLParser.Regular_bodyContext ctx) {
     Expr current = null;
     Insert insert = null;
 
@@ -276,7 +276,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Expr visitQueryStatementExpression(HiveParser.QueryStatementExpressionContext ctx) {
+  public Expr visitQueryStatementExpression(HiveQLParser.QueryStatementExpressionContext ctx) {
     Expr left = null, right = null, current = null;
     if (ctx.queryStatement() != null) {
       if (ctx.queryStatement().size() == 1)
@@ -298,7 +298,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitSelectStatement(HiveParser.SelectStatementContext ctx) {
+  public Expr visitSelectStatement(HiveQLParser.SelectStatementContext ctx) {
     Expr current = null;
 
     Projection select = (Projection) visitSelectClause(ctx.selectClause());
@@ -374,12 +374,12 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitFromClause(HiveParser.FromClauseContext ctx) {
+  public Expr visitFromClause(HiveQLParser.FromClauseContext ctx) {
     return visitJoinSource(ctx.joinSource());
   }
 
   @Override
-  public Expr visitJoinSource(HiveParser.JoinSourceContext ctx) {
+  public Expr visitJoinSource(HiveQLParser.JoinSourceContext ctx) {
     Expr[] relations = null;
     RelationList relationList = null;
 
@@ -397,24 +397,24 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       if (fromCount == 1) {
         relations[0] = visitFromSource(ctx.fromSource(0));
       } else {
-        left = visitFromSource((HiveParser.FromSourceContext) ctx.getChild(0));
+        left = visitFromSource((HiveQLParser.FromSourceContext) ctx.getChild(0));
 
         for (int i = 1; i < ctx.getChildCount(); i++) {
           type = null;
           right = null;
           condition = null;
 
-          if (ctx.getChild(i) instanceof HiveParser.JoinTokenContext) {
-            type = getJoinType((HiveParser.JoinTokenContext) ctx.getChild(i));
+          if (ctx.getChild(i) instanceof HiveQLParser.JoinTokenContext) {
+            type = getJoinType((HiveQLParser.JoinTokenContext) ctx.getChild(i));
             if (i > 1)
               left = parent;
 
-            if (i + 1 < ctx.getChildCount() && ctx.getChild(i + 1) instanceof HiveParser.FromSourceContext) {
-              right = visitFromSource((HiveParser.FromSourceContext) ctx.getChild(i + 1));
+            if (i + 1 < ctx.getChildCount() && ctx.getChild(i + 1) instanceof HiveQLParser.FromSourceContext) {
+              right = visitFromSource((HiveQLParser.FromSourceContext) ctx.getChild(i + 1));
             }
 
-            if (i + 3 < ctx.getChildCount() && ctx.getChild(i + 3) instanceof HiveParser.ExpressionContext) {
-              condition = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 3));
+            if (i + 3 < ctx.getChildCount() && ctx.getChild(i + 3) instanceof HiveQLParser.ExpressionContext) {
+              condition = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 3));
             }
 
             if (type != null) {
@@ -440,7 +440,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return relationList;
   }
 
-  public JoinType getJoinType(HiveParser.JoinTokenContext context) {
+  public JoinType getJoinType(HiveQLParser.JoinTokenContext context) {
     JoinType type = JoinType.INNER;
 
     if (context.KW_INNER() != null) {
@@ -470,7 +470,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitFromSource(HiveParser.FromSourceContext ctx) {
+  public Expr visitFromSource(HiveQLParser.FromSourceContext ctx) {
     Expr current = null;
 
     if (ctx.Identifier() != null && ctx.LPAREN() != null) {
@@ -486,7 +486,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
       String tableAlias = "";
       for (int i = 0; i < ctx.subQuerySource().getChildCount(); i++) {
-        if (ctx.subQuerySource().getChild(i) instanceof HiveParser.IdentifierContext) {
+        if (ctx.subQuerySource().getChild(i) instanceof HiveQLParser.IdentifierContext) {
           tableAlias = (ctx.subQuerySource().getChild(i)).getText();
         }
       }
@@ -500,13 +500,13 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitSubQuerySource(HiveParser.SubQuerySourceContext ctx) {
+  public Expr visitSubQuerySource(HiveQLParser.SubQuerySourceContext ctx) {
     Expr current = visitQueryStatementExpression(ctx.queryStatementExpression());
     return current;
   }
 
   @Override
-  public Expr visitTableSource(HiveParser.TableSourceContext ctx) {
+  public Expr visitTableSource(HiveQLParser.TableSourceContext ctx) {
     String tableName = "", alias = "";
 
     if (ctx.tableName() != null)
@@ -514,7 +514,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
 
     if (ctx.alias != null) {
       alias = ctx.alias.getText();
-      for (String token : HiveParser.tokenNames) {
+      for (String token : HiveQLParser.tokenNames) {
         if (token.replaceAll("'", "").equalsIgnoreCase(alias))
           alias = "";
       }
@@ -528,7 +528,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitSelectList(HiveParser.SelectListContext ctx) {
+  public Expr visitSelectList(HiveQLParser.SelectListContext ctx) {
     Expr current = null;
     Projection projection = new Projection();
     NamedExpr[] targets = new NamedExpr[ctx.selectItem().size()];
@@ -542,7 +542,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public NamedExpr visitSelectItem(HiveParser.SelectItemContext ctx) {
+  public NamedExpr visitSelectItem(HiveQLParser.SelectItemContext ctx) {
     NamedExpr target = null;
 
     if (ctx.selectExpression() != null) {
@@ -558,7 +558,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitSelectExpression(HiveParser.SelectExpressionContext ctx) {
+  public Expr visitSelectExpression(HiveQLParser.SelectExpressionContext ctx) {
     Expr current = null;
 
     if (ctx.tableAllColumns() != null) {
@@ -583,13 +583,13 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitExpression(HiveParser.ExpressionContext ctx) {
+  public Expr visitExpression(HiveQLParser.ExpressionContext ctx) {
     Expr current = visitPrecedenceOrExpression(ctx.precedenceOrExpression());
     return current;
   }
 
   @Override
-  public Expr visitPrecedenceOrExpression(HiveParser.PrecedenceOrExpressionContext ctx) {
+  public Expr visitPrecedenceOrExpression(HiveQLParser.PrecedenceOrExpressionContext ctx) {
     Expr current = null, left = null, right = null;
 
     for (int i = 0; i < ctx.precedenceAndExpression().size(); i++) {
@@ -615,14 +615,14 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Expr visitPrecedenceAndExpression(HiveParser.PrecedenceAndExpressionContext ctx) {
+  public Expr visitPrecedenceAndExpression(HiveQLParser.PrecedenceAndExpressionContext ctx) {
     Expr current = null, left = null, right = null;
 
     for (int i = 0; i < ctx.precedenceNotExpression().size(); i++) {
       Expr min = null, max = null;
 
       if (ctx.precedenceNotExpression(i).precedenceEqualExpression() != null) {
-        HiveParser.PrecedenceEqualExpressionContext expressionContext = ctx.precedenceNotExpression(i)
+        HiveQLParser.PrecedenceEqualExpressionContext expressionContext = ctx.precedenceNotExpression(i)
             .precedenceEqualExpression();
         if (expressionContext.KW_BETWEEN() != null) {
 
@@ -666,8 +666,8 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceNotExpression(HiveParser.PrecedenceNotExpressionContext ctx) {
-    HiveParser.PrecedenceEqualExpressionContext expressionContext = ctx.precedenceEqualExpression();
+  public Expr visitPrecedenceNotExpression(HiveQLParser.PrecedenceNotExpressionContext ctx) {
+    HiveQLParser.PrecedenceEqualExpressionContext expressionContext = ctx.precedenceEqualExpression();
     Expr current = visitPrecedenceEqualExpression(expressionContext);
     return current;
   }
@@ -682,33 +682,33 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Expr visitPrecedenceEqualExpression(HiveParser.PrecedenceEqualExpressionContext ctx) {
+  public Expr visitPrecedenceEqualExpression(HiveQLParser.PrecedenceEqualExpressionContext ctx) {
     Expr current = null, left = null, right = null, min = null, max = null;
     OpType type = null;
     boolean isNot = false, isIn = false;
     for (int i = 0; i < ctx.getChildCount(); i++) {
-      if (ctx.getChild(i) instanceof HiveParser.PrecedenceBitwiseOrExpressionContext) {
+      if (ctx.getChild(i) instanceof HiveQLParser.PrecedenceBitwiseOrExpressionContext) {
         if (i == 0) {
-          left = visitPrecedenceBitwiseOrExpression((HiveParser.PrecedenceBitwiseOrExpressionContext) ctx.getChild(i));
+          left = visitPrecedenceBitwiseOrExpression((HiveQLParser.PrecedenceBitwiseOrExpressionContext) ctx.getChild(i));
         } else {
-          right = visitPrecedenceBitwiseOrExpression((HiveParser.PrecedenceBitwiseOrExpressionContext) ctx.getChild(i));
+          right = visitPrecedenceBitwiseOrExpression((HiveQLParser.PrecedenceBitwiseOrExpressionContext) ctx.getChild(i));
         }
-      } else if (ctx.getChild(i) instanceof HiveParser.ExpressionsContext) {
-        right = visitExpressions((HiveParser.ExpressionsContext) ctx.getChild(i));
+      } else if (ctx.getChild(i) instanceof HiveQLParser.ExpressionsContext) {
+        right = visitExpressions((HiveQLParser.ExpressionsContext) ctx.getChild(i));
       } else if (ctx.getChild(i) instanceof TerminalNodeImpl) {
         int symbolType = ((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType();
         switch (symbolType) {
-          case HiveLexer.KW_NOT:
+          case HiveQLLexer.KW_NOT:
             isNot = true;
             break;
-          case HiveLexer.KW_IN:
+          case HiveQLLexer.KW_IN:
             isIn = true;
             break;
           default:
             break;
         }
-      } else if (ctx.getChild(i) instanceof HiveParser.PrecedenceEqualOperatorContext
-          || ctx.getChild(i) instanceof HiveParser.PrecedenceEqualNegatableOperatorContext) {
+      } else if (ctx.getChild(i) instanceof HiveQLParser.PrecedenceEqualOperatorContext
+          || ctx.getChild(i) instanceof HiveQLParser.PrecedenceEqualNegatableOperatorContext) {
         String keyword = ctx.getChild(i).getText().toUpperCase();
 
         if (keyword.equals(">")) {
@@ -760,7 +760,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public ValueListExpr visitExpressions(HiveParser.ExpressionsContext ctx) {
+  public ValueListExpr visitExpressions(HiveQLParser.ExpressionsContext ctx) {
     int size = ctx.expression().size();
     Expr[] exprs = new Expr[size];
     for (int i = 0; i < size; i++) {
@@ -770,7 +770,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceBitwiseOrExpression(HiveParser.PrecedenceBitwiseOrExpressionContext ctx) {
+  public Expr visitPrecedenceBitwiseOrExpression(HiveQLParser.PrecedenceBitwiseOrExpressionContext ctx) {
     int expressionCount = ctx.precedenceAmpersandExpression().size();
 
     Expr current = null, left = null, right = null, parentLeft, parentRight;
@@ -804,14 +804,14 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return current;
   }
 
-  public OpType getPrecedenceBitwiseOrOperator(HiveParser.PrecedenceBitwiseOrOperatorContext ctx) {
+  public OpType getPrecedenceBitwiseOrOperator(HiveQLParser.PrecedenceBitwiseOrOperatorContext ctx) {
     OpType type = null;
     // TODO: It needs to consider how to support.
     return type;
   }
 
   @Override
-  public Expr visitPrecedenceAmpersandExpression(HiveParser.PrecedenceAmpersandExpressionContext ctx) {
+  public Expr visitPrecedenceAmpersandExpression(HiveQLParser.PrecedenceAmpersandExpressionContext ctx) {
     int expressionCount = ctx.precedencePlusExpression().size();
 
     Expr current = null, left = null, right = null, parentLeft, parentRight;
@@ -845,14 +845,14 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return current;
   }
 
-  public OpType getPrecedenceAmpersandOperator(HiveParser.PrecedenceAmpersandOperatorContext ctx) {
+  public OpType getPrecedenceAmpersandOperator(HiveQLParser.PrecedenceAmpersandOperatorContext ctx) {
     OpType type = null;
     // TODO: It needs to consider how to support.
     return type;
   }
 
   @Override
-  public Expr visitPrecedencePlusExpression(HiveParser.PrecedencePlusExpressionContext ctx) {
+  public Expr visitPrecedencePlusExpression(HiveQLParser.PrecedencePlusExpressionContext ctx) {
     int expressionCount = ctx.precedenceStarExpression().size();
 
     Expr current = null, left = null, right = null, parentLeft, parentRight;
@@ -886,7 +886,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return current;
   }
 
-  public OpType getPrecedencePlusOperator(HiveParser.PrecedencePlusOperatorContext ctx) {
+  public OpType getPrecedencePlusOperator(HiveQLParser.PrecedencePlusOperatorContext ctx) {
     OpType type = null;
 
     if (ctx.MINUS() != null) {
@@ -899,7 +899,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceStarExpression(HiveParser.PrecedenceStarExpressionContext ctx) {
+  public Expr visitPrecedenceStarExpression(HiveQLParser.PrecedenceStarExpressionContext ctx) {
     int expressionCount = ctx.precedenceBitwiseXorExpression().size();
 
     Expr current = null, left = null, right = null, parentLeft, parentRight;
@@ -934,7 +934,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return current;
   }
 
-  public OpType getPrecedenceStarOperator(HiveParser.PrecedenceStarOperatorContext ctx) {
+  public OpType getPrecedenceStarOperator(HiveQLParser.PrecedenceStarOperatorContext ctx) {
     OpType type = null;
 
     if (ctx.DIV() != null) {
@@ -951,7 +951,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceBitwiseXorExpression(HiveParser.PrecedenceBitwiseXorExpressionContext ctx) {
+  public Expr visitPrecedenceBitwiseXorExpression(HiveQLParser.PrecedenceBitwiseXorExpressionContext ctx) {
     int expressionCount = ctx.precedenceUnarySuffixExpression().size();
 
     Expr current = null, left = null, right = null, parentLeft, parentRight;
@@ -986,7 +986,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
     return current;
   }
 
-  public OpType getPrecedenceBitwiseXorOperator(HiveParser.PrecedenceBitwiseXorOperatorContext ctx) {
+  public OpType getPrecedenceBitwiseXorOperator(HiveQLParser.PrecedenceBitwiseXorOperatorContext ctx) {
     OpType type = null;
     // TODO: It needs to consider how to support.
 
@@ -994,7 +994,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceUnarySuffixExpression(HiveParser.PrecedenceUnarySuffixExpressionContext ctx) {
+  public Expr visitPrecedenceUnarySuffixExpression(HiveQLParser.PrecedenceUnarySuffixExpressionContext ctx) {
     Expr current = visitPrecedenceUnaryPrefixExpression(ctx.precedenceUnaryPrefixExpression());
 
     if (ctx.nullCondition() != null) {
@@ -1007,18 +1007,18 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPrecedenceUnaryPrefixExpression(HiveParser.PrecedenceUnaryPrefixExpressionContext ctx) {
+  public Expr visitPrecedenceUnaryPrefixExpression(HiveQLParser.PrecedenceUnaryPrefixExpressionContext ctx) {
     Expr current = visitPrecedenceFieldExpression(ctx.precedenceFieldExpression());
     return current;
   }
 
   @Override
-  public Expr visitNullCondition(HiveParser.NullConditionContext ctx) {
+  public Expr visitNullCondition(HiveQLParser.NullConditionContext ctx) {
     return new NullLiteral();
   }
 
   @Override
-  public Expr visitPrecedenceFieldExpression(HiveParser.PrecedenceFieldExpressionContext ctx) {
+  public Expr visitPrecedenceFieldExpression(HiveQLParser.PrecedenceFieldExpressionContext ctx) {
     Expr current = visitAtomExpression(ctx.atomExpression());
 
     if (ctx.DOT().size() > 0) {
@@ -1031,7 +1031,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitAtomExpression(HiveParser.AtomExpressionContext ctx) {
+  public Expr visitAtomExpression(HiveQLParser.AtomExpressionContext ctx) {
     Expr current = null;
 
     if (ctx.KW_NULL() != null) {
@@ -1064,13 +1064,13 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTableOrColumn(HiveParser.TableOrColumnContext ctx) {
+  public Expr visitTableOrColumn(HiveQLParser.TableOrColumnContext ctx) {
     ColumnReferenceExpr columnReferenceExpr = new ColumnReferenceExpr(ctx.identifier().getText());
     return columnReferenceExpr;
   }
 
   @Override
-  public Expr visitIdentifier(HiveParser.IdentifierContext ctx) {
+  public Expr visitIdentifier(HiveQLParser.IdentifierContext ctx) {
     Expr current = null;
 
     if (ctx.nonReserved() != null) {
@@ -1083,7 +1083,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LiteralValue visitConstant(HiveParser.ConstantContext ctx) {
+  public LiteralValue visitConstant(HiveQLParser.ConstantContext ctx) {
     LiteralValue literalValue = null;
 
     if (ctx.StringLiteral() != null) {
@@ -1138,7 +1138,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitFunction(HiveParser.FunctionContext ctx) {
+  public Expr visitFunction(HiveQLParser.FunctionContext ctx) {
     Expr current = null;
     String signature = ctx.functionName().getText();
 
@@ -1190,33 +1190,33 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Expr visitCastExpression(HiveParser.CastExpressionContext ctx) {
+  public Expr visitCastExpression(HiveQLParser.CastExpressionContext ctx) {
     return visitExpression(ctx.expression());
   }
 
   @Override
-  public Expr visitCaseExpression(HiveParser.CaseExpressionContext ctx) {
+  public Expr visitCaseExpression(HiveQLParser.CaseExpressionContext ctx) {
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();
     Expr condition = null, result = null;
     for (int i = 1; i < ctx.getChildCount(); i++) {
       if (ctx.getChild(i) instanceof TerminalNodeImpl) {
-        if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveLexer.KW_WHEN) {
+        if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveQLLexer.KW_WHEN) {
           condition = null;
           result = null;
 
-          if (ctx.getChild(i + 1) instanceof HiveParser.ExpressionContext) {
-            condition = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 1));
+          if (ctx.getChild(i + 1) instanceof HiveQLParser.ExpressionContext) {
+            condition = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 1));
           }
 
-          if (ctx.getChild(i + 3) instanceof HiveParser.ExpressionContext) {
-            result = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 3));
+          if (ctx.getChild(i + 3) instanceof HiveQLParser.ExpressionContext) {
+            result = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 3));
           }
 
           if (condition != null && result != null) {
             caseWhen.addWhen(condition, result);
           }
-        } else if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveLexer.KW_ELSE) {
-          result = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 1));
+        } else if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveQLLexer.KW_ELSE) {
+          result = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 1));
           caseWhen.setElseResult(result);
         }
       }
@@ -1226,28 +1226,28 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitWhenExpression(HiveParser.WhenExpressionContext ctx) {
+  public Expr visitWhenExpression(HiveQLParser.WhenExpressionContext ctx) {
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();
     Expr condition = null, result = null;
     for (int i = 1; i < ctx.getChildCount(); i++) {
       if (ctx.getChild(i) instanceof TerminalNodeImpl) {
-        if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveLexer.KW_WHEN) {
+        if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveQLLexer.KW_WHEN) {
           condition = null;
           result = null;
 
-          if (ctx.getChild(i + 1) instanceof HiveParser.ExpressionContext) {
-            condition = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 1));
+          if (ctx.getChild(i + 1) instanceof HiveQLParser.ExpressionContext) {
+            condition = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 1));
           }
 
-          if (ctx.getChild(i + 3) instanceof HiveParser.ExpressionContext) {
-            result = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 3));
+          if (ctx.getChild(i + 3) instanceof HiveQLParser.ExpressionContext) {
+            result = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 3));
           }
 
           if (condition != null && result != null) {
             caseWhen.addWhen(condition, result);
           }
-        } else if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveLexer.KW_ELSE) {
-          result = visitExpression((HiveParser.ExpressionContext) ctx.getChild(i + 1));
+        } else if (((TerminalNodeImpl) ctx.getChild(i)).getSymbol().getType() == HiveQLLexer.KW_ELSE) {
+          result = visitExpression((HiveQLParser.ExpressionContext) ctx.getChild(i + 1));
           caseWhen.setElseResult(result);
         }
       }
@@ -1257,7 +1257,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Aggregation visitGroupByClause(HiveParser.GroupByClauseContext ctx) {
+  public Aggregation visitGroupByClause(HiveQLParser.GroupByClauseContext ctx) {
     Aggregation clause = new Aggregation();
     if (ctx.groupByExpression().size() > 0) {
       List<Expr> columns = new ArrayList<Expr>();
@@ -1326,7 +1326,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Sort visitOrderByClause(HiveParser.OrderByClauseContext ctx) {
+  public Sort visitOrderByClause(HiveQLParser.OrderByClauseContext ctx) {
     Sort clause = null;
     Sort.SortSpec[] specs = null;
 
@@ -1346,25 +1346,25 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitHavingClause(HiveParser.HavingClauseContext ctx) {
+  public Expr visitHavingClause(HiveQLParser.HavingClauseContext ctx) {
     return visitHavingCondition(ctx.havingCondition());
   }
 
   @Override
-  public Expr visitClusterByClause(HiveParser.ClusterByClauseContext ctx) {
+  public Expr visitClusterByClause(HiveQLParser.ClusterByClauseContext ctx) {
     // TODO: It needs to consider how to support.
     return null;
   }
 
   @Override
-  public Expr visitDistributeByClause(HiveParser.DistributeByClauseContext ctx) {
+  public Expr visitDistributeByClause(HiveQLParser.DistributeByClauseContext ctx) {
     // TODO: It needs to consider how to support.
 
     return null;
   }
 
   @Override
-  public Sort visitSortByClause(HiveParser.SortByClauseContext ctx) {
+  public Sort visitSortByClause(HiveQLParser.SortByClauseContext ctx) {
     Sort clause = null;
     Sort.SortSpec[] specs = null;
 
@@ -1385,40 +1385,40 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Limit visitLimitClause(HiveParser.LimitClauseContext ctx) {
+  public Limit visitLimitClause(HiveQLParser.LimitClauseContext ctx) {
     LiteralValue expr = new LiteralValue(ctx.Number().getText(), LiteralValue.LiteralType.Unsigned_Integer);
     Limit limit = new Limit(expr);
     return limit;
   }
 
   @Override
-  public Expr visitWindow_clause(HiveParser.Window_clauseContext ctx) {
+  public Expr visitWindow_clause(HiveQLParser.Window_clauseContext ctx) {
     // TODO: It needs to consider how to support.
     return null;
   }
 
   @Override
-  public Insert visitInsertClause(HiveParser.InsertClauseContext ctx) {
+  public Insert visitInsertClause(HiveQLParser.InsertClauseContext ctx) {
     Insert insert = new Insert();
     if (ctx.KW_OVERWRITE() != null)
       insert.setOverwrite();
 
     if (ctx.tableOrPartition() != null) {
-      HiveParser.TableOrPartitionContext partitionContext = ctx.tableOrPartition();
+      HiveQLParser.TableOrPartitionContext partitionContext = ctx.tableOrPartition();
       if (partitionContext.tableName() != null) {
         insert.setTableName(ctx.tableOrPartition().tableName().getText());
       }
     }
 
     if (ctx.destination() != null) {
-      HiveParser.DestinationContext destination = ctx.destination();
+      HiveQLParser.DestinationContext destination = ctx.destination();
       if (destination.KW_DIRECTORY() != null) {
         String location = destination.StringLiteral().getText();
         location = location.replaceAll("\\'", "");
         insert.setLocation(location);
       } else if (destination.KW_TABLE() != null) {
         if (destination.tableOrPartition() != null) {
-          HiveParser.TableOrPartitionContext partitionContext = destination.tableOrPartition();
+          HiveQLParser.TableOrPartitionContext partitionContext = destination.tableOrPartition();
           if (partitionContext.tableName() != null) {
             insert.setTableName(partitionContext.tableName().getText());
           }
@@ -1439,7 +1439,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCreateTableStatement(HiveParser.CreateTableStatementContext ctx) {
+  public Expr visitCreateTableStatement(HiveQLParser.CreateTableStatementContext ctx) {
     CreateTable createTable = null;
     Map<String, String> params = new HashMap<String, String>();
 
@@ -1473,16 +1473,16 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
       }
 
       if (ctx.columnNameTypeList() != null) {
-        List<HiveParser.ColumnNameTypeContext> list = ctx.columnNameTypeList().columnNameType();
+        List<HiveQLParser.ColumnNameTypeContext> list = ctx.columnNameTypeList().columnNameType();
 
         CreateTable.ColumnDefinition[] columns = new CreateTable.ColumnDefinition[list.size()];
 
         for (int i = 0; i < list.size(); i++) {
-          HiveParser.ColumnNameTypeContext eachColumn = list.get(i);
+          HiveQLParser.ColumnNameTypeContext eachColumn = list.get(i);
           String type = null;
           if (eachColumn.colType().type() != null) {
             if (eachColumn.colType().type().primitiveType() != null) {
-              HiveParser.PrimitiveTypeContext primitiveType = eachColumn.colType().type().primitiveType();
+              HiveQLParser.PrimitiveTypeContext primitiveType = eachColumn.colType().type().primitiveType();
 
               if (primitiveType.KW_STRING() != null) {
                 type = TajoDataTypes.Type.TEXT.name();
@@ -1528,7 +1528,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitDropTableStatement(HiveParser.DropTableStatementContext ctx) {
+  public Expr visitDropTableStatement(HiveQLParser.DropTableStatementContext ctx) {
     DropTable dropTable = new DropTable(ctx.tableName().getText(), false);
     return dropTable;
   }

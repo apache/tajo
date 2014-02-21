@@ -34,7 +34,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.HiveConverter;
+import org.apache.tajo.engine.parser.HiveQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -297,8 +297,8 @@ public class QueryMasterTask extends CompositeService {
     LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
     Expr expr;
     if (queryContext.isHiveQueryMode()) {
-      HiveConverter hiveConverter = new HiveConverter();
-      expr = hiveConverter.parse(sql);
+      HiveQLAnalyzer HiveQLAnalyzer = new HiveQLAnalyzer();
+      expr = HiveQLAnalyzer.parse(sql);
     } else {
       SQLAnalyzer analyzer = new SQLAnalyzer();
       expr = analyzer.parse(sql);

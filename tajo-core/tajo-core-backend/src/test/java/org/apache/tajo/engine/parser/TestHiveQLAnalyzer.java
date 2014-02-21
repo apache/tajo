@@ -22,8 +22,8 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
@@ -32,8 +32,8 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestHiveConverter {
-  private static final Log LOG = LogFactory.getLog(TestHiveConverter.class.getName());
+public class TestHiveQLAnalyzer {
+  private static final Log LOG = LogFactory.getLog(TestHiveQLAnalyzer.class.getName());
 
   public static Expr parseQuery(String sql) {
     ANTLRInputStream input = new ANTLRInputStream(sql);
@@ -47,7 +47,7 @@ public class TestHiveConverter {
   }
 
   public static Expr parseHiveQL(String sql) {
-    HiveConverter converter = new HiveConverter();
+    HiveQLAnalyzer converter = new HiveQLAnalyzer();
     return converter.parse(sql);
   }
 
