@@ -28,7 +28,7 @@ public class DropTableNode extends LogicalNode {
     super(pid, NodeType.DROP_TABLE);
   }
 
-  public void set(String tableName, boolean purge) {
+  public void init(String tableName, boolean purge) {
     this.tableName = tableName;
     this.purge = purge;
   }

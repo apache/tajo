@@ -34,8 +34,4 @@ public class UnionNode extends BinaryNode {
     PlanString planStr = new PlanString(this);
     return planStr;
   }
-
-  public String toString() {
-    return getLeftChild().toString() + "\n UNION \n" + getRightChild().toString();
-  }
 }

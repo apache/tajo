@@ -24,11 +24,11 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -235,11 +235,6 @@ public class MasterPlan {
         continue;
       }
 
-      if (block.getBroadcastTables().size() > 0) {
-        sb.append("[Broadcasted Tables]: ").append(TUtil.collectionToString(block.getBroadcastTables()));
-        sb.append("\n");
-      }
-
       if (!isLeaf(block)) {
         sb.append("\n[Incoming]\n");
         for (DataChannel channel : getIncomingChannels(block.getId())) {
@@ -265,10 +260,9 @@ public class MasterPlan {
         }
       }
 
-      sb.append("\n").append(block.getPlan());
+      sb.append("\n").append(PlannerUtil.buildExplainString(block.getPlan()));
     }
 
     return sb.toString();
   }
-
 }

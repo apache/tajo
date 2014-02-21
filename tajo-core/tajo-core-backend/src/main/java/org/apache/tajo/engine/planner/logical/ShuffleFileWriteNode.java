@@ -87,28 +87,16 @@ public class ShuffleFileWriteNode extends PersistentStoreNode implements Cloneab
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\"Store\":");
+    StringBuilder sb = new StringBuilder("Shuffle Write (type=" + shuffleType.name().toLowerCase());
     if (storageType != null) {
-      sb.append(" storage: "+ storageType.name());
+      sb.append(", storage="+ storageType.name());
     }
-    sb.append(", partnum: ").append(numOutputs).append("}")
-    .append(", ");
+    sb.append(", part number=").append(numOutputs);
     if (shuffleKeys != null) {
-      sb.append("\"partition keys: [");
-      for (int i = 0; i < shuffleKeys.length; i++) {
-        sb.append(shuffleKeys[i]);
-        if (i < shuffleKeys.length - 1)
-          sb.append(",");
-      }
-      sb.append("],");
+      sb.append(", keys: ").append(TUtil.arrayToString(shuffleKeys));
     }
+    sb.append(")");
     
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInSchema());
-
-    sb.append("}");
-    
-    return sb.toString() + "\n" + getChild().toString();
+    return sb.toString();
   }
 }

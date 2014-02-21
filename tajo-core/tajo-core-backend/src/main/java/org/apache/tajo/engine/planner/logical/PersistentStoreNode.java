@@ -35,7 +35,7 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
   @Expose protected StoreType storageType = StoreType.CSV;
   @Expose protected Options options;
 
-  public PersistentStoreNode(int pid, NodeType nodeType) {
+  protected PersistentStoreNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
   }
 

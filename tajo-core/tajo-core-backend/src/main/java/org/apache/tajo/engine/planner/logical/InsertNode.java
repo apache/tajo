@@ -16,16 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalNodeVisitor;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public class InsertNode extends StoreTableNode implements Cloneable {
@@ -145,28 +142,14 @@ public class InsertNode extends StoreTableNode implements Cloneable {
   }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("INSERT ");
-    if (overwrite) {
-      sb.append("OVERWRITE ");
-    }
-    sb.append("INTO ");
-
+    StringBuilder sb = new StringBuilder("Insert (overwrite=").append(overwrite);
     if (hasTargetTable()) {
-      sb.append("  ").append(tableName);
+      sb.append(",table=").append(tableName);
     }
-
-    if (hasTargetSchema()) {
-      sb.append("\n  ").append(targetSchema);
-    }
-
     if (hasPath()) {
-      sb.append("\n  LOCATION ");
-      sb.append(path);
+      sb.append(", location=").append(path);
     }
-
-    sb.append("\n").append(getChild());
-    
+    sb.append(")");
     return sb.toString();
   }
 

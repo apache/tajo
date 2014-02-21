@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.Stack;
@@ -64,10 +65,10 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     }
   }
 
-  public Context getBlockPlanStrings(LogicalPlan plan, String block) throws PlanningException {
+  public Context getBlockPlanStrings(@Nullable LogicalPlan plan, LogicalNode node) throws PlanningException {
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
     Context explainContext = new Context();
-    visit(explainContext, plan, plan.getBlock(block), plan.getBlock(block).getRoot(), stack);
+    visit(explainContext, plan, null, node, stack);
     return explainContext;
   }
 
@@ -176,6 +177,14 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   @Override
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
                                Stack<LogicalNode> stack) throws PlanningException {
+    context.add(context.depth, node.getPlanString());
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitPartitionedTableScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          PartitionedTableScanNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
     context.add(context.depth, node.getPlanString());
     return node;
   }

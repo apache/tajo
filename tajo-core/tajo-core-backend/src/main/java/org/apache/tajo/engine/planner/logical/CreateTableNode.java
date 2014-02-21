@@ -105,20 +105,9 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     store.options = (Options) (options != null ? options.clone() : null);
     return store;
   }
-  
+
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\"CreateTable\": {\"table\": \""+tableName+"\",");
-    sb.append("\"schema: \"{" + this.schema).append("}");
-    sb.append(",\"storeType\": \"" + this.storageType);
-    sb.append(",\"path\" : \"" + this.path).append("\",");
-    sb.append(",\"external\" : \"" + this.external).append("\",");
-    
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInSchema())
-    .append("}");
-    
-    return sb.toString();
+    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType + ")";
   }
 
   @Override

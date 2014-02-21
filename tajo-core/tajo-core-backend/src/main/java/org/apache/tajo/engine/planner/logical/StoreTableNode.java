@@ -90,22 +90,11 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\"Store\": {\"table\": \""+tableName);
+    StringBuilder sb = new StringBuilder("Store Table (table=").append(tableName);
     if (storageType != null) {
-      sb.append(", storage: "+ storageType.name());
+      sb.append(", storage="+ storageType.name());
     }
-    
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInSchema());
-
-    if(partitionDesc != null) {
-      sb.append(partitionDesc.toString());
-    }
-
-    sb.append("}");
-    
-    return sb.toString() + "\n"
-        + getChild().toString();
+    sb.append(")");
+    return sb.toString();
   }
 }

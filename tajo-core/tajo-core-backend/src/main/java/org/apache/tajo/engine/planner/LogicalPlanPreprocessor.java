@@ -165,7 +165,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   public LogicalNode visitProjection(PreprocessContext ctx, Stack<Expr> stack, Projection expr) throws PlanningException {
     // If Non-from statement, it immediately returns.
     if (!expr.hasChild()) {
-      return new EvalExprNode(ctx.plan.newPID());
+      return ctx.plan.createNode(EvalExprNode.class);
     }
 
     stack.push(expr); // <--- push
@@ -206,7 +206,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     }
     stack.pop(); // <--- Pop
 
-    ProjectionNode projectionNode = new ProjectionNode(ctx.plan.newPID());
+    ProjectionNode projectionNode = ctx.plan.createNode(ProjectionNode.class);
     projectionNode.setInSchema(child.getOutSchema());
     projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
     return projectionNode;
@@ -218,7 +218,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
-    LimitNode limitNode = new LimitNode(ctx.plan.newPID());
+    LimitNode limitNode = ctx.plan.createNode(LimitNode.class);
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
     return limitNode;
@@ -230,7 +230,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
-    SortNode sortNode = new SortNode(ctx.plan.newPID());
+    SortNode sortNode = ctx.plan.createNode(SortNode.class);
     sortNode.setInSchema(child.getOutSchema());
     sortNode.setOutSchema(child.getOutSchema());
     return sortNode;
@@ -242,7 +242,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
-    HavingNode havingNode = new HavingNode(ctx.plan.newPID());
+    HavingNode havingNode = ctx.plan.createNode(HavingNode.class);
     havingNode.setInSchema(child.getOutSchema());
     havingNode.setOutSchema(child.getOutSchema());
     return havingNode;
@@ -269,7 +269,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     }
     stack.pop();
 
-    GroupbyNode groupByNode = new GroupbyNode(ctx.plan.newPID());
+    GroupbyNode groupByNode = ctx.plan.createNode(GroupbyNode.class);
     groupByNode.setInSchema(child.getOutSchema());
     groupByNode.setOutSchema(PlannerUtil.targetToSchema(targets));
     return groupByNode;
@@ -301,7 +301,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
-    SelectionNode selectionNode = new SelectionNode(ctx.plan.newPID());
+    SelectionNode selectionNode = ctx.plan.createNode(SelectionNode.class);
     selectionNode.setInSchema(child.getOutSchema());
     selectionNode.setOutSchema(child.getOutSchema());
     return selectionNode;
@@ -313,7 +313,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode left = visit(ctx, stack, expr.getLeft());
     LogicalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
-    JoinNode joinNode = new JoinNode(ctx.plan.newPID());
+    JoinNode joinNode = ctx.plan.createNode(JoinNode.class);
     joinNode.setJoinType(expr.getJoinType());
     Schema merged = SchemaUtil.merge(left.getOutSchema(), right.getOutSchema());
     joinNode.setInSchema(merged);
@@ -330,11 +330,11 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     Relation relation = expr;
     TableDesc desc = catalog.getTableDesc(relation.getName());
 
-    ScanNode scanNode;
+    ScanNode scanNode = ctx.plan.createNode(ScanNode.class);
     if (relation.hasAlias()) {
-      scanNode = new ScanNode(ctx.plan.newPID(), desc, relation.getAlias());
+      scanNode.init(desc, relation.getAlias());
     } else {
-      scanNode = new ScanNode(ctx.plan.newPID(), desc);
+      scanNode.init(desc);
     }
     ctx.currentBlock.addRelation(scanNode);
 
@@ -352,7 +352,8 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalNode child = super.visitTableSubQuery(newContext, stack, expr);
 
     // a table subquery should be dealt as a relation.
-    TableSubQueryNode node = new TableSubQueryNode(ctx.plan.newPID(), expr.getName(), child);
+    TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
+    node.init(expr.getName(), child);
     ctx.currentBlock.addRelation(node);
     return node;
   }
@@ -365,7 +366,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   public LogicalNode visitCreateTable(PreprocessContext ctx, Stack<Expr> stack, CreateTable expr)
       throws PlanningException {
 
-    CreateTableNode createTableNode = new CreateTableNode(ctx.plan.newPID());
+    CreateTableNode createTableNode = ctx.plan.createNode(CreateTableNode.class);
 
     if (expr.hasSubQuery()) {
       stack.push(expr);
@@ -379,7 +380,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   @Override
   public LogicalNode visitDropTable(PreprocessContext ctx, Stack<Expr> stack, DropTable expr)
       throws PlanningException {
-    DropTableNode dropTable = new DropTableNode(ctx.plan.newPID());
+    DropTableNode dropTable = ctx.plan.createNode(DropTableNode.class);
     return dropTable;
   }
 

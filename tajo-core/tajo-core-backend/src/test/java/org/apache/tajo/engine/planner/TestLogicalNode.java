@@ -47,14 +47,14 @@ public class TestLogicalNode {
     schema.addColumn("age", Type.INT2);
     GroupbyNode groupbyNode = new GroupbyNode(0);
     groupbyNode.setGroupingColumns(new Column[]{schema.getColumn(1), schema.getColumn(2)});
-    ScanNode scanNode = new ScanNode(0,
-        CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
+    ScanNode scanNode = new ScanNode(0);
+    scanNode.init(CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
 
     GroupbyNode groupbyNode2 = new GroupbyNode(0);
     groupbyNode2.setGroupingColumns(new Column[]{schema.getColumn(1), schema.getColumn(2)});
     JoinNode joinNode = new JoinNode(0);
-    ScanNode scanNode2 = new ScanNode(0,
-        CatalogUtil.newTableDesc("in2", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in2")));
+    ScanNode scanNode2 = new ScanNode(0);
+    scanNode2.init(CatalogUtil.newTableDesc("in2", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in2")));
 
     groupbyNode.setChild(scanNode);
     groupbyNode2.setChild(joinNode);
@@ -64,8 +64,8 @@ public class TestLogicalNode {
     assertTrue(groupbyNode.equals(groupbyNode2));
     assertFalse(groupbyNode.deepEquals(groupbyNode2));
 
-    ScanNode scanNode3 = new ScanNode(0,
-        CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
+    ScanNode scanNode3 = new ScanNode(0);
+    scanNode3.init(CatalogUtil.newTableDesc("in", schema, CatalogUtil.newTableMeta(StoreType.CSV), new Path("in")));
     groupbyNode2.setChild(scanNode3);
 
     assertTrue(groupbyNode.equals(groupbyNode2));

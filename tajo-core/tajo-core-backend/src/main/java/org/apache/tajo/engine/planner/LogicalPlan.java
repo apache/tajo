@@ -36,6 +36,7 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.util.TUtil;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -49,6 +50,7 @@ public class LogicalPlan {
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "QB_";
+  private static final int NO_SEQUENCE_PID = -1;
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
@@ -66,6 +68,37 @@ public class LogicalPlan {
 
   public LogicalPlan(LogicalPlanner planner) {
     this.planner = planner;
+  }
+
+  /**
+   * Create a LogicalNode instance for a type. Each a LogicalNode instance is given an unique plan node id (PID).
+   *
+   * @param theClass The class to be created
+   * @return a LogicalNode instance identified by an unique plan node id (PID).
+   */
+  public <T extends LogicalNode> T createNode(Class<T> theClass) {
+    try {
+      Constructor<T> ctor = theClass.getConstructor(int.class);
+      return ctor.newInstance(newPID());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Create a LogicalNode instance for a type. Each a LogicalNode instance is not given an unique plan node id (PID).
+   * This method must be only used after all query planning and optimization phases.
+   *
+   * @param theClass The class to be created
+   * @return a LogicalNode instance
+   */
+  public static <T extends LogicalNode> T createNodeWithoutPID(Class<T> theClass) {
+    try {
+      Constructor<T> ctor = theClass.getConstructor(int.class);
+      return ctor.newInstance(NO_SEQUENCE_PID);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -399,7 +432,7 @@ public class LogicalPlan {
 
     StringBuilder explains = new StringBuilder();
     try {
-      ExplainLogicalPlanVisitor.Context explainContext = explain.getBlockPlanStrings(this, ROOT_BLOCK);
+      ExplainLogicalPlanVisitor.Context explainContext = explain.getBlockPlanStrings(this, getRootBlock().getRoot());
       while(!explainContext.explains.empty()) {
         explains.append(
             ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));

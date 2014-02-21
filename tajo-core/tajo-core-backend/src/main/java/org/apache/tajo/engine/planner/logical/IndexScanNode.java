@@ -32,7 +32,8 @@ public class IndexScanNode extends ScanNode {
   
   public IndexScanNode(int pid, ScanNode scanNode ,
       Schema keySchema , Datum[] datum, SortSpec[] sortKeys ) {
-    super(pid, scanNode.getTableDesc());
+    super(pid);
+    init(scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
     setTargets(scanNode.getTargets());

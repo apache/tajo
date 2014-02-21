@@ -95,31 +95,16 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder("\"GroupBy\": {\"grouping fields\":[");
-    for (int i=0; i < groupingColumns.length; i++) {
-      sb.append("\"").append(groupingColumns[i]).append("\"");
-      if(i < groupingColumns.length - 1)
-        sb.append(",");
+    StringBuilder sb = new StringBuilder("GroupBy (");
+    if (groupingColumns != null || groupingColumns.length > 0) {
+      sb.append("grouping set=").append(TUtil.arrayToString(groupingColumns));
+      sb.append(", ");
     }
-
-    if(hasTargets()) {
-      sb.append(", \"target\": [");
-      for (int i = 0; i < targets.length; i++) {
-        sb.append("\"").append(targets[i]).append("\"");
-        if( i < targets.length - 1) {
-          sb.append(",");
-        }
-      }
-      sb.append("],");
+    if (hasAggFunctions()) {
+      sb.append("funcs=").append(TUtil.arrayToString(aggrFunctions));
     }
-    if (aggrFunctions != null) {
-      sb.append("\n  \"expr\": ").append(TUtil.arrayToString(aggrFunctions)).append(",");
-    }
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
-    sb.append("\n  \"in schema\": ").append(getInSchema());
-    sb.append("}");
-    
-    return sb.toString() + "\n" + getChild().toString();
+    sb.append(")");
+    return sb.toString();
   }
   
   @Override

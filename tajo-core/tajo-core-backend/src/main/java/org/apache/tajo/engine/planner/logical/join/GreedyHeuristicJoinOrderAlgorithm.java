@@ -76,20 +76,21 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   private static JoinNode createJoinNode(LogicalPlan plan, JoinEdge joinEdge) {
     LogicalNode left = joinEdge.getLeftRelation();
     LogicalNode right = joinEdge.getRightRelation();
-    JoinNode joinNode;
+
+    JoinNode joinNode = plan.createNode(JoinNode.class);
 
     if (PlannerUtil.isCommutativeJoin(joinEdge.getJoinType())) {
       // if only one operator is relation
       if ((left instanceof RelationNode) && !(right instanceof RelationNode)) {
         // for left deep
-        joinNode =  new JoinNode(plan.newPID(), joinEdge.getJoinType(), right, left);
+        joinNode.init(joinEdge.getJoinType(), right, left);
       } else {
         // if both operators are relation or if both are relations
         // we don't need to concern the left-right position.
-        joinNode = new JoinNode(plan.newPID(), joinEdge.getJoinType(), left, right);
+        joinNode.init(joinEdge.getJoinType(), left, right);
       }
     } else {
-      joinNode = new JoinNode(plan.newPID(), joinEdge.getJoinType(), left, right);
+      joinNode.init(joinEdge.getJoinType(), left, right);
     }
 
     Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),

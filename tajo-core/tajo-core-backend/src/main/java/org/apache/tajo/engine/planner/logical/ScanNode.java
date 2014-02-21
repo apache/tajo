@@ -37,21 +37,23 @@ public class ScanNode extends RelationNode implements Projectable {
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
 
-  protected ScanNode(int pid, NodeType nodeType, TableDesc desc) {
+  protected ScanNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
-    this.tableDesc = desc;
   }
 
-  public ScanNode(int pid, TableDesc desc) {
+  public ScanNode(int pid) {
     super(pid, NodeType.SCAN);
+  }
+
+  public void init(TableDesc desc) {
     this.tableDesc = desc;
     this.setInSchema(tableDesc.getSchema());
     this.setOutSchema(tableDesc.getSchema());
     logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, null);
   }
   
-	public ScanNode(int pid, TableDesc desc, String alias) {
-    this(pid, desc);
+	public void init(TableDesc desc, String alias) {
+    this.tableDesc = desc;
     this.alias = CatalogUtil.normalizeIdentifier(alias);
     this.setInSchema(tableDesc.getSchema());
     this.getInSchema().setQualifier(alias);
@@ -112,33 +114,15 @@ public class ScanNode extends RelationNode implements Projectable {
   }
 	
 	public String toString() {
-	  StringBuilder sb = new StringBuilder();	  
-	  sb.append("\"Scan\" : {\"table\":\"")
-	  .append(getTableName()).append("\"");
-	  if (hasAlias()) {
-	    sb.append(",\"alias\": \"").append(alias);
-	  }
-	  
-	  if (hasQual()) {
-	    sb.append(", \"qual\": \"").append(this.qual).append("\"");
-	  }
-	  
-	  if (hasTargets()) {
-	    sb.append(", \"target list\": ");
-      boolean first = true;
-      for (Target target : targets) {
-        if (!first) {
-          sb.append(", ");
-        }
-        sb.append(target);
-        first = false;
-      }
-	  }
-
-	  sb.append(",");
-	  sb.append("\n  \"out schema\": ").append(getOutSchema());
-	  sb.append("\n  \"in schema\": ").append(getInSchema());
-	  return sb.toString();
+    StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
+    if (hasAlias()) {
+      sb.append(", alias=").append(alias);
+    }
+    if (hasQual()) {
+      sb.append(", filter=").append(qual);
+    }
+    sb.append(", path=").append(getTableDesc().getPath()).append(")");
+    return sb.toString();
 	}
 
   @Override

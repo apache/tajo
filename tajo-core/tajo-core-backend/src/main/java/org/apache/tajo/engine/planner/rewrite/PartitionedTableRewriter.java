@@ -354,8 +354,8 @@ public class PartitionedTableRewriter implements RewriteRule {
       try {
         Path [] filteredPaths = findFilteredPartitionPaths(scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
-        PartitionedTableScanNode rewrittenScanNode =
-            new PartitionedTableScanNode(plan.newPID(), scanNode, filteredPaths);
+        PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
+        rewrittenScanNode.init(scanNode, filteredPaths);
         updateTableStat(rewrittenScanNode);
 
         // if it is topmost node, set it as the rootnode of this block.

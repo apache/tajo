@@ -710,7 +710,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
-    UnionNode union = new UnionNode(plan.newPID());
+    UnionNode union = plan.createNode(UnionNode.class);
     union.setLeftChild(root.getChild());
     union.setRightChild(root.getChild());
     root.setChild(union);

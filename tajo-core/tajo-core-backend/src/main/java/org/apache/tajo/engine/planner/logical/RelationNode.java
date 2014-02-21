@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.Schema;
  */
 public abstract class RelationNode extends LogicalNode {
 
-  public RelationNode(int pid, NodeType nodeType) {
+  protected RelationNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
     assert(nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.TABLE_SUBQUERY);
   }

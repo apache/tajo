@@ -130,6 +130,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-614: Explaning a logical node should use ExplainLogicalPlanVisitor.
+    (hyunsik)
+
     TAJO-610: Refactor Column class. (hyunsik)
 
     TAJO-601: Improve distinct aggregation query processing. (hyunsik)

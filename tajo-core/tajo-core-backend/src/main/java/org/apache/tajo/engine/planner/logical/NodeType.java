@@ -21,8 +21,6 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
-import org.apache.tajo.engine.planner.InsertNode;
-
 /**
  * This indicates a logical node type.
  */

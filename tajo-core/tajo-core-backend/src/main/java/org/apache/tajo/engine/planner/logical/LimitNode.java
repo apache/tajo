@@ -60,12 +60,6 @@ public final class LimitNode extends UnaryNode implements Cloneable {
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("Limit (").append(fetchFirstNum).append(")");
-
-    sb.append("\n  \"out schema: ").append(getOutSchema())
-        .append("\n  \"in schema: " + getInSchema());
-    sb.append("\n").append(getChild().toString());
-
-    return sb.toString();
+    return "Limit (fetch first=" + fetchFirstNum + ")";
   }
 }

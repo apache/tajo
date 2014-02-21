@@ -55,25 +55,9 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	}
 	
 	public String toString() {
-	  StringBuilder sb = new StringBuilder();
-	  sb.append("\"Projection\": {");
-    if (distinct) {
-      sb.append("\"distinct\": true, ");
-    }
-    sb.append("\"targets\": [");
-	  
-	  for (int i = 0; i < targets.length; i++) {
-	    sb.append("\"").append(targets[i]).append("\"");
-	    if( i < targets.length - 1) {
-	      sb.append(",");
-	    }
-	  }
-	  sb.append("],");
-	  sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
-	  sb.append("\n  \"in schema\": ").append(getInSchema());
-	  sb.append("}");
-	  return sb.toString()+"\n"
-	      + getChild().toString();
+	  StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
+    sb.append(", exprs=").append(TUtil.arrayToString(targets)).append(")");
+	  return sb.toString();
 	}
 	
 	@Override
