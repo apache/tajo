@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"?>
+<rdf:RDF xml:lang="en"
+         xmlns="http://usefulinc.com/ns/doap#" 
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+         xmlns:asfext="http://projects.apache.org/ns/asfext#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+   
+         http://www.apache.org/licenses/LICENSE-2.0
+   
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+  <Project rdf:about="http://tajo.apache.org">
+    <created>2014-02-23</created>
+    <license rdf:resource="http://usefulinc.com/doap/licenses/asl20" />
+    <name>Apache Tajo</name>
+    <homepage rdf:resource="http://tajo.apache.org" />
+    <asfext:pmc rdf:resource="http://tajo.apache.org" />
+    <shortdesc>
+      Tajo is an open source big data warehouse system in Hadoop for
+      processing web-scale data sets.
+    </shortdesc>
+    <description>
+      The main goal of Apache Tajo project is to build an advanced open
+      source data warehouse system in Hadoop for processing web-scale data
+      sets. Basically, Tajo provides SQL standard as a query language.
+      Tajo is designed for both interactive and batch queries on data sets
+      stored on HDFS and other data sources. Without hurting query response
+      times, Tajo provides fault-tolerance and dynamic load balancing which
+      are necessary for long-running queries. Tajo employs a cost-based and
+      progressive query optimization techniques for reoptimizing running
+      queries in order to avoid the worst query plans.
+    </description>
+    <bug-database rdf:resource="https://issues.apache.org/jira/browse/TAJO" />
+    <mailing-list rdf:resource="http://tajo.apache.org/mailing-lists.html" />
+    <download-page rdf:resource="http://tajo.apache.org/downloads.html" />
+    <programming-language>Java</programming-language>
+    <category rdf:resource="http://projects.apache.org/category/big-data" />
+    <repository>
+      <SVNRepository>
+        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/tajo.git"/>
+        <browse rdf:resource="https://git-wip-us.apache.org/repos/asf?p=tajo.git"/>
+      </SVNRepository>
+    </repository>
+    <maintainer>
+      <foaf:Person>
+        <foaf:name>Hyunsik Choi</foaf:name>
+          <foaf:mbox rdf:resource="mailto:hyunsik@apache.org"/>
+      </foaf:Person>
+    </maintainer>
+  </Project>
+</rdf:RDF>

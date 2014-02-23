@@ -463,6 +463,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-621: Add DOAP file for Tajo. (hyunsik)
+
     TAJO-622: Add TM mark and navigation links required for TLP project.
     (hyunsik)
 
