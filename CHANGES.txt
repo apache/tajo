@@ -463,6 +463,9 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-622: Add TM mark and navigation links required for TLP project.
+    (hyunsik)
+
     TAJO-578: Update configuration for tajo-site.xml. (jaehwa)
 
     TAJO-530: Fix warnings in tajo-catalog. (jaehwa)

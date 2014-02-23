@@ -108,6 +108,13 @@
       <item name="Coding Style" href="http://wiki.apache.org/tajo/CodingStyle" />
     </menu>
 
+    <menu name="Apache">
+      <item name="Web Site" href="http://www.apache.org/" />
+      <item name="Sponsorship" href="http://www.apache.org/foundation/sponsorship.html" />
+      <item name="Thanks" href="http://www.apache.org/foundation/thanks.html" />
+      <item name="Security" href="http://www.apache.org/security/" />
+    </menu>
+
     <footer>
       <div class="row span12">
         Apache Tajo, Apache Hadoop, Apache, the Apache feather logo, and the Apache incubator logo are

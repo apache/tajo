@@ -14,14 +14,14 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-Tajo - Big Data Warehouse System on Hadoop
+Apache Tajo (TM) - An open source big data warehouse system in Hadoop
 
-	Tajo is a distributed data warehouse system on Hadoop that provides
+	Apache Tajo (TM) is an advanced open source data warehouse system on Hadoop that provides
 	low-latency and scalable ad-hoc queries and ETL on large-data sets stored on HDFS and other data sources.
 
 Features
 
-  * <<Scalability and low latency>>
+  * <<Interactive and Batch Queries>>
 
     * Fully distributed SQL query processing on large data sets stored in HDFS and other data sources
 
@@ -32,6 +32,12 @@ Features
     * Fault tolerance support that avoids query restart when some tasks are failed.
 
     * Dynamic scheduling support that handles struggling and heterogeneous cluster nodes
+
+  * <<Query Optimization>>
+
+    * Cost-based optimization for bushy join trees
+
+    * Progressive query optimization for reoptimizing running queries
 
   * <<ETL>>
 
@@ -66,6 +72,8 @@ Features
 
 News
 
+  * <<[2014-01-02]>> Keuntae Park was invited to become a new committer.
+
   * <<[2013-11-20]>> Tajo 0.2.0-incubating Released. Now available for {{{http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/}download}}!
 
   * <<[2013-10-15]>> Tajo was presented at {{{http://www.meetup.com/hadoop/events/146077932/}Bay Area Hadoop User Group - LinkedIn Special Event}}.
@@ -86,7 +94,7 @@ Downloads
 
 Disclaimer
 
-  Apache Tajo is an effort undergoing incubation at The Apache Software Foundation (ASF)
+  Apache Tajo (TM) is an effort undergoing incubation at The Apache Software Foundation (ASF)
   sponsored by the Apache Incubator PMC. Incubation is required of all newly accepted projects
   until a further review indicates that the infrastructure, communications, and decision making
   process have stabilized in a manner consistent with other successful ASF projects.
