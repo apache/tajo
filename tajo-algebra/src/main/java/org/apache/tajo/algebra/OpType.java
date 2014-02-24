@@ -131,4 +131,38 @@ public enum OpType {
       return OpType.valueOf(json.getAsString());
     }
   }
+
+  /**
+   * Check if it is one of the literal types.
+   *
+   * @param type The type to be checked
+   * @return True if it is one of the literal types. Otherwise, it returns False.
+   */
+  public static boolean isLiteral(OpType type) {
+    return  type == Literal ||
+            type == NullLiteral ||
+            type == TimeLiteral ||
+            type == DateLiteral ||
+            type == TimestampLiteral;
+  }
+
+  /**
+   * Check if it is one of function types.
+   *
+   * @param type The type to be checked
+   * @return True if it is aggregation function type. Otherwise, it returns False.
+   */
+  public static boolean isFunction(OpType type) {
+    return type == Function || isAggregationFunction(type);
+  }
+
+  /**
+   * Check if it is an aggregation function type.
+   *
+   * @param type The type to be checked
+   * @return True if it is aggregation function type. Otherwise, it returns False.
+   */
+  public static boolean isAggregationFunction(OpType type) {
+    return type == GeneralSetFunction || type == CountRowsFunction;
+  }
 }

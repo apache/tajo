@@ -14,9 +14,12 @@
 
 package org.apache.tajo.algebra;
 
-public class CountRowsFunctionExpr extends FunctionExpr {
+/**
+ * Describe a aggregation function count(*).
+ */
+public class CountRowsFunctionExpr extends GeneralSetFunctionExpr {
   public CountRowsFunctionExpr() {
-    super(OpType.CountRowsFunction, "count");
+    super(OpType.CountRowsFunction, "count", false, new Expr[] {});
   }
 
   @Override

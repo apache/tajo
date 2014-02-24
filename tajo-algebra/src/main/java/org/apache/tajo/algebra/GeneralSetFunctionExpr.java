@@ -14,14 +14,41 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.common.base.Preconditions;
+
+/**
+ * Describes SQL Standard set function (e.g., sum, min, max, avg, and count)
+ */
 public class GeneralSetFunctionExpr extends FunctionExpr {
   private boolean distinct = false;
 
-  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr param) {
-    super(OpType.GeneralSetFunction, signature, new Expr[] {param});
+  /**
+   *
+   * @param type Function type which must be one of GeneralSetFunction or CountRowFunction
+   * @param signature Function name
+   * @param distinct True if this function is a distinct aggregation function
+   * @param params An array of function parameters
+   */
+  protected GeneralSetFunctionExpr(OpType type, String signature, boolean distinct, Expr [] params) {
+    super(type, signature, params);
+    Preconditions.checkArgument(OpType.isAggregationFunction(type));
     this.distinct = distinct;
   }
 
+  /**
+   *
+   * @param signature Function name
+   * @param distinct True if this function is a distinct aggregation function
+   * @param param Function parameter
+   */
+  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr param) {
+    this(OpType.GeneralSetFunction, signature, distinct, new Expr [] {param});
+  }
+
+  /**
+   *
+   * @return True if this function is a distinct aggregation function. Otherwise, it returns False.
+   */
   public boolean isDistinct() {
     return distinct;
   }

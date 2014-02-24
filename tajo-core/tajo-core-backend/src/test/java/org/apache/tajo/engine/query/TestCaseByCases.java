@@ -37,4 +37,14 @@ public class TestCaseByCases extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  /**
+   * It's an unit test to reproduce TAJO-619 (https://issues.apache.org/jira/browse/TAJO-619).
+   */
+  @Test
+  public final void testTAJO619Case() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

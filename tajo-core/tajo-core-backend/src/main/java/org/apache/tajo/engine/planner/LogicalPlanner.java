@@ -931,12 +931,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ScanNode scanNode = block.getNodeFromExpr(expr);
     updatePhysicalInfo(scanNode.getTableDesc());
 
-    // Add additional expressions required in upper nodes, such as sort key, grouping columns,
-    // column references included in filter condition
-    //
-    // newlyEvaluatedExprsRef keeps
+    // Find expression which can be evaluated at this relation node.
+    // Except for column references, additional expressions used in select list, where clause, order-by clauses
+    // can be evaluated here. Their reference names are kept in newlyEvaluatedExprsRef.
     Set<String> newlyEvaluatedExprsReferences = new LinkedHashSet<String>();
-    for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
+    for (Iterator<NamedExpr> iterator = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); iterator.hasNext();) {
+      NamedExpr rawTarget = iterator.next();
       try {
         EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
         if (checkIfBeEvaluatedAtRelation(block, evalNode, scanNode)) {
