@@ -263,6 +263,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-594: MySQL store doesn't work. (Yongjun Park via jaehwa)
+
     TAJO-590: Rename HiveConverter to HiveQLAnalyzer. (jaehwa)
 
     TAJO-575: Worker's env.jsp has wrong URL which go to worker's index.jsp. (hyoungjunkim via jaehwa)

@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.Map;
 
 public class DerbyStore extends AbstractDBStore {
@@ -67,6 +68,7 @@ public class DerbyStore extends AbstractDBStore {
         }
         stmt.executeUpdate(sql.toString());
         LOG.info("Table '" + TB_META + " is created.");
+        baseTableMaps.put(TB_META, true);
       }
 
       // TABLES
@@ -111,7 +113,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_TABLES + "' is created.");
-
+        baseTableMaps.put(TB_TABLES, true);
       }
 
       // COLUMNS
@@ -154,6 +156,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_COLUMNS + " is created.");
+        baseTableMaps.put(TB_COLUMNS, true);
       }
 
       // OPTIONS
@@ -189,6 +192,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_OPTIONS + " is created.");
+        baseTableMaps.put(TB_OPTIONS, true);
       }
 
       // INDEXES
@@ -230,6 +234,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_INDEXES + "' is created.");
+        baseTableMaps.put(TB_INDEXES, true);
       }
 
       if (!baseTableMaps.get(TB_STATISTICS)) {
@@ -256,6 +261,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_STATISTICS + "' is created.");
+        baseTableMaps.put(TB_STATISTICS, true);
       }
 
       // PARTITION_METHODS
@@ -284,6 +290,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_PARTITION_METHODS + "' is created.");
+        baseTableMaps.put(TB_PARTITION_METHODS, true);
       }
 
       // PARTITIONS
@@ -316,8 +323,46 @@ public class DerbyStore extends AbstractDBStore {
         stmt.addBatch(sql.toString());
         stmt.executeBatch();
         LOG.info("Table '" + TB_PARTTIONS + "' is created.");
+        baseTableMaps.put(TB_PARTTIONS, true);
       }
 
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(conn, stmt);
+    }
+  }
+
+  @Override
+  protected void dropBaseTable() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    Map<String, Boolean> droppedTable = new HashMap<String, Boolean>();
+
+    try {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      StringBuilder sql = new StringBuilder();
+
+      for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
+        if(entry.getValue() && !entry.getKey().equals(TB_TABLES)) {
+          sql.delete(0, sql.length());
+          sql.append("DROP TABLE ").append(entry.getKey());
+          stmt.addBatch(sql.toString());
+          droppedTable.put(entry.getKey(), true);
+        }
+      }
+      if(baseTableMaps.get(TB_TABLES)) {
+        sql.delete(0, sql.length());
+        sql.append("DROP TABLE ").append(TB_TABLES);
+        stmt.addBatch(sql.toString());
+        droppedTable.put(TB_TABLES, true);
+      }
+      stmt.executeBatch();
+
+      for(String tableName : droppedTable.keySet()) {
+        LOG.info("Table '" + tableName + "' is dropped");
+      }
     } catch (SQLException se) {
       throw new CatalogException(se);
     } finally {

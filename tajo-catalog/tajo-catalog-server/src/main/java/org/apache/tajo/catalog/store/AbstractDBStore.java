@@ -65,6 +65,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   protected abstract void createBaseTable() throws CatalogException;
 
+  protected abstract void dropBaseTable() throws CatalogException;
+
   public AbstractDBStore(Configuration conf)
       throws InternalException {
 
@@ -113,8 +115,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       if (!isInitialized()) {
-        LOG.info("The base tables of CatalogServer are created.");
-        createBaseTable();
+        try {
+          createBaseTable();
+          LOG.info("The base tables of CatalogServer are created.");
+        } catch (CatalogException ce) {
+          dropBaseTable();
+          throw ce;
+        }
       } else {
         LOG.info("The base tables of CatalogServer already is initialized.");
       }
