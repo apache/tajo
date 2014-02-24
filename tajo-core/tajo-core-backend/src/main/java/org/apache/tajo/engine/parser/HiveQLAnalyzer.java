@@ -1188,14 +1188,6 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
    */
   @Override
   public Expr visitCastExpression(HiveQLParser.CastExpressionContext ctx) {
-    LOG.info("### 100 - expr:" + ctx.getText());
-    LOG.info("### 110 - primitiveType:" + ctx.primitiveType().getText());
-
-//    current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
-
-
-    Expr expr = visitExpression(ctx.expression());
-    LOG.info("### 200 - expr:" + expr.toJson());
     return visitExpression(ctx.expression());
   }
 
