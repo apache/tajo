@@ -263,6 +263,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-628: The second stage of distinct aggregation can be scheduled to
+    only one node. (hyunsik)
+
     TAJO-619: SELECT count(1) after joins on text keys causes wrong plans.
     (hyunsik)
 

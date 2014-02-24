@@ -95,6 +95,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     TajoMasterProtocol.ClusterResourceSummary clusterResource = workerContext.getClusterResource();
     int clusterSlots = clusterResource == null ? 0 : clusterResource.getTotalMemoryMB() / memoryMBPerTask;
     clusterSlots =  Math.max(1, clusterSlots - 1); // reserve query master slot
+    LOG.info("CalculateNumberRequestContainer - Number of Tasks=" + numTasks +
+        ", Number of Cluster Slots=" + clusterSlots);
     return  Math.min(numTasks, clusterSlots);
   }
 

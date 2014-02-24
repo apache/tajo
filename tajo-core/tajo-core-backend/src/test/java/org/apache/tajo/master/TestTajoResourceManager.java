@@ -28,7 +28,6 @@ import org.apache.tajo.ipc.TajoMasterProtocol.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -42,20 +41,19 @@ public class TestTajoResourceManager {
   private final PrimitiveProtos.BoolProto BOOL_FALSE = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
   TajoConf tajoConf;
-  TajoWorkerResourceManager tajoWorkerResourceManager;
   long queryIdTime = System.currentTimeMillis();
   int numWorkers = 5;
   float workerDiskSlots = 5.0f;
   int workerMemoryMB = 512 * 10;
   WorkerResourceAllocationResponse response;
 
-  private void initResourceManager(boolean queryMasterMode) throws Exception {
+  private TajoWorkerResourceManager initResourceManager(boolean queryMasterMode) throws Exception {
     tajoConf = new org.apache.tajo.conf.TajoConf();
 
     tajoConf.setFloatVar(TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT, 0.0f);
     tajoConf.setIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MEMORY_MB, 512);
 
-    tajoWorkerResourceManager = new TajoWorkerResourceManager(tajoConf);
+    TajoWorkerResourceManager tajoWorkerResourceManager = new TajoWorkerResourceManager(tajoConf);
 
     for(int i = 0; i < numWorkers; i++) {
       ServerStatusProto.System system = ServerStatusProto.System.newBuilder()
@@ -104,22 +102,25 @@ public class TestTajoResourceManager {
 
       tajoWorkerResourceManager.workerHeartbeat(tajoHeartbeat);
     }
+
+    return tajoWorkerResourceManager;
   }
 
 
   @Test
   public void testHeartbeat() throws Exception {
-    initResourceManager(false);
+    TajoWorkerResourceManager tajoWorkerResourceManager = initResourceManager(false);
     assertEquals(numWorkers, tajoWorkerResourceManager.getWorkers().size());
     for(WorkerResource eachWorker: tajoWorkerResourceManager.getWorkers().values()) {
       assertEquals(workerMemoryMB, eachWorker.getAvailableMemoryMB());
       assertEquals(workerDiskSlots, eachWorker.getAvailableDiskSlots(), 0);
     }
+    tajoWorkerResourceManager.stop();
   }
 
   @Test
   public void testMemoryResource() throws Exception {
-    initResourceManager(false);
+    TajoWorkerResourceManager tajoWorkerResourceManager = initResourceManager(false);
 
     final int minMemory = 256;
     final int maxMemory = 512;
@@ -193,11 +194,13 @@ public class TestTajoResourceManager {
       assertEquals(workerDiskSlots, eachWorker.getAvailableDiskSlots(), 0);
       assertEquals(0.0f, eachWorker.getUsedDiskSlots(), 0);
     }
+
+    tajoWorkerResourceManager.stop();
   }
 
   @Test
   public void testMemoryNotCommensurable() throws Exception {
-    initResourceManager(false);
+    TajoWorkerResourceManager tajoWorkerResourceManager = initResourceManager(false);
 
     final int minMemory = 200;
     final int maxMemory = 500;
@@ -271,11 +274,13 @@ public class TestTajoResourceManager {
       assertEquals(0.0f, eachWorker.getUsedDiskSlots(), 0);
       assertEquals(workerDiskSlots, eachWorker.getAvailableDiskSlots(), 0);
     }
+
+    tajoWorkerResourceManager.stop();
   }
 
   @Test
   public void testDiskResource() throws Exception {
-    initResourceManager(false);
+    TajoWorkerResourceManager tajoWorkerResourceManager = initResourceManager(false);
     final float minDiskSlots = 1.0f;
     final float maxDiskSlots = 2.0f;
     int memoryMB = 256;
@@ -345,11 +350,13 @@ public class TestTajoResourceManager {
       assertEquals(workerDiskSlots, eachWorker.getAvailableDiskSlots(), 0);
       assertEquals(0.0f, eachWorker.getUsedDiskSlots(), 0);
     }
+
+    tajoWorkerResourceManager.stop();
   }
 
   @Test
   public void testQueryMasterResource() throws Exception {
-    initResourceManager(true);
+    TajoWorkerResourceManager tajoWorkerResourceManager = initResourceManager(true);
 
     int qmDefaultMemoryMB = tajoConf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MEMORY_MB);
     float qmDefaultDiskSlots = tajoConf.getFloatVar(TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT);
@@ -386,5 +393,7 @@ public class TestTajoResourceManager {
       totalUsedMemory += eachWorker.getUsedMemoryMB();
       totalUsedDisks += eachWorker.getUsedDiskSlots();
     }
+
+    tajoWorkerResourceManager.stop();
   }
 }

@@ -139,10 +139,10 @@ public class Task {
               final QueryMasterProtocolService.Interface masterProxy,
               final QueryUnitRequest request) throws IOException {
     this.request = request;
-    this.reporter = new Reporter(masterProxy);
+    this.taskId = taskId;
+    this.reporter = new Reporter(taskId, masterProxy);
     this.reporter.startCommunicationThread();
 
-    this.taskId = request.getId();
     this.systemConf = worker.getConf();
     this.queryContext = request.getQueryContext();
     this.taskRunnerContext = worker;
@@ -621,8 +621,10 @@ public class Task {
     private Thread pingThread;
     private AtomicBoolean stop = new AtomicBoolean(false);
     private static final int PROGRESS_INTERVAL = 3000;
+    private QueryUnitAttemptId taskId;
 
-    public Reporter(QueryMasterProtocolService.Interface masterStub) {
+    public Reporter(QueryUnitAttemptId taskId, QueryMasterProtocolService.Interface masterStub) {
+      this.taskId = taskId;
       this.masterStub = masterStub;
     }
 
@@ -649,14 +651,12 @@ public class Task {
               }
 
             } catch (Throwable t) {
-
-              LOG.info("Communication exception: " + StringUtils
-                  .stringifyException(t));
+              LOG.error(t.getMessage(), t);
               remainingRetries -=1;
               if (remainingRetries == 0) {
                 ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
-                LOG.warn("Last retry, killing ");
-                System.exit(65);
+                LOG.warn("Last retry, exiting ");
+                throw new RuntimeException(t);
               }
             }
           }

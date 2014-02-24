@@ -453,11 +453,13 @@ public class Repartitioner {
       }
     }
 
-    GroupbyNode groupby = PlannerUtil.findTopNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
+    GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
     // the number of tasks cannot exceed the number of merged fetch uris.
     int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
+    LOG.info("ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetchURI.size());
     if (groupby != null && groupby.getGroupingColumns().length == 0) {
       determinedTaskNum = 1;
+      LOG.info("No Grouping Column - determinedTaskNum is set to 1");
     }
 
     for (Entry<Integer, List<URI>> entry : finalFetchURI.entrySet()) {
@@ -468,6 +470,7 @@ public class Repartitioner {
     }
 
     schedulerContext.setEstimatedTaskNum(determinedTaskNum);
+    LOG.info("DeterminedTaskNum : " + determinedTaskNum);
   }
 
   public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
