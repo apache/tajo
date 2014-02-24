@@ -211,6 +211,37 @@ public class TestHiveQLAnalyzer {
   }
 
   @Test
+  public void testGroupby2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_2.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testGroupby3() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_3.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testGroupby4() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_4.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+
+  @Test
+  public void testGroupby5() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/groupby_5.sql"));
+    Expr expr = parseQuery(sql);
+    Expr hiveExpr = parseHiveQL(sql);
+    compareJsonResult(expr, hiveExpr);
+  }
+  @Test
   public void testJoin2() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/join_2.sql"));
     Expr expr = parseQuery(sql);

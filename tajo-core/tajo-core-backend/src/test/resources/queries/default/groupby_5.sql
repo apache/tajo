@@ -1,0 +1,1 @@
+select id, name, count(*), sum(id), avg(age) from people group by id, name

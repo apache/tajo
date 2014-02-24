@@ -30,10 +30,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.parser.HiveQLParser.TableAllColumnsContext;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
   private static final Log LOG = LogFactory.getLog(HiveQLAnalyzer.class.getName());
@@ -1191,6 +1188,14 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
    */
   @Override
   public Expr visitCastExpression(HiveQLParser.CastExpressionContext ctx) {
+    LOG.info("### 100 - expr:" + ctx.getText());
+    LOG.info("### 110 - primitiveType:" + ctx.primitiveType().getText());
+
+//    current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
+
+
+    Expr expr = visitExpression(ctx.expression());
+    LOG.info("### 200 - expr:" + expr.toJson());
     return visitExpression(ctx.expression());
   }
 
@@ -1259,66 +1264,41 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
   @Override
   public Aggregation visitGroupByClause(HiveQLParser.GroupByClauseContext ctx) {
     Aggregation clause = new Aggregation();
+
     if (ctx.groupByExpression().size() > 0) {
-      List<Expr> columns = new ArrayList<Expr>();
-      List<Expr> functions = new ArrayList<Expr>();
+      int elementSize = ctx.groupByExpression().size();
+      ArrayList<Aggregation.GroupElement> groups = new ArrayList<Aggregation.GroupElement>(elementSize + 1);
+      ArrayList<Expr> ordinaryExprs = new ArrayList<Expr>();
+      int groupSize = 1;
+      groups.add(null);
 
       for (int i = 0; i < ctx.groupByExpression().size(); i++) {
         Expr expr = visitGroupByExpression(ctx.groupByExpression(i));
 
-        if (expr instanceof ColumnReferenceExpr) {
-          columns.add(expr);
-        } else if (expr instanceof FunctionExpr) {
-          functions.add(expr);
+        if (expr instanceof FunctionExpr) {
+          FunctionExpr function = (FunctionExpr) expr;
+
+          if (function.getSignature().equalsIgnoreCase("ROLLUP")) {
+            groupSize++;
+            groups.add(new Aggregation.GroupElement(Aggregation.GroupType.Rollup,
+                function.getParams()));
+          } else if (function.getSignature().equalsIgnoreCase("CUBE")) {
+            groupSize++;
+            groups.add(new Aggregation.GroupElement(Aggregation.GroupType.Cube, function.getParams()));
+          } else {
+            Collections.addAll(ordinaryExprs, function);
+          }
         } else {
-          //TODO: find another case.
+          Collections.addAll(ordinaryExprs, (ColumnReferenceExpr)expr);
         }
       }
 
-      Aggregation.GroupElement[] groups = null;
-
-      if (columns.size() > 0) {
-        groups = new Aggregation.GroupElement[1 + functions.size()];
-      } else {
-        groups = new Aggregation.GroupElement[functions.size()];
+      if (ordinaryExprs != null) {
+        groups.set(0, new Aggregation.GroupElement(Aggregation.GroupType.OrdinaryGroup, ordinaryExprs.toArray(new Expr[ordinaryExprs.size()])));
+        clause.setGroups(groups.subList(0, groupSize).toArray(new Aggregation.GroupElement[groupSize]));
+      } else if (groupSize > 1) {
+        clause.setGroups(groups.subList(1, groupSize).toArray(new Aggregation.GroupElement[groupSize - 1]));
       }
-
-      int index = 0;
-      if (columns.size() > 0) {
-        index = 0;
-        ColumnReferenceExpr[] columnReferenceExprs = new ColumnReferenceExpr[columns.size()];
-        for (int i = 0; i < columns.size(); i++) {
-          ColumnReferenceExpr expr = (ColumnReferenceExpr) columns.get(i);
-          columnReferenceExprs[i] = expr;
-        }
-        groups[index] = new Aggregation.GroupElement(Aggregation.GroupType.OrdinaryGroup, columnReferenceExprs);
-      }
-
-      if (functions.size() > 0) {
-        if (columns.size() == 0) {
-          index = 0;
-        } else {
-          index = 1;
-        }
-
-        for (int i = 0; i < functions.size(); i++) {
-          FunctionExpr function = (FunctionExpr) functions.get(i);
-
-          Expr[] params = function.getParams();
-          ColumnReferenceExpr[] column = new ColumnReferenceExpr[params.length];
-          for (int j = 0; j < column.length; j++)
-            column[j] = (ColumnReferenceExpr) params[j];
-
-          if (function.getSignature().equalsIgnoreCase("ROLLUP"))
-            groups[i + index] = new Aggregation.GroupElement(Aggregation.GroupType.Rollup, column);
-          else if (function.getSignature().equalsIgnoreCase("CUBE"))
-            groups[i + index] = new Aggregation.GroupElement(Aggregation.GroupType.Cube, column);
-          else
-            throw new RuntimeException("Unexpected aggregation function.");
-        }
-      }
-
-      clause.setGroups(groups);
     }
 
     //TODO: grouping set expression

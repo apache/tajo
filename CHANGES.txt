@@ -263,6 +263,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-403: HiveQLAnalyzer should supports standard function in the GROUP BY Clause. (jaehwa)
+
     TAJO-594: MySQL store doesn't work. (Yongjun Park via jaehwa)
 
     TAJO-590: Rename HiveConverter to HiveQLAnalyzer. (jaehwa)
