@@ -1188,7 +1188,10 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
    */
   @Override
   public Expr visitCastExpression(HiveQLParser.CastExpressionContext ctx) {
-    return visitExpression(ctx.expression());
+    DataTypeExpr castTarget = getDataTypeExpr(ctx.primitiveType());
+    Expr expr = visitExpression(ctx.expression());
+    Expr current = new CastExpr(expr, castTarget);
+    return current;
   }
 
   @Override
@@ -1455,33 +1458,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
           if (eachColumn.colType().type() != null) {
             if (eachColumn.colType().type().primitiveType() != null) {
               HiveQLParser.PrimitiveTypeContext primitiveType = eachColumn.colType().type().primitiveType();
-
-              if (primitiveType.KW_STRING() != null) {
-                type = TajoDataTypes.Type.TEXT.name();
-              } else if (primitiveType.KW_TINYINT() != null) {
-                type = TajoDataTypes.Type.INT1.name();
-              } else if (primitiveType.KW_SMALLINT() != null) {
-                type = TajoDataTypes.Type.INT2.name();
-              } else if (primitiveType.KW_INT() != null) {
-                type = TajoDataTypes.Type.INT4.name();
-              } else if (primitiveType.KW_BIGINT() != null) {
-                type = TajoDataTypes.Type.INT8.name();
-              } else if (primitiveType.KW_FLOAT() != null) {
-                type = TajoDataTypes.Type.FLOAT4.name();
-              } else if (primitiveType.KW_DOUBLE() != null) {
-                type = TajoDataTypes.Type.FLOAT8.name();
-              } else if (primitiveType.KW_DECIMAL() != null) {
-                type = TajoDataTypes.Type.DECIMAL.name();
-              } else if (primitiveType.KW_BOOLEAN() != null) {
-                type = TajoDataTypes.Type.BOOLEAN.name();
-              } else if (primitiveType.KW_DATE() != null) {
-                type = TajoDataTypes.Type.DATE.name();
-              } else if (primitiveType.KW_DATETIME() != null) {
-                //TODO
-              } else if (primitiveType.KW_TIMESTAMP() != null) {
-                type = TajoDataTypes.Type.TIMESTAMP.name();
-              }
-
+              type = getDataTypeExpr(primitiveType).getTypeName();
               columns[i] = new CreateTable.ColumnDefinition(eachColumn.colName.Identifier().getText(), type);
             }
           }
@@ -1498,6 +1475,39 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
 
     return createTable;
   }
+
+
+  private DataTypeExpr getDataTypeExpr(HiveQLParser.PrimitiveTypeContext primitiveType) {
+    DataTypeExpr typeDefinition = null;
+
+    if (primitiveType.KW_STRING() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.TEXT.name());
+    } else if (primitiveType.KW_TINYINT() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.INT1.name());
+    } else if (primitiveType.KW_SMALLINT() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.INT2.name());
+    } else if (primitiveType.KW_INT() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.INT4.name());
+    } else if (primitiveType.KW_BIGINT() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.INT8.name());
+    } else if (primitiveType.KW_FLOAT() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.FLOAT4.name());
+    } else if (primitiveType.KW_DOUBLE() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.FLOAT8.name());
+    } else if (primitiveType.KW_DECIMAL() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.DECIMAL.name());
+    } else if (primitiveType.KW_BOOLEAN() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.BOOLEAN.name());
+    } else if (primitiveType.KW_DATE() != null) {
+    } else if (primitiveType.KW_DATETIME() != null) {
+      //TODO
+    } else if (primitiveType.KW_TIMESTAMP() != null) {
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.TIMESTAMP.name());
+    }
+
+    return typeDefinition;
+  }
+
 
   @Override
   public Expr visitDropTableStatement(HiveQLParser.DropTableStatementContext ctx) {

@@ -134,6 +134,11 @@ public class TestHiveQLAnalyzer {
   }
 
   @Test
+  public void testSelect15() throws IOException {
+    compareJsonResult("select_15.sql", "select_15.hiveql");
+  }
+
+  @Test
   public void testAsterisk1() throws IOException {
     compareJsonResult("asterisk_1.sql");
   }
