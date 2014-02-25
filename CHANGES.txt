@@ -475,6 +475,9 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-632: add intellij idea projects files into git ignore.
+    (Min Zhou via hyunsik)
+
     TAJO-218: HiveQLAnalyzer has to support cast expression. (jaehwa)
 
     TAJO-621: Add DOAP file for Tajo. (hyunsik)

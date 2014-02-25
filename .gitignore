@@ -2,9 +2,13 @@
 .settings
 .classpath
 .metadata
-.idea
 target
-*.iml
 derby.log
 .reviewboardrc
 atlassian-ide-plugin.xml
+
+# IntelliJ IDEA files
+.idea
+*.iml
+*.ipr
+*.iws
