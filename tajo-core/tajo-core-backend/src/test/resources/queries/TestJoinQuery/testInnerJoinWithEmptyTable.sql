@@ -1,6 +1,6 @@
 select
   c_custkey,
-  orders.o_orderkey
+  empty_orders.o_orderkey
 from
   customer, empty_orders
 where c_custkey = o_orderkey
