@@ -194,4 +194,15 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     checkDivisionByZero(context, evalNode);
     return evalNode;
   }
+
+  @Override
+  public EvalNode visitFuncCall(VerificationState context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+    super.visitFuncCall(context, evalNode, stack);
+    if (evalNode.getArgs() != null) {
+      for (EvalNode param : evalNode.getArgs()) {
+        visitChild(context, param, stack);
+      }
+    }
+    return evalNode;
+  }
 }

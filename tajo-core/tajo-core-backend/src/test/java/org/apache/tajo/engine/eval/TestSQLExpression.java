@@ -84,8 +84,8 @@ public class TestSQLExpression extends ExprTestBase {
         new String[]{"123.0", "234.0"});
     testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
         new String[]{"123.0", "234.0"});
-    testEval(schema, "table1", "1980-04-01 01:50:01,234", "select col1::timestamp, col2::float from table1 " +
-        "where col1 = '1980-04-01 01:50:01'::timestamp",
+    testEval(schema, "table1", "1980-04-01 01:50:01,234", "select col1::timestamp as t1, col2::float from table1 " +
+        "where t1 = '1980-04-01 01:50:01'::timestamp",
         new String[]{"1980-04-01 01:50:01", "234.0"});
 
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {"1980-04-01 01:50:01"});

@@ -89,6 +89,9 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       case IS_NULL:
         result = visitIsNull(context, (IsNullEval) evalNode, stack);
         break;
+      case BETWEEN:
+        result = visitBetween(context, (BetweenPredicateEval) evalNode, stack);
+        break;
       case CASE:
         result = visitCaseWhen(context, (CaseWhenEval) evalNode, stack);
         break;
@@ -99,7 +102,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         result = visitInPredicate(context, (InEval) evalNode, stack);
         break;
 
-      // Pattern match predicates
+      // String operators and Pattern match predicates
       case LIKE:
         result = visitLike(context, (LikePredicateEval) evalNode, stack);
         break;
@@ -108,6 +111,9 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         break;
       case REGEX:
         result = visitRegex(context, (RegexPredicateEval) evalNode, stack);
+        break;
+      case CONCATENATE:
+        result = visitConcatenate(context, (BinaryEval) evalNode, stack);
         break;
 
       // Functions
@@ -143,8 +149,10 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   private RESULT visitDefaultFunctionEval(CONTEXT context, Stack<EvalNode> stack, FunctionEval functionEval) {
     RESULT result = null;
     stack.push(functionEval);
-    for (EvalNode arg : functionEval.getArgs()) {
-      result = visitChild(context, arg, stack);
+    if (functionEval.getArgs() != null) {
+      for (EvalNode arg : functionEval.getArgs()) {
+        result = visitChild(context, arg, stack);
+      }
     }
     stack.pop();
     return result;
@@ -246,6 +254,15 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   }
 
   @Override
+  public RESULT visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
+    stack.push(evalNode);
+    RESULT result = visitChild(context, evalNode.getPredicand(), stack);
+    visitChild(context, evalNode.getBegin(), stack);
+    visitChild(context, evalNode.getEnd(), stack);
+    return result;
+  }
+
+  @Override
   public RESULT visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
     RESULT result = null;
     stack.push(evalNode);
@@ -286,6 +303,11 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   @Override
   public RESULT visitRegex(CONTEXT context, RegexPredicateEval evalNode, Stack<EvalNode> stack) {
+    return visitDefaultBinaryEval(context, stack, evalNode);
+  }
+
+  @Override
+  public RESULT visitConcatenate(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 

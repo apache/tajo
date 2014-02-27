@@ -616,8 +616,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
     stack.push(expr);
     RESULT result = null;
-    for (Expr param : expr.getParams()) {
-      result = visit(ctx, stack, param);
+    if (expr.hasParams()) {
+      for (Expr param : expr.getParams()) {
+        result = visit(ctx, stack, param);
+      }
     }
     stack.pop();
     return result;
