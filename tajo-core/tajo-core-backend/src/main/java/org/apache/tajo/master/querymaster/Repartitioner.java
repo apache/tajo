@@ -23,8 +23,8 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -292,7 +292,7 @@ public class Repartitioner {
 
   public static void scheduleFragmentsForNonLeafTasks(TaskSchedulerContext schedulerContext,
                                                       MasterPlan masterPlan, SubQuery subQuery, int maxNum)
-      throws InternalException {
+      throws InternalException, IOException {
     DataChannel channel = masterPlan.getIncomingChannels(subQuery.getBlock().getId()).get(0);
     if (channel.getShuffleType() == HASH_SHUFFLE) {
       scheduleHashShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
@@ -316,7 +316,7 @@ public class Repartitioner {
 
   public static void scheduleRangeShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
                                                   SubQuery subQuery, DataChannel channel, int maxNum)
-      throws InternalException {
+      throws InternalException, IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
@@ -329,6 +329,11 @@ public class Repartitioner {
 
     // calculate the number of maximum query ranges
     TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
+
+    // If there is an empty table in inner join, it should return zero rows.
+    if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0 ) {
+      return;
+    }
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats());
     RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
     BigDecimal card = partitioner.getTotalCardinality();
