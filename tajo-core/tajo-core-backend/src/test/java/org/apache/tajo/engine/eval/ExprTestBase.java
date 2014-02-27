@@ -26,10 +26,8 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.LazyTuple;
@@ -41,6 +39,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.util.Stack;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,7 +48,10 @@ public class ExprTestBase {
   private static TajoTestingCluster util;
   private static CatalogService cat;
   private static SQLAnalyzer analyzer;
+  private static PreLogicalPlanVerifier preLogicalPlanVerifier;
   private static LogicalPlanner planner;
+  private static LogicalOptimizer optimizer;
+  private static LogicalPlanVerifier annotatedPlanVerifier;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -61,7 +63,10 @@ public class ExprTestBase {
     }
 
     analyzer = new SQLAnalyzer();
+    preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
     planner = new LogicalPlanner(cat);
+    optimizer = new LogicalOptimizer(util.getConfiguration());
+    annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
   }
 
   @AfterClass
@@ -77,7 +82,19 @@ public class ExprTestBase {
 
   private static Target[] getRawTargets(String query) throws PlanningException {
     Expr expr = analyzer.parse(query);
+    VerificationState state = new VerificationState();
+    preLogicalPlanVerifier.visit(state, new Stack<Expr>(), expr);
+    if (state.getErrorMessages().size() > 0) {
+      assertFalse(state.getErrorMessages().get(0), true);
+    }
     LogicalPlan plan = planner.createPlan(expr, true);
+    optimizer.optimize(plan);
+    annotatedPlanVerifier.visit(state, plan, plan.getRootBlock(), plan.getRootBlock().getRoot(),
+        new Stack<LogicalNode>());
+    if (state.getErrorMessages().size() > 0) {
+      assertFalse(state.getErrorMessages().get(0), true);
+    }
+
     Target [] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("Wrong query statement or query plan: " + query);

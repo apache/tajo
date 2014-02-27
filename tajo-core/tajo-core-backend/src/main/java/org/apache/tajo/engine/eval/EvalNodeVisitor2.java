@@ -50,14 +50,16 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
 
   // Other Predicates
   RESULT visitIsNull(CONTEXT context, IsNullEval evalNode, Stack<EvalNode> stack);
+  RESULT visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack);
   RESULT visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack);
   RESULT visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack);
   RESULT visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack);
 
-  // Pattern matching predicates
+  // String operator and Pattern matching predicates
   RESULT visitLike(CONTEXT context, LikePredicateEval evalNode, Stack<EvalNode> stack);
   RESULT visitSimilarTo(CONTEXT context, SimilarToPredicateEval evalNode, Stack<EvalNode> stack);
   RESULT visitRegex(CONTEXT context, RegexPredicateEval evalNode, Stack<EvalNode> stack);
+  RESULT visitConcatenate(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack);
 
   // Functions
   RESULT visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack);

@@ -46,6 +46,18 @@ public class BetweenPredicateEval extends EvalNode {
     this.end = end;
   }
 
+  public EvalNode getPredicand() {
+    return predicand;
+  }
+
+  public EvalNode getBegin() {
+    return begin;
+  }
+
+  public EvalNode getEnd() {
+    return end;
+  }
+
   private static interface Checker {
     Datum eval(Schema schema, Tuple param);
   }

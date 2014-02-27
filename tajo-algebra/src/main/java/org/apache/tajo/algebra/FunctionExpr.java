@@ -55,6 +55,10 @@ public class FunctionExpr extends Expr {
     return this.signature;
   }
 
+  public boolean hasParams() {
+    return params != null;
+  }
+
   public Expr[] getParams() {
     return params;
   }
