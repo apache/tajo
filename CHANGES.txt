@@ -263,6 +263,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-620: A join query can cause IndexOutOfBoundsException if one of tables is empty. (jaehwa)
+
     TAJO-628: The second stage of distinct aggregation can be scheduled to
     only one node. (hyunsik)
 

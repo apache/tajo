@@ -46,6 +46,8 @@ public class TPCH extends BenchmarkSet {
   public static final String ORDERS = "orders";
   public static final String PARTSUPP = "partsupp";
   public static final String SUPPLIER = "supplier";
+  public static final String EMPTY_ORDERS = "empty_orders";
+
 
   public static final Map<String, Long> tableVolumes = Maps.newHashMap();
 
@@ -58,6 +60,8 @@ public class TPCH extends BenchmarkSet {
     tableVolumes.put(ORDERS, 171952161L);
     tableVolumes.put(PARTSUPP, 118984616L);
     tableVolumes.put(SUPPLIER, 1409184L);
+    tableVolumes.put(EMPTY_ORDERS, 0L);
+
   }
 
   @Override
@@ -131,6 +135,8 @@ public class TPCH extends BenchmarkSet {
         .addColumn("o_shippriority", Type.INT4) // 7
         .addColumn("o_comment", Type.TEXT); // 8
     schemas.put(ORDERS, orders);
+    schemas.put(EMPTY_ORDERS, orders);
+
 
     Schema partsupp = new Schema()
         .addColumn("ps_partkey", Type.INT4) // 0
@@ -177,6 +183,8 @@ public class TPCH extends BenchmarkSet {
     loadTable(ORDERS);
     loadTable(PARTSUPP) ;
     loadTable(SUPPLIER);
+    loadTable(EMPTY_ORDERS);
+
   }
 
   private void loadTable(String tableName) throws ServiceException {
