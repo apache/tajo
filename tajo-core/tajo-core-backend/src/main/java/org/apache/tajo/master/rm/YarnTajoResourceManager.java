@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
 import org.apache.hadoop.yarn.api.protocolrecords.FinishApplicationMasterRequest;
@@ -39,7 +40,6 @@ import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
 import org.apache.hadoop.yarn.util.Records;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.exception.UnimplementedException;
@@ -47,7 +47,6 @@ import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.YarnContainerProxy;
 import org.apache.tajo.master.querymaster.QueryInProgress;
-import org.apache.tajo.master.querymaster.QueryJobEvent;
 import org.apache.tajo.util.ApplicationIdUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -57,7 +56,10 @@ import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
 import java.util.*;
 
-public class YarnTajoResourceManager implements WorkerResourceManager {
+import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerAllocatedResource;
+import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerResourceAllocationResponse;
+
+public class YarnTajoResourceManager extends AbstractService implements WorkerResourceManager {
   private static final Log LOG = LogFactory.getLog(YarnTajoResourceManager.class);
 
   private YarnClient yarnClient;
@@ -67,10 +69,11 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
   private TajoMaster.MasterContext masterContext;
 
   public YarnTajoResourceManager() {
-
+    super(YarnTajoResourceManager.class.getSimpleName());
   }
 
   public YarnTajoResourceManager(TajoMaster.MasterContext masterContext) {
+    super(YarnTajoResourceManager.class.getSimpleName());
     this.masterContext = masterContext;
   }
 
@@ -78,8 +81,14 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
   public void stop() {
   }
 
-  public Map<String, WorkerResource> getWorkers() {
-    return new HashMap<String, WorkerResource>();
+  @Override
+  public Map<String, Worker> getWorkers() {
+    return new HashMap<String, Worker>();
+  }
+
+  @Override
+  public Map<String, Worker> getInactiveWorkers() {
+    return new HashMap<String, Worker>();
   }
 
   public Collection<String> getQueryMasters() {
@@ -99,39 +108,20 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
   }
 
   @Override
-  public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request) {
-    throw new UnimplementedException("workerHeartbeat");
-  }
-
-  @Override
-  public void releaseWorkerResource(ExecutionBlockId ebId, YarnProtos.ContainerIdProto containerId) {
+  public void releaseWorkerResource(YarnProtos.ContainerIdProto containerId) {
     throw new UnimplementedException("releaseWorkerResource");
   }
 
   @Override
-  public WorkerResource allocateQueryMaster(QueryInProgress queryInProgress) {
+  public WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress) {
     throw new UnimplementedException("allocateQueryMaster");
   }
 
   @Override
   public void allocateWorkerResources(
       TajoMasterProtocol.WorkerResourceAllocationRequest request,
-      RpcCallback<TajoMasterProtocol.WorkerResourceAllocationResponse> rpcCallBack) {
+      RpcCallback<WorkerResourceAllocationResponse> rpcCallBack) {
     throw new UnimplementedException("allocateWorkerResources");
-  }
-
-  @Override
-  public void startQueryMaster(QueryInProgress queryInProgress) {
-    try {
-      allocateAndLaunchQueryMaster(queryInProgress);
-
-      queryInProgress.getEventHandler().handle(
-          new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInProgress.getQueryInfo()));
-    } catch (IOException e) {
-      LOG.error(e);
-    } catch (YarnException e) {
-      LOG.error(e);
-    }
   }
 
   @Override

@@ -25,15 +25,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class WorkerResource implements Comparable<WorkerResource> {
+/**
+ * Describe current resources of a worker.
+ *
+ * It includes various resource capability of a worker as follows:
+ * <ul>
+ *   <li>used/total disk slots</li>
+ *   <li>used/total core slots</li>
+ *   <li>used/total memory</li>
+ *   <li>the number of running tasks</li>
+ * </ul>
+ */
+public class WorkerResource {
   private static final Log LOG = LogFactory.getLog(WorkerResource.class);
-
-  private String allocatedHost;
-  private int peerRpcPort;
-  private int queryMasterPort;
-  private int clientPort;
-  private int pullServerPort;
-  private int httpPort;
 
   private float diskSlots;
   private int cpuCoreSlots;
@@ -53,27 +57,11 @@ public class WorkerResource implements Comparable<WorkerResource> {
   private final Lock rlock = lock.readLock();
   private final Lock wlock = lock.writeLock();
 
-  private WorkerStatus workerStatus;
-
-  private long lastHeartbeat;
-
   private boolean queryMasterMode;
 
   private boolean taskRunnerMode;
 
   private AtomicInteger numQueryMasterTasks = new AtomicInteger(0);
-
-  public String getId() {
-    return allocatedHost + ":" + queryMasterPort + ":" + peerRpcPort;
-  }
-
-  public String getAllocatedHost() {
-    return allocatedHost;
-  }
-
-  public void setAllocatedHost(String allocatedHost) {
-    this.allocatedHost = allocatedHost;
-  }
 
   public float getDiskSlots() {
     return diskSlots;
@@ -123,16 +111,8 @@ public class WorkerResource implements Comparable<WorkerResource> {
 
   @Override
   public String toString() {
-    return "host:" + allocatedHost + ", port=" + portsToStr() + ", slots=m:" + memoryMB + ",d:" + diskSlots +
+    return "slots=m:" + memoryMB + ",d:" + diskSlots +
         ",c:" + cpuCoreSlots + ", used=m:" + usedMemoryMB + ",d:" + usedDiskSlots + ",c:" + usedCpuCoreSlots;
-  }
-
-  public String portsToStr() {
-    return queryMasterPort + "," + peerRpcPort + "," + clientPort + "," + pullServerPort;
-  }
-
-  public void setLastHeartbeat(long heartbeatTime) {
-    this.lastHeartbeat = heartbeatTime;
   }
 
   public int getUsedMemoryMB() {
@@ -163,22 +143,6 @@ public class WorkerResource implements Comparable<WorkerResource> {
 
   public float getUsedDiskSlots() {
     return usedDiskSlots;
-  }
-
-  public void setUsedDiskSlots(int usedDiskSlots) {
-    this.usedDiskSlots = usedDiskSlots;
-  }
-
-  public WorkerStatus getWorkerStatus() {
-    return workerStatus;
-  }
-
-  public void setWorkerStatus(WorkerStatus workerStatus) {
-    this.workerStatus = workerStatus;
-  }
-
-  public long getLastHeartbeat() {
-    return lastHeartbeat;
   }
 
   public boolean isQueryMasterMode() {
@@ -233,46 +197,6 @@ public class WorkerResource implements Comparable<WorkerResource> {
     }
   }
 
-  public int getPeerRpcPort() {
-    return peerRpcPort;
-  }
-
-  public void setPeerRpcPort(int peerRpcPort) {
-    this.peerRpcPort = peerRpcPort;
-  }
-
-  public int getQueryMasterPort() {
-    return queryMasterPort;
-  }
-
-  public void setQueryMasterPort(int queryMasterPort) {
-    this.queryMasterPort = queryMasterPort;
-  }
-  
-  public int getClientPort() {
-    return clientPort;
-  }
-
-  public void setClientPort(int clientPort) {
-    this.clientPort = clientPort;
-  }
-
-  public int getPullServerPort() {
-    return pullServerPort;
-  }
-
-  public void setPullServerPort(int pullServerPort) {
-    this.pullServerPort = pullServerPort;
-  }
-
-  public int getHttpPort() {
-    return httpPort;
-  }
-
-  public void setHttpPort(int httpPort) {
-    this.httpPort = httpPort;
-  }
-
   public long getMaxHeap() {
     return maxHeap;
   }
@@ -307,23 +231,5 @@ public class WorkerResource implements Comparable<WorkerResource> {
 
   public int getNumQueryMasterTasks() {
     return numQueryMasterTasks.get();
-  }
-
-  public void addNumQueryMasterTask(float diskSlots, int memoryMB) {
-    numQueryMasterTasks.getAndIncrement();
-    allocateResource(diskSlots, memoryMB);
-  }
-
-  public void releaseQueryMasterTask(float diskSlots, int memoryMB) {
-    numQueryMasterTasks.getAndDecrement();
-    releaseResource(diskSlots, memoryMB);
-  }
-
-  @Override
-  public int compareTo(WorkerResource workerResource) {
-    if(workerResource == null) {
-      return 1;
-    }
-    return getId().compareTo(workerResource.getId());
   }
 }

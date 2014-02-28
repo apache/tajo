@@ -23,14 +23,14 @@ import org.apache.hadoop.yarn.api.records.*;
 public class TajoWorkerContainer extends Container {
   ContainerId id;
   NodeId nodeId;
-  WorkerResource workerResource;
+  Worker worker;
 
-  public WorkerResource getWorkerResource() {
-    return workerResource;
+  public Worker getWorkerResource() {
+    return worker;
   }
 
-  public void setWorkerResource(WorkerResource workerResource) {
-    this.workerResource = workerResource;
+  public void setWorkerResource(Worker workerResource) {
+    this.worker = workerResource;
   }
 
   @Override

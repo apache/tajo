@@ -19,7 +19,6 @@
 package org.apache.tajo.worker;
 
 import com.codahale.metrics.Gauge;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -41,14 +40,9 @@ import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.storage.v2.DiskDeviceInfo;
-import org.apache.tajo.storage.v2.DiskMountInfo;
-import org.apache.tajo.storage.v2.DiskUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
@@ -62,7 +56,6 @@ import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -92,6 +85,8 @@ public class TajoWorker extends CompositeService {
 
   private InetSocketAddress tajoMasterAddress;
 
+  private InetSocketAddress workerResourceTrackerAddr;
+
   private CatalogClient catalogClient;
 
   private WorkerContext workerContext;
@@ -106,7 +101,7 @@ public class TajoWorker extends CompositeService {
 
   private boolean taskRunnerMode;
 
-  private WorkerHeartbeatThread workerHeartbeatThread;
+  private WorkerHeartbeatService workerHeartbeatThread;
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
@@ -259,11 +254,13 @@ public class TajoWorker extends CompositeService {
       taskRunnerManager.startTask(cmdArgs);
     } else {
       tajoMasterAddress = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+      workerResourceTrackerAddr = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
       connectToCatalog();
-      workerHeartbeatThread = new WorkerHeartbeatThread();
-      workerHeartbeatThread.start();
     }
 
+    workerHeartbeatThread = new WorkerHeartbeatService(workerContext);
+    workerHeartbeatThread.init(conf);
+    addIfService(workerHeartbeatThread);
   }
 
   private void initWorkerMetrics() {
@@ -314,11 +311,6 @@ public class TajoWorker extends CompositeService {
         webServer.stop();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
-      }
-    }
-    if(workerHeartbeatThread != null) {
-      synchronized (workerHeartbeatThread){
-        workerHeartbeatThread.notifyAll();
       }
     }
 
@@ -377,6 +369,10 @@ public class TajoWorker extends CompositeService {
 
     public TajoPullServerService getPullService() {
       return pullService;
+    }
+
+    public int getHttpPort() {
+      return httpPort;
     }
 
     public String getWorkerName() {
@@ -461,6 +457,10 @@ public class TajoWorker extends CompositeService {
       return tajoMasterAddress;
     }
 
+    public InetSocketAddress getResourceTrackerAddress() {
+      return workerResourceTrackerAddr;
+    }
+
     public int getPeerRpcPort() {
       return getTajoWorkerManagerService() == null ? 0 : getTajoWorkerManagerService().getBindAddr().getPort();
     }
@@ -487,187 +487,6 @@ public class TajoWorker extends CompositeService {
       catalogClient = new CatalogClient(systemConf);
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
-    }
-  }
-
-  class WorkerHeartbeatThread extends Thread {
-    TajoMasterProtocol.ServerStatusProto.System systemInfo;
-    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos =
-        new ArrayList<TajoMasterProtocol.ServerStatusProto.Disk>();
-    float workerDiskSlots;
-    int workerMemoryMB;
-    List<DiskDeviceInfo> diskDeviceInfos;
-
-    public WorkerHeartbeatThread() {
-      int workerCpuCoreNum;
-
-      boolean dedicatedResource = systemConf.getBoolVar(ConfVars.WORKER_RESOURCE_DEDICATED);
-      int workerCpuCoreSlots = Runtime.getRuntime().availableProcessors();
-
-      try {
-        diskDeviceInfos = DiskUtil.getDiskDeviceInfos();
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-      }
-
-      if(dedicatedResource) {
-        float dedicatedMemoryRatio = systemConf.getFloatVar(ConfVars.WORKER_RESOURCE_DEDICATED_MEMORY_RATIO);
-        int totalMemory = getTotalMemoryMB();
-        workerMemoryMB = (int) ((float) (totalMemory) * dedicatedMemoryRatio);
-        workerCpuCoreNum = Runtime.getRuntime().availableProcessors();
-
-        if(diskDeviceInfos == null) {
-          workerDiskSlots = ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.defaultIntVal;
-        } else {
-          workerDiskSlots = diskDeviceInfos.size();
-        }
-      } else {
-        workerMemoryMB = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
-        workerCpuCoreNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
-        workerDiskSlots = systemConf.getFloatVar(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
-      }
-
-      systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
-          .setAvailableProcessors(workerCpuCoreNum)
-          .setFreeMemoryMB(0)
-          .setMaxMemoryMB(0)
-          .setTotalMemoryMB(getTotalMemoryMB())
-          .build();
-    }
-
-    public void run() {
-      LOG.info("Worker Resource Heartbeat Thread start.");
-      int sendDiskInfoCount = 0;
-      int pullServerPort = 0;
-      if(pullService != null) {
-        long startTime = System.currentTimeMillis();
-        while(true) {
-          pullServerPort = pullService.getPort();
-          if(pullServerPort > 0) {
-            break;
-          }
-          //waiting while pull server init
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
-          }
-          if(System.currentTimeMillis() - startTime > 30 * 1000) {
-            LOG.fatal("Too long push server init.");
-            System.exit(0);
-          }
-        }
-      }
-
-      String hostName = null;
-      int peerRpcPort = 0;
-      int queryMasterPort = 0;
-      int clientPort = 0;
-      if(workerContext.getTajoWorkerManagerService() != null) {
-        hostName = workerContext.getTajoWorkerManagerService().getBindAddr().getHostName();
-        peerRpcPort = workerContext.getTajoWorkerManagerService().getBindAddr().getPort();
-      }
-      if(workerContext.getQueryMasterManagerService() != null) {
-        hostName = workerContext.getQueryMasterManagerService().getBindAddr().getHostName();
-        queryMasterPort = workerContext.getQueryMasterManagerService().getBindAddr().getPort();
-      }
-      if(workerContext.getTajoWorkerClientService() != null) {
-        clientPort = workerContext.getTajoWorkerClientService().getBindAddr().getPort();
-      }
-
-      while(!stopped.get()) {
-        if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
-          getDiskUsageInfos();
-        }
-        TajoMasterProtocol.ServerStatusProto.JvmHeap jvmHeap =
-          TajoMasterProtocol.ServerStatusProto.JvmHeap.newBuilder()
-            .setMaxHeap(Runtime.getRuntime().maxMemory())
-            .setFreeHeap(Runtime.getRuntime().freeMemory())
-            .setTotalHeap(Runtime.getRuntime().totalMemory())
-            .build();
-
-        TajoMasterProtocol.ServerStatusProto serverStatus = TajoMasterProtocol.ServerStatusProto.newBuilder()
-            .addAllDisk(diskInfos)
-            .setRunningTaskNum(taskRunnerManager == null ? 1 : taskRunnerManager.getNumTasks())   //TODO
-            .setSystem(systemInfo)
-            .setDiskSlots(workerDiskSlots)
-            .setMemoryResourceMB(workerMemoryMB)
-            .setJvmHeap(jvmHeap)
-            .setQueryMasterMode(PrimitiveProtos.BoolProto.newBuilder().setValue(queryMasterMode))
-            .setTaskRunnerMode(PrimitiveProtos.BoolProto.newBuilder().setValue(taskRunnerMode))
-            .build();
-
-        TajoMasterProtocol.TajoHeartbeat heartbeatProto = TajoMasterProtocol.TajoHeartbeat.newBuilder()
-            .setTajoWorkerHost(hostName)
-            .setTajoQueryMasterPort(queryMasterPort)
-            .setPeerRpcPort(peerRpcPort)
-            .setTajoWorkerClientPort(clientPort)
-            .setTajoWorkerHttpPort(httpPort)
-            .setTajoWorkerPullServerPort(pullServerPort)
-            .setServerStatus(serverStatus)
-            .build();
-
-        NettyClientBase tmClient = null;
-        try {
-          CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
-              new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
-
-          tmClient = connPool.getConnection(tajoMasterAddress, TajoMasterProtocol.class, true);
-          TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
-          masterClientService.heartbeat(callBack.getController(), heartbeatProto, callBack);
-
-          TajoMasterProtocol.TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
-          if(response != null) {
-            TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
-            if(clusterResourceSummary.getNumWorkers() > 0) {
-              workerContext.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
-            }
-            workerContext.setClusterResource(clusterResourceSummary);
-          } else {
-            if(callBack.getController().failed()) {
-              throw new ServiceException(callBack.getController().errorText());
-            }
-          }
-        } catch (InterruptedException e) {
-          break;
-        } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
-        } finally {
-          connPool.releaseConnection(tmClient);
-        }
-
-        try {
-          synchronized (workerHeartbeatThread){
-            wait(10 * 1000);
-          }
-        } catch (InterruptedException e) {
-          break;
-        }
-        sendDiskInfoCount++;
-
-        if(sendDiskInfoCount > 10) {
-          sendDiskInfoCount = 0;
-        }
-      }
-
-      LOG.info("Worker Resource Heartbeat Thread stopped.");
-    }
-
-    private void getDiskUsageInfos() {
-      diskInfos.clear();
-      for(DiskDeviceInfo eachDevice: diskDeviceInfos) {
-        List<DiskMountInfo> mountInfos = eachDevice.getMountInfos();
-        if(mountInfos != null) {
-          for(DiskMountInfo eachMount: mountInfos) {
-            File eachFile = new File(eachMount.getMountPath());
-            diskInfos.add(TajoMasterProtocol.ServerStatusProto.Disk.newBuilder()
-                .setAbsolutePath(eachFile.getAbsolutePath())
-                .setTotalSpace(eachFile.getTotalSpace())
-                .setFreeSpace(eachFile.getFreeSpace())
-                .setUsableSpace(eachFile.getUsableSpace())
-                .build());
-          }
-        }
-      }
     }
   }
 
@@ -750,14 +569,6 @@ public class TajoWorker extends CompositeService {
         mountOutput.close();
       }
     }
-  }
-
-  public static int getTotalMemoryMB() {
-    com.sun.management.OperatingSystemMXBean bean =
-        (com.sun.management.OperatingSystemMXBean)
-            java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-    long max = bean.getTotalPhysicalMemorySize();
-    return ((int) (max / (1024 * 1024)));
   }
 
   public static void main(String[] args) throws Exception {

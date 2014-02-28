@@ -218,7 +218,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
           .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
-          .setPeerRpcPort(workerContext.getPeerRpcPort())
           .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
           .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
           .setState(state)
@@ -358,7 +357,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     TajoHeartbeat queryHeartbeat = TajoHeartbeat.newBuilder()
         .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
         .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
-        .setPeerRpcPort(workerContext.getPeerRpcPort())
         .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
         .setState(queryMasterTask.getState())
         .setQueryId(queryMasterTask.getQueryId().getProto())

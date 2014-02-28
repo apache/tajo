@@ -45,6 +45,7 @@ import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobEvent;
 import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -316,39 +317,37 @@ public class TajoMasterClientService extends AbstractService {
       GetClusterInfoResponse.Builder builder
         = GetClusterInfoResponse.newBuilder(); 
        
-      Map<String, WorkerResource> workers 
-        = context.getResourceManager().getWorkers();
+      Map<String, Worker> workers = context.getResourceManager().getWorkers();
 
       List<String> wokerKeys = new ArrayList<String>(workers.keySet());
       Collections.sort(wokerKeys);
 
-      int runningQueryMasterTasks = 0;
-
       WorkerResourceInfo.Builder workerBuilder
         = WorkerResourceInfo.newBuilder();
 
-      for(WorkerResource eachWorker: workers.values()) {
-        workerBuilder.setAllocatedHost(eachWorker.getAllocatedHost());
-        workerBuilder.setDiskSlots(eachWorker.getDiskSlots());
-        workerBuilder.setCpuCoreSlots(eachWorker.getCpuCoreSlots());
-        workerBuilder.setMemoryMB(eachWorker.getMemoryMB());
-        workerBuilder.setLastHeartbeat(eachWorker.getLastHeartbeat());
-        workerBuilder.setUsedMemoryMB(eachWorker.getUsedMemoryMB());
-        workerBuilder.setUsedCpuCoreSlots(eachWorker.getUsedCpuCoreSlots());
-        workerBuilder.setUsedDiskSlots(eachWorker.getUsedDiskSlots());
-        workerBuilder.setWorkerStatus(eachWorker.getWorkerStatus().toString());
-        workerBuilder.setQueryMasterMode(eachWorker.isQueryMasterMode());
-        workerBuilder.setTaskRunnerMode(eachWorker.isTaskRunnerMode());
-        workerBuilder.setPeerRpcPort(eachWorker.getPeerRpcPort());
-        workerBuilder.setQueryMasterPort(eachWorker.getQueryMasterPort());
-        workerBuilder.setClientPort(eachWorker.getClientPort());
-        workerBuilder.setPullServerPort(eachWorker.getPullServerPort());
-        workerBuilder.setHttpPort(eachWorker.getHttpPort());
-        workerBuilder.setMaxHeap(eachWorker.getMaxHeap());
-        workerBuilder.setFreeHeap(eachWorker.getFreeHeap());
-        workerBuilder.setTotalHeap(eachWorker.getTotalHeap());
-        workerBuilder.setNumRunningTasks(eachWorker.getNumRunningTasks());
-        workerBuilder.setNumQueryMasterTasks(eachWorker.getNumQueryMasterTasks());
+      for(Worker worker: workers.values()) {
+        WorkerResource workerResource = worker.getResource();
+        workerBuilder.setAllocatedHost(worker.getHostName());
+        workerBuilder.setDiskSlots(workerResource.getDiskSlots());
+        workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
+        workerBuilder.setMemoryMB(workerResource.getMemoryMB());
+        workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
+        workerBuilder.setUsedMemoryMB(workerResource.getUsedMemoryMB());
+        workerBuilder.setUsedCpuCoreSlots(workerResource.getUsedCpuCoreSlots());
+        workerBuilder.setUsedDiskSlots(workerResource.getUsedDiskSlots());
+        workerBuilder.setWorkerStatus(worker.getState().toString());
+        workerBuilder.setQueryMasterMode(workerResource.isQueryMasterMode());
+        workerBuilder.setTaskRunnerMode(workerResource.isTaskRunnerMode());
+        workerBuilder.setPeerRpcPort(worker.getPeerRpcPort());
+        workerBuilder.setQueryMasterPort(worker.getQueryMasterPort());
+        workerBuilder.setClientPort(worker.getClientPort());
+        workerBuilder.setPullServerPort(worker.getPullServerPort());
+        workerBuilder.setHttpPort(worker.getHttpPort());
+        workerBuilder.setMaxHeap(workerResource.getMaxHeap());
+        workerBuilder.setFreeHeap(workerResource.getFreeHeap());
+        workerBuilder.setTotalHeap(workerResource.getTotalHeap());
+        workerBuilder.setNumRunningTasks(workerResource.getNumRunningTasks());
+        workerBuilder.setNumQueryMasterTasks(workerResource.getNumQueryMasterTasks());
 
         builder.addWorkerList(workerBuilder.build());
       }

@@ -123,8 +123,10 @@ public class NettyServerBase {
       bootstrap.releaseExternalResources();
     }
 
-    LOG.info("Rpc (" + serviceName + ") listened on "
-        + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
+    if (bindAddress != null) {
+      LOG.info("Rpc (" + serviceName + ") listened on "
+          + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
+    }
   }
 
   private static String getNextDefaultServiceName() {

@@ -19,9 +19,8 @@
 package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.proto.YarnProtos.*;
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.hadoop.service.Service;
+import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -30,41 +29,82 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-public interface WorkerResourceManager {
+import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerAllocatedResource;
+import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerResourceAllocationResponse;
+
+/**
+ * An interface of WorkerResourceManager which allows TajoMaster to request allocation for containers
+ * and release the allocated containers.
+ */
+public interface WorkerResourceManager extends Service {
 
   /**
-   * select Worker for QueryMaster
-   * @param queryInProgress
-   * @return
+   * Request a resource container for a QueryMaster.
+   *
+   * @param queryInProgress QueryInProgress
+   * @return A allocated container resource
    */
-  public WorkerResource allocateQueryMaster(QueryInProgress queryInProgress);
+  @Deprecated
+  public WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress);
 
+  /**
+   * Request one or more resource containers. You can set the number of containers and resource capabilities, such as
+   * memory, CPU cores, and disk slots. This is an asynchronous call. You should use a callback to get allocated
+   * resource containers. Each container is identified {@link org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto}.
+   *
+   * @param request Request description
+   * @param rpcCallBack Callback function
+   */
   public void allocateWorkerResources(TajoMasterProtocol.WorkerResourceAllocationRequest request,
-      RpcCallback<TajoMasterProtocol.WorkerResourceAllocationResponse> rpcCallBack);
+      RpcCallback<WorkerResourceAllocationResponse> rpcCallBack);
 
   /**
-   * start Worker for query master(YARN) or assign query master role(Standby Mode)
-   * @param queryInProgress
+   * Release a container
+   *
+   * @param containerId ContainerIdProto to be released
    */
-  public void startQueryMaster(QueryInProgress queryInProgress);
+  public void releaseWorkerResource(ContainerIdProto containerId);
 
   public String getSeedQueryId() throws IOException;
 
+  /**
+   * Check if a query master is stopped.
+   *
+   * @param queryId QueryId to be checked
+   * @return True if QueryMaster is stopped
+   */
   public boolean isQueryMasterStopped(QueryId queryId);
 
-  public void init(Configuration conf);
-
+  /**
+   * Stop a query master
+   *
+   * @param queryId QueryId to be stopped
+   */
   public void stopQueryMaster(QueryId queryId);
 
-  public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request);
+  /**
+   *
+   * @return a Map instance containing active workers
+   */
+  public Map<String, Worker> getWorkers();
 
-  public void releaseWorkerResource(ExecutionBlockId ebId, ContainerIdProto containerId);
-
-  public Map<String, WorkerResource> getWorkers();
+  /**
+   *
+   * @return a Map instance containing inactive workers
+   */
+  public Map<String, Worker> getInactiveWorkers();
 
   public void stop();
 
+  /**
+   *
+   * @return The overall summary of cluster resources
+   */
   public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary();
 
+  /**
+   *
+   * @return WorkerIds on which QueryMasters are running
+   */
   Collection<String> getQueryMasters();
 }

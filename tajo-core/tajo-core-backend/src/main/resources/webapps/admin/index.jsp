@@ -19,21 +19,23 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.master.rm.*" %>
-<%@ page import="org.apache.tajo.catalog.*" %>
-<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
-<%@ page import="org.apache.tajo.util.NetUtils" %>
-<%@ page import="org.apache.hadoop.util.StringUtils" %>
 <%@ page import="org.apache.hadoop.fs.FileSystem" %>
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
 <%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
+<%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
+<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
+<%@ page import="org.apache.tajo.util.NetUtils" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="java.util.Collection" %>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.Map" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
+  Map<String, Worker> workers = master.getContext().getResourceManager().getWorkers();
+  Map<String, Worker> inactiveWorkers = master.getContext().getResourceManager().getInactiveWorkers();
 
   int numWorkers = 0;
   int numLiveWorkers = 0;
@@ -49,27 +51,29 @@
   TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary =
           master.getContext().getResourceManager().getClusterResourceSummary();
 
-  for(WorkerResource eachWorker: workers.values()) {
-    if(eachWorker.getWorkerStatus() == WorkerStatus.LIVE) {
-      if(eachWorker.isQueryMasterMode()) {
-        numQueryMasters++;
-        numLiveQueryMasters++;
-        runningQueryMasterTask += eachWorker.getNumQueryMasterTasks();
-      }
-      if(eachWorker.isTaskRunnerMode()) {
-        numWorkers++;
-        numLiveWorkers++;
-      }
-    } else if(eachWorker.getWorkerStatus() == WorkerStatus.DEAD) {
-      if(eachWorker.isQueryMasterMode()) {
+  for(Worker eachWorker: workers.values()) {
+    if(eachWorker.getResource().isQueryMasterMode()) {
+      numQueryMasters++;
+      numLiveQueryMasters++;
+      runningQueryMasterTask += eachWorker.getResource().getNumQueryMasterTasks();
+    }
+    if(eachWorker.getResource().isTaskRunnerMode()) {
+      numWorkers++;
+      numLiveWorkers++;
+    }
+  }
+
+  for (Worker eachWorker : inactiveWorkers.values()) {
+    if (eachWorker.getState() == WorkerState.LOST) {
+      if(eachWorker.getResource().isQueryMasterMode()) {
         numQueryMasters++;
         numDeadQueryMasters++;
       }
-      if(eachWorker.isTaskRunnerMode()) {
+      if(eachWorker.getResource().isTaskRunnerMode()) {
         numWorkers++;
         numDeadWorkers++;
       }
-    } else if(eachWorker.getWorkerStatus() == WorkerStatus.DECOMMISSION) {
+    } else if(eachWorker.getState() == WorkerState.DECOMMISSIONED) {
       numDecommissionWorkers++;
     }
   }

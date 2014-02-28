@@ -169,14 +169,19 @@ public class CatalogServer extends AbstractService {
   }
 
   public void stop() {
+    LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
+
+    // If CatalogServer shutdowns before it started, rpcServer and store may be NULL.
+    // So, we should check Nullity of them.
     if (rpcServer != null) {
       this.rpcServer.shutdown();
     }
-    LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
-    try {
-      store.close();
-    } catch (IOException ioe) {
-      LOG.error(ioe.getMessage(), ioe);
+    if (store != null) {
+      try {
+        store.close();
+      } catch (IOException ioe) {
+        LOG.error(ioe.getMessage(), ioe);
+      }
     }
     super.stop();
   }

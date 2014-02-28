@@ -24,12 +24,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.proto.YarnProtos;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -37,7 +37,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class TajoMasterService extends AbstractService {
@@ -97,25 +97,14 @@ public class TajoMasterService extends AbstractService {
         RpcController controller,
         TajoMasterProtocol.TajoHeartbeat request, RpcCallback<TajoMasterProtocol.TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
-        LOG.debug("Received QueryHeartbeat:" + request.getTajoWorkerHost() + ":" +
-            request.getTajoQueryMasterPort() + ":" + request.getPeerRpcPort());
+        LOG.debug("Received QueryHeartbeat:" + request.getTajoWorkerHost() + ":" + request.getTajoQueryMasterPort());
       }
 
       TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
-      if(request.hasQueryId()) {
-        QueryId queryId = new QueryId(request.getQueryId());
 
-        //heartbeat from querymaster
-        //LOG.info("Received QueryHeartbeat:" + queryId + "," + request);
-        QueryJobManager queryJobManager = context.getQueryJobManager();
-        command = queryJobManager.queryHeartbeat(request);
-      } else {
-        //heartbeat from TajoWorker
-        context.getResourceManager().workerHeartbeat(request);
-      }
+      QueryJobManager queryJobManager = context.getQueryJobManager();
+      command = queryJobManager.queryHeartbeat(request);
 
-      //ApplicationAttemptId attemptId = queryJobManager.getAppAttemptId();
-      //String attemptIdStr = attemptId == null ? null : attemptId.toString();
       TajoMasterProtocol.TajoHeartbeatResponse.Builder builder = TajoMasterProtocol.TajoHeartbeatResponse.newBuilder();
       builder.setHeartbeatResult(BOOL_TRUE);
       if(command != null) {
@@ -139,10 +128,9 @@ public class TajoMasterService extends AbstractService {
                                            TajoMasterProtocol.WorkerResourceReleaseRequest request,
                                            RpcCallback<PrimitiveProtos.BoolProto> done) {
       List<YarnProtos.ContainerIdProto> containerIds = request.getContainerIdsList();
-      ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
 
       for(YarnProtos.ContainerIdProto eachContainer: containerIds) {
-        context.getResourceManager().releaseWorkerResource(ebId, eachContainer);
+        context.getResourceManager().releaseWorkerResource(eachContainer);
       }
       done.run(BOOL_TRUE);
     }
@@ -160,20 +148,20 @@ public class TajoMasterService extends AbstractService {
 
       TajoMasterProtocol.WorkerResourcesRequest.Builder builder =
           TajoMasterProtocol.WorkerResourcesRequest.newBuilder();
-      List<WorkerResource> workerResources =
-          new ArrayList<WorkerResource>(context.getResourceManager().getWorkers().values());
+      Collection<Worker> workers = context.getResourceManager().getWorkers().values();
 
-      for(WorkerResource worker: workerResources) {
+      for(Worker worker: workers) {
+        WorkerResource resource = worker.getResource();
 
         TajoMasterProtocol.WorkerResourceProto.Builder workerResource =
             TajoMasterProtocol.WorkerResourceProto.newBuilder();
 
-        workerResource.setHost(worker.getAllocatedHost());
+        workerResource.setHost(worker.getHostName());
         workerResource.setPeerRpcPort(worker.getPeerRpcPort());
         workerResource.setInfoPort(worker.getHttpPort());
         workerResource.setQueryMasterPort(worker.getQueryMasterPort());
-        workerResource.setMemoryMB(worker.getMemoryMB());
-        workerResource.setDiskSlots(worker.getDiskSlots());
+        workerResource.setMemoryMB(resource.getMemoryMB());
+        workerResource.setDiskSlots(resource.getDiskSlots());
         workerResource.setQueryMasterPort(worker.getQueryMasterPort());
 
         builder.addWorkerResources(workerResource);

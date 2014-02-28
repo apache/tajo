@@ -61,17 +61,13 @@ message ServerStatusProto {
 
 message TajoHeartbeat {
   required string tajoWorkerHost = 1;
-  required int32 peerRpcPort = 2;
-  required int32 tajoQueryMasterPort = 3;
-  optional ServerStatusProto serverStatus = 4;
-  optional int32 tajoWorkerClientPort = 5;
-  optional QueryIdProto queryId = 6;
-  optional QueryState state = 7;
-  optional string statusMessage = 8;
-  optional int32 tajoWorkerPullServerPort = 9;
-  optional int32 tajoWorkerHttpPort = 10;
-  optional float queryProgress = 11;
-  optional int64 queryFinishTime = 12;
+  required int32 tajoQueryMasterPort = 2;
+  optional int32 tajoWorkerClientPort = 3;
+  optional QueryIdProto queryId = 4;
+  optional QueryState state = 5;
+  optional string statusMessage = 6;
+  optional float queryProgress = 7;
+  optional int64 queryFinishTime = 8;
 }
 
 message TajoHeartbeatResponse {
@@ -101,7 +97,7 @@ enum ResourceRequestPriority {
 }
 
 message WorkerResourceAllocationRequest {
-    required ExecutionBlockIdProto executionBlockId = 1;
+    required QueryIdProto queryId = 1;
     required ResourceRequestPriority resourceRequestPriority = 2;
 
     required int32 numContainers = 3;
@@ -137,14 +133,15 @@ message WorkerAllocatedResource {
     required string workerHost = 3;
     required int32 peerRpcPort = 4;
     required int32 queryMasterPort = 5;
-    required int32 workerPullServerPort = 6;
+    required int32 clientPort = 6;
+    required int32 workerPullServerPort = 7;
 
-    required int32 allocatedMemoryMB = 7;
-    required float allocatedDiskSlots = 8;
+    required int32 allocatedMemoryMB = 8;
+    required float allocatedDiskSlots = 9;
 }
 
 message WorkerResourceAllocationResponse {
-    required ExecutionBlockIdProto executionBlockId = 1;
+    required QueryIdProto queryId = 1;
     repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 

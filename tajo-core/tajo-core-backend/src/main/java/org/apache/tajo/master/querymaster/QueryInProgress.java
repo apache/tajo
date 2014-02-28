@@ -25,6 +25,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
@@ -35,7 +36,6 @@ import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -44,6 +44,8 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerAllocatedResource;
 
 public class QueryInProgress extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryInProgress.class.getName());
@@ -67,6 +69,8 @@ public class QueryInProgress extends CompositeService {
   private NettyClientBase queryMasterRpc;
 
   private QueryMasterProtocolService queryMasterRpcClient;
+
+  private YarnProtos.ContainerIdProto qmContainerId;
 
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
@@ -146,16 +150,24 @@ public class QueryInProgress extends CompositeService {
     return dispatcher.getEventHandler();
   }
 
+
+
   public boolean startQueryMaster() {
     try {
       LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
       WorkerResourceManager resourceManager = masterContext.getResourceManager();
-      WorkerResource queryMasterResource = resourceManager.allocateQueryMaster(this);
+      WorkerAllocatedResource resource = resourceManager.allocateQueryMaster(this);
 
-      if(queryMasterResource == null) {
+      // if no resource to allocate a query master
+      if(resource == null) {
+        LOG.info("No Available Resources for QueryMaster");
         return false;
       }
-      queryInfo.setQueryMasterResource(queryMasterResource);
+
+      queryInfo.setQueryMaster(resource.getWorkerHost());
+      queryInfo.setQueryMasterPort(resource.getQueryMasterPort());
+      queryInfo.setQueryMasterclientPort(resource.getClientPort());
+
       getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START, queryInfo));
 
       return true;
@@ -171,7 +183,9 @@ public class QueryInProgress extends CompositeService {
       if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_HEARTBEAT) {
         heartbeat(queryJobEvent.getQueryInfo());
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
-        masterContext.getResourceManager().startQueryMaster(QueryInProgress.this);
+        QueryInProgress queryInProgress = masterContext.getQueryJobManager().getQueryInProgress(queryId);
+        queryInProgress.getEventHandler().handle(
+            new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInProgress.getQueryInfo()));
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_START) {
         submmitQueryToMaster();
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_FINISH) {
@@ -187,15 +201,12 @@ public class QueryInProgress extends CompositeService {
   }
 
   private void connectQueryMaster() throws Exception {
-    if(queryInfo.getQueryMasterResource() != null &&
-        queryInfo.getQueryMasterResource().getAllocatedHost() != null) {
-      InetSocketAddress addr = NetUtils.createSocketAddr(
-          queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
-      LOG.info("Connect to QueryMaster:" + addr);
-      queryMasterRpc =
-          RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
-      queryMasterRpcClient = queryMasterRpc.getStub();
-    }
+    InetSocketAddress addr = NetUtils.createSocketAddr(
+        queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    LOG.info("Connect to QueryMaster:" + addr);
+    queryMasterRpc =
+        RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
+    queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
   private synchronized void submmitQueryToMaster() {
@@ -244,9 +255,6 @@ public class QueryInProgress extends CompositeService {
 
   private void heartbeat(QueryInfo queryInfo) {
     LOG.info("Received QueryMaster heartbeat:" + queryInfo);
-    if(queryInfo.getQueryMasterResource() != null) {
-      this.queryInfo.setQueryMasterResource(queryInfo.getQueryMasterResource());
-    }
     this.queryInfo.setQueryState(queryInfo.getQueryState());
     this.queryInfo.setProgress(queryInfo.getProgress());
     this.queryInfo.setFinishTime(queryInfo.getFinishTime());

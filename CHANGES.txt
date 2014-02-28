@@ -529,6 +529,11 @@ Release 0.8.0 - unreleased
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
 
+  SUB TASKS
+
+    TAJO-602: WorkerResourceManager should be broke down into 3 parts.
+    (hyunsik)
+
 
 Release 0.2.0 - released
 
