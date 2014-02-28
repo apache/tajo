@@ -388,10 +388,13 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       try {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state of "
-            + event.getTaskAttemptId() + ")", e);
-        eventHandler.handle(new QueryEvent(TajoIdUtils.parseQueryId(getId().toString()),
-            QueryEventType.INTERNAL_ERROR));
+        LOG.error("Can't handle this event at current state of " + event.getTaskAttemptId() + ")", e);
+        eventHandler.handle(
+            new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
+                "Can't handle this event at current state of " + event.getTaskAttemptId() + ")"));
+        eventHandler.handle(
+            new SubQueryEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
+                SubQueryEventType.SQ_INTERNAL_ERROR));
       }
 
       //notify the eventhandler of state change
