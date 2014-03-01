@@ -19,10 +19,10 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
+<%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.master.*" %>
+<%@ page import="org.apache.tajo.master.rm.*" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
@@ -59,7 +59,8 @@
     if (state == WorkerState.LOST) {
       if (inactiveWorker.getResource().isQueryMasterMode()) {
         deadQueryMasters.add(inactiveWorker);
-      } else {
+      }
+      if (inactiveWorker.getResource().isTaskRunnerMode()) {
         deadWorkers.add(inactiveWorker);
       }
     } else if (state == WorkerState.DECOMMISSIONED) {
@@ -92,7 +93,7 @@
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heap(free/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heap(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
 
 <%
     int no = 1;
@@ -105,7 +106,7 @@
       <td><a href='<%=queryMasterHttp%>'><%=queryMaster.getHostName() + ":" + queryMaster.getQueryMasterPort()%></a></td>
       <td width='100' align='center'><%=queryMaster.getClientPort()%></td>
       <td width='200' align='right'><%=resource.getNumQueryMasterTasks()%></td>
-      <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+      <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
       <td width='100' align='right'><%=JSPUtil.getElapsedTime(queryMaster.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
       <td width='100' align='center'><%=queryMaster.getState()%></td>
     </tr>
@@ -124,18 +125,15 @@
 %>
   <hr/>
   <h3>Dead QueryMaster</h3>
-  <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Status</th></tr>
+  <table width="300" class="border_table" border="1">
+    <tr><th>No</th><th>QueryMaster</th>
 <%
       int no = 1;
       for(Worker queryMaster: deadQueryMasters) {
-        WorkerResource resource = queryMaster.getResource();
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
       <td><%=queryMaster.getHostName() + ":" + queryMaster.getQueryMasterPort()%></td>
-      <td><%=queryMaster.getClientPort()%></td>
-      <td align='center'><%=queryMaster.getState()%></td>
     </tr>
 <%
       } //end fo for
@@ -157,7 +155,7 @@
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>Worker</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th></th><th>Heap(free/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>Worker</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th><th>Heap<br/>(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
 <%
     int no = 1;
     for(Worker worker: liveWorkers) {
@@ -171,7 +169,7 @@
       <td width='100' align='right'><%=resource.getNumRunningTasks()%></td>
       <td width='150' align='center'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
       <td width='100' align='center'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
-      <td width='100' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+      <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
       <td width='100' align='right'><%=JSPUtil.getElapsedTime(worker.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
       <td width='100' align='center'><%=worker.getState()%></td>
     </tr>
@@ -195,8 +193,8 @@
 <%
   } else {
 %>
-  <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>Worker</th><th>PullServer Port</th><th>Running Tasks</th><th>Memory Resource</th><th>Disk Resource</th></th><th>Heap(free/max)</th><th>Heartbeat</th><th>Status</th></tr>
+  <table width="300" class="border_table" border="1">
+    <tr><th>No</th><th>Worker</th></tr>
 <%
       int no = 1;
       for(Worker worker: deadWorkers) {
@@ -205,11 +203,6 @@
     <tr>
       <td width='30' align='right'><%=no++%></td>
       <td><%=worker.getHostName() + ":" + worker.getPeerRpcPort()%></td>
-      <td width='150' align='center'><%=worker.getPullServerPort()%></td>
-      <td width='100' align='right'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
-      <td width='100' align='right'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
-      <td width='100' align='left'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
-      <td width='100' align='center'><%=worker.getState()%></td>
     </tr>
 <%
       } //end fo for
