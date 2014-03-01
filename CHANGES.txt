@@ -130,6 +130,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-589: Add fine grained progress indicator for each task.
+    (hyoungjunkim via hyunsik)
+
     TAJO-614: Explaning a logical node should use ExplainLogicalPlanVisitor.
     (hyunsik)
 

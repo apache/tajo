@@ -81,7 +81,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private int priority;
   private Schema schema;
   private TableMeta meta;
-  private TableStats statistics;
+  private TableStats resultStatistics;
+  private TableStats inputStatistics;
   private EventHandler<Event> eventHandler;
   private final AbstractStorageManager sm;
   private AbstractTaskScheduler taskScheduler;
@@ -304,7 +305,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return this.finishTime;
   }
 
-  public float getProgress() {
+  public float getTaskProgress() {
     readLock.lock();
     try {
       if (getState() == SubQueryState.NEW) {
@@ -315,6 +316,29 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     } finally {
       readLock.unlock();
     }
+  }
+
+  public float getProgress() {
+    List<QueryUnit> tempTasks = null;
+    readLock.lock();
+    try {
+      if (getState() == SubQueryState.NEW) {
+        return 0;
+      } else {
+        tempTasks = new ArrayList<QueryUnit>(tasks.values());
+      }
+    } finally {
+      readLock.unlock();
+    }
+
+    float totalProgress = 0.0f;
+    for (QueryUnit eachQueryUnit: tempTasks) {
+      if (eachQueryUnit.getLastAttempt() != null) {
+        totalProgress += eachQueryUnit.getLastAttempt().getProgress();
+      }
+    }
+
+    return totalProgress/(float)tempTasks.size();
   }
 
   public int getSucceededObjectCount() {
@@ -397,8 +421,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return meta;
   }
 
-  public TableStats getTableStat() {
-    return statistics;
+  public TableStats getResultStats() {
+    return resultStatistics;
+  }
+
+  public TableStats getInputStats() {
+    return inputStatistics;
   }
 
   public List<String> getDiagnostics() {
@@ -447,11 +475,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  private static TableStats computeStatFromUnionBlock(SubQuery subQuery) {
-    TableStats stat = new TableStats();
-    TableStats childStat;
-    long avgRows = 0, numBytes = 0, numRows = 0;
-    int numBlocks = 0, numOutputs = 0;
+  public static TableStats[] computeStatFromUnionBlock(SubQuery subQuery) {
+    TableStats[] stat = new TableStats[]{new TableStats(), new TableStats()};
+    long[] avgRows = new long[]{0, 0};
+    long[] numBytes = new long[]{0, 0};
+    long[] readBytes = new long[]{0, 0};
+    long[] numRows = new long[]{0, 0};
+    int[] numBlocks = new int[]{0, 0};
+    int[] numOutputs = new int[]{0, 0};
+
     List<ColumnStats> columnStatses = Lists.newArrayList();
 
     MasterPlan masterPlan = subQuery.getMasterPlan();
@@ -459,31 +491,48 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     while (it.hasNext()) {
       ExecutionBlock block = it.next();
       SubQuery childSubQuery = subQuery.context.getSubQuery(block.getId());
-      childStat = childSubQuery.getTableStat();
-      avgRows += childStat.getAvgRows();
-      columnStatses.addAll(childStat.getColumnStats());
-      numBlocks += childStat.getNumBlocks();
-      numBytes += childStat.getNumBytes();
-      numOutputs += childStat.getNumShuffleOutputs();
-      numRows += childStat.getNumRows();
+      TableStats[] childStatArray = new TableStats[]{
+          childSubQuery.getInputStats(), childSubQuery.getResultStats()
+      };
+      for (int i = 0; i < 2; i++) {
+        if (childStatArray[i] == null) {
+          continue;
+        }
+        avgRows[i] += childStatArray[i].getAvgRows();
+        numBlocks[i] += childStatArray[i].getNumBlocks();
+        numBytes[i] += childStatArray[i].getNumBytes();
+        readBytes[i] += childStatArray[i].getReadBytes();
+        numOutputs[i] += childStatArray[i].getNumShuffleOutputs();
+        numRows[i] += childStatArray[i].getNumRows();
+      }
+      columnStatses.addAll(childStatArray[1].getColumnStats());
     }
 
-    stat.setColumnStats(columnStatses);
-    stat.setNumBlocks(numBlocks);
-    stat.setNumBytes(numBytes);
-    stat.setNumShuffleOutputs(numOutputs);
-    stat.setNumRows(numRows);
-    stat.setAvgRows(avgRows);
+    for (int i = 0; i < 2; i++) {
+      stat[i].setNumBlocks(numBlocks[i]);
+      stat[i].setNumBytes(numBytes[i]);
+      stat[i].setReadBytes(readBytes[i]);
+      stat[i].setNumShuffleOutputs(numOutputs[i]);
+      stat[i].setNumRows(numRows[i]);
+      stat[i].setAvgRows(avgRows[i]);
+    }
+    stat[1].setColumnStats(columnStatses);
+
     return stat;
   }
 
-  private TableStats computeStatFromTasks() {
-    List<TableStats> stats = Lists.newArrayList();
+  private TableStats[] computeStatFromTasks() {
+    List<TableStats> inputStatsList = Lists.newArrayList();
+    List<TableStats> resultStatsList = Lists.newArrayList();
     for (QueryUnit unit : getQueryUnits()) {
-      stats.add(unit.getStats());
+      resultStatsList.add(unit.getStats());
+      if (unit.getLastAttempt().getInputStats() != null) {
+        inputStatsList.add(unit.getLastAttempt().getInputStats());
+      }
     }
-    TableStats tableStats = StatisticsUtil.aggregateTableStat(stats);
-    return tableStats;
+    TableStats inputStats = StatisticsUtil.aggregateTableStat(inputStatsList);
+    TableStats resultStats = StatisticsUtil.aggregateTableStat(resultStatsList);
+    return new TableStats[]{inputStats, resultStats};
   }
 
   private void stopScheduler() {
@@ -503,11 +552,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
    * It computes all stats and sets the intermediate result.
    */
   private void finalizeStats() {
-    TableStats stats;
+    TableStats[] statsArray;
     if (block.hasUnion()) {
-      stats = computeStatFromUnionBlock(this);
+      statsArray = computeStatFromUnionBlock(this);
     } else {
-      stats = computeStatFromTasks();
+      statsArray = computeStatFromTasks();
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
@@ -521,7 +570,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
     schema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(storeType, new Options());
-    statistics = stats;
+    inputStatistics = statsArray[0];
+    resultStatistics = statsArray[1];
   }
 
   @Override
@@ -766,7 +816,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           if (subquery == null || subquery.getState() != SubQueryState.SUCCEEDED) {
             aggregatedVolume += getInputVolume(masterPlan, context, childBlock);
           } else {
-            aggregatedVolume += subquery.getTableStat().getNumBytes();
+            aggregatedVolume += subquery.getResultStats().getNumBytes();
           }
         }
 

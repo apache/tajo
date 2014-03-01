@@ -92,7 +92,7 @@ public class Repartitioner {
         childBlocks[1] = masterPlan.getChild(execBlock.getId(), 1);
 
         tablePath = storageManager.getTablePath(scans[i].getTableName());
-        stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat().getNumBytes();
+        stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getResultStats().getNumBytes();
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
         tablePath = tableDesc.getPath();
@@ -309,7 +309,7 @@ public class Repartitioner {
     List<ExecutionBlock> childBlocks = masterPlan.getChilds(parentBlockId);
     for (ExecutionBlock childBlock : childBlocks) {
       SubQuery childExecSM = context.getSubQuery(childBlock.getId());
-      tableStatses.add(childExecSM.getTableStat());
+      tableStatses.add(childExecSM.getResultStats());
     }
     return StatisticsUtil.aggregateTableStat(tableStatses);
   }

@@ -23,6 +23,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.ColumnStats;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
 
@@ -42,6 +44,8 @@ public class MergeScanner implements Scanner {
   private boolean projectable = false;
   private boolean selectable = false;
   private Schema target;
+  private float progress;
+  protected TableStats tableStats;
 
   public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<FileFragment> rawFragmentList)
       throws IOException {
@@ -64,10 +68,25 @@ public class MergeScanner implements Scanner {
       this.projectable = currentScanner.isProjectable();
       this.selectable = currentScanner.isSelectable();
     }
+
+    tableStats = new TableStats();
+    long numBytes = 0;
+
+    for (FileFragment eachFileFragment: rawFragmentList) {
+      numBytes += (eachFileFragment.getEndKey() - eachFileFragment.getStartKey());
+    }
+    tableStats.setNumBytes(numBytes);
+    tableStats.setNumBlocks(rawFragmentList.size());
+
+    for(Column eachColumn: schema.getColumns()) {
+      ColumnStats columnStats = new ColumnStats(eachColumn);
+      tableStats.addColumnStat(columnStats);
+    }
   }
 
   @Override
   public void init() throws IOException {
+    progress = 0.0f;
   }
 
   @Override
@@ -80,6 +99,11 @@ public class MergeScanner implements Scanner {
     } else {
       if (currentScanner != null) {
         currentScanner.close();
+        TableStats scannerTableStsts = currentScanner.getInputStats();
+        if (scannerTableStsts != null) {
+          tableStats.setReadBytes(tableStats.getReadBytes() + scannerTableStsts.getReadBytes());
+          tableStats.setNumRows(tableStats.getNumRows() + scannerTableStsts.getNumRows());
+        }
       }
       currentScanner = getNextScanner();
       if (currentScanner != null) {
@@ -113,6 +137,7 @@ public class MergeScanner implements Scanner {
       currentScanner.close();
     }
     iterator = null;
+    progress = 1.0f;
   }
 
   @Override
@@ -142,5 +167,25 @@ public class MergeScanner implements Scanner {
   @Override
   public boolean isSplittable(){
     return false;
+  }
+
+  @Override
+  public float getProgress() {
+    if (currentScanner != null && iterator != null && tableStats.getNumBytes() > 0) {
+      TableStats scannerTableStsts = currentScanner.getInputStats();
+      long currentScannerReadBytes = 0;
+      if (scannerTableStsts != null) {
+        currentScannerReadBytes = scannerTableStsts.getReadBytes();
+      }
+
+      return (float)(tableStats.getReadBytes() + currentScannerReadBytes) / (float)tableStats.getNumBytes();
+    } else {
+      return progress;
+    }
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    return tableStats;
   }
 }

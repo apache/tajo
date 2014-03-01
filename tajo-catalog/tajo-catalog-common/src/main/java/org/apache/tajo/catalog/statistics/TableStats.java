@@ -43,6 +43,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   @Expose private Integer numBlocks = null; // optional
   @Expose private Integer numShuffleOutputs = null; // optional
   @Expose private Long avgRows = null; // optional
+  @Expose private Long readBytes = null; //optional
   @Expose private List<ColumnStats> columnStatses = null; // repeated
 
   public TableStats() {
@@ -51,6 +52,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     numBlocks = 0;
     numShuffleOutputs = 0;
     avgRows = 0l;
+    readBytes = 0l;
     columnStatses = TUtil.newList();
   }
 
@@ -72,6 +74,11 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       this.avgRows = proto.getAvgRows();
     } else {
       this.avgRows = 0l;
+    }
+    if (proto.hasReadBytes()) {
+      this.readBytes = proto.getReadBytes();
+    } else {
+      this.readBytes = 0l;
     }
 
     this.columnStatses = TUtil.newList();
@@ -123,6 +130,14 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     this.avgRows = avgRows;
   }
 
+  public Long getReadBytes() {
+    return readBytes;
+  }
+
+  public void setReadBytes(long readBytes) {
+    this.readBytes = readBytes;
+  }
+
   public List<ColumnStats> getColumnStats() {
     return this.columnStatses;
   }
@@ -144,6 +159,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       eq = eq && TUtil.checkEquals(this.numBlocks, other.numBlocks);
       eq = eq && TUtil.checkEquals(this.numShuffleOutputs, other.numShuffleOutputs);
       eq = eq && TUtil.checkEquals(this.avgRows, other.avgRows);
+      eq = eq && TUtil.checkEquals(this.readBytes, other.readBytes);
       eq = eq && TUtil.checkEquals(this.columnStatses, other.columnStatses);
       return eq;
     } else {
@@ -159,13 +175,42 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   public Object clone() throws CloneNotSupportedException {
     TableStats stat = (TableStats) super.clone();
     stat.builder = CatalogProtos.TableStatsProto.newBuilder();
-    stat.numRows = numRows != null ? numRows.longValue() : null;
-    stat.numBytes = numBytes != null ? numBytes.longValue() : null;
-    stat.numBlocks = numBlocks != null ? numBlocks.intValue() : null;
-    stat.numShuffleOutputs = numShuffleOutputs != null ? numShuffleOutputs.intValue() : null;
+    stat.numRows = numRows != null ? numRows : null;
+    stat.numBytes = numBytes != null ? numBytes : null;
+    stat.numBlocks = numBlocks != null ? numBlocks : null;
+    stat.numShuffleOutputs = numShuffleOutputs != null ? numShuffleOutputs : null;
+    stat.avgRows = avgRows != null ? avgRows : null;
+    stat.readBytes = readBytes != null ? readBytes : null;
+
     stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
 
     return stat;
+  }
+
+  public void merge(TableStats stat) {
+    if(stat == null) {
+      return;
+    }
+
+    numRows = stat.numRows != null ? stat.numRows + numRows : numRows;
+    numBytes = stat.numBytes != null ? stat.numBytes + numBytes : numBytes;
+    numBlocks = stat.numBlocks != null ? stat.numBlocks + numBlocks : numBlocks;
+    numShuffleOutputs = stat.numShuffleOutputs != null ? stat.numShuffleOutputs + numShuffleOutputs : numShuffleOutputs;
+    avgRows = stat.avgRows != null ? stat.avgRows + avgRows : avgRows;
+    readBytes = stat.readBytes != null ? stat.readBytes + readBytes : readBytes;
+  }
+
+  public void setValues(TableStats stat) {
+    if(stat == null) {
+      return;
+    }
+
+    numRows = stat.numRows != null ? stat.numRows : 0;
+    numBytes = stat.numBytes != null ? stat.numBytes : 0;
+    numBlocks = stat.numBlocks != null ? stat.numBlocks : 0;
+    numShuffleOutputs = stat.numShuffleOutputs != null ? stat.numShuffleOutputs : 0;
+    avgRows = stat.avgRows != null ? stat.avgRows : 0;
+    readBytes = stat.readBytes != null ? stat.readBytes : 0;
   }
 
   public String toString() {
@@ -197,6 +242,9 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     }
     if (this.avgRows != null) {
       builder.setAvgRows(this.avgRows);
+    }
+    if (this.readBytes != null) {
+      builder.setReadBytes(this.readBytes);
     }
     if (this.columnStatses != null) {
       for (ColumnStats colStat : columnStatses) {

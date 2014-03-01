@@ -254,6 +254,9 @@ public class QueryTestCaseBase {
    * @param resultSet ResultSet
    */
   public final void cleanupQuery(ResultSet resultSet) throws IOException {
+    if (resultSet == null) {
+      return;
+    }
     try {
       resultSet.close();
     } catch (SQLException e) {

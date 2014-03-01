@@ -37,6 +37,7 @@ import java.io.File;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -55,7 +56,10 @@ public class TaskAttemptContext {
   private final Path workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
-  private float progress = 0;
+  private float progress = 0.0f;
+  private float fetcherProgress = 0.0f;
+  private AtomicBoolean progressChanged = new AtomicBoolean(false);
+
   /** a map of shuffled file outputs */
   private Map<Integer, String> shuffleFileOutputs;
   private File fetchIn;
@@ -83,7 +87,7 @@ public class TaskAttemptContext {
 
     this.workDir = workDir;
     this.shuffleFileOutputs = Maps.newHashMap();
-    
+
     state = TaskAttemptState.TA_PENDING;
   }
 
@@ -133,7 +137,7 @@ public class TaskAttemptContext {
   public TableStats getResultStats() {
     return this.resultStats;
   }
-  
+
   public boolean isStopped() {
     return this.stopped;
   }
@@ -210,7 +214,21 @@ public class TaskAttemptContext {
   }
   
   public void setProgress(float progress) {
+    float previousProgress = this.progress;
     this.progress = progress;
+    progressChanged.set(previousProgress != progress);
+  }
+
+  public boolean isPorgressChanged() {
+    return progressChanged.get();
+  }
+  public void setExecutorProgress(float executorProgress) {
+    float adjustProgress = executorProgress * (1 - fetcherProgress);
+    setProgress(fetcherProgress + adjustProgress);
+  }
+
+  public void setFetcherProgress(float fetcherProgress) {
+    this.fetcherProgress = fetcherProgress;
   }
 
   public FragmentProto getTable(String id) {

@@ -154,5 +154,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
 
     partitioner = null;
     plan = null;
+
+    progress = 1.0f;
   }
 }

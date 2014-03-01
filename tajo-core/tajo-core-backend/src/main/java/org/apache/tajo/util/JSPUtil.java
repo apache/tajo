@@ -154,6 +154,8 @@ public class JSPUtil {
         } else if("runTime".equals(sortField)) {
           if(queryUnit2.getLaunchTime() == 0) {
             return -1;
+          } else if(queryUnit.getLaunchTime() == 0) {
+            return 1;
           }
           return compareLong(queryUnit2.getRunningTime(), queryUnit.getRunningTime());
         } else if("startTime".equals(sortField)) {

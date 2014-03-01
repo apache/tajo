@@ -26,6 +26,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.ColumnStats;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
 
@@ -42,17 +44,35 @@ public abstract class FileScanner implements Scanner {
   protected final int columnNum;
 
   protected Column [] targets;
-  
+
+  protected float progress;
+
+  protected TableStats tableStats;
+
   public FileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment) {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;
     this.fragment = fragment;
+    this.tableStats = new TableStats();
     this.columnNum = this.schema.size();
   }
 
   public void init() throws IOException {
     inited = true;
+    progress = 0.0f;
+
+    if (fragment != null) {
+      tableStats.setNumBytes(fragment.getEndKey());
+      tableStats.setNumBlocks(1);
+    }
+
+    if (schema != null) {
+      for(Column eachColumn: schema.getColumns()) {
+        ColumnStats columnStats = new ColumnStats(eachColumn);
+        tableStats.addColumnStat(columnStats);
+      }
+    }
   }
 
   @Override
@@ -89,5 +109,15 @@ public abstract class FileScanner implements Scanner {
     }
 
     return fs;
+  }
+
+  @Override
+  public float getProgress() {
+    return progress;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    return tableStats;
   }
 }

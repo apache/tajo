@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -405,6 +406,16 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   public long getFinishTime() {
     return finishTime;
+  }
+
+  @VisibleForTesting
+  public void setLaunchTime(long launchTime) {
+    this.launchTime = launchTime;
+  }
+
+  @VisibleForTesting
+  public void setFinishTime(long finishTime) {
+    this.finishTime = finishTime;
   }
 
   public long getRunningTime() {

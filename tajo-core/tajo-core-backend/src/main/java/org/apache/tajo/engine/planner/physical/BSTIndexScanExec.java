@@ -44,7 +44,9 @@ public class BSTIndexScanExec extends PhysicalExec {
   private Datum[] datum = null;
   
   private boolean initialize = true;
-  
+
+  private float progress;
+
   public BSTIndexScanExec(TaskAttemptContext context,
                           AbstractStorageManager sm , ScanNode scanNode ,
        FileFragment fragment, Path fileName , Schema keySchema,
@@ -66,7 +68,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
-
+    progress = 0.0f;
   }
 
   @Override
@@ -132,5 +134,10 @@ public class BSTIndexScanExec extends PhysicalExec {
     scanNode = null;
     qual = null;
     projector = null;
+  }
+
+  @Override
+  public float getProgress() {
+    return progress;
   }
 }

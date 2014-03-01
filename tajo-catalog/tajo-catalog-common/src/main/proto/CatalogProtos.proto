@@ -187,7 +187,8 @@ message TableStatsProto {
 	optional int32 numBlocks = 4;
 	optional int32 numShuffleOutputs = 5;
 	optional int64 avgRows = 6;
-	repeated ColumnStatsProto colStat = 7;
+	optional int64 readBytes = 7;
+	repeated ColumnStatsProto colStat = 8;
 }
 
 message ColumnStatsProto {

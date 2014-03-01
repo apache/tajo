@@ -18,14 +18,17 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.tajo.catalog.Schema;
 
 import java.io.IOException;
 
 public abstract class BinaryPhysicalExec extends PhysicalExec {
   protected PhysicalExec leftChild;
   protected PhysicalExec rightChild;
+  protected float progress;
+  protected TableStats inputStats;
 
   public BinaryPhysicalExec(final TaskAttemptContext context,
                             final Schema inSchema, final Schema outSchema,
@@ -47,6 +50,9 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
   public void init() throws IOException {
     leftChild.init();
     rightChild.init();
+    progress = 0.0f;
+
+    inputStats = new TableStats();
   }
 
   @Override
@@ -59,7 +65,46 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
   public void close() throws IOException {
     leftChild.close();
     rightChild.close();
+
+    getInputStats();
+    
     leftChild = null;
     rightChild = null;
+    
+    progress = 1.0f;
+  }
+
+  @Override
+  public float getProgress() {
+    if (leftChild == null) {
+      return progress;
+    }
+    return leftChild.getProgress() * 0.5f + rightChild.getProgress() * 0.5f;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    if (leftChild == null) {
+      return inputStats;
+    }
+    TableStats leftInputStats = leftChild.getInputStats();
+    inputStats.setNumBytes(0);
+    inputStats.setReadBytes(0);
+    inputStats.setNumRows(0);
+
+    if (leftInputStats != null) {
+      inputStats.setNumBytes(leftInputStats.getNumBytes());
+      inputStats.setReadBytes(leftInputStats.getReadBytes());
+      inputStats.setNumRows(leftInputStats.getNumRows());
+    }
+
+    TableStats rightInputStats = rightChild.getInputStats();
+    if (rightInputStats != null) {
+      inputStats.setNumBytes(inputStats.getNumBytes() + rightInputStats.getNumBytes());
+      inputStats.setReadBytes(inputStats.getReadBytes() + rightInputStats.getReadBytes());
+      inputStats.setNumRows(inputStats.getNumRows() + rightInputStats.getNumRows());
+    }
+
+    return inputStats;
   }
 }

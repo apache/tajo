@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaObject;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -54,6 +55,8 @@ public abstract class PhysicalExec implements SchemaObject {
 
   public abstract void close() throws IOException;
 
+  public abstract float getProgress();
+
   protected void info(Log log, String message) {
     log.info("["+ context.getTaskId() + "] " + message);
   }
@@ -68,5 +71,9 @@ public abstract class PhysicalExec implements SchemaObject {
 
   protected Path getExecutorTmpDir() {
     return new Path(UUID.randomUUID().toString());
+  }
+
+  public TableStats getInputStats() {
+    return null;
   }
 }

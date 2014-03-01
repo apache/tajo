@@ -26,6 +26,10 @@ import org.apache.tajo.master.event.TaskSchedulerEvent;
 
 public abstract class AbstractTaskScheduler extends AbstractService implements EventHandler<TaskSchedulerEvent> {
 
+  protected int hostLocalAssigned;
+  protected int rackLocalAssigned;
+  protected int totalAssigned;
+
   /**
    * Construct the service.
    *
@@ -33,6 +37,18 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
    */
   public AbstractTaskScheduler(String name) {
     super(name);
+  }
+
+  public int getHostLocalAssigned() {
+    return hostLocalAssigned;
+  }
+
+  public int getRackLocalAssigned() {
+    return rackLocalAssigned;
+  }
+
+  public int getTotalAssigned() {
+    return totalAssigned;
   }
 
   public abstract void handleTaskRequestEvent(TaskRequestEvent event);

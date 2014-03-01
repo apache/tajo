@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
+import org.apache.tajo.catalog.statistics.TableStats;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -91,4 +92,12 @@ public interface Scanner extends SchemaObject, Closeable {
    * @return true if this scanner can split the a file.
    */
   boolean isSplittable();
+
+  /**
+   * How much of the input has the Scanner consumed
+   * @return progress from <code>0.0</code> to <code>1.0</code>.
+   */
+  float getProgress();
+
+  TableStats getInputStats();
 }
