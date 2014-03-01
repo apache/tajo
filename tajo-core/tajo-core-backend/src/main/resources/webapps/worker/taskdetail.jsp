@@ -86,9 +86,11 @@
         <tr><td align="right">Start Time</td><td><%=taskHistory.getStartTime() == 0 ? "-" : df.format(taskHistory.getStartTime())%></td></tr>
         <tr><td align="right">Finish Time</td><td><%=taskHistory.getFinishTime() == 0 ? "-" : df.format(taskHistory.getFinishTime())%></td></tr>
         <tr><td align="right">Running Time</td><td><%=JSPUtil.getElapsedTime(taskHistory.getStartTime(), taskHistory.getFinishTime())%></td></tr>
-        <tr><td align="right">Progress</td><td><%=taskHistory.getProgress() * 100.0%> %</td></tr>
+        <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(taskHistory.getProgress())%>%</td></tr>
         <tr><td align="right">Output Path</td><td><%=taskHistory.getOutputPath()%></td></tr>
         <tr><td align="right">Working Path</td><td><%=taskHistory.getWorkingPath()%></td></tr>
+        <tr><td align="right">Input Statistics</td><td><%=TaskHistory.toInputStatsString(taskHistory.getInputStats())%></td></tr>
+        <tr><td align="right">Output Statistics</td><td><%=TaskHistory.toOutputStatsString(taskHistory.getOutputStats())%></td></tr>
     </table>
 
 <%

@@ -335,6 +335,10 @@ public class TajoTestingCluster {
     return this.tajoMaster;
   }
 
+  public List<TajoWorker> getTajoWorkers() {
+    return this.tajoWorkers;
+  }
+
   public void shutdownMiniTajoCluster() {
     if(this.tajoMaster != null) {
       this.tajoMaster.stop();

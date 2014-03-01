@@ -125,6 +125,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       try {
         eachProxy.stopContainer();
       } catch (Exception e) {
+        LOG.warn(e.getMessage());
       }
     }
     super.stop();
@@ -166,7 +167,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     @Override
     public void run() {
       proxy.launch(null);
-      LOG.info("ContainerProxy started:" + id);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("ContainerProxy started:" + id);
+      }
     }
   }
 
@@ -187,7 +190,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
     @Override
     public void run() {
-      LOG.info("ContainerProxy stopped:" + id + "," + proxy.getId());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("ContainerProxy stopped:" + id + "," + proxy.getId());
+      }
       proxy.stopContainer();
     }
   }

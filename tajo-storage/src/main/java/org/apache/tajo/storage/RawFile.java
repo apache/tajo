@@ -57,6 +57,7 @@ public class RawFile {
     private boolean eof = false;
     private long fileSize;
     private FileInputStream fis;
+    private long recordCount;
 
     public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
       super(conf, schema, meta, null);
@@ -85,6 +86,9 @@ public class RawFile {
       channel = fis.getChannel();
       fileSize = channel.size();
 
+      if (tableStats != null) {
+        tableStats.setNumBytes(fileSize);
+      }
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + path + "," + channel.position() + ", size :" + channel.size());
       }
@@ -246,6 +250,8 @@ public class RawFile {
         }
       }
 
+      recordCount++;
+
       for (int i = 0; i < columnTypes.length; i++) {
         // check if the i'th column is null
         if (nullFlags.get(i)) {
@@ -369,6 +375,10 @@ public class RawFile {
 
     @Override
     public void close() throws IOException {
+      if (tableStats != null) {
+        tableStats.setReadBytes(fileSize);
+        tableStats.setNumRows(recordCount);
+      }
       buffer.clear();
       channel.close();
       fis.close();
@@ -387,6 +397,32 @@ public class RawFile {
     @Override
     public boolean isSplittable(){
       return false;
+    }
+
+    @Override
+    public float getProgress() {
+      try {
+        tableStats.setNumRows(recordCount);
+        long filePos = 0;
+        if (channel != null) {
+          filePos = channel.position();
+          tableStats.setReadBytes(filePos);
+        }
+
+        if(eof || channel == null) {
+          tableStats.setReadBytes(fileSize);
+          return 1.0f;
+        }
+
+        if (filePos == 0) {
+          return 0.0f;
+        } else {
+          return Math.min(1.0f, ((float)filePos / (float)fileSize));
+        }
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+        return 0.0f;
+      }
     }
   }
 

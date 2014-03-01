@@ -438,7 +438,7 @@ public class Query implements EventHandler<QueryEvent> {
                           Path finalOutputDir) throws Exception {
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
-        TableStats stats = lastStage.getTableStat();
+        TableStats stats = lastStage.getResultStats();
 
         TableDesc resultTableDesc =
             new TableDesc(
@@ -469,7 +469,7 @@ public class Query implements EventHandler<QueryEvent> {
         CatalogService catalog = context.getWorkerContext().getCatalog();
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
-        TableStats stats = lastStage.getTableStat();
+        TableStats stats = lastStage.getResultStats();
 
         CreateTableNode createTableNode = (CreateTableNode) lastStage.getBlock().getPlan();
 
@@ -510,7 +510,7 @@ public class Query implements EventHandler<QueryEvent> {
         CatalogService catalog = context.getWorkerContext().getCatalog();
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
-        TableStats stats = lastStage.getTableStat();
+        TableStats stats = lastStage.getResultStats();
 
         InsertNode insertNode = (InsertNode) lastStage.getBlock().getPlan();
 

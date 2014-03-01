@@ -34,6 +34,7 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
@@ -67,6 +68,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class Task {
   private static final Log LOG = LogFactory.getLog(Task.class);
+  private static final float FETCHER_PROGRESS = 0.5f;
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
@@ -87,7 +89,6 @@ public class Task {
   private boolean killed = false;
   private boolean aborted = false;
   private boolean stopped = false;
-  private float progress = 0;
   private final Reporter reporter;
   private Path inputTableBaseDir;
 
@@ -99,12 +100,7 @@ public class Task {
   private long startTime;
   private long finishTime;
 
-  /**
-   * flag that indicates whether progress update needs to be sent to parent.
-   * If true, it has been set. If false, it has been reset.
-   * Using AtomicBoolean since we need an atomic read & reset method.
-   */
-  private AtomicBoolean progressFlag = new AtomicBoolean(false);
+  private final TableStats inputStats;
 
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
@@ -156,6 +152,7 @@ public class Task {
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
+    this.inputStats = new TableStats();
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
@@ -234,17 +231,6 @@ public class Task {
     return LOG;
   }
 
-  // getters and setters for flag
-  void setProgressFlag() {
-    progressFlag.set(true);
-  }
-  boolean resetProgressFlag() {
-    return progressFlag.getAndSet(false);
-  }
-  boolean getProgressFlag() {
-    return progressFlag.get();
-  }
-
   public void localize(QueryUnitRequest request) throws IOException {
     fetcherRunners = getFetchRunners(context, request.getFetches());
   }
@@ -263,7 +249,6 @@ public class Task {
 
   public void setState(TaskAttemptState status) {
     context.setState(status);
-    setProgressFlag();
   }
 
   public TaskAttemptContext getContext() {
@@ -283,7 +268,7 @@ public class Task {
   public void kill() {
     killed = true;
     context.stop();
-    setProgressFlag();
+    context.setState(TaskAttemptState.TA_KILLED);
     releaseChannelFactory();
   }
 
@@ -295,7 +280,6 @@ public class Task {
 
   public void cleanUp() {
     // remove itself from worker
-
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
       try {
         localFS.delete(context.getWorkDir(), true);
@@ -303,7 +287,7 @@ public class Task {
           taskRunnerContext.getTasks().remove(this.getId());
         }
       } catch (IOException e) {
-        e.printStackTrace();
+        LOG.error(e.getMessage(), e);
       }
     } else {
       LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
@@ -314,14 +298,37 @@ public class Task {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
     builder.setWorkerName(taskRunnerContext.getNodeId());
     builder.setId(context.getTaskId().getProto())
-        .setProgress(context.getProgress()).setState(context.getState());
+        .setProgress(context.getProgress())
+        .setState(context.getState());
 
+    builder.setInputStats(reloadInputStats());
+
+    if (context.getResultStats() != null) {
+      builder.setResultStats(context.getResultStats().getProto());
+    }
     return builder.build();
+  }
+
+  private CatalogProtos.TableStatsProto reloadInputStats() {
+    synchronized(inputStats) {
+      if (this.executor == null) {
+        return inputStats.getProto();
+      }
+
+      TableStats executorInputStats = this.executor.getInputStats();
+
+      if (executorInputStats != null) {
+        inputStats.setValues(executorInputStats);
+      }
+      return inputStats.getProto();
+    }
   }
 
   private TaskCompletionReport getTaskCompletionReport() {
     TaskCompletionReport.Builder builder = TaskCompletionReport.newBuilder();
     builder.setId(context.getTaskId().getProto());
+
+    builder.setInputStats(reloadInputStats());
 
     if (context.hasResultStats()) {
       builder.setResultStats(context.getResultStats().getProto());
@@ -359,12 +366,13 @@ public class Task {
     String errorMessage = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
-      setProgressFlag();
 
       if (context.hasFetchPhase()) {
         // If the fetch is still in progress, the query unit must wait for
         // complete.
         waitForFetch();
+        context.setFetcherProgress(FETCHER_PROGRESS);
+        context.setProgress(FETCHER_PROGRESS);
       }
 
       if (context.getFragmentSize() > 0) {
@@ -372,9 +380,9 @@ public class Task {
             createPlan(context, plan);
         this.executor.init();
         while(!killed && executor.next() != null) {
-          ++progress;
         }
         this.executor.close();
+        reloadInputStats();
         this.executor = null;
       }
     } catch (Exception e) {
@@ -383,11 +391,12 @@ public class Task {
       LOG.error(errorMessage);
       aborted = true;
     } finally {
-      setProgressFlag();
+      context.setProgress(1.0f);
       stopped = true;
       completedTasksNum++;
 
       if (killed || aborted) {
+        context.setExecutorProgress(0.0f);
         context.setProgress(0.0f);
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
@@ -466,6 +475,11 @@ public class Task {
       taskHistory.setStatus(getStatus().toString());
       taskHistory.setProgress(context.getProgress());
 
+      taskHistory.setInputStats(new TableStats(reloadInputStats()));
+      if (context.getResultStats() != null) {
+        taskHistory.setOutputStats((TableStats)context.getResultStats().clone());
+      }
+
       if (hasFetchPhase()) {
         Map<URI, TaskHistory.FetcherHistory> fetcherHistories = new HashMap<URI, TaskHistory.FetcherHistory>();
 
@@ -528,7 +542,7 @@ public class Task {
     return tablets;
   }
 
-  private static class FetchRunner implements Runnable {
+  private class FetchRunner implements Runnable {
     private final TaskAttemptContext ctx;
     private final Fetcher fetcher;
 
@@ -564,12 +578,30 @@ public class Task {
           retryNum++;
         }
       } finally {
-        ctx.getFetchLatch().countDown();
+        fetcherFinished(ctx);
       }
 
       if (retryNum == maxRetryNum) {
         LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
       }
+    }
+  }
+
+  private synchronized void fetcherFinished(TaskAttemptContext ctx) {
+    int fetcherSize = fetcherRunners.size();
+    if(fetcherSize == 0) {
+      return;
+    }
+    try {
+      int numRunningFetcher = (int)(ctx.getFetchLatch().getCount()) - 1;
+
+      if (numRunningFetcher == 0) {
+        context.setProgress(FETCHER_PROGRESS);
+      } else {
+        context.setProgress(((float)(fetcherSize - numRunningFetcher)) / numRunningFetcher * FETCHER_PROGRESS);
+      }
+    } finally {
+      ctx.getFetchLatch().countDown();
     }
   }
 
@@ -637,19 +669,20 @@ public class Task {
         public void run() {
           while (!stop.get() && !stopped) {
             try {
+              if(executor != null && context.getProgress() < 1.0f) {
+                float progress = executor.getProgress();
+                context.setExecutorProgress(progress);
+              }
+            } catch (Throwable t) {
+              LOG.error("Get progress error: " + t.getMessage(), t);
+            }
 
-              resetProgressFlag();
-
-              if (getProgressFlag()) {
-                resetProgressFlag();
+            try {
+              if (context.isPorgressChanged()) {
                 masterStub.statusUpdate(null, getReport(), NullCallback.get());
               } else {
                 masterStub.ping(null, taskId.getProto(), NullCallback.get());
               }
-              synchronized (pingThread) {
-                pingThread.wait(PROGRESS_INTERVAL);
-              }
-
             } catch (Throwable t) {
               LOG.error(t.getMessage(), t);
               remainingRetries -=1;
@@ -657,6 +690,15 @@ public class Task {
                 ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
                 LOG.warn("Last retry, exiting ");
                 throw new RuntimeException(t);
+              }
+            } finally {
+              if (remainingRetries > 0) {
+                synchronized (pingThread) {
+                  try {
+                    pingThread.wait(PROGRESS_INTERVAL);
+                  } catch (InterruptedException e) {
+                  }
+                }
               }
             }
           }

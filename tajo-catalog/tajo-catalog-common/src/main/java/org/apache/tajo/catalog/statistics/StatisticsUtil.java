@@ -81,6 +81,7 @@ public class StatisticsUtil {
 
     result.setNumRows(result.getNumRows() + stats.getNumRows());
     result.setNumBytes(result.getNumBytes() + stats.getNumBytes());
+    result.setReadBytes(result.getReadBytes() + stats.getReadBytes());
     result.setNumBlocks(result.getNumBlocks() + stats.getNumBlocks());
     result.setNumShuffleOutputs(result.getNumShuffleOutputs() + stats.getNumShuffleOutputs());
   }
@@ -132,6 +133,7 @@ public class StatisticsUtil {
       // aggregate table stats for each table
       aggregated.setNumRows(aggregated.getNumRows() + ts.getNumRows());
       aggregated.setNumBytes(aggregated.getNumBytes() + ts.getNumBytes());
+      aggregated.setReadBytes(aggregated.getReadBytes() + ts.getReadBytes());
       aggregated.setNumBlocks(aggregated.getNumBlocks() + ts.getNumBlocks());
       aggregated.setNumShuffleOutputs(aggregated.getNumShuffleOutputs() + ts.getNumShuffleOutputs());
     }

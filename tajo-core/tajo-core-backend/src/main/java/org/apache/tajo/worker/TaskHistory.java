@@ -18,6 +18,9 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.util.FileUtil;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
@@ -30,6 +33,9 @@ public class TaskHistory {
   private String outputPath;
   private String workingPath;
   private float progress;
+
+  private TableStats inputStats;
+  private TableStats outputStats;
 
   Map<URI, FetcherHistory> fetchers;
 
@@ -149,5 +155,44 @@ public class TaskHistory {
 
   public boolean hasFetcher() {
     return fetchers != null && !fetchers.isEmpty();
+  }
+
+  public TableStats getInputStats() {
+    return inputStats;
+  }
+
+  public void setInputStats(TableStats inputStats) {
+    this.inputStats = inputStats;
+  }
+
+  public TableStats getOutputStats() {
+    return outputStats;
+  }
+
+  public void setOutputStats(TableStats outputStats) {
+    this.outputStats = outputStats;
+  }
+
+  public static String toInputStatsString(TableStats tableStats) {
+    if (tableStats == null) {
+      return "No input statistics";
+    }
+
+    String result = "";
+    result += "TotalBytes: " + FileUtil.humanReadableByteCount(tableStats.getNumBytes(), false) + " ("
+        + tableStats.getNumBytes() + " B)";
+    result += ", ReadBytes: " + FileUtil.humanReadableByteCount(tableStats.getReadBytes(), false) + " ("
+        + tableStats.getReadBytes() + " B)";
+    result += ", ReadRows: " + (tableStats.getNumRows() == 0 ? "-" : tableStats.getNumRows());
+
+    return result;
+  }
+
+  public static String toOutputStatsString(TableStats tableStats) {
+    if (tableStats == null) {
+      return "No output statistics";
+    }
+
+    return tableStats.toJson();
   }
 }

@@ -55,8 +55,10 @@ public class TajoContainerProxy extends ContainerProxy {
     this.port = ((TajoWorkerContainer)container).getWorkerResource().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
-    LOG.info("Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
-        container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
+          container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
+    }
 
     assignExecutionBlock(executionBlockId, container);
   }
@@ -110,7 +112,9 @@ public class TajoContainerProxy extends ContainerProxy {
 
   @Override
   public synchronized void stopContainer() {
-    LOG.info("Release TajoWorker Resource: " + executionBlockId + "," + containerID + ", state:" + this.state);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Release TajoWorker Resource: " + executionBlockId + "," + containerID + ", state:" + this.state);
+    }
     if(isCompletelyDone()) {
       LOG.info("Container already stopped:" + containerID);
       return;

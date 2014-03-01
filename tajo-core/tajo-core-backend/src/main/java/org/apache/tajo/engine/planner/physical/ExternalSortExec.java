@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -30,6 +31,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.storage.*;
@@ -67,7 +69,7 @@ public class ExternalSortExec extends SortExec {
   /** the defaultFanout of external sort */
   private final int defaultFanout;
   /** It's the size of in-memory table. If memory consumption exceeds it, store the memory table into a disk. */
-  private final int sortBufferBytesNum;
+  private int sortBufferBytesNum;
   /** the number of available cores */
   private final int allocatedCoreNum;
   /** If there are available multiple cores, it tries parallel merge. */
@@ -94,6 +96,8 @@ public class ExternalSortExec extends SortExec {
   private boolean memoryResident = true;
   /** the final result */
   private Scanner result;
+  /** total bytes of input data */
+  private long sortAndStoredBytes;
 
   private ExternalSortExec(final TaskAttemptContext context, final AbstractStorageManager sm, final SortNode plan)
       throws PhysicalPlanningException {
@@ -136,7 +140,13 @@ public class ExternalSortExec extends SortExec {
     setChild(child);
   }
 
+  @VisibleForTesting
+  public void setSortBufferBytesNum(int sortBufferBytesNum) {
+    this.sortBufferBytesNum = sortBufferBytesNum;
+  }
+
   public void init() throws IOException {
+    inputStats = new TableStats();
     super.init();
   }
 
@@ -205,6 +215,19 @@ public class ExternalSortExec extends SortExec {
 
         memoryConsumption = 0;
         chunkId++;
+
+        // When the volume of sorting data once exceed the size of sort buffer,
+        // the total progress of this external sort is divided into two parts.
+        // In contrast, if the data fits in memory, the progress is only one part.
+        //
+        // When the progress is divided into two parts, the first part sorts tuples on memory and stores them
+        // into a chunk. The second part merges stored chunks into fewer chunks, and it continues until the number
+        // of merged chunks is fewer than the default fanout.
+        //
+        // The fact that the code reach here means that the first chunk has been just stored.
+        // That is, the progress was divided into two parts.
+        // So, it multiply the progress of the children operator and 0.5f.
+        progress = child.getProgress() * 0.5f;
       }
     }
 
@@ -222,6 +245,11 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
+    // get total loaded (or stored) bytes and total row numbers
+    TableStats childTableStats = child.getInputStats();
+    if (childTableStats != null) {
+      sortAndStoredBytes = childTableStats.getNumBytes();
+    }
     return chunkPaths;
   }
 
@@ -266,6 +294,9 @@ public class ExternalSortExec extends SortExec {
 
       sorted = true;
       result.init();
+
+      // if loaded and sorted, we assume that it proceeds the half of one entire external sort operation.
+      progress = 0.5f;
     }
 
     return result.next();
@@ -294,11 +325,13 @@ public class ExternalSortExec extends SortExec {
     return computedFanout;
   }
 
-  private Scanner externalMergeAndSort(List<Path> chunks) throws IOException, ExecutionException, InterruptedException {
+  private Scanner externalMergeAndSort(List<Path> chunks)
+      throws IOException, ExecutionException, InterruptedException {
     int level = 0;
     final List<Path> inputFiles = TUtil.newList(chunks);
     final List<Path> outputFiles = TUtil.newList();
     int remainRun = inputFiles.size();
+    int chunksSize = chunks.size();
 
     long mergeStart = System.currentTimeMillis();
 
@@ -310,13 +343,18 @@ public class ExternalSortExec extends SortExec {
       int outChunkId = 0;
       int outputFileNum = 0;
       List<Future> futures = TUtil.newList();
+      // the number of files being merged in threads.
+      List<Integer> numberOfMergingFiles = TUtil.newList();
 
       for (int startIdx = 0; startIdx < inputFiles.size();) {
 
         // calculate proper fanout
         int fanout = calculateFanout(remainInputRuns, inputFiles.size(), outputFileNum, startIdx);
+        // how many files are merged in ith thread?
+        numberOfMergingFiles.add(fanout);
         // launch a merger runner
-        futures.add(executorService.submit(new KWayMergerCaller(level, outChunkId++, inputFiles, startIdx, fanout)));
+        futures.add(executorService.submit(
+            new KWayMergerCaller(level, outChunkId++, inputFiles, startIdx, fanout, false)));
         outputFileNum++;
 
         startIdx += fanout;
@@ -340,8 +378,14 @@ public class ExternalSortExec extends SortExec {
       }
 
       // wait for all sort runners
+      int finishedMerger = 0;
+      int index = 0;
       for (Future<Path> future : futures) {
         outputFiles.add(future.get());
+        // Getting the number of merged files
+        finishedMerger += numberOfMergingFiles.get(index++);
+        // progress = (# number of merged files / total number of files) * 0.5;
+        progress = ((float)finishedMerger/(float)chunksSize) * 0.5f;
       }
 
       // delete merged intermediate files
@@ -363,6 +407,7 @@ public class ExternalSortExec extends SortExec {
 
     // final result
     finalOutputFiles = inputFiles;
+
     result = createFinalMerger(inputFiles);
     return result;
   }
@@ -376,14 +421,16 @@ public class ExternalSortExec extends SortExec {
     final List<Path> inputFiles;
     final int startIdx;
     final int mergeFanout;
+    final boolean updateInputStats;
 
     public KWayMergerCaller(final int level, final int nextRunId, final List<Path> inputFiles,
-                            final int startIdx, final int mergeFanout) {
+                            final int startIdx, final int mergeFanout, final boolean updateInputStats) {
       this.level = level;
       this.nextRunId = nextRunId;
       this.inputFiles = inputFiles;
       this.startIdx = startIdx;
       this.mergeFanout = mergeFanout;
+      this.updateInputStats = updateInputStats;
     }
 
     @Override
@@ -456,14 +503,31 @@ public class ExternalSortExec extends SortExec {
   private class MemTableScanner implements Scanner {
     Iterator<Tuple> iterator;
 
+    // for input stats
+    float scannerProgress;
+    int numRecords;
+    int totalRecords;
+    TableStats scannerTableStats;
+
     @Override
     public void init() throws IOException {
       iterator = inMemoryTable.iterator();
+
+      totalRecords = inMemoryTable.size();
+      scannerProgress = 0.0f;
+      numRecords = 0;
+
+      // it will be returned as the final stats
+      scannerTableStats = new TableStats();
+      scannerTableStats.setNumBytes(sortAndStoredBytes);
+      scannerTableStats.setReadBytes(sortAndStoredBytes);
+      scannerTableStats.setNumRows(totalRecords);
     }
 
     @Override
     public Tuple next() throws IOException {
       if (iterator.hasNext()) {
+        numRecords++;
         return iterator.next();
       } else {
         return null;
@@ -478,6 +542,7 @@ public class ExternalSortExec extends SortExec {
     @Override
     public void close() throws IOException {
       iterator = null;
+      scannerProgress = 1.0f;
     }
 
     @Override
@@ -507,6 +572,21 @@ public class ExternalSortExec extends SortExec {
     public Schema getSchema() {
       return null;
     }
+
+    @Override
+    public float getProgress() {
+      if (iterator != null && numRecords > 0) {
+        return (float)numRecords / (float)totalRecords;
+
+      } else { // if an input is empty
+        return scannerProgress;
+      }
+    }
+
+    @Override
+    public TableStats getInputStats() {
+      return scannerTableStats;
+    }
   }
 
   /**
@@ -521,6 +601,9 @@ public class ExternalSortExec extends SortExec {
 
     private final Comparator<Tuple> comparator = getComparator();
 
+    private float mergerProgress;
+    private TableStats mergerInputStats;
+
     public PairWiseMerger(Scanner leftScanner, Scanner rightScanner) throws IOException {
       this.leftScan = leftScanner;
       this.rightScan = rightScanner;
@@ -533,6 +616,9 @@ public class ExternalSortExec extends SortExec {
 
       leftTuple = leftScan.next();
       rightTuple = rightScan.next();
+
+      mergerInputStats = new TableStats();
+      mergerProgress = 0.0f;
     }
 
     public Tuple next() throws IOException {
@@ -565,11 +651,12 @@ public class ExternalSortExec extends SortExec {
       init();
     }
 
-    @Override
     public void close() throws IOException {
       IOUtils.cleanup(LOG, leftScan, rightScan);
+      getInputStats();
       leftScan = null;
       rightScan = null;
+      mergerProgress = 1.0f;
     }
 
     @Override
@@ -599,12 +686,51 @@ public class ExternalSortExec extends SortExec {
     public Schema getSchema() {
       return inSchema;
     }
+
+    @Override
+    public float getProgress() {
+      if (leftScan == null) {
+        return mergerProgress;
+      }
+      return leftScan.getProgress() * 0.5f + rightScan.getProgress() * 0.5f;
+    }
+
+    @Override
+    public TableStats getInputStats() {
+      if (leftScan == null) {
+        return mergerInputStats;
+      }
+      TableStats leftInputStats = leftScan.getInputStats();
+      mergerInputStats.setNumBytes(0);
+      mergerInputStats.setReadBytes(0);
+      mergerInputStats.setNumRows(0);
+
+      if (leftInputStats != null) {
+        mergerInputStats.setNumBytes(leftInputStats.getNumBytes());
+        mergerInputStats.setReadBytes(leftInputStats.getReadBytes());
+        mergerInputStats.setNumRows(leftInputStats.getNumRows());
+      }
+
+      TableStats rightInputStats = rightScan.getInputStats();
+      if (rightInputStats != null) {
+        mergerInputStats.setNumBytes(mergerInputStats.getNumBytes() + rightInputStats.getNumBytes());
+        mergerInputStats.setReadBytes(mergerInputStats.getReadBytes() + rightInputStats.getReadBytes());
+        mergerInputStats.setNumRows(mergerInputStats.getNumRows() + rightInputStats.getNumRows());
+      }
+
+      return mergerInputStats;
+    }
   }
 
   @Override
   public void close() throws IOException {
     if (result != null) {
       result.close();
+      try {
+        inputStats = (TableStats)result.getInputStats().clone();
+      } catch (CloneNotSupportedException e) {
+        LOG.warn(e.getMessage());
+      }
       result = null;
     }
 
@@ -632,6 +758,25 @@ public class ExternalSortExec extends SortExec {
   public void rescan() throws IOException {
     if (result != null) {
       result.reset();
+      progress = 0.5f;
+    }
+  }
+
+  @Override
+  public float getProgress() {
+    if (result != null) {
+      return progress + result.getProgress() * 0.5f;
+    } else {
+      return progress;
+    }
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    if (result != null) {
+      return result.getInputStats();
+    } else {
+      return inputStats;
     }
   }
 }

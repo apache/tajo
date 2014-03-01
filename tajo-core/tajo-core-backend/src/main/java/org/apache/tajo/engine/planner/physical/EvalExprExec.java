@@ -28,6 +28,7 @@ import java.io.IOException;
 
 public class EvalExprExec extends PhysicalExec {
   private final EvalExprNode plan;
+  private float progress;
 
   public EvalExprExec(final TaskAttemptContext context, final EvalExprNode plan) {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -36,6 +37,7 @@ public class EvalExprExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
+    progress = 0.0f;
   }
 
   @Override
@@ -54,5 +56,11 @@ public class EvalExprExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
+    progress = 1.0f;
+  }
+
+  @Override
+  public float getProgress() {
+    return progress;
   }
 }

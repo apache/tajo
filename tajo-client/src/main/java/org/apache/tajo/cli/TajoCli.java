@@ -430,6 +430,7 @@ public class TajoCli {
                   sout.print("continue... ('q' is quit)");
                   sout.flush();
                   if (sin.read() == 'q') {
+                    sout.println();
                     break;
                   }
                   numOfPrintedRows = 0;

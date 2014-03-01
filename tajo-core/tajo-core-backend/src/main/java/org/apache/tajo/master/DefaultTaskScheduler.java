@@ -64,9 +64,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private ScheduledRequests scheduledRequests;
   private TaskRequests taskRequests;
 
-  private int hostLocalAssigned = 0;
-  private int rackLocalAssigned = 0;
-  private int totalAssigned = 0;
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
 

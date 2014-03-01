@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -45,6 +46,9 @@ public class PartitionMergeScanExec extends PhysicalExec {
 
   private AbstractStorageManager sm;
 
+  private float progress;
+  protected TableStats inputStats;
+
   public PartitionMergeScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                                 ScanNode plan, CatalogProtos.FragmentProto[] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -52,6 +56,8 @@ public class PartitionMergeScanExec extends PhysicalExec {
     this.plan = plan;
     this.fragments = fragments;
     this.sm = sm;
+
+    inputStats = new TableStats();
   }
 
   public void init() throws IOException {
@@ -59,6 +65,7 @@ public class PartitionMergeScanExec extends PhysicalExec {
       scanners.add(new SeqScanExec(context, sm, (ScanNode) PlannerUtil.clone(null, plan),
           new CatalogProtos.FragmentProto[] {fragment}));
     }
+    progress = 0.0f;
     rescan();
   }
 
@@ -98,10 +105,39 @@ public class PartitionMergeScanExec extends PhysicalExec {
   public void close() throws IOException {
     for (SeqScanExec scanner : scanners) {
       scanner.close();
+      TableStats scannerTableStsts = scanner.getInputStats();
+      if (scannerTableStsts != null) {
+        inputStats.merge(scannerTableStsts);
+      }
     }
+    iterator = null;
+    progress = 1.0f;
   }
 
   public String getTableName() {
     return plan.getTableName();
+  }
+
+  @Override
+  public float getProgress() {
+    if (iterator != null) {
+      float progressSum = 0.0f;
+      for (SeqScanExec scanner : scanners) {
+        progressSum += scanner.getProgress();
+      }
+      if (progressSum > 0) {
+        // get a average progress - divide progress summary by the number of scanners
+        return progressSum / (float)(scanners.size());
+      } else {
+        return 0.0f;
+      }
+    } else {
+      return progress;
+    }
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    return inputStats;
   }
 }

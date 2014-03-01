@@ -38,6 +38,8 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
+<%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
+<%@ page import="org.apache.tajo.worker.TaskHistory" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -121,16 +123,18 @@
         delim = "<br/>";
     }
 
-    int numPartitions = queryUnit.getShuffleOutpuNum();
-    String partitionKey = "-";
-    String partitionFileName = "-";
-    if(numPartitions > 0) {
+    int numShuffles = queryUnit.getShuffleOutpuNum();
+    String shuffleKey = "-";
+    String shuffleFileName = "-";
+    if(numShuffles > 0) {
         TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = queryUnit.getShuffleFileOutputs().get(0);
-        partitionKey = "" + shuffleFileOutputs.getPartId();
-        partitionFileName = shuffleFileOutputs.getFileName();
+        shuffleKey = "" + shuffleFileOutputs.getPartId();
+        shuffleFileName = shuffleFileOutputs.getFileName();
     }
 
     //int numIntermediateData = queryUnit.getIntermediateData() == null ? 0 : queryUnit.getIntermediateData().size();
+    TableStats inputStat = queryUnit.getLastAttempt().getInputStats();
+    TableStats outputStat = queryUnit.getLastAttempt().getResultStats();
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -149,14 +153,17 @@
     <hr/>
     <table border="1" width="100%" class="border_table">
         <tr><td width="200" align="right">ID</td><td><%=queryUnit.getId()%></td></tr>
+        <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(queryUnit.getLastAttempt().getProgress())%>%</td></tr>
         <tr><td align="right">State</td><td><%=queryUnit.getState()%></td></tr>
         <tr><td align="right">Launch Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : df.format(queryUnit.getLaunchTime())%></td></tr>
         <tr><td align="right">Finish Time</td><td><%=queryUnit.getFinishTime() == 0 ? "-" : df.format(queryUnit.getFinishTime())%></td></tr>
         <tr><td align="right">Running Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : queryUnit.getRunningTime() + " ms"%></td></tr>
         <tr><td align="right">Host</td><td><%=queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost()%></td></tr>
-        <tr><td align="right">Partitions</td><td># Partitions: <%=numPartitions%>, Partition Key: <%=partitionKey%>, Partition file: <%=partitionFileName%></td></tr>
+        <tr><td align="right">Shuffles</td><td># Shuffle Outputs: <%=numShuffles%>, Shuffle Key: <%=shuffleKey%>, Shuffle file: <%=shuffleFileName%></td></tr>
         <tr><td align="right">Data Locations</td><td><%=dataLocationInfos%></td></tr>
         <tr><td align="right">Fragment</td><td><%=fragmentInfo%></td></tr>
+        <tr><td align="right">Input Statistics</td><td><%=TaskHistory.toInputStatsString(inputStat)%></td></tr>
+        <tr><td align="right">Output Statistics</td><td><%=TaskHistory.toOutputStatsString(outputStat)%></td></tr>
         <tr><td align="right">Fetches</td><td><%=fetchInfo%></td></tr>
     </table>
 </div>

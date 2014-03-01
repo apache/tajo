@@ -302,6 +302,9 @@ public class TaskRunner extends AbstractService {
 
   static void fatalError(QueryMasterProtocolService.Interface qmClientService,
                          QueryUnitAttemptId taskAttemptId, String message) {
+    if (message == null) {
+       message = "No error message";
+    }
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())
         .setErrorMessage(message);
@@ -372,6 +375,7 @@ public class TaskRunner extends AbstractService {
 
                   QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
                   if (tasks.containsKey(taskAttemptId)) {
+                    LOG.error("Duplicate Task Attempt: " + taskAttemptId);
                     fatalError(qmClientService, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
                     continue;
                   }
@@ -390,8 +394,8 @@ public class TaskRunner extends AbstractService {
                     // task.run() is a blocking call.
                     task.run();
                   } catch (Throwable t) {
+                    LOG.error(t.getMessage(), t);
                     fatalError(qmClientService, taskAttemptId, t.getMessage());
-                    t.printStackTrace();
                   } finally {
                     callFuture = null;
                     taskRequest = null;

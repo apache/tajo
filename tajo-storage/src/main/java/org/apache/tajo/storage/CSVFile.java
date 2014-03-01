@@ -381,7 +381,9 @@ public class CSVFile {
       rowLengthList.clear();
       fileOffsets.clear();
 
-      if(eof) return;
+      if(eof) {
+        return;
+      }
 
       while (DEFAULT_PAGE_SIZE >= bufferedSize){
 
@@ -403,6 +405,34 @@ public class CSVFile {
           eof = true;
           break;
         }
+      }
+      if (tableStats != null) {
+        tableStats.setReadBytes(getFilePosition() - startOffset);
+        tableStats.setNumRows(recordCount);
+      }
+    }
+
+    @Override
+    public float getProgress() {
+      try {
+        if(eof) {
+          return 1.0f;
+        }
+        long filePos = getFilePosition();
+
+        if (tableStats != null) {
+          tableStats.setReadBytes(filePos - startOffset);
+          tableStats.setNumRows(recordCount);
+        }
+
+        if (startOffset == filePos) {
+          return 0.0f;
+        } else {
+          return Math.min(1.0f, (float)(filePos - startOffset) / (float)(end - startOffset));
+        }
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+        return 0.0f;
       }
     }
 
@@ -454,6 +484,11 @@ public class CSVFile {
     @Override
     public void close() throws IOException {
       try {
+        if (tableStats != null) {
+          tableStats.setReadBytes(fragment.getEndKey());
+          tableStats.setNumRows(recordCount);
+        }
+
         IOUtils.cleanup(LOG, reader, is, fis);
         fs = null;
         is = null;

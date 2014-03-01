@@ -26,6 +26,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.ColumnStats;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -53,6 +55,10 @@ public abstract class FileScannerV2 implements Scanner {
   protected StorageManagerV2.StorgaeManagerContext smContext;
 
   protected AtomicBoolean firstSchdeuled = new AtomicBoolean(true);
+  
+  protected float progress;
+  
+  protected TableStats tableStats;
 
   protected abstract boolean scanNext(int length) throws IOException;
 
@@ -91,6 +97,20 @@ public abstract class FileScannerV2 implements Scanner {
       smContext.requestFileScan(this);
     }
     inited = true;
+    progress = 0.0f;
+
+    tableStats = new TableStats();
+    if (fragment != null) {
+      tableStats.setNumBytes(fragment.getEndKey());
+      tableStats.setNumBlocks(1);
+    }
+
+    if (schema != null) {
+      for(Column eachColumn: schema.getColumns()) {
+        ColumnStats columnStats = new ColumnStats(eachColumn);
+        tableStats.addColumnStat(columnStats);
+      }
+    }
   }
 
   @Override
@@ -182,6 +202,7 @@ public abstract class FileScannerV2 implements Scanner {
     long[] readBytes = reportReadBytes();
     smContext.incrementReadBytes(allocatedDiskId, readBytes);
     closed.set(true);
+    progress = 1.0f;
     LOG.info(toString() + " closed, totalScanTime=" + totalScanTime);
   }
 
@@ -199,5 +220,15 @@ public abstract class FileScannerV2 implements Scanner {
       }
     }
     return nextTuple();
+  }
+
+  @Override
+  public float getProgress() {
+    return progress;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    return tableStats;
   }
 }

@@ -34,15 +34,17 @@ message TaskStatusProto {
   required float progress = 3;
   required TaskAttemptState state = 4;
   optional StatSetProto stats = 5;
-  optional TableStatsProto resultStats = 6;
-  repeated ShuffleFileOutput shuffleFileOutputs = 7;
+  optional TableStatsProto inputStats = 6;
+  optional TableStatsProto resultStats = 7;
+  repeated ShuffleFileOutput shuffleFileOutputs = 8;
 }
 
 message TaskCompletionReport {
   required QueryUnitAttemptIdProto id = 1;
   optional StatSetProto stats = 2;
-  optional TableStatsProto resultStats = 3;
-  repeated ShuffleFileOutput shuffleFileOutputs = 4;
+  optional TableStatsProto inputStats = 3;
+  optional TableStatsProto resultStats = 4;
+  repeated ShuffleFileOutput shuffleFileOutputs = 5;
 }
 
 message TaskFatalErrorReport {

@@ -20,12 +20,15 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 public abstract class UnaryPhysicalExec extends PhysicalExec {
   protected PhysicalExec child;
+  protected float progress;
+  protected TableStats inputStats;
 
   public UnaryPhysicalExec(TaskAttemptContext context,
                            Schema inSchema, Schema outSchema,
@@ -44,21 +47,50 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
   }
 
   public void init() throws IOException {
+    progress = 0.0f;
     if (child != null) {
       child.init();
     }
   }
 
   public void rescan() throws IOException {
+    progress = 0.0f;
     if (child != null) {
       child.rescan();
     }
   }
 
   public void close() throws IOException {
+    progress = 1.0f;
     if (child != null) {
       child.close();
+      try {
+        TableStats stat = child.getInputStats();
+        if (stat != null) {
+          inputStats = (TableStats)(stat.clone());
+        }
+      } catch (CloneNotSupportedException e) {
+        e.printStackTrace();
+      }
       child = null;
+    }
+  }
+
+  @Override
+  public float getProgress() {
+    if (child != null) {
+      return child.getProgress();
+    } else {
+      return progress;
+    }
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    if (child != null) {
+      return child.getInputStats();
+    } else {
+      return inputStats;
     }
   }
 }
