@@ -130,6 +130,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-638: ExecutionBlock must be sorted by start time in querydetail.jsp.
+    (hyoungjunkim via hyunsik)
+
     TAJO-589: Add fine grained progress indicator for each task.
     (hyoungjunkim via hyunsik)
 

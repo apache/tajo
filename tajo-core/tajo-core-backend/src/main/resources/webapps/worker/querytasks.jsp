@@ -100,7 +100,7 @@
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebid + "&sortOrder=" + nextSortOrder + "&sort=";
+  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebid + "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
   QueryUnit[] queryUnits = subQuery.getQueryUnits();
 
 
@@ -176,6 +176,8 @@
         <option value="RUNNING" <%="RUNNING".equals(status) ? "selected" : ""%>>RUNNING</option>
         <option value="SUCCEEDED" <%="SUCCEEDED".equals(status) ? "selected" : ""%>>SUCCEEDED</option>
     </select>
+    &nbsp;&nbsp;
+    <input type="submit" value="Filter">
     <input type="hidden" name="queryId" value="<%=paramQueryId%>"/>
     <input type="hidden" name="ebid" value="<%=paramEbId%>"/>
     <input type="hidden" name="sort" value="<%=sort%>"/>

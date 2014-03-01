@@ -113,7 +113,18 @@ public class JSPUtil {
     Collections.sort(subQueryList, new Comparator<SubQuery>() {
       @Override
       public int compare(SubQuery subQuery1, SubQuery subQuery2) {
-        return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+        long q1StartTime = subQuery1.getStartTime();
+        long q2StartTime = subQuery2.getStartTime();
+
+        q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
+        q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
+
+        int result = compareLong(q1StartTime, q2StartTime);
+        if (result == 0) {
+          return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+        } else {
+          return result;
+        }
       }
     });
 
