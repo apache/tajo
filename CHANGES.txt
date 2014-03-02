@@ -269,6 +269,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-630: QueryMasterTask never finished when Internal error occurs.
+    (hyunsik)
+
     TAJO-638: QueryUnitAttempt causes Invalid event error: TA_UPDATE at
     TA_ASSIGNED. (hyunsik)
 
