@@ -282,7 +282,8 @@ public class QueryMasterTask extends CompositeService {
       return
           state == QueryState.QUERY_SUCCEEDED ||
           state == QueryState.QUERY_FAILED ||
-          state == QueryState.QUERY_KILLED;
+          state == QueryState.QUERY_KILLED ||
+          state == QueryState.QUERY_ERROR;
     }
   }
 
