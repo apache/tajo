@@ -269,6 +269,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-645: Task.Reporter can cause NPE during reporting. (hyunsik)
+
     TAJO-630: QueryMasterTask never finished when Internal error occurs.
     (hyunsik)
 
