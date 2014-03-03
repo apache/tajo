@@ -136,8 +136,6 @@ public class Task {
               final QueryUnitRequest request) throws IOException {
     this.request = request;
     this.taskId = taskId;
-    this.reporter = new Reporter(taskId, masterProxy);
-    this.reporter.startCommunicationThread();
 
     this.systemConf = worker.getConf();
     this.queryContext = request.getQueryContext();
@@ -153,6 +151,9 @@ public class Task {
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.inputStats = new TableStats();
+
+    this.reporter = new Reporter(taskId, masterProxy);
+    this.reporter.startCommunicationThread();
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
