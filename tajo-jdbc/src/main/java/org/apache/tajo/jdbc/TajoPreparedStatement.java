@@ -50,7 +50,7 @@ public class TajoPreparedStatement implements PreparedStatement {
   /**
    * Add SQLWarnings to the warningChain if needed.
    */
-  private  SQLWarning warningChain = null;
+  //private  SQLWarning warningChain = null;
 
   /**
    * Keep state so we can fail certain calls made after close().
@@ -449,7 +449,6 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public void clearWarnings() throws SQLException {
-     warningChain=null;
   }
 
   public void closeOnCompletion() throws SQLException {
@@ -588,7 +587,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    return warningChain;
+    return null;
   }
 
   @Override
