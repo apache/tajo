@@ -15,10 +15,14 @@ package org.apache.tajo.catalog.store;
 
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.log4j.Logger;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,7 +35,7 @@ public class HCatalogStoreClientPool {
   private final ConcurrentLinkedQueue<HCatalogStoreClient> clientPool =
       new ConcurrentLinkedQueue<HCatalogStoreClient>();
   private AtomicBoolean poolClosed = new AtomicBoolean(false);
-  private final HiveConf hiveConf;
+  private HiveConf hiveConf;
 
   /**
    * A wrapper around the HiveMetaStoreClient that manages interactions with the
@@ -43,9 +47,7 @@ public class HCatalogStoreClientPool {
 
     private HCatalogStoreClient(HiveConf hiveConf) {
       try {
-
         LOG.info("Creating MetaStoreClient. Pool Size = " + clientPool.size());
-
         this.hiveClient = new HiveMetaStoreClient(hiveConf);
       } catch (Exception e) {
         // Turn in to an unchecked exception
@@ -99,6 +101,13 @@ public class HCatalogStoreClientPool {
     addClients(initialSize);
   }
 
+  public void setParameters(Configuration conf) {
+    for( Iterator<Entry<String, String>> iter = conf.iterator(); iter.hasNext();) {
+      Map.Entry<String, String> entry = iter.next();
+      this.hiveConf.set(entry.getKey(), entry.getValue());
+    }
+  }
+
   /**
    * Add numClients to the client pool.
    */
@@ -127,6 +136,7 @@ public class HCatalogStoreClientPool {
       client = new HCatalogStoreClient(hiveConf);
     }
     client.markInUse();
+
     return client;
   }
 
