@@ -269,6 +269,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-646: TajoClient is blocked while main thread finished. 
+    (hyoungjunkim via jinho)
+
     TAJO-645: Task.Reporter can cause NPE during reporting. (hyunsik)
 
     TAJO-630: QueryMasterTask never finished when Internal error occurs.

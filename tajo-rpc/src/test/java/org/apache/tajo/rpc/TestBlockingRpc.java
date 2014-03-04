@@ -90,7 +90,8 @@ public class TestBlockingRpc {
         .setX4(2.0f).build();
 
     SumResponse response =
-    new ServerCallable<SumResponse>(new TajoConf(), server.getListenAddress(), DummyProtocol.class, false) {
+    new ServerCallable<SumResponse>(RpcConnectionPool.newPool(new TajoConf(), getClass().getSimpleName(), 2),
+        server.getListenAddress(), DummyProtocol.class, false) {
       @Override
       public SumResponse call(NettyClientBase client) throws Exception {
         BlockingInterface stub2 = client.getStub();
@@ -102,7 +103,8 @@ public class TestBlockingRpc {
     assertTrue(8.15d == response.getResult());
 
     response =
-        new ServerCallable<SumResponse>(new TajoConf(), server.getListenAddress(), DummyProtocol.class, false) {
+        new ServerCallable<SumResponse>(RpcConnectionPool.newPool(new TajoConf(), getClass().getSimpleName(), 2),
+            server.getListenAddress(), DummyProtocol.class, false) {
           @Override
           public SumResponse call(NettyClientBase client) throws Exception {
             BlockingInterface stub2 = client.getStub();

@@ -33,7 +33,7 @@ public class TajoDriver implements Driver, Closeable {
 
   public static final String TAJO_JDBC_URL_PREFIX = "jdbc:tajo://";
 
-  protected static TajoConf jdbcTajoConf;
+  protected static TajoConf jdbcTajoConf = new TajoConf();
 
   static {
     try {
@@ -45,7 +45,6 @@ public class TajoDriver implements Driver, Closeable {
   }
 
   public TajoDriver() {
-    jdbcTajoConf = new TajoConf();
   }
 
   @Override

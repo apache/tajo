@@ -69,6 +69,9 @@ public class TajoStatement implements Statement {
 
   @Override
   public void close() throws SQLException {
+    if (resultSet != null) {
+      resultSet.close();
+    }
     resultSet = null;
     isClosed = true;
   }
@@ -112,7 +115,8 @@ public class TajoStatement implements Statement {
     }
 
     try {
-      return tajoClient.executeQueryAndGetResult(sql);
+      resultSet = tajoClient.executeQueryAndGetResult(sql);
+      return resultSet;
     } catch (Exception e) {
       throw new SQLFeatureNotSupportedException(e.getMessage(), e);
     }

@@ -39,12 +39,16 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoResultSet extends TajoResultSetBase {
   private FileSystem fs;
   private Scanner scanner;
   private TajoClient tajoClient;
-  QueryId queryId;
+  private TajoConf conf;
+  private TableDesc desc;
+  private QueryId queryId;
+  private AtomicBoolean closed = new AtomicBoolean(false);
 
   public TajoResultSet(TajoClient tajoClient, QueryId queryId) {
     this.tajoClient = tajoClient;
@@ -56,6 +60,14 @@ public class TajoResultSet extends TajoResultSetBase {
                        TajoConf conf, TableDesc desc) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
+    this.conf = conf;
+    this.desc = desc;
+
+    initScanner();
+    init();
+  }
+
+  private void initScanner() throws IOException {
     if(desc != null) {
       this.schema = desc.getSchema();
 
@@ -65,7 +77,6 @@ public class TajoResultSet extends TajoResultSetBase {
       List<FileFragment> frags = getFragments(desc.getPath());
       scanner = new MergeScanner(conf, schema, desc.getMeta(), frags);
     }
-    init();
   }
 
   @Override
@@ -111,7 +122,11 @@ public class TajoResultSet extends TajoResultSetBase {
   }
 
   @Override
-  public void close() throws SQLException {
+  public synchronized void close() throws SQLException {
+    if (closed.getAndSet(true)) {
+      return;
+    }
+
     try {
       if(tajoClient != null) {
         this.tajoClient.closeQuery(queryId);
@@ -136,6 +151,8 @@ public class TajoResultSet extends TajoResultSetBase {
     try {
       if(scanner != null) {
         scanner.reset();
+      } else {
+        initScanner();
       }
       init();
     } catch (IOException e) {
@@ -143,13 +160,19 @@ public class TajoResultSet extends TajoResultSetBase {
     }
   }
 
-
   @Override
   protected Tuple nextTuple() throws IOException {
     if(scanner == null) {
       return null;
     }
-    return scanner.next();
+    Tuple tuple = scanner.next();
+    if (tuple == null) {
+      //query is closed automatically by querymaster but scanner is not
+      scanner.close();
+      scanner = null;
+    }
+
+    return tuple;
   }
 
   public boolean hasResult() {

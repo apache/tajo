@@ -36,16 +36,17 @@ public abstract class ServerCallable<T> {
   protected Class protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
+  protected RpcConnectionPool connPool;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
-  public ServerCallable(TajoConf conf, InetSocketAddress addr, Class protocol, boolean asyncMode) {
-    this(conf, addr, protocol, asyncMode, false);
+  public ServerCallable(RpcConnectionPool connPool,  InetSocketAddress addr, Class protocol, boolean asyncMode) {
+    this(connPool, addr, protocol, asyncMode, false);
   }
 
-  public ServerCallable(TajoConf conf, InetSocketAddress addr, Class protocol,
+  public ServerCallable(RpcConnectionPool connPool, InetSocketAddress addr, Class protocol,
                         boolean asyncMode, boolean closeConn) {
-    this.tajoConf = conf;
+    this.connPool = connPool;
     this.addr = addr;
     this.protocol = protocol;
     this.asyncMode = asyncMode;
@@ -91,14 +92,10 @@ public abstract class ServerCallable<T> {
       try {
         beforeCall();
         if(addr != null) {
-          client = RpcConnectionPool.getPool(tajoConf).getConnection(addr, protocol, asyncMode);
+          client = connPool.getConnection(addr, protocol, asyncMode);
         }
         return call(client);
       } catch (IOException ioe) {
-        if(!closeConn) {
-          RpcConnectionPool.getPool(tajoConf).closeConnection(client);
-          client = null;
-        }
         exceptions.add(ioe);
         if(abort) {
           throw new ServiceException(ioe.getMessage(), ioe);
@@ -111,9 +108,9 @@ public abstract class ServerCallable<T> {
       } finally {
         afterCall();
         if(closeConn) {
-          RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+          connPool.closeConnection(client);
         } else {
-          RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+          connPool.releaseConnection(client);
         }
       }
       try {
@@ -137,13 +134,9 @@ public abstract class ServerCallable<T> {
     NettyClientBase client = null;
     try {
       beforeCall();
-      client = RpcConnectionPool.getPool(tajoConf).getConnection(addr, protocol, asyncMode);
+      client = connPool.getConnection(addr, protocol, asyncMode);
       return call(client);
     } catch (Throwable t) {
-      if(!closeConn) {
-        RpcConnectionPool.getPool(tajoConf).closeConnection(client);
-        client = null;
-      }
       Throwable t2 = translateException(t);
       if (t2 instanceof IOException) {
         throw (IOException)t2;
@@ -153,9 +146,9 @@ public abstract class ServerCallable<T> {
     } finally {
       afterCall();
       if(closeConn) {
-        RpcConnectionPool.getPool(tajoConf).closeConnection(client);
+        connPool.closeConnection(client);
       } else {
-        RpcConnectionPool.getPool(tajoConf).releaseConnection(client);
+        connPool.releaseConnection(client);
       }
     }
   }

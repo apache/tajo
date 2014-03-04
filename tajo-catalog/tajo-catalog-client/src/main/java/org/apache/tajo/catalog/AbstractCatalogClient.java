@@ -59,7 +59,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final TableDesc getTableDesc(final String name) {
     try {
-      return new ServerCallable<TableDesc>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<TableDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public TableDesc call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return CatalogUtil.newTableDesc(stub.getTableDesc(null, StringProto.newBuilder().setValue(name).build()));
@@ -74,7 +74,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final PartitionMethodDesc getPartitionMethod(final String tableName) {
     try {
-      return new ServerCallable<PartitionMethodDesc>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<PartitionMethodDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public PartitionMethodDesc call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return CatalogUtil.newPartitionMethodDesc(stub.getPartitionMethodByTableName(null,
@@ -90,7 +90,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean existPartitionMethod(final String tableId) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.existPartitionMethod(null, StringProto.newBuilder().
@@ -106,7 +106,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final Collection<String> getAllTableNames() {
     try {
-      return new ServerCallable<Collection<String>>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Collection<String>>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Collection<String> call(NettyClientBase client) throws ServiceException {
           List<String> protos = new ArrayList<String>();
           GetAllTableNamesResponse response;
@@ -128,7 +128,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final Collection<FunctionDesc> getFunctions() {
     try {
-      return new ServerCallable<Collection<FunctionDesc>>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Collection<FunctionDesc>>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Collection<FunctionDesc> call(NettyClientBase client) throws ServiceException {
           List<FunctionDesc> list = new ArrayList<FunctionDesc>();
           GetFunctionsResponse response;
@@ -155,7 +155,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean addTable(final TableDesc desc) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.addTable(null, desc.getProto()).getValue();
@@ -170,7 +170,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean deleteTable(final String name) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.deleteTable(null,
@@ -186,7 +186,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean existsTable(final String tableId) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub
@@ -203,7 +203,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean addIndex(final IndexDesc index) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.addIndex(null, index.getProto()).getValue();
@@ -218,7 +218,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean existIndex(final String indexName) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.existIndexByName(null, StringProto.newBuilder().
@@ -234,7 +234,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public boolean existIndex(final String tableName, final String columnName) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           GetIndexRequest.Builder builder = GetIndexRequest.newBuilder();
           builder.setTableName(tableName);
@@ -252,7 +252,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final IndexDesc getIndex(final String indexName) {
     try {
-      return new ServerCallable<IndexDesc>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<IndexDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public IndexDesc call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return new IndexDesc(
@@ -269,7 +269,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final IndexDesc getIndex(final String tableName, final String columnName) {
     try {
-      return new ServerCallable<IndexDesc>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<IndexDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public IndexDesc call(NettyClientBase client) throws ServiceException {
           GetIndexRequest.Builder builder = GetIndexRequest.newBuilder();
           builder.setTableName(tableName);
@@ -288,7 +288,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public boolean deleteIndex(final String indexName) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.delIndex(null,
@@ -304,7 +304,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean createFunction(final FunctionDesc funcDesc) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.createFunction(null, funcDesc.getProto()).getValue();
@@ -319,7 +319,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final boolean dropFunction(final String signature) {
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           UnregisterFunctionRequest.Builder builder = UnregisterFunctionRequest.newBuilder();
           builder.setSignature(signature);
@@ -352,7 +352,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
 
     FunctionDescProto descProto = null;
     try {
-      descProto = new ServerCallable<FunctionDescProto>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      descProto = new ServerCallable<FunctionDescProto>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public FunctionDescProto call(NettyClientBase client) throws ServiceException {
           try {
             CatalogProtocolService.BlockingInterface stub = getStub(client);
@@ -402,7 +402,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
 
     try {
-      return new ServerCallable<Boolean>(conf, catalogServerAddr, CatalogProtocol.class, false) {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.containFunction(null, builder.build()).getValue();
