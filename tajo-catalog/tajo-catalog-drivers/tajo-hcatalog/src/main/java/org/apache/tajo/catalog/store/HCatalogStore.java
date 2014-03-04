@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.store;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -39,6 +40,9 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InternalException;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,17 +51,31 @@ import java.util.Properties;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
-  public static final String CVSFILE_DELIMITER = "csvfile.delimiter";
+  public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
+  public static final String CSVFILE_NULL = "csvfile.null";
 
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
   private static final int CLIENT_POOL_SIZE = 2;
   private final HCatalogStoreClientPool clientPool = new HCatalogStoreClientPool(0);
+  private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
   public HCatalogStore(final Configuration conf)
       throws InternalException {
     this.conf = conf;
     try {
+      // In unit test case, HCatalogStore has to set some hive configurations by force.
+      // So, it checks caller class name and caller method name.
+      long[] threadIds = threadBean.getAllThreadIds();
+      for (long tid : threadIds) {
+        ThreadInfo info = threadBean.getThreadInfo(tid, 5);
+        for (StackTraceElement frame : info.getStackTrace()) {
+          if (frame.toString().equals("org.apache.tajo.catalog.store.TestHCatalogStore.setUp")) {
+            clientPool.setParameters(this.conf);
+          }
+        }
+      }
+
       clientPool.addClients(CLIENT_POOL_SIZE);
     } catch (Exception e) {
       e.printStackTrace();
@@ -179,21 +197,28 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       Properties properties = table.getMetadata();
       if (properties != null) {
         // set field delimiter
-        String fieldDelimiter = "", fileOutputformat = "";
+        String fieldDelimiter = "", fileOutputformat = "", nullFormat = "";
         if (properties.getProperty(serdeConstants.FIELD_DELIM) != null) {
           fieldDelimiter = properties.getProperty(serdeConstants.FIELD_DELIM);
         } else {
           // if hive table used default row format delimiter, Properties doesn't have it.
           // So, Tajo must set as follows:
-          fieldDelimiter = "\\001";
+          fieldDelimiter = "\u0001";
+        }
+
+        // set null format
+        if (properties.getProperty(serdeConstants.SERIALIZATION_NULL_FORMAT) != null) {
+          nullFormat = properties.getProperty(serdeConstants.SERIALIZATION_NULL_FORMAT);
+        } else {
+          nullFormat = "\\N";
         }
 
         // set file output format
         fileOutputformat = properties.getProperty("file.outputformat");
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
-
         if (storeType.equals(CatalogProtos.StoreType.CSV) ) {
-          options.put(CVSFILE_DELIMITER, fieldDelimiter);
+          options.put(CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.put(CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
         }
 
         // set data size
@@ -310,45 +335,60 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       //table.setOwner();
 
       StorageDescriptor sd = new StorageDescriptor();
+      sd.setParameters(new HashMap<String, String>());
+      sd.setSerdeInfo(new SerDeInfo());
+      sd.getSerdeInfo().setParameters(new HashMap<String, String>());
+      sd.getSerdeInfo().setName(table.getTableName());
 
       // if tajo set location method, thrift client make exception as follows:
       // Caused by: MetaException(message:java.lang.NullPointerException)
       // If you want to modify table path, you have to modify on Hive cli.
-      //sd.setLocation(tableDesc.getPath().toString());
+      // sd.setLocation(tableDesc.getPath().toString());
 
       // set column information
       ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(tableDesc.getSchema().getFieldsCount());
-      for (CatalogProtos.ColumnProto col : tableDesc.getSchema().getFieldsList()) {
-        cols.add(new FieldSchema(
-            col.getName(),
-            HCatalogUtil.getHiveFieldType(col.getDataType().getType().name()),
-            ""));
+
+      for (CatalogProtos.ColumnProto eachField : tableDesc.getSchema().getFieldsList()) {
+        cols.add(new FieldSchema( eachField.getName(), HCatalogUtil.getHiveFieldType(eachField.getDataType().getType().name()), ""));
       }
       sd.setCols(cols);
 
+      // set partition keys
+      if (tableDesc.getPartition() != null && tableDesc.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+        List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
+        for(CatalogProtos.ColumnProto eachPartitionKey: tableDesc.getPartition().getExpressionSchema().getFieldsList()) {
+          partitionKeys.add(new FieldSchema( eachPartitionKey.getName(), HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType().getType().name()), ""));
+        }
+        table.setPartitionKeys(partitionKeys);
+      }
+
       sd.setCompressed(false);
+
       if (tableDesc.getMeta().hasParams()) {
         for (CatalogProtos.KeyValueProto entry: tableDesc.getMeta().getParams().getKeyvalList()) {
           if (entry.getKey().equals("compression.codec")) {
             sd.setCompressed(true);
-          } else if (entry.getKey().equals(CVSFILE_DELIMITER)) {
-            sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, entry.getValue());
+          } else if (entry.getKey().equals(CSVFILE_NULL)) {
+            sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT, StringEscapeUtils.unescapeJava(entry.getValue()));
+          } else if (entry.getKey().equals(CSVFILE_DELIMITER)) {
+            String fieldDelimiter = entry.getValue();
+
+            // User can use an unicode for filed delimiter such as \u0001, \001.
+            // In this case, java console will convert this value into "\\u001".
+            // And hive will un-espace this value again.
+            // As a result, user can use right field delimiter.
+            // So, we have to un-escape this value.
+            sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, StringEscapeUtils.unescapeJava(fieldDelimiter));
+            sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, StringEscapeUtils.unescapeJava(fieldDelimiter));
           }
         }
       }
-
-      sd.setParameters(new HashMap<String, String>());
-      sd.setSerdeInfo(new SerDeInfo());
-      sd.getSerdeInfo().setName(table.getTableName());
 
       if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
       } else {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
       }
-
-      sd.getSerdeInfo().setParameters(new HashMap<String, String>());
-//      sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, "1");
 
       if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
         sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());

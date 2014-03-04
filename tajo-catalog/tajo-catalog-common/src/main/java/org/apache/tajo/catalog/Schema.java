@@ -130,7 +130,10 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    */
   public Column getColumn(String name) {
     String [] parts = name.split("\\.");
-    if (parts.length == 2) {
+    // Some of the string can includes database name and table name and column name.
+    // For example, it can be 'default.table1.id'.
+    // Therefore, spilt string array length can be 3.
+    if (parts.length >= 2) {
       return getColumnByQName(name);
     } else {
       return getColumnByName(name);

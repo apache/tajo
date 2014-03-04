@@ -19,20 +19,17 @@
 package org.apache.tajo.catalog.store;
 
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
-import org.apache.hadoop.hive.metastore.api.*;
-import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hadoop.hive.shims.ShimLoader;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -42,7 +39,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -56,8 +55,13 @@ public class TestHCatalogStore {
   private static final String DB_NAME = "test_hive";
   private static final String CUSTOMER = "customer";
   private static final String NATION = "nation";
+  private static final String REGION = "region";
+  private static final String SUPPLIER = "supplier";
+
   private static CatalogStore store;
   private static int port;
+
+  private static Path warehousePath;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -68,46 +72,30 @@ public class TestHCatalogStore {
     Database db = new Database();
     db.setName(DB_NAME);
 
-    Path warehousePath = new Path(CommonTestingUtil.getTestDir(), DB_NAME);
-    port = MetaStoreUtils.findFreePort();
-    MetaStoreUtils.startMetaStore(port, ShimLoader.getHadoopThriftAuthBridge());
+    warehousePath = new Path(CommonTestingUtil.getTestDir(), DB_NAME);
     db.setLocationUri(warehousePath.toString());
 
-    String metastoreUri = "thrift://localhost:" + port;
-
     HiveConf conf = new HiveConf();
-    conf.setVar(HiveConf.ConfVars.METASTOREURIS, metastoreUri);
-    conf.setIntVar(HiveConf.ConfVars.METASTORETHRIFTCONNECTIONRETRIES, 3);
-    conf.set(HiveConf.ConfVars.PREEXECHOOKS.varname, "");
-    conf.set(HiveConf.ConfVars.POSTEXECHOOKS.varname, "");
-    conf.set(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "false");
-    conf.set(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname, DummyListener.class.getName());
+    conf.set(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, warehousePath.toString());
 
-    // set property to use at HCatalogUtil
-    System.setProperty(HiveConf.ConfVars.METASTOREURIS.varname, metastoreUri);
-    System.setProperty(HiveConf.ConfVars.METASTORETHRIFTCONNECTIONRETRIES.varname, "3");
-    System.setProperty(HiveConf.ConfVars.PREEXECHOOKS.varname, "");
-    System.setProperty(HiveConf.ConfVars.POSTEXECHOOKS.varname, "");
-    System.setProperty(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "false");
-    System.setProperty(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname, DummyListener.class.getName());
-
-    SessionState.start(new CliSessionState(conf));
+    // create hive configuration file for unit tests
+    Path path = new Path(warehousePath.getParent(), "hive-site.xml");
+    FileSystem fs = FileSystem.getLocal(new Configuration());
+    conf.writeXml(fs.create(path));
 
     // create database and tables on Hive MetaStore.
     client = new HiveMetaStoreClient(conf);
-
     client.createDatabase(db);
-    createTable(NATION);
-    createTable(CUSTOMER);
-
-    DummyListener.notifyList.clear();
 
     // create local HCatalogStore.
     TajoConf tajoConf = new TajoConf();
     tajoConf.set(CatalogConstants.STORE_CLASS, HCatalogStore.class.getCanonicalName());
     tajoConf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
+    tajoConf.addResource(path.toString());
+    tajoConf.set(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, warehousePath.toString());
 
     store = new HCatalogStore(tajoConf);
+
   }
 
   private static void deleteMetaStoreDirectory() throws Exception {
@@ -119,59 +107,6 @@ public class TestHCatalogStore {
     fs.close();
   }
 
-  private static void createTable(String tableName) throws Exception {
-    Map<String, String> tableParams = new HashMap<String, String>();
-
-    List<FieldSchema> cols = new ArrayList<FieldSchema>();
-
-    if (tableName.equals(CUSTOMER)) {
-      cols.add(new FieldSchema("c_custkey", "int", ""));
-      cols.add(new FieldSchema("c_name", "string", ""));
-      cols.add(new FieldSchema("c_address", "string", ""));
-      cols.add(new FieldSchema("c_nationkey", "int", ""));
-      cols.add(new FieldSchema("c_phone", "string", ""));
-      cols.add(new FieldSchema("c_acctbal", "double", ""));
-      cols.add(new FieldSchema("c_mktsegment", "string", ""));
-      cols.add(new FieldSchema("c_comment", "string", ""));
-    } else {
-      cols.add(new FieldSchema("n_nationkey", "int", ""));
-      cols.add(new FieldSchema("n_name", "string", ""));
-      cols.add(new FieldSchema("n_regionkey", "int", ""));
-      cols.add(new FieldSchema("n_comment", "string", ""));
-    }
-
-    StorageDescriptor sd = new StorageDescriptor();
-    sd.setCols(cols);
-    sd.setCompressed(false);
-    sd.setParameters(tableParams);
-    sd.setSerdeInfo(new SerDeInfo());
-    sd.getSerdeInfo().setName(tableName);
-    sd.getSerdeInfo().setParameters(new HashMap<String, String>());
-    sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, "1");
-
-    if (tableName.equals(CUSTOMER)) {
-      sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
-      sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
-      sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
-    } else {
-      sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
-      sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
-    }
-
-
-    Table table = new Table();
-    table.setDbName(DB_NAME);
-    table.setTableName(tableName);
-    table.setParameters(tableParams);
-    table.setSd(sd);
-
-    if (tableName.equals(NATION)) {
-      table.addToPartitionKeys(new FieldSchema("type", "string", ""));
-    }
-
-    client.createTable(table);
-  }
-
   @AfterClass
   public static void tearDown() throws IOException {
     try {
@@ -179,6 +114,10 @@ public class TestHCatalogStore {
         store.deleteTable(DB_NAME + "." + CUSTOMER);
       if (store.existTable(DB_NAME + "." + NATION))
         store.deleteTable(DB_NAME + "." + NATION);
+      if (store.existTable(DB_NAME + "." + REGION))
+        store.deleteTable(DB_NAME + "." + REGION);
+      if (store.existTable(DB_NAME + "." + SUPPLIER))
+        store.deleteTable(DB_NAME + "." + SUPPLIER);
       dropDatabase();
       client.close();
       store.close();
@@ -198,56 +137,122 @@ public class TestHCatalogStore {
     }
   }
 
-  // Current Hive MetaStoreClient doesn't support to set table location.
-  // If Tajo update table path, ThriftHiveMetaStore make a MetaException.
-  // So, it needs to disable until Hive support to set table location.
-//  @Test
-//  public void testAddTable() throws Exception {
-//    TableDesc table = new TableDesc();
-//
-//    table.setName(CUSTOMER);
-//
-//    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-//    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
-//    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
-//    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
-//    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
-//    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
-//    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
-//    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
-//    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
-//
-//    table.setSchema(schema);
-//    store.addTable(table);
-//  }
-//  @Test
-//  public void testAddTableByPartition() throws Exception {
-//    TableDesc table = new TableDesc();
-//
-//    table.setName(NATION);
-//
-//    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-//    schema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
-//    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-//    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-//    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
-//    table.setSchema(schema);
-//
-//    Partitions partitions = new Partitions();
-//    partitions.addColumn("type", TajoDataTypes.Type.TEXT);
-//    table.setPartitions(partitions);
-//
-//    store.addTable(table);
-//  }
+  @Test
+  public void testAddTable1() throws Exception {
+    TableDesc table = new TableDesc();
+
+    table.setName(DB_NAME + "." + CUSTOMER);
+
+    Options options = new Options();
+    options.put(HCatalogStore.CSVFILE_DELIMITER, "\u0001");
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.RCFILE, options);
+    table.setMeta(meta);
+
+    table.setPath(new Path(warehousePath, CUSTOMER));
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
+
+    table.setSchema(schema);
+    store.addTable(table.getProto());
+  }
+
+  @Test
+  public void testAddTable2() throws Exception {
+    TableDesc table = new TableDesc();
+
+    table.setName(DB_NAME + "." + REGION);
+
+    Options options = new Options();
+    options.put(HCatalogStore.CSVFILE_DELIMITER, "|");
+    options.put(HCatalogStore.CSVFILE_NULL, "\t");
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
+    table.setMeta(meta);
+
+    table.setPath(new Path(warehousePath, REGION));
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("r_name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
+
+    table.setSchema(schema);
+    store.addTable(table.getProto());
+  }
+
+  @Test
+  public void testAddTable3() throws Exception {
+    TableDesc table = new TableDesc();
+
+    table.setName(DB_NAME + "." + SUPPLIER);
+
+    Options options = new Options();
+    options.put(HCatalogStore.CSVFILE_DELIMITER, "\t");
+    options.put(HCatalogStore.CSVFILE_NULL, "\u0002");
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
+    table.setMeta(meta);
+
+    table.setPath(new Path(warehousePath, SUPPLIER));
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("s_name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("s_address", TajoDataTypes.Type.TEXT);
+    schema.addColumn("s_nationkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("s_phone", TajoDataTypes.Type.TEXT);
+    schema.addColumn("s_acctbal", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
+
+    table.setSchema(schema);
+    store.addTable(table.getProto());
+  }
+
+  @Test
+  public void testAddTableByPartition() throws Exception {
+    TableDesc table = new TableDesc();
+
+    table.setName(DB_NAME + "." + NATION);
+
+    Options options = new Options();
+    options.put(HCatalogStore.CSVFILE_DELIMITER, "\u0001");
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
+    table.setMeta(meta);
+
+    table.setPath(new Path(warehousePath, NATION));
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    table.setSchema(schema);
+
+    org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+    expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
+
+    PartitionMethodDesc partitions = new PartitionMethodDesc(DB_NAME + "." + NATION,
+        CatalogProtos.PartitionType.COLUMN, expressionSchema.getColumn(0).getQualifiedName(), expressionSchema);
+    table.setPartitionMethod(partitions);
+
+    store.addTable(table.getProto());
+  }
 
   @Test
   public void testExistTable() throws Exception {
     assertTrue(store.existTable(DB_NAME + "." + CUSTOMER));
     assertTrue(store.existTable(DB_NAME + "." + NATION));
+    assertTrue(store.existTable(DB_NAME + "." + REGION));
+    assertTrue(store.existTable(DB_NAME + "." + SUPPLIER));
   }
 
   @Test
-  public void testGetTable() throws Exception {
+  public void testGetTable1() throws Exception {
     TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + CUSTOMER));
 
     List<Column> columns = table.getSchema().getColumns();
@@ -269,37 +274,95 @@ public class TestHCatalogStore {
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(6).getDataType().getType());
     assertEquals("c_comment", columns.get(7).getSimpleName());
     assertEquals(TajoDataTypes.Type.TEXT, columns.get(7).getDataType().getType());
+
     assertNull(table.getPartitionMethod());
+
     assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.RCFILE.name());
+  }
 
+  @Test
+  public void testGetTable2() throws Exception {
+    TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
 
-    table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
-    columns = table.getSchema().getColumns();
+    List<Column> columns = table.getSchema().getColumns();
     assertEquals(DB_NAME + "." + NATION, table.getName());
-    assertEquals(4, columns.size());
-    assertEquals("n_nationkey", columns.get(0).getSimpleName());
-    assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());
-    assertEquals("n_name", columns.get(1).getSimpleName());
-    assertEquals(TajoDataTypes.Type.TEXT, columns.get(1).getDataType().getType());
-    assertEquals("n_regionkey", columns.get(2).getSimpleName());
-    assertEquals(TajoDataTypes.Type.INT4, columns.get(2).getDataType().getType());
-    assertEquals("n_comment", columns.get(3).getSimpleName());
-    assertEquals(TajoDataTypes.Type.TEXT, columns.get(3).getDataType().getType());
+    assertEquals(3, columns.size());
+    assertEquals("n_name", columns.get(0).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(0).getDataType().getType());
+    assertEquals("n_regionkey", columns.get(1).getSimpleName());
+    assertEquals(TajoDataTypes.Type.INT4, columns.get(1).getDataType().getType());
+    assertEquals("n_comment", columns.get(2).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(2).getDataType().getType());
+
     assertNotNull(table.getPartitionMethod());
-    assertEquals("type", table.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName());
+
+    assertEquals("n_nationkey", table.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName());
     assertEquals(CatalogProtos.PartitionType.COLUMN, table.getPartitionMethod().getPartitionType());
 
-    assertEquals(table.getMeta().getOption(HCatalogStore.CVSFILE_DELIMITER), "\\001");
     assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.CSV.name());
-
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_DELIMITER), StringEscapeUtils.escapeJava("\u0001"));
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_NULL), StringEscapeUtils.escapeJava("\\N"));
   }
+
+  @Test
+  public void testGetTable3() throws Exception {
+    TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + REGION));
+
+    List<Column> columns = table.getSchema().getColumns();
+    assertEquals(DB_NAME + "." + REGION, table.getName());
+    assertEquals(3, columns.size());
+    assertEquals("r_regionkey", columns.get(0).getSimpleName());
+    assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());
+    assertEquals("r_name", columns.get(1).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(1).getDataType().getType());
+    assertEquals("r_comment", columns.get(2).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(2).getDataType().getType());
+
+    assertNull(table.getPartitionMethod());
+
+    assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.CSV.name());
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_DELIMITER), StringEscapeUtils.escapeJava("|"));
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_NULL), StringEscapeUtils.escapeJava("\t"));
+  }
+
+  @Test
+  public void testGetTable4() throws Exception {
+    TableDesc table = new TableDesc(store.getTable(DB_NAME + "." + SUPPLIER));
+
+    List<Column> columns = table.getSchema().getColumns();
+    assertEquals(DB_NAME + "." + SUPPLIER, table.getName());
+    assertEquals(7, columns.size());
+    assertEquals("s_suppkey", columns.get(0).getSimpleName());
+    assertEquals(TajoDataTypes.Type.INT4, columns.get(0).getDataType().getType());
+    assertEquals("s_name", columns.get(1).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(1).getDataType().getType());
+    assertEquals("s_address", columns.get(2).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(2).getDataType().getType());
+    assertEquals("s_nationkey", columns.get(3).getSimpleName());
+    assertEquals(TajoDataTypes.Type.INT4, columns.get(3).getDataType().getType());
+    assertEquals("s_phone", columns.get(4).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(4).getDataType().getType());
+    assertEquals("s_acctbal", columns.get(5).getSimpleName());
+    assertEquals(TajoDataTypes.Type.FLOAT8, columns.get(5).getDataType().getType());
+    assertEquals("s_comment", columns.get(6).getSimpleName());
+    assertEquals(TajoDataTypes.Type.TEXT, columns.get(6).getDataType().getType());
+
+    assertNull(table.getPartitionMethod());
+
+    assertEquals(table.getMeta().getStoreType().name(), CatalogProtos.StoreType.CSV.name());
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_DELIMITER), StringEscapeUtils.escapeJava("\t"));
+    assertEquals(table.getMeta().getOption(HCatalogStore.CSVFILE_NULL), StringEscapeUtils.escapeJava("\u0002"));
+  }
+
 
   @Test
   public void testGetAllTableNames() throws Exception{
     Set<String> tables = new HashSet<String>(store.getAllTableNames());
-    assertEquals(2, tables.size());
+    assertEquals(4, tables.size());
     assertTrue(tables.contains(DB_NAME + "." + CUSTOMER));
     assertTrue(tables.contains(DB_NAME + "." + NATION));
+    assertTrue(tables.contains(DB_NAME + "." + REGION));
+    assertTrue(tables.contains(DB_NAME + "." + SUPPLIER));
   }
 
   @Test
@@ -310,12 +373,22 @@ public class TestHCatalogStore {
     table = new TableDesc(store.getTable(DB_NAME + "." + NATION));
     Path nationPath = table.getPath();
 
+    table = new TableDesc(store.getTable(DB_NAME + "." + REGION));
+    Path regionPath = table.getPath();
+
+    table = new TableDesc(store.getTable(DB_NAME + "." + SUPPLIER));
+    Path supplierPath = table.getPath();
+
     store.deleteTable(DB_NAME + "." + CUSTOMER);
     store.deleteTable(DB_NAME + "." + NATION);
+    store.deleteTable(DB_NAME + "." + REGION);
+    store.deleteTable(DB_NAME + "." + SUPPLIER);
 
     FileSystem fs = FileSystem.getLocal(new Configuration());
     assertTrue(fs.exists(customerPath));
     assertTrue(fs.exists(nationPath));
+    assertTrue(fs.exists(regionPath));
+    assertTrue(fs.exists(supplierPath));
     fs.close();
   }
 }
