@@ -269,6 +269,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-653: RCFileAppender throws IOException. (jinho)
+
     TAJO-641: NPE in HCatalogStore.addTable(). (jaehwa)
 
     TAJO-646: TajoClient is blocked while main thread finished.
