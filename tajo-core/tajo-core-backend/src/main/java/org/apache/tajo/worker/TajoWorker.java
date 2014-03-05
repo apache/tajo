@@ -188,29 +188,19 @@ public class TajoWorker extends CompositeService {
       systemConf.setIntVar(ConfVars.PULLSERVER_PORT, 0);
     }
 
-    if(queryMasterMode) {
-      //querymaster worker
-      tajoWorkerClientService = new TajoWorkerClientService(workerContext, clientPort);
-      addService(tajoWorkerClientService);
+    // querymaster worker
+    tajoWorkerClientService = new TajoWorkerClientService(workerContext, clientPort);
+    addService(tajoWorkerClientService);
 
-      queryMasterManagerService = new QueryMasterManagerService(workerContext, qmManagerPort);
-      addService(queryMasterManagerService);
-    }
+    queryMasterManagerService = new QueryMasterManagerService(workerContext, qmManagerPort);
+    addService(queryMasterManagerService);
 
-    if(taskRunnerMode) {
-      //taskrunner worker
-      taskRunnerManager = new TaskRunnerManager(workerContext);
-      addService(taskRunnerManager);
+    // taskrunner worker
+    taskRunnerManager = new TaskRunnerManager(workerContext);
+    addService(taskRunnerManager);
 
-      if(!yarnContainerMode) {
-        tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, peerRpcPort);
-        addService(tajoWorkerManagerService);
-      }
-    }
-
-    LOG.info("Tajo Worker started: queryMaster=" + queryMasterMode + " taskRunner=" + taskRunnerMode +
-        ",yarnContainer=" + yarnContainerMode + ", clientPort=" + clientPort +
-        ", peerRpcPort=" + peerRpcPort + ":" + qmManagerPort);
+    tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, peerRpcPort);
+    addService(tajoWorkerManagerService);
 
     if(!yarnContainerMode) {
       if(taskRunnerMode) {
@@ -240,6 +230,11 @@ public class TajoWorker extends CompositeService {
         }
       }
     }
+
+    LOG.info("Tajo Worker started: queryMaster=" + queryMasterMode + " taskRunner=" + taskRunnerMode +
+        ", qmRpcPort=" + qmManagerPort +
+        ",yarnContainer=" + yarnContainerMode + ", clientPort=" + clientPort +
+        ", peerRpcPort=" + peerRpcPort + ":" + qmManagerPort + ",httpPort" + httpPort);
 
     super.init(conf);
 

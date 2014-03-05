@@ -269,6 +269,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-648: TajoWorker does not send correct QM rpc and client rpc ports
+    via heartbeat. (hyunsik)
+
     TAJO-653: RCFileAppender throws IOException. (jinho)
 
     TAJO-641: NPE in HCatalogStore.addTable(). (jaehwa)
