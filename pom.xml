@@ -88,7 +88,6 @@
     <module>tajo-jdbc</module>
     <module>tajo-dist</module>
     <module>tajo-storage</module>
-    <module>tajo-docs</module>
   </modules>
 
   <build>
@@ -370,4 +369,14 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- User Documentation -->
+    <profile>
+      <id>userdocs</id>
+      <modules>
+        <module>tajo-docs</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
