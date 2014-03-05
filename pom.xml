@@ -88,6 +88,7 @@
     <module>tajo-jdbc</module>
     <module>tajo-dist</module>
     <module>tajo-storage</module>
+    <module>tajo-docs</module>
   </modules>
 
   <build>
@@ -362,6 +363,8 @@
             <exclude>**/.settings/**</exclude>
             <exclude>atlassian-ide-plugin.xml</exclude>
             <exclude>.reviewboardrc</exclude>
+            <!-- tajo-doc -->
+            <exclude>**/*.rst</exclude>
           </excludes>
         </configuration>
       </plugin>
