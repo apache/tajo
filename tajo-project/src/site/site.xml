@@ -95,8 +95,8 @@
     </menu>
 
     <menu name="Documentation">
-      <item name="0.8.0-SNAPSHOT (Dev)" href="tajo-0.8.0-doc.html" />
-      <item name="0.2.0-incubating (Current)" href="tajo-0.2.0-doc.html" />
+      <item name="0.8.0-SNAPSHOT (dev)" href="docs/0.8.0/index.html" />
+      <item name="0.2.0-incubating release" href="tajo-0.2.0-doc.html" />
     </menu>
 
     <menu name="Contributes">

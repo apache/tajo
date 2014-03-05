@@ -1,0 +1,23 @@
+========================
+Build Tajo Documentation
+========================
+
+First of all, get Sphinx from the Python as follows:
+
+  $ easy_install -U Sphinx
+
+Generate HTML docs via Maven:
+
+  $ mvn clean package
+  $ ls -l tajo-docs/target/html
+  index.html
+  ....
+  ....
+
+Generate HTML docs quickly while developing:
+
+  $ make html
+  $ ls -l tajo-docs/target/html
+  index.html
+  ....
+  ....
