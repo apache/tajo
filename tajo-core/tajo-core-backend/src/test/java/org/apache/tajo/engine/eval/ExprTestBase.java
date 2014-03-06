@@ -80,11 +80,22 @@ public class ExprTestBase {
     assertEquals(expr, fromJson);
   }
 
-  private static Target[] getRawTargets(String query) throws PlanningException {
+  /**
+   * verify query syntax and get raw targets.
+   *
+   * @param query a query for execution
+   * @param condition this parameter means whether it is for success case or is not for failure case.
+   * @return
+   * @throws PlanningException
+   */
+  private static Target[] getRawTargets(String query, boolean condition) throws PlanningException {
     Expr expr = analyzer.parse(query);
     VerificationState state = new VerificationState();
     preLogicalPlanVerifier.visit(state, new Stack<Expr>(), expr);
     if (state.getErrorMessages().size() > 0) {
+      if (!condition && state.getErrorMessages().size() > 0) {
+        throw new PlanningException(state.getErrorMessages().get(0));
+      }
       assertFalse(state.getErrorMessages().get(0), true);
     }
     LogicalPlan plan = planner.createPlan(expr, true);
@@ -109,13 +120,17 @@ public class ExprTestBase {
     testEval(null, null, null, query, expected);
   }
 
+  public void testSimpleEval(String query, String [] expected, boolean condition) throws IOException {
+    testEval(null, null, null, query, expected, ',', condition);
+  }
+
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
       throws IOException {
-    testEval(schema, tableName, csvTuple, query, expected, ',');
+    testEval(schema, tableName, csvTuple, query, expected, ',', true);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected,
-                       char delimiter) throws IOException {
+                       char delimiter, boolean condition) throws IOException {
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
     Schema inputSchema = null;
@@ -146,7 +161,7 @@ public class ExprTestBase {
     Target [] targets;
 
     try {
-      targets = getRawTargets(query);
+      targets = getRawTargets(query, condition);
 
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
@@ -158,7 +173,13 @@ public class ExprTestBase {
         assertEquals(query, expected[i], outTuple.get(i).asChars());
       }
     } catch (PlanningException e) {
-      assertFalse(e.getMessage(), true);
+      // In failure test case, an exception must occur while executing query.
+      // So, we should check an error message, and return it.
+      if (!condition) {
+        assertEquals(expected[0], e.getMessage());
+      } else {
+        assertFalse(e.getMessage(), true);
+      }
     } finally {
       if (schema != null) {
         cat.deleteTable(tableName);

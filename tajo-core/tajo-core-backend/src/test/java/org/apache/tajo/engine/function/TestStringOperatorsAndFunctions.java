@@ -21,14 +21,12 @@ package org.apache.tajo.engine.function;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.junit.Assert.fail;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
@@ -594,8 +592,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     testEval(schema, "table1", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
-        new String[]{"t"}, '|');
+        new String[]{"t"}, '|', true);
     testEval(schema, "table1", "cr|", "select find_in_set(col1, col2) is null from table1",
-        new String[]{"t"}, '|');
+        new String[]{"t"}, '|', true);
   }
 }
