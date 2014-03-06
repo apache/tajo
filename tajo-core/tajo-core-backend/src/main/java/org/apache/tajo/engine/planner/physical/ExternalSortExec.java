@@ -69,7 +69,7 @@ public class ExternalSortExec extends SortExec {
   /** the defaultFanout of external sort */
   private final int defaultFanout;
   /** It's the size of in-memory table. If memory consumption exceeds it, store the memory table into a disk. */
-  private int sortBufferBytesNum;
+  private long sortBufferBytesNum;
   /** the number of available cores */
   private final int allocatedCoreNum;
   /** If there are available multiple cores, it tries parallel merge. */
@@ -193,7 +193,7 @@ public class ExternalSortExec extends SortExec {
    */
   private List<Path> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
-    int memoryConsumption = 0;
+    long memoryConsumption = 0;
     List<Path> chunkPaths = TUtil.newList();
 
     int chunkId = 0;
