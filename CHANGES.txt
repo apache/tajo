@@ -269,6 +269,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-665: sort buffer size must be dealt as long type values. 
+    (hyoungjunkim via hyunsik)
+
     TAJO-427: Empty table makes IndexOutOfBoundsException at LEFT OUTER JOIN clause. (jaehwa)
 
     TAJO-650: Repartitioner::scheduleHashShuffledFetches should adjust the
