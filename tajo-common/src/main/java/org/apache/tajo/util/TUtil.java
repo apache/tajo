@@ -159,6 +159,15 @@ public class TUtil {
     }
   }
 
+  public static <KEY1, VALUE> void putCollectionToNestedList(Map<KEY1, List<VALUE>> map, KEY1 k1,
+                                                             Collection<VALUE> list) {
+    if (map.containsKey(k1)) {
+      map.get(k1).addAll(list);
+    } else {
+      map.put(k1, TUtil.newList(list));
+    }
+  }
+
   public static <KEY1, KEY2, VALUE> void putToNestedMap(Map<KEY1, Map<KEY2, VALUE>> map, KEY1 k1, KEY2 k2,
                                                         VALUE value) {
     if (map.containsKey(k1)) {

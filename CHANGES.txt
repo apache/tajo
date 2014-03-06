@@ -269,6 +269,12 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-650: Repartitioner::scheduleHashShuffledFetches should adjust the
+    number of tasks. (hyunsik)
+
+    TAJO-648: TajoWorker does not send correct QM rpc and client rpc ports
+    via heartbeat. (hyunsik)
+
     TAJO-653: RCFileAppender throws IOException. (jinho)
 
     TAJO-641: NPE in HCatalogStore.addTable(). (jaehwa)
@@ -548,7 +554,6 @@ Release 0.8.0 - unreleased
     TAJO-320: Visualize Tajo statemachine. (Min Zhou via hyunsik)
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
-
 
 Release 0.2.0 - released
 
