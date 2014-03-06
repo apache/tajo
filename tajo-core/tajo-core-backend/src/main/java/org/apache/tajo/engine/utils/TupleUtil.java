@@ -83,13 +83,31 @@ public class TupleUtil {
     Tuple startTuple = new VTuple(target.size());
     Tuple endTuple = new VTuple(target.size());
     int i = 0;
+
+    // In outer join, empty table could be searched.
+    // As a result, min value and max value would be null.
+    // So, we should put NullDatum for this case.
     for (Column col : target.getColumns()) {
       if (sortSpecs[i].isAscending()) {
-        startTuple.put(i, statSet.get(col).getMinValue());
-        endTuple.put(i, statSet.get(col).getMaxValue());
+        if (statSet.get(col).getMinValue() != null)
+          startTuple.put(i, statSet.get(col).getMinValue());
+        else
+          startTuple.put(i, DatumFactory.createNullDatum());
+
+        if (statSet.get(col).getMaxValue() != null)
+          endTuple.put(i, statSet.get(col).getMaxValue());
+        else
+          endTuple.put(i, DatumFactory.createNullDatum());
       } else {
-        startTuple.put(i, statSet.get(col).getMaxValue());
-        endTuple.put(i, statSet.get(col).getMinValue());
+        if (statSet.get(col).getMaxValue() != null)
+          startTuple.put(i, statSet.get(col).getMaxValue());
+        else
+          startTuple.put(i, DatumFactory.createNullDatum());
+
+        if (statSet.get(col).getMinValue() != null)
+          endTuple.put(i, statSet.get(col).getMinValue());
+        else
+          endTuple.put(i, DatumFactory.createNullDatum());
       }
       i++;
     }

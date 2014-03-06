@@ -269,6 +269,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-427: Empty table makes IndexOutOfBoundsException at LEFT OUTER JOIN clause. (jaehwa)
+
     TAJO-650: Repartitioner::scheduleHashShuffledFetches should adjust the
     number of tasks. (hyunsik)
 

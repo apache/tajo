@@ -53,7 +53,9 @@ public class ShuffleFileWriteNode extends PersistentStoreNode implements Cloneab
   public final void setShuffle(TajoWorkerProtocol.ShuffleType type, Column[] keys, int numPartitions) {
     Preconditions.checkArgument(keys.length >= 0, 
         "At least one partition key must be specified.");
-    Preconditions.checkArgument(numPartitions > 0,
+    // In outer join, zero can be passed into this value because of empty tables.
+    // So, we should allow zero.
+    Preconditions.checkArgument(numPartitions >= 0,
         "The number of partitions must be positive: %s", numPartitions);
 
     this.shuffleType = type;
