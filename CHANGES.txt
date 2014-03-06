@@ -269,6 +269,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-650: Repartitioner::scheduleHashShuffledFetches should adjust the
+    number of tasks. (hyunsik)
+
     TAJO-648: TajoWorker does not send correct QM rpc and client rpc ports
     via heartbeat. (hyunsik)
 
