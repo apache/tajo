@@ -269,6 +269,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-663: CREATE TABLE USING RAW doesn't throw ERROR. (jaehwa)
+
     TAJO-665: sort buffer size must be dealt as long type values. 
     (hyoungjunkim via hyunsik)
 
