@@ -140,7 +140,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <VerificationStat
   }
 
   private boolean assertUnsupportedStoreType(VerificationState state, String name) {
-    if (name.equals(CatalogProtos.StoreType.RAW.name())) {
+    if (name != null && name.equals(CatalogProtos.StoreType.RAW.name())) {
       state.addVerification(String.format("Unsupported store type :%s", name));
       return false;
     }
