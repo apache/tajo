@@ -63,7 +63,9 @@ public class NetUtils {
         addr = new InetSocketAddress("127.0.0.1", addr.getPort());
       }
     }
-    return addr;
+    InetSocketAddress canonicalAddress =
+        new InetSocketAddress(addr.getAddress().getCanonicalHostName(), addr.getPort());
+    return canonicalAddress;
   }
 
   /**
