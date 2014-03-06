@@ -34,6 +34,11 @@ public class HashPartitioner extends Partitioner {
   
   @Override
   public int getPartition(Tuple tuple) {
+    // In outer join, partition number can be zero because of empty tables.
+    // So, we should return zero for this case.
+    if (numPartitions == 0)
+      return 0;
+
     // build one key tuple
     for (int i = 0; i < partitionKeyIds.length; i++) {
       keyTuple.put(i, tuple.get(partitionKeyIds[i]));
