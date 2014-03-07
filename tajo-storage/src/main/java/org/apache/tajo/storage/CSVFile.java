@@ -30,6 +30,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -74,6 +75,7 @@ public class CSVFile {
     private int BUFFER_SIZE = 128 * 1024;
     private int bufferedBytes = 0;
     private long pos = 0;
+    private boolean isShuffle;
 
     private NonSyncByteArrayOutputStream os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
     private SerializerDeserializer serde;
@@ -97,6 +99,15 @@ public class CSVFile {
     public void init() throws IOException {
       if (!fs.exists(path.getParent())) {
         throw new FileNotFoundException(path.toString());
+      }
+
+      //determine the intermediate file type
+      String store = conf.get(TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.varname,
+          TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.defaultVal);
+      if (enabledStats && CatalogProtos.StoreType.CSV == CatalogProtos.StoreType.valueOf(store.toUpperCase())) {
+        isShuffle = true;
+      } else {
+        isShuffle = false;
       }
 
       String codecName = this.meta.getOption(TableMeta.COMPRESSION_CODEC);
@@ -157,7 +168,8 @@ public class CSVFile {
           os.write((byte) delimiter);
           rowBytes += 1;
         }
-        if (enabledStats) {
+        if (isShuffle) {
+          // it is to calculate min/max values, and it is only used for the intermediate file.
           stats.analyzeField(i, datum);
         }
       }
@@ -344,8 +356,7 @@ public class CSVFile {
       }
 
       if (startOffset != 0) {
-        startOffset += reader.readLine(new Text(), 0, maxBytesToConsume(startOffset));
-        pos = startOffset;
+        pos += reader.readLine(new Text(), 0, maxBytesToConsume(pos));
       }
       eof = false;
       page();
@@ -407,7 +418,7 @@ public class CSVFile {
         }
       }
       if (tableStats != null) {
-        tableStats.setReadBytes(getFilePosition() - startOffset);
+        tableStats.setReadBytes(pos - startOffset);
         tableStats.setNumRows(recordCount);
       }
     }
@@ -419,16 +430,12 @@ public class CSVFile {
           return 1.0f;
         }
         long filePos = getFilePosition();
-
-        if (tableStats != null) {
-          tableStats.setReadBytes(filePos - startOffset);
-          tableStats.setNumRows(recordCount);
-        }
-
         if (startOffset == filePos) {
           return 0.0f;
         } else {
-          return Math.min(1.0f, (float)(filePos - startOffset) / (float)(end - startOffset));
+          long readBytes = filePos - startOffset;
+          long remainingBytes = Math.max(end - filePos, 0);
+          return Math.min(1.0f, (float)(readBytes) / (float)(readBytes + remainingBytes));
         }
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
@@ -485,7 +492,7 @@ public class CSVFile {
     public void close() throws IOException {
       try {
         if (tableStats != null) {
-          tableStats.setReadBytes(fragment.getEndKey());
+          tableStats.setReadBytes(pos - startOffset);  //Actual Processed Bytes. (decompressed bytes + overhead)
           tableStats.setNumRows(recordCount);
         }
 

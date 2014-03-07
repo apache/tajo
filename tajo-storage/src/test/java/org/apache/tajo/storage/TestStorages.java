@@ -273,6 +273,7 @@ public class TestStorages {
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    appender.enableStats();
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
@@ -299,6 +300,8 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
+
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
     Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
@@ -310,6 +313,8 @@ public class TestStorages {
       }
     }
     scanner.close();
+    assertEquals(appender.getStats().getNumBytes().longValue(), scanner.getInputStats().getNumBytes().longValue());
+    assertEquals(appender.getStats().getNumRows().longValue(), scanner.getInputStats().getNumRows().longValue());
   }
 
   @Test
@@ -337,6 +342,7 @@ public class TestStorages {
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    appender.enableStats();
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
@@ -363,6 +369,8 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
+
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
     Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
@@ -374,6 +382,8 @@ public class TestStorages {
       }
     }
     scanner.close();
+    assertEquals(appender.getStats().getNumBytes().longValue(), scanner.getInputStats().getNumBytes().longValue());
+    assertEquals(appender.getStats().getNumRows().longValue(), scanner.getInputStats().getNumRows().longValue());
   }
 
   @Test

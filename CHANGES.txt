@@ -521,6 +521,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-657: Missing table stat in RCFile. (jinho)
+
     TAJO-659: Add Tajo JDBC documentation. (hyunsik)
 
     TAJO-642: Change tajo documentation tool to sphinx. (hyunsik)
