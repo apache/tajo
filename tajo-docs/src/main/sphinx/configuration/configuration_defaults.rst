@@ -2,7 +2,6 @@
 Configuration Defaults
 **********************
 
-====================================
 Tajo Master Configuration Defaults
 ====================================
 
