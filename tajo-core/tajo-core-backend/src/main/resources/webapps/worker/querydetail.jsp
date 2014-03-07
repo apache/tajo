@@ -81,10 +81,10 @@ for(SubQuery eachSubQuery: subQueries) {
   <p/>
   <hr/>
   <h3>Logical Plan</h3>
-  <pre><%=query.getPlan().getLogicalPlan().toString()%></pre>
+  <pre style="white-space:pre-wrap;"><%=query.getPlan().getLogicalPlan().toString()%></pre>
   <hr/>
   <h3>Distributed Query Plan</h3>
-  <pre><%=query.getPlan().toString()%></pre>
+  <pre style="white-space:pre-wrap;"><%=query.getPlan().toString()%></pre>
   <hr/>
 </div>
 </body>

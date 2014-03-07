@@ -145,7 +145,6 @@ public class QueryMasterManagerService extends CompositeService
     try {
       QueryId queryId = new QueryId(request.getId().getQueryUnitId().getExecutionBlockId().getQueryId());
       QueryUnitAttemptId attemptId = new QueryUnitAttemptId(request.getId());
-      LOG.info("statusUpdate from " + attemptId);
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
       if (queryMasterTask == null) {
         queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
@@ -153,13 +152,16 @@ public class QueryMasterManagerService extends CompositeService
       SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
       QueryUnit task = sq.getQueryUnit(attemptId.getQueryUnitId());
       QueryUnitAttempt attempt = task.getAttempt(attemptId.getId());
-      LOG.info(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
+
+      if(LOG.isDebugEnabled()){
+        LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
+      }
+
       if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
-        LOG.info(attemptId + " Killed");
+        LOG.warn(attemptId + " Killed");
         attempt.handle(
             new TaskAttemptEvent(new QueryUnitAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
       } else {
-        LOG.info(attemptId + " updated");
         queryMasterTask.getEventHandler().handle(
             new TaskAttemptStatusUpdateEvent(new QueryUnitAttemptId(request.getId()), request));
       }
