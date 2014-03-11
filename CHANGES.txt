@@ -273,6 +273,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-612: Missing INET4 type in SQLParser. (jihoon)
+
     TAJO-672: Wrong progress status when overwrites to partition table.
     (hyoungjunkim via hyunsik)
 

@@ -16,36 +16,44 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.engine.function.geoip;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BooleanDatum;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.GeoUtil;
+import org.apache.tajo.util.GeoIPUtil;
 
 @Description(
-  functionName = "in_country",
-  description = "",
-  example = "",
-  returnType = TajoDataTypes.Type.BOOLEAN,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+    functionName = "geoip_in_country",
+    description = "If the given country code is same with the country code of the given address, it returns true. "
+        + "Otherwise, returns false",
+    example = "geoip_in_country('8.8.8.8', 'US')"
+        + "true",
+    returnType = TajoDataTypes.Type.BOOLEAN,
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
-public class InCountry extends GeneralFunction {
+public class GeoIPInCountryText extends GeneralFunction {
 
-  public InCountry() {
-    super(new Column[] {new Column("string", TajoDataTypes.Type.TEXT),
-        new Column("code", TajoDataTypes.Type.TEXT)});
+  public GeoIPInCountryText() {
+    super(new Column[] {new Column("ipv4_address_string", TajoDataTypes.Type.TEXT),
+        new Column("country_code", TajoDataTypes.Type.TEXT)});
   }
 
   @Override
-  public BooleanDatum eval(Tuple params) {
+  public Datum eval(Tuple params) {
+    if (params.get(0) instanceof NullDatum || params.get(1) instanceof NullDatum) {
+      return NullDatum.get();
+    }
+
     String addr = params.get(0).asChars();
     String otherCode = params.get(1).asChars();
-    String thisCode = GeoUtil.getCountryCode(addr);
+    String thisCode = GeoIPUtil.getCountryCode(addr);
 
     return DatumFactory.createBool(thisCode.equals(otherCode));
   }

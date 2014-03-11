@@ -134,6 +134,13 @@ public abstract class RangePartitionAlgorithm {
           columnCard = new BigDecimal(start.asInt8() - end.asInt8());
         }
         break;
+      case INET4:
+        if (isAscending) {
+          columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+        } else {
+          columnCard = new BigDecimal(start.asInt4() - end.asInt4());
+        }
+        break;
       default:
         throw new UnsupportedOperationException(dataType + " is not supported yet");
     }

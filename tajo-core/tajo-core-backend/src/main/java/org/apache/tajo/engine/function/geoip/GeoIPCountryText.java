@@ -16,33 +16,41 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.engine.function.geoip;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.GeoUtil;
+import org.apache.tajo.util.GeoIPUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 @Description(
-  functionName = "country",
-  description = "Returns country code.",
-  example = "",
-  returnType = TajoDataTypes.Type.TEXT,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+    functionName = "geoip_country_code",
+    description = "Convert an ipv4 address string to a geoip country code.",
+    example = "> SELECT geoip_country_code('8.8.8.8');\n"
+        + "US",
+    returnType = TajoDataTypes.Type.TEXT,
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
 )
-public class Country extends GeneralFunction {
+public class GeoIPCountryText extends GeneralFunction {
 
-  public Country() {
-    super(new Column[] {new Column("string", TEXT)});
+  public GeoIPCountryText() {
+    super(new Column[] {new Column("ipv4_address_string", TEXT)});
   }
 
   @Override
-  public TextDatum eval(Tuple params) {
-    return new TextDatum(GeoUtil.getCountryCode(params.get(0).asChars()));
+  public Datum eval(Tuple params) {
+    Datum valueDatum = params.get(0);
+    if (valueDatum instanceof NullDatum) {
+      return NullDatum.get();
+    }
+    return new TextDatum(GeoIPUtil.getCountryCode(params.get(0).asChars()));
   }
 }

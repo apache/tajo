@@ -26,8 +26,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 
 import java.io.IOException;
 
-public class GeoUtil {
-  private static final Log LOG = LogFactory.getLog(GeoUtil.class);
+public class GeoIPUtil {
+  private static final Log LOG = LogFactory.getLog(GeoIPUtil.class);
   private static LookupService lookup;
 
   static {
