@@ -526,6 +526,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-681: Embed sphinx rtd theme into tajo-docs. (hyunsik)
+
     TAJO-657: Missing table stat in RCFile. (jinho)
 
     TAJO-659: Add Tajo JDBC documentation. (hyunsik)

@@ -26,7 +26,6 @@
 
 import sys
 import os
-import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -42,7 +41,7 @@ import sphinx_rtd_theme
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.todo',
+  'sphinx.ext.todo',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -100,7 +99,6 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-#pygments_style = 'sphinx'
 pygments_style = 'tango'
 
 
@@ -115,7 +113,6 @@ pygments_style = 'tango'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#html_theme = 'haiku'
 html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -124,14 +121,10 @@ html_theme = 'sphinx_rtd_theme'
 
 # For haiku
 #html_theme_options = {
-#  "linkcolor" : "#577492",
-#  "visitedlinkcolor" : "#577492",
-#  "hoverlinkcolor" : "#551A8B"
 #}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = 
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme_path = ["./themes"]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -282,5 +275,5 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# TODO
+# TODO Extension
 todo_include_todos = True
