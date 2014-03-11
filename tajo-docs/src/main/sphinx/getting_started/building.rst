@@ -1,5 +1,5 @@
 *****************
-Build Source Code
+Build source code
 *****************
 
 You prepare the prerequisites and the source code, you can build the source code now.
