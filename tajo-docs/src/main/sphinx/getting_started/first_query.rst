@@ -2,7 +2,9 @@
 First query execution
 ************************
 
-First of all, we need to prepare some data for query execution. For example, you can make a simple text-based table as follows: ::
+First of all, we need to prepare some table for query execution. For example, you can make a simple text-based table as follows: 
+
+.. code-block:: bash
 
   $ mkdir /home/x/table1
   $ cd /home/x/table1
@@ -14,7 +16,14 @@ First of all, we need to prepare some data for query execution. For example, you
   5|mno|5.6|e
   <CTRL + D>
 
-This schema of this table is (int, text, float, text). ::
+
+Apache Tajo™ provides a SQL shell which allows users to interactively submit SQL queries. In order to use this shell, please execute ``bin/tsql`` ::
+
+  $ $TAJO_HOME/bin/tsql
+  tajo>
+
+In order to load the table we created above, we should think of a schema of the table.
+Here, we assume the schema as (int, text, float, text). ::
 
   $ $TAJO_HOME/bin/tsql
   tajo> create external table table1 (
@@ -24,7 +33,7 @@ This schema of this table is (int, text, float, text). ::
         type text) 
         using csv with ('csvfile.delimiter'='|') location 'file:/home/x/table1';
 
-In order to load an external table, you need to use ‘create external table’ statement. 
+To load an external table, you need to use ‘create external table’ statement. 
 In the location clause, you should use the absolute directory path with an appropriate scheme. 
 If the table resides in HDFS, you should use ‘hdfs’ instead of ‘file’.
 
@@ -33,7 +42,7 @@ If you want to know DDL statements in more detail, please see Query Language. ::
   tajo> \d
   table1
 
-‘d’ command shows the list of tables. ::
+ ``\d`` command shows the list of tables. ::
 
   tajo> \d table1
 
@@ -48,7 +57,7 @@ If you want to know DDL statements in more detail, please see Query Language. ::
   score   FLOAT
   type    TEXT
 
-‘d [table name]’ command shows the description of a given table.
+``\d [table name]`` command shows the description of a given table.
 
 Also, you can execute SQL queries as follows: ::
 
@@ -62,7 +71,8 @@ Also, you can execute SQL queries as follows: ::
   4,  jkl,  4.5,  d
   5,  mno,  5.6,  e
 
-  tajo>
+  tajo> exit
+  bye
 
-
-
+Feel free to enjoy Tajo with SQL standards. 
+If you want to know more explanation for SQL supported by Tajo, please refer :doc:`/sql_language`.
