@@ -273,6 +273,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-647: Work unbalance on disk scheduling of DefaultScheduler. (jinho)
+
     TAJO-672: Wrong progress status when overwrites to partition table.
     (hyoungjunkim via hyunsik)
 

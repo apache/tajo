@@ -252,8 +252,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
-  public DataLocation[] getDataLocations() {
-    return dataLocations.toArray(new DataLocation[dataLocations.size()]);
+  public List<DataLocation> getDataLocations() {
+    return dataLocations;
   }
 
   public String getSucceededHost() {

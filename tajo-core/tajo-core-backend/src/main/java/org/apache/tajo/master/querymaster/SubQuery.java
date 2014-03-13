@@ -548,6 +548,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
   }
 
+  public void releaseContainer(ContainerId containerId) {
+    // try to kill the container.
+    ArrayList<Container> list = new ArrayList<Container>();
+    list.add(containers.get(containerId));
+    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), list));
+  }
+
   /**
    * It computes all stats and sets the intermediate result.
    */
