@@ -28,8 +28,8 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.engine.parser.SQLParser.*;
-import org.apache.tajo.storage.CSVFile;
 
 import java.util.*;
 
@@ -1281,7 +1281,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Map<String, String> escapeTableMeta(Map<String, String> map) {
     Map<String, String> params = new HashMap<String, String>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
-      if (entry.getKey().equals(CSVFile.DELIMITER)) {
+      if (entry.getKey().equals(CatalogConstants.CSVFILE_DELIMITER)) {
         params.put(entry.getKey(), escapeDelimiter(entry.getValue()));
       }  else {
         params.put(entry.getKey(), entry.getValue());

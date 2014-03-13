@@ -26,6 +26,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
+import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hcatalog.common.HCatUtil;
 import org.apache.hcatalog.data.Pair;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
@@ -37,12 +39,10 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.exception.InternalException;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,35 +51,21 @@ import java.util.Properties;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
-  public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
-  public static final String CSVFILE_NULL = "csvfile.null";
 
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
   private static final int CLIENT_POOL_SIZE = 2;
-  private final HCatalogStoreClientPool clientPool = new HCatalogStoreClientPool(0);
-  private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+  private final HCatalogStoreClientPool clientPool;
 
   public HCatalogStore(final Configuration conf)
       throws InternalException {
-    this.conf = conf;
-    try {
-      // In unit test case, HCatalogStore has to set some hive configurations by force.
-      // So, it checks caller class name and caller method name.
-      long[] threadIds = threadBean.getAllThreadIds();
-      for (long tid : threadIds) {
-        ThreadInfo info = threadBean.getThreadInfo(tid, 5);
-        for (StackTraceElement frame : info.getStackTrace()) {
-          if (frame.toString().equals("org.apache.tajo.catalog.store.TestHCatalogStore.setUp")) {
-            clientPool.setParameters(this.conf);
-          }
-        }
-      }
+    this(conf, new HCatalogStoreClientPool(CLIENT_POOL_SIZE, conf));
+  }
 
-      clientPool.addClients(CLIENT_POOL_SIZE);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+  public HCatalogStore(final Configuration conf, HCatalogStoreClientPool pool)
+      throws InternalException {
+    this.conf = conf;
+    this.clientPool = pool;
   }
 
   @Override
@@ -179,7 +165,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         if (!isPartitionKey) {
-          String fieldName = dbName + "." + tableName + "." + eachField.getName();
+          String fieldName = dbName + CatalogUtil.IDENTIFIER_DELIMITER + tableName +
+              CatalogUtil.IDENTIFIER_DELIMITER + eachField.getName();
           TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(eachField.getType().toString());
           schema.addColumn(fieldName, dataType);
         }
@@ -197,7 +184,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       Properties properties = table.getMetadata();
       if (properties != null) {
         // set field delimiter
-        String fieldDelimiter = "", fileOutputformat = "", nullFormat = "";
+        String fieldDelimiter = "", nullFormat = "";
         if (properties.getProperty(serdeConstants.FIELD_DELIM) != null) {
           fieldDelimiter = properties.getProperty(serdeConstants.FIELD_DELIM);
         } else {
@@ -214,17 +201,26 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         // set file output format
-        fileOutputformat = properties.getProperty("file.outputformat");
+        String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
-        if (storeType.equals(CatalogProtos.StoreType.CSV) ) {
+
+        if (storeType.equals(CatalogProtos.StoreType.CSV)) {
           options.put(CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
           options.put(CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+        } else if (storeType.equals(CatalogProtos.StoreType.RCFILE)) {
+          options.put(RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
+          if (LazyBinaryColumnarSerDe.class.getName().equals(serde)) {
+            options.put(RCFILE_SERDE, RCFILE_BINARY_SERDE);
+          } else if (ColumnarSerDe.class.getName().equals(serde)) {
+            options.put(RCFILE_SERDE, RCFILE_TEXT_SERDE);
+          }
         }
 
         // set data size
         long totalSize = 0;
         if(properties.getProperty("totalSize") != null) {
-          totalSize = new Long(properties.getProperty("totalSize"));
+          totalSize = Long.parseLong(properties.getProperty("totalSize"));
         } else {
           try {
             FileSystem fs = path.getFileSystem(conf);
@@ -247,14 +243,16 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           for(int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
-            expressionSchema.addColumn(new Column(dbName + "." + tableName + "." + fieldSchema.getName(), dataType));
+            String fieldName = dbName + CatalogUtil.IDENTIFIER_DELIMITER + tableName +
+                CatalogUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.addColumn(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
             }
             sb.append(fieldSchema.getName());
           }
           partitions = new PartitionMethodDesc(
-              tableName,
+              dbName + "." + tableName,
               PartitionType.COLUMN,
               sb.toString(),
               expressionSchema);
@@ -310,14 +308,15 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final void addTable(final CatalogProtos.TableDescProto tableDesc) throws CatalogException {
+  public final void addTable(final CatalogProtos.TableDescProto tableDescProto) throws CatalogException {
     String dbName = null, tableName = null;
     Pair<String, String> tablePair = null;
     HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
+    TableDesc tableDesc = new TableDesc(tableDescProto);
     // get db name and table name.
     try {
-      tablePair = HCatUtil.getDbAndTableName(tableDesc.getId());
+      tablePair = HCatUtil.getDbAndTableName(tableDesc.getName());
       dbName = tablePair.first;
       tableName = tablePair.second;
     } catch (Exception ioe) {
@@ -346,60 +345,63 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // sd.setLocation(tableDesc.getPath().toString());
 
       // set column information
-      ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(tableDesc.getSchema().getFieldsCount());
+      List<Column> columns = tableDesc.getSchema().getColumns();
+      ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(columns.size());
 
-      for (CatalogProtos.ColumnProto eachField : tableDesc.getSchema().getFieldsList()) {
-        cols.add(new FieldSchema( eachField.getName(), HCatalogUtil.getHiveFieldType(eachField.getDataType().getType().name()), ""));
+      for (Column eachField : columns) {
+        cols.add(new FieldSchema(eachField.getSimpleName(),
+            HCatalogUtil.getHiveFieldType(eachField.getDataType().getType().name()), ""));
       }
       sd.setCols(cols);
 
       // set partition keys
-      if (tableDesc.getPartition() != null && tableDesc.getPartition().getPartitionType().equals(PartitionType.COLUMN)) {
+      if (tableDesc.hasPartition() && tableDesc.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
         List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
-        for(CatalogProtos.ColumnProto eachPartitionKey: tableDesc.getPartition().getExpressionSchema().getFieldsList()) {
-          partitionKeys.add(new FieldSchema( eachPartitionKey.getName(), HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType().getType().name()), ""));
+        for(Column eachPartitionKey: tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+          partitionKeys.add(new FieldSchema( eachPartitionKey.getSimpleName(),
+              HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType().getType().name()), ""));
         }
         table.setPartitionKeys(partitionKeys);
       }
 
-      sd.setCompressed(false);
-
-      if (tableDesc.getMeta().hasParams()) {
-        for (CatalogProtos.KeyValueProto entry: tableDesc.getMeta().getParams().getKeyvalList()) {
-          if (entry.getKey().equals("compression.codec")) {
-            sd.setCompressed(true);
-          } else if (entry.getKey().equals(CSVFILE_NULL)) {
-            sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT, StringEscapeUtils.unescapeJava(entry.getValue()));
-          } else if (entry.getKey().equals(CSVFILE_DELIMITER)) {
-            String fieldDelimiter = entry.getValue();
-
-            // User can use an unicode for filed delimiter such as \u0001, \001.
-            // In this case, java console will convert this value into "\\u001".
-            // And hive will un-espace this value again.
-            // As a result, user can use right field delimiter.
-            // So, we have to un-escape this value.
-            sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT, StringEscapeUtils.unescapeJava(fieldDelimiter));
-            sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM, StringEscapeUtils.unescapeJava(fieldDelimiter));
-          }
-        }
-      }
-
-      if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
-        sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
-      } else {
-        sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
-      }
-
-      if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+      if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+        String serde = tableDesc.getMeta().getOption(RCFILE_SERDE);
         sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
-      } else {
-        sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
-      }
-
-      if(tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
-      } else {
+        if (RCFILE_TEXT_SERDE.equals(serde)) {
+          sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
+        } else {
+          sd.getSerdeInfo().setSerializationLib(
+              org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe.class.getName());
+        }
+
+        if (tableDesc.getMeta().getOption(RCFILE_NULL) != null) {
+          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(RCFILE_NULL)));
+        }
+      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)) {
+        sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
+        sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
+
+        String fieldDelimiter = tableDesc.getMeta().getOption(CSVFILE_DELIMITER, CSVFILE_DELIMITER_DEFAULT);
+
+        // User can use an unicode for filed delimiter such as \u0001, \001.
+        // In this case, java console will convert this value into "\\u001".
+        // And hive will un-espace this value again.
+        // As a result, user can use right field delimiter.
+        // So, we have to un-escape this value.
+        sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT,
+            StringEscapeUtils.unescapeJava(fieldDelimiter));
+        sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM,
+            StringEscapeUtils.unescapeJava(fieldDelimiter));
+
+        if (tableDesc.getMeta().getOption(CSVFILE_NULL) != null) {
+          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(CSVFILE_NULL)));
+        }
+      } else {
+        throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType().name()));
       }
 
       sd.setSortCols(new ArrayList<Order>());

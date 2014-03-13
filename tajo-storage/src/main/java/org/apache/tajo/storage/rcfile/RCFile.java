@@ -29,6 +29,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -734,7 +735,7 @@ public class RCFile {
         isShuffle = false;
       }
 
-      String codecClassname = this.meta.getOption(TableMeta.COMPRESSION_CODEC);
+      String codecClassname = this.meta.getOption(CatalogConstants.COMPRESSION_CODEC);
       if (!StringUtils.isEmpty(codecClassname)) {
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
@@ -746,7 +747,7 @@ public class RCFile {
         }
       }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.RCFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -759,14 +760,15 @@ public class RCFile {
 
       metadata.set(new Text(COLUMN_NUMBER_METADATA_STR), new Text("" + columnNumber));
 
-      String serdeClass = this.meta.getOption(SERDE, BinarySerializerDeserializer.class.getName());
+      String serdeClass = this.meta.getOption(CatalogConstants.RCFILE_SERDE,
+          BinarySerializerDeserializer.class.getName());
       try {
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
       }
-      metadata.set(new Text(SERDE), new Text(serdeClass));
+      metadata.set(new Text(CatalogConstants.RCFILE_SERDE), new Text(serdeClass));
 
       columnBuffers = new ColumnBuffer[columnNumber];
       for (int i = 0; i < columnNumber; i++) {
@@ -1190,7 +1192,7 @@ public class RCFile {
       rowId = new LongWritable();
       readBytes = 0;
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(CatalogConstants.RCFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -1359,14 +1361,14 @@ public class RCFile {
       metadata = new Metadata();
       metadata.readFields(in);
 
-      Text text = metadata.get(new Text(SERDE));
+      Text text = metadata.get(new Text(CatalogConstants.RCFILE_SERDE));
 
       try {
         String serdeClass;
         if(text != null && !text.toString().isEmpty()){
           serdeClass = text.toString();
         } else{
-          serdeClass = this.meta.getOption(SERDE, BinarySerializerDeserializer.class.getName());
+          serdeClass = this.meta.getOption(CatalogConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
         }
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {

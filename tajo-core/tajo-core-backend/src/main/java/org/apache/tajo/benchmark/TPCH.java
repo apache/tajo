@@ -23,12 +23,12 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.storage.CSVFile;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -189,7 +189,7 @@ public class TPCH extends BenchmarkSet {
 
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    meta.putOption(CSVFile.DELIMITER, "|");
+    meta.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
 
     try {
       tajo.createExternalTable(tableName, getSchema(tableName), new Path(dataDir, tableName), meta);

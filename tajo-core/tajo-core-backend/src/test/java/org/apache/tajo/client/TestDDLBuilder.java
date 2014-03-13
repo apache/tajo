@@ -39,8 +39,8 @@ public class TestDDLBuilder {
     schema.addColumn("name", TajoDataTypes.Type.BLOB);
     schema.addColumn("addr", TajoDataTypes.Type.TEXT);
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
-    meta.putOption("csv.delimiter", "|");
-    meta.putOption(TableMeta.COMPRESSION_CODEC, GzipCodec.class.getName());
+    meta.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+    meta.putOption(CatalogConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
     TableDesc desc = new TableDesc("table1", schema, meta, new Path("/table1"));
 

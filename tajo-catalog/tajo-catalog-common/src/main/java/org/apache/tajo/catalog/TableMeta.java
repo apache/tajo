@@ -36,8 +36,6 @@ import java.util.Map;
  * It contains all information for scanning a fragmented table
  */
 public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObject, Cloneable {
-  public static final String COMPRESSION_CODEC = "compression.codec";
-
 	protected TableProto.Builder builder = null;
   private TableProto proto = TableProto.getDefaultInstance();
   private boolean viaProto = false;
