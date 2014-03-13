@@ -74,15 +74,11 @@ public class HCatalogStoreClientPool {
       // This lock is needed to ensure proper behavior when a thread reads poolClosed
       // is false, but a call to pool.close() comes in immediately afterward.
       synchronized (poolClosed) {
-//        if (poolClosed.get()) {
-          hiveClient.close();
-//        } else {
-          // TODO: Currently the pool does not work properly because we cannot
-          // reuse MetastoreClient connections. No reason to add this client back
-          // to the pool. See HIVE-5181.
-//          clientPool.add(this);
-//          hiveClient.close();
-//        }
+        if (poolClosed.get()) {
+          this.getHiveClient().close();
+        } else {
+          clientPool.add(this);
+        }
       }
     }
 
@@ -98,6 +94,12 @@ public class HCatalogStoreClientPool {
 
   public HCatalogStoreClientPool(int initialSize, HiveConf hiveConf) {
     this.hiveConf = hiveConf;
+    addClients(initialSize);
+  }
+
+  public HCatalogStoreClientPool(int initialSize, Configuration conf) {
+    this.hiveConf = new HiveConf();
+    setParameters(conf);
     addClients(initialSize);
   }
 

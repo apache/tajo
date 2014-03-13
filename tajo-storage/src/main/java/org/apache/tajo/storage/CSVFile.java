@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -48,10 +49,6 @@ import java.util.Arrays;
 
 public class CSVFile {
 
-  public static final String DELIMITER = "csvfile.delimiter";
-  public static final String NULL = "csvfile.null";     //read only
-  public static final String SERDE = "csvfile.serde";
-  public static final String DELIMITER_DEFAULT = "|";
   public static final byte LF = '\n';
   public static int EOF = -1;
 
@@ -85,9 +82,10 @@ public class CSVFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_DELIMITER,
+          CatalogConstants.CSVFILE_DELIMITER_DEFAULT)).charAt(0);
       this.columnNum = schema.size();
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -110,7 +108,7 @@ public class CSVFile {
         isShuffle = false;
       }
 
-      String codecName = this.meta.getOption(TableMeta.COMPRESSION_CODEC);
+      String codecName = this.meta.getOption(CatalogConstants.COMPRESSION_CODEC);
       if(!StringUtils.isEmpty(codecName)){
         codecFactory = new CompressionCodecFactory(conf);
         codec = codecFactory.getCodecByClassName(codecName);
@@ -141,7 +139,8 @@ public class CSVFile {
       }
 
       try {
-        String serdeClass = this.meta.getOption(SERDE, TextSerializerDeserializer.class.getName());
+        String serdeClass = this.meta.getOption(CatalogConstants.CSVFILE_SERDE,
+            TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
@@ -261,10 +260,10 @@ public class CSVFile {
       }
 
       //Delimiter
-      String delim  = meta.getOption(DELIMITER, DELIMITER_DEFAULT);
+      String delim  = meta.getOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(CatalogConstants.CSVFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -341,7 +340,8 @@ public class CSVFile {
       }
 
       try {
-        String serdeClass = this.meta.getOption(SERDE, TextSerializerDeserializer.class.getName());
+        String serdeClass = this.meta.getOption(CatalogConstants.CSVFILE_SERDE,
+            TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);

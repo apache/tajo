@@ -121,11 +121,10 @@ public class HCatalogUtil {
       throw new CatalogException("Hive file output format is wrong. - file output format:" + fileFormat);
     }
 
-    String inputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
-
-    if(inputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
+    String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
+    if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.CSV.name();
-    } else if(inputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
+    } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
         return CatalogProtos.StoreType.RCFILE.name();
     } else {
       throw new CatalogException("Not supported file output format. - file output format:" + fileFormat);
