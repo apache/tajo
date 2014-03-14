@@ -34,7 +34,8 @@ service TajoMasterClientProtocolService {
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
   rpc explainQuery(ExplainQueryRequest) returns (ExplainQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
-  rpc getQueryList(GetQueryListRequest) returns (GetQueryListResponse);
+  rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
+  rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc killQuery(QueryIdProto) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);

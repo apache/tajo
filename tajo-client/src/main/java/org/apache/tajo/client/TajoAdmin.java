@@ -172,7 +172,7 @@ public class TajoAdmin {
 
   public static void processDesc(Writer writer, TajoClient client) throws ParseException, IOException,
       ServiceException, SQLException {
-    List<BriefQueryInfo> queryList = client.getQueryList();
+    List<BriefQueryInfo> queryList = client.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
     for (BriefQueryInfo queryInfo : queryList) {
@@ -375,7 +375,7 @@ public class TajoAdmin {
 
   public static void processList(Writer writer, TajoClient client) throws ParseException, IOException,
       ServiceException, SQLException {
-    List<BriefQueryInfo> queryList = client.getQueryList();
+    List<BriefQueryInfo> queryList = client.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     String fmt = "%1$-20s %2$-7s %3$-20s %4$-30s%n";
     String line = String.format(fmt, "QueryId", "State", 

@@ -400,14 +400,27 @@ public class TajoClient {
 
   }
 
-  public List<BriefQueryInfo> getQueryList() throws ServiceException {
+  public List<BriefQueryInfo> getRunningQueryList() throws ServiceException {
     return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
-        GetQueryListResponse res = tajoMasterService.getQueryList(null, builder.build());
+        GetQueryListResponse res = tajoMasterService.getRunningQueryList(null, builder.build());
+        return res.getQueryListList();
+      }
+    }.withRetries();
+  }
+
+  public List<BriefQueryInfo> getFinishedQueryList() throws ServiceException {
+    return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
+        GetQueryListResponse res = tajoMasterService.getFinishedQueryList(null, builder.build());
         return res.getQueryListList();
       }
     }.withRetries();

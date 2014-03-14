@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
@@ -457,5 +458,25 @@ public class TestTajoClient {
 
     functions = client.getFunctions(null);
     assertEquals(catalogFunctions.size(), functions.size());
+  }
+
+  @Test
+  public final void testGetFinishedQueryList() throws IOException,
+      ServiceException, SQLException {
+    final String tableName = "testGetFinishedQueryList";
+    String sql = "create table " + tableName + " (deptname text, score int4)";
+
+    client.updateQuery(sql);
+    assertTrue(client.existTable(tableName));
+
+    int numFinishedQueries = client.getFinishedQueryList().size();
+    ResultSet resultSet = client.executeQueryAndGetResult("select * from " + tableName);
+    assertNotNull(resultSet);
+
+    resultSet = client.executeQueryAndGetResult("select * from " + tableName);
+    assertNotNull(resultSet);
+    assertEquals(numFinishedQueries + 2, client.getFinishedQueryList().size());
+
+    resultSet.close();
   }
 }
