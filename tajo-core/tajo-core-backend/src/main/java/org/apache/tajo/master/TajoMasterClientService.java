@@ -223,7 +223,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryListResponse getQueryList(RpcController controller,
+    public GetQueryListResponse getRunningQueryList(RpcController controller,
                                              GetQueryListRequest request)
         throws ServiceException {
       GetQueryListResponse.Builder builder
@@ -243,6 +243,39 @@ public class TajoMasterClientService extends AbstractService {
         infoBuilder.setStartTime(queryInfo.getStartTime());
         long endTime = (queryInfo.getFinishTime() == 0) ? 
                        System.currentTimeMillis() : queryInfo.getFinishTime();
+        infoBuilder.setFinishTime(endTime);
+        infoBuilder.setProgress(queryInfo.getProgress());
+        infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
+        infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+
+        builder.addQueryList(infoBuilder.build());
+      }
+
+      GetQueryListResponse result = builder.build();
+      return result;
+    }
+
+    @Override
+    public GetQueryListResponse getFinishedQueryList(RpcController controller,
+                                             GetQueryListRequest request)
+        throws ServiceException {
+      GetQueryListResponse.Builder builder
+          = GetQueryListResponse.newBuilder();
+
+      Collection<QueryInProgress> queries
+          = context.getQueryJobManager().getFinishedQueries();
+
+      BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
+
+      for (QueryInProgress queryInProgress : queries) {
+        QueryInfo queryInfo = queryInProgress.getQueryInfo();
+
+        infoBuilder.setQueryId(queryInfo.getQueryId().getProto());
+        infoBuilder.setState(queryInfo.getQueryState());
+        infoBuilder.setQuery(queryInfo.getSql());
+        infoBuilder.setStartTime(queryInfo.getStartTime());
+        long endTime = (queryInfo.getFinishTime() == 0) ?
+            System.currentTimeMillis() : queryInfo.getFinishTime();
         infoBuilder.setFinishTime(endTime);
         infoBuilder.setProgress(queryInfo.getProgress());
         infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
