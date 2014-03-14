@@ -588,6 +588,9 @@ Release 0.8.0 - unreleased
     TAJO-602: WorkerResourceManager should be broke down into 3 parts.
     (hyunsik)
 
+  TEST
+
+    TAJO-686: Integration test aborted. (jinho)
 
 Release 0.2.0 - released
 
