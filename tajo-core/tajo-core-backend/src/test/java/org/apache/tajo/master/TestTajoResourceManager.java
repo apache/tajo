@@ -32,6 +32,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -139,7 +141,7 @@ public class TestTajoResourceManager {
         .setMaxMemoryMBPerContainer(maxMemory)
         .build();
 
-    final Object monitor = new Object();
+    final CountDownLatch barrier = new CountDownLatch(1);
     final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
 
 
@@ -148,16 +150,12 @@ public class TestTajoResourceManager {
       @Override
       public void run(WorkerResourceAllocationResponse response) {
         TestTajoResourceManager.this.response = response;
-        synchronized(monitor) {
-          monitor.notifyAll();
-        }
+        barrier.countDown();
       }
     };
 
     tajoWorkerResourceManager.allocateWorkerResources(request, callBack);
-    synchronized(monitor) {
-      monitor.wait();
-    }
+    assertTrue(barrier.await(3, TimeUnit.SECONDS));
 
 
     // assert after callback
@@ -225,22 +223,18 @@ public class TestTajoResourceManager {
           .setMaxMemoryMBPerContainer(maxMemory)
           .build();
 
-      final Object monitor = new Object();
+      final CountDownLatch barrier = new CountDownLatch(1);
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
         @Override
         public void run(WorkerResourceAllocationResponse response) {
           TestTajoResourceManager.this.response = response;
-          synchronized(monitor) {
-            monitor.notifyAll();
-          }
+          barrier.countDown();
         }
       };
 
       tajoWorkerResourceManager.allocateWorkerResources(request, callBack);
-      synchronized(monitor) {
-        monitor.wait();
-      }
+      assertTrue(barrier.await(3, TimeUnit.SECONDS));
 
       numAllocatedContainers += TestTajoResourceManager.this.response.getWorkerAllocatedResourceList().size();
 
@@ -298,7 +292,7 @@ public class TestTajoResourceManager {
         .setMaxMemoryMBPerContainer(memoryMB)
         .build();
 
-    final Object monitor = new Object();
+    final CountDownLatch barrier = new CountDownLatch(1);
     final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
 
 
@@ -307,16 +301,13 @@ public class TestTajoResourceManager {
       @Override
       public void run(WorkerResourceAllocationResponse response) {
         TestTajoResourceManager.this.response = response;
-        synchronized(monitor) {
-          monitor.notifyAll();
-        }
+        barrier.countDown();
       }
     };
 
     tajoWorkerResourceManager.allocateWorkerResources(request, callBack);
-    synchronized(monitor) {
-      monitor.wait();
-    }
+    assertTrue(barrier.await(3, TimeUnit.SECONDS));
+
     for(WorkerAllocatedResource eachResource: response.getWorkerAllocatedResourceList()) {
       assertTrue("AllocatedDiskSlot:" + eachResource.getAllocatedDiskSlots(),
           eachResource.getAllocatedDiskSlots() >= minDiskSlots &&

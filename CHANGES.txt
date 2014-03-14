@@ -581,6 +581,10 @@ Release 0.8.0 - unreleased
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
 
+  TEST
+
+    TAJO-686: Integration test aborted. (jinho)
+
 Release 0.2.0 - released
 
   NEW FEATURES
