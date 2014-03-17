@@ -147,7 +147,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   private FileFragment[] fragmentsForNonLeafTask;
 
-  List<TaskRequestEvent> taskRequestEvents = new ArrayList<TaskRequestEvent>();
+  LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
 
     if (taskRequests.size() > 0) {
@@ -306,7 +306,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
    * <h3>Volume id</h3>
    * Volume id is an integer. Each volume id identifies each disk volume.
    *
-   * This volume id can be obtained from {@link org.apache.hadoop.fs.BlockStorageLocation#getVolumeIds()}.   *
+   * This volume id can be obtained from org.apache.hadoop.fs.BlockStorageLocation#getVolumeIds()}.   *
    * HDFS cannot give any volume id due to unknown reason and disabled config 'dfs.client.file-block-locations.enabled'.
    * In this case, the volume id will be -1 or other native integer.
    *
@@ -706,16 +706,15 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       return attemptId;
     }
 
-    public void assignToLeafTasks(List<TaskRequestEvent> taskRequests) {
+    public void assignToLeafTasks(LinkedList<TaskRequestEvent> taskRequests) {
       Collections.shuffle(taskRequests);
       LinkedList<TaskRequestEvent> remoteTaskRequests = new LinkedList<TaskRequestEvent>();
-      Iterator<TaskRequestEvent> it = taskRequests.iterator();
 
       TaskRequestEvent taskRequest;
-      while (leafTasks.size() > 0 && (it.hasNext() || !remoteTaskRequests.isEmpty())) {
-        taskRequest = it.next();
+      while (leafTasks.size() > 0 && (!taskRequests.isEmpty() || !remoteTaskRequests.isEmpty())) {
+        taskRequest = taskRequests.pollFirst();
         if(taskRequest == null) { // if there are only remote task requests
-          taskRequest = remoteTaskRequests.removeFirst();
+          taskRequest = remoteTaskRequests.pollFirst();
         }
 
         // checking if this container is still alive.
@@ -734,7 +733,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if(!leafTaskHostMapping.containsKey(host)){
           host = NetUtils.normalizeHost(host);
 
-          if(!leafTaskHostMapping.containsKey(host) && it.hasNext()){
+          if(!leafTaskHostMapping.containsKey(host) && !taskRequests.isEmpty()){
             // this case means one of either cases:
             // * there are no blocks which reside in this node.
             // * all blocks which reside in this node are consumed, and this task runner requests a remote task.
@@ -835,13 +834,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       return true;
     }
 
-    public void assignToNonLeafTasks(List<TaskRequestEvent> taskRequests) {
+    public void assignToNonLeafTasks(LinkedList<TaskRequestEvent> taskRequests) {
       Collections.shuffle(taskRequests);
-      Iterator<TaskRequestEvent> it = taskRequests.iterator();
 
       TaskRequestEvent taskRequest;
-      while (it.hasNext()) {
-        taskRequest = it.next();
+      while (!taskRequests.isEmpty()) {
+        taskRequest = taskRequests.pollFirst();
         LOG.debug("assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
 
         QueryUnitAttemptId attemptId;
