@@ -43,7 +43,11 @@ public class LocalCatalogWrapper extends AbstractCatalogClient {
   }
 
   public LocalCatalogWrapper(final CatalogServer server) {
-    super(server.getConf(), null);
+    this(server, server.getConf());
+  }
+
+  public LocalCatalogWrapper(final CatalogServer server, final TajoConf conf) {
+    super(conf, null);
     this.catalog = server;
     this.stub = server.getHandler();
   }

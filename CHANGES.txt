@@ -276,6 +276,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-687: TajoMaster should pass tajoConf to create catalogServer. 
+    (DaeMyung Kang via jihoon)
+
     TAJO-690: infinite loop occurs when rack task is assigning. (jinho)
 
     TAJO-689: NoSuchElementException occurs during assigning the leaf tasks. (jinho)
