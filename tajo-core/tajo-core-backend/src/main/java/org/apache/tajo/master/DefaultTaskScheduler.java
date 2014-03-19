@@ -639,7 +639,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           //find remaining local task
           if (leafTasks.contains(attemptId)) {
             leafTasks.remove(attemptId);
-            leafTasksRackMapping.get(hostVolumeMapping.getRack()).remove(attemptId);
             //LOG.info(attemptId + " Assigned based on host match " + hostName);
             hostLocalAssigned++;
             totalAssigned++;
@@ -669,9 +668,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         for (HostVolumeMapping tasks : remainingTasks) {
           while (tasks.getRemainingLocalTaskSize() > 0){
             QueryUnitAttemptId tId = tasks.getQueryUnitAttemptIdByRack(rack);
+
+            if (tId == null) break;
+
             if (leafTasks.contains(tId)) {
               leafTasks.remove(tId);
-              leafTasksRackMapping.get(rack).remove(tId);
               attemptId = tId;
               break;
             }
