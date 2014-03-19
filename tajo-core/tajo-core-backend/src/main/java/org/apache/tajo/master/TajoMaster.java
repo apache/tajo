@@ -163,7 +163,7 @@ public class TajoMaster extends CompositeService {
 
       catalogServer = new CatalogServer(initBuiltinFunctions());
       addIfService(catalogServer);
-      catalog = new LocalCatalogWrapper(catalogServer);
+      catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
       globalEngine = new GlobalEngine(context);
       addIfService(globalEngine);
