@@ -29,34 +29,41 @@ import "PrimitiveProtos.proto";
 import "ClientProtos.proto";
 
 service TajoMasterClientProtocolService {
+
+  // Session APIs
+  rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc removeSession(SessionIdProto) returns (BoolProto);
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc existSessionVariable(SessionedStringProto) returns (BoolProto);
+  rpc getSessionVariable(SessionedStringProto) returns (StringProto);
+  rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);
+
+  // Query Submission and Result APIs
+  rpc explainQuery(SessionedStringProto) returns (ExplainQueryResponse);
   rpc submitQuery(QueryRequest) returns (GetQueryStatusResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
-  rpc explainQuery(ExplainQueryRequest) returns (ExplainQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
+
+  // Query And Resource Management APIs
+  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
-  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc killQuery(QueryIdProto) returns (BoolProto);
+  rpc killQuery(KillQueryRequest) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
-  rpc existTable(StringProto) returns (BoolProto);
+
+  // Database Management APIs
+  rpc createDatabase(SessionedStringProto) returns (BoolProto);
+  rpc existDatabase(SessionedStringProto) returns (BoolProto);
+  rpc dropDatabase(SessionedStringProto) returns (BoolProto);
+  rpc getAllDatabases(SessionIdProto) returns (StringListProto);
+  rpc getCurrentDatabase(SessionIdProto) returns (StringProto);
+  rpc selectDatabase(SessionedStringProto) returns (BoolProto);
+
+  // Table Management APIs
+  rpc createExternalTable(CreateTableRequest) returns (TableResponse);
+  rpc existTable(SessionedStringProto) returns (BoolProto);
+  rpc dropTable(DropTableRequest) returns (BoolProto);
   rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
   rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
-  rpc createExternalTable(CreateTableRequest) returns (TableResponse);
-  rpc dropTable(DropTableRequest) returns (BoolProto);
-  rpc getFunctionList(StringProto) returns (FunctionResponse);
-
-  // TODO - to be implemented
-  //
-  // authenticate
-  //
-  // getSessionVariableList
-  // detachTable
-  // createIndex
-  // dropIndex
-  // registerUDF
-  // dropUDF
-  // getUDFDesc
-  // registerJars
-  // getListRegisteredJars
+  rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
 }

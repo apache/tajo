@@ -55,8 +55,9 @@ public class CommonTestingUtil {
     String randomStr = UUID.randomUUID().toString();
     Path path = new Path("target/test-data", randomStr);
     FileSystem fs = FileSystem.getLocal(new Configuration());
-    if(fs.exists(path))
+    if(fs.exists(path)) {
       fs.delete(path, true);
+    }
 
     fs.mkdirs(path);
 

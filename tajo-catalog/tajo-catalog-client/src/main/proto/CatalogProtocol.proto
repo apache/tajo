@@ -25,15 +25,26 @@ import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
 service CatalogProtocolService {
-  rpc getTableDesc(StringProto) returns (TableDescProto);
-  rpc getAllTableNames(NullProto) returns (GetAllTableNamesResponse);
-  rpc addTable(TableDescProto) returns (BoolProto);
-  rpc deleteTable(StringProto) returns (BoolProto);
-  rpc existsTable(StringProto) returns (BoolProto);
 
-  rpc getPartitionMethodByTableName(StringProto) returns (PartitionMethodProto);
-  rpc existPartitionMethod(StringProto) returns (BoolProto);
-  rpc delPartitionMethod(StringProto) returns (BoolProto);
+  rpc createTablespace(CreateTablespaceRequest) returns (BoolProto);
+  rpc dropTablespace(StringProto) returns (BoolProto);
+  rpc existTablespace(StringProto) returns (BoolProto);
+  rpc getAllTablespaceNames(NullProto) returns (StringListProto);
+
+  rpc createDatabase(CreateDatabaseRequest) returns (BoolProto);
+  rpc dropDatabase(StringProto) returns (BoolProto);
+  rpc existDatabase(StringProto) returns (BoolProto);
+  rpc getAllDatabaseNames(NullProto) returns (StringListProto);
+
+  rpc createTable(TableDescProto) returns (BoolProto);
+  rpc dropTable(TableIdentifierProto) returns (BoolProto);
+  rpc existsTable(TableIdentifierProto) returns (BoolProto);
+  rpc getTableDesc(TableIdentifierProto) returns (TableDescProto);
+  rpc getAllTableNames(StringProto) returns (StringListProto);
+
+  rpc getPartitionMethodByTableName(TableIdentifierProto) returns (PartitionMethodProto);
+  rpc existPartitionMethod(TableIdentifierProto) returns (BoolProto);
+  rpc dropPartitionMethod(TableIdentifierProto) returns (BoolProto);
 
   rpc addPartitions(PartitionsProto) returns (BoolProto);
   rpc addPartition(PartitionDescProto) returns (BoolProto);
@@ -41,12 +52,12 @@ service CatalogProtocolService {
   rpc getPartitionsByTableName(StringProto) returns (PartitionsProto);
   rpc delAllPartitions(StringProto) returns (PartitionsProto);
 
-  rpc addIndex(IndexDescProto) returns (BoolProto);
-  rpc existIndexByName(StringProto) returns (BoolProto);
-  rpc existIndex(GetIndexRequest) returns (BoolProto);
-  rpc getIndexByName(StringProto) returns (IndexDescProto);
-  rpc getIndex(GetIndexRequest) returns (IndexDescProto);
-  rpc delIndex(StringProto) returns (BoolProto);
+  rpc createIndex(IndexDescProto) returns (BoolProto);
+  rpc dropIndex(IndexNameProto) returns (BoolProto);
+  rpc existIndexByName(IndexNameProto) returns (BoolProto);
+  rpc existIndexByColumn(GetIndexByColumnRequest) returns (BoolProto);
+  rpc getIndexByName(IndexNameProto) returns (IndexDescProto);
+  rpc getIndexByColumn(GetIndexByColumnRequest) returns (IndexDescProto);
 
   rpc createFunction(FunctionDescProto) returns (BoolProto);
   rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);

@@ -18,11 +18,9 @@
 
 package org.apache.tajo.cli;
 
+import com.google.protobuf.ServiceException;
 import jline.console.ConsoleReader;
-import jline.console.history.FileHistory;
-import jline.console.history.PersistentHistory;
 import org.apache.commons.cli.*;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
@@ -37,29 +35,33 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.FileUtil;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.apache.tajo.cli.ParsedResult.StatementType.META;
+import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
+import static org.apache.tajo.cli.SimpleParser.ParsingState;
+
 public class TajoCli {
-  public static final int PRINT_LIMIT = 24;
 
   private final TajoConf conf;
-  private static final Options options;
-
   private TajoClient client;
+  private final TajoCliContext context;
 
+  // Jline and Console related things
   private final ConsoleReader reader;
   private final InputStream sin;
   private final PrintWriter sout;
+  private TajoFileHistory history;
 
-  private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
+  // Current States
+  private String currentDatabase;
 
   private static final Class [] registeredCommands = {
       DescTableCommand.class,
@@ -67,9 +69,16 @@ public class TajoCli {
       HelpCommand.class,
       ExitCommand.class,
       CopyrightCommand.class,
-      VersionCommand.class
+      VersionCommand.class,
+      ConnectDatabaseCommand.class,
+      ListDatabaseCommand.class,
+      SetCommand.class,
+      UnsetCommand.class
   };
+  private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
+  public static final int PRINT_LIMIT = 24;
+  private static final Options options;
   private static final String HOME_DIR = System.getProperty("user.home");
   private static final String HISTORY_FILE = ".tajo_history";
 
@@ -79,10 +88,29 @@ public class TajoCli {
     options.addOption("f", "file", true, "execute commands from file, then exit");
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
+    options.addOption("help", "help", false, "help");
   }
 
-  public TajoCli(TajoConf c, String [] args,
-                 InputStream in, OutputStream out) throws Exception {
+  public class TajoCliContext {
+
+    public TajoClient getTajoClient() {
+      return client;
+    }
+
+    public void setCurrentDatabase(String databasae) {
+      currentDatabase = databasae;
+    }
+
+    public String getCurrentDatabase() {
+      return currentDatabase;
+    }
+
+    public PrintWriter getOutput() {
+      return sout;
+    }
+  }
+
+  public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
     this.conf = new TajoConf(c);
     this.sin = in;
     this.reader = new ConsoleReader(sin, out);
@@ -91,6 +119,10 @@ public class TajoCli {
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
 
+    if (cmd.hasOption("help")) {
+      printUsage();
+    }
+
     String hostName = null;
     Integer port = null;
     if (cmd.hasOption("h")) {
@@ -98,6 +130,11 @@ public class TajoCli {
     }
     if (cmd.hasOption("p")) {
       port = Integer.parseInt(cmd.getOptionValue("p"));
+    }
+
+    String baseDatabase = null;
+    if (cmd.getArgList().size() > 0) {
+      baseDatabase = (String) cmd.getArgList().get(0);
     }
 
     // if there is no "-h" option,
@@ -121,24 +158,26 @@ public class TajoCli {
       System.exit(-1);
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClient(conf);
+      client = new TajoClient(conf, baseDatabase);
     } else if (hostName == null && port == null) {
-      client = new TajoClient(conf);
+      client = new TajoClient(conf, baseDatabase);
     }
 
+    context = new TajoCliContext();
+    context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();
     initCommands();
 
     if (cmd.hasOption("c")) {
-      executeStatements(cmd.getOptionValue("c"));
+      executeScript(cmd.getOptionValue("c"));
       sout.flush();
       System.exit(0);
     }
     if (cmd.hasOption("f")) {
       File sqlFile = new File(cmd.getOptionValue("f"));
       if (sqlFile.exists()) {
-        String contents = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
-        executeStatements(contents);
+        String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
+        executeScript(script);
         sout.flush();
         System.exit(0);
       } else {
@@ -146,13 +185,16 @@ public class TajoCli {
         System.exit(-1);
       }
     }
+
+    addShutdownHook();
   }
 
   private void initHistory() {
     try {
       String historyPath = HOME_DIR + File.separator + HISTORY_FILE;
       if ((new File(HOME_DIR)).exists()) {
-        reader.setHistory(new FileHistory(new File(historyPath)));
+        history = new TajoFileHistory(new File(historyPath));
+        reader.setHistory(history);
       } else {
         System.err.println("ERROR: home directory : '" + HOME_DIR +"' does not exist.");
       }
@@ -165,8 +207,8 @@ public class TajoCli {
     for (Class clazz : registeredCommands) {
       TajoShellCommand cmd = null;
       try {
-         Constructor cons = clazz.getConstructor(new Class[] {TajoClient.class, PrintWriter.class});
-         cmd = (TajoShellCommand) cons.newInstance(client, sout);
+         Constructor cons = clazz.getConstructor(new Class[] {TajoCliContext.class});
+         cmd = (TajoShellCommand) cons.newInstance(context);
       } catch (Exception e) {
         System.err.println(e.getMessage());
         System.exit(-1);
@@ -175,160 +217,114 @@ public class TajoCli {
     }
   }
 
-  public int runShell() throws Exception {
+  private void addShutdownHook() {
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          history.flush();
+        } catch (IOException e) {
+        }
+        client.close();
+      }
+    }));
+  }
 
-    String raw;
+  private String updatePrompt(ParsingState state) throws ServiceException {
+    if (state == ParsingState.WITHIN_QUOTE) {
+      return "'";
+    } else if (state == ParsingState.TOK_START) {
+      return context.getCurrentDatabase();
+    } else {
+      return "";
+    }
+  }
+
+  public int runShell() throws Exception {
     String line;
-    StringBuffer accumulatedLine = new StringBuffer();
-    String prompt = "tajo";
-    String curPrompt = prompt;
-    boolean newStatement = true;
+    String currentPrompt = context.getCurrentDatabase();
     int code = 0;
 
     sout.write("Try \\? for help.\n");
-    while((raw = reader.readLine(curPrompt + "> ")) != null) {
-      // each accumulated line has a space delimiter
-      if (accumulatedLine.length() > 0) {
-        accumulatedLine.append(' ');
-      }
 
-      line = raw.trim();
+    SimpleParser parser = new SimpleParser();
+    while((line = reader.readLine(currentPrompt + "> ")) != null) {
 
-      if (line.length() == 0) { // if empty line
-        continue;
-
-      } else if (line.charAt(0) == '/') { // warning for legacy usage
-        printInvalidCommand(line);
-        continue;
-
-      } else if (line.charAt(0) == '\\') { // command mode
-        ((PersistentHistory)reader.getHistory()).flush();
-        executeCommand(line);
-
-      } else if (line.endsWith(";") && !line.endsWith("\\;")) {
-
-        // remove a trailing newline
-        line = StringUtils.chomp(line).trim();
-
-        // get a punctuated statement
-        String punctuated = accumulatedLine + line;
-
-        if (!newStatement) {
-          // why do two lines are removed?
-          // First history line indicates an accumulated line.
-          // Second history line is a just typed line.
-          reader.getHistory().removeLast();
-          reader.getHistory().removeLast();
-          reader.getHistory().add(punctuated);
-          ((PersistentHistory)reader.getHistory()).flush();
-        }
-
-        code = executeStatements(punctuated);
-
-        // reset accumulated lines
-        newStatement = true;
-        accumulatedLine = new StringBuffer();
-        curPrompt = prompt;
-
-      } else {
-        line = StringUtils.chomp(raw).trim();
-
-        // accumulate a line
-        accumulatedLine.append(line);
-
-        // replace the latest line with a accumulated line
-        if (!newStatement) { // if this is not first line, remove one more line.
-          reader.getHistory().removeLast();
-        } else {
-          newStatement = false;
-        }
-        reader.getHistory().removeLast();
-        reader.getHistory().add(accumulatedLine.toString());
-
-        // use an alternative prompt during accumulating lines
-        curPrompt = StringUtils.repeat(" ", prompt.length());
+      if (line.equals("")) {
         continue;
       }
+
+      List<ParsedResult> parsedResults = parser.parseLines(line);
+
+      if (parsedResults.size() > 0) {
+        for (ParsedResult parsed : parsedResults) {
+          history.addStatement(parsed.getStatement() + (parsed.getType() == STATEMENT ? ";":""));
+        }
+      }
+      executeParsedResults(parsedResults);
+      currentPrompt = updatePrompt(parser.getState());
     }
     return code;
   }
 
-  private void invokeCommand(String [] cmds) {
-    // this command should be moved to GlobalEngine
-    TajoShellCommand invoked;
-    try {
-      invoked = commands.get(cmds[0]);
-      invoked.invoke(cmds);
-    } catch (Throwable t) {
-      sout.println(t.getMessage());
+  private void executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+    for (ParsedResult parsedResult : parsedResults) {
+      if (parsedResult.getType() == META) {
+        executeMetaCommand(parsedResult.getStatement());
+      } else {
+        executeQuery(parsedResult.getStatement());
+      }
     }
   }
 
-  public int executeStatements(String line) throws Exception {
+  public int executeMetaCommand(String line) throws Exception {
+    String [] metaCommands = line.split(";");
+    for (String metaCommand : metaCommands) {
+      String arguments [];
+      arguments = metaCommand.split(" ");
 
-    // TODO - comment handling and multi line queries should be improved
-    // remove comments
-    String filtered = line.replaceAll("--[^\\r\\n]*", "").trim();
-
-    String stripped;
-    for (String statement : filtered.split(";")) {
-      stripped = StringUtils.chomp(statement);
-      if (StringUtils.isBlank(stripped)) {
-        continue;
+      TajoShellCommand invoked = commands.get(arguments[0]);
+      if (invoked == null) {
+        printInvalidCommand(arguments[0]);
+        return -1;
       }
 
-      String [] cmds = stripped.split(" ");
-      if (cmds[0].equalsIgnoreCase("exit") || cmds[0].equalsIgnoreCase("quit")) {
-        sout.println("\n\nbye!");
-        sout.flush();
-        ((PersistentHistory)this.reader.getHistory()).flush();
-        System.exit(0);
-      } else if (cmds[0].equalsIgnoreCase("detach") && cmds.length > 1 && cmds[1].equalsIgnoreCase("table")) {
-        // this command should be moved to GlobalEngine
-        invokeCommand(cmds);
-      } else if (cmds[0].equalsIgnoreCase("explain") && cmds.length > 1) {
-        String sql = stripped.substring(8);
-        ClientProtos.ExplainQueryResponse response = client.explainQuery(sql);
-        if (response == null) {
-          sout.println("response is null");
-        } else {
-          if (response.hasExplain()) {
-            sout.println(response.getExplain());
-          } else {
-            if (response.hasErrorMessage()) {
-              sout.println(response.getErrorMessage());
-            } else {
-              sout.println("No Explain");
-            }
-          }
-        }
-      } else { // submit a query to TajoMaster
-        ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
-        if (response == null) {
-          sout.println("response is null");
-        }
-        else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
-          QueryId queryId = null;
-          try {
-            queryId = new QueryId(response.getQueryId());
-            if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-              sout.println("OK");
-            } else {
-              waitForQueryCompleted(queryId);
-            }
-          } finally {
-            if(queryId != null) {
-              client.closeQuery(queryId);
-            }
-          }
-        } else {
-          if (response.hasErrorMessage()) {
-            sout.println(response.getErrorMessage());
-          }
-        }
+      try {
+        invoked.invoke(arguments);
+      } catch (IllegalArgumentException ige) {
+        sout.println(ige.getMessage());
+      } catch (Exception e) {
+        sout.println(e.getMessage());
       }
     }
+
     return 0;
+  }
+
+  private void executeQuery(String statement) throws ServiceException {
+    ClientProtos.GetQueryStatusResponse response = client.executeQuery(statement);
+    if (response == null) {
+      sout.println("response is null");
+    }
+    else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+      QueryId queryId = null;
+      try {
+        queryId = new QueryId(response.getQueryId());
+        if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+          sout.println("OK");
+        } else {
+          waitForQueryCompleted(queryId);
+        }
+      } finally {
+        if(queryId != null) {
+          client.closeQuery(queryId);
+        }
+      }
+    } else {
+      if (response.hasErrorMessage()) {
+        sout.println(response.getErrorMessage());
+      }
+    }
   }
 
   private void waitForQueryCompleted(QueryId queryId) {
@@ -453,33 +449,15 @@ public class TajoCli {
     }
   }
 
-  private void printUsage() {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp( "tajo cli [options]", options );
+  public int executeScript(String script) throws Exception {
+    List<ParsedResult> results = SimpleParser.parseScript(script);
+    executeParsedResults(results);
+    return 0;
   }
 
-  public int executeCommand(String line) throws Exception {
-    String [] metaCommands = line.split(";");
-    for (String metaCommand : metaCommands) {
-      String arguments [];
-      arguments = metaCommand.split(" ");
-
-      TajoShellCommand invoked = commands.get(arguments[0]);
-      if (invoked == null) {
-        printInvalidCommand(arguments[0]);
-        return -1;
-      }
-
-      try {
-        invoked.invoke(arguments);
-      } catch (IllegalArgumentException ige) {
-        sout.println(ige.getMessage());
-      } catch (Exception e) {
-        sout.println(e.getMessage());
-      }
-    }
-
-    return 0;
+  private void printUsage() {
+    HelpFormatter formatter = new HelpFormatter();
+    formatter.printHelp( "tsql [options] [database]", options );
   }
 
   private void printInvalidCommand(String command) {

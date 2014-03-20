@@ -19,6 +19,8 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
@@ -39,6 +41,7 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -50,6 +53,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +66,8 @@ public class TestEvalTreeUtil {
   static EvalNode expr3;
   static SQLAnalyzer analyzer;
   static LogicalPlanner planner;
+  static Session session = LocalTajoTestingUtility.createDummySession();
+
   public static class TestSum extends GeneralFunction {
     private Integer x;
     private Integer y;
@@ -87,6 +93,8 @@ public class TestEvalTreeUtil {
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.createFunction(funcDesc);
     }
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
+    catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
     Schema schema = new Schema();
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
@@ -94,8 +102,10 @@ public class TestEvalTreeUtil {
     schema.addColumn("age", TajoDataTypes.Type.INT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    TableDesc desc = new TableDesc("people", schema, meta, CommonTestingUtil.getTestDir());
-    catalog.addTable(desc);
+    TableDesc desc = new TableDesc(
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
+        CommonTestingUtil.getTestDir());
+    catalog.createTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class,
         FunctionType.GENERAL,
@@ -126,7 +136,7 @@ public class TestEvalTreeUtil {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(expr);
+      plan = planner.createPlan(session, expr);
     } catch (PlanningException e) {
       e.printStackTrace();
     }
@@ -138,7 +148,7 @@ public class TestEvalTreeUtil {
     Expr block = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(block);
+      plan = planner.createPlan(session, block);
     } catch (PlanningException e) {
       e.printStackTrace();
     }
@@ -150,23 +160,23 @@ public class TestEvalTreeUtil {
   @Test
   public final void testChangeColumnRef() throws CloneNotSupportedException {
     EvalNode copy = (EvalNode)expr1.clone();
-    EvalTreeUtil.changeColumnRef(copy, "people.score", "newscore");
+    EvalTreeUtil.changeColumnRef(copy, "default.people.score", "newscore");
     Set<Column> set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(1, set.size());
     assertTrue(set.contains(new Column("newscore", TajoDataTypes.Type.INT4)));
 
     copy = (EvalNode)expr2.clone();
-    EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
+    EvalTreeUtil.changeColumnRef(copy, "default.people.age", "sum_age");
     set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
 
     copy = (EvalNode)expr3.clone();
-    EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
+    EvalTreeUtil.changeColumnRef(copy, "default.people.age", "sum_age");
     set = EvalTreeUtil.findUniqueColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.score", TajoDataTypes.Type.INT4)));
     assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
   }
 
@@ -174,17 +184,17 @@ public class TestEvalTreeUtil {
   public final void testFindAllRefColumns() {    
     Set<Column> set = EvalTreeUtil.findUniqueColumns(expr1);
     assertEquals(1, set.size());
-    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.score", TajoDataTypes.Type.INT4)));
     
     set = EvalTreeUtil.findUniqueColumns(expr2);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
-    assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.age", TajoDataTypes.Type.INT4)));
     
     set = EvalTreeUtil.findUniqueColumns(expr3);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
-    assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("default.people.age", TajoDataTypes.Type.INT4)));
   }
   
   public static final String [] QUERIES = {
@@ -213,9 +223,9 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetContainExprs() throws CloneNotSupportedException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(expr, true);
+    LogicalPlan plan = planner.createPlan(session, expr, true);
     Target [] targets = plan.getRootBlock().getRawTargets();
-    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
+    Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     EvalNode node = exprs.iterator().next();
@@ -223,11 +233,11 @@ public class TestEvalTreeUtil {
     assertEquals(EvalType.PLUS, node.getLeftExpr().getType());
     assertEquals(new ConstEval(DatumFactory.createInt4(4)), node.getRightExpr());
 
-    Column col2 = new Column("people.age", TajoDataTypes.Type.INT4);
+    Column col2 = new Column("default.people.age", TajoDataTypes.Type.INT4);
     exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
     node = exprs.iterator().next();
     assertEquals(EvalType.GTH, node.getType());
-    assertEquals("people.age", node.getLeftExpr().getName());
+    assertEquals("default.people.age", node.getLeftExpr().getName());
     assertEquals(new ConstEval(DatumFactory.createInt4(5)), node.getRightExpr());
   }
   
@@ -237,7 +247,7 @@ public class TestEvalTreeUtil {
     EvalNode node = getRootSelection(QUERIES[5]);
     EvalNode [] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(node);
     
-    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
+    Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     
     assertEquals(2, cnf.length);
     EvalNode first = cnf[0];
@@ -276,8 +286,8 @@ public class TestEvalTreeUtil {
     EvalNode [] cnf = AlgebraicUtil.toDisjunctiveNormalFormArray(node);
     assertEquals(2, cnf.length);
 
-    assertEquals("people.score (INT4) > 1 AND people.score (INT4) < 3", cnf[0].toString());
-    assertEquals("7 < people.score (INT4) AND people.score (INT4) < 10", cnf[1].toString());
+    assertEquals("default.people.score (INT4) > 1 AND default.people.score (INT4) < 3", cnf[0].toString());
+    assertEquals("7 < default.people.score (INT4) AND default.people.score (INT4) < 10", cnf[1].toString());
   }
   
   @Test
@@ -291,9 +301,9 @@ public class TestEvalTreeUtil {
     assertTrue(7.0d == node.eval(null, null).asFloat8());
 
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(expr, true);
+    LogicalPlan plan = planner.createPlan(session, expr, true);
     targets = plan.getRootBlock().getRawTargets();
-    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
+    Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     node = exprs.iterator().next();
@@ -309,7 +319,7 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testTranspose() throws PlanningException {
-    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
+    Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     EvalNode node = getRootSelection(QUERIES[3]);
     // we expect that score < 3
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
@@ -331,7 +341,7 @@ public class TestEvalTreeUtil {
   public final void testFindDistinctAggFunctions() throws PlanningException {
     String query = "select sum(score) + max(age) from people";
     Expr expr = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(session, expr);
     GroupbyNode groupByNode = plan.getRootBlock().getNode(NodeType.GROUP_BY);
     EvalNode [] aggEvals = groupByNode.getAggFunctions();
 

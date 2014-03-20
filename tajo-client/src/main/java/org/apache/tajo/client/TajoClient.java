@@ -22,15 +22,16 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -40,11 +41,12 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.jdbc.TajoResultSet;
-import org.apache.tajo.rpc.*;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
-import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
+import org.apache.tajo.util.NetUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
@@ -54,39 +56,69 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ThreadSafe
-public class TajoClient {
+public class TajoClient implements Closeable {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
 
   private final TajoConf conf;
 
-  private Map<QueryId, InetSocketAddress> queryMasterMap = new ConcurrentHashMap<QueryId, InetSocketAddress>();
+  private final Map<QueryId, InetSocketAddress> queryMasterMap = new ConcurrentHashMap<QueryId, InetSocketAddress>();
 
-  private InetSocketAddress tajoMasterAddr;
+  private final InetSocketAddress tajoMasterAddr;
 
-  private RpcConnectionPool connPool;
+  private final RpcConnectionPool connPool;
+
+  private final String baseDatabase;
+
+  private final UserGroupInformation userInfo;
+
+  private volatile TajoIdProtos.SessionIdProto sessionId;
 
   public TajoClient(TajoConf conf) throws IOException {
-    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)));
+    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), null);
   }
 
-  public TajoClient(TajoConf conf, InetSocketAddress addr) throws IOException {
+  public TajoClient(TajoConf conf, String baseDatabase) throws IOException {
+    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), baseDatabase);
+  }
+
+  public TajoClient(TajoConf conf, InetSocketAddress addr, @Nullable String baseDatabase) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
     this.tajoMasterAddr = addr;
     int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
     //Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
+    userInfo = UserGroupInformation.getCurrentUser();
+    this.baseDatabase = baseDatabase;
+  }
+
+  public boolean isConnected() {
+    try {
+      return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isConnected();
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   public TajoClient(InetSocketAddress addr) throws IOException {
-    this(new TajoConf(), addr);
+    this(new TajoConf(), addr, null);
   }
 
-  public TajoClient(String hostname, int port) throws IOException {
-    this(new TajoConf(), NetUtils.createSocketAddr(hostname, port));
+  public TajoClient(String hostname, int port, String baseDatabase) throws IOException {
+    this(new TajoConf(), NetUtils.createSocketAddr(hostname, port), baseDatabase);
   }
 
+  @Override
   public void close() {
+    // remove session
+    try {
+      NettyClientBase client = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+      TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
+      tajoMaster.removeSession(null, sessionId);
+    } catch (Exception e) {
+      LOG.error(e);
+    }
+
     if(connPool != null) {
       connPool.shutdown();
     }
@@ -95,6 +127,10 @@ public class TajoClient {
 
   public TajoConf getConf() {
     return conf;
+  }
+
+  public UserGroupInformation getUserInfo() {
+    return userInfo;
   }
 
   /**
@@ -117,15 +153,134 @@ public class TajoClient {
     }
   }
 
+  private void checkSessionAndGet(NettyClientBase client) throws ServiceException {
+    if (sessionId == null) {
+      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+      CreateSessionRequest.Builder builder = CreateSessionRequest.newBuilder();
+      builder.setUsername(userInfo.getUserName()).build();
+      if (baseDatabase != null) {
+        builder.setBaseDatabaseName(baseDatabase);
+      }
+      CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
+      if (response.getState() == CreateSessionResponse.ResultState.SUCCESS) {
+        sessionId = response.getSessionId();
+        LOG.info(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+      } else {
+        throw new InvalidClientSessionException(response.getMessage());
+      }
+    }
+  }
+
+  private SessionedStringProto convertSessionedString(String str) {
+    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
+    builder.setSessionId(sessionId);
+    builder.setValue(str);
+    return builder.build();
+  }
+
+  public String getCurrentDatabase() throws ServiceException {
+    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public String call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getCurrentDatabase(null, sessionId).getValue();
+      }
+    }.withRetries();
+  }
+
+  public Boolean selectDatabase(final String databaseName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public Boolean updateSessionVariables(final Map<String, String> variables) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        Options options = new Options();
+        options.putAll(variables);
+        UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
+            .setSessionId(sessionId)
+            .setSetVariables(options.getProto()).build();
+
+        return tajoMasterService.updateSessionVariables(null, request).getValue();
+      }
+    }.withRetries();
+  }
+
+  public Boolean unsetSessionVariables(final List<String> variables)  throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
+            .setSessionId(sessionId)
+            .addAllUnsetVariables(variables).build();
+        return tajoMasterService.updateSessionVariables(null, request).getValue();
+      }
+    }.withRetries();
+  }
+
+  public String getSessionVariable(final String varname) throws ServiceException {
+    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public String call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getSessionVariable(null, convertSessionedString(varname)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public Boolean existSessionVariable(final String varname) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.existSessionVariable(null, convertSessionedString(varname)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public Map<String, String> getAllSessionVariables() throws ServiceException {
+    return new ServerCallable<Map<String, String>>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class,
+        false, true) {
+
+      public Map<String, String> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        Options options = new Options(tajoMasterService.getAllSessionVariables(null, sessionId));
+        return options.getAllKeyValus();
+      }
+    }.withRetries();
+  }
+
   public ExplainQueryResponse explainQuery(final String sql) throws ServiceException {
     return new ServerCallable<ExplainQueryResponse>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public ExplainQueryResponse call(NettyClientBase client) throws ServiceException {
-        final ExplainQueryRequest.Builder builder = ExplainQueryRequest.newBuilder();
-        builder.setQuery(sql);
+        checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.explainQuery(null, builder.build());
+        return tajoMasterService.explainQuery(null, convertSessionedString(sql));
       }
     }.withRetries();
   }
@@ -140,9 +295,11 @@ public class TajoClient {
     return new ServerCallable<GetQueryStatusResponse>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
-        final QueryRequest.Builder builder = QueryRequest.newBuilder();
-        builder.setQuery(sql);
+        checkSessionAndGet(client);
 
+        final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(sql);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         return tajoMasterService.submitQuery(null, builder.build());
       }
@@ -162,7 +319,10 @@ public class TajoClient {
     GetQueryStatusResponse response = new ServerCallable<GetQueryStatusResponse>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public GetQueryStatusResponse call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
         builder.setQuery(sql);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         return tajoMasterService.submitQuery(null, builder.build());
@@ -178,8 +338,7 @@ public class TajoClient {
   }
 
   public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
-    GetQueryStatusRequest.Builder builder
-        = GetQueryStatusRequest.newBuilder();
+    GetQueryStatusRequest.Builder builder = GetQueryStatusRequest.newBuilder();
     builder.setQueryId(queryId.getProto());
 
     GetQueryStatusResponse res = null;
@@ -198,8 +357,11 @@ public class TajoClient {
     } else {
       NettyClientBase tmClient = null;
       try {
-        tmClient = connPool.getConnection(tajoMasterAddr,
-            TajoMasterClientProtocol.class, false);
+        tmClient = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+
+        checkSessionAndGet(tmClient);
+        builder.setSessionId(sessionId);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
         res = tajoMasterService.getQueryStatus(null, builder.build());
 
@@ -315,9 +477,11 @@ public class TajoClient {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
-        QueryRequest.Builder builder = QueryRequest.newBuilder();
-        builder.setQuery(sql);
+        checkSessionAndGet(client);
 
+        QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(sql);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
         if (response.getResultCode() == ResultCode.OK) {
@@ -328,6 +492,46 @@ public class TajoClient {
           }
           return false;
         }
+      }
+    }.withRetries();
+  }
+
+  public boolean createDatabase(final String databaseName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.createDatabase(null, convertSessionedString(databaseName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public boolean existDatabase(final String databaseName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.existDatabase(null, convertSessionedString(databaseName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public boolean dropDatabase(final String databaseName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.dropDatabase(null, convertSessionedString(databaseName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  public List<String> getAllDatabaseNames() throws ServiceException {
+    return new ServerCallable<List<String>>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public List<String> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getAllDatabases(null, sessionId).getValuesList();
       }
     }.withRetries();
   }
@@ -344,11 +548,9 @@ public class TajoClient {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
-        StringProto.Builder builder = StringProto.newBuilder();
-        builder.setValue(name);
-
+        checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existTable(null, builder.build()).getValue();
+        return tajoMasterService.existTable(null, convertSessionedString(name)).getValue();
       }
     }.withRetries();
   }
@@ -358,9 +560,12 @@ public class TajoClient {
     return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
+        builder.setSessionId(sessionId);
         builder.setName(name);
         builder.setSchema(schema.getProto());
         builder.setMeta(meta.getProto());
@@ -389,9 +594,12 @@ public class TajoClient {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         DropTableRequest.Builder builder = DropTableRequest.newBuilder();
+        builder.setSessionId(sessionId);
         builder.setName(tableName);
         builder.setPurge(purge);
         return tajoMasterService.dropTable(null, builder.build()).getValue();
@@ -404,9 +612,11 @@ public class TajoClient {
     return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
+        builder.setSessionId(sessionId);
         GetQueryListResponse res = tajoMasterService.getRunningQueryList(null, builder.build());
         return res.getQueryListList();
       }
@@ -420,6 +630,7 @@ public class TajoClient {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
+        builder.setSessionId(sessionId);
         GetQueryListResponse res = tajoMasterService.getFinishedQueryList(null, builder.build());
         return res.getQueryListList();
       }
@@ -430,9 +641,12 @@ public class TajoClient {
     return new ServerCallable<List<WorkerResourceInfo>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public List<WorkerResourceInfo> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetClusterInfoRequest.Builder builder = GetClusterInfoRequest.newBuilder();
+        builder.setSessionId(sessionId);
         GetClusterInfoResponse res = tajoMasterService.getClusterInfo(null, builder.build());
         return res.getWorkerListList();
       }
@@ -442,29 +656,41 @@ public class TajoClient {
   /**
    * Get a list of table names. All table and column names are
    * represented as lower-case letters.
+   *
+   * @param databaseName The database name to show all tables. If it is null, this method will show all tables
+   *                     in the current database of this session.
    */
-  public List<String> getTableList() throws ServiceException {
+  public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
     return new ServerCallable<List<String>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public List<String> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        if (databaseName != null) {
+          builder.setDatabaseName(databaseName);
+        }
         GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
         return res.getTablesList();
       }
     }.withRetries();
   }
 
-  public TableDesc getTableDesc(final String tableName) throws SQLException, ServiceException {
+  public TableDesc getTableDesc(final String tableName) throws ServiceException {
     return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-        GetTableDescRequest.Builder build = GetTableDescRequest.newBuilder();
-        build.setTableName(tableName);
-        TableResponse res = tajoMasterService.getTableDesc(null, build.build());
+        GetTableDescRequest.Builder builder = GetTableDescRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setTableName(tableName);
+        TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
         if (res.getResultCode() == ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());
         } else {
@@ -484,7 +710,13 @@ public class TajoClient {
       /* send a kill to the TM */
       tmClient = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
-      tajoMasterService.killQuery(null, queryId.getProto());
+
+      checkSessionAndGet(tmClient);
+
+      KillQueryRequest.Builder builder = KillQueryRequest.newBuilder();
+      builder.setSessionId(sessionId);
+      builder.setQueryId(queryId.getProto());
+      tajoMasterService.killQuery(null, builder.build());
 
       long currentTimeMillis = System.currentTimeMillis();
       long timeKillIssued = currentTimeMillis;
@@ -510,12 +742,11 @@ public class TajoClient {
     return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
+        checkSessionAndGet(client);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-
         String paramFunctionName = functionName == null ? "" : functionName;
-
-        FunctionResponse res = tajoMasterService.getFunctionList(null,
-            StringProto.newBuilder().setValue(paramFunctionName).build());
+        FunctionResponse res = tajoMasterService.getFunctionList(null,convertSessionedString(paramFunctionName));
         if (res.getResultCode() == ResultCode.OK) {
           return res.getFunctionsList();
         } else {

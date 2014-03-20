@@ -47,8 +47,9 @@ public class HCatalogStoreClientPool {
 
     private HCatalogStoreClient(HiveConf hiveConf) {
       try {
-        LOG.info("Creating MetaStoreClient. Pool Size = " + clientPool.size());
         this.hiveClient = new HiveMetaStoreClient(hiveConf);
+        clientPool.add(this);
+        LOG.info("MetaStoreClient created (size = " + clientPool.size() + ")");
       } catch (Exception e) {
         // Turn in to an unchecked exception
         throw new IllegalStateException(e);

@@ -24,6 +24,10 @@ public class NoSuchTableException extends CatalogException {
 
 	public NoSuchTableException() {}
 
+  public NoSuchTableException(String databaseName, String relName) {
+    super(String.format("ERROR: relation \" %s \" in %s does not exist", relName, databaseName));
+  }
+
 	public NoSuchTableException(String relName) {
 		super("ERROR: relation \"" + relName + "\" does not exist");
 	}

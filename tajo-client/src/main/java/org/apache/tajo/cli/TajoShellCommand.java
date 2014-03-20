@@ -21,37 +21,33 @@ package org.apache.tajo.cli;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 
-import java.io.PrintWriter;
-
 public abstract class TajoShellCommand {
   public abstract String getCommand();
   public abstract void invoke(String [] command) throws Exception;
   public abstract String getUsage();
   public abstract String getDescription();
 
+  protected TajoCli.TajoCliContext context;
   protected TajoClient client;
-  protected PrintWriter sout;
-
   protected int maxColumn;
 
-  public TajoShellCommand(TajoClient client, PrintWriter sout) {
-    this.client = client;
-    this.sout = sout;
-
-    maxColumn = client.getConf().getIntVar(TajoConf.ConfVars.CLI_MAX_COLUMN);
+  public TajoShellCommand(TajoCli.TajoCliContext context) {
+    maxColumn = context.getTajoClient().getConf().getIntVar(TajoConf.ConfVars.CLI_MAX_COLUMN);
+    this.context = context;
+    client = context.getTajoClient();
   }
 
   protected void println() {
-    this.sout.println();
+    context.getOutput().println();
   }
 
   protected void printLeft(String message, int columnWidth) {
     int messageLength = message.length();
 
     if(messageLength >= columnWidth) {
-      sout.print(message.substring(0, columnWidth - 1));
+      context.getOutput().print(message.substring(0, columnWidth - 1));
     } else {
-      sout.print(message);
+      context.getOutput().print(message);
       print(' ', columnWidth - messageLength - 1);
     }
   }
@@ -60,12 +56,12 @@ public abstract class TajoShellCommand {
     int messageLength = message.length();
 
     if(messageLength > columnWidth) {
-      sout.print(message.substring(0, columnWidth - 1));
+      context.getOutput().print(message.substring(0, columnWidth - 1));
     } else {
       int numPadding = (columnWidth - messageLength)/2;
 
       print(' ', numPadding);
-      sout.print(message);
+      context.getOutput().print(message);
       print(' ', numPadding);
     }
     if(warp) {
@@ -79,7 +75,7 @@ public abstract class TajoShellCommand {
 
   protected void print(char c, int count) {
     for(int i = 0; i < count; i++) {
-      sout.print(c);
+      context.getOutput().print(c);
     }
   }
 
@@ -98,7 +94,7 @@ public abstract class TajoShellCommand {
 
     String prefix = "";
     for(int i = 0; i < headers.length; i++) {
-      sout.print(prefix);
+      context.getOutput().print(prefix);
       printLeft(" " + headers[i], columnWidths[i]);
       prefix = "|";
     }

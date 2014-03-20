@@ -202,6 +202,7 @@ COUNT : C O U N T;
 CUBE : C U B E;
 
 DAY : D A Y;
+DATABASE : D A T A B A S E;
 DEC : D E C;
 DECADE : D E C A D E;
 DOW : D O W;
@@ -225,6 +226,7 @@ GROUPING : G R O U P I N G;
 HASH : H A S H;
 HOUR : H O U R;
 
+IF : I F;
 INDEX : I N D E X;
 INSERT : I N S E R T;
 INTERSECTION : I N T E R S E C T I O N;

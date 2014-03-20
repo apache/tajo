@@ -962,9 +962,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public Expr visitDatabase_definition(@NotNull SQLParser.Database_definitionContext ctx) {
+    return new CreateDatabase(ctx.identifier().getText(), null, checkIfExist(ctx.if_not_exists()));
+  }
+
+  @Override
+  public Expr visitDrop_database_statement(@NotNull SQLParser.Drop_database_statementContext ctx) {
+    return new DropDatabase(ctx.identifier().getText(), checkIfExist(ctx.if_exists()));
+  }
+
+  @Override
   public Expr visitCreate_table_statement(SQLParser.Create_table_statementContext ctx) {
     String tableName = ctx.table_name().getText();
-    CreateTable createTable = new CreateTable(tableName);
+    CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
 
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
@@ -1265,7 +1275,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDrop_table_statement(SQLParser.Drop_table_statementContext ctx) {
-    return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.PURGE()));
+    return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
   }
 
 

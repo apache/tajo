@@ -71,6 +71,12 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitInsert(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, InsertNode node,
                      Stack<LogicalNode> stack) throws PlanningException;
 
+  RESULT visitCreateDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateDatabaseNode node,
+                          Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitDropDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropDatabaseNode node,
+                             Stack<LogicalNode> stack) throws PlanningException;
+
   RESULT visitCreateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateTableNode node,
                           Stack<LogicalNode> stack) throws PlanningException;
 

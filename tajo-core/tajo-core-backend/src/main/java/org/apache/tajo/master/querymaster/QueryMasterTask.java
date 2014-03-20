@@ -48,6 +48,7 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoContainerProxy;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -75,6 +76,8 @@ public class QueryMasterTask extends CompositeService {
       FsPermission.createImmutable((short) 0700); // rwx--------
 
   private QueryId queryId;
+
+  private Session session;
 
   private QueryContext queryContext;
 
@@ -107,10 +110,13 @@ public class QueryMasterTask extends CompositeService {
   private TajoMetrics queryMetrics;
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, QueryContext queryContext, String sql, String logicalPlanJson) {
+                         QueryId queryId, Session session, QueryContext queryContext, String sql,
+                         String logicalPlanJson) {
+
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
     this.queryId = queryId;
+    this.session = session;
     this.queryContext = queryContext;
     this.sql = sql;
     this.logicalPlanJson = logicalPlanJson;
@@ -306,7 +312,7 @@ public class QueryMasterTask extends CompositeService {
     }
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(expr);
+      plan = planner.createPlan(session, expr);
       optimizer.optimize(plan);
     } catch (PlanningException e) {
       e.printStackTrace();
@@ -400,7 +406,7 @@ public class QueryMasterTask extends CompositeService {
 
       // Create a subdirectories
       defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
-      LOG.info("The staging dir '" + outputDir + "' is created.");
+      LOG.info("The staging dir '" + stagingDir + "' is created.");
       queryContext.setStagingDir(stagingDir);
 
       /////////////////////////////////////////////////
@@ -479,6 +485,10 @@ public class QueryMasterTask extends CompositeService {
     EventHandler eventHandler;
     public QueryMaster.QueryMasterContext getQueryMasterContext() {
       return queryMasterContext;
+    }
+
+    public Session getSession() {
+      return session;
     }
 
     public QueryContext getQueryContext() {

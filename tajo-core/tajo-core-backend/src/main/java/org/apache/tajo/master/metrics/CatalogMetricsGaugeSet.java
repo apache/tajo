@@ -26,6 +26,8 @@ import org.apache.tajo.master.TajoMaster;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+
 public class CatalogMetricsGaugeSet implements MetricSet {
   TajoMaster.MasterContext tajoMasterContext;
   public CatalogMetricsGaugeSet(TajoMaster.MasterContext tajoMasterContext) {
@@ -38,7 +40,7 @@ public class CatalogMetricsGaugeSet implements MetricSet {
     metricsMap.put("numTables", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return tajoMasterContext.getCatalog().getAllTableNames().size();
+        return tajoMasterContext.getCatalog().getAllTableNames(DEFAULT_DATABASE_NAME).size();
       }
     });
 

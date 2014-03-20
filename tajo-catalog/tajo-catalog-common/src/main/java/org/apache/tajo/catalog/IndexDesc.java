@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
@@ -28,11 +29,12 @@ import org.apache.tajo.common.ProtoObject;
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private IndexDescProto.Builder builder;
   
-  private String name; // required
-  private String tableId; // required
-  private Column column; // required
-  private IndexMethod indexMethod; // required
-  private boolean isUnique = false; // optional [default = false]
+  private String indexName;            // required
+  private String databaseName;         // required
+  private String tableName;            // required
+  private Column column;               // required
+  private IndexMethod indexMethod;     // required
+  private boolean isUnique = false;    // optional [default = false]
   private boolean isClustered = false; // optional [default = false]
   private boolean isAscending = false; // optional [default = false]
   
@@ -40,11 +42,12 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     this.builder = IndexDescProto.newBuilder();
   }
   
-  public IndexDesc(String name, String tableId, Column column, IndexMethod type,
-      boolean isUnique, boolean isClustered, boolean isAscending) {
+  public IndexDesc(String idxName, String databaseName, String tableName, Column column,
+                   IndexMethod type,  boolean isUnique, boolean isClustered, boolean isAscending) {
     this();
-    this.name = name.toLowerCase();
-    this.tableId = tableId.toLowerCase();
+    this.indexName = idxName.toLowerCase();
+    this.databaseName = databaseName;
+    this.tableName = tableName.toLowerCase();
     this.column = column;
     this.indexMethod = type;
     this.isUnique = isUnique;
@@ -53,16 +56,19 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public IndexDesc(IndexDescProto proto) {
-    this(proto.getName(), proto.getTableId(), new Column(proto.getColumn()),
+    this(proto.getIndexName(),
+        proto.getTableIdentifier().getDatabaseName(),
+        proto.getTableIdentifier().getTableName(),
+        new Column(proto.getColumn()),
         proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(), proto.getIsAscending());
   }
   
-  public String getName() {
-    return name;
+  public String getIndexName() {
+    return indexName;
   }
   
-  public String getTableId() {
-    return tableId;
+  public String getTableName() {
+    return tableName;
   }
   
   public Column getColumn() {
@@ -90,8 +96,17 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     if (builder == null) {
       builder = IndexDescProto.newBuilder();
     }
-    builder.setName(this.name);
-    builder.setTableId(this.tableId);
+
+    CatalogProtos.TableIdentifierProto.Builder tableIdentifierBuilder = CatalogProtos.TableIdentifierProto.newBuilder();
+    if (databaseName != null) {
+      tableIdentifierBuilder.setDatabaseName(databaseName);
+    }
+    if (tableName != null) {
+      tableIdentifierBuilder.setTableName(tableName);
+    }
+
+    builder.setTableIdentifier(tableIdentifierBuilder.build());
+    builder.setIndexName(this.indexName);
     builder.setColumn(this.column.getProto());
     builder.setIndexMethod(indexMethod);
     builder.setIsUnique(this.isUnique);
@@ -104,8 +119,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof IndexDesc) {
       IndexDesc other = (IndexDesc) obj;
-      return getName().equals(other.getName())
-          && getTableId().equals(other.getTableId())
+      return getIndexName().equals(other.getIndexName())
+          && getTableName().equals(other.getTableName())
           && getColumn().equals(other.getColumn())
           && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
@@ -117,14 +132,14 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public int hashCode() {
-    return Objects.hashCode(getName(), getTableId(), getColumn(), 
+    return Objects.hashCode(getIndexName(), getTableName(), getColumn(),
         getIndexMethod(), isUnique(), isClustered(), isAscending());
   }
 
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
-    desc.name = name;
-    desc.tableId = tableId;
+    desc.indexName = indexName;
+    desc.tableName = tableName;
     desc.column = (Column) column.clone();
     desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;

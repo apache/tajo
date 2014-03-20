@@ -16,11 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.util;
+package org.apache.tajo.cli;
 
-import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+public class ListDatabaseCommand extends TajoShellCommand {
 
-public class ProtoBufUtil {
-  public static final BoolProto TRUE = BoolProto.newBuilder().setValue(true).build();
-  public static final BoolProto FALSE = BoolProto.newBuilder().setValue(true).build();
+  public ListDatabaseCommand(TajoCli.TajoCliContext context) {
+    super(context);
+  }
+
+  @Override
+  public String getCommand() {
+    return "\\l";
+  }
+
+  @Override
+  public void invoke(String[] cmd) throws Exception {
+    for (String databaseName : client.getAllDatabaseNames()) {
+      context.getOutput().println(databaseName);
+    }
+  }
+
+  @Override
+  public String getUsage() {
+    return "";
+  }
+
+  @Override
+  public String getDescription() {
+    return "list all databases";
+  }
 }

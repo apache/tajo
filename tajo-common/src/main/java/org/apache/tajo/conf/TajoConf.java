@@ -234,6 +234,11 @@ public class TajoConf extends Configuration {
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
     //////////////////////////////////
 
+    //////////////////////////////////
+    // User Session Configuration
+    //////////////////////////////////
+    CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
+
     // Metrics
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 

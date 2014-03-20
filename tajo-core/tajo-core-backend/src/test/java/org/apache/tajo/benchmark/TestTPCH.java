@@ -20,6 +20,7 @@ package org.apache.tajo.benchmark;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -27,6 +28,11 @@ import java.sql.ResultSet;
 
 @Category(IntegrationTest.class)
 public class TestTPCH extends QueryTestCaseBase {
+
+  public TestTPCH() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public void testQ1OrderBy() throws Exception {
     ResultSet res = executeQuery();

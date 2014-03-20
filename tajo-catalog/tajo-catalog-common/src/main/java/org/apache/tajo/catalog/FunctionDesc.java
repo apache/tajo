@@ -204,7 +204,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   }
 
   public String getHelpSignature() {
-    return returnType.getType() + " " + CatalogUtil.getCanonicalName(signature, getParamTypes());
+    return returnType.getType() + " " + CatalogUtil.getCanonicalSignature(signature, getParamTypes());
   }
 
   public static String dataTypesToStr(List<DataType> parameterTypesList) {

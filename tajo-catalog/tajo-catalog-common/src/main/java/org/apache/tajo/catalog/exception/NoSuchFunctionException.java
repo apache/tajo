@@ -27,10 +27,10 @@ public class NoSuchFunctionException extends RuntimeException {
 	private static final long serialVersionUID = 5062193018697228028L;
 
   public NoSuchFunctionException(String funcName, TajoDataTypes.DataType [] parameters) {
-    super("function " + CatalogUtil.getCanonicalName(funcName, parameters) + " does not exist");
+    super("function " + CatalogUtil.getCanonicalSignature(funcName, parameters) + " does not exist");
   }
 
 	public NoSuchFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
-		super("function " + CatalogUtil.getCanonicalName(funcName, parameters) + " does not exist");
+		super("function " + CatalogUtil.getCanonicalSignature(funcName, parameters) + " does not exist");
 	}
 }

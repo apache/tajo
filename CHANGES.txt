@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-353: Add Database support to Tajo. (hyunsik)
+
     TAJO-574: Add a sort-based physical executor for column partition store.
     (hyunsik)
 

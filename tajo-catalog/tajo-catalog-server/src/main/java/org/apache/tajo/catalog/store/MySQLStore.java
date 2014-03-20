@@ -31,14 +31,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MySQLStore extends AbstractDBStore  {
+  /** 2014-03-20: First versioning */
+  private static final int MYSQL_CATALOG_STORE_VERSION_2 = 2;
+  /** Before 2013-03-20 */
+  private static final int MYSQL_CATALOG_STORE_VERSION_1 = 1;
 
   private static final String CATALOG_DRIVER = "com.mysql.jdbc.Driver";
   protected String getCatalogDriverName(){
     return CATALOG_DRIVER;
   }
 
-  public MySQLStore(Configuration conf) throws InternalException {
+  public MySQLStore(final Configuration conf) throws InternalException {
     super(conf);
+  }
+
+  @Override
+  public int getDriverVersion() {
+    return MYSQL_CATALOG_STORE_VERSION_2;
   }
 
   protected Connection createConnection(Configuration conf) throws SQLException {
@@ -46,6 +55,11 @@ public class MySQLStore extends AbstractDBStore  {
         this.connectionPassword);
     //TODO con.setAutoCommit(false);
     return con;
+  }
+
+  @Override
+  public String readSchemaFile(String filename) throws CatalogException {
+    return super.readSchemaFile("mysql/" + filename);
   }
 
   // TODO - DDL and index statements should be renamed
@@ -58,10 +72,10 @@ public class MySQLStore extends AbstractDBStore  {
       conn = getConnection();
       stmt = conn.createStatement();
 
-      StringBuilder sql = new StringBuilder();
+
       // META
       if (!baseTableMaps.get(TB_META)) {
-        sql.append("CREATE TABLE ").append(TB_META).append(" (version int NOT NULL)");
+        String sql = super.readSchemaFile("common/meta.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
@@ -72,40 +86,47 @@ public class MySQLStore extends AbstractDBStore  {
         baseTableMaps.put(TB_META, true);
       }
 
-      // TABLES
-      if (!baseTableMaps.get(TB_TABLES)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_TABLES).append("(");
-        sql.append("TID int NOT NULL AUTO_INCREMENT PRIMARY KEY, ");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL UNIQUE, ");
-        sql.append("path TEXT, ").append("store_type CHAR(16)").append(")");
+      // TABLE SPACES
+      if (!baseTableMaps.get(TB_SPACES)) {
+        String sql = readSchemaFile("tablespaces.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
 
-        stmt.executeUpdate(sql.toString());
+        stmt.executeUpdate(sql);
+
+        LOG.info("Table '" + TB_SPACES + "' is created.");
+        baseTableMaps.put(TB_SPACES, true);
+      }
+
+      // DATABASES
+      if (!baseTableMaps.get(TB_DATABASES)) {
+        String sql = readSchemaFile("databases.sql");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+        LOG.info("Table '" + TB_DATABASES + "' is created.");
+        baseTableMaps.put(TB_DATABASES, true);
+        stmt.executeUpdate(sql);
+      }
+
+      // TABLES
+      if (!baseTableMaps.get(TB_TABLES)) {
+        String sql = readSchemaFile("tables.sql");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+        stmt.executeUpdate(sql);
         LOG.info("Table '" + TB_TABLES + "' is created.");
         baseTableMaps.put(TB_TABLES, true);
       }
 
       // COLUMNS
       if (!baseTableMaps.get(TB_COLUMNS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_COLUMNS).append("(");
-        sql.append("TID INT NOT NULL, ");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
-        sql.append("column_id INT NOT NULL,");
-        sql.append("column_name VARCHAR(255) NOT NULL, ");
-        sql.append("data_type CHAR(16), ");
-        sql.append("type_length INTEGER, ");
-        sql.append("UNIQUE KEY(").append(C_TABLE_ID).append(", column_name),");
-        sql.append("FOREIGN KEY(TID) REFERENCES ").append(TB_TABLES).append("(TID) ON DELETE CASCADE,");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID).append(") REFERENCES ");
-        sql.append(TB_TABLES).append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
-
+        String sql = readSchemaFile("columns.sql");
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
 
         stmt.executeUpdate(sql.toString());
@@ -115,14 +136,7 @@ public class MySQLStore extends AbstractDBStore  {
 
       // OPTIONS
       if (!baseTableMaps.get(TB_OPTIONS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_OPTIONS).append("(");
-        sql.append(C_TABLE_ID).append( " VARCHAR(255) NOT NULL,");
-        sql.append("key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL,");
-        sql.append("INDEX(").append(C_TABLE_ID).append(", key_),");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
-        sql.append(") REFERENCES ").append(TB_TABLES);
-        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+        String sql = readSchemaFile("table_properties.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
@@ -135,20 +149,7 @@ public class MySQLStore extends AbstractDBStore  {
 
       // INDEXES
       if (!baseTableMaps.get(TB_INDEXES)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_INDEXES).append("(");
-        sql.append("index_name VARCHAR(255) NOT NULL PRIMARY KEY, ");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
-        sql.append("column_name VARCHAR(255) NOT NULL, ");
-        sql.append("data_type VARCHAR(255) NOT NULL, ");
-        sql.append("index_type CHAR(32) NOT NULL, ");
-        sql.append("is_unique BOOLEAN NOT NULL, ");
-        sql.append("is_clustered BOOLEAN NOT NULL, ");
-        sql.append("is_ascending BOOLEAN NOT NULL,");
-        sql.append("INDEX(").append(C_TABLE_ID).append(", column_name),");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
-        sql.append(") REFERENCES ").append(TB_TABLES);
-        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+        String sql = readSchemaFile("indexes.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
@@ -160,15 +161,7 @@ public class MySQLStore extends AbstractDBStore  {
       }
 
       if (!baseTableMaps.get(TB_STATISTICS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_STATISTICS).append("(");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL,");
-        sql.append("num_rows BIGINT, ");
-        sql.append("num_bytes BIGINT,");
-        sql.append("INDEX(").append(C_TABLE_ID).append("),");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
-        sql.append(") REFERENCES ").append(TB_TABLES);
-        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+        String sql = readSchemaFile("stats.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
@@ -181,40 +174,20 @@ public class MySQLStore extends AbstractDBStore  {
 
       // PARTITION_METHODS
       if (!baseTableMaps.get(TB_PARTITION_METHODS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_PARTITION_METHODS).append("(");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) PRIMARY KEY,");
-        sql.append("partition_type VARCHAR(10) NOT NULL,");
-        sql.append("expression TEXT NOT NULL,");
-        sql.append("expression_schema VARBINARY(1024) NOT NULL, ");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
-        sql.append(") REFERENCES ").append(TB_TABLES);
-        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+        String sql = readSchemaFile("partition_methods.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
 
-        stmt.executeUpdate(sql.toString());
+        stmt.executeUpdate(sql);
         LOG.info("Table '" + TB_PARTITION_METHODS + "' is created.");
         baseTableMaps.put(TB_PARTITION_METHODS, true);
       }
 
       // PARTITIONS
       if (!baseTableMaps.get(TB_PARTTIONS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_PARTTIONS).append("(");
-        sql.append("PID int NOT NULL AUTO_INCREMENT PRIMARY KEY, ");
-        sql.append(C_TABLE_ID).append( " VARCHAR(255) NOT NULL,");
-        sql.append("partition_name VARCHAR(255), ");
-        sql.append("ordinal_position INT NOT NULL,");
-        sql.append("partition_value TEXT,");
-        sql.append("path TEXT,");
-        sql.append("cache_nodes VARCHAR(255), ");
-        sql.append("UNIQUE KEY(").append(C_TABLE_ID).append(", partition_name),");
-        sql.append("FOREIGN KEY(").append(C_TABLE_ID);
-        sql.append(") REFERENCES ").append(TB_TABLES);
-        sql.append("(").append(C_TABLE_ID).append(") ON DELETE CASCADE)");
+        String sql = readSchemaFile("partitions.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
@@ -224,10 +197,13 @@ public class MySQLStore extends AbstractDBStore  {
         LOG.info("Table '" + TB_PARTTIONS + "' is created.");
         baseTableMaps.put(TB_PARTTIONS, true);
       }
+
+      insertSchemaVersion();
+
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new CatalogException("failed to create base tables for MySQL catalog store", se);
     } finally {
-      CatalogUtil.closeQuietly(conn, stmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 
@@ -264,13 +240,13 @@ public class MySQLStore extends AbstractDBStore  {
     } catch (SQLException se) {
       throw new CatalogException(se);
     } finally {
-      CatalogUtil.closeQuietly(conn, stmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 
   @Override
   protected boolean isInitialized() throws CatalogException {
-    Connection conn = null;
+    Connection conn;
     ResultSet res = null;
 
     try {
@@ -279,6 +255,8 @@ public class MySQLStore extends AbstractDBStore  {
           new String[]{"TABLE"});
 
       baseTableMaps.put(TB_META, false);
+      baseTableMaps.put(TB_SPACES, false);
+      baseTableMaps.put(TB_DATABASES, false);
       baseTableMaps.put(TB_TABLES, false);
       baseTableMaps.put(TB_COLUMNS, false);
       baseTableMaps.put(TB_OPTIONS, false);
@@ -305,10 +283,9 @@ public class MySQLStore extends AbstractDBStore  {
     } catch(SQLException se) {
       throw new CatalogException(se);
     } finally {
-      CatalogUtil.closeQuietly(conn, res);
+      CatalogUtil.closeQuietly(res);
     }
 
     return  true;
   }
-
 }

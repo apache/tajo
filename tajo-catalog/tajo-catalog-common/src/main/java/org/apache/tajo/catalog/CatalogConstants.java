@@ -30,6 +30,8 @@ public class CatalogConstants {
   public static final String DEPRECATED_CATALOG_URI="tajo.catalog.jdbc.uri";
 
   public static final String TB_META = "META";
+  public static final String TB_SPACES = "TABLESPACES";
+  public static final String TB_DATABASES = "DATABASES_";
   public static final String TB_TABLES = "TABLES";
   public static final String TB_COLUMNS = "COLUMNS";
   public static final String TB_OPTIONS = "OPTIONS";
@@ -38,7 +40,10 @@ public class CatalogConstants {
   public static final String TB_PARTITION_METHODS = "PARTITION_METHODS";
   public static final String TB_PARTTIONS = "PARTITIONS";
 
-  public static final String C_TABLE_ID = "TABLE_ID";
+  public static final String COL_TABLESPACE_PK = "SPACE_ID";
+  public static final String COL_DATABASES_PK = "DB_ID";
+  public static final String COL_TABLES_PK = "TID";
+  public static final String COL_TABLES_NAME = "TABLE_NAME";
 
   // table options
   public static final String COMPRESSION_CODEC = "compression.codec";

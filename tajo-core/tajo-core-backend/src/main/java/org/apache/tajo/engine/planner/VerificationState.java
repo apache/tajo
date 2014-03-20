@@ -19,13 +19,18 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 
 public class VerificationState {
+  private static final Log LOG = LogFactory.getLog(VerificationState.class);
   List<String> errorMessages = Lists.newArrayList();
 
   public void addVerification(String error) {
+    LOG.warn(TUtil.getCurrentCodePoint(1) + " causes: " + error);
     errorMessages.add(error);
   }
 

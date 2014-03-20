@@ -18,13 +18,9 @@
 
 package org.apache.tajo.cli;
 
-import org.apache.tajo.client.TajoClient;
-
-import java.io.PrintWriter;
-
 public class CopyrightCommand extends TajoShellCommand {
-  public CopyrightCommand(TajoClient client, PrintWriter sout) {
-    super(client, sout);
+  public CopyrightCommand(TajoCli.TajoCliContext context) {
+    super(context);
   }
 
   @Override
@@ -34,8 +30,8 @@ public class CopyrightCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    sout.println();
-    sout.println(
+    context.getOutput().println();
+    context.getOutput().println(
         "  Licensed to the Apache Software Foundation (ASF) under one\n" +
             "  or more contributor license agreements.  See the NOTICE file\n" +
             "  distributed with this work for additional information\n" +
@@ -51,7 +47,7 @@ public class CopyrightCommand extends TajoShellCommand {
             "   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
             "   See the License for the specific language governing permissions and\n" +
             "   limitations under the License.");
-    sout.println();
+    context.getOutput().println();
   }
 
   @Override

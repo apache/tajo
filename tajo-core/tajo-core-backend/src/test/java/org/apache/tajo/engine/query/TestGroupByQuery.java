@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -27,6 +28,11 @@ import java.sql.ResultSet;
 
 @Category(IntegrationTest.class)
 public class TestGroupByQuery extends QueryTestCaseBase {
+
+  public TestGroupByQuery() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public final void testGroupBy() throws Exception {
     // select count(1) as unique_key from lineitem;

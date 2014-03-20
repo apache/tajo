@@ -20,6 +20,7 @@ package org.apache.tajo.master.querymaster;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
@@ -28,12 +29,16 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
+
+  public TestQueryUnitStatusUpdate() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public final void case1() throws Exception {
     // select l_linenumber, count(1) as unique_key from lineitem group by l_linenumber;
@@ -96,9 +101,10 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
     res.close();
 
-    assertTrue(catalog.existsTable(tableName));
-    assertEquals(2, catalog.getTableDesc(tableName).getSchema().size());
-    assertEquals(3, catalog.getTableDesc(tableName).getLogicalSchema().size());
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+    assertEquals(3,
+        catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
 
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");

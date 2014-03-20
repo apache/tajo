@@ -28,6 +28,14 @@ import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
+message SessionProto {
+  required string session_id = 1;
+  required string username = 2;
+  required string current_database = 3;
+  required int64 last_access_time = 4;
+  required KeyValueSetProto variables = 5;
+}
+
 message TaskStatusProto {
   required QueryUnitAttemptIdProto id = 1;
   required string workerName = 2;
@@ -109,9 +117,10 @@ message ShuffleFileOutput {
 
 message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
-    required KeyValueSetProto queryContext = 2;
-    required StringProto sql = 3;
-    optional StringProto logicalPlanJson = 4;
+    required SessionProto session = 2;
+    required KeyValueSetProto queryContext = 3;
+    required StringProto sql = 4;
+    optional StringProto logicalPlanJson = 5;
 }
 
 message GetTaskRequestProto {

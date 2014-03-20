@@ -51,6 +51,10 @@ public abstract class TajoResultSetBase implements ResultSet {
     wasNull = (d instanceof NullDatum);
   }
 
+  public Tuple getCurrentTuple() {
+    return cur;
+  }
+
   @Override
   public void beforeFirst() throws SQLException {
     init();

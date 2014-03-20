@@ -19,13 +19,11 @@
 package org.apache.tajo.util;
 
 import com.google.protobuf.Message;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
 
 import java.io.*;
+import java.nio.charset.Charset;
 
 public class FileUtil {
   public static void writeProto(File file, Message proto) throws IOException {
@@ -81,6 +79,22 @@ public class FileUtil {
 
   public static File getFile(String path) {
     return new File(path);
+  }
+
+  public static String readTextFileFromResource(String resource) throws IOException {
+    StringBuilder fileData = new StringBuilder(1000);
+    InputStream inputStream = ClassLoader.getSystemResourceAsStream(resource);
+    byte[] buf = new byte[1024];
+    int numRead;
+    try {
+      while ((numRead = inputStream.read(buf)) != -1) {
+        String readData = new String(buf, 0, numRead, Charset.defaultCharset());
+        fileData.append(readData);
+      }
+    } finally {
+      IOUtils.cleanup(null, inputStream);
+    }
+    return fileData.toString();
   }
 
   public static String readTextFile(File file) throws IOException {

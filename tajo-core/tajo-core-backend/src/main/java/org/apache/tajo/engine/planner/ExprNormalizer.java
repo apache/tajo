@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.catalog.CatalogUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -245,7 +246,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   public Expr visitColumnReference(ExprNormalizedResult ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
     // normalize column references.
-    if (!expr.hasQualifier()) {
+    if (!(expr.hasQualifier() && CatalogUtil.isFQTableName(expr.getQualifier()))) {
       if (ctx.block.namedExprsMgr.contains(expr.getCanonicalName())) {
         NamedExpr namedExpr = ctx.block.namedExprsMgr.getNamedExpr(expr.getCanonicalName());
         return new ColumnReferenceExpr(namedExpr.getAlias());

@@ -20,6 +20,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -29,6 +30,11 @@ import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
 public class TestBuiltinFunctions extends QueryTestCaseBase {
+
+  public TestBuiltinFunctions() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public void testMaxLong() throws Exception {
     ResultSet res = executeQuery();

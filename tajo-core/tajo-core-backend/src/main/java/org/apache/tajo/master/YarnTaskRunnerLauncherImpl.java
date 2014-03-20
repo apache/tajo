@@ -185,7 +185,7 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
 //
 //    @Override
 //    protected String getRunnerClass() {
-//      return TaskRunner.class.getCanonicalName();
+//      return TaskRunner.class.getCanonicalSignature();
 //    }
 //
 //    @Override

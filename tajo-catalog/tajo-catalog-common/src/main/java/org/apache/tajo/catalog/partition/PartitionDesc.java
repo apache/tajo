@@ -29,8 +29,6 @@ import org.apache.tajo.json.GsonObject;
  * <code>PartitionDesc</code> presents a table partition.
  */
 public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescProto>, Cloneable, GsonObject {
-
-  @Expose protected String tableId;                            // required
   @Expose protected String partitionName;                      // optional
   @Expose protected int ordinalPosition;                       // required
   @Expose protected String partitionValue;                     // optional
@@ -42,7 +40,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public PartitionDesc(PartitionDesc partition) {
-    this.tableId = partition.tableId;
     this.partitionName = partition.partitionName;
     this.ordinalPosition = partition.ordinalPosition;
     this.partitionValue = partition.partitionValue;
@@ -50,7 +47,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public PartitionDesc(CatalogProtos.PartitionDescProto proto) {
-    this.tableId = proto.getTableId();
     if(proto.hasPartitionName()) {
       this.partitionName = proto.getPartitionName();
     }
@@ -63,57 +59,43 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     }
   }
 
-  public String getName() {
-    return partitionName;
-  }
-
-  public String getTableId() {
-    return tableId;
-  }
-
-  public int getOrdinalPosition() {
-    return ordinalPosition;
-  }
-
-  public String getPartitionValue() {
-    return partitionValue;
-  }
-
-  public void setPartitionValue(String partitionValue) {
-    this.partitionValue = partitionValue;
-  }
-
-  public String getPath() {
-    return path;
-  }
-
-
-  public void setTable(String tableId) {
-    this.tableId = tableId;
-  }
-
   public void setName(String partitionName) {
     this.partitionName = partitionName;
+  }
+  public String getName() {
+    return partitionName;
   }
 
 
   public void setOrdinalPosition(int ordinalPosition) {
     this.ordinalPosition = ordinalPosition;
   }
+  public int getOrdinalPosition() {
+    return ordinalPosition;
+  }
+
+  public void setPartitionValue(String partitionValue) {
+    this.partitionValue = partitionValue;
+  }
+  public String getPartitionValue() {
+    return partitionValue;
+  }
 
   public void setPath(String path) {
     this.path = path;
   }
+  public String getPath() {
+    return path;
+  }
 
   public int hashCode() {
-    return Objects.hashCode(tableId, partitionName, ordinalPosition, partitionValue, path);
+    return Objects.hashCode(partitionName, ordinalPosition, partitionValue, path);
   }
 
   public boolean equals(Object o) {
     if (o instanceof PartitionDesc) {
       PartitionDesc another = (PartitionDesc) o;
-      boolean eq = tableId.equals(another.tableId);
-      eq = eq && ((partitionName != null && another.partitionName != null
+      boolean eq = ((partitionName != null && another.partitionName != null
           && partitionName.equals(another.partitionName)) ||
           (partitionName == null && another.partitionName == null));
       eq = eq && (ordinalPosition == another.ordinalPosition);
@@ -134,7 +116,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
       builder = CatalogProtos.PartitionDescProto.newBuilder();
     }
 
-    builder.setTableId(tableId);
     if(this.partitionName != null) {
       builder.setPartitionName(partitionName);
     }
@@ -169,7 +150,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   public Object clone() throws CloneNotSupportedException {
     PartitionDesc desc = (PartitionDesc) super.clone();
     desc.builder = CatalogProtos.PartitionDescProto.newBuilder();
-    desc.tableId = tableId;
     desc.partitionName = partitionName;
     desc.ordinalPosition = ordinalPosition;
     desc.partitionValue = partitionValue;

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.annotation.Nullable;
+
 public class AlreadyExistsIndexException extends CatalogException {
   private static final long serialVersionUID = 3705839985189534673L;
 
@@ -27,25 +29,11 @@ public class AlreadyExistsIndexException extends CatalogException {
   public AlreadyExistsIndexException() {
   }
 
-  /**
-   * @param message
-   */
-  public AlreadyExistsIndexException(String message) {
-    super(message);
+  public AlreadyExistsIndexException(String databaseName, @Nullable String namespace, String indexName) {
+    super(String.format("index \" %s \" already exists in %s.%s", indexName, databaseName, namespace));
   }
 
-  /**
-   * @param cause
-   */
-  public AlreadyExistsIndexException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * @param message
-   * @param cause
-   */
-  public AlreadyExistsIndexException(String message, Throwable cause) {
-    super(message, cause);
+  public AlreadyExistsIndexException(String indexName) {
+    super("index \"" + indexName + "\" exists table");
   }
 }

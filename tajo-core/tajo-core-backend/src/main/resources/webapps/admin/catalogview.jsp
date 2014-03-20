@@ -49,13 +49,13 @@
   TableDesc tableDesc = null;
   String selectedTable = request.getParameter("table");
   if(selectedTable != null && !selectedTable.trim().isEmpty()) {
-    tableDesc = catalog.getTableDesc(selectedTable);
+    tableDesc = catalog.getTableDesc(selectedDatabase, selectedTable);
   } else {
     selectedTable = "";
   }
 
   //TODO filter with database
-  Collection<String> tableNames = catalog.getAllTableNames();
+  Collection<String> tableNames = catalog.getAllTableNames(selectedDatabase);
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -83,8 +83,16 @@
       <td width="20%" valign="top">
         <div>
           <b>Database:</b>
-          <select width="190" style="width: 190px">
-            <option value="default" selected>default</option>
+          <select width="190" style="width: 190px" onchange="document.location.href='catalogview.jsp?database=' + this.value">
+            <%
+              for (String databaseName : catalog.getAllDatabaseNames()) {
+                if (selectedDatabase.equals(databaseName)) { %>
+                  <option value="<%=databaseName%>" selected><%=databaseName%>
+                <%} else {%>
+                <option value="<%=databaseName%>"><%=databaseName%></option>
+                <%}
+              }
+            %>
           </select>
         </div>
         <!-- table list -->

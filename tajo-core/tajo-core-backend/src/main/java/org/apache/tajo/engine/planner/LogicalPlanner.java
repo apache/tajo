@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -69,6 +70,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   public class PlanContext {
+    Session session;
     LogicalPlan plan;
 
     // transient data for each query block
@@ -76,13 +78,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     boolean debugOrUnitTests;
 
-    public PlanContext(LogicalPlan plan, QueryBlock block, boolean debugOrUnitTests) {
+    public PlanContext(Session session, LogicalPlan plan, QueryBlock block, boolean debugOrUnitTests) {
+      this.session = session;
       this.plan = plan;
       this.queryBlock = block;
       this.debugOrUnitTests = debugOrUnitTests;
     }
 
     public PlanContext(PlanContext context, QueryBlock block) {
+      this.session = context.session;
       this.plan = context.plan;
       this.queryBlock = block;
       this.debugOrUnitTests = context.debugOrUnitTests;
@@ -100,20 +104,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param expr A relational algebraic expression for a query.
    * @return A logical plan
    */
-  public LogicalPlan createPlan(Expr expr) throws PlanningException {
-    return createPlan(expr, false);
+  public LogicalPlan createPlan(Session session, Expr expr) throws PlanningException {
+    return createPlan(session, expr, false);
   }
 
   @VisibleForTesting
-  public LogicalPlan createPlan(Expr expr, boolean debug) throws PlanningException {
+  public LogicalPlan createPlan(Session session, Expr expr, boolean debug) throws PlanningException {
 
-    LogicalPlan plan = new LogicalPlan(this);
+    LogicalPlan plan = new LogicalPlan(session.getCurrentDatabase(), this);
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
-    PreprocessContext preProcessorCtx = new PreprocessContext(plan, rootBlock);
+    PreprocessContext preProcessorCtx = new PreprocessContext(session, plan, rootBlock);
     preprocessor.visit(preProcessorCtx, new Stack<Expr>(), expr);
 
-    PlanContext context = new PlanContext(plan, plan.getRootBlock(), debug);
+    PlanContext context = new PlanContext(session, plan, plan.getRootBlock(), debug);
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
 
     // Add Root Node
@@ -1148,7 +1152,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private InsertNode buildInsertIntoTablePlan(PlanContext context, InsertNode insertNode, Insert expr)
       throws PlanningException {
     // Get and set a target table
-    TableDesc desc = catalog.getTableDesc(expr.getTableName());
+    TableDesc desc = catalog.getTableDesc(context.session.getCurrentDatabase(), expr.getTableName());
     insertNode.setTargetTable(desc);
 
     //
@@ -1272,13 +1276,36 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    ===============================================================================================*/
 
   @Override
+  public LogicalNode visitCreateDatabase(PlanContext context, Stack<Expr> stack, CreateDatabase expr)
+      throws PlanningException {
+    CreateDatabaseNode createDatabaseNode = context.queryBlock.getNodeFromExpr(expr);
+    createDatabaseNode.init(expr.getDatabaseName(), expr.isIfNotExists());
+    return createDatabaseNode;
+  }
+
+  @Override
+  public LogicalNode visitDropDatabase(PlanContext context, Stack<Expr> stack, DropDatabase expr)
+      throws PlanningException {
+    DropDatabaseNode dropDatabaseNode = context.plan.createNode(DropDatabaseNode.class);
+    dropDatabaseNode.init(expr.getDatabaseName(), expr.isIfExists());
+    return dropDatabaseNode;
+  }
+
+  @Override
   public LogicalNode visitCreateTable(PlanContext context, Stack<Expr> stack, CreateTable expr)
       throws PlanningException {
 
     CreateTableNode createTableNode = context.queryBlock.getNodeFromExpr(expr);
+    createTableNode.setIfNotExists(expr.isIfNotExists());
 
     // Set a table name to be created.
-    createTableNode.setTableName(expr.getTableName());
+    if (CatalogUtil.isFQTableName(expr.getTableName())) {
+      createTableNode.setTableName(expr.getTableName());
+    } else {
+      createTableNode.setTableName(
+          CatalogUtil.buildFQName(context.session.getCurrentDatabase(), expr.getTableName()));
+    }
+
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
@@ -1359,18 +1386,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private PartitionMethodDesc getPartitionMethod(PlanContext context,
                                                  String tableName,
                                                  CreateTable.PartitionMethodDescExpr expr) throws PlanningException {
-    PartitionMethodDesc partitionMethodDesc = new PartitionMethodDesc();
-    partitionMethodDesc.setTableId(tableName);
+    PartitionMethodDesc partitionMethodDesc;
 
     if(expr.getPartitionType() == PartitionType.COLUMN) {
       CreateTable.ColumnPartition partition = (CreateTable.ColumnPartition) expr;
       String partitionExpression = Joiner.on(',').join(partition.getColumns());
-      partitionMethodDesc.setPartitionType(CatalogProtos.PartitionType.COLUMN);
-      partitionMethodDesc.setExpression(partitionExpression);
-      partitionMethodDesc.setExpressionSchema(convertColumnsToSchema(partition.getColumns()));
+
+      partitionMethodDesc = new PartitionMethodDesc(context.session.getCurrentDatabase(), tableName,
+          CatalogProtos.PartitionType.COLUMN, partitionExpression, convertColumnsToSchema(partition.getColumns()));
     } else {
-      throw new PlanningException(String.format("Not supported PartitonType: %s",
-          expr.getPartitionType()));
+      throw new PlanningException(String.format("Not supported PartitonType: %s", expr.getPartitionType()));
     }
     return partitionMethodDesc;
   }
@@ -1426,7 +1451,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitDropTable(PlanContext context, Stack<Expr> stack, DropTable dropTable) {
     DropTableNode dropTableNode = context.queryBlock.getNodeFromExpr(dropTable);
-    dropTableNode.init(dropTable.getTableName(), dropTable.isPurge());
+    String qualified;
+    if (CatalogUtil.isFQTableName(dropTable.getTableName())) {
+      qualified = dropTable.getTableName();
+    } else {
+      qualified = CatalogUtil.buildFQName(context.session.getCurrentDatabase(), dropTable.getTableName());
+    }
+    dropTableNode.init(qualified, dropTable.isIfExists(), dropTable.isPurge());
     return dropTableNode;
   }
 

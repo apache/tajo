@@ -97,6 +97,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
       break;
 
+    case CreateDatabase:
+      current = visitCreateDatabase(ctx, stack, (CreateDatabase) expr);
+      break;
+    case DropDatabase:
+      current = visitDropDatabase(ctx, stack, (DropDatabase) expr);
+      break;
     case CreateTable:
       current = visitCreateTable(ctx, stack, (CreateTable) expr);
       break;
@@ -401,6 +407,16 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Data Definition Language Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public RESULT visitCreateDatabase(CONTEXT ctx, Stack<Expr> stack, CreateDatabase expr) throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitDropDatabase(CONTEXT ctx, Stack<Expr> stack, DropDatabase expr) throws PlanningException {
+    return null;
+  }
 
   @Override
   public RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws PlanningException {

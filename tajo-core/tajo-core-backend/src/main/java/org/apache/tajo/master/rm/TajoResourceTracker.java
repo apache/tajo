@@ -30,7 +30,7 @@ import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.ProtoBufUtil;
+import org.apache.tajo.util.ProtoUtil;
 
 import java.io.IOError;
 import java.net.InetSocketAddress;
@@ -109,7 +109,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   /** The response builder */
-  private static final Builder builder = TajoHeartbeatResponse.newBuilder().setHeartbeatResult(ProtoBufUtil.TRUE);
+  private static final Builder builder = TajoHeartbeatResponse.newBuilder().setHeartbeatResult(ProtoUtil.TRUE);
 
   private static WorkerStatusEvent createStatusEvent(String workerKey, NodeHeartbeat heartbeat) {
     return new WorkerStatusEvent(

@@ -29,35 +29,44 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
+
 /**
  * <code>PartitionMethodDesc</code> presents a table description, including partition type, and partition keys.
  */
 public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionMethodProto>, Cloneable, GsonObject {
   private CatalogProtos.PartitionMethodProto.Builder builder;
 
-  @Expose private String tableId;                                       // required
-  @Expose private CatalogProtos.PartitionType partitionType;            // required
-  @Expose private String expression;                                    // required
-  @Expose private Schema expressionSchema;                              // required
+  @Expose private String databaseName;                         // required
+  @Expose private String tableName;                            // required
+  @Expose private PartitionType partitionType;                 // required
+  @Expose private String expression;                           // required
+  @Expose private Schema expressionSchema;                     // required
 
   public PartitionMethodDesc() {
     builder = CatalogProtos.PartitionMethodProto.newBuilder();
   }
 
-  public PartitionMethodDesc(String tableId, CatalogProtos.PartitionType partitionType, String expression,
+  public PartitionMethodDesc(String databaseName, String tableName,
+                             PartitionType partitionType, String expression,
                              Schema expressionSchema) {
-    this.tableId = tableId;
+    this.databaseName = databaseName;
+    this.tableName = tableName;
     this.partitionType = partitionType;
     this.expression = expression;
     this.expressionSchema = expressionSchema;
   }
 
   public PartitionMethodDesc(CatalogProtos.PartitionMethodProto proto) {
-    this(proto.getTableId(), proto.getPartitionType(), proto.getExpression(), new Schema(proto.getExpressionSchema()));
+    this(proto.getTableIdentifier().getDatabaseName(),
+        proto.getTableIdentifier().getTableName(),
+        proto.getPartitionType(), proto.getExpression(),
+        new Schema(proto.getExpressionSchema()));
   }
 
-  public String getTableId() {
-    return tableId;
+  public String getTableName() {
+    return tableName;
   }
 
   public String getExpression() {
@@ -68,19 +77,19 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
     return expressionSchema;
   }
 
-  public CatalogProtos.PartitionType getPartitionType() {
+  public PartitionType getPartitionType() {
     return partitionType;
   }
 
-  public void setTableId(String tableId) {
-    this.tableId = tableId;
+  public void setTableName(String tableId) {
+    this.tableName = tableId;
   }
 
   public void setExpressionSchema(Schema expressionSchema) {
     this.expressionSchema = expressionSchema;
   }
 
-  public void setPartitionType(CatalogProtos.PartitionType partitionsType) {
+  public void setPartitionType(PartitionType partitionsType) {
     this.partitionType = partitionsType;
   }
 
@@ -92,7 +101,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
   public boolean equals(Object object) {
     if(object instanceof PartitionMethodDesc) {
       PartitionMethodDesc other = (PartitionMethodDesc) object;
-      boolean eq = tableId.equals(other.tableId);
+      boolean eq = tableName.equals(other.tableName);
       eq = eq && partitionType.equals(other.partitionType);
       eq = eq && expression.equals(other.expression);
       eq = eq && TUtil.checkEquals(expressionSchema, other.expressionSchema);
@@ -104,7 +113,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableId, partitionType, expression, expressionSchema);
+    return Objects.hashCode(tableName, partitionType, expression, expressionSchema);
   }
 
   @Override
@@ -112,7 +121,17 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
     if(builder == null) {
       builder = CatalogProtos.PartitionMethodProto.newBuilder();
     }
-    builder.setTableId(tableId);
+
+    TableIdentifierProto.Builder tableIdentifierBuilder = TableIdentifierProto.newBuilder();
+    if (databaseName != null) {
+      tableIdentifierBuilder.setDatabaseName(databaseName);
+    }
+    if (tableName != null) {
+      tableIdentifierBuilder.setTableName(tableName);
+    }
+
+    CatalogProtos.PartitionMethodProto.Builder builder = CatalogProtos.PartitionMethodProto.newBuilder();
+    builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setPartitionType(partitionType);
     builder.setExpression(expression);
     builder.setExpressionSchema(expressionSchema.getProto());
@@ -123,7 +142,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
   public Object clone() throws CloneNotSupportedException {
     PartitionMethodDesc desc = (PartitionMethodDesc) super.clone();
     desc.builder = builder;
-    desc.tableId = tableId;
+    desc.tableName = tableName;
     desc.partitionType = partitionType;
     desc.expression = expression;
     desc.expressionSchema = (Schema) expressionSchema.clone();

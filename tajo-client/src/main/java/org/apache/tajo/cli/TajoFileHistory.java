@@ -16,14 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.utils;
+package org.apache.tajo.cli;
 
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import jline.console.history.FileHistory;
 
-public class ProtoUtil {
-  public static StringProto newProto(String val) {
-    StringProto.Builder builder = StringProto.newBuilder();
-    builder.setValue(val);
-    return builder.build();
+import java.io.File;
+import java.io.IOException;
+
+public class TajoFileHistory extends FileHistory {
+
+  public TajoFileHistory(File file) throws IOException {
+    super(file);
+  }
+
+  public void add(CharSequence item) {
+    // skip add
+  }
+
+  public void addStatement(String item) {
+    internalAdd(item);
   }
 }

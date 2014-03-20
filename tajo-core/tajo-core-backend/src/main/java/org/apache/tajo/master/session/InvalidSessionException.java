@@ -16,21 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.master.session;
 
-import org.apache.tajo.exception.InternalException;
-
-public class InvalidTableException extends InternalException {
-
-	private static final long serialVersionUID = -6326266814969872171L;
-
-	public InvalidTableException() {
-	}
-
-	/**
-	 * @param message
-	 */
-	public InvalidTableException(String message) {
-		super(message);
-	}
+public class InvalidSessionException extends Exception {
+  public InvalidSessionException(String sessionId) {
+    super("Invalid session id \"" + sessionId + "\"");
+  }
 }
