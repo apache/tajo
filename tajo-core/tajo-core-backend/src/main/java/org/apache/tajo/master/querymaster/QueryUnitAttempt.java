@@ -342,13 +342,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       taskAttempt.inputStats = updateEvent.getStatus().getInputStats();
       taskAttempt.resultStats = updateEvent.getStatus().getResultStats();
 
-      switch (updateEvent.getStatus().getState()) {
-        case TA_PENDING:
-        case TA_RUNNING:
-          return TaskAttemptState.TA_RUNNING;
-        default:
-          return taskAttempt.getState();
-      }
+      return TaskAttemptState.TA_RUNNING;
     }
   }
 
