@@ -33,14 +33,16 @@ public class CreateTable extends Expr {
   private Expr subquery;
   private Map<String, String> params;
   private PartitionMethodDescExpr partition;
+  private boolean ifNotExists;
 
-  public CreateTable(final String tableName) {
+  public CreateTable(final String tableName, boolean ifNotExists) {
     super(OpType.CreateTable);
     this.tableName = tableName;
+    this.ifNotExists = ifNotExists;
   }
 
-  public CreateTable(final String tableName, final Expr subQuery) {
-    this(tableName);
+  public CreateTable(final String tableName, final Expr subQuery, boolean ifNotExists) {
+    this(tableName, ifNotExists);
     this.subquery = subQuery;
   }
 
@@ -128,11 +130,15 @@ public class CreateTable extends Expr {
     return subquery;
   }
 
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(
         external, tableName, Objects.hashCode(tableElements),
-        storageType, subquery, location, params, partition);
+        storageType, subquery, location, params, partition, ifNotExists);
   }
 
   @Override
@@ -145,7 +151,8 @@ public class CreateTable extends Expr {
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(subquery, another.subquery) &&
         TUtil.checkEquals(params, another.params) &&
-        TUtil.checkEquals(partition, another.partition);
+        TUtil.checkEquals(partition, another.partition) &&
+        ifNotExists == another.ifNotExists;
   }
 
   public static class ColumnDefinition extends DataTypeExpr {
@@ -444,7 +451,7 @@ public class CreateTable extends Expr {
 
     public boolean equals(Object obj) {
       if (obj instanceof PartitionSpecifier ) {
-        return name == ((PartitionSpecifier)obj).name;
+        return name.equals(((PartitionSpecifier)obj).name);
       } else {
         return false;
       }

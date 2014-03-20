@@ -31,14 +31,30 @@ enum ResultCode {
   ERROR = 1;
 }
 
+message CreateSessionRequest {
+  required string username = 1;
+  optional string baseDatabaseName = 2;
+}
+
+message CreateSessionResponse {
+  enum ResultState {
+      SUCCESS = 0;
+      FAILED = 1;
+  }
+  required ResultState state = 1;
+  optional SessionIdProto sessionId = 2;
+  optional string message = 3;
+}
+
 message UpdateSessionVariableRequest {
   optional SessionIdProto sessionId = 1;
-  repeated KeyValueProto setVariables = 2;
+  optional KeyValueSetProto setVariables = 2;
   repeated string unsetVariables = 3;
 }
 
-message ExplainQueryRequest {
-  required string query = 1;
+message SessionedStringProto {
+  optional SessionIdProto sessionId = 1;
+  required string value = 2;
 }
 
 message ExplainQueryResponse {
@@ -73,6 +89,11 @@ message GetQueryResultResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
   required string tajoUserName = 3;
+}
+
+message KillQueryRequest {
+  optional SessionIdProto sessionId = 1;
+  required QueryIdProto queryId = 2;
 }
 
 message GetQueryListRequest {
@@ -146,6 +167,7 @@ message GetClusterInfoResponse {
 
 message GetTableListRequest {
   optional SessionIdProto sessionId = 1;
+  optional string databaseName = 2;
 }
 
 message GetTableListResponse {
@@ -158,16 +180,18 @@ message GetTableDescRequest {
 }
 
 message CreateTableRequest {
-  required string name = 1;
-  required SchemaProto schema = 2;
-  required TableProto meta = 3;
-  required string path = 4;
-  optional PartitionMethodProto partition = 5;
+  optional SessionIdProto sessionId = 1;
+  required string name = 2;
+  required SchemaProto schema = 3;
+  required TableProto meta = 4;
+  required string path = 5;
+  optional PartitionMethodProto partition = 6;
 }
 
 message DropTableRequest {
-  required string name = 1;
-  optional bool purge = 2 [default = false];
+  optional SessionIdProto sessionId = 1;
+  required string name = 2;
+  optional bool purge = 3 [default = false];
 }
 
 message TableResponse {

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.client;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
 import com.sun.org.apache.commons.logging.Log;
@@ -25,6 +27,7 @@ import com.sun.org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -32,6 +35,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -39,11 +43,10 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoClient {
@@ -60,10 +63,134 @@ public class TestTajoClient {
     testDir = CommonTestingUtil.getTestDir();
   }
 
+  @AfterClass
+  public static void tearDown() throws Exception {
+    client.close();
+  }
+
   private static Path writeTmpTable(String tableName) throws IOException {
     Path tablePath = StorageUtil.concatPath(testDir, tableName);
     BackendTestingUtil.writeTmpTable(conf, tablePath);
     return tablePath;
+  }
+
+  @Test
+  public final void testCreateAndDropDatabases() throws ServiceException {
+    int currentNum = client.getAllDatabaseNames().size();
+
+    String prefix = CatalogUtil.normalizeIdentifier("testCreateDatabase_");
+    for (int i = 0; i < 10; i++) {
+      // test allDatabaseNames
+      assertEquals(currentNum + i, client.getAllDatabaseNames().size());
+
+      // test existence
+      assertFalse(client.existDatabase(prefix + i));
+      assertTrue(client.createDatabase(prefix + i));
+      assertTrue(client.existDatabase(prefix + i));
+
+      // test allDatabaseNames
+      assertEquals(currentNum + i + 1, client.getAllDatabaseNames().size());
+      assertTrue(client.getAllDatabaseNames().contains(prefix + i));
+    }
+
+    // test dropDatabase, existDatabase and getAllDatabaseNames()
+    for (int i = 0; i < 10; i++) {
+      assertTrue(client.existDatabase(prefix + i));
+      assertTrue(client.getAllDatabaseNames().contains(prefix + i));
+      assertTrue(client.dropDatabase(prefix + i));
+      assertFalse(client.existDatabase(prefix + i));
+      assertFalse(client.getAllDatabaseNames().contains(prefix + i));
+    }
+
+    assertEquals(currentNum, client.getAllDatabaseNames().size());
+  }
+
+  @Test
+  public final void testCurrentDatabase() throws IOException, ServiceException, InterruptedException {
+    int currentNum = client.getAllDatabaseNames().size();
+    assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
+
+    assertTrue(client.createDatabase("testcurrentdatabase"));
+    assertEquals(currentNum + 1, client.getAllDatabaseNames().size());
+    assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
+    assertTrue(client.selectDatabase("testcurrentdatabase"));
+    assertEquals("testcurrentdatabase", client.getCurrentDatabase());
+    assertTrue(client.selectDatabase("default"));
+    assertTrue(client.dropDatabase("testcurrentdatabase"));
+
+    assertEquals(currentNum, client.getAllDatabaseNames().size());
+  }
+
+  @Test
+  public final void testSelectDatabaseToInvalidOne() throws IOException, ServiceException, InterruptedException {
+    int currentNum = client.getAllDatabaseNames().size();
+    assertFalse(client.existDatabase("invaliddatabase"));
+
+    try {
+      assertTrue(client.selectDatabase("invaliddatabase"));
+      assertFalse(true);
+    } catch (Throwable t) {
+      assertFalse(false);
+    }
+
+    assertEquals(currentNum, client.getAllDatabaseNames().size());
+  }
+
+  @Test
+  public final void testDropCurrentDatabase() throws IOException, ServiceException, InterruptedException {
+    int currentNum = client.getAllDatabaseNames().size();
+    assertTrue(client.createDatabase("testdropcurrentdatabase"));
+    assertTrue(client.selectDatabase("testdropcurrentdatabase"));
+    assertEquals("testdropcurrentdatabase", client.getCurrentDatabase());
+
+    try {
+      client.dropDatabase("testdropcurrentdatabase");
+      assertFalse(true);
+    } catch (Throwable t) {
+      assertFalse(false);
+    }
+
+    assertTrue(client.selectDatabase("default"));
+    assertTrue(client.dropDatabase("testdropcurrentdatabase"));
+    assertEquals(currentNum, client.getAllDatabaseNames().size());
+  }
+
+  @Test
+  public final void testSessionVariables() throws IOException, ServiceException, InterruptedException {
+    String prefixName = "key_";
+    String prefixValue = "val_";
+    for (int i = 0; i < 10; i++) {
+      String key = prefixName + i;
+      String val = prefixValue + i;
+
+      assertEquals(i, client.getAllSessionVariables().size());
+      assertFalse(client.getAllSessionVariables().containsKey(key));
+      assertFalse(client.existSessionVariable(key));
+
+      Map<String, String> map = Maps.newHashMap();
+      map.put(key, val);
+      client.updateSessionVariables(map);
+
+      assertEquals(i + 1, client.getAllSessionVariables().size());
+      assertTrue(client.getAllSessionVariables().containsKey(key));
+      assertTrue(client.existSessionVariable(key));
+    }
+
+    int totalSessionVarNum = client.getAllSessionVariables().size();
+
+    for (int i = 0; i < 10; i++) {
+      String key = prefixName + i;
+
+      assertTrue(client.getAllSessionVariables().containsKey(key));
+      assertTrue(client.existSessionVariable(key));
+
+      client.unsetSessionVariables(Lists.newArrayList(key));
+
+      assertFalse(client.getAllSessionVariables().containsKey(key));
+      assertFalse(client.existSessionVariable(key));
+    }
+
+    assertEquals(totalSessionVarNum - 10, client.getAllSessionVariables().size());
   }
 
   @Test
@@ -142,7 +269,7 @@ public class TestTajoClient {
     assertTrue(client.existTable(tableName));
 
     client.updateQuery("drop table " + tableName);
-    assertFalse(client.existTable(tableName));
+    assertFalse(client.existTable("tableName"));
     FileSystem localFS = FileSystem.getLocal(conf);
     assertTrue(localFS.exists(tablePath));
   }
@@ -235,7 +362,7 @@ public class TestTajoClient {
     assertTrue(client.existTable(tableName1));
     assertTrue(client.existTable(tableName2));
 
-    Set<String> tables = Sets.newHashSet(client.getTableList());
+    Set<String> tables = Sets.newHashSet(client.getTableList(null));
     assertTrue(tables.contains(tableName1));
     assertTrue(tables.contains(tableName2));
   }
@@ -258,7 +385,7 @@ public class TestTajoClient {
 
     TableDesc desc = client.getTableDesc(tableName1);
     assertNotNull(desc);
-    assertEquals(tableName1, desc.getName());
+    assertEquals(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName1), desc.getName());
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
 
@@ -424,7 +551,7 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
 
     String sql = "create table " + tableName + " (deptname text, score int4)";
-    sql += "PARTITION BY COLUMN (deptname text)";
+    sql += "PARTITION BY COLUMN (key1 text)";
 
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));

@@ -8,8 +8,9 @@ Synopsis
 
 .. code-block:: bash
 
-  bin/tsql [options]
+  bin/tsql [options] [database name]
 
+If a *database_name* is given, tsql connects to the database at startup time. Otherwise, tsql connects to ``default`` database.
 
 Options
 
@@ -26,13 +27,15 @@ If the hostname and the port num are not given, tsql will try to connect the Taj
 
   bin/tsql
 
-  tajo>
+  default>
 
 If you want to connect a specified TajoMaster, you should use '-h' and (or) 'p' options as follows: ::
 
   bin/tsql -h localhost -p 9004
 
-  tajo> 
+  default> 
+
+The prompt indicates the current database.
 
 ===================
  Meta Commands
@@ -42,7 +45,7 @@ In tsql, anything command that begins with an unquoted backslash ('\') is a tsql
 
 In the current implementation, there are meta commands as follows: ::
 
-  tajo> \?
+  default> \?
 
   General
     \copyright  show Apache License 2.0
@@ -52,25 +55,44 @@ In the current implementation, there are meta commands as follows: ::
 
 
   Informational
-    \d         list tables
-    \d  NAME   describe table
+    \l           list databases
+    \c           show current database
+    \c [DBNAME]  connect to new database
+    \d           list tables
+    \d [TBNAME]  describe table
+    \df          list functions
+    \df NAME     describe function
+
+
+  Variables
+    \set [[NAME] [VALUE]  set session variable or list session variables
+    \unset NAME           unset session variable
 
 
   Documentations
-    tsql guide        http://wiki.apache.org/tajo/tsql
-    Query language    http://wiki.apache.org/tajo/QueryLanguage
-    Functions         http://wiki.apache.org/tajo/Functions
-    Backup & restore  http://wiki.apache.org/tajo/BackupAndRestore
-    Configuration     http://wiki.apache.org/tajo/Configuration
+    tsql guide        http://tajo.incubator.apache.org/docs/0.8.0/cli.html
+    Query language    http://tajo.incubator.apache.org/docs/0.8.0/sql_language.html
+    Functions         http://tajo.incubator.apache.org/docs/0.8.0/functions.html
+    Backup & restore  http://tajo.incubator.apache.org/docs/0.8.0/backup_and_restore.html
+    Configuration     http://tajo.incubator.apache.org/docs/0.8.0/configuration.html
 
+-----------------------------------------------
+Basic usages
+-----------------------------------------------
 
-================
-Examples
-================
+``\l`` command shows a list of all databases.
 
-If you want to list all table names, use '\d' meta command as follows: ::
+.. code-block:: sql
 
-  tajo> \d
+  default> \l
+  default
+  tpch
+  work1
+  default> 
+
+``\d`` command shows a list of tables in the current database as follows: ..
+
+  default> \d
   customer
   lineitem
   nation
@@ -80,9 +102,9 @@ If you want to list all table names, use '\d' meta command as follows: ::
   region
   supplier
 
-Now look at the table description: ::
+``\d [table name]`` command also shows a table description.
 
-  tajo> \d orders
+  default> \d orders
 
   table name: orders
   table path: hdfs:/xxx/xxx/tpch/orders
@@ -99,3 +121,39 @@ Now look at the table description: ::
   o_clerk TEXT
   o_shippriority  INT4
   o_comment       TEXT
+
+The prompt ``default>`` indicates the current database. Basically, all SQL statements and meta commands work in the current database. Also, you can change the current database with ``\c`` command.
+
+.. code-block:: sql
+
+  default> \c work1
+  You are now connected to database "test" as user "hyunsik".
+  work1>
+
+-----------------------------------------------
+Session Variables
+-----------------------------------------------
+
+Each client connection to TajoMaster creates a unique session, and the client and TajoMaster uses the session until disconnect. A session provides session variables which are used for various configs per session.
+
+``tsql`` provides the meta command ``\set`` to manipulate session variables. Just ``\set`` command shows all session variables. ::
+
+  default> \set
+  'name1'='val1'
+  'name2'='val2'
+  'name3'='val3'
+       ...
+
+``\set key val`` will set the session variable named *key* with the value *val*. ::
+
+  default> \set
+  'CURRENT_DATABASE'='default'
+  
+  default> \set key1 val1
+
+  default> \set
+  'CURRENT_DATABASE'='default'
+  'key1'='val1'
+
+
+Also, ``\unset key`` will unset the session variable named *key*.

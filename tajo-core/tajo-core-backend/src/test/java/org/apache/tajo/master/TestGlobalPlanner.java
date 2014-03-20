@@ -42,6 +42,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
+
 public class TestGlobalPlanner {
 
   private static TajoTestingCluster util;
@@ -60,6 +63,8 @@ public class TestGlobalPlanner {
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.createFunction(funcDesc);
     }
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
+    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
     // TPC-H Schema for Complex Queries
     String [] tables = {
@@ -75,9 +80,11 @@ public class TestGlobalPlanner {
       TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
       TableStats stats = new TableStats();
       stats.setNumBytes(volumes[i]);
-      TableDesc d = CatalogUtil.newTableDesc(tables[i], tpch.getSchema(tables[i]), m, CommonTestingUtil.getTestDir());
+      TableDesc d = CatalogUtil.newTableDesc(
+          CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tables[i]), tpch.getSchema(tables[i]), m,
+          CommonTestingUtil.getTestDir());
       d.setStats(stats);
-      catalog.addTable(d);
+      catalog.createTable(d);
     }
 
     sqlAnalyzer = new SQLAnalyzer();
@@ -93,7 +100,7 @@ public class TestGlobalPlanner {
 
   private MasterPlan buildPlan(String sql) throws PlanningException, IOException {
     Expr expr = sqlAnalyzer.parse(sql);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
     optimizer.optimize(plan);
     QueryContext context = new QueryContext();
     MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);

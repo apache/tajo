@@ -66,7 +66,10 @@ public class LogicalPlan {
   private List<String> planingHistory = Lists.newArrayList();
   LogicalPlanner planner;
 
-  public LogicalPlan(LogicalPlanner planner) {
+  private final String currentDatabase;
+
+  public LogicalPlan(String currentDatabase, LogicalPlanner planner) {
+    this.currentDatabase = currentDatabase;
     this.planner = planner;
   }
 
@@ -257,27 +260,40 @@ public class LogicalPlan {
 
     if (columnRef.hasQualifier()) { // if a column reference is qualified
 
-      RelationNode relationOp = block.getRelation(columnRef.getQualifier());
+      String qualifier;
+      String canonicalName;
+      String qualifiedName;
+
+      if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
+        qualifier = columnRef.getQualifier();
+        canonicalName = columnRef.getCanonicalName();
+      } else {
+        qualifier = CatalogUtil.buildFQName(currentDatabase, columnRef.getQualifier());
+        canonicalName = CatalogUtil.buildFQName(currentDatabase, columnRef.getCanonicalName());
+      }
+      qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+
+      RelationNode relationOp = block.getRelation(qualifier);
 
       // if a column name is outside of this query block
       if (relationOp == null) {
         // TODO - nested query can only refer outer query block? or not?
         for (QueryBlock eachBlock : queryBlocks.values()) {
-          if (eachBlock.existsRelation(columnRef.getQualifier())) {
-            relationOp = eachBlock.getRelation(columnRef.getQualifier());
+          if (eachBlock.existsRelation(qualifier)) {
+            relationOp = eachBlock.getRelation(qualifier);
           }
         }
       }
 
       // If we cannot find any relation against a qualified column name
       if (relationOp == null) {
-        throw new NoSuchColumnException(columnRef.getCanonicalName());
+        throw new NoSuchColumnException(canonicalName);
       }
 
       Schema schema = relationOp.getTableSchema();
-      Column column = schema.getColumn(columnRef.getCanonicalName());
+      Column column = schema.getColumn(canonicalName);
       if (column == null) {
-        throw new NoSuchColumnException(columnRef.getCanonicalName());
+        throw new NoSuchColumnException(canonicalName);
       }
 
       // If code reach here, a column is found.
@@ -292,8 +308,8 @@ public class LogicalPlan {
       // the column can be used at the current node. So, we don't need to find aliase name.
       if (currentNode != null && !currentNode.getInSchema().contains(column)) {
         List<Column> candidates = TUtil.newList();
-        if (block.namedExprsMgr.isAliased(column.getQualifiedName())) {
-          String alias = block.namedExprsMgr.getAlias(columnRef.getCanonicalName());
+        if (block.namedExprsMgr.isAliased(qualifiedName)) {
+          String alias = block.namedExprsMgr.getAlias(canonicalName);
           Column found = resolveColumn(block, new ColumnReferenceExpr(alias));
           if (found != null) {
             candidates.add(found);

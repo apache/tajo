@@ -87,30 +87,30 @@ public class HCatalogUtil {
     }
   }
 
-  public static String getHiveFieldType(String fieldType) {
-    Preconditions.checkNotNull(fieldType);
-    String typeStr = null;
+  public static String getHiveFieldType(TajoDataTypes.DataType dataType) {
+    Preconditions.checkNotNull(dataType);
 
-    if(fieldType.equalsIgnoreCase("INT4"))
-      typeStr = serdeConstants.INT_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("INT1"))
-      typeStr = serdeConstants.TINYINT_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("INT2"))
-      typeStr = serdeConstants.SMALLINT_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("INT8"))
-      typeStr = serdeConstants.BIGINT_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("BOOLEAN"))
-      typeStr = serdeConstants.BOOLEAN_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("FLOAT4"))
-      typeStr = serdeConstants.FLOAT_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("FLOAT8"))
-      typeStr = serdeConstants.DOUBLE_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("TEXT"))
-      typeStr = serdeConstants.STRING_TYPE_NAME;
-    else if(fieldType.equalsIgnoreCase("BLOB"))
-      typeStr = serdeConstants.BINARY_TYPE_NAME;
-
-    return typeStr;
+    switch (dataType.getType()) {
+    case CHAR: return serdeConstants.CHAR_TYPE_NAME;
+    case BOOLEAN: return serdeConstants.BOOLEAN_TYPE_NAME;
+    case INT1: return serdeConstants.TINYINT_TYPE_NAME;
+    case INT2: return serdeConstants.SMALLINT_TYPE_NAME;
+    case INT4: return serdeConstants.INT_TYPE_NAME;
+    case INT8: return serdeConstants.BIGINT_TYPE_NAME;
+    case FLOAT4: return serdeConstants.FLOAT_TYPE_NAME;
+    case FLOAT8: return serdeConstants.DOUBLE_TYPE_NAME;
+    case TEXT: return serdeConstants.STRING_TYPE_NAME;
+    case VARCHAR: return serdeConstants.VARCHAR_TYPE_NAME;
+    case NCHAR: return serdeConstants.VARCHAR_TYPE_NAME;
+    case NVARCHAR: return serdeConstants.VARCHAR_TYPE_NAME;
+    case BINARY: return serdeConstants.BINARY_TYPE_NAME;
+    case VARBINARY: return serdeConstants.BINARY_TYPE_NAME;
+    case BLOB: return serdeConstants.BINARY_TYPE_NAME;
+    case DATE: return serdeConstants.DATE_TYPE_NAME;
+    case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
+    default:
+      throw new CatalogException(dataType + " is not supported.");
+    }
   }
 
   public static String getStoreType(String fileFormat) {

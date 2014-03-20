@@ -19,11 +19,16 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 
 import java.sql.ResultSet;
 
 public class TestTableSubQuery extends QueryTestCaseBase {
+
+  public TestTableSubQuery() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
 
   @Test
   public final void testTableSubquery1() throws Exception {

@@ -19,14 +19,20 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 
 import java.sql.ResultSet;
 
 public class TestJoinOnPartitionedTables extends QueryTestCaseBase {
 
+  public TestJoinOnPartitionedTables() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public void testPartitionTableJoinSmallTable() throws Exception {
+
     executeDDL("customer_ddl.sql", null);
     ResultSet res = executeFile("insert_into_customer.sql");
     res.close();

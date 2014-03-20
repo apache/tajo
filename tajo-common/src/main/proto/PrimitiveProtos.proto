@@ -39,3 +39,7 @@ message BoolProto {
 
 message NullProto {
 }
+
+message StringListProto {
+  repeated string values = 1;
+}

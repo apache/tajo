@@ -80,6 +80,11 @@ public class TajoTestingCluster {
 	 */
 	public static final String DEFAULT_TEST_DIRECTORY = "target/test-data";
 
+  /**
+   * True If HCatalogStore is used. Otherwise, it is FALSE.
+   */
+  public Boolean isHCatalogStoreUse = false;
+
   public TajoTestingCluster() {
     this.conf = new TajoConf();
     initPropertiesAndConfigs();
@@ -260,6 +265,10 @@ public class TajoTestingCluster {
     return this.catalogServer;
   }
 
+  public boolean isHCatalogStoreRunning() {
+    return isHCatalogStoreUse;
+  }
+
   ////////////////////////////////////////////////////////
   // Tajo Cluster Section
   ////////////////////////////////////////////////////////
@@ -270,9 +279,6 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
-    c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
-    c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
 
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
@@ -281,9 +287,10 @@ public class TajoTestingCluster {
       c.setVar(ConfVars.ROOT_DIR,
           getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
     } else {
-      c.setVar(ConfVars.ROOT_DIR,
-          clusterTestBuildDir.getAbsolutePath() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, clusterTestBuildDir.getAbsolutePath() + "/tajo");
     }
+
+    setupCatalogForTesting(c, clusterTestBuildDir);
 
     tajoMaster = new TajoMaster();
     tajoMaster.init(c);
@@ -303,6 +310,51 @@ public class TajoTestingCluster {
       startTajoWorkers(numSlaves);
     }
     LOG.info("Mini Tajo cluster is up");
+    LOG.info("====================================================================================");
+    LOG.info("=                           MiniTajoCluster starts up                              =");
+    LOG.info("====================================================================================");
+    LOG.info("= * Master Address: " + tajoMaster.getMasterName());
+    LOG.info("= * CatalogStore: " + tajoMaster.getCatalogServer().getStoreClassName());
+    LOG.info("------------------------------------------------------------------------------------");
+    LOG.info("= * Warehouse Dir: " + TajoConf.getWarehouseDir(c));
+    LOG.info("= * Worker Tmp Dir: " + c.getVar(ConfVars.WORKER_TEMPORAL_DIR));
+    LOG.info("====================================================================================");
+  }
+
+  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException {
+    final String HCATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HCatalogStore";
+    boolean hcatalogClassExists = false;
+    try {
+      getClass().getClassLoader().loadClass(HCATALOG_CLASS_NAME);
+      hcatalogClassExists = true;
+    } catch (ClassNotFoundException e) {
+      LOG.info("HCatalogStore is not available.");
+    }
+    String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
+
+    if (hcatalogClassExists &&
+        driverClass != null && driverClass.equals(HCATALOG_CLASS_NAME)) {
+      try {
+        getClass().getClassLoader().loadClass(HCATALOG_CLASS_NAME);
+        String jdbcUri = "jdbc:derby:;databaseName="+ testBuildDir.toURI().getPath()  + "/metastore_db;create=true";
+        c.set("hive.metastore.warehouse.dir", TajoConf.getWarehouseDir(c).toString() + "/default");
+        c.set("javax.jdo.option.ConnectionURL", jdbcUri);
+        c.set(TajoConf.ConfVars.WAREHOUSE_DIR.varname, conf.getVar(ConfVars.WAREHOUSE_DIR));
+        c.set(CatalogConstants.STORE_CLASS, HCATALOG_CLASS_NAME);
+        Path defaultDatabasePath = new Path(TajoConf.getWarehouseDir(c).toString() + "/default");
+        FileSystem fs = defaultDatabasePath.getFileSystem(c);
+        if (!fs.exists(defaultDatabasePath)) {
+          fs.mkdirs(defaultDatabasePath);
+        }
+        isHCatalogStoreUse = true;
+      } catch (ClassNotFoundException cnfe) {
+        throw new IOException(cnfe);
+      }
+    } else { // for derby
+      c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
+      c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
+    }
+    c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
   }
 
   private void startTajoWorkers(int numSlaves) throws Exception {

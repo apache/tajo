@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.logical;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Options;
@@ -29,6 +30,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Expose private Schema schema;
   @Expose private Path path;
   @Expose private boolean external;
+  @Expose private boolean ifNotExists;
 
   public CreateTableNode(int pid) {
     super(pid, NodeType.CREATE_TABLE);
@@ -76,9 +78,21 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     return child != null;
   }
 
+  public void setIfNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
+  }
+
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
+  }
+
+  public int hashCode() {
+    return super.hashCode() ^ Objects.hashCode(schema, path, external, ifNotExists) * 31;
   }
   
   @Override
@@ -88,7 +102,8 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
       return super.equals(other)
           && this.schema.equals(other.schema)
           && this.external == other.external
-          && TUtil.checkEquals(path, other.path);
+          && TUtil.checkEquals(path, other.path)
+          && ifNotExists == other.ifNotExists;
     } else {
       return false;
     }
@@ -96,18 +111,20 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   
   @Override
   public Object clone() throws CloneNotSupportedException {
-    CreateTableNode store = (CreateTableNode) super.clone();
-    store.tableName = tableName;
-    store.schema = (Schema) schema.clone();
-    store.storageType = storageType;
-    store.external = external;
-    store.path = path != null ? new Path(path.toString()) : null;
-    store.options = (Options) (options != null ? options.clone() : null);
-    return store;
+    CreateTableNode createTableNode = (CreateTableNode) super.clone();
+    createTableNode.tableName = tableName;
+    createTableNode.schema = (Schema) schema.clone();
+    createTableNode.storageType = storageType;
+    createTableNode.external = external;
+    createTableNode.path = path != null ? new Path(path.toString()) : null;
+    createTableNode.options = (Options) (options != null ? options.clone() : null);
+    createTableNode.ifNotExists = ifNotExists;
+    return createTableNode;
   }
 
   public String toString() {
-    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType + ")";
+    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType +
+        ", ifNotExists=" + ifNotExists +")";
   }
 
   @Override

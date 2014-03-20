@@ -21,6 +21,8 @@
  */
 package org.apache.tajo.jdbc;
 
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -32,7 +34,7 @@ import java.sql.SQLFeatureNotSupportedException;
 public class TajoResultSetMetaData implements ResultSetMetaData {
   Schema schema;
 
-  
+
   public TajoResultSetMetaData(Schema schema) {
     this.schema = schema;
   }
@@ -49,7 +51,11 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public String getCatalogName(int column) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getCatalogName not supported");
+    Column c = schema.getColumn(column - 1);
+    if (CatalogUtil.isFQColumnName(c.getQualifiedName())) {
+      return CatalogUtil.splitFQTableName(c.getQualifier())[0];
+    }
+    return "";
   }
 
   @Override

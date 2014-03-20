@@ -21,31 +21,14 @@ package org.apache.tajo.catalog.exception;
 public class NoSuchIndexException extends CatalogException {
   private static final long serialVersionUID = 3705839985189534673L;
 
-  /**
-   * 
-   */
   public NoSuchIndexException() {
   }
 
-  /**
-   * @param message
-   */
-  public NoSuchIndexException(String message) {
-    super(message);
+  public NoSuchIndexException(String databaseName, String columnName) {
+    super(String.format("ERROR: index \" %s \" in %s does not exist", columnName, databaseName));
   }
 
-  /**
-   * @param cause
-   */
-  public NoSuchIndexException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * @param message
-   * @param cause
-   */
-  public NoSuchIndexException(String message, Throwable cause) {
-    super(message, cause);
+  public NoSuchIndexException(String indexName) {
+    super("ERROR: index \"" + indexName + "\" does not exist");
   }
 }

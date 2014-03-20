@@ -166,7 +166,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     context.depth++;
     stack.push(node);
-    super.visitTableSubQuery(context, plan, block, node, stack);
+    visit(context, plan, block, node.getSubQuery(), new Stack<LogicalNode>());
     stack.pop();
     context.depth--;
     context.add(context.depth, node.getPlanString());
@@ -193,6 +193,18 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   public LogicalNode visitStoreTable(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
     return visitUnaryNode(context, plan, block, node, stack);
+  }
+
+  public LogicalNode visitCreateDatabase(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                         CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    context.add(context.depth, node.getPlanString());
+    return node;
+  }
+
+  public LogicalNode visitDropDatabase(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                         DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    context.add(context.depth, node.getPlanString());
+    return node;
   }
 
   @Override

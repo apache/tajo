@@ -16,21 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.cli;
 
-import org.apache.tajo.exception.InternalException;
+import jline.console.history.FileHistory;
 
-public class InvalidTableException extends InternalException {
+import java.io.File;
+import java.io.IOException;
 
-	private static final long serialVersionUID = -6326266814969872171L;
+public class TajoFileHistory extends FileHistory {
 
-	public InvalidTableException() {
-	}
+  public TajoFileHistory(File file) throws IOException {
+    super(file);
+  }
 
-	/**
-	 * @param message
-	 */
-	public InvalidTableException(String message) {
-		super(message);
-	}
+  public void add(CharSequence item) {
+    // skip add
+  }
+
+  public void addStatement(String item) {
+    internalAdd(item);
+  }
 }

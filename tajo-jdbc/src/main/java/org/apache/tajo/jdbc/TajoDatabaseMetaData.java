@@ -1,4 +1,4 @@
-package org.apache.tajo.jdbc; /**
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +15,11 @@ package org.apache.tajo.jdbc; /**
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.tajo.jdbc;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.ResultSetUtil;
@@ -27,6 +30,8 @@ import org.apache.tajo.datum.TextDatum;
 
 import java.sql.*;
 import java.util.*;
+
+import static org.apache.tajo.TajoConstants.DEFAULT_SCHEMA_NAME;
 
 /**
  * TajoDatabaseMetaData.
@@ -375,7 +380,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types)
+  public ResultSet getTables(@Nullable String catalog, String schemaPattern, String tableNamePattern, String [] types)
       throws SQLException {
     try {
       final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
@@ -389,17 +394,17 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       String regtableNamePattern = convertPattern(tableNamePattern);
       try {
         TajoClient tajoClient = conn.getTajoClient();
-        List<String> tableNames = tajoClient.getTableList();
+        List<String> tableNames = tajoClient.getTableList(resultCatalog);
         for (String eachTableName: tableNames) {
           if (eachTableName.matches(regtableNamePattern)) {
             MetaDataTuple tuple = new MetaDataTuple(5);
 
             int index = 0;
-            tuple.put(index++, new TextDatum(resultCatalog));  //TABLE_CAT
-            tuple.put(index++, NullDatum.get());   //TABLE_SCHEM
-            tuple.put(index++, new TextDatum(eachTableName));
-            tuple.put(index++, new TextDatum("TABLE"));   //TABLE_TYPE
-            tuple.put(index++, NullDatum.get());   //REMARKS
+            tuple.put(index++, new TextDatum(resultCatalog));         // TABLE_CAT
+            tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));   // TABLE_SCHEM
+            tuple.put(index++, new TextDatum(eachTableName));         // TABLE_NAME
+            tuple.put(index++, new TextDatum("TABLE"));               // TABLE_TYPE
+            tuple.put(index++, NullDatum.get());                      // REMARKS
 
             resultTables.add(tuple);
           }
@@ -427,25 +432,44 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getSchemas()
-      throws SQLException {
-    return getSchemas(null, null);
+  public ResultSet getSchemas() throws SQLException {
+    String databaseName;
+    try {
+      databaseName = conn.getTajoClient().getCurrentDatabase();
+    } catch (ServiceException e) {
+      throw new SQLException(e);
+    }
+
+    MetaDataTuple tuple = new MetaDataTuple(1);
+    tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));
+    tuple.put(1, new TextDatum(databaseName));
+
+    return new TajoMetaDataResultSet(
+        Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
+        Arrays.asList(Type.VARCHAR, Type.VARCHAR),
+        Arrays.asList(tuple));
   }
 
   @Override
-  public ResultSet getCatalogs()
-      throws SQLException {
-    List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
-    MetaDataTuple tuple = new MetaDataTuple(1);
-    tuple.put(0, new TextDatum("default"));
-    columns.add(tuple);
+  public ResultSet getCatalogs() throws SQLException {
+    Collection<String> databaseNames;
+    try {
+      databaseNames = conn.getTajoClient().getAllDatabaseNames();
+    } catch (ServiceException e) {
+      throw new SQLException(e);
+    }
 
-    ResultSet result = new TajoMetaDataResultSet(
-        Arrays.asList("TABLE_CAT")
-        , Arrays.asList(Type.VARCHAR)
-        , columns);
+    List<MetaDataTuple> tuples = new ArrayList<MetaDataTuple>();
+    for (String databaseName : databaseNames) {
+      MetaDataTuple tuple = new MetaDataTuple(1);
+      tuple.put(0, new TextDatum(databaseName));
+      tuples.add(tuple);
+    }
 
-    return result;
+    return new TajoMetaDataResultSet(
+        Arrays.asList("TABLE_CAT"),
+        Arrays.asList(Type.VARCHAR) ,
+        tuples);
   }
 
   @Override
@@ -482,13 +506,13 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
     try {
       if (catalog == null) {
-        catalog = "default";
+        catalog = TajoConstants.DEFAULT_DATABASE_NAME;
       }
 
       String regtableNamePattern = convertPattern(tableNamePattern);
       String regcolumnNamePattern = convertPattern(columnNamePattern);
 
-      List<String> tables = conn.getTajoClient().getTableList();
+      List<String> tables = conn.getTajoClient().getTableList(catalog);
       for (String table: tables) {
         if (table.matches(regtableNamePattern)) {
           TableDesc tableDesc = conn.getTajoClient().getTableDesc(table);
@@ -499,7 +523,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
               int index = 0;
               tuple.put(index++, new TextDatum(catalog));  //TABLE_CAT
-              tuple.put(index++, NullDatum.get());  //TABLE_SCHEM
+              tuple.put(index++, new TextDatum(catalog));  //TABLE_SCHEM
               tuple.put(index++, new TextDatum(table));  //TABLE_NAME
               tuple.put(index++, new TextDatum(column.getSimpleName()));  //COLUMN_NAME
               // TODO - DATA_TYPE
@@ -685,12 +709,22 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getSchemas(String catalog, String schemaPattern)
-      throws SQLException {
+  public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+    String databaseName;
+    try {
+      databaseName = conn.getTajoClient().getCurrentDatabase();
+    } catch (ServiceException e) {
+      throw new SQLException(e);
+    }
+
+    MetaDataTuple tuple = new MetaDataTuple(1);
+    tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));
+    tuple.put(1, new TextDatum(databaseName));
+
     return new TajoMetaDataResultSet(
         Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR),
-        null);
+        Arrays.asList(tuple));
   }
 
   @Override

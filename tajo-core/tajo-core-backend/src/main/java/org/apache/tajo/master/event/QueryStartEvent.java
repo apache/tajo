@@ -21,6 +21,7 @@ package org.apache.tajo.master.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.master.session.Session;
 
 /**
  * This event is conveyed to QueryMaster.
@@ -30,14 +31,17 @@ public class QueryStartEvent extends AbstractEvent {
     QUERY_START
   }
 
-  private QueryId queryId;
-  private QueryContext queryContext;
-  private String sql;
-  private String logicalPlanJson;
+  private final QueryId queryId;
+  private final Session session;
+  private final QueryContext queryContext;
+  private final String sql;
+  private final String logicalPlanJson;
 
-  public QueryStartEvent(QueryId queryId, QueryContext queryContext, String sql, String logicalPlanJson) {
+  public QueryStartEvent(QueryId queryId, Session session, QueryContext queryContext, String sql,
+                         String logicalPlanJson) {
     super(EventType.QUERY_START);
     this.queryId = queryId;
+    this.session = session;
     this.queryContext = queryContext;
     this.sql = sql;
     this.logicalPlanJson = logicalPlanJson;
@@ -45,6 +49,10 @@ public class QueryStartEvent extends AbstractEvent {
 
   public QueryId getQueryId() {
     return queryId;
+  }
+
+  public Session getSession() {
+    return this.session;
   }
 
   public QueryContext getQueryContext() {

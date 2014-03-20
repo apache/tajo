@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class DDLBuilder {
 
-  public static String buildDDL(TableDesc desc) {
+  public static String buildDDLForExternalTable(TableDesc desc) {
     StringBuilder sb = new StringBuilder();
 
     sb.append("--\n")
@@ -43,6 +43,27 @@ public class DDLBuilder {
     }
 
     buildLocationClause(sb, desc);
+
+    sb.append(";");
+    return sb.toString();
+  }
+
+  public static String buildDDLForBaseTable(TableDesc desc) {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("--\n")
+        .append("-- Name: ").append(desc.getName()).append("; Type: TABLE;")
+        .append(" Storage: ").append(desc.getMeta().getStoreType().name());
+    sb.append("\n-- Path: ").append(desc.getPath());
+    sb.append("\n--\n");
+    sb.append("CREATE TABLE ").append(desc.getName());
+    buildSchema(sb, desc.getSchema());
+    buildUsingClause(sb, desc.getMeta());
+    buildWithClause(sb, desc.getMeta());
+
+    if (desc.hasPartition()) {
+      buildPartitionClause(sb, desc);
+    }
 
     sb.append(";");
     return sb.toString();

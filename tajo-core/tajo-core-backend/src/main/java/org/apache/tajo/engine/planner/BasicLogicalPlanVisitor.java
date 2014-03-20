@@ -104,6 +104,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case INSERT:
         current = visitInsert(context, plan, block, (InsertNode) node, stack);
         break;
+      case CREATE_DATABASE:
+        current = visitCreateDatabase(context, plan, block, (CreateDatabaseNode) node, stack);
+        break;
+      case DROP_DATABASE:
+        current = visitDropDatabase(context, plan, block, (DropDatabaseNode) node, stack);
+        break;
       case CREATE_TABLE:
         current = visitCreateTable(context, plan, block, (CreateTableNode) node, stack);
         break;
@@ -262,6 +268,17 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitCreateDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitDropDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return null;
   }
 
   @Override

@@ -18,18 +18,22 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.cli.InvalidStatementException;
+import org.apache.tajo.cli.ParsedResult;
+import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -39,8 +43,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
-import java.util.Stack;
+import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -58,6 +64,8 @@ public class ExprTestBase {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();
+    cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
+    cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       cat.createFunction(funcDesc);
     }
@@ -88,27 +96,34 @@ public class ExprTestBase {
    * @return
    * @throws PlanningException
    */
-  private static Target[] getRawTargets(String query, boolean condition) throws PlanningException {
-    Expr expr = analyzer.parse(query);
+  private static Target[] getRawTargets(String query, boolean condition) throws PlanningException,
+      InvalidStatementException {
+
+    Session session = LocalTajoTestingUtility.createDummySession();
+    List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
+    if (parsedResults.size() > 1) {
+      throw new RuntimeException("this query includes two or more statements.");
+    }
+    Expr expr = analyzer.parse(parsedResults.get(0).getStatement());
     VerificationState state = new VerificationState();
-    preLogicalPlanVerifier.visit(state, new Stack<Expr>(), expr);
+    preLogicalPlanVerifier.verify(session, state, expr);
     if (state.getErrorMessages().size() > 0) {
       if (!condition && state.getErrorMessages().size() > 0) {
         throw new PlanningException(state.getErrorMessages().get(0));
       }
       assertFalse(state.getErrorMessages().get(0), true);
     }
-    LogicalPlan plan = planner.createPlan(expr, true);
+    LogicalPlan plan = planner.createPlan(session, expr, true);
     optimizer.optimize(plan);
-    annotatedPlanVerifier.visit(state, plan, plan.getRootBlock(), plan.getRootBlock().getRoot(),
-        new Stack<LogicalNode>());
+    annotatedPlanVerifier.verify(session, state, plan);
+
     if (state.getErrorMessages().size() > 0) {
       assertFalse(state.getErrorMessages().get(0), true);
     }
 
     Target [] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("Wrong query statement or query plan: " + query);
+      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getStatement());
     }
     for (Target t : targets) {
       assertJsonSerDer(t.getEvalTree());
@@ -133,10 +148,11 @@ public class ExprTestBase {
                        char delimiter, boolean condition) throws IOException {
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
+    String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
     Schema inputSchema = null;
     if (schema != null) {
       inputSchema = SchemaUtil.clone(schema);
-      inputSchema.setQualifier(tableName);
+      inputSchema.setQualifier(qualifiedTableName);
 
       int targetIdx [] = new int[inputSchema.size()];
       for (int i = 0; i < targetIdx.length; i++) {
@@ -154,8 +170,8 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.addTable(new TableDesc(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(),
-          CommonTestingUtil.getTestDir()));
+      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,
+          CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets;
@@ -172,6 +188,8 @@ public class ExprTestBase {
       for (int i = 0; i < expected.length; i++) {
         assertEquals(query, expected[i], outTuple.get(i).asChars());
       }
+    } catch (InvalidStatementException e) {
+      assertFalse(e.getMessage(), true);
     } catch (PlanningException e) {
       // In failure test case, an exception must occur while executing query.
       // So, we should check an error message, and return it.
@@ -182,7 +200,7 @@ public class ExprTestBase {
       }
     } finally {
       if (schema != null) {
-        cat.deleteTable(tableName);
+        cat.dropTable(qualifiedTableName);
       }
     }
   }

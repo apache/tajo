@@ -31,19 +31,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DerbyStore extends AbstractDBStore {
+
+  /** 2014-03-20: First versioning */
+  private static final int DERBY_STORE_VERSION_2 = 2;
+  /** Before 2013-03-20 */
+  private static final int DERBY_STORE_VERSION_1 = 1;
   private static final String CATALOG_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
 
   protected String getCatalogDriverName(){
     return CATALOG_DRIVER;
   }
 
-  public DerbyStore(final Configuration conf)
-      throws InternalException {
+  public DerbyStore(final Configuration conf) throws InternalException {
     super(conf);
+  }
+
+  public int getDriverVersion() {
+    return DERBY_STORE_VERSION_2;
   }
 
   protected Connection createConnection(Configuration conf) throws SQLException {
     return DriverManager.getConnection(getCatalogUri());
+  }
+
+  @Override
+  public String readSchemaFile(String filename) throws CatalogException {
+    return super.readSchemaFile("derby/" + filename);
   }
 
   // TODO - DDL and index statements should be renamed
@@ -55,62 +68,79 @@ public class DerbyStore extends AbstractDBStore {
       conn = getConnection();
       stmt = conn.createStatement();
 
-      StringBuilder sql = new StringBuilder();
-
       //META
       if (!baseTableMaps.get(TB_META)) {
-        sql.append("CREATE TABLE ");
-        sql.append(TB_META);
-        sql.append(" (version int NOT NULL)");
+
+        String sql = super.readSchemaFile("common/meta.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.executeUpdate(sql.toString());
-        LOG.info("Table '" + TB_META + " is created.");
+
+        stmt.executeUpdate(sql);
+
+        LOG.info("Table '" + TB_META + "' is created.");
         baseTableMaps.put(TB_META, true);
+      }
+
+      // TABLE SPACES
+      if (!baseTableMaps.get(TB_SPACES)) {
+
+        String sql = readSchemaFile("tablespaces.sql");
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+
+        stmt.executeUpdate(sql);
+
+        LOG.info("Table '" + TB_SPACES + "' is created.");
+        baseTableMaps.put(TB_SPACES, true);
+      }
+
+      // DATABASES
+      if (!baseTableMaps.get(TB_DATABASES)) {
+        String sql = readSchemaFile("databases.sql");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+        stmt.addBatch(sql);
+
+        sql = readSchemaFile("databases_idx.sql");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+        stmt.addBatch(sql);
+
+        stmt.executeBatch();
+        LOG.info("Table '" + TB_DATABASES + "' is created.");
+        baseTableMaps.put(TB_DATABASES, true);
       }
 
       // TABLES
       if (!baseTableMaps.get(TB_TABLES)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ");
-        sql.append(TB_TABLES);
-        sql.append(" (");
-        sql.append("TID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),");
-        sql.append(C_TABLE_ID);
-        sql.append(" VARCHAR(255) NOT NULL CONSTRAINT TABLE_ID_UNIQ UNIQUE, ");
-        sql.append("path VARCHAR(1024), ");
-        sql.append("store_type CHAR(16), ");
-        sql.append("CONSTRAINT TABLES_PK PRIMARY KEY (TID)");
-        sql.append( ")");
 
+        String sql = readSchemaFile("tables.sql");
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE UNIQUE INDEX idx_tables_tid on ");
-        sql.append(TB_TABLES);
-        sql.append(" (TID)");
 
+        sql = "CREATE UNIQUE INDEX idx_tables_tid on TABLES (TID)";
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE UNIQUE INDEX idx_tables_name on ");
-        sql.append(TB_TABLES);
-        sql.append("(");
-        sql.append(C_TABLE_ID);
-        sql.append(")");
 
+
+        sql = "CREATE UNIQUE INDEX idx_tables_name on TABLES (TABLE_NAME)";
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
+
         stmt.executeBatch();
         LOG.info("Table '" + TB_TABLES + "' is created.");
         baseTableMaps.put(TB_TABLES, true);
@@ -118,42 +148,19 @@ public class DerbyStore extends AbstractDBStore {
 
       // COLUMNS
       if (!baseTableMaps.get(TB_COLUMNS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ");
-        sql.append(TB_COLUMNS);
-        sql.append(" (");
-        sql.append("TID INT NOT NULL REFERENCES ");
-        sql.append(TB_TABLES);
-        sql.append(" (TID) ON DELETE CASCADE, ");
-        sql.append(C_TABLE_ID);
-        sql.append( " VARCHAR(255) NOT NULL REFERENCES ");
-        sql.append(TB_TABLES);
-        sql.append("(");
-        sql.append(C_TABLE_ID);
-        sql.append(") ON DELETE CASCADE, ");
-        sql.append("column_id INT NOT NULL,");
-        sql.append("column_name VARCHAR(255) NOT NULL, ");
-        sql.append("data_type CHAR(16), type_length INTEGER, ");
-        sql.append("CONSTRAINT C_COLUMN_ID UNIQUE (");
-        sql.append(C_TABLE_ID);
-        sql.append(", column_name))");
+        String sql = readSchemaFile("columns.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append( "CREATE UNIQUE INDEX idx_fk_columns_table_name on ");
-        sql.append(TB_COLUMNS);
-        sql.append("(");
-        sql.append(C_TABLE_ID);
-        sql.append(", column_name)");
+        sql = "CREATE UNIQUE INDEX idx_fk_columns_table_name on " + TB_COLUMNS + "(TID, COLUMN_NAME)";
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_COLUMNS + " is created.");
         baseTableMaps.put(TB_COLUMNS, true);
@@ -161,104 +168,68 @@ public class DerbyStore extends AbstractDBStore {
 
       // OPTIONS
       if (!baseTableMaps.get(TB_OPTIONS)) {
-        sql.delete(0, sql.length());
-        sql.append( "CREATE TABLE ");
-        sql.append(TB_OPTIONS);
-        sql.append(" (").append(C_TABLE_ID);
-        sql.append(" VARCHAR(255) NOT NULL REFERENCES TABLES (");
-        sql.append(C_TABLE_ID).append(") ON DELETE CASCADE, ");
-        sql.append("key_ VARCHAR(255) NOT NULL, value_ VARCHAR(255) NOT NULL)");
+        String sql = readSchemaFile("table_properties.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_options_key on ");
-        sql.append(TB_OPTIONS).append( " (").append(C_TABLE_ID).append(")");
 
+        sql = "CREATE INDEX idx_options_key on " + TB_OPTIONS + "(TID)";
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_options_table_name on ").append(TB_OPTIONS);
-        sql.append("(" ).append(C_TABLE_ID).append(")");
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
-        }
-        stmt.addBatch(sql.toString());
         stmt.executeBatch();
+
         LOG.info("Table '" + TB_OPTIONS + " is created.");
         baseTableMaps.put(TB_OPTIONS, true);
       }
 
       // INDEXES
       if (!baseTableMaps.get(TB_INDEXES)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_INDEXES).append("(");
-        sql.append( "index_name VARCHAR(255) NOT NULL PRIMARY KEY, ");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL REFERENCES TABLES (");
-        sql.append(C_TABLE_ID).append(") ");
-        sql.append("ON DELETE CASCADE, ");
-        sql.append("column_name VARCHAR(255) NOT NULL, ");
-        sql.append("data_type VARCHAR(255) NOT NULL, ");
-        sql.append("index_type CHAR(32) NOT NULL, ");
-        sql.append("is_unique BOOLEAN NOT NULL, ");
-        sql.append("is_clustered BOOLEAN NOT NULL, ");
-        sql.append("is_ascending BOOLEAN NOT NULL)");
+        String sql = readSchemaFile("indexes.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE UNIQUE INDEX idx_indexes_key ON ");
-        sql.append(TB_INDEXES).append(" (index_name)");
+        sql = "CREATE UNIQUE INDEX idx_indexes_pk ON " + TB_INDEXES + "(" + COL_DATABASES_PK + ",index_name)";
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_indexes_columns ON ");
-        sql.append(TB_INDEXES).append(" (").append(C_TABLE_ID).append(", column_name)");
+        sql = "CREATE INDEX idx_indexes_columns ON " + TB_INDEXES + "(" + COL_DATABASES_PK + ",column_name)";
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_INDEXES + "' is created.");
         baseTableMaps.put(TB_INDEXES, true);
       }
 
       if (!baseTableMaps.get(TB_STATISTICS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_STATISTICS).append( "(");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL REFERENCES TABLES (");
-        sql.append(C_TABLE_ID).append(") ");
-        sql.append("ON DELETE CASCADE, ");
-        sql.append("num_rows BIGINT, ");
-        sql.append("num_bytes BIGINT)");
+        String sql = readSchemaFile("stats.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_stats_table_name ON ");
-        sql.append(TB_STATISTICS).append(" (").append(C_TABLE_ID).append(")");
+
+        sql = "CREATE UNIQUE INDEX idx_stats_table_name ON " + TB_STATISTICS + "(TID)";
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_STATISTICS + "' is created.");
         baseTableMaps.put(TB_STATISTICS, true);
@@ -266,28 +237,19 @@ public class DerbyStore extends AbstractDBStore {
 
       // PARTITION_METHODS
       if (!baseTableMaps.get(TB_PARTITION_METHODS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_PARTITION_METHODS).append(" (");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL REFERENCES TABLES (");
-        sql.append(C_TABLE_ID).append(") ");
-        sql.append("ON DELETE CASCADE, ");
-        sql.append("partition_type VARCHAR(10) NOT NULL,");
-        sql.append("expression VARCHAR(1024) NOT NULL,");
-        sql.append("expression_schema VARCHAR(1024) FOR BIT DATA NOT NULL)");
+        String sql = readSchemaFile("partition_methods.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_partition_methods_table_name ON ");
-        sql.append(TB_PARTITION_METHODS).append(" (").append(C_TABLE_ID).append(")");
 
+        sql = "CREATE INDEX idx_partition_methods_table_id ON " + TB_PARTITION_METHODS + "(TID)";
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_PARTITION_METHODS + "' is created.");
         baseTableMaps.put(TB_PARTITION_METHODS, true);
@@ -295,67 +257,54 @@ public class DerbyStore extends AbstractDBStore {
 
       // PARTITIONS
       if (!baseTableMaps.get(TB_PARTTIONS)) {
-        sql.delete(0, sql.length());
-        sql.append("CREATE TABLE ").append(TB_PARTTIONS).append("(");
-        sql.append("PID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),");
-        sql.append(C_TABLE_ID).append(" VARCHAR(255) NOT NULL REFERENCES TABLES (");
-        sql.append(C_TABLE_ID).append(")");
-        sql.append("ON DELETE CASCADE, ");
-        sql.append("partition_name VARCHAR(255), ");
-        sql.append("ordinal_position INT NOT NULL,");
-        sql.append("partition_value VARCHAR(1024),");
-        sql.append("path VARCHAR(1024),");
-        sql.append("cache_nodes VARCHAR(255), ");
-        sql.append(" CONSTRAINT PARTITION_PK PRIMARY KEY (PID))");
+        String sql = readSchemaFile("partitions.sql");
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
 
-        sql.delete(0, sql.length());
-        sql.append("CREATE INDEX idx_partitions_table_name ON ");
-        sql.append(TB_PARTTIONS).append(" (").append(C_TABLE_ID).append(")");
+
+        sql = "CREATE INDEX idx_partitions_table_name ON PARTITIONS(TID)";
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug(sql.toString());
+          LOG.debug(sql);
         }
-        stmt.addBatch(sql.toString());
+        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_PARTTIONS + "' is created.");
         baseTableMaps.put(TB_PARTTIONS, true);
       }
 
+      insertSchemaVersion();
+
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new CatalogException("failed to create base tables for Derby catalog store.", se);
     } finally {
-      CatalogUtil.closeQuietly(conn, stmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 
   @Override
   protected void dropBaseTable() throws CatalogException {
-    Connection conn = null;
+    Connection conn;
     Statement stmt = null;
     Map<String, Boolean> droppedTable = new HashMap<String, Boolean>();
 
     try {
       conn = getConnection();
       stmt = conn.createStatement();
-      StringBuilder sql = new StringBuilder();
 
       for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
         if(entry.getValue() && !entry.getKey().equals(TB_TABLES)) {
-          sql.delete(0, sql.length());
-          sql.append("DROP TABLE ").append(entry.getKey());
-          stmt.addBatch(sql.toString());
+          String sql = "DROP TABLE " + entry.getKey();
+          stmt.addBatch(sql);
           droppedTable.put(entry.getKey(), true);
         }
       }
       if(baseTableMaps.get(TB_TABLES)) {
-        sql.delete(0, sql.length());
-        sql.append("DROP TABLE ").append(TB_TABLES);
-        stmt.addBatch(sql.toString());
+        String sql = "DROP TABLE " + TB_TABLES;
+        stmt.addBatch(sql);
         droppedTable.put(TB_TABLES, true);
       }
       stmt.executeBatch();
@@ -366,15 +315,14 @@ public class DerbyStore extends AbstractDBStore {
     } catch (SQLException se) {
       throw new CatalogException(se);
     } finally {
-      CatalogUtil.closeQuietly(conn, stmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 
   @Override
   protected boolean isInitialized() throws CatalogException {
-    Connection conn = null;
+    Connection conn;
     ResultSet res = null;
-    int foundCount = 0;
 
     try {
       conn = getConnection();
@@ -382,6 +330,8 @@ public class DerbyStore extends AbstractDBStore {
           new String [] {"TABLE"});
 
       baseTableMaps.put(TB_META, false);
+      baseTableMaps.put(TB_SPACES, false);
+      baseTableMaps.put(TB_DATABASES, false);
       baseTableMaps.put(TB_TABLES, false);
       baseTableMaps.put(TB_COLUMNS, false);
       baseTableMaps.put(TB_OPTIONS, false);
@@ -396,7 +346,7 @@ public class DerbyStore extends AbstractDBStore {
     } catch (SQLException se){
       throw  new CatalogException(se);
     } finally {
-      CatalogUtil.closeQuietly(conn, res);
+      CatalogUtil.closeQuietly(res);
     }
 
     for(Map.Entry<String, Boolean> entry : baseTableMaps.entrySet()) {
@@ -406,28 +356,6 @@ public class DerbyStore extends AbstractDBStore {
     }
 
     return true;
-  }
-
-  final boolean checkInternalTable(final String tableName) throws CatalogException {
-    Connection conn = null;
-    ResultSet res = null;
-    boolean found = false;
-
-    try {
-      conn = getConnection();
-      res = conn.getMetaData().getTables(null, null, null,
-          new String [] {"TABLE"});
-      while(res.next() && !found) {
-        if (tableName.equals(res.getString("TABLE_NAME")))
-          found = true;
-      }
-
-    } catch (SQLException se) {
-      throw new CatalogException(se);
-    } finally {
-      CatalogUtil.closeQuietly(conn, res);
-    }
-    return found;
   }
 
 

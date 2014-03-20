@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 
 public class TestBSTIndexExec {
@@ -85,7 +87,9 @@ public class TestBSTIndexExec {
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
+    Path workDir = CommonTestingUtil.getTestDir();
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
+    catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     sm = StorageManagerFactory.getStorageManager(conf, workDir);
 
     idxPath = new Path(workDir, "test.idx");
@@ -139,8 +143,10 @@ public class TestBSTIndexExec {
     appender.close();
     writer.close();
 
-    TableDesc desc = new TableDesc("employee", schema, meta, sm.getTablePath("employee"));
-    catalog.addTable(desc);
+    TableDesc desc = new TableDesc(
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
+        sm.getTablePath("employee"));
+    catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
@@ -160,12 +166,12 @@ public class TestBSTIndexExec {
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
-    FileFragment[] frags = StorageManager.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERY);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
     TmpPlanner phyPlanner = new TmpPlanner(conf, sm);

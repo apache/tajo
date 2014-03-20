@@ -18,13 +18,13 @@
 
 package org.apache.tajo.cli;
 
-import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.TajoConstants;
 
 import java.io.PrintWriter;
 
 public class HelpCommand extends TajoShellCommand {
-  public HelpCommand(TajoClient client, PrintWriter sout) {
-    super(client, sout);
+  public HelpCommand(TajoCli.TajoCliContext context) {
+    super(context);
   }
 
   @Override
@@ -34,6 +34,8 @@ public class HelpCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
+    String docVersion = getDocumentationVersion();
+    PrintWriter sout = context.getOutput();
     sout.println();
 
     sout.println("General");
@@ -45,20 +47,38 @@ public class HelpCommand extends TajoShellCommand {
     sout.println();
 
     sout.println("Informational");
-    sout.println("  \\d         list tables");
-    sout.println("  \\d  NAME   describe table");
-    sout.println("  \\df        list functions");
-    sout.println("  \\df NAME   describe function");
+    sout.println("  \\l           list databases");
+    sout.println("  \\c           show current database");
+    sout.println("  \\c [DBNAME]  connect to new database");
+    sout.println("  \\d           list tables");
+    sout.println("  \\d [TBNAME]  describe table");
+    sout.println("  \\df          list functions");
+    sout.println("  \\df NAME     describe function");
+    sout.println();
+    sout.println();
+
+    sout.println("Variables");
+    sout.println("  \\set [[NAME] [VALUE]  set session variable or list session variables");
+    sout.println("  \\unset NAME           unset session variable");
     sout.println();
     sout.println();
 
     sout.println("Documentations");
-    sout.println("  tsql guide        http://wiki.apache.org/tajo/tsql");
-    sout.println("  Query language    http://wiki.apache.org/tajo/QueryLanguage");
-    sout.println("  Functions         http://wiki.apache.org/tajo/Functions");
-    sout.println("  Backup & restore  http://wiki.apache.org/tajo/BackupAndRestore");
-    sout.println("  Configuration     http://wiki.apache.org/tajo/Configuration");
+    sout.println("  tsql guide        http://tajo.incubator.apache.org/docs/"+ docVersion +"/cli.html");
+    sout.println("  Query language    http://tajo.incubator.apache.org/docs/"+ docVersion +"/sql_language.html");
+    sout.println("  Functions         http://tajo.incubator.apache.org/docs/"+ docVersion +"/functions.html");
+    sout.println("  Backup & restore  http://tajo.incubator.apache.org/docs/"+ docVersion +"/backup_and_restore.html");
+    sout.println("  Configuration     http://tajo.incubator.apache.org/docs/"+ docVersion +"/configuration.html");
     sout.println();
+  }
+
+  private String getDocumentationVersion() {
+    int delimiterIdx = TajoConstants.TAJO_VERSION.indexOf("-");
+    if (delimiterIdx > -1) {
+      return TajoConstants.TAJO_VERSION.substring(0, delimiterIdx);
+    } else {
+      return TajoConstants.TAJO_VERSION;
+    }
   }
 
   @Override

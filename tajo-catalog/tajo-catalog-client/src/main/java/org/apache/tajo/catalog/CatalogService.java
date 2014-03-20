@@ -28,25 +28,85 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 public interface CatalogService {
 
   /**
+   *
+   * @param tableSpaceName Tablespace name to be created
+   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
+   */
+  Boolean createTablespace(String tableSpaceName, String uri);
+
+  /**
+   *
+   * @param tableSpaceName Tablespace name to be created
+   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
+   */
+  Boolean existTablespace(String tableSpaceName);
+
+  /**
+   *
+   * @param tableSpaceName Tablespace name to be created
+   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
+   */
+  Boolean dropTablespace(String tableSpaceName);
+
+  /**
+   *
+   * @return All tablespace names
+   */
+  Collection<String> getAllTablespaceNames();
+
+  /**
+   *
+   * @param databaseName Database name to be created
+   * @return True if database is created successfully. Otherwise, it will return FALSE.
+   */
+  Boolean createDatabase(String databaseName, String tablespaceName);
+
+  /**
+   *
+   * @param databaseName Database name to be dropped
+   * @return True if database is dropped sucessfully. Otherwise, it will return FALSE.
+   */
+  Boolean dropDatabase(String databaseName);
+
+  /**
+   *
+   * @param databaseName Database name to be checked
+   * @return True if database exists. Otherwise, it will return FALSE.
+   */
+  Boolean existDatabase(String databaseName);
+
+  /**
+   *
+   * @return All database names
+   */
+  Collection<String> getAllDatabaseNames();
+
+  /**
    * Get a table description by name
-   * @param name table name
+   * @param tableName table name
    * @return a table description
    * @see TableDesc
    * @throws Throwable
    */
-  TableDesc getTableDesc(String name);
+  TableDesc getTableDesc(String databaseName, String tableName);
 
   /**
-   *
-   * @return
-   * @throws org.apache.tajo.catalog.exception.CatalogException
+   * Get a table description by name
+   * @return a table description
+   * @see TableDesc
+   * @throws Throwable
    */
-  Collection<String> getAllTableNames();
+  TableDesc getTableDesc(String qualifiedName);
 
   /**
    *
-   * @return
-   * @throws org.apache.tajo.catalog.exception.CatalogException
+   * @return All table names which belong to a given database.
+   */
+  Collection<String> getAllTableNames(String databaseName);
+
+  /**
+   *
+   * @return All FunctionDescs
    */
   Collection<FunctionDesc> getFunctions();
 
@@ -55,34 +115,36 @@ public interface CatalogService {
    * @see TableDesc
    * @throws Throwable
    */
-  boolean addTable(TableDesc desc);
+  boolean createTable(TableDesc desc);
 
 
   /**
    * Drop a table by name
    *
-   * @param name table name
+   * @param tableName table name
    * @throws Throwable
    */
-  boolean deleteTable(String name);
+  boolean dropTable(String tableName);
 
-  boolean existsTable(String tableId);
+  boolean existsTable(String databaseName, String tableName);
 
-  PartitionMethodDesc getPartitionMethod(String tableId);
+  boolean existsTable(String tableName);
 
-  boolean existPartitionMethod(String tableId);
+  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName);
 
-  boolean addIndex(IndexDesc index);
+  boolean existPartitionMethod(String databaseName, String tableName);
 
-  boolean existIndex(String indexName);
+  boolean createIndex(IndexDesc index);
 
-  boolean existIndex(String tableName, String columnName);
+  boolean existIndexByName(String databaseName, String indexName);
 
-  IndexDesc getIndex(String indexName);
+  boolean existIndexByColumn(String databaseName, String tableName, String columnName);
 
-  IndexDesc getIndex(String tableName, String columnName);
+  IndexDesc getIndexByName(String databaseName, String indexName);
 
-  boolean deleteIndex(String indexName);
+  IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
+
+  boolean dropIndex(String databaseName, String indexName);
 
   boolean createFunction(FunctionDesc funcDesc);
 

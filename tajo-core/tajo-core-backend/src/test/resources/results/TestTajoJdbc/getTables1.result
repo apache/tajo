@@ -1,0 +1,4 @@
+table_cat,table_schem,table_name,table_type,remarks
+-------------------------------
+jdbc_test1,public,table1,TABLE,
+jdbc_test1,public,table2,TABLE,

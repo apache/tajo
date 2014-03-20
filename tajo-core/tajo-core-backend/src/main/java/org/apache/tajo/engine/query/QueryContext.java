@@ -28,7 +28,6 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
 
 public class QueryContext extends Options {
-
   public static final String COMMAND_TYPE = "tajo.query.command";
 
   public static final String STAGING_DIR = "tajo.query.staging_dir";

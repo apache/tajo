@@ -54,4 +54,12 @@ public class StringUtils {
     }
     return buf.toString();
   }
+
+  public static String quote(String str) {
+    return "'" + str + "'";
+  }
+
+  public static String doubleQuote(String str) {
+    return "\"" + str + "\"";
+  }
 }

@@ -23,6 +23,7 @@ package org.apache.tajo.jdbc;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -90,7 +91,8 @@ public class TestResultSet {
     stats.setAvgRows(tupleNum);
     stats.setNumBlocks(1000);
     stats.setNumShuffleOutputs(100);
-    desc = new TableDesc("score", scoreSchema, scoreMeta, p);
+    desc = new TableDesc(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
+        scoreSchema, scoreMeta, p);
     desc.setStats(stats);
   }
 

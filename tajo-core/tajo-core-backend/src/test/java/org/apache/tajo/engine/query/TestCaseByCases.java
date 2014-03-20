@@ -19,11 +19,17 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 
 import java.sql.ResultSet;
 
 public class TestCaseByCases extends QueryTestCaseBase {
+
+  public TestCaseByCases() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public final void testTAJO415Case() throws Exception {
     ResultSet res = executeQuery();

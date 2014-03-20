@@ -2,6 +2,29 @@
 Data Definition Language
 ************************
 
+========================
+CREATE DATABASE
+========================
+
+*Synopsis*
+
+.. code-block:: sql
+
+  CREATE DATABASE [IF NOT EXISTS] <database_name> 
+
+``IF NOT EXISTS`` allows ``CREATE DATABASE`` statement to avoid an error which occurs when the database exists.
+
+========================
+DROP DATABASE
+========================
+
+*Synopsis*
+
+.. code-block:: sql
+
+  DROP DATABASE [IF EXISTS] <database_name>
+
+``IF EXISTS`` allows ``DROP DATABASE`` statement to avoid an error which occurs when the database does not exist.
 
 ========================
 CREATE TABLE
@@ -11,15 +34,13 @@ CREATE TABLE
 
 .. code-block:: sql
 
-  CREATE TABLE <table_name> [(<column_name> <data_type>, ... )]
+  CREATE TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )]
   [using <storage_type> [with (<key> = <value>, ...)]] [AS <select_statement>]
 
-  CREATE EXTERNAL TABLE
-
-  CREATE EXTERNAL TABLE <table_name> (<column_name> <data_type>, ... )
+  CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> (<column_name> <data_type>, ... )
   using <storage_type> [with (<key> = <value>, ...)] LOCATION '<path>'
 
-
+``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
 
 ------------------------
  Compression
@@ -48,6 +69,10 @@ If you want to add an external table that contains compressed data, you should g
  DROP TABLE
 ========================
 
+*Synopsis*
+
 .. code-block:: sql
 
-  DROP TABLE <table_name>
+  DROP TABLE [IF EXISTS] <table_name> [PURGE]
+
+``IF EXISTS`` allows ``DROP DATABASE`` statement to avoid an error which occurs when the database does not exist. ``DROP TABLE`` statement removes a table from Tajo catalog, but it does not remove the contents. If ``PURGE`` option is given, ``DROP TABLE`` statement will eliminate the entry in the catalog as well as the contents.

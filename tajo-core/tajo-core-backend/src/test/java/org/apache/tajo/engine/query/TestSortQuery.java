@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -27,6 +28,10 @@ import java.sql.ResultSet;
 
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
+
+  public TestSortQuery() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
 
   @Test
   public final void testSort() throws Exception {
@@ -96,12 +101,16 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortWithDate() throws Exception {
-    //select col1, col2, l_comment from table1 order by col1, col2;
-    executeDDL("create_table_with_date_ddl.sql", "table1.tbl");
+    // skip this test if catalog uses HCatalogStore.
+    // It is because HCatalogStore does not support Time data type.
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      // create external table table1 (col1 timestamp, col2 date, col3 time) ...
+      executeDDL("create_table_with_date_ddl.sql", "table1");
 
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    }
   }
 
   @Test
@@ -114,7 +123,7 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortWithAscDescKeys() throws Exception {
-    executeDDL("create_table_with_asc_desc_keys.sql", "table2.tbl");
+    executeDDL("create_table_with_asc_desc_keys.sql", "table2");
 
     ResultSet res = executeQuery();
     System.out.println(resultSetToString(res));

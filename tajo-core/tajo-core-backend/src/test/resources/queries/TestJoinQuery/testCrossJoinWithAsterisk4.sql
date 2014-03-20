@@ -1,1 +1,1 @@
-select length(r_comment), *, c_custkey*10 from customer, region;
+select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name;

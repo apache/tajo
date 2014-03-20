@@ -24,35 +24,59 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
 import java.io.Closeable;
 import org.apache.tajo.catalog.exception.CatalogException;
+
+import java.util.Collection;
 import java.util.List;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
+
 public interface CatalogStore extends Closeable {
+  /*************************** Tablespace ******************************/
+  void createTablespace(String spaceName, String spaceUri) throws CatalogException;
+
+  boolean existTablespace(String spaceName) throws CatalogException;
+
+  void dropTablespace(String spaceName) throws CatalogException;
+
+  Collection<String> getAllTablespaceNames() throws CatalogException;
+
+  /*************************** Database ******************************/
+  void createDatabase(String databaseName, String tablespaceName) throws CatalogException;
+
+  boolean existDatabase(String databaseName) throws CatalogException;
+
+  void dropDatabase(String databaseName) throws CatalogException;
+
+  Collection<String> getAllDatabaseNames() throws CatalogException;
+
   /*************************** TABLE ******************************/
-  void addTable(CatalogProtos.TableDescProto desc) throws CatalogException;
+  void createTable(CatalogProtos.TableDescProto desc) throws CatalogException;
   
-  boolean existTable(String name) throws CatalogException;
+  boolean existTable(String databaseName, String tableName) throws CatalogException;
   
-  void deleteTable(String name) throws CatalogException;
+  void dropTable(String databaseName, String tableName) throws CatalogException;
   
-  CatalogProtos.TableDescProto getTable(String name) throws CatalogException;
+  CatalogProtos.TableDescProto getTable(String databaseName, String tableName) throws CatalogException;
   
-  List<String> getAllTableNames() throws CatalogException;
+  List<String> getAllTableNames(String databaseName) throws CatalogException;
 
 
   /************************ PARTITION METHOD **************************/
-  void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException;
+  void addPartitionMethod(PartitionMethodProto partitionMethodProto) throws CatalogException;
 
-  CatalogProtos.PartitionMethodProto getPartitionMethod(String tableName) throws CatalogException;
+  PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
+      throws CatalogException;
 
-  boolean existPartitionMethod(String tableName) throws CatalogException;
+  boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException;
 
-  void delPartitionMethod(String tableName) throws CatalogException;
+  void dropPartitionMethod(String dbName, String tableName) throws CatalogException;
 
 
   /************************** PARTITIONS *****************************/
   void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws CatalogException;
 
-  void addPartition(CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException;
+  void addPartition(String databaseName, String tableName,
+                    CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException;
 
   /**
    * Get all partitions of a table
@@ -66,23 +90,27 @@ public interface CatalogStore extends Closeable {
 
   void delPartition(String partitionName) throws CatalogException;
 
-  void delPartitions(String tableName) throws CatalogException;
+  void dropPartitions(String tableName) throws CatalogException;
 
   /**************************** INDEX *******************************/
-  void addIndex(IndexDescProto proto) throws CatalogException;
+  void createIndex(IndexDescProto proto) throws CatalogException;
   
-  void delIndex(String indexName) throws CatalogException;
+  void dropIndex(String databaseName, String indexName) throws CatalogException;
   
-  IndexDescProto getIndex(String indexName) throws CatalogException;
+  IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException;
   
-  IndexDescProto getIndex(String tableName, String columnName) throws CatalogException;
+  IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+      throws CatalogException;
   
-  boolean existIndex(String indexName) throws CatalogException;
+  boolean existIndexByName(String databaseName, String indexName) throws CatalogException;
   
-  boolean existIndex(String tableName, String columnName) throws CatalogException;
+  boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+      throws CatalogException;
+
+  IndexDescProto [] getIndexes(String databaseName, String tableName) throws CatalogException;
 
   /************************** FUNCTION *****************************/
-  IndexDescProto [] getIndexes(String tableName) throws CatalogException;
+
   
   void addFunction(FunctionDesc func) throws CatalogException;
   

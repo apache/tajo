@@ -25,9 +25,21 @@ If you want to customize the catalog service, copy ``$TAJO_HOME/conf/catalog-sit
 MySQLStore Configuration
 =========================
 
-If you want to use MySQLStore, you must create database and user on mysql for tajo. 
+In order to use MySQLStore, you need to create database and user on MySQL for Tajo.
 
-And then, you need to prepare mysql jdbc driver on host which can be ran TajoMaster. If you do, you should set ``TAJO_CLASSPATH`` variable in ``conf/tajo-env.sh`` with it as follows:
+.. code-block:: sh
+  
+  mysql> create user 'tajo'@'localhost' identified by 'xxxxxx';
+  Query OK, 0 rows affected (0.00 sec)
+
+  mysql> create database tajo;
+  Query OK, 1 row affected (0.00 sec)  
+
+  mysql> grant all on tajo.* to 'tajo'@'localhost';
+  Query OK, 0 rows affected (0.01 sec)
+
+
+And then, you need to prepare MySQL JDBC driver on the machine which can be ran TajoMaster. If you do, you should set ``TAJO_CLASSPATH`` variable in ``conf/tajo-env.sh`` with it as follows:
 
 .. code-block:: sh
 

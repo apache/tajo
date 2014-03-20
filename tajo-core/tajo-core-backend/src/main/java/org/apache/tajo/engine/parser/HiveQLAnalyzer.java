@@ -1419,7 +1419,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
     Map<String, String> params = new HashMap<String, String>();
 
     if (ctx.name != null) {
-      createTable = new CreateTable(ctx.name.getText());
+      createTable = new CreateTable(ctx.name.getText(), ctx.ifNotExists() != null);
       if (ctx.KW_EXTERNAL() != null) {
         createTable.setExternal();
       }
@@ -1511,7 +1511,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDropTableStatement(HiveQLParser.DropTableStatementContext ctx) {
-    DropTable dropTable = new DropTable(ctx.tableName().getText(), false);
+    DropTable dropTable = new DropTable(ctx.tableName().getText(), false, ctx.ifExists() != null);
     return dropTable;
   }
 

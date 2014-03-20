@@ -1,3 +1,5 @@
+-- Some types were commented out due to Hive meta test.
+
 create table various_types (
   col0 bit,
   col1 BIT(10),

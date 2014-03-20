@@ -50,6 +50,52 @@ public class CatalogUtil {
     return identifier.toLowerCase();
   }
 
+  public static boolean isFQColumnName(String tableName) {
+    return tableName.split(IDENTIFIER_DELIMITER_REGEXP).length == 3;
+  }
+
+  public static boolean isFQTableName(String tableName) {
+    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);
+    return lastDelimiterIdx > -1;
+  }
+
+  public static String [] splitFQTableName(String qualifiedName) {
+    String [] splitted = CatalogUtil.splitTableName(CatalogUtil.normalizeIdentifier(qualifiedName));
+    if (splitted.length == 1) {
+      throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
+          + qualifiedName + "\".");
+    }
+    return splitted;
+  }
+
+  public static String [] splitTableName(String tableName) {
+    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);
+    if (lastDelimiterIdx > -1) {
+      return new String [] {
+          tableName.substring(0, lastDelimiterIdx),
+          tableName.substring(lastDelimiterIdx + 1, tableName.length())
+      };
+    } else {
+      return new String [] {tableName};
+    }
+  }
+
+  public static String buildFQName(String... identifiers) {
+    boolean first = true;
+    StringBuilder sb = new StringBuilder();
+    for(String id : identifiers) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(IDENTIFIER_DELIMITER);
+      }
+
+      sb.append(id);
+    }
+
+    return sb.toString();
+  }
+
   /**
    * Extract a qualification name from an identifier.
    *
@@ -87,11 +133,18 @@ public class CatalogUtil {
     }
   }
 
-  public static String getCanonicalName(String signature, Collection<DataType> paramTypes) {
-    DataType [] types = paramTypes.toArray(new DataType[paramTypes.size()]);
-    return getCanonicalName(signature, types);
+  public static String getCanonicalTableName(String databaseName, String tableName) {
+    StringBuilder sb = new StringBuilder(databaseName);
+    sb.append(IDENTIFIER_DELIMITER);
+    sb.append(tableName);
+    return sb.toString();
   }
-  public static String getCanonicalName(String signature, DataType...paramTypes) {
+
+  public static String getCanonicalSignature(String functionName, Collection<DataType> paramTypes) {
+    DataType [] types = paramTypes.toArray(new DataType[paramTypes.size()]);
+    return getCanonicalSignature(functionName, types);
+  }
+  public static String getCanonicalSignature(String signature, DataType... paramTypes) {
     StringBuilder sb = new StringBuilder(signature);
     sb.append("(");
     int i = 0;
@@ -142,10 +195,6 @@ public class CatalogUtil {
 
   public static PartitionMethodDesc newPartitionMethodDesc(CatalogProtos.PartitionMethodProto proto) {
     return new PartitionMethodDesc(proto);
-  }
-
-  public static TableDesc newTableDesc(String tableName, Schema schema, StoreType type, Options options, Path path) {
-    return new TableDesc(tableName, schema, type, options, path);
   }
 
   /**
@@ -206,6 +255,13 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+  public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
+    CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
+    builder.setDatabaseName(databaseName);
+    builder.setTableName(tableName);
+    return builder.build();
+  }
+
   public static void closeQuietly(Connection conn) {
     try {
       if (conn != null)
@@ -230,31 +286,11 @@ public class CatalogUtil {
     }
   }
 
-  public static void closeQuietly(Connection conn, Statement stmt)  {
+  public static void closeQuietly(Statement stmt, ResultSet res) {
     try {
+      closeQuietly(res);
+    } finally {
       closeQuietly(stmt);
-    } finally {
-      closeQuietly(conn);
-    }
-  }
-
-  public static void closeQuietly(Connection conn, ResultSet res) {
-    try {
-      closeQuietly(res);
-    } finally {
-      closeQuietly(conn);
-    }
-  }
-
-  public static void closeQuietly(Connection conn, Statement stmt, ResultSet res) {
-    try {
-      closeQuietly(res);
-    } finally {
-      try {
-        closeQuietly(stmt);
-      } finally {
-        closeQuietly(conn);
-      }
     }
   }
 }

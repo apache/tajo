@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -29,6 +31,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -39,6 +42,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 
 public class TestPlannerUtil {
@@ -46,12 +51,15 @@ public class TestPlannerUtil {
   private static CatalogService catalog;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
+  private static Session session = LocalTajoTestingUtility.createDummySession();
 
   @BeforeClass
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
+    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
     Schema schema = new Schema();
     schema.addColumn("name", Type.TEXT);
@@ -67,14 +75,22 @@ public class TestPlannerUtil {
     schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    TableDesc people = new TableDesc("employee", schema, meta, CommonTestingUtil.getTestDir());
-    catalog.addTable(people);
+    TableDesc people = new TableDesc(
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
+        CommonTestingUtil.getTestDir());
+    catalog.createTable(people);
 
-    TableDesc student = new TableDesc("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
-    catalog.addTable(student);
+    TableDesc student =
+        new TableDesc(
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV,
+            new Options(), CommonTestingUtil.getTestDir());
+    catalog.createTable(student);
 
-    TableDesc score = new TableDesc("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
-    catalog.addTable(score);
+    TableDesc score =
+        new TableDesc(
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV,
+            new Options(), CommonTestingUtil.getTestDir());
+    catalog.createTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
         CatalogUtil.newSimpleDataType(Type.INT4),
@@ -94,24 +110,24 @@ public class TestPlannerUtil {
   public final void testFindTopNode() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalNode.testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
 
     assertEquals(NodeType.JOIN, projNode.getChild().getType());
-    JoinNode joinNode = (JoinNode) projNode.getChild();
+    JoinNode joinNode = projNode.getChild();
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("employee", leftNode.getTableName());
+    ScanNode leftNode = joinNode.getLeftChild();
+    assertEquals("default.employee", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("dept", rightNode.getTableName());
+    ScanNode rightNode = joinNode.getRightChild();
+    assertEquals("default.dept", rightNode.getTableName());
     
     LogicalNode node = PlannerUtil.findTopNode(root, NodeType.ROOT);
     assertEquals(NodeType.ROOT, node.getType());

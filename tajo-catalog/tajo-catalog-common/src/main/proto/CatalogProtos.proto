@@ -40,33 +40,11 @@ enum OrderType {
     DSC = 2;
 }
 
-enum CompressType {
-    COMP_NONE = 0;
-    NULL_SUPPRESS = 1;
-    RUN_LENGTH = 2;
-    BIT_VECTOR = 3;
-    DICTIONARY = 4;
-    SNAPPY = 5;
-    LZ = 6;
-}
-
 enum PartitionType {
     RANGE = 0;
     HASH = 1;
     LIST = 2;
     COLUMN = 3;
-}
-
-message ColumnMetaProto {
-    required DataType dataType = 1;
-    required bool compressed = 2;
-    required bool sorted = 3;
-    required bool contiguous = 4;
-    required StoreType storeType = 5;
-    required CompressType compType = 6;
-    required int64 startRid = 7;
-    required int32 recordNum = 8;
-    required int32 offsetToIndex = 9;
 }
 
 message ColumnProto {
@@ -102,17 +80,38 @@ message FileFragmentProto {
 }
 
 message TableProto {
-    required StoreType storeType = 1;
-    optional KeyValueSetProto params = 2;
+  required StoreType storeType = 1;
+  optional KeyValueSetProto params = 2;
+}
+
+message CreateTablespaceRequest {
+  required string tablespace_name = 1;
+  required string tablespace_uri = 2;
+}
+
+message CreateDatabaseRequest {
+  required string database_name = 1;
+  optional string tablespace_name = 2;
 }
 
 message TableDescProto {
-	required string id = 1;
-	required string path = 2;
-	required TableProto meta = 3;
-	required SchemaProto schema = 4;
-	optional TableStatsProto stats = 5;
-  optional PartitionMethodProto partition = 6;
+	required string table_name = 2;
+	optional string path = 3;
+	required TableProto meta = 4;
+	required SchemaProto schema = 5;
+	optional TableStatsProto stats = 6;
+  optional PartitionMethodProto partition = 7;
+  optional bool isExternal = 8 [default = false];
+}
+
+message TableIdentifierProto {
+  required string database_name = 1;
+  required string table_name = 3;
+}
+
+message NamespaceProto {
+  required string database_name = 1;
+  optional string namespace = 2;
 }
 
 enum FunctionType {
@@ -136,8 +135,8 @@ message FunctionDescProto {
 }
 
 message IndexDescProto {
-    required string name = 1;
-    required string tableId = 2;
+    required TableIdentifierProto tableIdentifier = 1;
+    required string indexName = 2;
     required ColumnProto column = 3;
     required IndexMethod indexMethod = 4;
     optional bool isUnique = 5 [default = false];
@@ -156,9 +155,15 @@ message GetAllTableNamesResponse {
     repeated string tableName = 1;
 }
 
-message GetIndexRequest {
-    required string tableName = 1;
+message GetIndexByColumnRequest {
+    required TableIdentifierProto tableIdentifier = 1;
     required string columnName = 2;
+}
+
+message IndexNameProto {
+  required string databaseName = 1;
+  optional string namespace = 2;
+  required string indexName = 3;
 }
 
 message GetFunctionsResponse {
@@ -239,18 +244,18 @@ message SortSpecProto {
 
 
 message PartitionsProto {
-  repeated PartitionDescProto partition = 1;
+  required TableIdentifierProto tableIdentifier = 1;
+  repeated PartitionDescProto partition = 2;
 }
 
 message PartitionMethodProto {
-  required string tableId = 1;
+  required TableIdentifierProto tableIdentifier = 1;
   required PartitionType partitionType = 2;
   required string expression = 3;
   required SchemaProto expressionSchema = 4;
 }
 
 message PartitionDescProto {
-  required string tableId = 1;
   optional string partitionName = 2;
   required int32  ordinalPosition = 3;
   optional string partitionValue = 4;

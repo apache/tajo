@@ -213,4 +213,16 @@ public class TUtil {
     T array = (T) Array.newInstance(type, collection.size());
     return collection.toArray((T[]) array);
   }
+
+  /**
+   * It returns the exact code point at which this running thread is executed.
+   *
+   * @param depth in the call stack (0 means current method, 1 means call method, ...)
+   * @return A string including class name, method, and line.
+   */
+  public static String getCurrentCodePoint(final int depth) {
+    final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
+    StackTraceElement element = ste[2 + depth];
+    return element.getClassName() + ":" + element.getMethodName() + "(" + element.getLineNumber() +")";
+  }
 }

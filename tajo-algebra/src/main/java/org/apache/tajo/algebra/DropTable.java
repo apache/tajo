@@ -22,16 +22,22 @@ import com.google.common.base.Objects;
 
 public class DropTable extends Expr {
   private final String tableName;
+  private final boolean ifExists;
   private final boolean purge;
 
-  public DropTable(String tableName, boolean purge) {
+  public DropTable(String tableName, boolean ifExists, boolean purge) {
     super(OpType.DropTable);
     this.tableName = tableName;
+    this.ifExists = ifExists;
     this.purge = purge;
   }
 
   public String getTableName() {
     return this.tableName;
+  }
+
+  public boolean isIfExists() {
+    return ifExists;
   }
 
   public boolean isPurge() {
@@ -40,14 +46,16 @@ public class DropTable extends Expr {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName, purge);
+    return Objects.hashCode(tableName, ifExists, purge);
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     if (expr instanceof DropTable) {
       DropTable another = (DropTable) expr;
-      return tableName.equals(another.tableName) && purge == another.purge;
+      return tableName.equals(another.tableName) &&
+          ifExists == another.ifExists &&
+          purge == another.purge;
     }
     return false;
   }

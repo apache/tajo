@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -35,6 +36,10 @@ import java.sql.ResultSet;
  */
 @Category(IntegrationTest.class)
 public class TestUnionQuery extends QueryTestCaseBase {
+
+  public TestUnionQuery() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
 
   @Test
   /**

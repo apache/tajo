@@ -19,6 +19,8 @@
 package org.apache.tajo;
 
 import com.google.protobuf.ServiceException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.CreateTable;
@@ -27,15 +29,16 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.ParsedResult;
+import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 
 import java.io.File;
@@ -44,8 +47,7 @@ import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -118,13 +120,13 @@ import static org.junit.Assert.*;
  * </ul>
  */
 public class QueryTestCaseBase {
-
+  private static final Log LOG = LogFactory.getLog(QueryTestCaseBase.class);
   protected static final TpchTestBase testBase;
   protected static final TajoTestingCluster testingCluster;
   protected static TajoConf conf;
   protected static TajoClient client;
-  protected static CatalogService catalog;
-  protected static SQLAnalyzer sqlParser = new SQLAnalyzer();
+  protected static final CatalogService catalog;
+  protected static final SQLAnalyzer sqlParser = new SQLAnalyzer();
 
   /** the base path of dataset directories */
   protected static final Path datasetBasePath;
@@ -147,14 +149,15 @@ public class QueryTestCaseBase {
   }
 
   /** It transiently contains created tables for the running test class. */
-  private static Set<String> createdTableSet = new HashSet<String>();
+  private static String currentDatabase;
+  private static Set<String> createdTableGlobalSet = new HashSet<String>();
   // queries and results directory corresponding to subclass class.
   private Path currentQueryPath;
   private Path currentResultPath;
   private Path currentDatasetPath;
 
   // for getting a method name
-  @Rule public TestName name= new TestName();
+  @Rule public TestName name = new TestName();
 
   @BeforeClass
   public static void setUpClass() throws IOException {
@@ -164,19 +167,56 @@ public class QueryTestCaseBase {
 
   @AfterClass
   public static void tearDownClass() throws ServiceException {
-    for (String tableName : createdTableSet) {
-      client.dropTable(tableName, false);
+    for (String tableName : createdTableGlobalSet) {
+      client.updateQuery("DROP TABLE IF EXISTS " +tableName + " PURGE");
     }
-    createdTableSet.clear();
+    createdTableGlobalSet.clear();
+
+    // if the current database is "default", shouldn't drop it.
+    if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
+      for (String tableName : catalog.getAllTableNames(currentDatabase)) {
+        client.updateQuery("DROP TABLE IF EXISTS " +tableName + " PURGE");
+      }
+
+      client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
+      client.dropDatabase(currentDatabase);
+    }
     client.close();
   }
 
-  @Before
-  public void setUp() {
+  public QueryTestCaseBase() {
+    this.currentDatabase = getClass().getSimpleName();
+    init();
+  }
+
+  public QueryTestCaseBase(String currentDatabase) {
+    this.currentDatabase = currentDatabase;
+    init();
+  }
+
+  private void init() {
     String className = getClass().getSimpleName();
     currentQueryPath = new Path(queryBasePath, className);
     currentResultPath = new Path(resultBasePath, className);
     currentDatasetPath = new Path(datasetBasePath, className);
+
+    try {
+      // if the current database is "default", we don't need create it because it is already prepated at startup time.
+      if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
+        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + currentDatabase);
+      }
+      client.selectDatabase(currentDatabase);
+    } catch (ServiceException e) {
+      e.printStackTrace();
+    }
+  }
+
+  protected TajoClient getClient() {
+    return client;
+  }
+
+  public String getCurrentDatabase() {
+    return currentDatabase;
   }
 
   protected ResultSet executeString(String sql) throws Exception {
@@ -204,7 +244,12 @@ public class QueryTestCaseBase {
     Path queryFilePath = getQueryFilePath(queryFileName);
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
-    ResultSet result = testBase.execute(FileUtil.readTextFile(new File(queryFilePath.toUri())));
+
+    List<ParsedResult> parsedResults = SimpleParser.parseScript(FileUtil.readTextFile(new File(queryFilePath.toUri())));
+    if (parsedResults.size() > 1) {
+      assertNotNull("This script \"" + queryFileName + "\" includes two or more queries");
+    }
+    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getStatement());
     assertNotNull("Query succeeded test", result);
     return result;
   }
@@ -264,8 +309,20 @@ public class QueryTestCaseBase {
     }
   }
 
+  public void assertDatabaseExists(String databaseName) throws ServiceException {
+    assertTrue(client.existDatabase(databaseName));
+  }
+
+  public void assertDatabaseNotExists(String databaseName) throws ServiceException {
+    assertTrue(!client.existDatabase(databaseName));
+  }
+
   public void assertTableExists(String tableName) throws ServiceException {
     assertTrue(client.existTable(tableName));
+  }
+
+  public void assertTableNotExists(String tableName) throws ServiceException {
+    assertTrue(!client.existTable(tableName));
   }
 
   /**
@@ -316,7 +373,7 @@ public class QueryTestCaseBase {
     return StorageUtil.concatPath(currentDatasetPath, fileName);
   }
 
-  public String executeDDL(String ddlFileName, @Nullable String [] args) throws Exception {
+  public List<String> executeDDL(String ddlFileName, @Nullable String [] args) throws Exception {
     return executeDDL(ddlFileName, null, true, args);
   }
 
@@ -337,17 +394,16 @@ public class QueryTestCaseBase {
    * @param dataFileName A file name, containing data rows, which columns have to be separated by vertical bar '|'.
    *                     This file name is used for replacing some format string indicating an external table location.
    * @param args A list of arguments, each of which is used to replace corresponding variable which has a form of ${i}.
-   * @return The table name created
+   * @return The table names created
    */
-  public String executeDDL(String ddlFileName, @Nullable String dataFileName, @Nullable String ... args)
+  public List<String> executeDDL(String ddlFileName, @Nullable String dataFileName, @Nullable String ... args)
       throws Exception {
 
     return executeDDL(ddlFileName, dataFileName, true, args);
   }
 
-  private String executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
-                            @Nullable String [] args)
-      throws Exception {
+  private List<String> executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
+                            @Nullable String [] args) throws Exception {
 
     Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
     FileSystem fs = ddlFilePath.getFileSystem(conf);
@@ -360,33 +416,43 @@ public class QueryTestCaseBase {
     }
     String compiled = compileTemplate(template, dataFilePath, args);
 
-    // parse a statement
-    Expr expr = sqlParser.parse(compiled);
-    assertNotNull(ddlFilePath + " cannot be parsed", expr);
+    List<ParsedResult> parsedResults = SimpleParser.parseScript(compiled);
+    List<String> createdTableNames = new ArrayList<String>();
 
-    String tableName = null;
-    if (expr.getType() == OpType.CreateTable) {
-      CreateTable createTable = (CreateTable) expr;
-      tableName = createTable.getTableName();
-      client.updateQuery(compiled);
-      assertTrue("table '" + tableName  + "' creation check", client.existTable(tableName));
-      if (isLocalTable) {
-        createdTableSet.add(tableName);
+    for (ParsedResult parsedResult : parsedResults) {
+      // parse a statement
+      Expr expr = sqlParser.parse(parsedResult.getStatement());
+      assertNotNull(ddlFilePath + " cannot be parsed", expr);
+
+      if (expr.getType() == OpType.CreateTable) {
+        CreateTable createTable = (CreateTable) expr;
+        String tableName = createTable.getTableName();
+        assertTrue("Table creation is failed.", client.updateQuery(parsedResult.getStatement()));
+        TableDesc createdTable = client.getTableDesc(tableName);
+        String createdTableName = createdTable.getName();
+
+        assertTrue("table '" + createdTableName  + "' creation check", client.existTable(createdTableName));
+        if (isLocalTable) {
+          createdTableGlobalSet.add(createdTableName);
+          createdTableNames.add(tableName);
+        }
+      } else if (expr.getType() == OpType.DropTable) {
+        DropTable dropTable = (DropTable) expr;
+        String tableName = dropTable.getTableName();
+        assertTrue("table '" + tableName + "' existence check",
+            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+        assertTrue("table drop is failed.", client.updateQuery(parsedResult.getStatement()));
+        assertFalse("table '" + tableName + "' dropped check",
+            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+        if (isLocalTable) {
+          createdTableGlobalSet.remove(tableName);
+        }
+      } else {
+        assertTrue(ddlFilePath + " is not a Create or Drop Table statement", false);
       }
-    } else if (expr.getType() == OpType.DropTable) {
-      DropTable dropTable = (DropTable) expr;
-      tableName = dropTable.getTableName();
-      assertTrue("table '" + tableName + "' existence check", client.existTable(tableName));
-      client.updateQuery(compiled);
-      assertFalse("table '" + tableName + "' dropped check", client.existTable(tableName));
-      if (isLocalTable) {
-        createdTableSet.remove(tableName);
-      }
-    } else {
-      assertTrue(ddlFilePath + " is not a Create or Drop Table statement", false);
     }
 
-    return tableName;
+    return createdTableNames;
   }
 
   /**

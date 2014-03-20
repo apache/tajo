@@ -27,6 +27,11 @@ public class TajoConstants {
   public static final String SYSTEM_RESOURCE_DIR_NAME = "resource";
   public static final String RESULT_DIR_NAME="RESULT";
 
+  public static final String DEFAULT_TABLESPACE_NAME = "default";
+  public static final String DEFAULT_DATABASE_NAME = "default";
+  public static final String DEFAULT_SCHEMA_NAME = "public";
+
+
   public static final String EMPTY_STRING = "";
 
   private TajoConstants() {}

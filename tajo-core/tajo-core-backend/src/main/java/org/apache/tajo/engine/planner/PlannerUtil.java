@@ -21,10 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.algebra.CountRowsFunctionExpr;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.GeneralSetFunctionExpr;
-import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -48,7 +45,12 @@ public class PlannerUtil {
       baseNode = ((LogicalRootNode) node).getChild();
     }
 
-    return (baseNode.getType() == NodeType.CREATE_TABLE && !((CreateTableNode)baseNode).hasSubQuery()) ||
+    NodeType type = baseNode.getType();
+
+    return
+        type == NodeType.CREATE_DATABASE ||
+        type == NodeType.DROP_DATABASE ||
+        (type == NodeType.CREATE_TABLE && !((CreateTableNode)baseNode).hasSubQuery()) ||
         baseNode.getType() == NodeType.DROP_TABLE;
   }
 

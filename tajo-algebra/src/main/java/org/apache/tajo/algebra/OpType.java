@@ -42,6 +42,8 @@ public enum OpType {
   ScalarSubQuery(ScalarSubQuery.class),
 
   // Data definition language
+  CreateDatabase(CreateDatabase.class),
+  DropDatabase(DropDatabase.class),
   CreateTable(CreateTable.class),
   DropTable(DropTable.class),
 

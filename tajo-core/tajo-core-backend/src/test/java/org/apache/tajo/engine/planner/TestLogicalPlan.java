@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
@@ -33,6 +34,8 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 import static org.junit.Assert.*;
 
@@ -49,6 +52,8 @@ public class TestLogicalPlan {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, CommonTestingUtil.getTestDir().toUri().toString());
+    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.createFunction(funcDesc);
     }
@@ -71,7 +76,7 @@ public class TestLogicalPlan {
       TableDesc d = CatalogUtil.newTableDesc(tpchTables[i], tpch.getSchema(tpchTables[i]), m,
           CommonTestingUtil.getTestDir());
       d.setStats(stats);
-      catalog.addTable(d);
+      catalog.createTable(d);
     }
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(util.getConfiguration());
@@ -83,7 +88,7 @@ public class TestLogicalPlan {
 
   @Test
   public final void testQueryBlockGraph() {
-    LogicalPlan plan = new LogicalPlan(planner);
+    LogicalPlan plan = new LogicalPlan(LocalTajoTestingUtility.createDummySession().getCurrentDatabase(), planner);
     LogicalPlan.QueryBlock root = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     LogicalPlan.QueryBlock new1 = plan.newQueryBlock();
     LogicalPlan.QueryBlock new2 = plan.newQueryBlock();

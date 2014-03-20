@@ -43,6 +43,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -66,6 +68,8 @@ public class TestHashSemiJoinExec {
     util.initTestDir();
     catalog = util.startCatalogCluster().getCatalog();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
+    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
@@ -93,8 +97,8 @@ public class TestHashSemiJoinExec {
 
     appender.flush();
     appender.close();
-    employee = CatalogUtil.newTableDesc("employee", employeeSchema, employeeMeta, employeePath);
-    catalog.addTable(employee);
+    employee = CatalogUtil.newTableDesc("default.employee", employeeSchema, employeeMeta, employeePath);
+    catalog.createTable(employee);
 
     Schema peopleSchema = new Schema();
     peopleSchema.addColumn("empId", Type.INT4);
@@ -122,8 +126,8 @@ public class TestHashSemiJoinExec {
     appender.flush();
     appender.close();
 
-    people = CatalogUtil.newTableDesc("people", peopleSchema, peopleMeta, peoplePath);
-    catalog.addTable(people);
+    people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
+    catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(conf);
@@ -145,9 +149,9 @@ public class TestHashSemiJoinExec {
 
   @Test
   public final void testHashSemiJoin() throws IOException, PlanningException {
-    FileFragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
+    FileFragment[] empFrags = StorageManager.splitNG(conf, "default.e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
+    FileFragment[] peopleFrags = StorageManager.splitNG(conf, "default.p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
@@ -157,7 +161,7 @@ public class TestHashSemiJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
     optimizer.optimize(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
@@ -173,7 +177,7 @@ public class TestHashSemiJoinExec {
       SeqScanExec scanRightChild = (SeqScanExec) sortRightChild.getChild();
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
-      if (scanLeftChild.getTableName().equals("people")) {
+      if (scanLeftChild.getTableName().equals("default.people")) {
         exec = new HashLeftSemiJoinExec(ctx, join.getPlan(), scanRightChild, scanLeftChild);
       } else {
         exec = new HashLeftSemiJoinExec(ctx, join.getPlan(), scanLeftChild, scanRightChild);
@@ -183,7 +187,7 @@ public class TestHashSemiJoinExec {
       SeqScanExec scanLeftChild = (SeqScanExec) join.getLeftChild();
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
-      if (scanLeftChild.getTableName().equals("people")) {
+      if (scanLeftChild.getTableName().equals("default.people")) {
         exec = new HashLeftSemiJoinExec(ctx, join.getPlan(), join.getRightChild(), join.getLeftChild());
       } else {
         exec = new HashLeftSemiJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());

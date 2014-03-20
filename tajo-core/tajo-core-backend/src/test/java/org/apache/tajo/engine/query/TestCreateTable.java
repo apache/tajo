@@ -23,140 +23,209 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.List;
+
 @Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testVariousTypes() throws Exception {
-    String tableName = executeDDL("create_table_various_types.sql", null);
-    assertTableExists(tableName);
+    List<String> createdNames;
+    if (testingCluster.isHCatalogStoreRunning()) {
+      createdNames = executeDDL("create_table_various_types_for_hcatalog.sql", null);
+    } else {
+      createdNames = executeDDL("create_table_various_types.sql", null);
+    }
+    assertTableExists(createdNames.get(0));
   }
 
   @Test
   public final void testCreateTable1() throws Exception {
-    String tableName = executeDDL("table1_ddl.sql", "table1.tbl", "table1");
-    assertTableExists(tableName);
+    List<String> createdNames = executeDDL("table1_ddl.sql", "table1", "table1");
+    assertTableExists(createdNames.get(0));
+  }
+
+  @Test
+  public final void testCreateTable2() throws Exception {
+    executeString("CREATE DATABASE D1;").close();
+    executeString("CREATE DATABASE D2;").close();
+
+    executeString("CREATE TABLE D1.table1 (age int);").close();
+    executeString("CREATE TABLE D1.table2 (age int);").close();
+    executeString("CREATE TABLE D2.table3 (age int);").close();
+    executeString("CREATE TABLE D2.table4 (age int);").close();
+
+    assertTableExists("D1.table1");
+    assertTableExists("D1.table2");
+    assertTableNotExists("D2.table1");
+    assertTableNotExists("D2.table2");
+
+    assertTableExists("D2.table3");
+    assertTableExists("D2.table4");
+    assertTableNotExists("D1.table3");
+    assertTableNotExists("D1.table4");
+
+    executeString("DROP TABLE D1.table1");
+    executeString("DROP TABLE D1.table2");
+    executeString("DROP TABLE D2.table3");
+    executeString("DROP TABLE D2.table4");
+
+    assertDatabaseExists("D1");
+    assertDatabaseExists("D2");
+    executeString("DROP DATABASE D1").close();
+    executeString("DROP DATABASE D2").close();
+    assertDatabaseNotExists("D1");
+    assertDatabaseNotExists("D2");
+  }
+
+  @Test
+  public final void testCreateTableIfNotExists() throws Exception {
+    executeString("CREATE DATABASE D3;").close();
+
+    assertTableNotExists("D3.table1");
+    executeString("CREATE TABLE D3.table1 (age int);").close();
+    assertTableExists("D3.table1");
+
+    executeString("CREATE TABLE IF NOT EXISTS D3.table1 (age int);").close();
+    assertTableExists("D3.table1");
+
+    executeString("DROP TABLE D3.table1");
+  }
+
+  @Test
+  public final void testDropTableIfExists() throws Exception {
+    executeString("CREATE DATABASE D4;").close();
+
+    assertTableNotExists("D4.table1");
+    executeString("CREATE TABLE D4.table1 (age int);").close();
+    assertTableExists("D4.table1");
+
+    executeString("DROP TABLE D4.table1;").close();
+    assertTableNotExists("D4.table1");
+
+    executeString("DROP TABLE IF EXISTS D4.table1");
+    assertTableNotExists("D4.table1");
   }
 
   @Test
   public final void testNonreservedKeywordTableNames() throws Exception {
-    String tableName = null;
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "filter");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "first");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "format");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "grouping");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "hash");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "index");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "insert");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "last");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "location");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "max");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "min");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "national");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "nullif");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "overwrite");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "precision");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "range");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "regexp");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "rlike");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "set");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "unknown");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "var_pop");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "var_samp");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "varying");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "zone");
-    assertTableExists(tableName);
+    List<String> createdNames = null;
+    createdNames = executeDDL("table1_ddl.sql", "table1", "filter");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "first");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "format");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "grouping");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "hash");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "index");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "insert");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "last");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "location");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "max");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "min");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "national");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "nullif");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "overwrite");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "precision");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "range");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "regexp");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "rlike");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "set");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "unknown");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "var_pop");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "var_samp");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "varying");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "zone");
+    assertTableExists(createdNames.get(0));
 
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "bigint");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "bit");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "blob");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "bool");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "boolean");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "bytea");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "char");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "date");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "decimal");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "double");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "float");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "float4");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "float8");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "inet4");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "int");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "int1");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "int2");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "int4");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "int8");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "integer");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "nchar");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "numeric");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "nvarchar");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "real");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "smallint");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "text");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "time");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "timestamp");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "timestamptz");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "timetz");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "tinyint");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "varbinary");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "varbit");
-    assertTableExists(tableName);
-    tableName = executeDDL("table1_ddl.sql", "table1.tbl", "varchar");
-    assertTableExists(tableName);
+    createdNames = executeDDL("table1_ddl.sql", "table1", "bigint");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "bit");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "blob");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "bool");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "boolean");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "bytea");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "char");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "date");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "decimal");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "double");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "float");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "float4");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "float8");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "inet4");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "int");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "int1");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "int2");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "int4");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "int8");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "integer");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "nchar");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "numeric");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "nvarchar");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "real");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "smallint");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "text");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "time");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "timestamp");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "timestamptz");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "timetz");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "tinyint");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "varbinary");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "varbit");
+    assertTableExists(createdNames.get(0));
+    createdNames = executeDDL("table1_ddl.sql", "table1", "varchar");
+    assertTableExists(createdNames.get(0));
   }
 }
