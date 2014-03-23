@@ -47,7 +47,26 @@ public class CatalogUtil {
    * @return The normalized identifier
    */
   public static String normalizeIdentifier(String identifier) {
-    return identifier.toLowerCase();
+    return isDelimited(identifier) ? stripQuote(identifier).toLowerCase() : identifier.toLowerCase();
+  }
+
+  public static String stripQuote(String str) {
+    return str.substring(1, str.length() - 1);
+  }
+
+  public static boolean isDelimited(String identifier) {
+    boolean openQuote = identifier.charAt(0) == '"';
+    boolean closeQuote = identifier.charAt(identifier.length() - 1) == '"';
+
+    if (openQuote ^ closeQuote || identifier.length() < 2) {
+      throw new IllegalArgumentException("Invalid Identifier: " + identifier);
+    }
+
+    if (openQuote && closeQuote && identifier.length() == 2) {
+      throw new IllegalArgumentException("zero-length delimited identifier: " + identifier);
+    }
+
+    return openQuote && closeQuote && identifier.length() > 2;
   }
 
   public static boolean isFQColumnName(String tableName) {
@@ -60,7 +79,7 @@ public class CatalogUtil {
   }
 
   public static String [] splitFQTableName(String qualifiedName) {
-    String [] splitted = CatalogUtil.splitTableName(CatalogUtil.normalizeIdentifier(qualifiedName));
+    String [] splitted = CatalogUtil.splitTableName(qualifiedName);
     if (splitted.length == 1) {
       throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
           + qualifiedName + "\".");

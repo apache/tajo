@@ -90,7 +90,7 @@ public class TestRangeRetrieverHandler {
     optimizer = new LogicalOptimizer(conf);
 
     schema = new Schema();
-    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("empid", Type.INT4);
     schema.addColumn("age", Type.INT4);
   }
 

@@ -77,7 +77,7 @@ public class TajoClient implements Closeable {
     this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), null);
   }
 
-  public TajoClient(TajoConf conf, String baseDatabase) throws IOException {
+  public TajoClient(TajoConf conf, @Nullable String baseDatabase) throws IOException {
     this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), baseDatabase);
   }
 
@@ -89,7 +89,7 @@ public class TajoClient implements Closeable {
     //Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
     userInfo = UserGroupInformation.getCurrentUser();
-    this.baseDatabase = baseDatabase;
+    this.baseDatabase = baseDatabase != null ? CatalogUtil.normalizeIdentifier(baseDatabase) : null;
   }
 
   public boolean isConnected() {
@@ -197,7 +197,8 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)).getValue();
+        return tajoMasterService.selectDatabase(null,
+            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
       }
     }.withRetries();
   }
@@ -501,7 +502,8 @@ public class TajoClient implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.createDatabase(null, convertSessionedString(databaseName)).getValue();
+        return tajoMasterService.createDatabase(null,
+            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
       }
     }.withRetries();
   }
@@ -511,7 +513,8 @@ public class TajoClient implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existDatabase(null, convertSessionedString(databaseName)).getValue();
+        return tajoMasterService.existDatabase(null,
+            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
       }
     }.withRetries();
   }
@@ -521,7 +524,8 @@ public class TajoClient implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.dropDatabase(null, convertSessionedString(databaseName)).getValue();
+        return tajoMasterService.dropDatabase(null,
+            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
       }
     }.withRetries();
   }
@@ -550,7 +554,8 @@ public class TajoClient implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existTable(null, convertSessionedString(name)).getValue();
+        return tajoMasterService.existTable(null,
+            convertSessionedString(CatalogUtil.normalizeIdentifier(name))).getValue();
       }
     }.withRetries();
   }
@@ -566,7 +571,7 @@ public class TajoClient implements Closeable {
 
         CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setName(name);
+        builder.setName(CatalogUtil.normalizeIdentifier(name));
         builder.setSchema(schema.getProto());
         builder.setMeta(meta.getProto());
         builder.setPath(path.toUri().toString());
@@ -600,7 +605,7 @@ public class TajoClient implements Closeable {
 
         DropTableRequest.Builder builder = DropTableRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setName(tableName);
+        builder.setName(CatalogUtil.normalizeIdentifier(tableName));
         builder.setPurge(purge);
         return tajoMasterService.dropTable(null, builder.build()).getValue();
       }
@@ -666,12 +671,14 @@ public class TajoClient implements Closeable {
       public List<String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
 
+        final String normalizedDBName = databaseName == null ? null : CatalogUtil.normalizeIdentifier(databaseName);
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
         builder.setSessionId(sessionId);
-        if (databaseName != null) {
-          builder.setDatabaseName(databaseName);
+        if (normalizedDBName != null) {
+          builder.setDatabaseName(normalizedDBName);
         }
         GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
         return res.getTablesList();
@@ -689,7 +696,7 @@ public class TajoClient implements Closeable {
 
         GetTableDescRequest.Builder builder = GetTableDescRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setTableName(tableName);
+        builder.setTableName(CatalogUtil.normalizeIdentifier(tableName));
         TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
         if (res.getResultCode() == ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());

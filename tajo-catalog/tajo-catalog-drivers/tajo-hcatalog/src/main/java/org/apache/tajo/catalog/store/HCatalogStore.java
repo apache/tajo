@@ -377,7 +377,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
-    String [] splitted = CatalogUtil.splitFQTableName(CatalogUtil.normalizeIdentifier(tableDesc.getName()));
+    String [] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
     String databaseName = splitted[0];
     String tableName = splitted[1];
 

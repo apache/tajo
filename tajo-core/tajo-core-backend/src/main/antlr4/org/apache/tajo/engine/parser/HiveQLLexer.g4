@@ -370,9 +370,7 @@ Number
     ;
     
 Identifier
-    :
-    (Letter | Digit) (Letter | Digit | '_')*
-    | '`' RegexComponent+ '`'
+    : (Letter | Digit) (Letter | Digit | '_')* { setText(getText().toLowerCase()); }
     ;
 
 CharSetName

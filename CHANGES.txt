@@ -132,7 +132,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-553: Add a method to the TajoClient to get finished query lists. 
+    TAJO-644: Support quoted identifiers. (hyunsik)
+
+    TAJO-553: Add a method to the TajoClient to get finished query lists.
     (Ilhyun Suh via jihoon)
 
     TAJO-670: Change daemon's hostname to canonical hostname 

@@ -105,11 +105,11 @@ public class TestPhysicalPlanner {
 
     Schema employeeSchema = new Schema();
     employeeSchema.addColumn("name", Type.TEXT);
-    employeeSchema.addColumn("empId", Type.INT4);
-    employeeSchema.addColumn("deptName", Type.TEXT);
+    employeeSchema.addColumn("empid", Type.INT4);
+    employeeSchema.addColumn("deptname", Type.TEXT);
 
     Schema scoreSchema = new Schema();
-    scoreSchema.addColumn("deptName", Type.TEXT);
+    scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("class", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
     scoreSchema.addColumn("nullable", Type.TEXT);
@@ -526,7 +526,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(session, context);
 
     int numPartitions = 3;
-    Column key1 = new Column("default.score.deptName", Type.TEXT);
+    Column key1 = new Column("default.score.deptname", Type.TEXT);
     Column key2 = new Column("default.score.class", Type.TEXT);
     DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
         ShuffleType.HASH_SHUFFLE, numPartitions);

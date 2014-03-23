@@ -29,6 +29,18 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestSQLExpression extends ExprTestBase {
 
+  @Test
+  public void testQuotedIdentifiers() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("컬럼1", TEXT);
+    schema.addColumn("컬럼2", TEXT);
+    testEval(schema, "테이블1", "123,234", "select \"컬럼1\"::float, cast (\"컬럼2\" as float4) as a from \"테이블1\"",
+        new String[]{"123.0", "234.0"});
+    testEval(schema,
+        "테이블1", "123,234", "select char_length(\"컬럼1\"), \"컬럼2\"::float4 as \"별명1\" from \"테이블1\"",
+        new String[]{"3", "234.0"});
+  }
+
   @Test(expected = NoSuchFunctionException.class)
   public void testNoSuchFunction() throws IOException {
     testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});

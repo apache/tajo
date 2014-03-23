@@ -78,10 +78,10 @@ public class TestNLJoinExec {
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", Type.INT4);
-    schema.addColumn("empId", Type.INT4);
-    schema.addColumn("memId", Type.INT4);
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("managerid", Type.INT4);
+    schema.addColumn("empid", Type.INT4);
+    schema.addColumn("memid", Type.INT4);
+    schema.addColumn("deptname", Type.TEXT);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
@@ -102,8 +102,8 @@ public class TestNLJoinExec {
     catalog.createTable(employee);
     
     Schema peopleSchema = new Schema();
-    peopleSchema.addColumn("empId", Type.INT4);
-    peopleSchema.addColumn("fk_memId", Type.INT4);
+    peopleSchema.addColumn("empid", Type.INT4);
+    peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta(StoreType.CSV);

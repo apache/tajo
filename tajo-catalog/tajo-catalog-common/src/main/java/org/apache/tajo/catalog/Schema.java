@@ -147,7 +147,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @return The Column matched to a given qualified name
    */
   private Column getColumnByQName(String qualifiedName) {
-		Integer cid = fieldsByQualifiedName.get(qualifiedName.toLowerCase());
+		Integer cid = fieldsByQualifiedName.get(qualifiedName);
 		return cid != null ? fields.get(cid) : null;
 	}
 
@@ -161,7 +161,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @return The Column matched to a given name.
    */
 	private Column getColumnByName(String columnName) {
-    String normalized = columnName.toLowerCase();
+    String normalized = columnName;
 	  List<Integer> list = fieldsByName.get(normalized);
 
     if (list == null || list.size() == 0) {
@@ -213,7 +213,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
   public int getColumnIdByName(String colName) {
     for (Column col : fields) {
-      if (col.getSimpleName().equals(colName.toLowerCase())) {
+      if (col.getSimpleName().equals(colName)) {
         String qualifiedName = col.getQualifiedName();
         return fieldsByQualifiedName.get(qualifiedName);
       }
@@ -226,10 +226,10 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 
   public boolean contains(String name) {
-    if (fieldsByQualifiedName.containsKey(name.toLowerCase())) {
+    if (fieldsByQualifiedName.containsKey(name)) {
       return true;
     }
-    if (fieldsByName.containsKey(name.toLowerCase())) {
+    if (fieldsByName.containsKey(name)) {
       if (fieldsByName.size() > 1) {
         throw new RuntimeException("Ambiguous Column name");
       }
@@ -258,7 +258,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 	
 	public boolean containsByQualifiedName(String qualifiedName) {
-		return fieldsByQualifiedName.containsKey(qualifiedName.toLowerCase());
+		return fieldsByQualifiedName.containsKey(qualifiedName);
 	}
 
   public boolean containsByName(String colName) {
@@ -281,7 +281,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public synchronized Schema addColumn(String name, DataType dataType) {
-		String normalized = name.toLowerCase();
+		String normalized = name;
 		if(fieldsByQualifiedName.containsKey(normalized)) {
 		  LOG.error("Already exists column " + normalized);
 			throw new AlreadyExistsFieldException(normalized);

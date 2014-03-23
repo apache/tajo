@@ -1,0 +1,1 @@
+CREATE EXTERNAL TABLE ${0} ("아이디" int, "텍스트" text, "숫자" int) using csv location ${table.path};

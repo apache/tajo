@@ -234,7 +234,7 @@ public class TajoMasterClientService extends AbstractService {
     public BoolProto selectDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
-        String databaseName = CatalogUtil.normalizeIdentifier(request.getValue());
+        String databaseName = request.getValue();
 
         if (context.getCatalog().existDatabase(databaseName)) {
           context.getSessionManager().getSession(sessionId).selectDatabase(databaseName);

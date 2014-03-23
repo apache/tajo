@@ -21,6 +21,7 @@ package org.apache.tajo.master.querymaster;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
@@ -96,7 +97,7 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
   }
 
   private void createColumnPartitionedTable() throws Exception {
-    String tableName ="ColumnPartitionedTable";
+    String tableName = CatalogUtil.normalizeIdentifier("ColumnPartitionedTable");
     ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
     res.close();

@@ -405,13 +405,12 @@ LineComment
 ===============================================================================
 */
 
-Identifier
-  : Regular_Identifier
+Regular_Identifier
+  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_')* { setText(getText().toLowerCase()); }
   ;
 
-fragment
-Regular_Identifier
-  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_')*
+Quoted_Identifier
+  : DOUBLE_QUOTE ( ESC_SEQ | ~('\\'|'"') )* DOUBLE_QUOTE { setText(getText().substring(1, getText().length()-1)); }
   ;
 
 /*

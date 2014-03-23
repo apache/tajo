@@ -408,7 +408,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
 
           GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
           builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(CatalogUtil.normalizeIdentifier(columnName));
+          builder.setColumnName(columnName);
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.existIndexByColumn(null, builder.build()).getValue();

@@ -572,7 +572,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       conn.setAutoCommit(false);
 
-      String [] splitted = CatalogUtil.splitTableName(CatalogUtil.normalizeIdentifier(table.getTableName()));
+      String [] splitted = CatalogUtil.splitTableName(table.getTableName());
       if (splitted.length == 1) {
         throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
             + table.getTableName() + "\".");
@@ -1106,8 +1106,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(ADD_PARTITION_SQL);
       }
 
-      String databaseName = CatalogUtil.normalizeIdentifier(partitionsProto.getTableIdentifier().getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(partitionsProto.getTableIdentifier().getTableName());
+      String databaseName = partitionsProto.getTableIdentifier().getDatabaseName();
+      String tableName = partitionsProto.getTableIdentifier().getTableName();
 
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
@@ -1157,8 +1157,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      String databaseName = CatalogUtil.normalizeIdentifier(proto.getTableIdentifier().getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(proto.getTableIdentifier().getTableName());
+      String databaseName = proto.getTableIdentifier().getDatabaseName();
+      String tableName = proto.getTableIdentifier().getTableName();
 
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
@@ -1353,9 +1353,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
 
-    String databaseName = CatalogUtil.normalizeIdentifier(proto.getTableIdentifier().getDatabaseName());
-    String tableName = CatalogUtil.normalizeIdentifier(proto.getTableIdentifier().getTableName());
-    String columnName = CatalogUtil.extractSimpleName(CatalogUtil.normalizeIdentifier(proto.getColumn().getName()));
+    String databaseName = proto.getTableIdentifier().getDatabaseName();
+    String tableName = proto.getTableIdentifier().getTableName();
+    String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
 
     try {
       int databaseId = getDatabaseId(databaseName);

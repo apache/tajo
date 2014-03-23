@@ -39,7 +39,7 @@ public class QualifiedAsteriskExpr extends Expr {
   }
 
   public void setQualifier(String qualifier) {
-    this.qualifier = qualifier.toLowerCase();
+    this.qualifier = qualifier;
   }
 
   @Override

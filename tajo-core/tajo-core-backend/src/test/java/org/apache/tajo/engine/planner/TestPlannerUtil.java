@@ -63,15 +63,15 @@ public class TestPlannerUtil {
 
     Schema schema = new Schema();
     schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empId", CatalogUtil.newSimpleDataType(Type.INT4));
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("empid", CatalogUtil.newSimpleDataType(Type.INT4));
+    schema.addColumn("deptname", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("deptname", Type.TEXT);
     schema2.addColumn("manager", Type.TEXT);
 
     Schema schema3 = new Schema();
-    schema3.addColumn("deptName", Type.TEXT);
+    schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);

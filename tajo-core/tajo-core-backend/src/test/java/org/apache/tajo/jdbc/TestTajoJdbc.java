@@ -224,7 +224,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     ResultSet rs = null;
 
     try {
-      String tableName = "lineitem";
+      String tableName = CatalogUtil.normalizeIdentifier("lineitem");
       rs = dbmd.getColumns(null, null, tableName, null);
 
       ResultSetMetaData rsmd = rs.getMetaData();

@@ -26,6 +26,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -56,12 +57,13 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     res.close();
 
+    String tableName = CatalogUtil.normalizeIdentifier("testCtasWithoutTableDefinition");
     CatalogService catalog = testBase.getTestingCluster().getMaster().getCatalog();
-    String tableName = buildFQName(DEFAULT_DATABASE_NAME, "testCtasWithoutTableDefinition");
-    TableDesc desc = catalog.getTableDesc(tableName);
-    assertTrue(catalog.existsTable(tableName));
+    String qualifiedTableName = buildFQName(DEFAULT_DATABASE_NAME, tableName);
+    TableDesc desc = catalog.getTableDesc(qualifiedTableName);
+    assertTrue(catalog.existsTable(qualifiedTableName));
 
-    assertTrue(desc.getSchema().contains("default.testCtasWithoutTableDefinition.col1"));
+    assertTrue(desc.getSchema().contains("default.testctaswithouttabledefinition.col1"));
     PartitionMethodDesc partitionDesc = desc.getPartitionMethod();
     assertEquals(partitionDesc.getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals("key", partitionDesc.getExpressionSchema().getColumns().get(0).getSimpleName());
@@ -99,10 +101,12 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     res.close();
 
+    String tableName = CatalogUtil.normalizeIdentifier("testCtasWithColumnedPartition");
+
     TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "testCtasWithColumnedPartition");
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "testCtasWithColumnedPartition"));
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     PartitionMethodDesc partitionDesc = desc.getPartitionMethod();
     assertEquals(partitionDesc.getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals("key", partitionDesc.getExpressionSchema().getColumns().get(0).getSimpleName());

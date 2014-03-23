@@ -77,10 +77,10 @@ public class TestMergeJoinExec {
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     Schema employeeSchema = new Schema();
-    employeeSchema.addColumn("managerId", Type.INT4);
-    employeeSchema.addColumn("empId", Type.INT4);
-    employeeSchema.addColumn("memId", Type.INT4);
-    employeeSchema.addColumn("deptName", Type.TEXT);
+    employeeSchema.addColumn("managerid", Type.INT4);
+    employeeSchema.addColumn("empid", Type.INT4);
+    employeeSchema.addColumn("memid", Type.INT4);
+    employeeSchema.addColumn("deptname", Type.TEXT);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
@@ -107,8 +107,8 @@ public class TestMergeJoinExec {
     catalog.createTable(employee);
 
     Schema peopleSchema = new Schema();
-    peopleSchema.addColumn("empId", Type.INT4);
-    peopleSchema.addColumn("fk_memId", Type.INT4);
+    peopleSchema.addColumn("empid", Type.INT4);
+    peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta(StoreType.CSV);

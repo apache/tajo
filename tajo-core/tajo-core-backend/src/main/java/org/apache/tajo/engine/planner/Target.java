@@ -43,7 +43,7 @@ public class Target implements Cloneable, GsonObject {
   public Target(final EvalNode eval, final String alias) {
     this.expr = eval;
     // force lower case
-    String normalized = alias.toLowerCase();
+    String normalized = alias;
 
     // If an expr is a column reference and its alias is equivalent to column name, ignore a given alias.
     if (eval instanceof FieldEval && eval.getName().equals(normalized)) {

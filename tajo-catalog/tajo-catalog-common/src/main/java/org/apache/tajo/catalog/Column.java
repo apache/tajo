@@ -40,7 +40,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @param dataType Data Type with length
    */
 	public Column(String name, DataType dataType) {
-    this.name = CatalogUtil.normalizeIdentifier(name);
+    this.name = name;
 		this.dataType = dataType;
 	}
 
@@ -64,7 +64,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
   }
 
 	public Column(ColumnProto proto) {
-    name = CatalogUtil.normalizeIdentifier(proto.getName());
+    name = proto.getName();
     dataType = proto.getDataType();
 	}
 

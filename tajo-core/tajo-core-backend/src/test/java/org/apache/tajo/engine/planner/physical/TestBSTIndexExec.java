@@ -95,14 +95,14 @@ public class TestBSTIndexExec {
     idxPath = new Path(workDir, "test.idx");
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", Type.INT4);
-    schema.addColumn("empId", Type.INT4);
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("managerid", Type.INT4);
+    schema.addColumn("empid", Type.INT4);
+    schema.addColumn("deptname", Type.TEXT);
 
     this.idxSchema = new Schema();
-    idxSchema.addColumn("managerId", Type.INT4);
+    idxSchema.addColumn("managerid", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
-    sortKeys[0] = new SortSpec(idxSchema.getColumn("managerId"), true, false);
+    sortKeys[0] = new SortSpec(idxSchema.getColumn("managerid"), true, false);
     this.comp = new TupleComparator(idxSchema, sortKeys);
 
     this.writer = new BSTIndex(conf).getIndexWriter(idxPath,

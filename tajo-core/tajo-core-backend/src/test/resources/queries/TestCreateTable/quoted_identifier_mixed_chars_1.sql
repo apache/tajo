@@ -1,0 +1,1 @@
+SELECT "aGe", "teXt", "Number" FROM "TABLE1";

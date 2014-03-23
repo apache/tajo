@@ -82,9 +82,9 @@ public class TestProgressExternalSortExec {
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", TajoDataTypes.Type.INT4);
-    schema.addColumn("empId", TajoDataTypes.Type.INT4);
-    schema.addColumn("deptName", TajoDataTypes.Type.TEXT);
+    schema.addColumn("managerid", TajoDataTypes.Type.INT4);
+    schema.addColumn("empid", TajoDataTypes.Type.INT4);
+    schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.RAW);
     Path employeePath = new Path(testDir, "employee.csv");
@@ -171,8 +171,8 @@ public class TestProgressExternalSortExec {
     exec.init();
     TupleComparator comparator = new TupleComparator(proj.getSchema(),
         new SortSpec[]{
-            new SortSpec(new Column("managerId", TajoDataTypes.Type.INT4)),
-            new SortSpec(new Column("empId", TajoDataTypes.Type.INT4))
+            new SortSpec(new Column("managerid", TajoDataTypes.Type.INT4)),
+            new SortSpec(new Column("empid", TajoDataTypes.Type.INT4))
         });
 
     float initProgress = 0.0f;

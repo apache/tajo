@@ -32,8 +32,8 @@ public class ColumnReferenceExpr extends Expr {
 
   public ColumnReferenceExpr(String qualifier, String columnName) {
     super(OpType.Column);
-    this.qualifier = qualifier.toLowerCase();
-    this.name = columnName.toLowerCase();
+    this.qualifier = qualifier;
+    this.name = columnName;
   }
 
   public boolean hasQualifier() {
@@ -41,7 +41,7 @@ public class ColumnReferenceExpr extends Expr {
   }
 
   public void setQualifier(String qualifier) {
-    this.qualifier = qualifier.toLowerCase();
+    this.qualifier = qualifier;
   }
 
   public String getQualifier() {
@@ -53,7 +53,7 @@ public class ColumnReferenceExpr extends Expr {
   }
 
   public void setName(String qualifiedName) {
-    String [] parts = qualifiedName.toLowerCase().split("\\.");
+    String [] parts = qualifiedName.split("\\.");
 
     if (parts.length > 1) {
       qualifier = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
