@@ -283,6 +283,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-698: Error occurs when FUNCTION and IN statement are used together.
+    (hyunsik)
+    
     TAJO-692: Missing Null handling for INET4 in RowStoreUtil. (jihoon)
 
     TAJO-701: Invalid bytes when creating BlobDatum with offset. (jinho)
@@ -561,8 +564,6 @@ Release 0.8.0 - unreleased
 
   TASKS
 
-    TAJO-684: Add functions about time. (Alvin Henrick via jihoon)
-
     TAJO-669: Add cluster setup documentation. (hyunsik)
 
     TAJO-681: Embed sphinx rtd theme into tajo-docs. (hyunsik)
@@ -839,9 +840,6 @@ Release 0.2.0 - released
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
-
-    TAJO-682: RangePartitionAlgorithm should be improved to handle empty
-    texts. (hyunsik)
 
     TAJO-511: Sometimes, a query progress becomes higher than 100%. (jihoon)
 
