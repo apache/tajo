@@ -121,7 +121,7 @@ public class MemStore implements CatalogStore {
 
   @Override
   public void createTable(CatalogProtos.TableDescProto request) throws CatalogException {
-    String [] splitted = CatalogUtil.splitTableName(CatalogUtil.normalizeIdentifier(request.getTableName()));
+    String [] splitted = CatalogUtil.splitTableName(request.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
           + request.getTableName() + "\".");
@@ -131,7 +131,7 @@ public class MemStore implements CatalogStore {
 
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
 
-    String tbName = CatalogUtil.normalizeIdentifier(tableName);
+    String tbName = tableName;
     if (database.containsKey(tbName)) {
       throw new AlreadyExistsTableException(tbName);
     }

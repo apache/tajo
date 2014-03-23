@@ -204,7 +204,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto createTablespace(RpcController controller, CreateTablespaceRequest request) throws ServiceException {
-      final String tablespaceName = CatalogUtil.normalizeIdentifier(request.getTablespaceName());
+      final String tablespaceName = request.getTablespaceName();
       final String uri = request.getTablespaceUri();
 
       wlock.lock();
@@ -227,7 +227,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto dropTablespace(RpcController controller, StringProto request) throws ServiceException {
-      String tablespaceName = CatalogUtil.normalizeIdentifier(request.getValue());
+      String tablespaceName = request.getValue();
 
       wlock.lock();
       try {
@@ -248,7 +248,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto existTablespace(RpcController controller, StringProto request) throws ServiceException {
-      String tablespaceName = CatalogUtil.normalizeIdentifier(request.getValue());
+      String tablespaceName = request.getValue();
 
       rlock.lock();
       try {
@@ -280,8 +280,8 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto createDatabase(RpcController controller, CreateDatabaseRequest request) throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tablespaceName = CatalogUtil.normalizeIdentifier(request.getTablespaceName());
+      String databaseName = request.getDatabaseName();
+      String tablespaceName = request.getTablespaceName();
 
       wlock.lock();
       try {
@@ -302,7 +302,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto dropDatabase(RpcController controller, StringProto request) throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getValue());
+      String databaseName = request.getValue();
 
       wlock.lock();
       try {
@@ -323,7 +323,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto existDatabase(RpcController controller, StringProto request) throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getValue());
+      String databaseName = request.getValue();
 
       rlock.lock();
       try {
@@ -356,8 +356,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public TableDescProto getTableDesc(RpcController controller,
                                        TableIdentifierProto request) throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
       rlock.lock();
       try {
@@ -370,7 +370,7 @@ public class CatalogServer extends AbstractService {
           if (contain) {
             return store.getTable(databaseName, tableName);
           } else {
-            throw new NoSuchTableException(databaseName);
+            throw new NoSuchTableException(tableName);
           }
         } else {
           throw new NoSuchDatabaseException(databaseName);
@@ -387,7 +387,7 @@ public class CatalogServer extends AbstractService {
     public StringListProto getAllTableNames(RpcController controller, StringProto request)
         throws ServiceException {
 
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getValue());
+      String databaseName = request.getValue();
 
       rlock.lock();
       try {
@@ -420,7 +420,7 @@ public class CatalogServer extends AbstractService {
     public BoolProto createTable(RpcController controller, TableDescProto request)throws ServiceException {
 
       String [] splitted =
-          CatalogUtil.splitFQTableName(CatalogUtil.normalizeIdentifier(request.getTableName()));
+          CatalogUtil.splitFQTableName(request.getTableName());
 
       String databaseName = splitted[0];
       String tableName = splitted[1];
@@ -454,8 +454,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto dropTable(RpcController controller, TableIdentifierProto request) throws ServiceException {
 
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
       wlock.lock();
       try {
@@ -485,8 +485,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto existsTable(RpcController controller, TableIdentifierProto request)
         throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
       rlock.lock();
       try {
@@ -515,8 +515,8 @@ public class CatalogServer extends AbstractService {
     public PartitionMethodProto getPartitionMethodByTableName(RpcController controller,
                                                               TableIdentifierProto request)
         throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
       rlock.lock();
       try {
@@ -549,8 +549,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto existPartitionMethod(RpcController controller, TableIdentifierProto request)
         throws ServiceException {
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
       rlock.lock();
       try {
@@ -641,8 +641,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto existIndexByName(RpcController controller, IndexNameProto request) throws ServiceException {
 
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String indexName = CatalogUtil.normalizeIdentifier(request.getIndexName());
+      String databaseName = request.getDatabaseName();
+      String indexName = request.getIndexName();
 
       rlock.lock();
       try {
@@ -660,9 +660,9 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
-      String databaseName = CatalogUtil.normalizeIdentifier(identifier.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(identifier.getTableName());
-      String columnName = CatalogUtil.normalizeIdentifier(request.getColumnName());
+      String databaseName = identifier.getDatabaseName();
+      String tableName = identifier.getTableName();
+      String columnName = request.getColumnName();
 
       rlock.lock();
       try {
@@ -680,8 +680,8 @@ public class CatalogServer extends AbstractService {
     public IndexDescProto getIndexByName(RpcController controller, IndexNameProto request)
         throws ServiceException {
 
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String indexName = CatalogUtil.normalizeIdentifier(request.getIndexName());
+      String databaseName = request.getDatabaseName();
+      String indexName = request.getIndexName();
 
       rlock.lock();
       try {
@@ -702,9 +702,9 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
-      String databaseName = CatalogUtil.normalizeIdentifier(identifier.getDatabaseName());
-      String tableName = CatalogUtil.normalizeIdentifier(identifier.getTableName());
-      String columnName = CatalogUtil.normalizeIdentifier(request.getColumnName());
+      String databaseName = identifier.getDatabaseName();
+      String tableName = identifier.getTableName();
+      String columnName = request.getColumnName();
 
       rlock.lock();
       try {
@@ -724,8 +724,8 @@ public class CatalogServer extends AbstractService {
     public BoolProto dropIndex(RpcController controller, IndexNameProto request)
         throws ServiceException {
 
-      String databaseName = CatalogUtil.normalizeIdentifier(request.getDatabaseName());
-      String indexName = CatalogUtil.normalizeIdentifier(request.getIndexName());
+      String databaseName = request.getDatabaseName();
+      String indexName = request.getIndexName();
 
       wlock.lock();
       try {

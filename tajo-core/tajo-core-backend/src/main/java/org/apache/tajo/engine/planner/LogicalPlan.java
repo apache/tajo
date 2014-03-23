@@ -144,7 +144,7 @@ public class LogicalPlan {
     } else { // if a generated column name
       generatedName = attachSeqIdToGeneratedColumnName(getGeneratedPrefixFromExpr(expr));
     }
-    return generatedName.toLowerCase();
+    return generatedName;
   }
 
   /**
@@ -578,15 +578,15 @@ public class LogicalPlan {
     }
 
     public boolean existsRelation(String name) {
-      return nameToRelationMap.containsKey(CatalogUtil.normalizeIdentifier(name));
+      return nameToRelationMap.containsKey(name);
     }
 
     public RelationNode getRelation(String name) {
-      return nameToRelationMap.get(CatalogUtil.normalizeIdentifier(name));
+      return nameToRelationMap.get(name);
     }
 
     public void addRelation(RelationNode relation) {
-      nameToRelationMap.put(CatalogUtil.normalizeIdentifier(relation.getCanonicalName()), relation);
+      nameToRelationMap.put(relation.getCanonicalName(), relation);
     }
 
     public Collection<RelationNode> getRelations() {

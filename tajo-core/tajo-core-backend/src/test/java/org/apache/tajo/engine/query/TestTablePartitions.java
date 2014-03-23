@@ -29,6 +29,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.junit.Test;
 
@@ -48,7 +49,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testCreateColumnPartitionedTable() throws Exception {
-    String tableName ="testCreateColumnPartitionedTable";
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTable");
     ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
     res.close();
@@ -64,7 +65,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testCreateColumnPartitionedTableWithSelectedColumns() throws Exception {
-    String tableName ="testCreateColumnPartitionedTableWithSelectedColumns";
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithSelectedColumns");
     ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
@@ -80,7 +81,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableByOneColumn() throws Exception {
-    String tableName ="testColumnPartitionedTableByOneColumn";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumn");
     ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
@@ -125,7 +126,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testQueryCasesOnColumnPartitionedTable() throws Exception {
-    String tableName ="testQueryCasesOnColumnPartitionedTable";
+    String tableName = CatalogUtil.normalizeIdentifier("testQueryCasesOnColumnPartitionedTable");
     ResultSet res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
@@ -155,9 +156,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableByThreeColumns() throws Exception {
-    String tableName ="testColumnPartitionedTableByThreeColumns";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumns");
     ResultSet res = testBase.execute(
-        "create table " + tableName +" (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
     res.close();
     TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
@@ -219,7 +220,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableByOneColumnsWithCompression() throws Exception {
-    String tableName = "testColumnPartitionedTableByOneColumnsWithCompression";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumnsWithCompression");
     ResultSet res = executeString(
         "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
@@ -255,7 +256,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableByTwoColumnsWithCompression() throws Exception {
-    String tableName = "testColumnPartitionedTableByTwoColumnsWithCompression";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByTwoColumnsWithCompression");
     ResultSet res = executeString("create table " + tableName + " (col3 float8, col4 text) USING csv " +
         "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "PARTITION by column(col1 int4, col2 int4)");
@@ -299,7 +300,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableByThreeColumnsWithCompression() throws Exception {
-    String tableName = "testColumnPartitionedTableByThreeColumnsWithCompression";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumnsWithCompression");
     ResultSet res = executeString(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
@@ -382,7 +383,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testColumnPartitionedTableNoMatchedPartition() throws Exception {
-    String tableName = "testColumnPartitionedTableNoMatchedPartition";
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableNoMatchedPartition");
     ResultSet res = executeString(
         "create table " + tableName + " (col4 text) USING csv " +
             "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +

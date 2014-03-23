@@ -141,14 +141,17 @@ public class ExprTestBase {
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
       throws IOException {
-    testEval(schema, tableName, csvTuple, query, expected, ',', true);
+    testEval(schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
+        expected, ',', true);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected,
                        char delimiter, boolean condition) throws IOException {
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
-    String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
+    String qualifiedTableName =
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME,
+            tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null);
     Schema inputSchema = null;
     if (schema != null) {
       inputSchema = SchemaUtil.clone(schema);

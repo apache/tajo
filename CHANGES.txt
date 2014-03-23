@@ -132,7 +132,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-553: Add a method to the TajoClient to get finished query lists.
+    TAJO-644: Support quoted identifiers. (hyunsik)
+    
+    TAJO-553: Add a method to the TajoClient to get finished query lists. 
     (Ilhyun Suh via jihoon)
 
     TAJO-670: Change daemon's hostname to canonical hostname 
@@ -293,6 +295,8 @@ Release 0.8.0 - unreleased
 
     TAJO-647: Work unbalance on disk scheduling of DefaultScheduler. (jinho)
 
+    TAJO-612: Missing INET4 type in SQLParser. (jihoon)
+
     TAJO-672: Wrong progress status when overwrites to partition table.
     (hyoungjunkim via hyunsik)
 
@@ -314,7 +318,7 @@ Release 0.8.0 - unreleased
 
     TAJO-641: NPE in HCatalogStore.addTable(). (jaehwa)
 
-    TAJO-646: TajoClient is blocked while main thread finished. 
+    TAJO-646: TajoClient is blocked while main thread finished.
     (hyoungjunkim via jinho)
 
     TAJO-645: Task.Reporter can cause NPE during reporting. (hyunsik)
@@ -597,6 +601,11 @@ Release 0.8.0 - unreleased
     TAJO-320: Visualize Tajo statemachine. (Min Zhou via hyunsik)
 
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
+
+  SUB TASKS
+
+    TAJO-602: WorkerResourceManager should be broke down into 3 parts.
+    (hyunsik)
 
   TEST
 

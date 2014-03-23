@@ -23,6 +23,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 @Category(IntegrationTest.class)
@@ -105,6 +106,75 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     executeString("DROP TABLE IF EXISTS D4.table1");
     assertTableNotExists("D4.table1");
+  }
+
+  @Test
+  public final void testDelimitedIdentifierWithNonAsciiCharacters() throws Exception {
+
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      ResultSet res = null;
+      try {
+        List<String> tableNames = executeDDL("quoted_identifier_non_ascii_ddl.sql", "table1", "\"테이블1\"");
+        assertTableExists(tableNames.get(0));
+
+        // SELECT "아이디", "텍스트", "숫자" FROM "테이블1";
+        res = executeFile("quoted_identifier_non_ascii_1.sql");
+        assertResultSet(res, "quoted_identifier_non_ascii_1.result");
+      } finally {
+        cleanupQuery(res);
+      }
+
+      // SELECT "아이디" as "진짜아이디", "텍스트" as text, "숫자" FROM "테이블1" as "테이블 별명"
+      try {
+        res = executeFile("quoted_identifier_non_ascii_2.sql");
+        assertResultSet(res, "quoted_identifier_non_ascii_2.result");
+      } finally {
+        cleanupQuery(res);
+      }
+
+      // SELECT "아이디" "진짜아이디", char_length("텍스트") as "길이", "숫자" * 2 FROM "테이블1" "테이블 별명"
+      try {
+        res = executeFile("quoted_identifier_non_ascii_3.sql");
+        assertResultSet(res, "quoted_identifier_non_ascii_3.result");
+      } finally {
+        cleanupQuery(res);
+      }
+    }
+  }
+
+  @Test
+  public final void testDelimitedIdentifierWithMixedCharacters() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      ResultSet res = null;
+
+      try {
+        List<String> tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table1", "\"TABLE1\"");
+        assertTableExists(tableNames.get(0));
+
+        tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table2", "\"tablE1\"");
+        assertTableExists(tableNames.get(0));
+
+        // SELECT "aGe", "tExt", "Number" FROM "TABLE1";
+        res = executeFile("quoted_identifier_mixed_chars_1.sql");
+        assertResultSet(res, "quoted_identifier_mixed_chars_1.result");
+      } finally {
+        cleanupQuery(res);
+      }
+
+      try {
+        res = executeFile("quoted_identifier_mixed_chars_2.sql");
+        assertResultSet(res, "quoted_identifier_mixed_chars_2.result");
+      } finally {
+        cleanupQuery(res);
+      }
+
+      try {
+        res = executeFile("quoted_identifier_mixed_chars_3.sql");
+        assertResultSet(res, "quoted_identifier_mixed_chars_3.result");
+      } finally {
+        cleanupQuery(res);
+      }
+    }
   }
 
   @Test

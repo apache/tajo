@@ -356,7 +356,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testCreateTableWithUnsupportedStoreType() throws IOException {
-    testSimpleEval("create table table1 (name text, age int) using RAW;", new String[] {"Unsupported store type :RAW"}, false);
+    testSimpleEval("create table table1 (name text, age int) using RAW;",
+        new String[] {"Wrong query statement or query plan: create table table1 (name text, age int) using RAW"},
+        false);
   }
-
 }

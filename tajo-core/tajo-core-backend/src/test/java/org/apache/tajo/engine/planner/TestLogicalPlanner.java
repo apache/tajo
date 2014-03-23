@@ -262,7 +262,7 @@ public class TestLogicalPlanner {
   static {
     expectedJoinSchema = new Schema();
     expectedJoinSchema.addColumn("name", Type.TEXT);
-    expectedJoinSchema.addColumn("deptName", Type.TEXT);
+    expectedJoinSchema.addColumn("deptname", Type.TEXT);
     expectedJoinSchema.addColumn("score", Type.INT4);
   }
 

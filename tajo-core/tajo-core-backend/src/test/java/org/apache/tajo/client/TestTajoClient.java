@@ -110,13 +110,14 @@ public class TestTajoClient {
     int currentNum = client.getAllDatabaseNames().size();
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
 
-    assertTrue(client.createDatabase("testcurrentdatabase"));
+    String databaseName = CatalogUtil.normalizeIdentifier("testcurrentdatabase");
+    assertTrue(client.createDatabase(databaseName));
     assertEquals(currentNum + 1, client.getAllDatabaseNames().size());
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
-    assertTrue(client.selectDatabase("testcurrentdatabase"));
-    assertEquals("testcurrentdatabase", client.getCurrentDatabase());
-    assertTrue(client.selectDatabase("default"));
-    assertTrue(client.dropDatabase("testcurrentdatabase"));
+    assertTrue(client.selectDatabase(databaseName));
+    assertEquals(databaseName, client.getCurrentDatabase());
+    assertTrue(client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME));
+    assertTrue(client.dropDatabase(databaseName));
 
     assertEquals(currentNum, client.getAllDatabaseNames().size());
   }
@@ -139,19 +140,20 @@ public class TestTajoClient {
   @Test
   public final void testDropCurrentDatabase() throws IOException, ServiceException, InterruptedException {
     int currentNum = client.getAllDatabaseNames().size();
-    assertTrue(client.createDatabase("testdropcurrentdatabase"));
-    assertTrue(client.selectDatabase("testdropcurrentdatabase"));
-    assertEquals("testdropcurrentdatabase", client.getCurrentDatabase());
+    String databaseName = CatalogUtil.normalizeIdentifier("testdropcurrentdatabase");
+    assertTrue(client.createDatabase(databaseName));
+    assertTrue(client.selectDatabase(databaseName));
+    assertEquals(databaseName, client.getCurrentDatabase());
 
     try {
-      client.dropDatabase("testdropcurrentdatabase");
+      client.dropDatabase(databaseName);
       assertFalse(true);
     } catch (Throwable t) {
       assertFalse(false);
     }
 
-    assertTrue(client.selectDatabase("default"));
-    assertTrue(client.dropDatabase("testdropcurrentdatabase"));
+    assertTrue(client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME));
+    assertTrue(client.dropDatabase(databaseName));
     assertEquals(currentNum, client.getAllDatabaseNames().size());
   }
 
@@ -204,7 +206,7 @@ public class TestTajoClient {
 
   @Test
   public final void testUpdateQuery() throws IOException, ServiceException {
-    final String tableName = "testUpdateQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testUpdateQuery");
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
@@ -257,7 +259,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndDropExternalTableByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropExternalTableByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropExternalTableByExecuteQuery");
 
     Path tablePath = writeTmpTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -277,7 +279,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndPurgeExternalTableByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndPurgeExternalTableByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeExternalTableByExecuteQuery");
 
     Path tablePath = writeTmpTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -297,7 +299,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndDropTableByExecuteQuery() throws IOException, ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTableByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTableByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -318,7 +320,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndPurgeTableByExecuteQuery() throws IOException, ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndPurgeTableByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeTableByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -338,7 +340,7 @@ public class TestTajoClient {
 
   @Test
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
-    final String tableName = "testDDLByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testDDLByExecuteQuery");
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
@@ -371,7 +373,7 @@ public class TestTajoClient {
 
   @Test
   public final void testGetTableDesc() throws IOException, ServiceException, SQLException {
-    final String tableName1 = "table3";
+    final String tableName1 = CatalogUtil.normalizeIdentifier("table3");
     Path tablePath = writeTmpTable(tableName1);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
     FileSystem fs = tablePath.getFileSystem(conf);
@@ -546,7 +548,7 @@ public class TestTajoClient {
   public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException,
       ServiceException, SQLException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = "testCreateAndDropTablePartitionedColumnByExecuteQuery";
+    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTablePartitionedColumnByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -590,7 +592,7 @@ public class TestTajoClient {
   @Test
   public final void testGetFinishedQueryList() throws IOException,
       ServiceException, SQLException {
-    final String tableName = "testGetFinishedQueryList";
+    final String tableName = CatalogUtil.normalizeIdentifier("testGetFinishedQueryList");
     String sql = "create table " + tableName + " (deptname text, score int4)";
 
     client.updateQuery(sql);

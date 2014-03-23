@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
@@ -102,7 +101,7 @@ public class QueryContext extends Options {
    * @param tableName The target table name
    */
   public void setOutputTable(String tableName) {
-    put(OUTPUT_TABLE_NAME, CatalogUtil.normalizeIdentifier(tableName));
+    put(OUTPUT_TABLE_NAME, tableName);
   }
 
   public String getOutputTable() {

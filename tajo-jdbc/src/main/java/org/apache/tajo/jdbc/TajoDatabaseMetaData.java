@@ -20,6 +20,7 @@ package org.apache.tajo.jdbc;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.ResultSetUtil;
@@ -370,7 +371,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
           } else if (c == '_') {
             result.append('.');
           } else {
-            result.append(Character.toLowerCase(c));
+            result.append(c);
           }
         }
       }
@@ -380,18 +381,19 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getTables(@Nullable String catalog, String schemaPattern, String tableNamePattern, String [] types)
-      throws SQLException {
+  public ResultSet getTables(@Nullable String catalog, @Nullable String schemaPattern,
+                             @Nullable String tableNamePattern, @Nullable String [] types) throws SQLException {
     try {
       final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
       final String resultCatalog;
       if (catalog == null) {
-        resultCatalog = "default";
+        resultCatalog = TajoConstants.DEFAULT_DATABASE_NAME;
       } else {
-        resultCatalog = catalog;
+        resultCatalog = CatalogUtil.normalizeIdentifier(catalog);
       }
 
-      String regtableNamePattern = convertPattern(tableNamePattern);
+      String regtableNamePattern =
+          convertPattern(tableNamePattern == null ? null : CatalogUtil.normalizeIdentifier(tableNamePattern));
       try {
         TajoClient tajoClient = conn.getTajoClient();
         List<String> tableNames = tajoClient.getTableList(resultCatalog);
@@ -501,7 +503,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
+  public ResultSet getColumns(@Nullable String catalog, @Nullable String schemaPattern,
+                              @Nullable String tableNamePattern, @Nullable String columnNamePattern)
       throws SQLException {
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
     try {
@@ -509,8 +512,10 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         catalog = TajoConstants.DEFAULT_DATABASE_NAME;
       }
 
-      String regtableNamePattern = convertPattern(tableNamePattern);
-      String regcolumnNamePattern = convertPattern(columnNamePattern);
+      String regtableNamePattern =
+          convertPattern(tableNamePattern == null ? null : CatalogUtil.normalizeIdentifier(tableNamePattern));
+      String regcolumnNamePattern =
+          convertPattern(columnNamePattern == null ? null : CatalogUtil.normalizeIdentifier(columnNamePattern));
 
       List<String> tables = conn.getTajoClient().getTableList(catalog);
       for (String table: tables) {
@@ -763,7 +768,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean nullPlusNonNullIsNull() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -833,7 +838,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -944,7 +949,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsExpressionsInOrderBy() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -954,7 +959,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsFullOuterJoins() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -1004,7 +1009,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -1059,7 +1064,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsOuterJoins() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override

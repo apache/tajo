@@ -56,7 +56,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   public TableDesc(String tableName, Schema schema, TableMeta meta,
                    Path path, boolean external) {
     this();
-    this.tableName = tableName.toLowerCase();
+    this.tableName = tableName;
     this.schema = schema;
     this.meta = meta;
     this.uri = path;
@@ -64,7 +64,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   }
 
 	public TableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
-		this(CatalogUtil.normalizeIdentifier(tableName), schema, meta, path, true);
+		this(tableName, schema, meta, path, true);
 	}
 	
 	public TableDesc(String tableName, Schema schema, StoreType type, Options options, Path path) {
@@ -83,8 +83,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	}
 	
 	public void setName(String tableId) {
-	  // tajo deems all identifiers as lowcase characters
-		this.tableName = tableId.toLowerCase();
+		this.tableName = tableId;
 	}
 	
   public String getName() {

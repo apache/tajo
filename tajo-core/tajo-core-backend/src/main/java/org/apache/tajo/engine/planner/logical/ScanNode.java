@@ -54,7 +54,7 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
   
 	public void init(TableDesc desc, String alias) {
     this.tableDesc = desc;
-    this.alias = CatalogUtil.normalizeIdentifier(alias);
+    this.alias = alias;
 
     if (!CatalogUtil.isFQTableName(this.tableDesc.getName())) {
       throw new IllegalArgumentException("the name in TableDesc must be qualified, but it is \"" +

@@ -287,7 +287,7 @@ public class GlobalEngine extends AbstractService {
     if(createTable.isExternal()){
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     } else {
-      Path tablePath = new Path(sm.getWarehouseDir(), createTable.getTableName().toLowerCase());
+      Path tablePath = new Path(sm.getWarehouseDir(), createTable.getTableName());
       createTable.setPath(tablePath);
     }
 
@@ -382,7 +382,7 @@ public class GlobalEngine extends AbstractService {
     }
 
     if (catalog.createDatabase(databaseName, tablespaceName)) {
-      String normalized = CatalogUtil.normalizeIdentifier(databaseName);
+      String normalized = databaseName;
       Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
       FileSystem fs = databaseDir.getFileSystem(context.getConf());
       fs.mkdirs(databaseDir);

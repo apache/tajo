@@ -198,8 +198,9 @@ drop_table_statement
 */
 
 identifier
-  : Identifier
+  : Regular_Identifier
   | nonreserved_keywords
+  | Quoted_Identifier
   ;
 
 nonreserved_keywords
@@ -1050,7 +1051,7 @@ table_or_query_name
   ;
 
 table_name
-  : identifier  ( DOT  identifier (  DOT identifier )? )?
+  : identifier (DOT identifier ( DOT identifier)? )?
   ;
 
 query_specification
@@ -1071,7 +1072,7 @@ derived_column
   ;
 
 qualified_asterisk
-  : (tb_name=Identifier DOT)? MULTIPLY
+  : (tb_name=identifier DOT)? MULTIPLY
   ;
 
 set_qualifier

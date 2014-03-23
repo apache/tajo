@@ -175,7 +175,7 @@ public class QueryTestCaseBase {
     // if the current database is "default", shouldn't drop it.
     if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
       for (String tableName : catalog.getAllTableNames(currentDatabase)) {
-        client.updateQuery("DROP TABLE IF EXISTS " +tableName + " PURGE");
+        client.updateQuery("DROP TABLE IF EXISTS " + tableName + " PURGE");
       }
 
       client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
@@ -185,7 +185,7 @@ public class QueryTestCaseBase {
   }
 
   public QueryTestCaseBase() {
-    this.currentDatabase = getClass().getSimpleName();
+    this.currentDatabase = CatalogUtil.normalizeIdentifier(getClass().getSimpleName());
     init();
   }
 

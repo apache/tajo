@@ -62,15 +62,15 @@ public class TestLogicalOptimizer {
     
     Schema schema = new Schema();
     schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empId", Type.INT4);
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("empid", Type.INT4);
+    schema.addColumn("deptname", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("deptname", Type.TEXT);
     schema2.addColumn("manager", Type.TEXT);
 
     Schema schema3 = new Schema();
-    schema3.addColumn("deptName", Type.TEXT);
+    schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
     schema3.addColumn("phone", Type.INT4);
 

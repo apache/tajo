@@ -75,9 +75,9 @@ public class TestExternalSortExec {
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", Type.INT4);
-    schema.addColumn("empId", Type.INT4);
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("managerid", Type.INT4);
+    schema.addColumn("empid", Type.INT4);
+    schema.addColumn("deptname", Type.TEXT);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
@@ -150,8 +150,8 @@ public class TestExternalSortExec {
     long start = System.currentTimeMillis();
     TupleComparator comparator = new TupleComparator(proj.getSchema(),
         new SortSpec[]{
-            new SortSpec(new Column("managerId", Type.INT4)),
-            new SortSpec(new Column("empId", Type.INT4))
+            new SortSpec(new Column("managerid", Type.INT4)),
+            new SortSpec(new Column("empid", Type.INT4))
         });
 
     while ((tuple = exec.next()) != null) {

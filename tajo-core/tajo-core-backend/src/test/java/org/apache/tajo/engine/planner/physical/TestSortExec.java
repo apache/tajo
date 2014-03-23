@@ -70,9 +70,9 @@ public class TestSortExec {
     sm = StorageManagerFactory.getStorageManager(conf, workDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", Type.INT4);
-    schema.addColumn("empId", Type.INT4);
-    schema.addColumn("deptName", Type.TEXT);
+    schema.addColumn("managerid", Type.INT4);
+    schema.addColumn("empid", Type.INT4);
+    schema.addColumn("deptname", Type.TEXT);
 
     employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 

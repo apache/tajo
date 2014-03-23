@@ -89,7 +89,7 @@ public class NamedExprsManager {
   }
 
   private static String normalizeName(String name) {
-    return name.toLowerCase();
+    return name;
   }
 
   /**
@@ -121,7 +121,7 @@ public class NamedExprsManager {
   }
 
   public NamedExpr getNamedExpr(String name) {
-    String normalized = name.toLowerCase();
+    String normalized = name;
     return new NamedExpr(getExpr(name), normalized);
   }
 
@@ -227,7 +227,7 @@ public class NamedExprsManager {
    * @param evalNode EvalNode to be added.
    */
   public void markAsEvaluated(String referenceName, EvalNode evalNode) throws PlanningException {
-    String normalized = referenceName.toLowerCase();
+    String normalized = referenceName;
 
     int refId = nameToIdMap.get(normalized);
     evaluationStateMap.put(refId, true);
