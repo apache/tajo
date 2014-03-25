@@ -304,4 +304,78 @@ public class TestUniformRangePartition {
 
     assertEquals(expected, ranges[0]);
   }
+
+  @Test
+  public void testPartitionForOnePartNumWithOneOfTheValueNull() {
+    Schema schema = new Schema()
+            .addColumn("l_returnflag", Type.TEXT)
+            .addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(2);
+    s.put(0, DatumFactory.createNullDatum());
+    s.put(1, DatumFactory.createText("F"));
+    Tuple e = new VTuple(2);
+    e.put(0, DatumFactory.createText("R"));
+    e.put(1, DatumFactory.createNullDatum());
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+            new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(1);
+
+    assertEquals(expected, ranges[0]);
+  }
+
+  @Test
+  public void testPartitionForOnePartNumWithBothValueNull() {
+    Schema schema = new Schema()
+            .addColumn("l_returnflag", Type.TEXT)
+            .addColumn("l_linestatus", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(2);
+    s.put(0, DatumFactory.createNullDatum());
+    s.put(1, DatumFactory.createNullDatum());
+    Tuple e = new VTuple(2);
+    e.put(0, DatumFactory.createNullDatum());
+    e.put(1, DatumFactory.createNullDatum());
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+            new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(1);
+
+    assertEquals(expected, ranges[0]);
+  }
+
+    @Test
+    public void testPartitionWithNull() {
+        Schema schema = new Schema();
+        schema.addColumn("l_returnflag", Type.TEXT);
+        schema.addColumn("l_linestatus", Type.TEXT);
+
+        SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+        Tuple s = new VTuple(2);
+        s.put(0, DatumFactory.createNullDatum());
+        s.put(1, DatumFactory.createText("F"));
+        Tuple e = new VTuple(2);
+        e.put(0, DatumFactory.createNullDatum());
+        e.put(1, DatumFactory.createText("O"));
+        TupleRange expected = new TupleRange(sortSpecs, s, e);
+        RangePartitionAlgorithm partitioner
+                = new UniformRangePartition(expected, sortSpecs, true);
+        TupleRange [] ranges = partitioner.partition(10);
+
+
+        TupleRange prev = null;
+        for (TupleRange r : ranges) {
+            if (prev == null) {
+                prev = r;
+            } else {
+                assertTrue(prev.compareTo(r) > 0);
+            }
+        }
+    }
 }
