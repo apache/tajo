@@ -220,7 +220,7 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
 
     // GeoIP
-    GEOIP_DATA("tajo.geoip.data", ""),
+    GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     //////////////////////////////////
     // Hive Configuration

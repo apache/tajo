@@ -132,6 +132,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-685: Add prerequisite to the document of network functions and operators. 
+    (jihoon)
+
     TAJO-644: Support quoted identifiers. (hyunsik)
 
     TAJO-553: Add a method to the TajoClient to get finished query lists.
