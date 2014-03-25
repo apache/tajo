@@ -2,11 +2,32 @@
 Network Functions and Operators
 *******************************
 
+=============
+Prerequisites
+=============
+
+Apache Tajo provides network functions and operations using GeoIP databases.
+To use these functions and operations, the GeoIP database should be precedently installed in local disks of
+all the workers.
+(Please refer the install instruction in http://dev.maxmind.com/geoip/legacy/downloadable/)
+
+Once the GeoIP database is installed, you should specify the install location in ``conf/tajo-site.xml``
+as follows. ::
+
+  <property>
+    <name>tajo.function.geoip-database-location</name>
+    <value>/path/to/geoip/database/file</value>
+  </property>
+
+===================
+Supported Functions
+===================
+
 .. function:: geoip_country_code (string addr)
 
   Convert an ipv4 address string to a geoip country code.
 
-  :param string: ipv4 address string
+  :param addr: ipv4 address string
   :rtype: text
   :example:
 
@@ -19,7 +40,7 @@ Network Functions and Operators
 
   Convert an ipv4 address to a geoip country code.
 
-  :param string: ipv4 address
+  :param addr: ipv4 address
   :rtype: text
   :example:
 
