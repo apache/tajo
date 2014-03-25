@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.exception.RangeOverflowException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
@@ -194,7 +195,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       }
       case TEXT: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = inc.add(new BigDecimal((int)(last.asChars().charAt(0))));
+          candidate = inc.add(new BigDecimal((int)(last instanceof NullDatum ? '0' : last.asChars().charAt(0))));
           return new BigDecimal(range.getEnd().get(colId).asChars().charAt(0)).compareTo(candidate) < 0;
         } else {
           candidate = new BigDecimal((int)(last.asChars().charAt(0))).subtract(inc);
@@ -381,7 +382,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 + incs[i].longValue())) + ""));
           } else {
             end.put(i, DatumFactory.createText(
-                ((char) (last.get(i).asChars().charAt(0) + incs[i].longValue())) + ""));
+                ((char) ((last.get(i) instanceof NullDatum ? '0': last.get(i).asChars().charAt(0)) + incs[i].longValue())) + ""));
           }
           break;
         case DATE:
