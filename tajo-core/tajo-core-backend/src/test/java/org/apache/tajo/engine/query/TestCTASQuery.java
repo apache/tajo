@@ -19,15 +19,14 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
@@ -38,8 +37,7 @@ import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.CatalogUtil.buildFQName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -177,5 +175,38 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res2 = executeQuery();
     resultSetToString(res2);
     res2.close();
+  }
+
+  @Test
+  public final void testCtasWithStoreType() throws Exception {
+    ResultSet res = executeFile("CtasWithStoreType.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    resultSetToString(res2);
+    res2.close();
+
+    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    assertNotNull(desc);
+    assertEquals(CatalogProtos.StoreType.RCFILE, desc.getMeta().getStoreType());
+  }
+
+  @Test
+  public final void testCtasWithOptions() throws Exception {
+    ResultSet res = executeFile("CtasWithOptions.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    resultSetToString(res2);
+    res2.close();
+
+    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    assertNotNull(desc);
+    assertEquals(CatalogProtos.StoreType.CSV, desc.getMeta().getStoreType());
+
+
+    Options options = desc.getMeta().getOptions();
+    assertNotNull(options);
+    assertEquals(StringEscapeUtils.escapeJava("\u0001"), options.get(CatalogConstants.CSVFILE_DELIMITER));
   }
 }

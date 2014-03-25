@@ -1313,11 +1313,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
     }
 
+    // Set default options to be created.
+    Options options = CatalogUtil.newOptionsWithDefault(createTableNode.getStorageType());
     if (expr.hasParams()) {
-      Options options = new Options();
       options.putAll(expr.getParams());
-      createTableNode.setOptions(options);
     }
+
+    createTableNode.setOptions(options);
 
     if (expr.hasPartition()) {
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {

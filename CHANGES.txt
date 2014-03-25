@@ -283,6 +283,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-705: CTAS always stores tables with CSV storage type into catalog.
+    (jinho)
+
     TAJO-693: StatusUpdateTransition in QueryUnitAttempt handles TA_UPDATE 
     incorrectly. (hyunsik)
 
