@@ -168,14 +168,14 @@ public class QueryTestCaseBase {
   @AfterClass
   public static void tearDownClass() throws ServiceException {
     for (String tableName : createdTableGlobalSet) {
-      client.updateQuery("DROP TABLE IF EXISTS " +tableName + " PURGE");
+      client.updateQuery("DROP TABLE IF EXISTS " +tableName);
     }
     createdTableGlobalSet.clear();
 
     // if the current database is "default", shouldn't drop it.
     if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
       for (String tableName : catalog.getAllTableNames(currentDatabase)) {
-        client.updateQuery("DROP TABLE IF EXISTS " + tableName + " PURGE");
+        client.updateQuery("DROP TABLE IF EXISTS " + tableName);
       }
 
       client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
