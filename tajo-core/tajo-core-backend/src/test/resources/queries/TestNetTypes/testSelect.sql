@@ -1,0 +1,1 @@
+select name, addr from table1;

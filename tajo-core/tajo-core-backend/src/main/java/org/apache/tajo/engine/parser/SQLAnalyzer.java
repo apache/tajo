@@ -1224,6 +1224,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         typeDefinition.setLengthOrPrecision(
             Integer.parseInt(binaryType.type_length().NUMBER().getText()));
       }
+    } else if (predefined_type.network_type() != null) {
+      typeDefinition = new DataTypeExpr(Type.INET4.name());
     }
 
     return typeDefinition;

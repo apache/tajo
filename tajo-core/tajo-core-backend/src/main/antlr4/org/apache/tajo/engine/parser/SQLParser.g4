@@ -377,6 +377,11 @@ predefined_type
   | datetime_type
   | bit_type
   | binary_type
+  | network_type
+  ;
+
+network_type
+  : INET4
   ;
 
 character_string_type
