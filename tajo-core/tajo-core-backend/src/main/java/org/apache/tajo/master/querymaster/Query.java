@@ -482,10 +482,10 @@ public class Query implements EventHandler<QueryEvent> {
                           Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception {
         CatalogService catalog = context.getWorkerContext().getCatalog();
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
-        TableMeta meta = lastStage.getTableMeta();
         TableStats stats = lastStage.getResultStats();
 
         CreateTableNode createTableNode = (CreateTableNode) lastStage.getBlock().getPlan();
+        TableMeta meta = new TableMeta(createTableNode.getStorageType(), createTableNode.getOptions());
 
         TableDesc tableDescTobeCreated =
             new TableDesc(

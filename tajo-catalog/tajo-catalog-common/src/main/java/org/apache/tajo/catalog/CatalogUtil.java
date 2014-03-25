@@ -183,17 +183,25 @@ public class CatalogUtil {
       return StoreType.CSV;
     } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
       return StoreType.RAW;
-    } else if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
-      return StoreType.CSV;
     } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
       return StoreType.ROWFILE;
-    }else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
+    } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
       return StoreType.RCFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.TREVNI.name())) {
       return StoreType.TREVNI;
     } else {
       return null;
     }
+  }
+  public static Options newOptionsWithDefault(StoreType type) {
+    Options options = new Options();
+    if(StoreType.CSV == type){
+      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+    } else if(StoreType.RCFILE == type){
+      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.RCFILE_BINARY_SERDE);
+    }
+
+    return options;
   }
 
   public static TableMeta newTableMeta(StoreType type) {
