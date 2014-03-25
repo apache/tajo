@@ -283,6 +283,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-707: Jenkins build failure in TestNetTypes. (jihoon)
+
     TAJO-693: StatusUpdateTransition in QueryUnitAttempt handles TA_UPDATE 
     incorrectly. (hyunsik)
 

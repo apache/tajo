@@ -19,56 +19,69 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.ResultSet;
 
 public class TestNetTypes extends QueryTestCaseBase {
 
-  @Before
-  public final void setup() throws Exception {
-    executeDDL("table1_ddl.sql", "table1.tbl");
-    executeDDL("table2_ddl.sql", "table2.tbl");
-  }
-
   @Test
   public final void testSelect() throws Exception {
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
     // select name, addr from table1;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 
   @Test
   public final void testGroupby() throws Exception {
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
     // select name, addr, count(1) from table1 group by name, addr;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 
   @Test
   public final void testGroupby2() throws Exception {
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
     // select addr, count(*) from table1 group by addr;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 
   @Test
   public final void testSort() throws Exception {
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
     // select * from table1 order by addr;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 
   @Test
   public final void testJoin() throws Exception {
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
     // select * from table1 as t1, table2 as t2 where t1.addr = t2.addr;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 }
