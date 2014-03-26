@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -57,6 +57,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
   private final BSTIndex.BSTIndexReader idxReader;
   private final Schema schema;
   private final TupleComparator comp;
+  private final RowStoreDecoder decoder;
 
   public RangeRetrieverHandler(File outDir, Schema schema, TupleComparator comp) throws IOException {
     this.file = outDir;
@@ -70,6 +71,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     this.idxReader.open();
     LOG.info("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", "
         + idxReader.getLastKey());
+    this.decoder = RowStoreDecoder.createInstance(schema);
   }
 
   @Override
@@ -78,11 +80,11 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     // its validity of the file.
     File data = new File(this.file, "data/data");
     byte [] startBytes = Base64.decodeBase64(kvs.get("start").get(0));
-    Tuple start = RowStoreUtil.RowStoreDecoder.toTuple(schema, startBytes);
+    Tuple start = decoder.toTuple(startBytes);
     byte [] endBytes;
     Tuple end;
     endBytes = Base64.decodeBase64(kvs.get("end").get(0));
-    end = RowStoreUtil.RowStoreDecoder.toTuple(schema, endBytes);
+    end = decoder.toTuple(endBytes);
     boolean last = kvs.containsKey("final");
 
     if(!comp.isAscendingFirstKey()) {

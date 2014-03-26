@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.planner.physical.ProjectionExec;
 import org.apache.tajo.engine.planner.physical.RangeShuffleFileWriteExec;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -355,13 +356,14 @@ public class TestRangeRetrieverHandler {
   private FileChunk getFileChunk(RangeRetrieverHandler handler, Schema keySchema,
                                  TupleRange range, boolean last) throws IOException {
     Map<String,List<String>> kvs = Maps.newHashMap();
+    RowStoreEncoder encoder = RowStoreEncoder.createInstance(keySchema);
     kvs.put("start", Lists.newArrayList(
         new String(Base64.encodeBase64(
-            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, range.getStart()),
+            encoder.toBytes(range.getStart()),
             false))));
     kvs.put("end", Lists.newArrayList(
         new String(Base64.encodeBase64(
-            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, range.getEnd()), false))));
+            encoder.toBytes(range.getEnd()), false))));
 
     if (last) {
       kvs.put("final", Lists.newArrayList("true"));

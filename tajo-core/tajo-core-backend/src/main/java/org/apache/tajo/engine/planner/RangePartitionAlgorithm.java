@@ -148,7 +148,7 @@ public abstract class RangePartitionAlgorithm {
         throw new UnsupportedOperationException(dataType + " is not supported yet");
     }
 
-    return inclusive ? columnCard.add(new BigDecimal(1)) : columnCard;
+    return inclusive ? columnCard.add(new BigDecimal(1)).abs() : columnCard.abs();
   }
 
   /**

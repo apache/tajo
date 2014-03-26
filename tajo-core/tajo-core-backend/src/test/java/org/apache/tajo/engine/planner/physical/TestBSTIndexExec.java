@@ -187,11 +187,6 @@ public class TestBSTIndexExec {
     assertEquals(tupleCount , counter);
   }
 
-  @After
-  public void shutdown() {
-
-  }
-
   private class TmpPlanner extends PhysicalPlannerImpl {
     public TmpPlanner(TajoConf conf, AbstractStorageManager sm) {
       super(conf, sm);

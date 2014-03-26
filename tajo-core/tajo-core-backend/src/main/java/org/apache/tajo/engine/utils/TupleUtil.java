@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
@@ -46,11 +46,14 @@ public class TupleUtil {
 
   public static String rangeToQuery(Schema schema, TupleRange range, boolean last)
       throws UnsupportedEncodingException {
+    return rangeToQuery(range, last, RowStoreEncoder.createInstance(schema));
+  }
+
+  public static String rangeToQuery(TupleRange range, boolean last, RowStoreEncoder encoder)
+      throws UnsupportedEncodingException {
     StringBuilder sb = new StringBuilder();
-    byte [] firstKeyBytes = RowStoreUtil.RowStoreEncoder
-        .toBytes(schema, range.getStart());
-    byte [] endKeyBytes = RowStoreUtil.RowStoreEncoder
-        .toBytes(schema, range.getEnd());
+    byte [] firstKeyBytes = encoder.toBytes(range.getStart());
+    byte [] endKeyBytes = encoder.toBytes(range.getEnd());
 
     String firstKeyBase64 = new String(Base64.encodeBase64(firstKeyBytes));
     String lastKeyBase64 = new String(Base64.encodeBase64(endKeyBytes));
