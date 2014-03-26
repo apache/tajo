@@ -33,7 +33,7 @@ public class DDLBuilder {
       .append(" Storage: ").append(desc.getMeta().getStoreType().name());
     sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
-    sb.append("CREATE EXTERNAL TABLE ").append(desc.getName());
+    sb.append("CREATE EXTERNAL TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
@@ -56,7 +56,7 @@ public class DDLBuilder {
         .append(" Storage: ").append(desc.getMeta().getStoreType().name());
     sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
-    sb.append("CREATE TABLE ").append(desc.getName());
+    sb.append("CREATE TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
@@ -80,7 +80,7 @@ public class DDLBuilder {
         sb.append(", ");
       }
 
-      sb.append(column.getSimpleName()).append(" ");
+      sb.append(CatalogUtil.denormalizeIdentifier(column.getSimpleName())).append(" ");
       TajoDataTypes.DataType dataType = column.getDataType();
       sb.append(dataType.getType().name());
       if (column.getDataType().hasLength() && column.getDataType().getLength() > 0) {

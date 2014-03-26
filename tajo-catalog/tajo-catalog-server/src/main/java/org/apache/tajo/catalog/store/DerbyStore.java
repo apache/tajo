@@ -135,7 +135,7 @@ public class DerbyStore extends AbstractDBStore {
 
 
 
-        sql = "CREATE UNIQUE INDEX idx_tables_name on TABLES (TABLE_NAME)";
+        sql = "CREATE UNIQUE INDEX idx_tables_name on TABLES (DB_ID, TABLE_NAME)";
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql);
         }

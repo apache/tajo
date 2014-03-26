@@ -28,6 +28,8 @@ import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class TestDDLBuilder {
@@ -60,14 +62,73 @@ public class TestDDLBuilder {
     TableDesc desc = new TableDesc("db1.table1", schema1, meta1, new Path("/table1"));
     desc.setPartitionMethod(partitionMethod1);
     desc.setExternal(true);
-    assertEquals(FileUtil.readTextFileFromResource("results/testBuildDDLForExternalTable.result"),
+    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLForExternalTable.result"),
         DDLBuilder.buildDDLForExternalTable(desc));
+  }
+
+  @Test
+  public void testBuildDDLQuotedTableName() throws Exception {
+    Schema schema2 = new Schema();
+    schema2.addColumn("name", TajoDataTypes.Type.BLOB);
+    schema2.addColumn("addr", TajoDataTypes.Type.TEXT);
+    schema2.addColumn("FirstName", TajoDataTypes.Type.TEXT);
+    schema2.addColumn("LastName", TajoDataTypes.Type.TEXT);
+    schema2.addColumn("with", TajoDataTypes.Type.TEXT);
+
+    Schema expressionSchema2 = new Schema();
+    expressionSchema2.addColumn("BirthYear", TajoDataTypes.Type.INT4);
+
+    PartitionMethodDesc partitionMethod2 = new PartitionMethodDesc(
+        "db1",
+        "table1",
+        CatalogProtos.PartitionType.COLUMN,
+        "key,key2",
+        expressionSchema2);
+
+    TableDesc desc = new TableDesc("db1.TABLE2", schema2, meta1, new Path("/table1"));
+    desc.setPartitionMethod(partitionMethod2);
+    desc.setExternal(true);
+    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName1.result"),
+        DDLBuilder.buildDDLForExternalTable(desc));
+
+    desc = new TableDesc("db1.TABLE1", schema2, meta1, new Path("/table1"));
+    desc.setPartitionMethod(partitionMethod2);
+    desc.setExternal(false);
+    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName2.result"),
+        DDLBuilder.buildDDLForBaseTable(desc));
   }
 
   @Test
   public void testBuildDDLForBaseTable() throws Exception {
     TableDesc desc = new TableDesc("db1.table2", schema1, meta1, new Path("/table1"));
-    assertEquals(FileUtil.readTextFileFromResource("results/testBuildDDLForBaseTable.result"),
+    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLForBaseTable.result"),
         DDLBuilder.buildDDLForBaseTable(desc));
+  }
+
+  @Test
+  public void testBuildColumn() throws Exception {
+    String [] tobeUnquoted = {
+        "column_name",
+        "columnname",
+        "column_1",
+    };
+
+    for (String columnName : tobeUnquoted) {
+      assertFalse(CatalogUtil.isShouldBeQuoted(columnName));
+    }
+
+    String [] quoted = {
+        "Column_Name",
+        "COLUMN_NAME",
+        "컬럼",
+        "$column_name",
+        "Column_Name1",
+        "with",
+        "when"
+    };
+
+    for (String columnName : quoted) {
+      assertTrue(CatalogUtil.isShouldBeQuoted(columnName));
+    }
   }
 }

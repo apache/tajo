@@ -323,6 +323,38 @@ public class TestCatalog {
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), schema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed"));
   }
+
+  @Test
+  public void testCreateSameTables() throws IOException {
+    assertTrue(catalog.createDatabase("tmpdb3", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    assertTrue(catalog.existDatabase("tmpdb3"));
+    assertTrue(catalog.createDatabase("tmpdb4", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    assertTrue(catalog.existDatabase("tmpdb4"));
+
+    TableDesc table1 = createMockupTable("tmpdb3", "table1");
+    assertTrue(catalog.createTable(table1));
+    TableDesc table2 = createMockupTable("tmpdb3", "table2");
+    assertTrue(catalog.createTable(table2));
+    assertTrue(catalog.existsTable("tmpdb3", "table1"));
+    assertTrue(catalog.existsTable("tmpdb3", "table2"));
+
+    TableDesc table3 = createMockupTable("tmpdb4", "table1");
+    assertTrue(catalog.createTable(table3));
+    TableDesc table4 = createMockupTable("tmpdb4", "table2");
+    assertTrue(catalog.createTable(table4));
+    assertTrue(catalog.existsTable("tmpdb4", "table1"));
+    assertTrue(catalog.existsTable("tmpdb4", "table2"));
+
+    assertTrue(catalog.dropTable("tmpdb3.table1"));
+    assertTrue(catalog.dropTable("tmpdb3.table2"));
+    assertTrue(catalog.dropTable("tmpdb4.table1"));
+    assertTrue(catalog.dropTable("tmpdb4.table2"));
+
+    assertFalse(catalog.existsTable("tmpdb3.table1"));
+    assertFalse(catalog.existsTable("tmpdb3.table2"));
+    assertFalse(catalog.existsTable("tmpdb4.table1"));
+    assertFalse(catalog.existsTable("tmpdb4.table2"));
+  }
 	
 	@Test
 	public void testAddAndDelIndex() throws Exception {
