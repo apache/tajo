@@ -48,6 +48,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -895,6 +896,7 @@ public class TestPhysicalPlanner {
 
 
     // The below is for testing RangeRetrieverHandler.
+    RowStoreEncoder encoder = RowStoreEncoder.createInstance(keySchema);
     RangeRetrieverHandler handler = new RangeRetrieverHandler(
         new File(new Path(workDir, "output").toUri()), keySchema, comp);
     Map<String,List<String>> kvs = Maps.newHashMap();
@@ -902,12 +904,12 @@ public class TestPhysicalPlanner {
     startTuple.put(0, DatumFactory.createInt4(50));
     kvs.put("start", Lists.newArrayList(
         new String(Base64.encodeBase64(
-            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, startTuple), false))));
+            encoder.toBytes(startTuple), false))));
     Tuple endTuple = new VTuple(1);
     endTuple.put(0, DatumFactory.createInt4(80));
     kvs.put("end", Lists.newArrayList(
         new String(Base64.encodeBase64(
-            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, endTuple), false))));
+            encoder.toBytes(endTuple), false))));
     FileChunk chunk = handler.get(kvs);
 
     scanner.seek(chunk.startOffset());

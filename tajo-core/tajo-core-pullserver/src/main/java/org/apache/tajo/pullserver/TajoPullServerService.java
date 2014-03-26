@@ -45,7 +45,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -560,17 +560,18 @@ public class TajoPullServerService extends AbstractService {
     byte [] startBytes = Base64.decodeBase64(startKey);
     byte [] endBytes = Base64.decodeBase64(endKey);
 
+    RowStoreDecoder decoder = RowStoreDecoder.createInstance(keySchema);
     Tuple start;
     Tuple end;
     try {
-      start = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, startBytes);
+      start = decoder.toTuple(startBytes);
     } catch (Throwable t) {
       throw new IllegalArgumentException("StartKey: " + startKey
           + ", decoded byte size: " + startBytes.length, t);
     }
 
     try {
-      end = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, endBytes);
+      end = decoder.toTuple(endBytes);
     } catch (Throwable t) {
       throw new IllegalArgumentException("EndKey: " + endKey
           + ", decoded byte size: " + endBytes.length, t);

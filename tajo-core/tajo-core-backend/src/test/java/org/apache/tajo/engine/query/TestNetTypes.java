@@ -79,6 +79,17 @@ public class TestNetTypes extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSort2() throws Exception {
+    // Skip all tests when HCatalogStore is used.
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      // select addr from table2 order by addr;
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    }
+  }
+
+  @Test
   public final void testJoin() throws Exception {
     // Skip all tests when HCatalogStore is used.
     if (!testingCluster.isHCatalogStoreRunning()) {

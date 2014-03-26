@@ -43,6 +43,7 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TUtil;
@@ -378,11 +379,12 @@ public class Repartitioner {
 
     Set<URI> uris;
     try {
+      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.RowStoreEncoder.createInstance(sortSchema);
       for (int i = 0; i < ranges.length; i++) {
         uris = new HashSet<URI>();
         for (String uri: basicFetchURIs) {
           String rangeParam =
-              TupleUtil.rangeToQuery(sortSchema, ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0);
+              TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
           URI finalUri = URI.create(uri + "&" + rangeParam);
           uris.add(finalUri);
         }

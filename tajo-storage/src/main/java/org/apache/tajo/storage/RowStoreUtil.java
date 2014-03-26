@@ -22,7 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BitArray;
 
 import java.nio.ByteBuffer;
 
@@ -48,101 +48,90 @@ public class RowStoreUtil {
 
   public static class RowStoreDecoder {
 
-    public static Tuple toTuple(Schema schema, byte [] bytes) {
+    private Schema schema;
+    private BitArray nullFlags;
+    private int headerSize;
+
+    public static RowStoreDecoder createInstance(Schema schema) {
+      return new RowStoreDecoder(schema);
+    }
+
+    private RowStoreDecoder(Schema schema) {
+      this.schema = schema;
+      nullFlags = new BitArray(schema.size());
+      headerSize = nullFlags.bytesLength();
+    }
+
+
+    public Tuple toTuple(byte [] bytes) {
+      nullFlags.clear();
       ByteBuffer bb = ByteBuffer.wrap(bytes);
       Tuple tuple = new VTuple(schema.size());
       Column col;
       TajoDataTypes.DataType type;
+
+      bb.limit(headerSize);
+      nullFlags.fromByteBuffer(bb);
+      bb.limit(bytes.length);
+
       for (int i =0; i < schema.size(); i++) {
+        if (nullFlags.get(i)) {
+          tuple.put(i, DatumFactory.createNullDatum());
+          continue;
+        }
+
         col = schema.getColumn(i);
         type = col.getDataType();
         switch (type.getType()) {
           case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
           case BIT:
             byte b = bb.get();
-            if(b == 0) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              tuple.put(i, DatumFactory.createBit(b));
-            }
+            tuple.put(i, DatumFactory.createBit(b));
             break;
 
           case CHAR:
             byte c = bb.get();
-            if(c == 0) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              tuple.put(i, DatumFactory.createChar(c));
-            }
+            tuple.put(i, DatumFactory.createChar(c));
             break;
 
           case INT2:
             short s = bb.getShort();
-            if(s < Short.MIN_VALUE + 1) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-              tuple.put(i, DatumFactory.createInt2(s));
-            }
+            tuple.put(i, DatumFactory.createInt2(s));
             break;
 
           case INT4:
           case DATE:
             int i_ = bb.getInt();
-            if ( i_ < Integer.MIN_VALUE + 1) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              tuple.put(i, DatumFactory.createFromInt4(type, i_));
-            }
+            tuple.put(i, DatumFactory.createFromInt4(type, i_));
             break;
 
           case INT8:
           case TIME:
           case TIMESTAMP:
             long l = bb.getLong();
-            if ( l < Long.MIN_VALUE + 1) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-              tuple.put(i, DatumFactory.createFromInt8(type, l));
-            }
+            tuple.put(i, DatumFactory.createFromInt8(type, l));
             break;
 
           case FLOAT4:
             float f = bb.getFloat();
-            if (Float.isNaN(f)) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-              tuple.put(i, DatumFactory.createFloat4(f));
-            }
+            tuple.put(i, DatumFactory.createFloat4(f));
             break;
 
           case FLOAT8:
             double d = bb.getDouble();
-            if(Double.isNaN(d)) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-              tuple.put(i, DatumFactory.createFloat8(d));
-            }
+            tuple.put(i, DatumFactory.createFloat8(d));
             break;
 
           case TEXT:
             byte [] _string = new byte[bb.getInt()];
             bb.get(_string);
-            String str = new String(_string);
-            if(str.compareTo("NULL") == 0) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            }else {
-            tuple.put(i, DatumFactory.createText(str));
-            }
+            tuple.put(i, DatumFactory.createText(_string));
             break;
 
           case BLOB:
             byte [] _bytes = new byte[bb.getInt()];
             bb.get(_bytes);
-            if(Bytes.compareTo(bytes, Bytes.toBytes("NULL")) == 0) {
-              tuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              tuple.put(i, DatumFactory.createBlob(_bytes));
-            }
+            tuple.put(i, DatumFactory.createBlob(_bytes));
             break;
 
           case INET4:
@@ -156,17 +145,40 @@ public class RowStoreUtil {
       }
       return tuple;
     }
+
+    public Schema getSchema() {
+      return schema;
+    }
   }
 
   public static class RowStoreEncoder {
+    private Schema schema;
+    private BitArray nullFlags;
+    private int headerSize;
 
-    public static byte [] toBytes(Schema schema, Tuple tuple) {
+    public static RowStoreEncoder createInstance(Schema schema) {
+      return new RowStoreEncoder(schema);
+    }
+
+    private RowStoreEncoder(Schema schema) {
+      this.schema = schema;
+      nullFlags = new BitArray(schema.size());
+      headerSize = nullFlags.bytesLength();
+    }
+    public byte [] toBytes(Tuple tuple) {
+      nullFlags.clear();
       int size = StorageUtil.getRowByteSize(schema);
-      ByteBuffer bb = ByteBuffer.allocate(size);
+      ByteBuffer bb = ByteBuffer.allocate(size+headerSize);
+      bb.position(headerSize);
       Column col;
       for (int i = 0; i < schema.size(); i++) {
+        if (tuple.isNull(i)) {
+          nullFlags.set(i);
+        }
+
         col = schema.getColumn(i);
         switch (col.getDataType().getType()) {
+          case NULL_TYPE: nullFlags.set(i); break;
           case BOOLEAN: bb.put(tuple.get(i).asByte()); break;
           case BIT: bb.put(tuple.get(i).asByte()); break;
           case CHAR: bb.put(tuple.get(i).asByte()); break;
@@ -199,10 +211,20 @@ public class RowStoreUtil {
         }
       }
 
+      byte[] flags = nullFlags.toArray();
+      int finalPosition = bb.position();
+      bb.position(0);
+      bb.put(flags);
+
+      bb.position(finalPosition);
       bb.flip();
       byte [] buf = new byte [bb.limit()];
       bb.get(buf);
       return buf;
+    }
+
+    public Schema getSchema() {
+      return schema;
     }
   }
 }
