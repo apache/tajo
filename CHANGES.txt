@@ -283,6 +283,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-701: Invalid bytes when creating BlobDatum with offset. (jinho)
+
     TAJO-708: Test failure after a successful test. (jihoon)
 
     TAJO-705: CTAS always stores tables with CSV storage type into catalog.

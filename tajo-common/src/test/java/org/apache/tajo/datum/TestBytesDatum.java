@@ -20,7 +20,10 @@ package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.util.Bytes;
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -58,5 +61,28 @@ public class TestBytesDatum {
   public final void testAsTextBytes() {
     Datum d = DatumFactory.createBlob("12345".getBytes());
     assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
+
+    byte[] bytes = "12345".getBytes();
+    d = DatumFactory.createBlob(bytes, 0, 1);
+    assertEquals(d.toString(), "1");
+  }
+
+  @Test
+  public final void testAsBytes() {
+    ByteBuffer buffer = ByteBuffer.allocate(14);
+    buffer.putShort((short)1);
+    buffer.putInt(123);
+    buffer.putLong(123456);
+    buffer.flip();
+    byte[] bytes = Bytes.getBytes(buffer);
+
+    Datum d = new BlobDatum(buffer);
+    assertArrayEquals(bytes, d.asByteArray());
+    buffer.clear();
+
+    byte[] bytes1 = new byte[1024];
+    System.arraycopy(bytes, 0, bytes1, 0, bytes.length);
+    d = new BlobDatum(bytes1, 0, bytes.length);
+    assertArrayEquals(bytes, d.asByteArray());
   }
 }
