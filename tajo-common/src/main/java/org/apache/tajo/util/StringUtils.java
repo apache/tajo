@@ -62,4 +62,28 @@ public class StringUtils {
   public static String doubleQuote(String str) {
     return "\"" + str + "\"";
   }
+
+  public static boolean isPartOfAnsiSQLIdentifier(char character) {
+    return
+        isLowerCaseAlphabet(character) ||
+        isUpperCaseAlphabet(character) ||
+        isDigit(character)             ||
+        isUndersscore(character);
+  }
+
+  public static boolean isUndersscore(char character) {
+    return character == '_';
+  }
+
+  public static boolean isLowerCaseAlphabet(char character) {
+    return 'a' <= character && character <= 'z';
+  }
+
+  public static boolean isUpperCaseAlphabet(char character) {
+    return 'A' <= character && character <= 'Z';
+  }
+
+  public static boolean isDigit(char character) {
+    return '0' <= character && character <= '9';
+  }
 }

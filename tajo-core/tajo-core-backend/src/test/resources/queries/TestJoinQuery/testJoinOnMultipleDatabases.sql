@@ -2,10 +2,10 @@ select
 	s_acctbal,
 	s_name,
 	n_name,
-	p_partkey,
+	JOINS.part_.p_partkey,
 	p_mfgr,
-	s_address,
-	s_phone,
+	JOINS.supplier_.s_address,
+	JOINS.supplier_.s_phone,
 	s_comment
 from
 	JOINS.part_,

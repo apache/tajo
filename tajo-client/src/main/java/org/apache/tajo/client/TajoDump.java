@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.DDLBuilder;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -33,6 +34,8 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 
 public class TajoDump {
   private static final org.apache.commons.cli.Options options;
@@ -143,8 +146,12 @@ public class TajoDump {
     writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", databaseName));
     writer.write("\n");
 
-    for (String tableName : client.getTableList(databaseName)) {
-      TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
+    // returned list is immutable.
+    List<String> tableNames = TUtil.newList(client.getTableList(databaseName));
+    Collections.sort(tableNames);
+    for (String tableName : tableNames) {
+      TableDesc table =
+          client.getTableDesc(CatalogUtil.denormalizeIdentifier(CatalogUtil.buildFQName(databaseName,tableName)));
       if (table.isExternal()) {
         writer.write(DDLBuilder.buildDDLForExternalTable(table));
       } else {

@@ -26,12 +26,15 @@ import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.util.StringUtils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -41,13 +44,100 @@ public class CatalogUtil {
   public final static String IDENTIFIER_DELIMITER_REGEXP = "\\.";
 
   /**
-   * Normalize an identifier
+   * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
+   *
+   * Identifier can be composed of multiple parts as follows:
+   * <pre>
+   *   database_name.table_name.column_name
+   * </pre>
+   *
+   * Each regular identifier part can be composed alphabet ([a-z][A-Z]), number([0-9]), and underscore([_]).
+   * Also, the first letter must be an alphabet character.
+   *
+   * <code>normalizeIdentifier</code> normalizes each part of an identifier.
+   *
+   * In detail, for each part, it performs as follows:
+   * <ul>
+   *   <li>changing a part without double quotation to be lower case letters</li>
+   *   <li>eliminating double quotation marks from identifier</li>
+   * </ul>
    *
    * @param identifier The identifier to be normalized
    * @return The normalized identifier
    */
   public static String normalizeIdentifier(String identifier) {
-    return isDelimited(identifier) ? stripQuote(identifier).toLowerCase() : identifier.toLowerCase();
+    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);
+
+    StringBuilder sb = new StringBuilder();
+    boolean first = true;
+    for (String part : splitted) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(IDENTIFIER_DELIMITER);
+      }
+      sb.append(normalizeIdentifierPart(part));
+    }
+    return sb.toString();
+  }
+
+  public static String normalizeIdentifierPart(String part) {
+    return isDelimited(part) ? stripQuote(part) : part.toLowerCase();
+  }
+
+  /**
+   * Denormalize an identifier. Denormalize means a translation from a stored identifier
+   * to be a printable identifier name.
+   *
+   * In detail, for each part, it performs as follows:
+   * <ul>
+   *   <li>changing a part including upper case character or non-ascii character to be lower case letters</li>
+   *   <li>eliminating double quotation marks from identifier</li>
+   * </ul>
+   *
+   * @param identifier The identifier to be normalized
+   * @return The denormalized identifier
+   */
+  public static String denormalizeIdentifier(String identifier) {
+    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);
+
+    StringBuilder sb = new StringBuilder();
+    boolean first = true;
+    for (String part : splitted) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(IDENTIFIER_DELIMITER);
+      }
+      sb.append(denormalizePart(part));
+    }
+    return sb.toString();
+  }
+
+  public static String denormalizePart(String identifier) {
+    if (isShouldBeQuoted(identifier)) {
+      return StringUtils.doubleQuote(identifier);
+    } else {
+      return identifier;
+    }
+  }
+
+  public static boolean isShouldBeQuoted(String columnName) {
+    for (char character : columnName.toCharArray()) {
+      if (Character.isUpperCase(character)) {
+        return true;
+      }
+
+      if (!StringUtils.isPartOfAnsiSQLIdentifier(character)) {
+        return true;
+      }
+
+      if (RESERVED_KEYWORDS_SET.contains(columnName.toUpperCase())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public static String stripQuote(String str) {
@@ -274,7 +364,7 @@ public class CatalogUtil {
   }
 
   public static String columnToDDLString(Column column) {
-    StringBuilder sb = new StringBuilder(column.getSimpleName());
+    StringBuilder sb = new StringBuilder(denormalizeIdentifier(column.getSimpleName()));
     sb.append(" ").append(column.getDataType().getType());
     if (column.getDataType().hasLength()) {
       sb.append(" (").append(column.getDataType().getLength()).append(")");
@@ -318,6 +408,35 @@ public class CatalogUtil {
       closeQuietly(res);
     } finally {
       closeQuietly(stmt);
+    }
+  }
+
+  public static final Set<String> RESERVED_KEYWORDS_SET = new HashSet<String>();
+
+  static final String [] RESERVED_KEYWORDS = {
+      "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
+      "BOTH",
+      "CASE", "CAST", "CREATE", "CROSS",
+      "DESC", "DISTINCT",
+      "END", "ELSE", "EXCEPT",
+      "FALSE", "FULL", "FROM",
+      "GROUP",
+      "HAVING",
+      "ILIKE", "IN", "INNER", "INTERSECT", "INTO", "IS",
+      "JOIN",
+      "LEADING", "LEFT", "LIKE", "LIMIT",
+      "NATURAL", "NOT", "NULL",
+      "ON", "OUTER", "OR", "ORDER",
+      "RIGHT",
+      "SELECT", "SOME", "SYMMETRIC",
+      "TABLE", "THEN", "TRAILING", "TRUE",
+      "UNION", "UNIQUE", "USING",
+      "WHEN", "WHERE", "WITH"
+  };
+
+  static {
+    for (String keyword : RESERVED_KEYWORDS) {
+      RESERVED_KEYWORDS_SET.add(keyword);
     }
   }
 }

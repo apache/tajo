@@ -37,17 +37,22 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
       context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
           client.getCurrentDatabase(), client.getUserInfo().getUserName()));
     } else if (cmd.length == 2) {
-      try {
-        if (client.selectDatabase(cmd[1])) {
-          context.setCurrentDatabase(client.getCurrentDatabase());
-          context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
-              context.getCurrentDatabase(), client.getUserInfo().getUserName()));
-        }
-      } catch (ServiceException se) {
-        if (se.getMessage() != null) {
-          context.getOutput().write(se.getMessage());
-        } else {
-          context.getOutput().write(String.format("cannot connect the database \"%s\"", cmd[1]));
+
+      if (!client.existDatabase(cmd[1])) {
+        context.getOutput().write("No Database Found\n");
+      } else {
+        try {
+          if (client.selectDatabase(cmd[1])) {
+            context.setCurrentDatabase(client.getCurrentDatabase());
+            context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
+                context.getCurrentDatabase(), client.getUserInfo().getUserName()));
+          }
+        } catch (ServiceException se) {
+          if (se.getMessage() != null) {
+            context.getOutput().write(se.getMessage());
+          } else {
+            context.getOutput().write(String.format("cannot connect the database \"%s\"", cmd[1]));
+          }
         }
       }
     }
