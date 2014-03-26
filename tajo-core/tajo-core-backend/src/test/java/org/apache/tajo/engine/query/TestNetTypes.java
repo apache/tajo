@@ -75,13 +75,14 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testSort2() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
-      // select addr from table2 order by addr;
-      ResultSet res = executeQuery();
-      assertResultSet(res);
-      cleanupQuery(res);
-    }
+    executeDDL("table1_ddl.sql", "table1");
+    executeDDL("table2_ddl.sql", "table2");
+    // select addr from table2 order by addr;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeDDL("drop_table1_ddl.sql", "table1");
+    executeDDL("drop_table2_ddl.sql", "table2");
   }
 
   @Test
