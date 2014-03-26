@@ -27,9 +27,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
-import static org.apache.tajo.common.TajoDataTypes.Type.TIME;
-import static org.apache.tajo.common.TajoDataTypes.Type.DATE;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestDateTimeFunctions extends ExprTestBase {
 
@@ -242,5 +240,14 @@ public class TestDateTimeFunctions extends ExprTestBase {
     testSimpleEval("select date_part('quarter', DATE '2006-12-01');", new String[]{"4.0"});
 
     testSimpleEval("select date_part('week', DATE '1970-01-17');", new String[]{"3.0"});
+  }
+
+  @Test
+  public void testUtcUsecTo() throws IOException {
+     testSimpleEval("select utc_usec_to('day' ,1274259481071200);", new String[]{1274227200000000L+""});
+     testSimpleEval("select utc_usec_to('hour' ,1274259481071200);", new String[]{1274256000000000L+""});
+     testSimpleEval("select utc_usec_to('month' ,1274259481071200);", new String[]{1272672000000000L+""});
+     testSimpleEval("select utc_usec_to('year' ,1274259481071200);", new String[]{1262304000000000L+""});
+     testSimpleEval("select utc_usec_to('week' ,1207929480000000, 2);", new String[]{1207612800000000L+""});
   }
 }
