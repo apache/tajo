@@ -283,6 +283,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-716: Using column names actually aliased in aggregation functions
+    can cause planning error. (hyunsik)
+
     TAJO-698: Error occurs when FUNCTION and IN statement are used together.
     (hyunsik)
 

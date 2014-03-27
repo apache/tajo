@@ -72,7 +72,8 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
 	public String getTableName() {
 	  return tableDesc.getName();
 	}
-	
+
+  @Override
 	public boolean hasAlias() {
 	  return alias != null;
 	}

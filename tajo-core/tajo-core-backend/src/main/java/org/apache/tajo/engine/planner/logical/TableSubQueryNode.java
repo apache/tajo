@@ -46,6 +46,11 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     }
   }
 
+  @Override
+  public boolean hasAlias() {
+    return false;
+  }
+
   public String getTableName() {
     return tableName;
   }

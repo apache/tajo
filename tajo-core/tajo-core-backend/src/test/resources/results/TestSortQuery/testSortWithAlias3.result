@@ -1,0 +1,7 @@
+n_nationkey,c_name,cnt
+-------------------------------
+1,Customer#000000003,1
+3,Customer#000000005,1
+4,Customer#000000004,1
+13,Customer#000000002,1
+15,Customer#000000001,1

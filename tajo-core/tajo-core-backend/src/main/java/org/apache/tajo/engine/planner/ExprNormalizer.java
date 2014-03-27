@@ -217,7 +217,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
       // If parameters are all constants, we don't need to dissect an aggregation expression into two parts:
       // function and parameter parts.
-      if (!OpType.isLiteral(param.getType())) {
+      if (!OpType.isLiteral(param.getType()) && param.getType() != OpType.Column) {
         String referenceName = ctx.block.namedExprsMgr.addExpr(param);
         ctx.scalarExprs.add(new NamedExpr(param, referenceName));
         expr.getParams()[i] = new ColumnReferenceExpr(referenceName);

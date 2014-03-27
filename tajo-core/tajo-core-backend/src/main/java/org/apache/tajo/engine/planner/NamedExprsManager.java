@@ -88,10 +88,6 @@ public class NamedExprsManager {
     return sequenceId++;
   }
 
-  private static String normalizeName(String name) {
-    return name;
-  }
-
   /**
    * Check whether the expression corresponding to a given name was evaluated.
    *
@@ -99,9 +95,8 @@ public class NamedExprsManager {
    * @return true if resolved. Otherwise, false.
    */
   public boolean isEvaluated(String name) {
-    String normalized = normalizeName(name);
-    if (nameToIdMap.containsKey(normalized)) {
-      int refId = nameToIdMap.get(normalized);
+    if (nameToIdMap.containsKey(name)) {
+      int refId = nameToIdMap.get(name);
       return evaluationStateMap.containsKey(refId) && evaluationStateMap.get(refId);
     } else {
       return false;
@@ -159,11 +154,10 @@ public class NamedExprsManager {
    * It specifies the alias as an reference name.
    */
   public String addExpr(Expr expr, String alias) throws PlanningException {
-    String normalized = normalizeName(alias);
 
     // if this name already exists, just returns the name.
-    if (nameToIdMap.containsKey(normalized)) {
-      return normalized;
+    if (nameToIdMap.containsKey(alias)) {
+      return alias;
     }
 
     // if the name is first
@@ -175,11 +169,13 @@ public class NamedExprsManager {
       idToExprBiMap.put(refId, expr);
     }
 
-    nameToIdMap.put(normalized, refId);
-    TUtil.putToNestedList(idToNamesMap, refId, normalized);
+    nameToIdMap.put(alias, refId);
     evaluationStateMap.put(refId, false);
 
-    return normalized;
+    // add the entry to idToNames map
+    TUtil.putToNestedList(idToNamesMap, refId, alias);
+
+    return alias;
   }
 
   /**
