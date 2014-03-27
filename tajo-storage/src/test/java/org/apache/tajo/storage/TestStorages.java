@@ -79,10 +79,10 @@ public class TestStorages {
         {StoreType.CSV, true, true},
         {StoreType.RAW, false, false},
         {StoreType.RCFILE, true, true},
-        {StoreType.TREVNI, false, true},
+        {StoreType.PARQUET, false, false},
     });
   }
-		
+
 	@Test
   public void testSplitable() throws IOException {
     if (splitable) {
@@ -172,7 +172,10 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-      if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI || storeType == StoreType.CSV) {
+      if (storeType == StoreType.RCFILE
+          || storeType == StoreType.TREVNI
+          || storeType == StoreType.CSV
+          || storeType == StoreType.PARQUET) {
         assertTrue(tuple.get(0) == null);
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
@@ -241,6 +244,91 @@ public class TestStorages {
       for (int i = 0; i < tuple.size(); i++) {
         assertEquals(tuple.get(i), retrieved.get(i));
       }
+    }
+    scanner.close();
+  }
+
+  @Test
+  public void testNullHandlingTypes() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", Type.BIT);
+    schema.addColumn("col3", Type.CHAR, 7);
+    schema.addColumn("col4", Type.INT2);
+    schema.addColumn("col5", Type.INT4);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.FLOAT4);
+    schema.addColumn("col8", Type.FLOAT8);
+    schema.addColumn("col9", Type.TEXT);
+    schema.addColumn("col10", Type.BLOB);
+    schema.addColumn("col11", Type.INET4);
+    schema.addColumn("col12", Type.NULL_TYPE);
+    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+
+    Options options = new Options();
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.putOption(CatalogConstants.CSVFILE_NULL, "\\\\N");
+    meta.putOption(CatalogConstants.RCFILE_NULL, "\\\\N");
+    meta.putOption(CatalogConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
+
+    Path tablePath = new Path(testDir, "testVariousTypes.data");
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    appender.init();
+
+    QueryId queryid = new QueryId("12345", 5);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
+
+    Tuple seedTuple = new VTuple(13);
+    seedTuple.put(new Datum[]{
+        DatumFactory.createBool(true),                // 0
+        DatumFactory.createBit((byte) 0x99),          // 1
+        DatumFactory.createChar("hyunsik"),           // 2
+        DatumFactory.createInt2((short) 17),          // 3
+        DatumFactory.createInt4(59),                  // 4
+        DatumFactory.createInt8(23l),                 // 5
+        DatumFactory.createFloat4(77.9f),             // 6
+        DatumFactory.createFloat8(271.9f),            // 7
+        DatumFactory.createText("hyunsik"),           // 8
+        DatumFactory.createBlob("hyunsik".getBytes()),// 9
+        DatumFactory.createInet4("192.168.0.1"),      // 10
+        NullDatum.get(),                              // 11
+        factory.createDatum(queryid.getProto())       // 12
+    });
+
+    // Making tuples with different null column positions
+    Tuple tuple;
+    for (int i = 0; i < 13; i++) {
+      tuple = new VTuple(13);
+      for (int j = 0; j < 13; j++) {
+        if (i == j) { // i'th column will have NULL value
+          tuple.put(j, NullDatum.get());
+        } else {
+          tuple.put(j, seedTuple.get(j));
+        }
+      }
+      appender.addTuple(tuple);
+    }
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    scanner.init();
+
+    Tuple retrieved;
+    int i = 0;
+    while ((retrieved = scanner.next()) != null) {
+      assertEquals(13, retrieved.size());
+      for (int j = 0; j < 13; j++) {
+        if (i == j) {
+          assertEquals(NullDatum.get(), retrieved.get(j));
+        } else {
+          assertEquals(seedTuple.get(j), retrieved.get(j));
+        }
+      }
+
+      i++;
     }
     scanner.close();
   }

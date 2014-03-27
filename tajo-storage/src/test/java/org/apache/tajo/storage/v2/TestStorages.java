@@ -82,6 +82,7 @@ public class TestStorages {
         {StoreType.CSV, true, true},
         {StoreType.RCFILE, true, true},
         {StoreType.TREVNI, false, true},
+        {StoreType.PARQUET, false, false},
         {StoreType.RAW, false, false},
     });
   }
@@ -173,7 +174,10 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-      if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI || storeType == StoreType.CSV) {
+      if (storeType == StoreType.RCFILE
+          || storeType == StoreType.TREVNI
+          || storeType == StoreType.CSV
+          || storeType == StoreType.PARQUET) {
         assertTrue(tuple.get(0) == null || tuple.get(0) instanceof NullDatum);
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
