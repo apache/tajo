@@ -286,6 +286,19 @@ public class TestPredicates extends ExprTestBase {
     testEval(schema2, "table1", "a,b,c", "select col1 in ('a'), col2 in ('a', 'c') from table1", new String[]{"t","f"});
     testEval(schema2, "table1", "a,,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from table1",
         new String[]{"t","t"});
+
+    testEval(schema2,
+        "table1",
+        "2014-03-21,2015-04-01,2016-04-01",
+        "select substr(col1,1,4) in ('2014','2015','2016'), substr(col1,6,2)::int4 in (1,2,3) from table1",
+        new String[]{"t", "t"});
+
+    // null handling test
+    testEval(schema2,
+        "table1",
+        "2014-03-21,,2015-04-01",
+        "select (substr(col2,1,4)::int4 in (2014,2015,2016)) is null from table1",
+        new String[]{"t"});
   }
 
   //////////////////////////////////////////////////////////////////

@@ -19,23 +19,26 @@
 package org.apache.tajo.engine.eval;
 
 
+import com.google.common.collect.Sets;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+
+import java.util.Set;
 
 public class InEval extends BinaryEval {
   private static final TajoDataTypes.DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
 
   @Expose private boolean not;
-  private Integer fieldId = null;
-  Datum [] values;
+  Set<Datum> values;
 
-  public InEval(FieldEval columnRef, RowConstantEval valueList, boolean not) {
-    super(EvalType.IN, columnRef, valueList);
+  public InEval(EvalNode lhs, RowConstantEval valueList, boolean not) {
+    super(EvalType.IN, lhs, valueList);
     this.not = not;
   }
 
@@ -55,26 +58,17 @@ public class InEval extends BinaryEval {
 
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
-    if (fieldId == null) {
-      fieldId = schema.getColumnId(((FieldEval)leftExpr).getColumnRef().getQualifiedName());
-      values = ((RowConstantEval)rightExpr).getValues();
+    if (values == null) {
+      values = Sets.newHashSet(((RowConstantEval)rightExpr).getValues());
     }
 
-    Datum value = tuple.get(fieldId);
+    Datum leftValue = leftExpr.eval(schema, tuple);
 
-    if (value.isNull()) {
-      return value;
+    if (leftValue.isNull()) {
+      return NullDatum.get();
     }
 
-    boolean isIncluded = false;
-    for (Datum datum : values) {
-      if (value.equalsTo(datum).asBool()) {
-        isIncluded = true;
-        break;
-      }
-    }
-
-    return DatumFactory.createBool(not ^ isIncluded);
+    return DatumFactory.createBool(not ^ values.contains(leftValue));
   }
 
   @Override
