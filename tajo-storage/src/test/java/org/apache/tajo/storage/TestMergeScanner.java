@@ -66,6 +66,7 @@ public class TestMergeScanner {
         {StoreType.RAW},
         {StoreType.RCFILE},
         {StoreType.TREVNI},
+        {StoreType.PARQUET},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
         //{StoreType.ROWFILE},
 
@@ -76,12 +77,12 @@ public class TestMergeScanner {
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
-    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni");
+    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni", "parquet");
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
   }
-  
+
   @Test
   public void testMultipleFiles() throws IOException {
     Schema schema = new Schema();
@@ -89,7 +90,7 @@ public class TestMergeScanner {
     schema.addColumn("file", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("age", Type.INT8);
-    
+
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
@@ -109,7 +110,7 @@ public class TestMergeScanner {
       appender1.addTuple(vTuple);
     }
     appender1.close();
-    
+
     TableStats stat1 = appender1.getStats();
     if (stat1 != null) {
       assertEquals(tupleNum, stat1.getNumRows().longValue());
@@ -152,7 +153,7 @@ public class TestMergeScanner {
     scanner.init();
     int totalCounts = 0;
     Tuple tuple;
-    while ((tuple=scanner.next()) != null) {
+    while ((tuple = scanner.next()) != null) {
       totalCounts++;
       if (isProjectableStorage(meta.getStoreType())) {
         assertNotNull(tuple.get(0));
@@ -162,7 +163,7 @@ public class TestMergeScanner {
       }
     }
     scanner.close();
-    
+
     assertEquals(tupleNum * 2, totalCounts);
 	}
 
@@ -170,6 +171,7 @@ public class TestMergeScanner {
     switch (type) {
       case RCFILE:
       case TREVNI:
+      case PARQUET:
       case CSV:
         return true;
       default:

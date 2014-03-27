@@ -41,11 +41,11 @@
     <name>fs.s3.impl</name>
     <value>org.apache.tajo.storage.s3.SmallBlockS3FileSystem</value>
   </property>
-  
+
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni</value>
+    <value>csv,raw,rcfile,row,trevni,parquet</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -67,6 +67,10 @@
   </property>
   <property>
     <name>tajo.storage.fragment.trevni.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.parquet.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
 
@@ -121,10 +125,20 @@
     <value>org.apache.tajo.storage.trevni.TrevniScanner</value>
   </property>
 
+  <property>
+    <name>tajo.storage.scanner-handler.parquet.class</name>
+    <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.v2.parquet.class</name>
+    <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>csv,raw,rcfile,row,trevni</value>
+    <value>csv,raw,rcfile,row,trevni,parquet</value>
   </property>
 
   <property>
@@ -150,5 +164,10 @@
   <property>
     <name>tajo.storage.appender-handler.trevni.class</name>
     <value>org.apache.tajo.storage.trevni.TrevniAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.parquet.class</name>
+    <value>org.apache.tajo.storage.parquet.ParquetAppender</value>
   </property>
 </configuration>
