@@ -37,6 +37,8 @@ public abstract class RelationNode extends LogicalNode {
     assert(nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.TABLE_SUBQUERY);
   }
 
+  public abstract boolean hasAlias();
+
   public abstract String getTableName();
 
   public abstract String getCanonicalName();

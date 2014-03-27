@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical.join;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.AlgebraicUtil;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -53,13 +54,8 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     } else {
       if (namedExprsMgr.isAliasedName(leftExpr.getSimpleName())) {
         String columnName = namedExprsMgr.getOriginalName(leftExpr.getSimpleName());
-        String [] parts = columnName.split("\\.");
-
-        if (parts.length != 2) {
-          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
-        }
-
-        relationNames[0] = parts[0];
+        String qualifier = CatalogUtil.extractQualifier(columnName);
+        relationNames[0] = qualifier;
       } else {
         throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
       }
@@ -70,11 +66,8 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     } else {
       if (namedExprsMgr.isAliasedName(rightExpr.getSimpleName())) {
         String columnName = namedExprsMgr.getOriginalName(rightExpr.getSimpleName());
-        String [] parts = columnName.split("\\.");
-        if (parts.length != 2) {
-          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
-        }
-        relationNames[1] = parts[0];
+        String qualifier = CatalogUtil.extractQualifier(columnName);
+        relationNames[1] = qualifier;
       } else {
         throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
       }

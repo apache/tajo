@@ -49,6 +49,20 @@ public class TestSortQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSortWithAlias2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSortWithAlias3() throws Exception {
+    ResultSet res = executeQuery();
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSortWithExpr1() throws Exception {
     // select l_linenumber, l_orderkey as sortkey from lineitem order by l_orderkey + 1;
     ResultSet res = executeQuery();
@@ -126,7 +140,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     executeDDL("create_table_with_asc_desc_keys.sql", "table2");
 
     ResultSet res = executeQuery();
-    System.out.println(resultSetToString(res));
+    assertResultSet(res);
     cleanupQuery(res);
   }
 }

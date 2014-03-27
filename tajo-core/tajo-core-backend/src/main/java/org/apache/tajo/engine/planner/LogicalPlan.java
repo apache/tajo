@@ -290,6 +290,13 @@ public class LogicalPlan {
         throw new NoSuchColumnException(canonicalName);
       }
 
+      if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
+        String changedName = CatalogUtil.buildFQName(
+            relationOp.getCanonicalName(),
+            CatalogUtil.extractSimpleName(canonicalName));
+        canonicalName = changedName;
+      }
+
       Schema schema = relationOp.getTableSchema();
       Column column = schema.getColumn(canonicalName);
       if (column == null) {
@@ -517,7 +524,8 @@ public class LogicalPlan {
     private NodeType rootType;
 
     // transient states
-    private final Map<String, RelationNode> nameToRelationMap = TUtil.newHashMap();
+    private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
+    private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
@@ -578,23 +586,38 @@ public class LogicalPlan {
     }
 
     public boolean existsRelation(String name) {
-      return nameToRelationMap.containsKey(name);
+      return canonicalNameToRelationMap.containsKey(name);
+    }
+
+    public boolean isAlreadyRenamedTableName(String name) {
+      return aliasMap.containsKey(name);
     }
 
     public RelationNode getRelation(String name) {
-      return nameToRelationMap.get(name);
+      if (canonicalNameToRelationMap.containsKey(name)) {
+        return canonicalNameToRelationMap.get(name);
+      }
+
+      if (aliasMap.containsKey(name)) {
+        return canonicalNameToRelationMap.get(aliasMap.get(name).get(0));
+      }
+
+      return null;
     }
 
     public void addRelation(RelationNode relation) {
-      nameToRelationMap.put(relation.getCanonicalName(), relation);
+      if (relation.hasAlias()) {
+        TUtil.putToNestedList(aliasMap, relation.getTableName(), relation.getCanonicalName());
+      }
+      canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
     }
 
     public Collection<RelationNode> getRelations() {
-      return this.nameToRelationMap.values();
+      return this.canonicalNameToRelationMap.values();
     }
 
     public boolean hasTableExpression() {
-      return this.nameToRelationMap.size() > 0;
+      return this.canonicalNameToRelationMap.size() > 0;
     }
 
     public void setSchema(Schema schema) {
