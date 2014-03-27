@@ -108,4 +108,12 @@ public class TestDateDatum {
     assertEquals(4, d.getMonthOfYear());
     assertEquals(1, d.getDayOfMonth());
   }
+
+  @Test
+  public final void testNull() {
+    Datum d = DatumFactory.createDate(DATE);
+    assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
+    assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
+    assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
+  }
 }

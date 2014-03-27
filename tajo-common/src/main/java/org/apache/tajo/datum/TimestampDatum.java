@@ -160,7 +160,7 @@ public class TimestampDatum extends Datum {
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       return DatumFactory.createBool(dateTime.equals(((TimestampDatum) datum).dateTime));
-    } else if (datum.isNull()) {
+    } else if (datum instanceof NullDatum || datum.isNull()) {
       return datum;
     } else {
       throw new InvalidOperationException();
@@ -171,7 +171,7 @@ public class TimestampDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       return dateTime.compareTo(((TimestampDatum)datum).dateTime);
-    } else if (datum.isNull()) {
+    } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException();
@@ -180,6 +180,9 @@ public class TimestampDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (obj instanceof NullDatum) {
+       return false;
+    }
     if (obj instanceof TimestampDatum) {
       TimestampDatum another = (TimestampDatum) obj;
       return dateTime.isEqual(another.dateTime);

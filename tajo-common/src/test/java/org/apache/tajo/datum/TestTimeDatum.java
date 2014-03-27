@@ -121,4 +121,12 @@ public class TestTimeDatum {
     assertEquals(34, copy.getMinuteOfHour());
     assertEquals(56, copy.getSecondOfMinute());
   }
+
+  @Test
+  public final void testNull() {
+    Datum d = DatumFactory.createTime(TIME);
+    assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
+    assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
+    assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
+  }
 }

@@ -283,6 +283,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-679: TimestampDatum, TimeDatum, DateDatum should be able to be compared 
+    with NullDatum. (Alvin Henrick via jihoon)
+
     TAJO-716: Using column names actually aliased in aggregation functions
     can cause planning error. (hyunsik)
 
