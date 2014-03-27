@@ -39,7 +39,7 @@ public class TestTimestampDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createTimeStamp(timestamp);
-    assertEquals(Type.TIMESTAMP, d.type());
+        assertEquals(Type.TIMESTAMP, d.type());
 	}
 
 	@Test(expected = InvalidCastException.class)
@@ -110,5 +110,13 @@ public class TestTimestampDatum {
     assertEquals(1, d.getHourOfDay());
     assertEquals(50, d.getMinuteOfHour());
     assertEquals(01, d.getSecondOfMinute());
+  }
+
+  @Test
+  public final void testNull() {
+   Datum d = DatumFactory.createTimeStamp(timestamp);
+   assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
+   assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
+   assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
   }
 }
