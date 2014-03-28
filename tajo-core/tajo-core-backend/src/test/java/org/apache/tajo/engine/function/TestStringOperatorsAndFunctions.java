@@ -602,4 +602,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select concat('333', '22') ", new String[]{"33322"});
     testSimpleEval("select concat('한글', '22') ", new String[]{"한글22"});
   }
+
+  @Test
+  public void testConcat_ws() throws IOException {
+    testSimpleEval("select concat_ws(',', '333', '22') ", new String[]{"333,22"});
+    testSimpleEval("select concat_ws(',', '한글', '22') ", new String[]{"한글,22"});
+  }
 }
