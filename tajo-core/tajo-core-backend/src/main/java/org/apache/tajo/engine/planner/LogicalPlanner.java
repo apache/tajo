@@ -367,10 +367,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     } else  if (projectable instanceof GroupbyNode) {
       GroupbyNode groupbyNode = (GroupbyNode) projectable;
-      for (Column c : groupbyNode.getGroupingColumns()) {
-        if (!projectable.getInSchema().contains(c)) {
-          throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-              c, projectable.getPID()));
+      // It checks if all column references within each target can be evaluated with the input schema.
+      int groupingColumnNum = groupbyNode.getGroupingColumns().length;
+      for (int i = 0; i < groupingColumnNum; i++) {
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(groupbyNode.getTargets()[i].getEvalTree());
+        if (!projectable.getInSchema().containsAll(columns)) {
+          throw new PlanningException(String.format("Cannot get the field(s) \"%s\" at node (%d)",
+              TUtil.collectionToString(columns), projectable.getPID()));
         }
       }
       if (groupbyNode.hasAggFunctions()) {
@@ -610,6 +613,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Expr groupingKey = aggregation.getGroupSet()[0].getGroupingSets()[i];
       normalizedResults[i] = normalizer.normalize(context, groupingKey);
     }
+
     String [] groupingKeyRefNames = new String[groupingKeyNum];
     for (int i = 0; i < groupingKeyNum; i++) {
       groupingKeyRefNames[i] = block.namedExprsMgr.addExpr(normalizedResults[i].baseExpr);
@@ -674,7 +678,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Build grouping keys
     for (int i = 0; i < groupingKeyNum; i++) {
-      Target target = new Target(new FieldEval(groupingNode.getGroupingColumns()[i]));
+      Target target = block.namedExprsMgr.getTarget(groupingNode.getGroupingColumns()[i].getQualifiedName());
       targets[i] = target;
     }
 

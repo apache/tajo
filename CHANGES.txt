@@ -289,8 +289,11 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
-    TAJO-679: TimestampDatum, TimeDatum, DateDatum should be able to be compared 
-    with NullDatum. (Alvin Henrick via jihoon)
+    TAJO-718: A group-by clause with the same columns but aliased causes
+    planning error. (hyunsik)
+
+    TAJO-679: TimestampDatum, TimeDatum, DateDatum should be able to be
+    compared with NullDatum. (Alvin Henrick via jihoon)
 
     TAJO-716: Using column names actually aliased in aggregation functions
     can cause planning error. (hyunsik)
@@ -299,6 +302,8 @@ Release 0.8.0 - unreleased
     (hyunsik)
 
     TAJO-692: Missing Null handling for INET4 in RowStoreUtil. (jihoon)
+
+    TAJO-712: Fix some bugs after database is supported. (hyunsik)
 
     TAJO-701: Invalid bytes when creating BlobDatum with offset. (jinho)
 

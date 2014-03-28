@@ -486,6 +486,29 @@ public class ProjectionPushDownRule extends
 
     LogicalNode child = super.visitSort(newContext, plan, block, node, stack);
 
+    // it rewrite sortkeys. This rewrite sets right column names and eliminates duplicated sort keys.
+    List<SortSpec> sortSpecs = new ArrayList<SortSpec>();
+    for (int i = 0; i < keyNames.length; i++) {
+      String sortKey = keyNames[i];
+      Target target = context.targetListMgr.getTarget(sortKey);
+      if (context.targetListMgr.isEvaluated(sortKey)) {
+        Column c = target.getNamedColumn();
+        SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullFirst());
+        if (!sortSpecs.contains(sortSpec)) {
+          sortSpecs.add(sortSpec);
+        }
+      } else {
+        if (target.getEvalTree().getType() == EvalType.FIELD) {
+          Column c = ((FieldEval)target.getEvalTree()).getColumnRef();
+          SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullFirst());
+          if (!sortSpecs.contains(sortSpec)) {
+            sortSpecs.add(sortSpec);
+          }
+        }
+      }
+    }
+    node.setSortSpecs(sortSpecs.toArray(new SortSpec[sortSpecs.size()]));
+
     node.setInSchema(child.getOutSchema());
     node.setOutSchema(child.getOutSchema());
     return node;
@@ -550,31 +573,41 @@ public class ProjectionPushDownRule extends
     node.setInSchema(child.getOutSchema());
 
     List<Target> targets = Lists.newArrayList();
-    if (groupingKeyNum > 0) {
+    if (groupingKeyNum > 0 && groupingKeyNames != null) {
       // Restoring grouping key columns
-      final Column [] groupingColumns = new Column[groupingKeyNum];
+      final List<Column> groupingColumns = new ArrayList<Column>();
       for (int i = 0; i < groupingKeyNum; i++) {
         String groupingKey = groupingKeyNames[i];
 
         Target target = context.targetListMgr.getTarget(groupingKey);
+
+        // it rewrite grouping keys.
+        // This rewrite sets right column names and eliminates duplicated grouping keys.
         if (context.targetListMgr.isEvaluated(groupingKey)) {
-          groupingColumns[i] = target.getNamedColumn();
-          targets.add(new Target(new FieldEval(target.getNamedColumn())));
+          Column c = target.getNamedColumn();
+          if (!groupingColumns.contains(c)) {
+            groupingColumns.add(c);
+            targets.add(new Target(new FieldEval(target.getNamedColumn())));
+          }
         } else {
           if (target.getEvalTree().getType() == EvalType.FIELD) {
-            groupingColumns[i] = ((FieldEval)target.getEvalTree()).getColumnRef();
-            targets.add(target);
-            context.targetListMgr.markAsEvaluated(target);
+            Column c = ((FieldEval)target.getEvalTree()).getColumnRef();
+            if (!groupingColumns.contains(c)) {
+              groupingColumns.add(c);
+              targets.add(target);
+              context.targetListMgr.markAsEvaluated(target);
+            }
           } else {
             throw new PlanningException("Cannot evaluate this expression in grouping keys: " + target.getEvalTree());
           }
         }
       }
-      node.setGroupingColumns(groupingColumns);
+
+      node.setGroupingColumns(groupingColumns.toArray(new Column[groupingColumns.size()]));
     }
 
     // Getting projected targets
-    if (node.hasAggFunctions()) {
+    if (node.hasAggFunctions() && aggEvalNames != null) {
       AggregationFunctionCallEval [] aggEvals = new AggregationFunctionCallEval[aggEvalNames.length];
       int i = 0;
       for (Iterator<String> it = getFilteredReferences(aggEvalNames, TUtil.newList(aggEvalNames)); it.hasNext();) {
