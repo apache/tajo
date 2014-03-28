@@ -117,7 +117,7 @@ In addition to the following JAR files, please don't forgot including
   * commons-logging-1.1.1.jar
   * guava-11.0.2.jar
   * protobuf-java-2.5.0.jar
-  * netty-3.6.2.Final.jar
+  * netty-3.6.6.Final.jar
   * commons-lang-2.5.jar
   * commons-configuration-1.6.jar
   * slf4j-api-1.7.5.jar
