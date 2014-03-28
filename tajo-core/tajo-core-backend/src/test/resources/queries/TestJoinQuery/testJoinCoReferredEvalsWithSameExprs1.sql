@@ -11,4 +11,4 @@ from
 where
   r_regionkey = n_regionkey and r_regionkey > 0
 order by
-  n_regionkey + n_nationkey;
+  n_regionkey + n_nationkey, n_regionkey;

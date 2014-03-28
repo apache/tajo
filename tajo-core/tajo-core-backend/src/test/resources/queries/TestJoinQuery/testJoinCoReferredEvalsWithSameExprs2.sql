@@ -19,4 +19,4 @@ group by
   ((r_regionkey + n_regionkey) / 2)
 
 order by
-  n_regionkey + n_nationkey;
+  n_regionkey + n_nationkey, n_regionkey;
