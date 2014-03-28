@@ -183,6 +183,73 @@ HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-$HADOOP_HOME/etc/hadoop}"
 # Hadoop Version Checking Section End
 ##############################################################################
 
+##############################################################################
+# Find and Set Hadoop CLASSPATH
+##############################################################################
+
+# HADOOP JAR DIRS
+HADOOP_MODULE_DIRS="$HADOOP_HOME/share/hadoop/common/lib
+$HADOOP_HOME/share/hadoop/common
+$HADOOP_HOME/share/hadoop/hdfs
+$HADOOP_HOME/share/hadoop/hdfs/lib
+$HADOOP_HOME/share/hadoop/yarn
+$HADOOP_HOME/share/hadoop/mapreduce"
+
+HADOOP_EXT_CLASSPATH="${HADOOP_CONF_DIR}"
+
+for d in $HADOOP_MODULE_DIRS; do
+  CLASSPATH=${CLASSPATH}:$d/*
+done;
+
+export HADOOP_EXT_CLASSPATH
+
+# Append $HADOOP_JAR_CLASSPATH to $CLASSPATH
+CLASSPATH="${CLASSPATH}:${HADOOP_EXT_CLASSPATH}"
+
+HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
+
+##############################################################################
+# Find and Set Hive CLASSPATH
+##############################################################################
+
+HIVE_CONF=$HIVE_HOME/conf
+
+if [ -d ${HIVE_CONF} ]; then
+  CLASSPATH=${CLASSPATH}:${HIVE_CONF}
+fi
+
+HIVE_LIB=$HIVE_HOME/lib
+
+if [ -d ${HIVE_LIB} ]; then
+
+  for f in ${HIVE_LIB}/hive-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HIVE_LIB}/libthrift-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HIVE_LIB}/libfb*.jar; do
+      CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HIVE_LIB}/jdo*-api-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HIVE_LIB}/datanucleus-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in $HIVE_HOME/hcatalog/share/hcatalog/hcatalog-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+fi
+
+if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then
+  CLASSPATH=${CLASSPATH}:$HIVE_JDBC_DRIVER_DIR;
+fi
 
 ##############################################################################
 # Find and Set Tajo CLASSPATH
@@ -229,73 +296,6 @@ export TAJO_BASE_CLASSPATH
 
 CLASSPATH="${CLASSPATH}:${TAJO_BASE_CLASSPATH}"
 
-##############################################################################
-# Find and Set Hive CLASSPATH
-##############################################################################
-
-HIVE_CONF=$HIVE_HOME/conf
-
-if [ -d ${HIVE_CONF} ]; then
-  CLASSPATH=${CLASSPATH}:${HIVE_CONF}
-fi
-
-HIVE_LIB=$HIVE_HOME/lib
-
-if [ -d ${HIVE_LIB} ]; then
-
-  for f in ${HIVE_LIB}/hive-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-
-  for f in ${HIVE_LIB}/libfb303-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-
-  for f in ${HIVE_LIB}/jdo-api-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-
-  for f in ${HIVE_LIB}/datanucleus-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-
-  for f in $HIVE_HOME/hcatalog/share/hcatalog/hcatalog-core-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-
-  for f in $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-core-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-fi
-
-if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then
-  CLASSPATH=${CLASSPATH}:$HIVE_JDBC_DRIVER_DIR;
-fi
-
-##############################################################################
-# Find and Set Hadoop CLASSPATH
-##############################################################################
-
-# HADOOP JAR DIRS
-HADOOP_MODULE_DIRS="$HADOOP_HOME/share/hadoop/common/lib
-$HADOOP_HOME/share/hadoop/common
-$HADOOP_HOME/share/hadoop/hdfs
-$HADOOP_HOME/share/hadoop/hdfs/lib
-$HADOOP_HOME/share/hadoop/yarn/lib
-$HADOOP_HOME/share/hadoop/yarn"
-
-HADOOP_EXT_CLASSPATH="${HADOOP_CONF_DIR}"
-
-for d in $HADOOP_MODULE_DIRS; do
-  CLASSPATH=${CLASSPATH}:$d/*
-done;
-
-export HADOOP_EXT_CLASSPATH
-
-# Append $HADOOP_JAR_CLASSPATH to $CLASSPATH
-CLASSPATH="${CLASSPATH}:${HADOOP_EXT_CLASSPATH}"
-
-HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 ##############################################################################
 # Hadoop Home Configuration End
 ##############################################################################

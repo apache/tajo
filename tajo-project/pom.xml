@@ -35,9 +35,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
-    <hadoop.version>2.2.0</hadoop.version>
+    <hadoop.version>2.3.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
+    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
   </properties>
 
@@ -575,6 +575,38 @@
         <artifactId>maven-surefire-report-plugin</artifactId>
         <version>2.15</version>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/main/hadoop-${hadoop.version}</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-source-2.3</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/main/hadoop-${hadoop.version}</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -746,6 +778,21 @@
         <version>${hadoop.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-mapreduce-client-shuffle</artifactId>
+        <version>${hadoop.version}</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>hadoop-mapreduce-client-core</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>hadoop-yarn-server-nodemanager</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

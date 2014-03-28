@@ -28,7 +28,7 @@ Please add the following configs to tajo-site.xml file:
   </property>
 
   <property>
-    <name>tajo.master.client-rpc.addres</name>
+    <name>tajo.master.client-rpc.address</name>
     <value>hostname:26002</value>
   </property>
 

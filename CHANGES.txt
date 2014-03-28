@@ -574,6 +574,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-694: Bump up hadoop to 2.3.0. (jinho)
+
     TAJO-684: Add functions about time. (Alvin Henrick via jihoon)
 
     TAJO-669: Add cluster setup documentation. (hyunsik)
