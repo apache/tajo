@@ -45,6 +45,7 @@ public abstract class NettyClientBase implements Closeable {
   public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory, ClientSocketChannelFactory factory)
       throws IOException {
     try {
+
       this.bootstrap = new ClientBootstrap(factory);
       this.bootstrap.setPipelineFactory(pipeFactory);
       // TODO - should be configurable
@@ -57,7 +58,7 @@ public abstract class NettyClientBase implements Closeable {
       connect(addr);
     } catch (Throwable t) {
       close();
-      throw new IOException(t.getCause());
+      throw new IOException("Connect error to " + addr + " cause " + t.getMessage(), t.getCause());
     }
   }
 

@@ -138,7 +138,10 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-685: Add prerequisite to the document of network functions and operators. 
+    TAJO-691: HashJoin or HashAggregation is too slow if there is many unique keys.
+    (hyoungjunkim via hyunsik)
+
+    TAJO-685: Add prerequisite to the document of network functions and operators.
     (jihoon)
 
     TAJO-644: Support quoted identifiers. (hyunsik)

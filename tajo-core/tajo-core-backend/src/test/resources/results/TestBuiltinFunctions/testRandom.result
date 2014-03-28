@@ -1,1 +1,0 @@
-select l_orderkey, random(3) as rndnum from lineitem group by l_orderkey, rndnum;

@@ -30,4 +30,7 @@ from (
   group by
     o_orderkey
 
-) b on (a.c_custkey = b.o_orderkey);
+) b on (a.c_custkey = b.o_orderkey)
+
+order by
+  c_custkey;

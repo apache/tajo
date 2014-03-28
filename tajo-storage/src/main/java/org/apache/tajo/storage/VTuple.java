@@ -198,19 +198,10 @@ public class VTuple implements Tuple, Cloneable {
 		str.append(")");
 		return str.toString();
 	}
-	
+
 	@Override
 	public int hashCode() {
-	  int hashCode = 37;
-	  for (int i=0; i < values.length; i++) {
-	    if(values[i] != null) {
-        hashCode ^= (values[i].hashCode() * 41);
-	    } else {
-	      hashCode = hashCode ^ (i + 17);
-	    }
-	  }
-	  
-	  return hashCode;
+	  return Arrays.hashCode(values);
 	}
 
   @Override
