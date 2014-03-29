@@ -19,25 +19,25 @@
 
 ## Apache Git Repository
 
-The development codebase can also be downloaded from the [Apache git repository](https://git-wip-us.apache.org/repos/asf/incubator-tajo.git) at:
+The development codebase can also be downloaded from the [Apache git repository](https://git-wip-us.apache.org/repos/asf/tajo.git) at:
 
 ```
-git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git
+git clone https://git-wip-us.apache.org/repos/asf/tajo.git
 ```
 
 ### Getting a Specific Branch or Tag
 If you want to get a specific branch or tagged source code, just add an option -b *branch or tag name* as follow:
 
 ```
-git clone -b [branch or tag name] https://git-wip-us.apache.org/repos/asf/incubator-tajo.git
+git clone -b [branch or tag name] https://git-wip-us.apache.org/repos/asf/tajo.git
 ```
 
-You can see all available branch or tag lists at [here](https://git-wip-us.apache.org/repos/asf?p=incubator-tajo.git;a=tags).
+You can see all available branch or tag lists at [here](https://git-wip-us.apache.org/repos/asf?p=tajo.git;a=tags).
 
 ## Github
 
-A read-only git repository is also mirrored [on Github](https://github.com/apache/incubator-tajo).
+A read-only git repository is also mirrored on [Github](https://github.com/apache/tajo).
 
 ```
-git clone https://github.com/apache/incubator-tajo.git
+git clone https://github.com/apache/tajo
 ```

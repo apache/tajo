@@ -93,14 +93,14 @@ Tajo is _**a big daga warehouse system on Hadoop**_ that provides low-latency an
 
 ### <a name="BinaryDownload"></a>Binary Download
 
-Download the source code from http://tajo.incubator.apache.org/downloads.html.
+Download the source code from http://tajo.apache.org/downloads.html.
 
 ### <a name="SourceDownload"></a>Source Download
 
 Download the source code and build Tajo as follows:
 
 ```
-$ git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
+$ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
 ```
 
 ## <a name="BuildSourceCode"></a>Build Source Code
@@ -460,7 +460,7 @@ Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogSt
 First, you must compile source code and get a binary archive as follows:
 
 ```
-$ git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
+$ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
 $ mvn clean package -DskipTests -Pdist -Dtar -Phcatalog-0.1x.0
 $ ls tajo-dist/target/tajo-0.8.0-SNAPSHOT.tar.gz
 ```

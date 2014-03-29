@@ -79,7 +79,7 @@ First, you must compile source code and get a binary archive as follows:
 
 .. code-block:: sh
 
-  $ git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
+  $ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
   $ mvn clean package -DskipTests -Pdist -Dtar -Phcatalog-0.1x.0
   $ ls tajo-dist/target/tajo-0.8.0-SNAPSHOT.tar.gz
 
