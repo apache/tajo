@@ -70,11 +70,11 @@ In the current implementation, there are meta commands as follows: ::
 
 
   Documentations
-    tsql guide        http://tajo.incubator.apache.org/docs/0.8.0/cli.html
-    Query language    http://tajo.incubator.apache.org/docs/0.8.0/sql_language.html
-    Functions         http://tajo.incubator.apache.org/docs/0.8.0/functions.html
-    Backup & restore  http://tajo.incubator.apache.org/docs/0.8.0/backup_and_restore.html
-    Configuration     http://tajo.incubator.apache.org/docs/0.8.0/configuration.html
+    tsql guide        http://tajo.apache.org/docs/0.8.0/cli.html
+    Query language    http://tajo.apache.org/docs/0.8.0/sql_language.html
+    Functions         http://tajo.apache.org/docs/0.8.0/functions.html
+    Backup & restore  http://tajo.apache.org/docs/0.8.0/backup_and_restore.html
+    Configuration     http://tajo.apache.org/docs/0.8.0/configuration.html
 
 -----------------------------------------------
 Basic usages

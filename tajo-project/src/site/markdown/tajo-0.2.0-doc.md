@@ -91,14 +91,14 @@ Tajo is _**a big daga warehouse system on Hadoop**_ that provides low-latency an
 
 ### <a name="BinaryDownload"></a>Binary Download
 
-Download the source code from http://tajo.incubator.apache.org/downloads.html.
+Download the source code from http://tajo.apache.org/downloads.html.
 
 ### <a name="SourceDownload"></a>Source Download
 
 Download the source code and build Tajo as follows:
 
 ```
-$ git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
+$ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
 ```
 
 ## <a name="BuildSourceCode"></a>Build Source Code

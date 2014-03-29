@@ -64,11 +64,11 @@ public class HelpCommand extends TajoShellCommand {
     sout.println();
 
     sout.println("Documentations");
-    sout.println("  tsql guide        http://tajo.incubator.apache.org/docs/"+ docVersion +"/cli.html");
-    sout.println("  Query language    http://tajo.incubator.apache.org/docs/"+ docVersion +"/sql_language.html");
-    sout.println("  Functions         http://tajo.incubator.apache.org/docs/"+ docVersion +"/functions.html");
-    sout.println("  Backup & restore  http://tajo.incubator.apache.org/docs/"+ docVersion +"/backup_and_restore.html");
-    sout.println("  Configuration     http://tajo.incubator.apache.org/docs/"+ docVersion +"/configuration.html");
+    sout.println("  tsql guide        http://tajo.apache.org/docs/"+ docVersion +"/cli.html");
+    sout.println("  Query language    http://tajo.apache.org/docs/"+ docVersion +"/sql_language.html");
+    sout.println("  Functions         http://tajo.apache.org/docs/"+ docVersion +"/functions.html");
+    sout.println("  Backup & restore  http://tajo.apache.org/docs/"+ docVersion +"/backup_and_restore.html");
+    sout.println("  Configuration     http://tajo.apache.org/docs/"+ docVersion +"/configuration.html");
     sout.println();
   }
 

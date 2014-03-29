@@ -11,8 +11,8 @@ and its optimizer.
 
 Project
 =======
-* Project Home (http://tajo.incubator.apache.org/)
-* Source Repository (https://git-wip-us.apache.org/repos/asf/incubator-tajo.git)
+* Project Home (http://tajo.apache.org/)
+* Source Repository (https://git-wip-us.apache.org/repos/asf/tajo.git)
 * Issue Tracking (https://issues.apache.org/jira/browse/TAJO)
 
 License

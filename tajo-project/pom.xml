@@ -246,9 +246,9 @@
   </issueManagement>
 
   <scm>
-    <url>https://git-wip-us.apache.org/repos/asf/incubator-tajo.git</url>
-    <connection>scm:git:http://git-wip-us.apache.org/repos/asf/incubator-tajo.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-tajo.git</developerConnection>
+    <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
+    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
+    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
   </scm>
 
   <mailingLists>

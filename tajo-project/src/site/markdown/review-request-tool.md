@@ -164,7 +164,7 @@ If you checked out using the git wip http url that confusingly won't work with r
 
 ```
 $ cat ~/.reviewboardrc
-REPOSITORY = 'git://git.apache.org/incubator-tajo.git'
+REPOSITORY = 'http://git.apache.org/tajo.git'
 TARGET_GROUPS = 'Tajo'
 ```
 

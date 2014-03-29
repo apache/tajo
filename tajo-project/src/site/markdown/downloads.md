@@ -21,19 +21,19 @@
 
 ### 0.2-incubating Release (Nov 20, 2013)
  * [RELEASE NOTES](http://s.apache.org/tajo-0.2-release-notes)
- * [Source Tarball] (http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/incubator/tajo/KEYS)) ([How to verify?](#Verification))
+ * [Source Tarball](http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/incubator/tajo/KEYS)) ([How to verify?](#Verification))
 
 ## Getting the source code via Git
 
-The development codebase can also be downloaded from [the Apache git repository](https://git-wip-us.apache.org/repos/asf/incubator-tajo.git) as follows:
+The development codebase can also be downloaded from [the Apache git repository](https://git-wip-us.apache.org/repos/asf/tajo.git) as follows:
 
 ```
-git clone https://git-wip-us.apache.org/repos/asf/incubator-tajo.git
+git clone https://git-wip-us.apache.org/repos/asf/tajo.git
 ```
 
-A read-only git repository is also mirrored on [Github](https://github.com/apache/incubator-tajo).
+A read-only git repository is also mirrored on [Github](https://github.com/apache/tajo).
 
-Once you have downloaded Tajo, follow the [getting started instructions](http://tajo.incubator.apache.org/tajo-0.8.0-doc.html#GettingStarted), and take a look at the rest of the Tajo documentation.
+Once you have downloaded Tajo, follow the [getting started instructions](http://tajo.apache.org/tajo-0.8.0-doc.html#GettingStarted), and take a look at the rest of the Tajo documentation.
 
 ## <a name="Verification"></a>How to Verify the integrity of the files
 

@@ -50,7 +50,7 @@
   </ciManagement>
 
   <scm>
-    <url>https://git-wip-us.apache.org/repos/asf/incubator-tajo.git</url>
+    <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
   </scm>
 
   <repositories>
