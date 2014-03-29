@@ -29,6 +29,7 @@ import org.apache.tajo.engine.exception.RangeOverflowException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.Bytes;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -202,6 +203,25 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           return candidate.compareTo(new BigDecimal(range.getEnd().get(colId).asChars().charAt(0))) < 0;
         }
       }
+      case INET4: {
+        int candidateIntVal;
+        byte[] candidateBytesVal = new byte[4];
+        if (sortSpecs[colId].isAscending()) {
+          candidateIntVal = inc.intValue() + last.asInt4();
+          if (candidateIntVal - inc.intValue() != last.asInt4()) {
+            return true;
+          }
+          Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
+          return Bytes.compareTo(range.getEnd().get(colId).asByteArray(), candidateBytesVal) < 0;
+        } else {
+          candidateIntVal = last.asInt4() - inc.intValue();
+          if (candidateIntVal + inc.intValue() != last.asInt4()) {
+            return true;
+          }
+          Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
+          return Bytes.compareTo(candidateBytesVal, range.getEnd().get(colId).asByteArray()) < 0;
+        }
+      }
     }
     return overflow;
   }
@@ -231,7 +251,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       }
       case TIME:
       case TIMESTAMP:
-      case INT8: {
+      case INT8:
+      case INET4: {
         long candidate = last.asInt8() + inc;
         long end = range.getEnd().get(colId).asInt8();
         reminder = candidate - end;
@@ -405,6 +426,19 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 range.getStart().get(i).asInt8() + incs[i].longValue()));
           } else {
             end.put(i, DatumFactory.createTimeStampFromMillis(last.get(i).asInt8() + incs[i].longValue()));
+          }
+          break;
+        case INET4:
+          byte[] ipBytes;
+          if (overflowFlag[i]) {
+            ipBytes = range.getStart().get(i).asByteArray();
+            assert ipBytes.length == 4;
+            end.put(i, DatumFactory.createInet4(ipBytes));
+          } else {
+            int lastVal = last.get(i).asInt4() + incs[i].intValue();
+            ipBytes = new byte[4];
+            Bytes.putInt(ipBytes, 0, lastVal);
+            end.put(i, DatumFactory.createInet4(ipBytes));
           }
           break;
         default:
