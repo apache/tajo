@@ -20,6 +20,7 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -63,6 +64,9 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public void connect(InetSocketAddress addr) {
+    if(addr.isUnresolved()){
+       addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+    }
     this.channelFuture = bootstrap.connect(addr);
     this.channelFuture.awaitUninterruptibly();
     if (!channelFuture.isSuccess()) {

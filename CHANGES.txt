@@ -292,6 +292,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-719: JUnit test failures. (jinho)
+
     TAJO-713: Missing INET4 in UniformRangePartition. (jihoon)
 
     TAJO-718: A group-by clause with the same columns but aliased causes
