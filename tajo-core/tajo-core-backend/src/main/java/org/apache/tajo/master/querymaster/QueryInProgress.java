@@ -206,8 +206,8 @@ public class QueryInProgress extends CompositeService {
   }
 
   private void connectQueryMaster() throws Exception {
-    InetSocketAddress addr = NetUtils.createSocketAddr(
-        queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    InetSocketAddress addr = NetUtils.createSocketAddrForHost(
+        queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
         RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);

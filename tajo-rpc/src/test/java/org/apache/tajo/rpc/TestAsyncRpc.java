@@ -162,4 +162,20 @@ public class TestAsyncRpc {
     assertTrue(future.getController().failed());
     assertTrue(future.getController().errorText() != null);
   }
+
+  @Test
+  public void testUnresolvedAddress() throws Exception {
+    String hostAndPort = NetUtils.normalizeInetSocketAddress(server.getListenAddress());
+    AsyncRpcClient client = new AsyncRpcClient(DummyProtocol.class, NetUtils.createUnresolved(hostAndPort));
+    Interface stub = client.getStub();
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    stub.deley(null, echoMessage, future);
+
+    assertFalse(future.isDone());
+    assertEquals(future.get(), echoMessage);
+    assertTrue(future.isDone());
+    client.close();
+  }
 }

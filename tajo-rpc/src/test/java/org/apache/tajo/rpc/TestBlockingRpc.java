@@ -174,4 +174,17 @@ public class TestBlockingRpc {
       fail(error.toString());
     }
   }
+
+  @Test
+  public void testUnresolvedAddress() throws Exception {
+    String hostAndPort = NetUtils.normalizeInetSocketAddress(server.getListenAddress());
+    BlockingRpcClient client = new BlockingRpcClient(DummyProtocol.class, NetUtils.createUnresolved(hostAndPort));
+    BlockingInterface stub = client.getStub();
+
+    EchoMessage message = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    EchoMessage response2 = stub.echo(null, message);
+    assertEquals(MESSAGE, response2.getMessage());
+    client.close();
+  }
 }
