@@ -328,9 +328,24 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
         QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+
+        // if we cannot get a QueryInProgress instance from QueryJobManager,
+        // the instance can be in the finished query list.
+        if (queryInProgress == null) {
+          queryInProgress = context.getQueryJobManager().getFinishedQuery(queryId);
+        }
+
+        GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
+
+        // If we cannot the QueryInProgress instance from the finished list,
+        // the query result was expired due to timeout.
+        // In this case, we will result in error.
+        if (queryInProgress == null) {
+          builder.setErrorMessage("No such query: " + queryId.toString());
+          return builder.build();
+        }
+
         QueryInfo queryInfo = queryInProgress.getQueryInfo();
-        GetQueryResultResponse.Builder builder
-            = GetQueryResultResponse.newBuilder();
 
         try {
           //TODO After implementation Tajo's user security feature, Should be modified.
@@ -448,6 +463,11 @@ public class TajoMasterClientService extends AbstractService {
           builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
         } else {
           QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+
+          // It will try to find a query status from a finished query list.
+          if (queryInProgress == null) {
+            queryInProgress = context.getQueryJobManager().getFinishedQuery(queryId);
+          }
           if (queryInProgress != null) {
             QueryInfo queryInfo = queryInProgress.getQueryInfo();
             builder.setResultCode(ResultCode.OK);
@@ -458,8 +478,6 @@ public class TajoMasterClientService extends AbstractService {
               builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
               builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
             }
-            //builder.setInitTime(queryJobManager.getInitializationTime());
-            //builder.setHasResult(!queryJobManager.isCreateTableStmt());
             if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
               builder.setFinishTime(queryInfo.getFinishTime());
             } else {

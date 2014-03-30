@@ -137,6 +137,12 @@ public class QueryJobManager extends CompositeService {
     }
   }
 
+  public QueryInProgress getFinishedQuery(QueryId queryId) {
+    synchronized(finishedQueries) {
+      return finishedQueries.get(queryId);
+    }
+  }
+
   public void stopQuery(QueryId queryId) {
     LOG.info("Stop QueryInProgress:" + queryId);
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
