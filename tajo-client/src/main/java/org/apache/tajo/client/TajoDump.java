@@ -150,14 +150,20 @@ public class TajoDump {
     List<String> tableNames = TUtil.newList(client.getTableList(databaseName));
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
-      TableDesc table =
-          client.getTableDesc(CatalogUtil.denormalizeIdentifier(CatalogUtil.buildFQName(databaseName,tableName)));
-      if (table.isExternal()) {
-        writer.write(DDLBuilder.buildDDLForExternalTable(table));
-      } else {
-        writer.write(DDLBuilder.buildDDLForBaseTable(table));
+      try {
+        TableDesc table =
+            client.getTableDesc(CatalogUtil.denormalizeIdentifier(CatalogUtil.buildFQName(databaseName,tableName)));
+        if (table.isExternal()) {
+          writer.write(DDLBuilder.buildDDLForExternalTable(table));
+        } else {
+          writer.write(DDLBuilder.buildDDLForBaseTable(table));
+        }
+        writer.write("\n\n");
+      } catch (Exception e) {
+        // dump for each table can throw any exception. We need to skip the exception case.
+        // here, the error message prints out via stderr.
+        System.err.println("ERROR:" + tableName + "," + e.getMessage());
       }
-      writer.write("\n\n");
     }
   }
 

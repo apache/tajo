@@ -33,12 +33,14 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -607,5 +609,59 @@ public class TestTajoClient {
     assertEquals(numFinishedQueries + 2, client.getFinishedQueryList().size());
 
     resultSet.close();
+  }
+
+  /**
+   * The main objective of this test is to get the status of a query which is actually finished.
+   * Statuses of queries regardless of its status should be available for a specified time duration.
+   */
+  @Test(timeout = 20 * 1000)
+  public final void testGetQueryStatusAndResultAfterFinish() throws Exception {
+    String sql = "select * from lineitem";
+    ClientProtos.GetQueryStatusResponse response = client.executeQuery(sql);
+
+    assertNotNull(response);
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    try {
+      long startTime = System.currentTimeMillis();
+      while (true) {
+        Thread.sleep(5 * 1000);
+
+        List<ClientProtos.BriefQueryInfo> finishedQueries = client.getFinishedQueryList();
+        boolean finished = false;
+        if (finishedQueries != null) {
+          for (ClientProtos.BriefQueryInfo eachQuery: finishedQueries) {
+            if (eachQuery.getQueryId().equals(queryId.getProto())) {
+              finished = true;
+              break;
+            }
+          }
+        }
+
+        if (finished) {
+          break;
+        }
+        if(System.currentTimeMillis() - startTime > 20 * 1000) {
+          fail("Too long time execution query");
+        }
+      }
+
+      QueryStatus queryStatus = client.getQueryStatus(queryId);
+      assertNotNull(queryStatus);
+      assertTrue(!TajoClient.isQueryRunnning(queryStatus.getState()));
+
+      TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
+      assertNotNull(resultSet);
+
+      int count = 0;
+      while(resultSet.next()) {
+        count++;
+      }
+
+      assertEquals(5, count);
+    } finally {
+      client.closeQuery(queryId);
+    }
   }
 }
