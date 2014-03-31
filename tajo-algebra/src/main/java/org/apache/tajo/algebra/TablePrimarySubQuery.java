@@ -53,7 +53,7 @@ public class TablePrimarySubQuery extends Relation {
   @Override
   boolean equalsTo(Expr expr) {
     TablePrimarySubQuery another = (TablePrimarySubQuery) expr;
-    return subquery.equals(subquery) && TUtil.checkEquals(columnNames, another.columnNames);
+    return subquery.equals(another.subquery) && TUtil.checkEquals(columnNames, another.columnNames);
   }
 
   public String toJson() {

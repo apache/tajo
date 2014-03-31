@@ -101,7 +101,7 @@ public class CaseWhenPredicate extends Expr {
     public boolean equals(Object obj) {
       if (obj instanceof WhenExpr) {
         WhenExpr another = (WhenExpr) obj;
-        return condition.equals(another.condition) && result.equals(result);
+        return TUtil.checkEquals(condition, another.condition) && TUtil.checkEquals(result, another.result);
       }
 
       return false;

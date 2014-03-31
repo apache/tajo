@@ -323,8 +323,8 @@ public class CreateTable extends Expr {
     }
 
     public boolean equals(Object object) {
-      if (object instanceof HashPartition) {
-        HashPartition another = (HashPartition) object;
+      if (object instanceof ListPartition) {
+        ListPartition another = (ListPartition) object;
         return type == another.type && TUtil.checkEquals(columns, another.columns) &&
             specifiers.equals(another.specifiers);
       } else {
@@ -356,13 +356,12 @@ public class CreateTable extends Expr {
     }
 
     public boolean equals(Object object) {
-      if (object instanceof HashPartition) {
+      if (object instanceof ColumnPartition) {
         ColumnPartition another = (ColumnPartition) object;
         return type == another.type && TUtil.checkEquals(columns, another.columns) &&
             TUtil.checkEquals(isOmitValues, another.isOmitValues);
-      } else {
-        return false;
       }
+      return false;
     }
   }
 

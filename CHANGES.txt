@@ -588,6 +588,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-529: Fix warnings in tajo-algebra. (jaehwa)
+
     TAJO-700: Update site, wikis, pom.xml and other resources to point to the 
     new repository location. (jihoon)
 
