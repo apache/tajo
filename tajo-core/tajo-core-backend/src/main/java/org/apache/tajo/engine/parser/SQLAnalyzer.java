@@ -125,7 +125,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     Expr current = visitNon_join_query_primary(ctx.non_join_query_primary());
     Expr left;
 
-    for (int i = 1; i < ctx.getChildCount();) {
+    for (int i = 1; i < ctx.getChildCount(); ) {
       int idx = i;
       boolean distinct = true;
 
@@ -147,7 +147,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         left = current;
         current = new SetOperation(OpType.Intersect, left, right, distinct);
 
-        i+=idx;
+        i += idx;
       }
     }
 
@@ -215,6 +215,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    *   : select_sublist (COMMA select_sublist)*
    *   ;
    * </pre>
+   *
    * @param ctx
    * @return
    */
@@ -237,6 +238,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    *   | asterisked_qualifier
    *   ;
    * </pre>
+   *
    * @param ctx
    * @return
    */
@@ -251,7 +253,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public RelationList visitFrom_clause(SQLParser.From_clauseContext ctx) {
-    Expr [] relations = new Expr[ctx.table_reference_list().table_reference().size()];
+    Expr[] relations = new Expr[ctx.table_reference_list().table_reference().size()];
     for (int i = 0; i < relations.length; i++) {
       relations[i] = visitTable_reference(ctx.table_reference_list().table_reference(i));
     }
@@ -308,7 +310,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
     int size = ctx.sort_specifier_list().sort_specifier().size();
-    Sort.SortSpec specs [] = new Sort.SortSpec[size];
+    Sort.SortSpec specs[] = new Sort.SortSpec[size];
     for (int i = 0; i < size; i++) {
       SQLParser.Sort_specifierContext specContext = ctx.sort_specifier_list().sort_specifier(i);
       Expr column = visitRow_value_predicand(specContext.key);
@@ -381,7 +383,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
               join_condition().search_condition());
           join.setQual(searchCondition);
         } else if (ctx.join_specification().named_columns_join() != null) {
-          ColumnReferenceExpr [] columns = getColumnReferences(ctx.join_specification().
+          ColumnReferenceExpr[] columns = getColumnReferences(ctx.join_specification().
               named_columns_join().column_reference_list());
           join.setJoinColumns(columns);
         }
@@ -392,7 +394,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return join;
   }
 
-  private Expr [] getRowValuePredicandsFromOrdinaryGroupingSetList(Ordinary_grouping_set_listContext ctx) {
+  private Expr[] getRowValuePredicandsFromOrdinaryGroupingSetList(Ordinary_grouping_set_listContext ctx) {
     ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
     for (int i = 0; i < ctx.ordinary_grouping_set().size(); i++) {
       Collections.addAll(rowValuePredicands, getRowValuePredicandsFromOrdinaryGroupingSet(ctx.ordinary_grouping_set(i)));
@@ -400,7 +402,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return rowValuePredicands.toArray(new Expr[rowValuePredicands.size()]);
   }
 
-  private Expr [] getRowValuePredicandsFromOrdinaryGroupingSet(Ordinary_grouping_setContext ctx) {
+  private Expr[] getRowValuePredicandsFromOrdinaryGroupingSet(Ordinary_grouping_setContext ctx) {
     ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
     if (ctx.row_value_predicand() != null) {
       rowValuePredicands.add(visitRow_value_predicand(ctx.row_value_predicand()));
@@ -411,16 +413,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return rowValuePredicands.toArray(new Expr[rowValuePredicands.size()]);
   }
 
-  private Expr [] getRowValuePredicands(Row_value_predicand_listContext ctx) {
-    Expr [] rowValuePredicands = new Expr[ctx.row_value_predicand().size()];
+  private Expr[] getRowValuePredicands(Row_value_predicand_listContext ctx) {
+    Expr[] rowValuePredicands = new Expr[ctx.row_value_predicand().size()];
     for (int i = 0; i < rowValuePredicands.length; i++) {
       rowValuePredicands[i] = visitRow_value_predicand(ctx.row_value_predicand(i));
     }
     return rowValuePredicands;
   }
 
-  private ColumnReferenceExpr [] getColumnReferences(Column_reference_listContext ctx) {
-    ColumnReferenceExpr [] columnRefs = new ColumnReferenceExpr[ctx.column_reference().size()];
+  private ColumnReferenceExpr[] getColumnReferences(Column_reference_listContext ctx) {
+    ColumnReferenceExpr[] columnRefs = new ColumnReferenceExpr[ctx.column_reference().size()];
     for (int i = 0; i < columnRefs.length; i++) {
       columnRefs[i] = visitColumn_reference(ctx.column_reference(i));
     }
@@ -482,7 +484,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override public CaseWhenPredicate visitSearched_case(SQLParser.Searched_caseContext ctx) {
+  @Override
+  public CaseWhenPredicate visitSearched_case(SQLParser.Searched_caseContext ctx) {
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();
 
     for (int i = 0; i < ctx.searched_when_clause().size(); i++) {
@@ -497,7 +500,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return caseWhen;
   }
 
-  @Override public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
+  @Override
+  public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
     if (checkIfExist(ctx.NULL())) {
       return new NullLiteral();
     } else {
@@ -671,7 +675,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return current;
   }
 
-  @Override public Expr visitFactor(SQLParser.FactorContext ctx) {
+  @Override
+  public Expr visitFactor(SQLParser.FactorContext ctx) {
     Expr current = visitNumeric_primary(ctx.numeric_primary());
     if (checkIfExist(ctx.sign()) && checkIfExist(ctx.sign().MINUS())) {
       current = new SignedExpr(true, current);
@@ -696,27 +701,44 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   public static OpType tokenToExprType(int tokenId) {
     switch (tokenId) {
-      case SQLParser.UNION: return OpType.Union;
-      case SQLParser.EXCEPT: return OpType.Except;
-      case SQLParser.INTERSECT: return OpType.Intersect;
+      case SQLParser.UNION:
+        return OpType.Union;
+      case SQLParser.EXCEPT:
+        return OpType.Except;
+      case SQLParser.INTERSECT:
+        return OpType.Intersect;
 
-      case SQLParser.AND: return OpType.And;
-      case SQLParser.OR: return OpType.Or;
+      case SQLParser.AND:
+        return OpType.And;
+      case SQLParser.OR:
+        return OpType.Or;
 
-      case SQLParser.EQUAL: return OpType.Equals;
-      case SQLParser.NOT_EQUAL: return OpType.NotEquals;
-      case SQLParser.LTH: return OpType.LessThan;
-      case SQLParser.LEQ: return OpType.LessThanOrEquals;
-      case SQLParser.GTH: return OpType.GreaterThan;
-      case SQLParser.GEQ: return OpType.GreaterThanOrEquals;
+      case SQLParser.EQUAL:
+        return OpType.Equals;
+      case SQLParser.NOT_EQUAL:
+        return OpType.NotEquals;
+      case SQLParser.LTH:
+        return OpType.LessThan;
+      case SQLParser.LEQ:
+        return OpType.LessThanOrEquals;
+      case SQLParser.GTH:
+        return OpType.GreaterThan;
+      case SQLParser.GEQ:
+        return OpType.GreaterThanOrEquals;
 
-      case SQLParser.MULTIPLY: return OpType.Multiply;
-      case SQLParser.DIVIDE: return OpType.Divide;
-      case SQLParser.MODULAR: return OpType.Modular;
-      case SQLParser.PLUS: return OpType.Plus;
-      case SQLParser.MINUS: return OpType.Minus;
+      case SQLParser.MULTIPLY:
+        return OpType.Multiply;
+      case SQLParser.DIVIDE:
+        return OpType.Divide;
+      case SQLParser.MODULAR:
+        return OpType.Modular;
+      case SQLParser.PLUS:
+        return OpType.Plus;
+      case SQLParser.MINUS:
+        return OpType.Minus;
 
-      default: throw new RuntimeException("Unknown Token Id: " + tokenId);
+      default:
+        throw new RuntimeException("Unknown Token Id: " + tokenId);
     }
   }
 
@@ -730,7 +752,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
     if (checkIfExist(ctx.in_value_list())) {
       int size = ctx.in_value_list().row_value_expression().size();
-      Expr [] exprs = new Expr[size];
+      Expr[] exprs = new Expr[size];
       for (int i = 0; i < size; i++) {
         exprs[i] = visitRow_value_expression(ctx.in_value_list().row_value_expression(i));
       }
@@ -743,7 +765,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitArray(SQLParser.ArrayContext ctx) {
     int size = ctx.numeric_value_expression().size();
-    Expr [] exprs = new Expr[size];
+    Expr[] exprs = new Expr[size];
     for (int i = 0; i < size; i++) {
       exprs[i] = visit(ctx.numeric_value_expression(i));
     }
@@ -825,7 +847,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override public FunctionExpr visitAggregate_function( SQLParser.Aggregate_functionContext ctx) {
+  @Override
+  public FunctionExpr visitAggregate_function(SQLParser.Aggregate_functionContext ctx) {
     if (ctx.COUNT() != null && ctx.MULTIPLY() != null) {
       return new CountRowsFunctionExpr();
     } else {
@@ -833,7 +856,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
+  @Override
+  public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
     boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT());
     Expr param = visitValue_expression(ctx.value_expression());
@@ -847,7 +871,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     FunctionExpr function = new FunctionExpr(signature);
     if (ctx.sql_argument_list() != null) {
       int numArgs = ctx.sql_argument_list().value_expression().size();
-      Expr [] argument_list = new Expr[numArgs];
+      Expr[] argument_list = new Expr[numArgs];
       for (int i = 0; i < numArgs; i++) {
         argument_list[i] = visitValue_expression(ctx.sql_argument_list().
             value_expression().get(i));
@@ -894,7 +918,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       right = visitCharacter_factor((Character_factorContext) ctx.getChild(i));
 
       if (left.getType() == OpType.Literal && right.getType() == OpType.Literal) {
-        current = new LiteralValue(((LiteralValue)left).getValue() + ((LiteralValue)right).getValue(),
+        current = new LiteralValue(((LiteralValue) left).getValue() + ((LiteralValue) right).getValue(),
             LiteralType.String);
       } else {
         current = new BinaryOperator(OpType.Concatenate, left, right);
@@ -927,7 +951,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     String functionName = "date_part";
-    Expr [] params = new Expr[] {extractTarget, extractSource};
+    Expr[] params = new Expr[]{extractTarget, extractSource};
 
     return new FunctionExpr(functionName, params);
   }
@@ -954,11 +978,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       trimCharacters = visitCharacter_value_expression(ctx.trim_operands().trim_character);
     }
 
-    Expr [] params;
+    Expr[] params;
     if (trimCharacters != null) {
-      params = new Expr[] {trimSource, trimCharacters};
+      params = new Expr[]{trimSource, trimCharacters};
     } else {
-      params = new Expr[] {trimSource};
+      params = new Expr[]{trimSource};
     }
 
     return new FunctionExpr(functionName, params);
@@ -982,7 +1006,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
-      CreateTable.ColumnDefinition [] elements = getDefinitions(ctx.table_elements());
+      ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String fileType = ctx.file_type.getText();
       String path = stripQuote(ctx.path.getText());
 
@@ -991,7 +1015,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setLocation(path);
     } else {
       if (checkIfExist(ctx.table_elements())) {
-        CreateTable.ColumnDefinition [] elements = getDefinitions(ctx.table_elements());
+        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
       }
 
@@ -1019,13 +1043,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return createTable;
   }
 
-  private CreateTable.ColumnDefinition [] getDefinitions(SQLParser.Table_elementsContext ctx) {
+  private ColumnDefinition[] getDefinitions(SQLParser.Table_elementsContext ctx) {
     int size = ctx.field_element().size();
-    CreateTable.ColumnDefinition [] elements = new CreateTable.ColumnDefinition[size];
+    ColumnDefinition[] elements = new ColumnDefinition[size];
     for (int i = 0; i < size; i++) {
       String name = ctx.field_element(i).name.getText();
       DataTypeExpr typeDef = visitData_type(ctx.field_element(i).field_type().data_type());
-      elements[i] = new CreateTable.ColumnDefinition(name, typeDef);
+      elements[i] = new ColumnDefinition(name, typeDef);
     }
 
     return elements;
@@ -1074,7 +1098,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       for (List_value_partitionContext listValuePartition : partitions) {
         int size = listValuePartition.in_value_list().row_value_expression().size();
-        Expr [] exprs = new Expr[size];
+        Expr[] exprs = new Expr[size];
         for (int i = 0; i < size; i++) {
           exprs[i] = visitRow_value_expression(listValuePartition.in_value_list().row_value_expression(i));
         }
@@ -1120,7 +1144,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         }
 
       } else if (character_string_type.TEXT() != null) {
-        typeDefinition =  new DataTypeExpr(Type.TEXT.name());
+        typeDefinition = new DataTypeExpr(Type.TEXT.name());
       }
 
     } else if (predefined_type.national_character_string_type() != null) {
@@ -1187,7 +1211,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           typeDefinition = new DataTypeExpr(Type.FLOAT8.name());
         }
       }
-    } else if (predefined_type.boolean_type() != null)  {
+    } else if (predefined_type.boolean_type() != null) {
       typeDefinition = new DataTypeExpr(Type.BOOLEAN.name());
     } else if (predefined_type.datetime_type() != null) {
       SQLParser.Datetime_typeContext dateTimeType = predefined_type.datetime_type();
@@ -1246,7 +1270,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       insertExpr.setTableName(ctx.table_name().getText());
 
       if (ctx.column_name_list() != null) {
-        String [] targetColumns = new String[ctx.column_name_list().identifier().size()];
+        String[] targetColumns = new String[ctx.column_name_list().identifier().size()];
         for (int i = 0; i < targetColumns.length; i++) {
           targetColumns[i] = ctx.column_name_list().identifier().get(i).getText();
         }
@@ -1296,7 +1320,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (Map.Entry<String, String> entry : map.entrySet()) {
       if (entry.getKey().equals(CatalogConstants.CSVFILE_DELIMITER)) {
         params.put(entry.getKey(), escapeDelimiter(entry.getValue()));
-      }  else {
+      } else {
         params.put(entry.getKey(), entry.getValue());
       }
     }
@@ -1317,13 +1341,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return str.substring(1, str.length() - 1);
   }
 
-  @Override public Expr visitCast_specification(SQLParser.Cast_specificationContext ctx) {
+  @Override
+  public Expr visitCast_specification(SQLParser.Cast_specificationContext ctx) {
     Expr operand = visitChildren(ctx.cast_operand());
     DataTypeExpr castTarget = visitData_type(ctx.cast_target().data_type());
     return new CastExpr(operand, castTarget);
   }
 
-  @Override public Expr visitUnsigned_value_specification(@NotNull SQLParser.Unsigned_value_specificationContext ctx) {
+  @Override
+  public Expr visitUnsigned_value_specification(@NotNull SQLParser.Unsigned_value_specificationContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -1351,7 +1377,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitDatetime_literal(@NotNull SQLParser.Datetime_literalContext ctx) {
     if (checkIfExist(ctx.time_literal())) {
       return visitTime_literal(ctx.time_literal());
-    } else if(checkIfExist(ctx.date_literal())) {
+    } else if (checkIfExist(ctx.date_literal())) {
       return visitDate_literal(ctx.date_literal());
     } else {
       return visitTimestamp_literal(ctx.timestamp_literal());
@@ -1373,7 +1399,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitTimestamp_literal(SQLParser.Timestamp_literalContext ctx) {
     String timestampStr = stripQuote(ctx.timestamp_string.getText());
-    String [] parts = timestampStr.split(" ");
+    String[] parts = timestampStr.split(" ");
     String datePart = parts[0];
     String timePart = parts[1];
     return new TimestampLiteral(parseDate(datePart), parseTime(timePart));
@@ -1381,18 +1407,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   private DateValue parseDate(String datePart) {
     // e.g., 1980-04-01
-    String [] parts = datePart.split("-");
+    String[] parts = datePart.split("-");
     return new DateValue(parts[0], parts[1], parts[2]);
   }
 
   private TimeValue parseTime(String timePart) {
     // e.g., 12:01:50.399
-    String [] parts = timePart.split(":");
+    String[] parts = timePart.split(":");
 
     TimeValue time;
     boolean hasFractionOfSeconds = parts[2].indexOf('.') > 0;
     if (hasFractionOfSeconds) {
-      String [] secondsParts = parts[2].split("\\.");
+      String[] secondsParts = parts[2].split("\\.");
       time = new TimeValue(parts[0], parts[1], secondsParts[0]);
       if (secondsParts.length == 2) {
         time.setSecondsFraction(secondsParts[1]);
@@ -1401,5 +1427,78 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       time = new TimeValue(parts[0], parts[1], parts[2]);
     }
     return time;
+  }
+
+  @Override
+  public Expr visitAlter_table_statement(SQLParser.Alter_table_statementContext ctx) {
+
+    final List<Table_nameContext> tables = ctx.table_name();
+
+    final AlterTable alterTable = new AlterTable(tables.get(0).getText());
+
+    if (tables.size() == 2) {
+      alterTable.setNewTableName(tables.get(1).getText());
+    }
+
+    if (checkIfExist(ctx.column_name()) && ctx.column_name().size() == 2) {
+      final List<Column_nameContext> columns = ctx.column_name();
+      alterTable.setColumnName(columns.get(0).getText());
+      alterTable.setNewColumnName(columns.get(1).getText());
+    }
+
+    Field_elementContext field_elementContext = ctx.field_element();
+    if (checkIfExist(field_elementContext)) {
+      final String name = field_elementContext.name.getText();
+      final DataTypeExpr typeDef = visitData_type(field_elementContext.field_type().data_type());
+      final ColumnDefinition columnDefinition = new ColumnDefinition(name, typeDef);
+      alterTable.setAddNewColumn(columnDefinition);
+    }
+
+    alterTable.setAlterTableOpType(determineAlterTableType(ctx));
+
+    return alterTable;
+  }
+
+  private AlterTableOpType determineAlterTableType(SQLParser.Alter_table_statementContext ctx) {
+
+    final int RENAME_MASK = 00000001;
+    final int COLUMN_MASK = 00000010;
+    final int TO_MASK = 00000100;
+    final int ADD_MASK = 00001000;
+
+    int val = 00000000;
+
+    for (int idx = 1; idx < ctx.getChildCount(); idx++) {
+
+      if (ctx.getChild(idx) instanceof TerminalNode) {
+        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == RENAME) {
+          val = val | RENAME_MASK;
+        }
+        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == COLUMN) {
+          val = val | COLUMN_MASK;
+        }
+        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == TO) {
+          val = val | TO_MASK;
+        }
+        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == ADD) {
+          val = val | ADD_MASK;
+        }
+      }
+    }
+    return evaluateAlterTableOperationTye(val);
+  }
+
+  private AlterTableOpType evaluateAlterTableOperationTye(final int value) {
+
+    switch (value) {
+      case 65:
+        return AlterTableOpType.RENAME_TABLE;
+      case 73:
+        return AlterTableOpType.RENAME_COLUMN;
+      case 520:
+        return AlterTableOpType.ADD_COLUMN;
+      default:
+        return null;
+    }
   }
 }

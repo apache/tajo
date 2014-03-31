@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.algebra.CreateTable.ColumnDefinition;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -1412,10 +1411,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private Schema convertColumnsToSchema(CreateTable.ColumnDefinition[] elements) {
+  private Schema convertColumnsToSchema(ColumnDefinition[] elements) {
     Schema schema = new Schema();
 
-    for (CreateTable.ColumnDefinition columnDefinition: elements) {
+    for (ColumnDefinition columnDefinition: elements) {
       schema.addColumn(convertColumn(columnDefinition));
     }
 
@@ -1428,10 +1427,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private Schema convertTableElementsSchema(CreateTable.ColumnDefinition[] elements) {
+  private Schema convertTableElementsSchema(ColumnDefinition[] elements) {
     Schema schema = new Schema();
 
-    for (CreateTable.ColumnDefinition columnDefinition: elements) {
+    for (ColumnDefinition columnDefinition: elements) {
       schema.addColumn(convertColumn(columnDefinition));
     }
 
@@ -1465,6 +1464,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     dropTableNode.init(qualified, dropTable.isIfExists(), dropTable.isPurge());
     return dropTableNode;
+  }
+
+  @Override
+  public LogicalNode visitAlterTable(PlanContext context, Stack<Expr> stack, AlterTable alterTable) {
+    AlterTableNode alterTableNode = context.queryBlock.getNodeFromExpr(alterTable);
+    alterTableNode.setTableName(alterTable.getTableName());
+    alterTableNode.setNewTableName(alterTable.getNewTableName());
+    alterTableNode.setColumnName(alterTable.getColumnName());
+    alterTableNode.setNewColumnName(alterTable.getNewColumnName());
+
+    if (null != alterTable.getAddNewColumn()) {
+      alterTableNode.setAddNewColumn(convertColumn(alterTable.getAddNewColumn()));
+    }
+    alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
+    return alterTableNode;
   }
 
   /*===============================================================================================

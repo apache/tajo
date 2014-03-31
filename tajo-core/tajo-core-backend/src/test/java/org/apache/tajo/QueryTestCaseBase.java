@@ -23,10 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.algebra.CreateTable;
-import org.apache.tajo.algebra.DropTable;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -321,6 +318,15 @@ public class QueryTestCaseBase {
     assertTrue(client.existTable(tableName));
   }
 
+  public void assertColumnExists(String tableName,String columnName) throws ServiceException {
+    TableDesc tableDesc = fetchTableMetaData(tableName);
+    assertTrue(tableDesc.getSchema().containsByName(columnName));
+  }
+
+  private TableDesc fetchTableMetaData(String tableName) throws ServiceException {
+    return client.getTableDesc(tableName);
+  }
+
   public void assertTableNotExists(String tableName) throws ServiceException {
     assertTrue(!client.existTable(tableName));
   }
@@ -403,7 +409,7 @@ public class QueryTestCaseBase {
   }
 
   private List<String> executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
-                            @Nullable String [] args) throws Exception {
+                                  @Nullable String[] args) throws Exception {
 
     Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
     FileSystem fs = ddlFilePath.getFileSystem(conf);
@@ -431,7 +437,7 @@ public class QueryTestCaseBase {
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
 
-        assertTrue("table '" + createdTableName  + "' creation check", client.existTable(createdTableName));
+        assertTrue("table '" + createdTableName + "' creation check", client.existTable(createdTableName));
         if (isLocalTable) {
           createdTableGlobalSet.add(createdTableName);
           createdTableNames.add(tableName);
@@ -444,6 +450,14 @@ public class QueryTestCaseBase {
         assertTrue("table drop is failed.", client.updateQuery(parsedResult.getStatement()));
         assertFalse("table '" + tableName + "' dropped check",
             client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+        if (isLocalTable) {
+          createdTableGlobalSet.remove(tableName);
+        }
+      } else if (expr.getType() == OpType.AlterTable) {
+        AlterTable alterTable = (AlterTable) expr;
+        String tableName = alterTable.getTableName();
+        assertTrue("table '" + tableName + "' existence check", client.existTable(tableName));
+        client.updateQuery(compiled);
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }

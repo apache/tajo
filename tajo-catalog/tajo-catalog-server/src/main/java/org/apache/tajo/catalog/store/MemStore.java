@@ -23,6 +23,8 @@ package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.*;
@@ -42,11 +44,11 @@ public class MemStore implements CatalogStore {
   private final Map<String, CatalogProtos.FunctionDescProto> functions = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexes = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexesByColumn = Maps.newHashMap();
-  
+
   public MemStore(Configuration conf) {
   }
 
-  @Override
+  
   public void close() throws IOException {
     databases.clear();
     functions.clear();
@@ -156,6 +158,74 @@ public class MemStore implements CatalogStore {
     }
   }
 
+  /* (non-Javadoc)
+   * @see CatalogStore#alterTable(AlterTableDesc)
+   */
+  @Override
+  public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException {
+
+    String[] split = CatalogUtil.splitTableName(alterTableDescProto.getTableName());
+    if (split.length == 1) {
+      throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
+          + alterTableDescProto.getTableName() + "\".");
+    }
+    String databaseName = split[0];
+    String tableName = split[1];
+
+    final Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
+
+    final CatalogProtos.TableDescProto tableDescProto = database.get(tableName);
+    CatalogProtos.TableDescProto newTableDescProto;
+    CatalogProtos.SchemaProto schemaProto;
+
+    switch (alterTableDescProto.getAlterTableType()) {
+      case RENAME_TABLE:
+        if (database.containsKey(alterTableDescProto.getNewTableName())) {
+          throw new AlreadyExistsTableException(alterTableDescProto.getNewTableName());
+        }
+        // Currently, we only use the default table space (i.e., WAREHOUSE directory).
+        String spaceUri = tablespaces.get(TajoConstants.DEFAULT_TABLESPACE_NAME);
+        // Create a new table directory.
+        String newPath = new Path(spaceUri, new Path(databaseName, alterTableDescProto.getNewTableName())).toString();
+        newTableDescProto = tableDescProto.toBuilder()
+            .setTableName(alterTableDescProto.getNewTableName())
+            .setPath(newPath).build();
+        database.remove(tableName);
+        database.put(alterTableDescProto.getNewTableName(), newTableDescProto);
+        break;
+      case RENAME_COLUMN:
+        schemaProto = tableDescProto.getSchema();
+        final int index = getIndexOfColumnToBeRenamed(schemaProto.getFieldsList(),
+            alterTableDescProto.getAlterColumnName().getOldColumnName());
+        final CatalogProtos.ColumnProto columnProto = schemaProto.getFields(index);
+        final CatalogProtos.ColumnProto newcolumnProto =
+            columnProto.toBuilder().setName(alterTableDescProto.getAlterColumnName().getNewColumnName()).build();
+        newTableDescProto = tableDescProto.toBuilder().setSchema(schemaProto.toBuilder().
+            setFields(index, newcolumnProto).build()).build();
+        database.put(tableName, newTableDescProto);
+        break;
+      case ADD_COLUMN:
+        schemaProto = tableDescProto.getSchema();
+        CatalogProtos.SchemaProto newSchemaProto =
+            schemaProto.toBuilder().addFields(alterTableDescProto.getAddColumn()).build();
+        newTableDescProto = tableDescProto.toBuilder().setSchema(newSchemaProto).build();
+        database.put(tableName, newTableDescProto);
+        break;
+      default:
+        //TODO
+    }
+  }
+
+  private int getIndexOfColumnToBeRenamed(List<CatalogProtos.ColumnProto> fieldList, String columnName) {
+    int fieldCount = fieldList.size();
+    for (int index = 0; index < fieldCount; index++) {
+      CatalogProtos.ColumnProto columnProto = fieldList.get(index);
+      if (null != columnProto && columnProto.getName().equalsIgnoreCase(columnName)) {
+        return index;
+      }
+    }
+    return -1;
+  }
   /* (non-Javadoc)
    * @see CatalogStore#getTable(java.lang.String)
    */

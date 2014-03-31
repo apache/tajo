@@ -18,13 +18,22 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.StorageUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
@@ -77,6 +86,56 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("DROP DATABASE D2").close();
     assertDatabaseNotExists("D1");
     assertDatabaseNotExists("D2");
+  }
+
+  private final void assertPathOfCreatedTable(final String databaseName,
+                                              final String originalTableName,
+                                              final String newTableName,
+                                              String createTableStmt) throws Exception {
+    // create one table
+    executeString("CREATE DATABASE " + CatalogUtil.denormalizeIdentifier(databaseName)).close();
+    getClient().existDatabase(CatalogUtil.denormalizeIdentifier(databaseName));
+    final String oldFQTableName = CatalogUtil.buildFQName(databaseName, originalTableName);
+
+    ResultSet res = executeString(createTableStmt);
+    res.close();
+    assertTableExists(CatalogUtil.denormalizeIdentifier(oldFQTableName));
+    TableDesc oldTableDesc = client.getTableDesc(CatalogUtil.denormalizeIdentifier(oldFQTableName));
+
+
+    // checking the existence of the table directory and validating the path
+    FileSystem fs = testingCluster.getMaster().getStorageManager().getFileSystem();
+    Path warehouseDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
+    assertTrue(fs.exists(oldTableDesc.getPath()));
+    assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, originalTableName), oldTableDesc.getPath());
+
+    // Rename
+    client.executeQuery("ALTER TABLE " + CatalogUtil.denormalizeIdentifier(oldFQTableName)
+        + " RENAME to " + CatalogUtil.denormalizeIdentifier(newTableName));
+
+    // checking the existence of the new table directory and validating the path
+    final String newFQTableName = CatalogUtil.buildFQName(databaseName, newTableName);
+    TableDesc newTableDesc = client.getTableDesc(CatalogUtil.denormalizeIdentifier(newFQTableName));
+    assertTrue(fs.exists(newTableDesc.getPath()));
+    assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, newTableName), newTableDesc.getPath());
+  }
+
+  @Test
+  public final void testCreatedTableViaCTASAndVerifyPath() throws Exception {
+    assertPathOfCreatedTable("d4", "old_table", "new_mgmt_table",
+        "CREATE TABLE d4.old_table AS SELECT * FROM default.lineitem;");
+  }
+
+  @Test
+  public final void testCreatedTableJustCreatedAndVerifyPath() throws Exception {
+    assertPathOfCreatedTable("d5", "old_table", "new_mgmt_table", "CREATE TABLE d5.old_table (age integer);");
+  }
+
+  @Test
+  public final void testCreatedTableWithQuotedIdentifierAndVerifyPath() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertPathOfCreatedTable("D6", "OldTable", "NewMgmtTable", "CREATE TABLE \"D6\".\"OldTable\" (age integer);");
+    }
   }
 
   @Test

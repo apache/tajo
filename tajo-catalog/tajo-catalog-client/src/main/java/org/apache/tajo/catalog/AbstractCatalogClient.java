@@ -360,7 +360,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return false;
     }
   }
-
+  @Override
   public final boolean existsTable(final String tableName) {
     String [] splitted = CatalogUtil.splitFQTableName(tableName);
     return existsTable(splitted[0], splitted[1]);
@@ -595,4 +595,20 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return false;
     }
   }
+
+  @Override
+  public final boolean alterTable(final AlterTableDesc desc) {
+    try {
+      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
+        public Boolean call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.alterTable(null, desc.getProto()).getValue();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
 }

@@ -116,6 +116,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case DROP_TABLE:
         current = visitDropTable(context, plan, block, (DropTableNode) node, stack);
         break;
+      case ALTER_TABLE:
+        current = visitAlterTable(context, plan, block, (AlterTableNode) node, stack);
+        break;
       default:
         throw new PlanningException("Unknown logical node type: " + node.getType());
     }
@@ -298,4 +301,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
                                Stack<LogicalNode> stack) {
     return null;
   }
+  @Override
+  public RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
+                                 Stack<LogicalNode> stack) {
+        return null;
+    }
 }

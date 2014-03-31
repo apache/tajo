@@ -45,8 +45,9 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitDropDatabase(CONTEXT ctx, Stack<Expr> stack, DropDatabase expr) throws PlanningException;
   RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws PlanningException;
   RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws PlanningException;
+  RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException;
 
-  // Insert or Update
+    // Insert or Update
   RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException;
 
   // Logical operators

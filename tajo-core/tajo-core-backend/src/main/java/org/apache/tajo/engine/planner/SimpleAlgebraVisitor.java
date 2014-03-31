@@ -121,10 +121,15 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
     return super.visitDropTable(ctx, stack, expr);
   }
 
+  @Override
+  public RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException {
+    return super.visitAlterTable(ctx, stack, expr);
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+  @Override
   public RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException {
     return super.visitInsert(ctx, stack, expr);
   }

@@ -49,9 +49,9 @@ public class PlannerUtil {
 
     return
         type == NodeType.CREATE_DATABASE ||
-        type == NodeType.DROP_DATABASE ||
-        (type == NodeType.CREATE_TABLE && !((CreateTableNode)baseNode).hasSubQuery()) ||
-        baseNode.getType() == NodeType.DROP_TABLE;
+            type == NodeType.DROP_DATABASE ||
+            (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
+            baseNode.getType() == NodeType.DROP_TABLE || baseNode.getType() == NodeType.ALTER_TABLE;
   }
 
   /**
@@ -60,9 +60,9 @@ public class PlannerUtil {
    * @param from The LogicalNode to start visiting LogicalNodes.
    * @return an array of all descendant RelationNode of LogicalNode.
    */
-  public static String [] getRelationLineage(LogicalNode from) {
-    LogicalNode [] scans = findAllNodes(from, NodeType.SCAN, NodeType.PARTITIONS_SCAN);
-    String [] tableNames = new String[scans.length];
+  public static String[] getRelationLineage(LogicalNode from) {
+    LogicalNode[] scans = findAllNodes(from, NodeType.SCAN, NodeType.PARTITIONS_SCAN);
+    String[] tableNames = new String[scans.length];
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
       scan = (ScanNode) scans[i];
@@ -106,11 +106,11 @@ public class PlannerUtil {
       return node;
     }
   }
-  
+
   /**
    * Delete the logical node from a plan.
    *
-   * @param parent this node must be a parent node of one node to be removed.
+   * @param parent      this node must be a parent node of one node to be removed.
    * @param tobeRemoved this node must be a child node of the parent.
    */
   public static LogicalNode deleteNode(LogicalNode parent, LogicalNode tobeRemoved) {
@@ -137,7 +137,7 @@ public class PlannerUtil {
       }
     } else {
       throw new InvalidQueryException("Unexpected logical plan: " + parent);
-    }    
+    }
     return child;
   }
 
@@ -233,13 +233,13 @@ public class PlannerUtil {
 
     @Override
     public LogicalNode visitPartitionedTableScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.
-        QueryBlock block,PartitionedTableScanNode node, Stack<LogicalNode> stack)
+        QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack)
 
         throws PlanningException {
       return node;
     }
   }
-  
+
   public static void replaceNode(LogicalNode plan, LogicalNode newNode, NodeType type) {
     LogicalNode parent = findTopParentNode(plan, type);
     Preconditions.checkArgument(parent instanceof UnaryNode);
@@ -254,7 +254,7 @@ public class PlannerUtil {
 
   /**
    * Find the top logical node matched to type from the given node
-   * 
+   *
    * @param node start node
    * @param type to find
    * @return a found logical node
@@ -262,10 +262,10 @@ public class PlannerUtil {
   public static <T extends LogicalNode> T findTopNode(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
-    
+
     LogicalNodeFinder finder = new LogicalNodeFinder(type);
     node.preOrder(finder);
-    
+
     if (finder.getFoundNodes().size() == 0) {
       return null;
     }
@@ -299,7 +299,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode [] findAllNodes(LogicalNode node, NodeType...type) {
+  public static LogicalNode[] findAllNodes(LogicalNode node, NodeType... type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
 
@@ -307,15 +307,15 @@ public class PlannerUtil {
     node.postOrder(finder);
 
     if (finder.getFoundNodes().size() == 0) {
-      return new LogicalNode[] {};
+      return new LogicalNode[]{};
     }
     List<LogicalNode> founds = finder.getFoundNodes();
     return founds.toArray(new LogicalNode[founds.size()]);
   }
-  
+
   /**
    * Find a parent node of a given-typed operator.
-   * 
+   *
    * @param node start node
    * @param type to find
    * @return the parent node of a found logical node
@@ -323,10 +323,10 @@ public class PlannerUtil {
   public static <T extends LogicalNode> T findTopParentNode(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
-    
+
     ParentNodeFinder finder = new ParentNodeFinder(type);
     node.postOrder(finder);
-    
+
     if (finder.getFoundNodes().size() == 0) {
       return null;
     }
@@ -339,7 +339,7 @@ public class PlannerUtil {
     private boolean topmost = false;
     private boolean finished = false;
 
-    public LogicalNodeFinder(NodeType...type) {
+    public LogicalNodeFinder(NodeType... type) {
       this.tofind = type;
     }
 
@@ -366,11 +366,11 @@ public class PlannerUtil {
       return list;
     }
 
-    public LogicalNode [] getFoundNodeArray() {
+    public LogicalNode[] getFoundNodeArray() {
       return list.toArray(new LogicalNode[list.size()]);
     }
   }
-  
+
   private static class ParentNodeFinder implements LogicalNodeVisitor {
     private List<LogicalNode> list = new ArrayList<LogicalNode>();
     private NodeType tofind;
@@ -386,7 +386,7 @@ public class PlannerUtil {
         if (unary.getChild().getType() == tofind) {
           list.add(node);
         }
-      } else if (node instanceof BinaryNode){
+      } else if (node instanceof BinaryNode) {
         BinaryNode bin = (BinaryNode) node;
         if (bin.getLeftChild().getType() == tofind ||
             bin.getRightChild().getType() == tofind) {
@@ -403,10 +403,10 @@ public class PlannerUtil {
   /**
    * fill targets with FieldEvals from a given schema
    *
-   * @param schema to be transformed to targets
+   * @param schema  to be transformed to targets
    * @param targets to be filled
    */
-  public static void schemaToTargets(Schema schema, Target [] targets) {
+  public static void schemaToTargets(Schema schema, Target[] targets) {
     FieldEval eval;
     for (int i = 0; i < schema.size(); i++) {
       eval = new FieldEval(schema.getColumn(i));
@@ -440,7 +440,7 @@ public class PlannerUtil {
     return schemaToSortSpecs(schema.toArray());
   }
 
-  public static SortSpec[] schemaToSortSpecs(Column [] columns) {
+  public static SortSpec[] schemaToSortSpecs(Column[] columns) {
     SortSpec[] specs = new SortSpec[columns.length];
 
     for (int i = 0; i < columns.length; i++) {
@@ -450,7 +450,7 @@ public class PlannerUtil {
     return specs;
   }
 
-  public static SortSpec [] columnsToSortSpec(Collection<Column> columns) {
+  public static SortSpec[] columnsToSortSpec(Collection<Column> columns) {
     SortSpec[] specs = new SortSpec[columns.size()];
     int i = 0;
     for (Column column : columns) {
@@ -472,7 +472,7 @@ public class PlannerUtil {
   /**
    * is it join qual or not?
    *
-   * @param qual  The condition to be checked
+   * @param qual The condition to be checked
    * @return true if two operands refers to columns and the operator is comparison,
    */
   public static boolean isJoinQual(EvalNode qual) {
@@ -489,7 +489,7 @@ public class PlannerUtil {
   }
 
   public static SortSpec[][] getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
-    List<Column []> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner);
+    List<Column[]> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner);
     SortSpec[] outerSortSpec = new SortSpec[joinKeyPairs.size()];
     SortSpec[] innerSortSpec = new SortSpec[joinKeyPairs.size()];
 
@@ -498,12 +498,12 @@ public class PlannerUtil {
       innerSortSpec[i] = new SortSpec(joinKeyPairs.get(i)[1]);
     }
 
-    return new SortSpec[][] {outerSortSpec, innerSortSpec};
+    return new SortSpec[][]{outerSortSpec, innerSortSpec};
   }
 
   public static TupleComparator[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
     SortSpec[][] sortSpecs = getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
-    TupleComparator [] comparators = new TupleComparator[2];
+    TupleComparator[] comparators = new TupleComparator[2];
     comparators[0] = new TupleComparator(leftSchema, sortSpecs[0]);
     comparators[1] = new TupleComparator(rightSchema, sortSpecs[1]);
     return comparators;
@@ -512,27 +512,27 @@ public class PlannerUtil {
   /**
    * @return the first array contains left table's columns, and the second array contains right table's columns.
    */
-  public static Column [][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    List<Column []> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema);
-    Column [] leftColumns = new Column[joinKeys.size()];
-    Column [] rightColumns = new Column[joinKeys.size()];
+  public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema);
+    Column[] leftColumns = new Column[joinKeys.size()];
+    Column[] rightColumns = new Column[joinKeys.size()];
     for (int i = 0; i < joinKeys.size(); i++) {
       leftColumns[i] = joinKeys.get(i)[0];
       rightColumns[i] = joinKeys.get(i)[1];
     }
 
-    return new Column[][] {leftColumns, rightColumns};
+    return new Column[][]{leftColumns, rightColumns};
   }
 
-  public static List<Column []> getJoinKeyPairs(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+  public static List<Column[]> getJoinKeyPairs(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
     JoinKeyPairFinder finder = new JoinKeyPairFinder(leftSchema, rightSchema);
     joinQual.preOrder(finder);
     return finder.getPairs();
   }
 
   public static class JoinKeyPairFinder implements EvalNodeVisitor {
-    private final List<Column []> pairs = Lists.newArrayList();
-    private Schema [] schemas = new Schema[2];
+    private final List<Column[]> pairs = Lists.newArrayList();
+    private Schema[] schemas = new Schema[2];
 
     public JoinKeyPairFinder(Schema outer, Schema inner) {
       schemas[0] = outer;
@@ -542,13 +542,13 @@ public class PlannerUtil {
     @Override
     public void visit(EvalNode node) {
       if (EvalTreeUtil.isJoinQual(node)) {
-        Column [] pair = new Column[2];
+        Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression
           Column column = EvalTreeUtil.findAllColumnRefs(node.getExpr(i)).get(0);
           for (int j = 0; j < schemas.length; j++) {
-          // check whether the column is for either outer or inner
-          // 0 is outer, and 1 is inner
+            // check whether the column is for either outer or inner
+            // 0 is outer, and 1 is inner
             if (schemas[j].containsByQualifiedName(column.getQualifiedName())) {
               pair[j] = column;
             }
@@ -562,7 +562,7 @@ public class PlannerUtil {
       }
     }
 
-    public List<Column []> getPairs() {
+    public List<Column[]> getPairs() {
       return this.pairs;
     }
   }
@@ -573,7 +573,7 @@ public class PlannerUtil {
 
   public static Schema targetToSchema(Target[] targets) {
     Schema schema = new Schema();
-    for(Target t : targets) {
+    for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
       String name;
       if (t.hasAlias()) {
@@ -595,9 +595,9 @@ public class PlannerUtil {
    * @param sourceTargets The targets to be stripped
    * @return The stripped targets
    */
-  public static Target [] stripTarget(Target [] sourceTargets) {
-    Target [] copy = new Target[sourceTargets.length];
-    for(int i = 0; i < sourceTargets.length; i++) {
+  public static Target[] stripTarget(Target[] sourceTargets) {
+    Target[] copy = new Target[sourceTargets.length];
+    for (int i = 0; i < sourceTargets.length; i++) {
       try {
         copy[i] = (Target) sourceTargets[i].clone();
       } catch (CloneNotSupportedException e) {
@@ -650,6 +650,7 @@ public class PlannerUtil {
     boolean generalSetFunction;
     boolean distinctSetFunction;
   }
+
   static class AggregationFunctionFinder extends SimpleAlgebraVisitor<AggFunctionFoundResult, Object> {
     @Override
     public Object visitCountRowsFunction(AggFunctionFoundResult ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
@@ -670,7 +671,7 @@ public class PlannerUtil {
   public static Collection<String> toQualifiedFieldNames(Collection<String> fieldNames, String qualifier) {
     List<String> names = TUtil.newList();
     for (String n : fieldNames) {
-      String [] parts = n.split("\\.");
+      String[] parts = n.split("\\.");
       if (parts.length == 1) {
         names.add(qualifier + "." + parts[0]);
       } else {
@@ -680,8 +681,8 @@ public class PlannerUtil {
     return names;
   }
 
-  public static SortSpec [] convertSortSpecs(Collection<CatalogProtos.SortSpecProto> sortSpecProtos) {
-    SortSpec [] sortSpecs = new SortSpec[sortSpecProtos.size()];
+  public static SortSpec[] convertSortSpecs(Collection<CatalogProtos.SortSpecProto> sortSpecProtos) {
+    SortSpec[] sortSpecs = new SortSpec[sortSpecProtos.size()];
     int i = 0;
     for (CatalogProtos.SortSpecProto proto : sortSpecProtos) {
       sortSpecs[i++] = new SortSpec(proto);
@@ -701,7 +702,7 @@ public class PlannerUtil {
     StringBuilder explains = new StringBuilder();
     try {
       ExplainLogicalPlanVisitor.Context explainContext = explain.getBlockPlanStrings(null, node);
-      while(!explainContext.explains.empty()) {
+      while (!explainContext.explains.empty()) {
         explains.append(
             ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));
       }

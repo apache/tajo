@@ -235,7 +235,10 @@ public class GlobalEngine extends AbstractService {
         DropTableNode dropTable = (DropTableNode) root;
         dropTable(session, dropTable.getTableName(), dropTable.isIfExists(), dropTable.isPurge());
         return true;
-
+      case ALTER_TABLE:
+         AlterTableNode alterTable = (AlterTableNode) root;
+         alterTable(session,alterTable);
+         return true;
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -275,6 +278,82 @@ public class GlobalEngine extends AbstractService {
     return plan;
   }
 
+  /**
+   * Alter a given table
+   */
+  public void alterTable(final Session session, final AlterTableNode alterTable) throws IOException {
+
+    final CatalogService catalog = context.getCatalog();
+    final String tableName = alterTable.getTableName();
+
+    String databaseName;
+    String simpleTableName;
+    if (CatalogUtil.isFQTableName(tableName)) {
+      String[] split = CatalogUtil.splitFQTableName(tableName);
+      databaseName = split[0];
+      simpleTableName = split[1];
+    } else {
+      databaseName = session.getCurrentDatabase();
+      simpleTableName = tableName;
+    }
+    final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+
+    if (!catalog.existsTable(databaseName, simpleTableName)) {
+      throw new NoSuchTableException(qualifiedName);
+    }
+
+    switch (alterTable.getAlterTableOpType()) {
+      case RENAME_TABLE:
+        if (!catalog.existsTable(databaseName, simpleTableName)) {
+          throw new NoSuchTableException(alterTable.getTableName());
+        }
+        if (catalog.existsTable(databaseName, alterTable.getNewTableName())) {
+          throw new AlreadyExistsTableException(alterTable.getNewTableName());
+        }
+
+        TableDesc desc = catalog.getTableDesc(databaseName, simpleTableName);
+
+        if (!desc.isExternal()) { // if the table is the managed table
+          Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+              databaseName, simpleTableName);
+          Path newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+              databaseName, alterTable.getNewTableName());
+          FileSystem fs = oldPath.getFileSystem(context.getConf());
+
+          if (!fs.exists(oldPath)) {
+            throw new IOException("No such a table directory: " + oldPath);
+          }
+          if (fs.exists(newPath)) {
+            throw new IOException("Already table directory exists: " + newPath);
+          }
+
+          fs.rename(oldPath, newPath);
+        }
+        catalog.alterTable(CatalogUtil.renameTable(qualifiedName, alterTable.getNewTableName(),
+            AlterTableType.RENAME_TABLE));
+        break;
+      case RENAME_COLUMN:
+        if (existColumnName(qualifiedName, alterTable.getNewColumnName())) {
+          throw new ColumnNameAlreadyExistException(alterTable.getNewColumnName());
+        }
+        catalog.alterTable(CatalogUtil.renameColumn(qualifiedName, alterTable.getColumnName(), alterTable.getNewColumnName(), AlterTableType.RENAME_COLUMN));
+        break;
+      case ADD_COLUMN:
+        if (existColumnName(qualifiedName, alterTable.getAddNewColumn().getSimpleName())) {
+          throw new ColumnNameAlreadyExistException(alterTable.getAddNewColumn().getSimpleName());
+        }
+        catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType.ADD_COLUMN));
+        break;
+      default:
+        //TODO
+    }
+  }
+
+  private boolean existColumnName(String tableName, String columnName) {
+    final TableDesc tableDesc = catalog.getTableDesc(tableName);
+    return tableDesc.getSchema().containsByName(columnName) ? true : false;
+  }
+
   private TableDesc createTable(Session session, CreateTableNode createTable, boolean ifNotExists) throws IOException {
     TableMeta meta;
 
@@ -287,7 +366,18 @@ public class GlobalEngine extends AbstractService {
     if(createTable.isExternal()){
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     } else {
-      Path tablePath = new Path(sm.getWarehouseDir(), createTable.getTableName());
+      String databaseName;
+      String tableName;
+      if (CatalogUtil.isFQTableName(createTable.getTableName())) {
+        databaseName = CatalogUtil.extractQualifier(createTable.getTableName());
+        tableName = CatalogUtil.extractSimpleName(createTable.getTableName());
+      } else {
+        databaseName = session.getCurrentDatabase();
+        tableName = createTable.getTableName();
+      }
+
+      // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
+      Path tablePath = StorageUtil.concatPath(sm.getWarehouseDir(), databaseName, tableName);
       createTable.setPath(tablePath);
     }
 

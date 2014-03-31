@@ -413,6 +413,13 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     return dropTable;
   }
 
+  @Override
+  public LogicalNode visitAlterTable(PreprocessContext ctx, Stack<Expr> stack, AlterTable expr)
+      throws PlanningException {
+    AlterTableNode alterTableNode = ctx.plan.createNode(AlterTableNode.class);
+    return alterTableNode;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
