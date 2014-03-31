@@ -48,6 +48,12 @@ enum PartitionType {
     COLUMN = 3;
 }
 
+enum AlterTableType {
+  RENAME_TABLE = 0;
+  RENAME_COLUMN = 1;
+  ADD_COLUMN = 2;
+}
+
 message ColumnProto {
 	required string name = 1;
 	required DataType dataType = 3;
@@ -263,3 +269,15 @@ message PartitionDescProto {
   optional string path = 5;
 }
 
+message AlterTableDescProto {
+  required string tableName = 1;
+  optional string newTableName = 2 ;
+  optional ColumnProto addColumn = 3;
+  optional AlterColumnProto alterColumnName = 4;
+  required AlterTableType alterTableType = 5;
+}
+
+message AlterColumnProto {
+  required string oldColumnName = 1;
+  required string newColumnName = 2;
+}

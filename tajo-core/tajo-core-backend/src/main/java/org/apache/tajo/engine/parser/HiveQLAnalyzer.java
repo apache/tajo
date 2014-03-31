@@ -1450,7 +1450,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
       if (ctx.columnNameTypeList() != null) {
         List<HiveQLParser.ColumnNameTypeContext> list = ctx.columnNameTypeList().columnNameType();
 
-        CreateTable.ColumnDefinition[] columns = new CreateTable.ColumnDefinition[list.size()];
+        ColumnDefinition[] columns = new ColumnDefinition[list.size()];
 
         for (int i = 0; i < list.size(); i++) {
           HiveQLParser.ColumnNameTypeContext eachColumn = list.get(i);
@@ -1459,7 +1459,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
             if (eachColumn.colType().type().primitiveType() != null) {
               HiveQLParser.PrimitiveTypeContext primitiveType = eachColumn.colType().type().primitiveType();
               type = getDataTypeExpr(primitiveType).getTypeName();
-              columns[i] = new CreateTable.ColumnDefinition(eachColumn.colName.Identifier().getText(), type);
+              columns[i] = new ColumnDefinition(eachColumn.colName.Identifier().getText(), type);
             }
           }
         }

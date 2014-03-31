@@ -4,6 +4,9 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-480: Umbrella Jira for adding ALTER TABLE statement.
+    (Alvin Henrick via hyunsik)
+
     TAJO-378: Implement concat_ws function. (Seungun Choe via jaehwa)
 
     TAJO-377: Implement concat function (Seungun Choe via jaehwa)

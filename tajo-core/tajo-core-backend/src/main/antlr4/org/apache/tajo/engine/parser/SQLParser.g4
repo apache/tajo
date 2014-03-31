@@ -58,6 +58,7 @@ schema_statement
   | drop_database_statement
   | create_table_statement
   | drop_table_statement
+  | alter_table_statement
   ;
 
 index_statement
@@ -1059,6 +1060,10 @@ table_name
   : identifier (DOT identifier ( DOT identifier)? )?
   ;
 
+column_name
+  : identifier
+  ;
+
 query_specification
   : SELECT set_qualifier? select_list table_expression?
   ;
@@ -1365,4 +1370,16 @@ null_ordering
 insert_statement
   : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
   | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=identifier (param_clause)?)? query_expression
+  ;
+
+/*
+===============================================================================
+  <alter table>
+===============================================================================
+*/
+
+alter_table_statement
+  : ALTER TABLE table_name RENAME TO table_name
+  | ALTER TABLE table_name RENAME COLUMN column_name TO column_name
+  | ALTER TABLE table_name ADD COLUMN field_element
   ;

@@ -30,6 +30,8 @@ service CatalogProtocolService {
   rpc dropTablespace(StringProto) returns (BoolProto);
   rpc existTablespace(StringProto) returns (BoolProto);
   rpc getAllTablespaceNames(NullProto) returns (StringListProto);
+  rpc alterTable(AlterTableDescProto) returns (BoolProto);
+
 
   rpc createDatabase(CreateDatabaseRequest) returns (BoolProto);
   rpc dropDatabase(StringProto) returns (BoolProto);

@@ -121,6 +121,7 @@ ANY : A N Y;
 ASYMMETRIC : A S Y M M E T R I C;
 ASC : A S C;
 
+
 BOTH : B O T H;
 
 CASE : C A S E;
@@ -189,6 +190,8 @@ WITH : W I T H;
 ===============================================================================
 */
 AVG : A V G;
+ADD: A D D;
+ALTER : A L T E R;
 
 BETWEEN : B E T W E E N;
 BY : B Y;
@@ -263,6 +266,7 @@ RANGE : R A N G E;
 REGEXP : R E G E X P;
 RLIKE : R L I K E;
 ROLLUP : R O L L U P;
+RENAME : R E N A M E;
 
 SECOND : S E C O N D;
 SET : S E T;

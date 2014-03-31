@@ -36,9 +36,7 @@ import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.AlreadyExistsDatabaseException;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
+import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -135,7 +133,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         isPartitionKey = false;
 
         if (table.getPartitionKeys() != null) {
-          for(FieldSchema partitionKey: table.getPartitionKeys()) {
+          for (FieldSchema partitionKey : table.getPartitionKeys()) {
             if (partitionKey.getName().equals(eachField.getName())) {
               isPartitionKey = true;
             }
@@ -198,7 +196,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
         // set data size
         long totalSize = 0;
-        if(properties.getProperty("totalSize") != null) {
+        if (properties.getProperty("totalSize") != null) {
           totalSize = Long.parseLong(properties.getProperty("totalSize"));
         } else {
           try {
@@ -219,7 +217,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         StringBuilder sb = new StringBuilder();
         if (table.getPartitionKeys().size() > 0) {
           List<FieldSchema> partitionKeys = table.getPartitionKeys();
-          for(int i = 0; i < partitionKeys.size(); i++) {
+          for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
             String fieldName = databaseName + CatalogUtil.IDENTIFIER_DELIMITER + tableName +
@@ -377,7 +375,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
-    String [] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
+    String[] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
     String databaseName = splitted[0];
     String tableName = splitted[1];
 
@@ -425,8 +423,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // set partition keys
       if (tableDesc.hasPartition() && tableDesc.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
         List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
-        for(Column eachPartitionKey: tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
-          partitionKeys.add(new FieldSchema( eachPartitionKey.getSimpleName(),
+        for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+          partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
               HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
         }
         table.setPartitionKeys(partitionKeys);
@@ -492,6 +490,110 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       client = clientPool.getClient();
       client.getHiveClient().dropTable(databaseName, tableName, false, false);
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      client.release();
+    }
+  }
+
+
+  @Override
+  public void alterTable(final CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException {
+
+    HCatalogStoreClientPool.HCatalogStoreClient client = clientPool.getClient();
+
+    final String[] split = CatalogUtil.splitFQTableName(alterTableDescProto.getTableName());
+
+    if (split.length == 1) {
+      throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
+          + alterTableDescProto.getTableName() + "\".");
+    }
+
+    final String databaseName = split[0];
+    final String tableName = split[1];
+
+
+    switch (alterTableDescProto.getAlterTableType()) {
+      case RENAME_TABLE:
+        if (existTable(databaseName,alterTableDescProto.getNewTableName().toLowerCase())) {
+          throw new AlreadyExistsTableException(alterTableDescProto.getNewTableName());
+        }
+        renameTable(databaseName, tableName, alterTableDescProto.getNewTableName().toLowerCase());
+        break;
+      case RENAME_COLUMN:
+        if (existColumn(databaseName,tableName, alterTableDescProto.getAlterColumnName().getNewColumnName())) {
+          throw new ColumnNameAlreadyExistException(alterTableDescProto.getAlterColumnName().getNewColumnName());
+        }
+        renameColumn(databaseName, tableName, alterTableDescProto.getAlterColumnName());
+        break;
+      case ADD_COLUMN:
+        if (existColumn(databaseName,tableName, alterTableDescProto.getAddColumn().getName())) {
+          throw new ColumnNameAlreadyExistException(alterTableDescProto.getAddColumn().getName());
+        }
+        addNewColumn(databaseName, tableName, alterTableDescProto.getAddColumn());
+        break;
+      default:
+        //TODO
+    }
+
+
+  }
+
+
+  private void renameTable(String databaseName, String tableName, String newTableName) {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    try {
+      client = clientPool.getClient();
+      Table newTable = client.getHiveClient().getTable(databaseName, tableName);
+      newTable.setTableName(newTableName);
+      client.getHiveClient().alter_table(databaseName, tableName, newTable);
+
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      client.release();
+    }
+  }
+
+  private void renameColumn(String databaseName, String tableName, CatalogProtos.AlterColumnProto alterColumnProto) {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    try {
+
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      List<FieldSchema> columns = table.getSd().getCols();
+
+      for (final FieldSchema currentColumn : columns) {
+        if (currentColumn.getName().equalsIgnoreCase(alterColumnProto.getOldColumnName())) {
+          currentColumn.setName(alterColumnProto.getNewColumnName());
+        }
+      }
+      client.getHiveClient().alter_table(databaseName, tableName, table);
+
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      client.release();
+    }
+  }
+
+
+  private void addNewColumn(String databaseName, String tableName, CatalogProtos.ColumnProto columnProto) {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    try {
+
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      List<FieldSchema> columns = table.getSd().getCols();
+      columns.add(new FieldSchema(columnProto.getName(),
+          HCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+      client.getHiveClient().alter_table(databaseName, tableName, table);
+
+
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new CatalogException(e);
@@ -617,5 +719,32 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public final void close() {
     clientPool.close();
+  }
+
+  private boolean existColumn(final String databaseName ,final String tableName , final String columnName) throws CatalogException {
+    boolean exist = false;
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+
+    try {
+
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      List<FieldSchema> columns = table.getSd().getCols();
+
+      for (final FieldSchema currentColumn : columns) {
+        if (currentColumn.getName().equalsIgnoreCase(columnName)) {
+          exist = true;
+        }
+      }
+      client.getHiveClient().alter_table(databaseName, tableName, table);
+
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      client.release();
+    }
+
+    return exist;
   }
 }

@@ -46,6 +46,7 @@ public enum OpType {
   DropDatabase(DropDatabase.class),
   CreateTable(CreateTable.class),
   DropTable(DropTable.class),
+  AlterTable(AlterTable.class),
 
   // Insert or Update
   Insert(Insert.class),

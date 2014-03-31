@@ -441,4 +441,29 @@ public class CatalogUtil {
       RESERVED_KEYWORDS_SET.add(keyword);
     }
   }
+
+  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setColumnName(oldColumName);
+    alterTableDesc.setNewColumnName(newColumName);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc renameTable(String tableName, String newTableName, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setNewTableName(newTableName);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc addNewColumn(String tableName, Column column, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAddColumn(column);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
 }

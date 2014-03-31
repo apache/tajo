@@ -157,4 +157,11 @@ public interface CatalogService {
   boolean containFunction(String signature, DataType... paramTypes);
 
   boolean containFunction(String signature, FunctionType funcType, DataType... paramTypes);
+
+  /**
+  * Add a table via table description
+  * @see AlterTableDesc
+  * @throws Throwable
+  */
+  boolean alterTable(AlterTableDesc desc);
 }

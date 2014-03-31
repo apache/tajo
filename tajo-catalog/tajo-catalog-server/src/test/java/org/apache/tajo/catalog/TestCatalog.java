@@ -667,4 +667,53 @@ public class TestCatalog {
     catalog.dropTable(tableName);
     assertFalse(catalog.existsTable(tableName));
   }
+
+  @Test
+  public void testAlterTableName () throws Exception {
+
+    //CREATE_TABLE
+    TableDesc tableRenameTestDesc = createMockupTable("default", "mycooltable") ;
+    catalog.createTable(tableRenameTestDesc);
+
+    //RENAME_TABLE
+    catalog.alterTable(createMockAlterTableName());
+    assertTrue(catalog.existsTable("default", "mynewcooltable"));
+
+    //RENAME_COLUMN
+    catalog.alterTable(createMockAlterTableRenameColumn());
+    TableDesc columnRenameDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertTrue(columnRenameDesc.getSchema().containsByName("ren"+FieldName1));
+
+    //ADD_COLUMN
+    catalog.alterTable(createMockAlterTableAddColumn());
+    TableDesc addColumnDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertTrue(addColumnDesc.getSchema().containsByName("mynewcol"));
+
+  }
+
+  private AlterTableDesc createMockAlterTableName(){
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mycooltable");
+    alterTableDesc.setNewTableName("mynewcooltable");
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_TABLE);
+    return alterTableDesc;
+  }
+
+  private AlterTableDesc createMockAlterTableRenameColumn(){
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mynewcooltable");
+    alterTableDesc.setColumnName(FieldName1);
+    alterTableDesc.setNewColumnName("ren" + FieldName1);
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
+    return alterTableDesc;
+  }
+
+  private AlterTableDesc createMockAlterTableAddColumn(){
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mynewcooltable");
+    alterTableDesc.setAddColumn(new Column("mynewcol", Type.TEXT));
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
+    return alterTableDesc;
+  }
+
 }
