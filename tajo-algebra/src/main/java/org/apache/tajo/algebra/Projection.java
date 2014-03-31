@@ -65,4 +65,12 @@ public class Projection extends UnaryOperator implements Cloneable {
   public String toJson() {
     return JsonHelper.toJson(this);
   }
+
+  public Projection clone() throws CloneNotSupportedException {
+    Projection projection = (Projection)super.clone();
+    projection.distinct = distinct;
+    projection.targets = targets;
+
+    return projection;
+  }
 }
