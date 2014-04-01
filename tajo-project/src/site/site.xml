@@ -34,8 +34,13 @@
 	  <src>./images/tajo_logo.png</src>
     <href>http://tajo.apache.org</href>
 	  <width>240</width>
-    <title/>
   </bannerLeft>
+
+  <bannerRight>
+    <name>Apache Software Foundation</name>
+	  <src>http://apache.org/images/feather-small.gif</src>
+    <href>http://apache.org/</href>
+  </bannerRight>
 
   <poweredBy>
     <logo name="ApacheCon 2014" href="http://events.linuxfoundation.org/events/apachecon-north-america"
