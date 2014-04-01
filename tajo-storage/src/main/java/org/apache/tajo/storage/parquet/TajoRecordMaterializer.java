@@ -50,7 +50,7 @@ class TajoRecordMaterializer extends RecordMaterializer<Tuple> {
     Column[] targets = projection.toArray();
     int[] projectionMap = new int[targets.length];
     for (int i = 0; i < targets.length; ++i) {
-      int tid = schema.getColumnIdByName(targets[i].getSimpleName());
+      int tid = schema.getColumnId(targets[i].getQualifiedName());
       projectionMap[i] = tid;
     }
     return projectionMap;

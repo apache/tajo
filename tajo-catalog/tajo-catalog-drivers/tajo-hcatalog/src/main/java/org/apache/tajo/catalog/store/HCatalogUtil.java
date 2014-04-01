@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
+import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
 import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatException;
@@ -124,6 +125,8 @@ public class HCatalogUtil {
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
     if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.CSV.name();
+    } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
+      return CatalogProtos.StoreType.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
         return CatalogProtos.StoreType.RCFILE.name();
     } else {

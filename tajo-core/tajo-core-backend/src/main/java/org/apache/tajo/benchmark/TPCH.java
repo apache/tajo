@@ -189,7 +189,7 @@ public class TPCH extends BenchmarkSet {
 
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    meta.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+    meta.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
 
     try {
       tajo.createExternalTable(tableName, getSchema(tableName), new Path(dataDir, tableName), meta);

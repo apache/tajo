@@ -47,15 +47,21 @@ public class CatalogConstants {
 
   // table options
   public static final String COMPRESSION_CODEC = "compression.codec";
+  public static final String COMPRESSION_TYPE = "compression.type";
+
   public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
   public static final String CSVFILE_NULL = "csvfile.null";
   public static final String CSVFILE_SERDE = "csvfile.serde";
 
-  public static final String CSVFILE_DELIMITER_DEFAULT = "|";
+
+  public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
+  public static final String SEQUENCEFILE_NULL = "sequencefile.null";
+  public static final String SEQUENCEFILE_SERDE = "sequencefile.serde";
 
   public static final String RCFILE_NULL = "rcfile.null";
   public static final String RCFILE_SERDE = "rcfile.serde";
 
-  public static final String RCFILE_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
-  public static final String RCFILE_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
+  public static final String DEFAULT_FIELD_DELIMITER = "|";
+  public static final String DEFAULT_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
+  public static final String DEFAULT_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
 }
