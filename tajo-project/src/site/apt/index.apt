@@ -14,64 +14,58 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-Apache Tajo&#153; - An open source big data warehouse system in Hadoop
+Apache Tajo&#153;: A big data warehouse system on Hadoop
 
-  The main goal of Apache Tajo&#153; project is to build an advanced open source data warehouse system in Hadoop for processing web-scale data sets	
+  Apache Tajo is a robust big data relational and distributed data warehouse system for Apache Hadoop.
+  Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation,
+  and ETL (extract-transform-load process) on large-data sets stored on HDFS (Hadoop Distributed File System)
+  and other data sources. By supporting SQL standards and leveraging advanced database techniques,
+  Tajo allows direct control of distributed execution and data flow across a variety of query evaluation
+  strategies and optimization opportunities.
 
 Features
 
-  * <<Interactive and Batch Queries>>
+  * <<Fast and Efficient>>
 
-    * Fully distributed SQL query processing on large data sets stored in HDFS and other data sources
+    * Fully distributed SQL query processing engine
 
-    * Very low response time (100 msec ~) against simple queries (e.g., just aggregation or small-large join) on reasonable data size
+    * Advanced Query Optimization such as cost-based and progressive query optimization
 
-  * <<Long running query support>>
+    * Interactive analysis on reasonable data set
 
-    * Fault tolerance support that avoids query restart when some tasks are failed.
+  * <<Scalable>>
 
-    * Dynamic scheduling support that handles struggling and heterogeneous cluster nodes
+    * Fault tolerance and dynamic scheduling for long-running queries
 
-  * <<Query Optimization>>
+    * Out-of-core algorithms for data sets larger than main memory
 
-    * Cost-based optimization for bushy join trees
+  * <<Compatible>>
 
-    * Progressive query optimization for reoptimizing running queries
+    * ANSI/ISO SQL standard compliance
 
-  * <<ETL>>
-
-    * ETL features that transform one data format to another data format
-
-    * Various file formats support, such as CSV, RCFile, and RowFile (a row store file)
-
-  * <<Extensibility>>
-
-    * User-defined function support
-
-    * Scanner/Appender interface for custom file formats
-
-  * <<Compatibility>>
-
-    * ANSI/ISO SQL standard compliance and PostgreSQL compliance for non-standard parts
-
-    * HiveQL mode support
-
-    * Tables access in HCatalog and Hive MetaStore
+    * Hive MetaStore access support
 
     * JDBC driver support
 
+    * Various file formats support, such as CSV, RCFile, RowFile, SequenceFile and Parquet
+
   * <<Easy>>
 
-    * Interactive shell to allow users to submit SQL queries to Tajo clusters
+    * User-defined functions
 
-    * Backup/Restore utility
+    * Interactive shell
 
-    * Asynchronous/Synchronous Java API to enable clients to submit SQL queries to Tajo clusters
+    * Convenient Backup/Restore utility
 
+    * Asynchronous/Synchronous Java API
 
 News
 
-  * <<[2014-02-27]>> Keuntae Park was invited to ApacheConf 2014.
+  * <<[2014-04-01]>> Min Zhou was invited to a new committer.
+
+  * <<[2014-03-24]>> Apache Tajo became Apache Top-level Project.
+
+  * <<[2014-02-27]>> Keuntae Park was invited to ApacheConf 2014 ({{{http://sched.co/1bsN9iE}schedule}}).
 
   * <<[2014-01-02]>> Keuntae Park was invited to become a new committer.
 
@@ -92,12 +86,3 @@ News
 Downloads
 
   * <<[2013-11-20]>> Most recent release: {{{http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/}Apache Tajo 0.2.0-incubating}} ({{{http://s.apache.org/tajo-0.2-release-notes}Release Notes}})
-
-Disclaimer
-
-  Apache Tajo&#153; is an effort undergoing incubation at The Apache Software Foundation (ASF)
-  sponsored by the Apache Incubator PMC. Incubation is required of all newly accepted projects
-  until a further review indicates that the infrastructure, communications, and decision making
-  process have stabilized in a manner consistent with other successful ASF projects.
-  While incubation status is not necessarily a reflection of the completeness or stability of the
-  code, it does indicate that the project has yet to be fully endorsed by the ASF.

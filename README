@@ -1,4 +1,4 @@
-Apache Tajo (incubation)
+Apache Tajo
 ========================
 Tajo is a relational and distributed data warehouse system for Hadoop.
 Tajo is designed for low-latency and scalable ad-hoc queries, online
@@ -37,25 +37,16 @@ Requirements
 
 Mailing lists
 =============
-* dev@tajo.incubator.apache.org - To discuss and ask development and usage
-  issues. Send an empty email to dev-subscribe@tajo.incubator.apache.org in
-  order to subscribe to this mailing list.
+* dev@tajo.apache.org     - To discuss and ask general development issues.
 
-* commits@tajo.incubator.apache.org - In order to monitor commits to the source
-  repository. Send an empty email to commits-subscribe@tajo.incubator.apache.org
-  in order to subscribe to this mailing list.
+* user@tajo.apache.org    - To discuss and ask end-user questions/issues.
+
+* issues@tajo.apache.org  - To see notifications made in the Tajo issue
+                            tracking system, review board, and Jenkins CI.
+
+* commits@tajo.apache.org - To monitor commits to the source repository.
 
 To subscribe to the mailing lists, please send an email to:
-${listname}-subscribe@tajo.incubator.apache.org. For example, to subscribe to 
+${listname}-subscribe@tajo.apache.org. For example, to subscribe to
 dev, send an email from your desired subscription address to:
-dev-subscribe@tajo.incubator.apache.org and follow the instructions from there.
-
-Disclaimer
-==========
-Apache Tajo is an effort undergoing incubation at The Apache Software
-Foundation (ASF) sponsored by the Apache Incubator PMC. Incubation is required
-of all newly accepted projects until a further review indicates that the
-infrastructure, communications, and decision making process have stabilized in
-a manner consistent with other successful ASF projects. While incubation status
-is not necessarily a reflection of the completeness or stability of the code,
-it does indicate that the project has yet to be fully endorsed by the ASF.
+dev-subscribe@tajo.apache.org and follow the instructions from there.
