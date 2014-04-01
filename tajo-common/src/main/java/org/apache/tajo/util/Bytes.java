@@ -207,6 +207,11 @@ public class Bytes {
     return offset + srcLength;
   }
 
+  public static void writeVLong(ByteArrayOutputStream byteStream, long l) {
+    byte[] vLongBytes = Bytes.vlongToBytes(l);
+    byteStream.write(vLongBytes, 0, vLongBytes.length);
+  }
+
   /**
    * Put bytes at the specified byte array position.
    * @param tgtBytes the byte array
@@ -990,6 +995,34 @@ public class Bytes {
       i = i | (b & 0xFF);
     }
     return (WritableUtils.isNegativeVInt(firstByte) ? (i ^ -1L) : i);
+  }
+
+  /**
+   * Reads a zero-compressed encoded int from input stream and returns it.
+   * @param buffer Binary array
+   * @param offset Offset into array at which vint begins.
+   * @throws java.io.IOException e
+   * @return deserialized long from stream.
+   */
+  public static int readVInt(final byte [] buffer, final int offset)
+      throws IOException {
+    byte firstByte = buffer[offset];
+    int length = (byte) WritableUtils.decodeVIntSize(firstByte);
+    if (length == 1) {
+      return firstByte;
+    }
+    int i = 0;
+    for (int idx = 0; idx < length - 1; idx++) {
+      byte b = buffer[offset + 1 + idx];
+      i = i << 8;
+      i = i | (b & 0xFF);
+    }
+    return (WritableUtils.isNegativeVInt(firstByte) ? (i ^ -1) : i);
+  }
+
+  public static byte getVIntSize(byte[] bytes, int offset) {
+    byte firstByte = bytes[offset];
+    return (byte) WritableUtils.decodeVIntSize(firstByte);
   }
 
   /**

@@ -71,7 +71,7 @@ public class TrevniScanner extends FileScanner {
     projectionMap = new int[targets.length];
     int tid;
     for (int i = 0; i < targets.length; i++) {
-      tid = schema.getColumnIdByName(targets[i].getSimpleName());
+      tid = schema.getColumnId(targets[i].getQualifiedName());
       projectionMap[i] = tid;
     }
   }

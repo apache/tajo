@@ -281,6 +281,8 @@ public class CatalogUtil {
       return StoreType.TREVNI;
     } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
       return StoreType.PARQUET;
+    } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
+      return StoreType.SEQUENCEFILE;
     } else {
       return null;
     }
@@ -288,9 +290,12 @@ public class CatalogUtil {
   public static Options newOptionsWithDefault(StoreType type) {
     Options options = new Options();
     if(StoreType.CSV == type){
-      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
     } else if(StoreType.RCFILE == type){
-      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.RCFILE_BINARY_SERDE);
+      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
+    } else if(StoreType.SEQUENCEFILE == type){
+      options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
+      options.put(CatalogConstants.SEQUENCEFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
     }
 
     return options;

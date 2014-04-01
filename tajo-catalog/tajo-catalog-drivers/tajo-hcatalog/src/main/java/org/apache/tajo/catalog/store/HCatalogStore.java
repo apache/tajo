@@ -30,6 +30,8 @@ import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
+import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hcatalog.common.HCatUtil;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
@@ -61,6 +63,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   private final String defaultTableSpaceUri;
 
   public HCatalogStore(final Configuration conf) throws InternalException {
+    if (!(conf instanceof TajoConf)) {
+      throw new CatalogException("Invalid Configuration Type:" + conf.getClass().getSimpleName());
+    }
     this.conf = conf;
     this.defaultTableSpaceUri = TajoConf.getWarehouseDir((TajoConf) conf).toString();
     this.clientPool = new HCatalogStoreClientPool(CLIENT_POOL_SIZE, conf);
@@ -188,9 +193,18 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           options.put(RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
           if (LazyBinaryColumnarSerDe.class.getName().equals(serde)) {
-            options.put(RCFILE_SERDE, RCFILE_BINARY_SERDE);
+            options.put(RCFILE_SERDE, DEFAULT_BINARY_SERDE);
           } else if (ColumnarSerDe.class.getName().equals(serde)) {
-            options.put(RCFILE_SERDE, RCFILE_TEXT_SERDE);
+            options.put(RCFILE_SERDE, DEFAULT_TEXT_SERDE);
+          }
+        } else if (storeType.equals(CatalogProtos.StoreType.SEQUENCEFILE) ) {
+          options.put(SEQUENCEFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.put(SEQUENCEFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
+          if (LazyBinarySerDe.class.getName().equals(serde)) {
+            options.put(SEQUENCEFILE_SERDE, DEFAULT_BINARY_SERDE);
+          } else if (LazySimpleSerDe.class.getName().equals(serde)) {
+            options.put(SEQUENCEFILE_SERDE, DEFAULT_TEXT_SERDE);
           }
         }
 
@@ -434,7 +448,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         String serde = tableDesc.getMeta().getOption(RCFILE_SERDE);
         sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
-        if (RCFILE_TEXT_SERDE.equals(serde)) {
+        if (DEFAULT_TEXT_SERDE.equals(serde)) {
           sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe.class.getName());
         } else {
           sd.getSerdeInfo().setSerializationLib(
@@ -450,7 +464,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
 
-        String fieldDelimiter = tableDesc.getMeta().getOption(CSVFILE_DELIMITER, CSVFILE_DELIMITER_DEFAULT);
+        String fieldDelimiter = tableDesc.getMeta().getOption(CSVFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
 
         // User can use an unicode for filed delimiter such as \u0001, \001.
         // In this case, java console will convert this value into "\\u001".
@@ -465,6 +479,33 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         if (tableDesc.getMeta().getOption(CSVFILE_NULL) != null) {
           sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(CSVFILE_NULL)));
+        }
+      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.SEQUENCEFILE)) {
+        String serde = tableDesc.getMeta().getOption(SEQUENCEFILE_SERDE);
+        sd.setInputFormat(org.apache.hadoop.mapred.SequenceFileInputFormat.class.getName());
+        sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat.class.getName());
+
+        if (DEFAULT_TEXT_SERDE.equals(serde)) {
+          sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
+
+          String fieldDelimiter = tableDesc.getMeta().getOption(SEQUENCEFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
+
+          // User can use an unicode for filed delimiter such as \u0001, \001.
+          // In this case, java console will convert this value into "\\u001".
+          // And hive will un-espace this value again.
+          // As a result, user can use right field delimiter.
+          // So, we have to un-escape this value.
+          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT,
+              StringEscapeUtils.unescapeJava(fieldDelimiter));
+          sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM,
+              StringEscapeUtils.unescapeJava(fieldDelimiter));
+        } else {
+          sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe.class.getName());
+        }
+
+        if (tableDesc.getMeta().getOption(SEQUENCEFILE_NULL) != null) {
+          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(SEQUENCEFILE_NULL)));
         }
       } else {
         throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType().name()));
@@ -501,9 +542,6 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void alterTable(final CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException {
-
-    HCatalogStoreClientPool.HCatalogStoreClient client = clientPool.getClient();
-
     final String[] split = CatalogUtil.splitFQTableName(alterTableDescProto.getTableName());
 
     if (split.length == 1) {
@@ -537,8 +575,6 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       default:
         //TODO
     }
-
-
   }
 
 
