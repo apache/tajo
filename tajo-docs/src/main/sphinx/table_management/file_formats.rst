@@ -2,12 +2,12 @@
 File Formats
 *************************************
 
-.. todo::
+Currently, Tajo provides four file formats as follows:
 
-===============================
-Text File
-===============================
+.. toctree::
+    :maxdepth: 1
 
-===============================
-RCFile
-===============================
+    csv
+    rcfile
+    parquet
+    sequencefile

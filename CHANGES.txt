@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-616: SequenceFile support. (jaehwa)
+
     TAJO-480: Umbrella Jira for adding ALTER TABLE statement.
     (Alvin Henrick via hyunsik)
 
@@ -590,6 +592,8 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-730: Update Tajo site to reflect graduation. (hyunsik)
 
     TAJO-529: Fix warnings in tajo-algebra. (jaehwa)
 

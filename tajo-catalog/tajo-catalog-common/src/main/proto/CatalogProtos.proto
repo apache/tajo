@@ -33,6 +33,7 @@ enum StoreType {
   HCFILE = 5;
   TREVNI = 6;
   PARQUET = 7;
+  SEQUENCEFILE = 8;
 }
 
 enum OrderType {

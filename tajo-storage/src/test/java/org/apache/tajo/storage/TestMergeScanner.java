@@ -67,6 +67,7 @@ public class TestMergeScanner {
         {StoreType.RCFILE},
         {StoreType.TREVNI},
         {StoreType.PARQUET},
+        {StoreType.SEQUENCEFILE},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
         //{StoreType.ROWFILE},
 
@@ -172,6 +173,7 @@ public class TestMergeScanner {
       case RCFILE:
       case TREVNI:
       case PARQUET:
+      case SEQUENCEFILE:
       case CSV:
         return true;
       default:
