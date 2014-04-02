@@ -18,13 +18,11 @@
 
 package org.apache.tajo.engine.function.dataformat;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -50,7 +48,6 @@ import org.apache.tajo.storage.Tuple;
     }
 )
 public class ToCharDataFormat extends GeneralFunction {
-  @Expose private boolean hasMoreCharacters;
 
   public ToCharDataFormat() {
     super(new Column[] {
@@ -64,7 +61,6 @@ public class ToCharDataFormat extends GeneralFunction {
   String pttn="";
 
   int dotUpper=0;
-  int dotUnder=0;
 
   String dotUpperPttn = "";
   String dotUnderPttn = "";
@@ -101,27 +97,27 @@ public class ToCharDataFormat extends GeneralFunction {
       dotUpperPttn=String.valueOf(pttn);
 
     int tmpUpper=Math.abs(dotUpper);
-    String tmpPttn = new String(pttn);
+    String tmpPttn = pttn;
     int tmpUpperLen = (String.valueOf(tmpUpper)).length();
     int dotUpperPttrnLen = dotUpperPttn.length();
     if( tmpUpperLen > dotUpperPttrnLen) {
       if(dotUpper < 0)
-        result = result.append("-");
-      result  = result.append(tmpPttn.replace("9", "#"));
+        result.append("-");
+      result.append(tmpPttn.replace("9", "#"));
     }
     else {
       if(tmpUpperLen < dotUpperPttrnLen) {
         if(dotUpper < 0)
-          result = result.append("-");
+          result.append("-");
 
         for(int i=dotUpperPttrnLen-tmpUpperLen-1; i>=0; i--) {
           if(dotUpperPttn.charAt(i)=='0')
-            result = result.append("0");
+            result.append("0");
           else if(dotUpperPttn.charAt(i)=='9')
-            result = result.append(" ");
+            result.append(" ");
         }
       }
-      result = result.append(String.valueOf(tmpUpper));
+      result.append(String.valueOf(tmpUpper));
     }
 
     double tmpNum=Double.parseDouble(num);
@@ -142,12 +138,12 @@ public class ToCharDataFormat extends GeneralFunction {
       else
         endIndex = strRoundNum.length();
       int dotUnderLen = strRoundNum.substring(startIndex, endIndex).length()-1;
-      result = result.append(strRoundNum.substring(startIndex, endIndex));
+      result.append(strRoundNum.substring(startIndex, endIndex));
 
       // Fill 0 if Pattern is longer than rounding values
       for(int i=dotUnderLen; i<dotUnderPttnLen; i++) {
         if(dotUnderPttn.charAt(i)=='0' || dotUnderPttn.charAt(i)=='9')
-          result = result.append("0");
+          result.append("0");
       }
     }
   }

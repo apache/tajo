@@ -20,10 +20,7 @@ package org.apache.tajo.engine.function;
 
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
-import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
