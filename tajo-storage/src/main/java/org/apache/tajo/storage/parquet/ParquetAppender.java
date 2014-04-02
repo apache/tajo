@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage.parquet;
 
+import parquet.hadoop.ParquetOutputFormat;
+import parquet.hadoop.metadata.CompressionCodecName;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
@@ -34,6 +37,11 @@ import java.io.IOException;
  */
 public class ParquetAppender extends FileAppender {
   private TajoParquetWriter writer;
+  private int blockSize;
+  private int pageSize;
+  private CompressionCodecName compressionCodecName;
+  private boolean enableDictionary;
+  private boolean validating;
   private TableStatistics stats;
 
   /**
@@ -47,6 +55,16 @@ public class ParquetAppender extends FileAppender {
   public ParquetAppender(Configuration conf, Schema schema, TableMeta meta,
                          Path path) throws IOException {
     super(conf, schema, meta, path);
+    this.blockSize = Integer.parseInt(
+        meta.getOption(ParquetOutputFormat.BLOCK_SIZE));
+    this.pageSize = Integer.parseInt(
+        meta.getOption(ParquetOutputFormat.PAGE_SIZE));
+    this.compressionCodecName = CompressionCodecName.fromConf(
+        meta.getOption(ParquetOutputFormat.COMPRESSION));
+    this.enableDictionary = Boolean.parseBoolean(
+        meta.getOption(ParquetOutputFormat.ENABLE_DICTIONARY));
+    this.validating = Boolean.parseBoolean(
+        meta.getOption(ParquetOutputFormat.VALIDATION));
   }
 
   /**
@@ -54,10 +72,17 @@ public class ParquetAppender extends FileAppender {
    * and initializes the table statistics if enabled.
    */
   public void init() throws IOException {
-    writer = new TajoParquetWriter(path, schema);
+    writer = new TajoParquetWriter(path,
+                                   schema,
+                                   compressionCodecName,
+                                   blockSize,
+                                   pageSize,
+                                   enableDictionary,
+                                   validating);
     if (enabledStats) {
       this.stats = new TableStatistics(schema);
     }
+    super.init();
   }
 
   /**
