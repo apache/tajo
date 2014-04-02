@@ -57,6 +57,7 @@ public class ParquetScanner extends FileScanner {
     }
     reader = new TajoParquetReader(fragment.getPath(), schema,
                                    new Schema(targets));
+    super.init();
   }
 
   /**

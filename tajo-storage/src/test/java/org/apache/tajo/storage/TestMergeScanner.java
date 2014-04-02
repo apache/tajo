@@ -94,6 +94,7 @@ public class TestMergeScanner {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
     Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, table1Path);
