@@ -75,6 +75,8 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.8.0-SNAPSHOT</tajo.version>
     <tajo.root>${basedir}</tajo.root>
+    <parquet.version>1.3.2</parquet.version>
+    <parquet.format.version>2.0.0</parquet.format.version>
   </properties>
 
   <modules>
