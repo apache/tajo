@@ -43,6 +43,8 @@ public class TestDataFormatFunctions extends ExprTestBase {
     testSimpleEval("select to_char(123.325, '0999.99') ", new String[]{"0123.33"});
     testSimpleEval("select to_char(123.325, '999RN9999.999') ", new String[]{""});
     testSimpleEval("select to_char(12345, '99D999') ", new String[]{""});
+    testSimpleEval("select to_char(12345, '90999999.99999') ", new String[]{"00012345.00000"});
+    testSimpleEval("select to_char(12345.12345, '99999') ", new String[]{"12345"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT8);

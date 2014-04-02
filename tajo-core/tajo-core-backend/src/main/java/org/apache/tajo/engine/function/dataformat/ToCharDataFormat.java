@@ -65,20 +65,9 @@ public class ToCharDataFormat extends GeneralFunction {
   String dotUpperPttn = "";
   String dotUnderPttn = "";
 
-  void getDigit() {
-    for(int i = 0; i < num.length(); i++){
-      if( Character.isDigit( num.charAt(i) ) ) {
-        result.append( num.charAt(i) );
-      }
-      else if (num.charAt(i)=='.') {
-        result.append(num.charAt(i));
-      }
-    }
-  }
-
   boolean hasOthersPattern () {
     for(int i=0; i<pttn.length(); i++) {
-      if(pttn.charAt(i)!='0' && pttn.charAt(i)!='9' && pttn.charAt(i)!='.')
+      if(pttn.charAt(i)!='0' && pttn.charAt(i)!='9' && pttn.charAt(i)!='.' && pttn.charAt(i)!=',')
         return true;
     }
     return false;
@@ -110,11 +99,16 @@ public class ToCharDataFormat extends GeneralFunction {
         if(dotUpper < 0)
           result.append("-");
 
-        for(int i=dotUpperPttrnLen-tmpUpperLen-1; i>=0; i--) {
-          if(dotUpperPttn.charAt(i)=='0')
+        if(dotUpperPttn.contains("0")) {
+          for(int i=dotUpperPttrnLen-tmpUpperLen-1; i>=0; i--) {
             result.append("0");
-          else if(dotUpperPttn.charAt(i)=='9')
-            result.append(" ");
+          }
+        }
+        else {
+          for(int i=dotUpperPttrnLen-tmpUpperLen-1; i>=0; i--) {
+            if(dotUpperPttn.charAt(i)=='9')
+              result.append(" ");
+          }
         }
       }
       result.append(String.valueOf(tmpUpper));
@@ -123,7 +117,7 @@ public class ToCharDataFormat extends GeneralFunction {
     double tmpNum=Double.parseDouble(num);
 
     // Formatted decimal point digits
-    if(tmpNum-(double)dotUpper != 0.) {
+    if(!dotUnderPttn.equals("") /*|| tmpNum-(double)dotUpper != 0.*/) {
       int dotUnderPttnLen = dotUnderPttn.length();
 
       // Rounding
