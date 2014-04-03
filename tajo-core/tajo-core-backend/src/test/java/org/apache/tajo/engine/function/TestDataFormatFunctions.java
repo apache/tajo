@@ -35,6 +35,7 @@ public class TestDataFormatFunctions extends ExprTestBase {
     testSimpleEval("select to_char(-12345, '0000099') ", new String[]{"-0012345"});
     testSimpleEval("select to_char(12345, '99999') ", new String[]{"12345"});
     testSimpleEval("select to_char(12345, '999') ", new String[]{"###"});
+    testSimpleEval("select to_char(-12345, '999') ", new String[]{"-###"});
 
     testSimpleEval("select to_char(123.123, '999.999') ", new String[]{"123.123"});
     testSimpleEval("select to_char(123.325, '999.99') ", new String[]{"123.33"});
@@ -45,6 +46,17 @@ public class TestDataFormatFunctions extends ExprTestBase {
     testSimpleEval("select to_char(12345, '99D999') ", new String[]{""});
     testSimpleEval("select to_char(12345, '90999999.99999') ", new String[]{"00012345.00000"});
     testSimpleEval("select to_char(12345.12345, '99999') ", new String[]{"12345"});
+    testSimpleEval("select to_char(12345.12345, '99999.9999.9999') ", new String[]{""});
+
+    testSimpleEval("select to_char(123456, '09,999,999') ", new String[]{"00,123,456"});
+    testSimpleEval("select to_char(123.12345, '0999999.999,999,9') ", new String[]{"0000123.123,450,0"});
+    testSimpleEval("select to_char(123456, '99,999,999') ", new String[]{"  123,456"});
+    testSimpleEval("select to_char(123.12345, '999999.999,999,9') ", new String[]{"   123.123,450,0"});
+
+    testSimpleEval("select to_char(-123456, '09,999,999') ", new String[]{"-00,123,456"});
+    testSimpleEval("select to_char(-123.12345, '0999999.999,999,9') ", new String[]{"-0000123.123,450,0"});
+    testSimpleEval("select to_char(-123456, '99,999,999') ", new String[]{"  -123,456"});
+    testSimpleEval("select to_char(-123.12345, '999999.999,999,9') ", new String[]{"   -123.123,450,0"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT8);

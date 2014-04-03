@@ -27,6 +27,7 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
+import java.util.Vector;
 
 
 /**
@@ -39,7 +40,7 @@ import org.apache.tajo.storage.Tuple;
     description = "convert number to string.",
     detail = "In a to_char output template string, there are certain patterns that are recognized and replaced with appropriately-formatted data based on the given value.",
     example = "> SELECT to_char(123, '999');\n"
-        + "125",
+        + "123",
     returnType = TajoDataTypes.Type.TEXT,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.TEXT}),
         @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.TEXT}),
@@ -59,6 +60,7 @@ public class ToCharDataFormat extends GeneralFunction {
   StringBuilder result = new StringBuilder();
   String num="";
   String pttn="";
+  Vector<Integer> commaIndex;
 
   int dotUpper=0;
 
@@ -66,11 +68,26 @@ public class ToCharDataFormat extends GeneralFunction {
   String dotUnderPttn = "";
 
   boolean hasOthersPattern () {
+    int cntdot = 0;
+    commaIndex = new Vector<Integer>();
     for(int i=0; i<pttn.length(); i++) {
-      if(pttn.charAt(i)!='0' && pttn.charAt(i)!='9' && pttn.charAt(i)!='.' && pttn.charAt(i)!=',')
-        return true;
+      if(pttn.charAt(i)!='0' && pttn.charAt(i)!='9' && pttn.charAt(i)!=',') {
+        if(pttn.charAt(i)=='.') {
+          cntdot++;
+          if(cntdot>1)
+            return true;
+        }
+        else
+          return true;
+      }
+      else if(pttn.charAt(i)==',')
+        commaIndex.addElement(new Integer(i));
     }
     return false;
+  }
+
+  void pickCommaPattern() {
+    pttn = pttn.replaceAll(",","");
   }
 
   void getFormatedNumber() {
@@ -89,16 +106,10 @@ public class ToCharDataFormat extends GeneralFunction {
     String tmpPttn = pttn;
     int tmpUpperLen = (String.valueOf(tmpUpper)).length();
     int dotUpperPttrnLen = dotUpperPttn.length();
-    if( tmpUpperLen > dotUpperPttrnLen) {
-      if(dotUpper < 0)
-        result.append("-");
-      result.append(tmpPttn.replace("9", "#"));
-    }
+    if( tmpUpperLen > dotUpperPttrnLen)
+      result.append(tmpPttn.replaceAll("9", "#"));
     else {
       if(tmpUpperLen < dotUpperPttrnLen) {
-        if(dotUpper < 0)
-          result.append("-");
-
         if(dotUpperPttn.contains("0")) {
           for(int i=dotUpperPttrnLen-tmpUpperLen-1; i>=0; i--) {
             result.append("0");
@@ -121,7 +132,11 @@ public class ToCharDataFormat extends GeneralFunction {
       int dotUnderPttnLen = dotUnderPttn.length();
 
       // Rounding
-      double roundNum = (int)(tmpNum * Math.pow(10, dotUnderPttnLen) + 0.5f) / Math.pow(10, dotUnderPttnLen);
+      double roundNum =0.;
+      if(tmpNum > 0)
+        roundNum = (int)(tmpNum * Math.pow(10, dotUnderPttnLen) + 0.5f) / Math.pow(10, dotUnderPttnLen);
+      else
+        roundNum = (int)(tmpNum * Math.pow(10, dotUnderPttnLen) - 0.5f) / Math.pow(10, dotUnderPttnLen);
       String strRoundNum = String.valueOf(roundNum);
 
       // Fill decimal point digits
@@ -142,6 +157,33 @@ public class ToCharDataFormat extends GeneralFunction {
     }
   }
 
+  void insertCommaPattern() {
+    int increaseIndex=0;
+    if(result.charAt(0)=='-')
+      increaseIndex++;
+    for(int i=0;i<commaIndex.size();i++) {
+      int tmpIndex=commaIndex.elementAt(i);
+      if(result.charAt(tmpIndex-1+increaseIndex) == ' ' )
+        increaseIndex--;
+      else
+        result.insert(tmpIndex+increaseIndex, ',');
+    }
+
+    int minusIndex=0;
+    if(Double.parseDouble(num) < 0) {
+      //result.replace(0,0," ");
+      for(minusIndex=0;minusIndex<result.length();minusIndex++) {
+        if(result.charAt(minusIndex+1)!=' ' || result.charAt(minusIndex)=='0' || result.charAt(minusIndex)=='#') {
+          break;
+        }
+      }
+      if(minusIndex==0)
+        result.insert(minusIndex,'-');
+      else
+        result.insert(minusIndex+1,'-');
+    }
+  }
+
   @Override
   public Datum eval(Tuple params) {
     Datum number = params.get(0);
@@ -154,8 +196,10 @@ public class ToCharDataFormat extends GeneralFunction {
 
     if(hasOthersPattern())
       return NullDatum.get();
+    pickCommaPattern();
 
     getFormatedNumber();
+    insertCommaPattern();
 
     //paste pattern into Array[keep index];
     return DatumFactory.createText(result.toString());
