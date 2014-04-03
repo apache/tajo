@@ -4,7 +4,6 @@
 .metadata
 target
 derby.log
-.reviewboardrc
 atlassian-ide-plugin.xml
 
 # IntelliJ IDEA files
@@ -12,3 +11,6 @@ atlassian-ide-plugin.xml
 *.iml
 *.ipr
 *.iws
+
+# Vim files
+*.swp
