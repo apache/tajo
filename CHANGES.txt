@@ -143,6 +143,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-725: Broadcast JOIN should supports multiple tables. (hyoungjunkim via jaehwa)
+
     TAJO-735: Remove multiple SLF4J bindings message. (hyoungjunkim via hyunsik)
 
     TAJO-714: Enable setting Parquet tuning parameters. (David Chen via hyunsik)

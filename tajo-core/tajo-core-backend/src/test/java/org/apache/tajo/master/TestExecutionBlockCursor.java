@@ -58,6 +58,8 @@ public class TestExecutionBlockCursor {
     util.startCatalogCluster();
 
     conf = util.getConfiguration();
+    conf.set(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
+
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:!234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
@@ -88,7 +90,9 @@ public class TestExecutionBlockCursor {
   @AfterClass
   public static void tearDown() {
     util.shutdownCatalogCluster();
-    dispatcher.stop();
+    if (dispatcher != null) {
+      dispatcher.stop();
+    }
   }
 
   @Test
@@ -114,6 +118,6 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    assertEquals(6, count);
+    assertEquals(10, count);
   }
 }

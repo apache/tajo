@@ -42,6 +42,9 @@
   Map<String, Integer> portMap = new HashMap<String, Integer>();
 
   Collection<String> queryMasters = master.getContext().getResourceManager().getQueryMasters();
+  if (queryMasters == null || queryMasters.isEmpty()) {
+    queryMasters = master.getContext().getResourceManager().getWorkers().keySet();
+  }
   for(String eachQueryMasterKey: queryMasters) {
     WorkerResource queryMaster = workers.get(eachQueryMasterKey);
     if(queryMaster != null) {

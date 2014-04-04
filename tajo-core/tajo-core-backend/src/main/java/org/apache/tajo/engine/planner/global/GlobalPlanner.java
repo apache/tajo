@@ -100,12 +100,22 @@ public class GlobalPlanner {
     DistributedPlannerVisitor planner = new DistributedPlannerVisitor();
     GlobalPlanContext globalPlanContext = new GlobalPlanContext();
     globalPlanContext.plan = masterPlan;
+
     LOG.info(masterPlan.getLogicalPlan());
 
     // copy a logical plan in order to keep the original logical plan. The distributed planner can modify
     // an input logical plan.
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
+
+    boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    if (autoBroadcast) {
+      // pre-visit finding broadcast join target table
+      // this visiting doesn't make any execution block and change plan
+      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor();
+      broadcastJoinPlanVisitor.visit(globalPlanContext,
+          masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
+    }
 
     // create a distributed execution plan by visiting each logical node.
     // Its output is a graph, where each vertex is an execution block, and each edge is a data channel.
@@ -200,53 +210,42 @@ public class GlobalPlanner {
     throw new PlanningException("Invalid State");
   }
 
-  private static boolean checkIfCanBeOneOfBroadcastJoin(LogicalNode node) {
-    return node.getType() == NodeType.SCAN || node.getType() == NodeType.PARTITIONS_SCAN;
-  }
-
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
-                                       ExecutionBlock leftBlock, ExecutionBlock rightBlock)
+                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock)
       throws PlanningException {
     MasterPlan masterPlan = context.plan;
-    ExecutionBlock currentBlock;
+    ExecutionBlock currentBlock = null;
 
-    LogicalNode leftNode = joinNode.getLeftChild();
-    LogicalNode rightNode = joinNode.getRightChild();
+    boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
 
-    boolean leftBroadcasted = false;
-    boolean rightBroadcasted = false;
-
-    if (checkIfCanBeOneOfBroadcastJoin(leftNode) && checkIfCanBeOneOfBroadcastJoin(rightNode)) {
-      ScanNode leftScan = (ScanNode) leftNode;
-      ScanNode rightScan = (ScanNode) rightNode;
-
-      TableDesc leftDesc = leftScan.getTableDesc();
-      TableDesc rightDesc = rightScan.getTableDesc();
+    if (autoBroadcast && joinNode.isCandidateBroadcast()) {
       long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
-
-      if (leftDesc.getStats().getNumBytes() < broadcastThreshold) {
-        leftBroadcasted = true;
+      List<LogicalNode> broadtargetTables = new ArrayList<LogicalNode>();
+      int numLargeTables = 0;
+      for(LogicalNode eachNode: joinNode.getBroadcastTargets()) {
+        ScanNode scanNode = (ScanNode)eachNode;
+        TableDesc tableDesc = scanNode.getTableDesc();
+        if (tableDesc.getStats().getNumBytes() < broadcastThreshold) {
+          broadtargetTables.add(scanNode);
+          LOG.info("The table " + scanNode.getCanonicalName() + " ("
+              + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+        } else {
+          numLargeTables++;
+        }
       }
-      if (rightDesc.getStats().getNumBytes() < broadcastThreshold) {
-        rightBroadcasted = true;
-      }
 
-      if (leftBroadcasted || rightBroadcasted) {
+      //large table must be one
+      if (numLargeTables <= 1 && !broadtargetTables.isEmpty()) {
         currentBlock = masterPlan.newExecutionBlock();
         currentBlock.setPlan(joinNode);
-        if (leftBroadcasted) {
-          currentBlock.addBroadcastTable(leftScan.getCanonicalName());
-          LOG.info("The left table " + rightScan.getCanonicalName() + " ("
-              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
-        }
-        if (rightBroadcasted) {
-          currentBlock.addBroadcastTable(rightScan.getCanonicalName());
-          LOG.info("The right table " + rightScan.getCanonicalName() + " ("
-              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+
+        for (LogicalNode eachBroadcastTargetNode: broadtargetTables) {
+          currentBlock.addBroadcastTable(((ScanNode)eachBroadcastTargetNode).getCanonicalName());
         }
 
-        context.execBlockMap.remove(leftScan.getPID());
-        context.execBlockMap.remove(rightScan.getPID());
+        for (LogicalNode eachNode: joinNode.getBroadcastTargets()) {
+          context.execBlockMap.remove(eachNode.getPID());
+        }
         return currentBlock;
       }
     }

@@ -36,6 +36,7 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
   @Expose protected Schema logicalSchema;
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
+  @Expose protected boolean broadcastTable;
 
   protected ScanNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
@@ -77,6 +78,14 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
 	public boolean hasAlias() {
 	  return alias != null;
 	}
+
+  public void setBroadcastTable(boolean broadcastTable) {
+    this.broadcastTable = broadcastTable;
+  }
+
+  public boolean isBroadcastTable() {
+    return broadcastTable;
+  }
 
   public String getCanonicalName() {
     if (CatalogUtil.isFQTableName(this.tableDesc.getName())) {

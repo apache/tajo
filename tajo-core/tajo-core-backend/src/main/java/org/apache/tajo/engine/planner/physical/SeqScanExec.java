@@ -32,21 +32,20 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.utils.SchemaUtil;
-import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.engine.utils.*;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class SeqScanExec extends PhysicalExec {
   private ScanNode plan;
+
   private Scanner scanner = null;
 
   private EvalNode qual = null;
@@ -57,6 +56,10 @@ public class SeqScanExec extends PhysicalExec {
 
   private TableStats inputStats;
 
+  private TupleCacheKey cacheKey;
+
+  private boolean cacheRead = false;
+
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                      ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -64,6 +67,11 @@ public class SeqScanExec extends PhysicalExec {
     this.plan = plan;
     this.qual = plan.getQual();
     this.fragments = fragments;
+
+    if (plan.isBroadcastTable()) {
+      cacheKey = new TupleCacheKey(
+          context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName());
+    }
   }
 
   /**
@@ -83,7 +91,6 @@ public class SeqScanExec extends PhysicalExec {
 
     // Remove partition key columns from an input schema.
     this.inSchema = plan.getTableDesc().getSchema();
-
 
     List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
@@ -118,7 +125,8 @@ public class SeqScanExec extends PhysicalExec {
   public void init() throws IOException {
     Schema projected;
 
-    if (plan.getTableDesc().hasPartition()
+    if (fragments != null
+        && plan.getTableDesc().hasPartition()
         && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
       rewriteColumnPartitionedTableSchema();
     }
@@ -144,28 +152,93 @@ public class SeqScanExec extends PhysicalExec {
       projected = outSchema;
     }
 
+    if (cacheKey != null) {
+      TupleCache tupleCache = TupleCache.getInstance();
+      if (tupleCache.isBroadcastCacheReady(cacheKey)) {
+        openCacheScanner();
+      } else {
+        if (TupleCache.getInstance().lockBroadcastScan(cacheKey)) {
+          scanAndAddCache(projected);
+          openCacheScanner();
+        } else {
+          Object lockMonitor = tupleCache.getLockMonitor();
+          synchronized (lockMonitor) {
+            try {
+              lockMonitor.wait(20 * 1000);
+            } catch (InterruptedException e) {
+            }
+          }
+          if (tupleCache.isBroadcastCacheReady(cacheKey)) {
+            openCacheScanner();
+          } else {
+            initScanner(projected);
+          }
+        }
+      }
+    } else {
+      initScanner(projected);
+    }
+  }
+
+  private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
 
-    if (fragments.length > 1) {
-      this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
-          FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-              fragments), projected);
-    } else {
-      this.scanner = StorageManagerFactory.getStorageManager(
-          context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
-          projected);
+    if (fragments != null) {
+      if (fragments.length > 1) {
+        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
+            FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
+                fragments), projected
+        );
+      } else {
+        this.scanner = StorageManagerFactory.getStorageManager(
+            context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
+            projected);
+      }
+      scanner.init();
+    }
+  }
+
+  private void openCacheScanner() throws IOException {
+    Scanner cacheScanner = TupleCache.getInstance().openCacheScanner(cacheKey, plan.getPhysicalSchema());
+    if (cacheScanner != null) {
+      scanner = cacheScanner;
+      cacheRead = true;
+    }
+  }
+
+  private void scanAndAddCache(Schema projected) throws IOException {
+    initScanner(projected);
+
+    List<Tuple> broadcastTupleCacheList = new ArrayList<Tuple>();
+    while (true) {
+      Tuple tuple = next();
+      if (tuple != null) {
+        broadcastTupleCacheList.add(tuple);
+      } else {
+        break;
+      }
     }
 
-    scanner.init();
+    scanner.close();
+    scanner = null;
+
+    TupleCache.getInstance().addBroadcastCache(cacheKey, broadcastTupleCacheList);
   }
 
   @Override
   public Tuple next() throws IOException {
+    if (fragments == null) {
+      return null;
+    }
+
     Tuple tuple;
     Tuple outTuple = new VTuple(outColumnNum);
 
     if (!plan.hasQual()) {
       if ((tuple = scanner.next()) != null) {
+        if (cacheRead) {
+          return tuple;
+        }
         projector.eval(tuple, outTuple);
         outTuple.setOffset(tuple.getOffset());
         return outTuple;
@@ -174,7 +247,9 @@ public class SeqScanExec extends PhysicalExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-
+        if (cacheRead) {
+          return tuple;
+        }
         if (qual.eval(inSchema, tuple).isTrue()) {
           projector.eval(tuple, outTuple);
           return outTuple;
@@ -227,6 +302,15 @@ public class SeqScanExec extends PhysicalExec {
       return scanner.getInputStats();
     } else {
       return inputStats;
+    }
+  }
+
+  @Override
+  public String toString() {
+    if (scanner != null) {
+      return "SeqScanExec:" + plan.getTableName() + "," + scanner.getClass().getName();
+    } else {
+      return "SeqScanExec:" + plan.getTableName();
     }
   }
 }

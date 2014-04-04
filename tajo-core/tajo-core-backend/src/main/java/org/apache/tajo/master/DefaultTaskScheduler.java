@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -44,6 +44,8 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
@@ -186,17 +188,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if (context.isLeafQuery()) {
           QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
           QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
-          task.setFragment(castEvent.getLeftFragment());
+          task.addFragment(castEvent.getLeftFragment(), true);
           scheduledObjectNum++;
-          if (castEvent.getRightFragment() != null) {
-            task.setFragment(castEvent.getRightFragment());
-            scheduledObjectNum++;
+          if (castEvent.hasRightFragments()) {
+            task.addFragments(castEvent.getRightFragments());
+            //scheduledObjectNum += castEvent.getRightFragments().size();
           }
           subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
-          fragmentsForNonLeafTask[1] = castEvent.getRightFragment();
+          if (castEvent.hasRightFragments()) {
+            fragmentsForNonLeafTask[1] = castEvent.getRightFragments().toArray(new FileFragment[]{})[0];
+          }
         }
       } else if (event instanceof FetchScheduleEvent) {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
@@ -206,9 +210,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         scheduledObjectNum++;
         for (Entry<String, List<URI>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
-          task.setFragment(fragmentsForNonLeafTask[0]);
+          task.addFragment(fragmentsForNonLeafTask[0], true);
           if (fragmentsForNonLeafTask[1] != null) {
-            task.setFragment(fragmentsForNonLeafTask[1]);
+            task.addFragment(fragmentsForNonLeafTask[1], true);
           }
         }
         subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
@@ -512,10 +516,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     /**
-    *  volume of a host : 0 ~ n
-    *  compressed task, amazon s3, unKnown volume : -1
-    *  remote task : -2
-    */
+     *  volume of a host : 0 ~ n
+     *  compressed task, amazon s3, unKnown volume : -1
+     *  remote task : -2
+     */
     public int getLowestVolumeId(){
       Map.Entry<Integer, Integer> volumeEntry = null;
 
@@ -558,7 +562,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     public int getRemainingLocalTaskSize(){
-       return remainTasksNum.get();
+      return remainTasksNum.get();
     }
 
     public String getHost() {

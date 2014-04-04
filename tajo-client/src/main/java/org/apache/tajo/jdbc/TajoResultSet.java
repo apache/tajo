@@ -178,4 +178,8 @@ public class TajoResultSet extends TajoResultSetBase {
   public boolean hasResult() {
     return scanner != null;
   }
+
+  public QueryId getQueryId() {
+    return queryId;
+  }
 }

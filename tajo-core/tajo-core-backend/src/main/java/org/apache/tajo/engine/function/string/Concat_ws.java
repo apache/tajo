@@ -29,9 +29,6 @@ import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
-import java.lang.StringBuffer;
-
-
 /**
  * Function definition
  *

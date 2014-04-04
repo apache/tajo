@@ -665,7 +665,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.getMasterPlan().isLeaf(subQuery.getId()), subQuery.getId());
       subQuery.taskScheduler = TaskSchedulerFactory.get(conf, subQuery.schedulerContext, subQuery);
       subQuery.taskScheduler.init(conf);
-      LOG.info(subQuery.taskScheduler.getName() + " is chosen for the task scheduling");
+      LOG.info(subQuery.taskScheduler.getName() + " is chosen for the task scheduling for " + subQuery.getId());
     }
 
     /**
@@ -716,31 +716,32 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (parent != null && parent.getScanNodes().length == 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
-        // for inner
+        // for outer
         ExecutionBlock outer = childs.get(0);
         long outerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, outer);
 
         // for inner
         ExecutionBlock inner = childs.get(1);
         long innerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, inner);
-        LOG.info("Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
+        LOG.info(subQuery.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
             + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
 
         long bigger = Math.max(outerVolume, innerVolume);
 
         int mb = (int) Math.ceil((double) bigger / 1048576);
-        LOG.info("Bigger Table's volume is approximately " + mb + " MB");
+        LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb /
             conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
 
         int totalMem = getClusterTotalMemory(subQuery);
-        LOG.info("Total memory of cluster is " + totalMem + " MB");
+        LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
         int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
 
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
-        LOG.info("The determined number of join partitions is " + taskNum);
+        LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
+
         return taskNum;
 
         // Is this subquery the first step of group-by?
@@ -752,17 +753,17 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
 
           int mb = (int) Math.ceil((double) volume / 1048576);
-          LOG.info("Table's volume is approximately " + mb + " MB");
+          LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
           // determine the number of task
           int taskNumBySize = (int) Math.ceil((double) mb /
               conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
 
           int totalMem = getClusterTotalMemory(subQuery);
 
-          LOG.info("Total memory of cluster is " + totalMem + " MB");
+          LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
           int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
           int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
-          LOG.info("The determined number of aggregation partitions is " + taskNum);
+          LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }
       } else {
@@ -770,10 +771,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
 
         int mb = (int) Math.ceil((double)volume / 1048576);
-        LOG.info("Table's volume is approximately " + mb + " MB");
+        LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
         // determine the number of task per 128MB
         int taskNum = (int) Math.ceil((double)mb / 128);
-        LOG.info("The determined number of partitions is " + taskNum);
+        LOG.info(subQuery.getId() + ", The determined number of partitions is " + taskNum);
         return taskNum;
       }
     }
@@ -813,9 +814,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                                       ExecutionBlock execBlock) {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
-        ScanNode outerScan = execBlock.getScanNodes()[0];
-        TableStats stat = tableMap.get(outerScan.getCanonicalName()).getStats();
-        return stat.getNumBytes();
+        ScanNode[] outerScans = execBlock.getScanNodes();
+        long maxVolume = 0;
+        for (ScanNode eachScanNode: outerScans) {
+          TableStats stat = tableMap.get(eachScanNode.getCanonicalName()).getStats();
+          if (stat.getNumBytes() > maxVolume) {
+            maxVolume = stat.getNumBytes();
+          }
+        }
+        return maxVolume;
       } else {
         long aggregatedVolume = 0;
         for (ExecutionBlock childBlock : masterPlan.getChilds(execBlock)) {
@@ -895,28 +902,29 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
+  public static void scheduleFragment(SubQuery subQuery, FileFragment fragment) {
+    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        subQuery.getId(), fragment));
+  }
+
+
   public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> fragments) {
     for (FileFragment eachFragment : fragments) {
       scheduleFragment(subQuery, eachFragment);
     }
   }
 
-  public static void scheduleFragment(SubQuery subQuery, FileFragment fragment) {
-    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
-        subQuery.getId(), fragment));
-  }
-
   public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> leftFragments,
-                                       FileFragment broadcastFragment) {
+                                       Collection<FileFragment> broadcastFragments) {
     for (FileFragment eachLeafFragment : leftFragments) {
-      scheduleFragment(subQuery, eachLeafFragment, broadcastFragment);
+      scheduleFragment(subQuery, eachLeafFragment, broadcastFragments);
     }
   }
 
   public static void scheduleFragment(SubQuery subQuery,
-                                      FileFragment leftFragment, FileFragment rightFragment) {
+                                      FileFragment leftFragment, Collection<FileFragment> rightFragments) {
     subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
-        subQuery.getId(), leftFragment, rightFragment));
+        subQuery.getId(), leftFragment, rightFragments));
   }
 
   public static void scheduleFetches(SubQuery subQuery, Map<String, List<URI>> fetches) {
@@ -1007,24 +1015,26 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.completedTaskCount++;
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
-          if (task.isLeafTask()) {
-            subQuery.succeededObjectCount += task.getTotalFragmentNum();
-          } else {
-            subQuery.succeededObjectCount++;
-          }
+//          if (task.isLeafTask()) {
+//            subQuery.succeededObjectCount += task.getTotalFragmentNum();
+//          } else {
+//            subQuery.succeededObjectCount++;
+//          }
+          subQuery.succeededObjectCount++;
         } else if (task.getState() == TaskState.KILLED) {
-          if (task.isLeafTask()) {
-            subQuery.killedObjectCount += task.getTotalFragmentNum();
-          } else {
-            subQuery.killedObjectCount++;
-          }
+//          if (task.isLeafTask()) {
+//            subQuery.killedObjectCount += task.getTotalFragmentNum();
+//          } else {
+//            subQuery.killedObjectCount++;
+//          }
+          subQuery.killedObjectCount++;
         } else if (task.getState() == TaskState.FAILED) {
-          if (task.isLeafTask()) {
-            subQuery.failedObjectCount+= task.getTotalFragmentNum();
-          } else {
-            subQuery.failedObjectCount++;
-          }
-
+//          if (task.isLeafTask()) {
+//            subQuery.failedObjectCount+= task.getTotalFragmentNum();
+//          } else {
+//            subQuery.failedObjectCount++;
+//          }
+          subQuery.failedObjectCount++;
           // if at least one task is failed, try to kill all tasks.
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
         }

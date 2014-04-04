@@ -489,7 +489,7 @@ public class TajoClient implements Closeable {
           return true;
         } else {
           if (response.hasErrorMessage()) {
-            LOG.error(response.getErrorMessage());
+            System.err.println("ERROR: " + response.getErrorMessage());
           }
           return false;
         }
