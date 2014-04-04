@@ -42,6 +42,9 @@ public class TestDataFormatFunctions extends ExprTestBase {
     testSimpleEval("select to_char(123.12345, '9999999.9999999') ", new String[]{"    123.1234500"});
     testSimpleEval("select to_char(123.325, '99999999.99') ", new String[]{"     123.33"});
     testSimpleEval("select to_char(123.325, '0999.99') ", new String[]{"0123.33"});
+    testSimpleEval("select to_char(0.325, '0999.99') ", new String[]{"0000.33"});
+    testSimpleEval("select to_char(-0.325, '0999.99') ", new String[]{"-0000.33"});
+    testSimpleEval("select to_char(-0.325, '9999.99') ", new String[]{"   -0.33"});
     testSimpleEval("select to_char(123.325, '999RN9999.999') ", new String[]{""});
     testSimpleEval("select to_char(12345, '99D999') ", new String[]{""});
     testSimpleEval("select to_char(12345, '90999999.99999') ", new String[]{"00012345.00000"});
