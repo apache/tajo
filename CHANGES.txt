@@ -143,6 +143,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-735: Remove multiple SLF4J bindings message. (hyoungjunkim via hyunsik)
+
     TAJO-714: Enable setting Parquet tuning parameters. (David Chen via hyunsik)
 
     TAJO-691: HashJoin or HashAggregation is too slow if there is many unique keys.
