@@ -304,6 +304,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-729: PreLogicalPlanVerifier verifies distinct aggregation functions
+    incorrectly. (hyunsik)
+
     TAJO-719: JUnit test failures. (jinho)
 
     TAJO-713: Missing INET4 in UniformRangePartition. (jihoon)
