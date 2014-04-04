@@ -281,8 +281,9 @@ TAJO_BASE_CLASSPATH="${TAJO_CONF_DIR}"
 TAJO_JAR_DIRS="$TAJO_HOME
 ${TAJO_HOME}/lib"
 
+# We need to avoid the inclusion of slf4 twice.
 for d in $TAJO_JAR_DIRS; do
-  for j in `find $d/*.jar ! -name "*test*"`; do
+  for j in `find $d/*.jar ! -name "*test*" | grep -v slf4`; do
     TAJO_BASE_CLASSPATH=$TAJO_BASE_CLASSPATH:$j
   done
 done
