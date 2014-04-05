@@ -620,4 +620,11 @@ public class TajoTestingCluster {
       Closeables.closeQuietly(writer);
     }
   }
+
+  public void setAllTajoDaemonConfValue(String key, String value) {
+    tajoMaster.getContext().getConf().set(key, value);
+    for (TajoWorker eachWorker: tajoWorkers) {
+      eachWorker.getConfig().set(key, value);
+    }
+  }
 }

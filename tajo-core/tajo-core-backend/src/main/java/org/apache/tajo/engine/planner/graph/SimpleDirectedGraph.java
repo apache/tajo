@@ -118,7 +118,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
     if (reversedEdges.containsKey(v)) {
       return reversedEdges.get(v).size();
     } else {
-      return -1;
+      return 0;
     }
   }
 

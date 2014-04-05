@@ -102,7 +102,12 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = sqlFuncs;
   }
 
-  
+  public void reloadBuiltinFunctions(List<FunctionDesc> builtingFuncs) throws ServiceException {
+    this.builtingFuncs = builtingFuncs;
+    initBuiltinFunctions(builtingFuncs);
+  }
+
+  @Override
   public void serviceInit(Configuration conf) throws Exception {
 
     Constructor<?> cons;
@@ -833,7 +838,7 @@ public class CatalogServer extends AbstractService {
       return BOOL_TRUE;
     }
 
-     @Override
+    @Override
     public BoolProto dropFunction(RpcController controller, UnregisterFunctionRequest request)
         throws ServiceException {
 

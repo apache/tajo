@@ -298,7 +298,6 @@ public class QueryMasterTask extends CompositeService {
       LOG.warn("Query already started");
       return;
     }
-
     CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
@@ -315,7 +314,8 @@ public class QueryMasterTask extends CompositeService {
       plan = planner.createPlan(session, expr);
       optimizer.optimize(plan);
     } catch (PlanningException e) {
-      e.printStackTrace();
+      //TODO how set query failed(???)
+      LOG.error(e.getMessage(), e);
     }
 
     GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
@@ -341,7 +341,6 @@ public class QueryMasterTask extends CompositeService {
           }
         }
       }
-
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(masterPlan);
 
@@ -349,7 +348,6 @@ public class QueryMasterTask extends CompositeService {
           "", queryTaskContext.getEventHandler(), masterPlan);
 
       dispatcher.register(QueryEventType.class, query);
-
       queryTaskContext.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.START));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

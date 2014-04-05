@@ -29,10 +29,16 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinType joinType;
   @Expose private EvalNode joinQual;
   @Expose private Target[] targets;
+
+  @Expose private boolean candidateBroadcast = false;
+  @Expose private List<LogicalNode> broadcastTargets = new ArrayList<LogicalNode>();
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);
@@ -42,6 +48,22 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     this.joinType = joinType;
     setLeftChild(left);
     setRightChild(right);
+  }
+
+  public boolean isCandidateBroadcast() {
+    return candidateBroadcast;
+  }
+
+  public void setCandidateBroadcast(boolean candidateBroadcast) {
+    this.candidateBroadcast = candidateBroadcast;
+  }
+
+  public List<LogicalNode> getBroadcastTargets() {
+    return broadcastTargets;
+  }
+
+  public void setBroadcastTargets(List<LogicalNode> broadcastTargets) {
+    this.broadcastTargets = broadcastTargets;
   }
 
   public JoinType getJoinType() {

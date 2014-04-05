@@ -1,0 +1,7 @@
+c_custkey,const_val,min_name
+-------------------------------
+1,123,Customer#000000001
+2,123,Customer#000000002
+3,123,Customer#000000003
+4,123,Customer#000000004
+5,123,Customer#000000005

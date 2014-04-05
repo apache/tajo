@@ -37,7 +37,9 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
+import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.rpc.CallFuture;
@@ -219,10 +221,8 @@ public class TaskRunner extends AbstractService {
     tasks.clear();
     fetchLauncher.shutdown();
     this.queryEngine = null;
-//    if(client != null) {
-//      client.close();
-//      client = null;
-//    }
+
+    TupleCache.getInstance().removeBroadcastCache(executionBlockId);
 
     LOG.info("Stop TaskRunner: " + executionBlockId);
     synchronized (this) {
@@ -242,10 +242,6 @@ public class TaskRunner extends AbstractService {
     public String getNodeId() {
       return nodeId.toString();
     }
-
-//    public TajoWorkerProtocolService.Interface getMaster() {
-//      return master;
-//    }
 
     public FileSystem getLocalFS() {
       return localFS;

@@ -114,8 +114,8 @@ public abstract class RangePartitionAlgorithm {
         }
         break;
       case TEXT:
-        final char textStart =  start instanceof NullDatum ? '0' : start.asChars().charAt(0);
-        final char textEnd = end instanceof NullDatum ? '0' : end.asChars().charAt(0);
+        final char textStart =  (start instanceof NullDatum || start.size() == 0) ? '0' : start.asChars().charAt(0);
+        final char textEnd = (end instanceof NullDatum || start.size() == 0) ? '0' : end.asChars().charAt(0);
         if (isAscending) {
           columnCard = new BigDecimal(textEnd - textStart);
         } else {

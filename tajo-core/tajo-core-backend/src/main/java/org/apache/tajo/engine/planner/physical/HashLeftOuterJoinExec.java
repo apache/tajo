@@ -122,8 +122,9 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
         // getting corresponding right
         getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
-        if (tupleSlots.containsKey(leftKeyTuple)) { // finds right tuples on in-memory hash table.
-          iterator = tupleSlots.get(leftKeyTuple).iterator();
+        List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+        if (rightTuples != null) { // found right tuples on in-memory hash table.
+          iterator = rightTuples.iterator();
           shouldGetLeftTuple = false;
         } else {
           // this left tuple doesn't have a match on the right, and output a tuple with the nulls padded rightTuple
@@ -162,15 +163,13 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
     while ((tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
-      List<Tuple> newValue;
       for (int i = 0; i < rightKeyList.length; i++) {
         keyTuple.put(i, tuple.get(rightKeyList[i]));
       }
 
-      if (tupleSlots.containsKey(keyTuple)) {
-        newValue = tupleSlots.get(keyTuple);
+      List<Tuple> newValue = tupleSlots.get(keyTuple);
+      if (newValue != null) {
         newValue.add(tuple);
-        tupleSlots.put(keyTuple, newValue);
       } else {
         newValue = new ArrayList<Tuple>();
         newValue.add(tuple);

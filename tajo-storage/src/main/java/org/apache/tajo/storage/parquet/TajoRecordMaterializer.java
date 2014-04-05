@@ -69,7 +69,7 @@ class TajoRecordMaterializer extends RecordMaterializer<Tuple> {
   /**
    * Returns the root converter.
    *
-   * @param return The root converter
+   * @return The root converter
    */
   @Override
   public GroupConverter getRootConverter() {

@@ -201,18 +201,23 @@ public class GlobalEngine extends AbstractService {
   }
 
   public QueryId updateQuery(Session session, String sql) throws IOException, SQLException, PlanningException {
-    LOG.info("SQL: " + sql);
-    // parse the query
-    Expr expr = analyzer.parse(sql);
+    try {
+      LOG.info("==========>SQL: " + sql);
+      // parse the query
+      Expr expr = analyzer.parse(sql);
 
-    LogicalPlan plan = createLogicalPlan(session, expr);
-    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+      LogicalPlan plan = createLogicalPlan(session, expr);
+      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    if (!PlannerUtil.checkIfDDLPlan(rootNode)) {
-      throw new SQLException("This is not update query:\n" + sql);
-    } else {
-      updateQuery(session, rootNode.getChild());
-      return QueryIdFactory.NULL_QUERY_ID;
+      if (!PlannerUtil.checkIfDDLPlan(rootNode)) {
+        throw new SQLException("This is not update query:\n" + sql);
+      } else {
+        updateQuery(session, rootNode.getChild());
+        return QueryIdFactory.NULL_QUERY_ID;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new IOException(e.getMessage(), e);
     }
   }
 

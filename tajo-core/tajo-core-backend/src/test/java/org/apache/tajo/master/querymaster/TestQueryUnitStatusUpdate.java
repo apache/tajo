@@ -86,11 +86,11 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
       res = executeQuery();
 
-      long[] expectedNumRows = new long[]{7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{63, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{63, 0, 34, 0};
+      long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
+      long[] expectedNumBytes = new long[]{18, 34, 45, 75, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{18, 0, 45, 0, 109, 0, 34, 0};
 
-      assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }

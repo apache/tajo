@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -223,6 +224,18 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLeftOuterJoinWithEmptyTable1() throws Exception {
+    /*
+    select
+      c_custkey,
+      empty_orders.o_orderkey,
+      empty_orders.o_orderstatus,
+      empty_orders.o_orderdate
+    from
+      customer left outer join empty_orders on c_custkey = o_orderkey
+    order by
+      c_custkey, o_orderkey;
+     */
+
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

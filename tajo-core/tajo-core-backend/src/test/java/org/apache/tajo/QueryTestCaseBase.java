@@ -206,6 +206,7 @@ public class QueryTestCaseBase {
     } catch (ServiceException e) {
       e.printStackTrace();
     }
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
   }
 
   protected TajoClient getClient() {
@@ -433,7 +434,8 @@ public class QueryTestCaseBase {
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
         String tableName = createTable.getTableName();
-        assertTrue("Table creation is failed.", client.updateQuery(parsedResult.getStatement()));
+        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getStatement()));
+
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
 
