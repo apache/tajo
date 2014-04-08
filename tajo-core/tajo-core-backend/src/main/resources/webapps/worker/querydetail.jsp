@@ -34,12 +34,15 @@
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
           .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
 
-  if(queryMasterTask == null) {
+  if (queryMasterTask == null) {
     out.write("<script type='text/javascript'>alert('no query'); history.back(0); </script>");
     return;
   }
   Query query = queryMasterTask.getQuery();
-  List<SubQuery> subQueries = JSPUtil.sortSubQuery(query.getSubQueries());
+  List<SubQuery> subQueries = null;
+  if (query != null) {
+    subQueries = JSPUtil.sortSubQuery(query.getSubQueries());
+  }
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 %>
@@ -56,8 +59,16 @@
 <div class='contents'>
   <h2>Tajo Worker: <a href='index.jsp'><%=tajoWorker.getWorkerContext().getWorkerName()%></a></h2>
   <hr/>
+<%
+if (query == null) {
+  String errorMessage = queryMasterTask.getErrorMessage();
+  out.write("Query Status: " + queryMasterTask.getState());
+  if (errorMessage != null && !errorMessage.isEmpty()) {
+    out.write("<p/>Message:<p/><pre>" + errorMessage + "</pre>");
+  }
+} else {
+%>
   <h3><%=queryId.toString()%> <a href='queryplan.jsp?queryId=<%=queryId%>'>[Query Plan]</a></h3>
-
   <table width="100%" border="1" class="border_table">
     <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th><th>Progress</th><th>Tasks</th></tr>
 <%
@@ -86,6 +97,9 @@ for(SubQuery eachSubQuery: subQueries) {
   <h3>Distributed Query Plan</h3>
   <pre style="white-space:pre-wrap;"><%=query.getPlan().toString()%></pre>
   <hr/>
+<%
+}   //end of else [if (query == null)]
+%>
 </div>
 </body>
 </html>

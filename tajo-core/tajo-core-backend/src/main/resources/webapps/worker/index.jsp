@@ -70,13 +70,14 @@ if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
     } else {
   %>
   <table width="100%" border="1" class="border_table">
-    <tr><th>QueryId</th><th>StartTime</th><th>FinishTime</th><th>Progress</th><th>RunTime</th></tr>
+    <tr><th>QueryId</th><th>Status</th><th>StartTime</th><th>FinishTime</th><th>Progress</th><th>RunTime</th></tr>
     <%
       for(QueryMasterTask eachQueryMasterTask: queryMasterTasks) {
         Query query = eachQueryMasterTask.getQuery();
     %>
     <tr>
       <td align='center'><a href='querydetail.jsp?queryId=<%=query.getId()%>'><%=query.getId()%></a></td>
+      <td align='center'><%=eachQueryMasterTask.getState()%></td>
       <td align='center'><%=df.format(query.getStartTime())%></td>
       <td align='center'><%=query.getFinishTime() == 0 ? "-" : df.format(query.getFinishTime())%></td>
       <td align='center'><%=(int)(query.getProgress()*100.0f)%>%</td>
@@ -96,17 +97,19 @@ if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
     } else {
   %>
   <table width="100%" border="1" class="border_table">
-    <tr><th>QueryId</th><th>StartTime</th><th>FinishTime</th><th>Progress</th><th>RunTime</th></tr>
+    <tr><th>QueryId</th><th>Status</th><th>StartTime</th><th>FinishTime</th><th>Progress</th><th>RunTime</th></tr>
     <%
       for(QueryMasterTask eachQueryMasterTask: finishedQueryMasterTasks) {
         Query query = eachQueryMasterTask.getQuery();
+        long startTime = query != null ? query.getStartTime() : eachQueryMasterTask.getQuerySubmitTime();
     %>
     <tr>
-      <td align='center'><a href='querydetail.jsp?queryId=<%=query.getId()%>'><%=query.getId()%></a></td>
-      <td align='center'><%=df.format(query.getStartTime())%></td>
-      <td align='center'><%=query.getFinishTime() == 0 ? "-" : df.format(query.getFinishTime())%></td>
-      <td align='center'><%=(int)(query.getProgress()*100.0f)%>%</td>
-      <td align='right'><%=JSPUtil.getElapsedTime(query.getStartTime(), query.getFinishTime())%></td>
+      <td align='center'><a href='querydetail.jsp?queryId=<%=eachQueryMasterTask.getQueryId()%>'><%=eachQueryMasterTask.getQueryId()%></a></td>
+      <td align='center'><%=eachQueryMasterTask.getState()%></td>
+      <td align='center'><%=df.format(startTime)%></td>
+      <td align='center'><%=(query == null || query.getFinishTime() == 0) ? "-" : df.format(query.getFinishTime())%></td>
+      <td align='center'><%=(query == null) ? "-" : (int)(query.getProgress()*100.0f)%>%</td>
+      <td align='right'><%=(query == null) ? "-" : JSPUtil.getElapsedTime(query.getStartTime(), query.getFinishTime())%></td>
     </tr>
     <%
         } //end of for
