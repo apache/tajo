@@ -202,7 +202,7 @@ public class GlobalEngine extends AbstractService {
 
   public QueryId updateQuery(Session session, String sql) throws IOException, SQLException, PlanningException {
     try {
-      LOG.info("==========>SQL: " + sql);
+      LOG.info("SQL: " + sql);
       // parse the query
       Expr expr = analyzer.parse(sql);
 

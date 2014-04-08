@@ -303,6 +303,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-739: A subquery with the same column alias caused planning error.
+    (hyoungjunkim via hyunsik)
+
     TAJO-729: PreLogicalPlanVerifier verifies distinct aggregation functions
     incorrectly. (hyunsik)
 

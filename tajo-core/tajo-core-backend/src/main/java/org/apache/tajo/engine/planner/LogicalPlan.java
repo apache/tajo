@@ -313,7 +313,7 @@ public class LogicalPlan {
 
       // The condition (currentNode.getInSchema().contains(column)) means
       // the column can be used at the current node. So, we don't need to find aliase name.
-      if (currentNode != null && !currentNode.getInSchema().contains(column)) {
+      if (currentNode != null && !currentNode.getInSchema().contains(column) && currentNode.getType() != NodeType.TABLE_SUBQUERY) {
         List<Column> candidates = TUtil.newList();
         if (block.namedExprsMgr.isAliased(qualifiedName)) {
           String alias = block.namedExprsMgr.getAlias(canonicalName);
