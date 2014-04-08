@@ -433,11 +433,11 @@ public class QueryTestCaseBase {
 
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
-        String tableName = createTable.getTableName();
+        String tableName = CatalogUtil.denormalizeIdentifier(createTable.getTableName());
         assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
-        String createdTableName = createdTable.getName();
+        String createdTableName = CatalogUtil.denormalizeIdentifier(createdTable.getName());
 
         assertTrue("table '" + createdTableName + "' creation check", client.existTable(createdTableName));
         if (isLocalTable) {

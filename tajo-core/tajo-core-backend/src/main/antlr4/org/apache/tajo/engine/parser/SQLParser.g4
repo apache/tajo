@@ -35,7 +35,11 @@ options {
 ===============================================================================
 */
 sql
-  : statement (SEMI_COLON)? EOF
+  : (explain_clause)? statement (SEMI_COLON)? EOF
+  ;
+
+explain_clause
+  : EXPLAIN
   ;
 
 statement
@@ -205,7 +209,9 @@ identifier
   ;
 
 nonreserved_keywords
-  : AVG
+  : ADD
+  | AVG
+  | ALTER
   | BETWEEN
   | BY
   | CENTURY
@@ -224,6 +230,7 @@ nonreserved_keywords
   | EPOCH
   | EVERY
   | EXISTS
+  | EXPLAIN
   | EXTERNAL
   | EXTRACT
   | FILTER
@@ -259,6 +266,7 @@ nonreserved_keywords
   | QUARTER
   | RANGE
   | REGEXP
+  | RENAME
   | RLIKE
   | ROLLUP
   | SECOND

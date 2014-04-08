@@ -39,8 +39,7 @@ service TajoMasterClientProtocolService {
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);
 
   // Query Submission and Result APIs
-  rpc explainQuery(SessionedStringProto) returns (ExplainQueryResponse);
-  rpc submitQuery(QueryRequest) returns (GetQueryStatusResponse);
+  rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
 

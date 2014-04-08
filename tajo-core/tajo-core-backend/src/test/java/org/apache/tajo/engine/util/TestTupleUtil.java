@@ -28,12 +28,9 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleRange;
-import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -70,8 +67,8 @@ public class TestTupleUtil {
         DatumFactory.createInet4("192.168.0.1")
     });
 
-    RowStoreEncoder encoder = RowStoreEncoder.createInstance(schema);
-    RowStoreDecoder decoder = RowStoreDecoder.createInstance(schema);
+    RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(schema);
     byte [] bytes = encoder.toBytes(tuple);
     Tuple tuple2 = decoder.toTuple(bytes);
     

@@ -250,33 +250,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ExplainQueryResponse explainQuery(RpcController controller,
-                                           SessionedStringProto request) throws ServiceException {
-
-      try {
-        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-
-        if(LOG.isDebugEnabled()) {
-          LOG.debug("ExplainQuery [" + request.getValue() + "]");
-        }
-        ClientProtos.ExplainQueryResponse.Builder responseBuilder = ClientProtos.ExplainQueryResponse.newBuilder();
-        responseBuilder.setResultCode(ResultCode.OK);
-        String plan = context.getGlobalEngine().explainQuery(session, request.getValue());
-        if(LOG.isDebugEnabled()) {
-          LOG.debug("ExplainQuery [" + plan + "]");
-        }
-        responseBuilder.setExplain(plan);
-        return responseBuilder.build();
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        ClientProtos.ExplainQueryResponse.Builder responseBuilder = ClientProtos.ExplainQueryResponse.newBuilder();
-        responseBuilder.setResultCode(ResultCode.ERROR);
-        responseBuilder.setErrorMessage(e.getMessage());
-        return responseBuilder.build();
-      }
-    }
-    @Override
-    public GetQueryStatusResponse submitQuery(RpcController controller, QueryRequest request) throws ServiceException {
+    public SubmitQueryResponse submitQuery(RpcController controller, QueryRequest request) throws ServiceException {
 
 
       try {
@@ -288,7 +262,8 @@ public class TajoMasterClientService extends AbstractService {
         return context.getGlobalEngine().executeQuery(session, request.getQuery());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
-        ClientProtos.GetQueryStatusResponse.Builder responseBuilder = ClientProtos.GetQueryStatusResponse.newBuilder();
+        SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
+        responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
         responseBuilder.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
           responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));

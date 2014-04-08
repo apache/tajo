@@ -410,7 +410,7 @@ public class Repartitioner {
 
     Set<URI> uris;
     try {
-      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.RowStoreEncoder.createInstance(sortSchema);
+      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(sortSchema);
       for (int i = 0; i < ranges.length; i++) {
         uris = new HashSet<URI>();
         for (String uri: basicFetchURIs) {

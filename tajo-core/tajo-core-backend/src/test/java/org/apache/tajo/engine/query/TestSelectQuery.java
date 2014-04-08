@@ -41,6 +41,38 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testNonFromSelect1() throws Exception {
+    // select upper('abc');
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSimpleQuery() throws Exception {
+    // select * from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSimpleQueryWithLimit() throws Exception {
+    // select * from lineitem limit 3;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testExplainSelect() throws Exception {
+    // explain select l_orderkey, l_partkey from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSelect() throws Exception {
     // select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();

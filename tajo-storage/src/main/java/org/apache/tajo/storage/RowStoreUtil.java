@@ -46,15 +46,19 @@ public class RowStoreUtil {
     return out;
   }
 
+  public static RowStoreEncoder createEncoder(Schema schema) {
+    return new RowStoreEncoder(schema);
+  }
+
+  public static RowStoreDecoder createDecoder(Schema schema) {
+    return new RowStoreDecoder(schema);
+  }
+
   public static class RowStoreDecoder {
 
     private Schema schema;
     private BitArray nullFlags;
     private int headerSize;
-
-    public static RowStoreDecoder createInstance(Schema schema) {
-      return new RowStoreDecoder(schema);
-    }
 
     private RowStoreDecoder(Schema schema) {
       this.schema = schema;
@@ -156,10 +160,6 @@ public class RowStoreUtil {
     private BitArray nullFlags;
     private int headerSize;
 
-    public static RowStoreEncoder createInstance(Schema schema) {
-      return new RowStoreEncoder(schema);
-    }
-
     private RowStoreEncoder(Schema schema) {
       this.schema = schema;
       nullFlags = new BitArray(schema.size());
@@ -167,8 +167,8 @@ public class RowStoreUtil {
     }
     public byte [] toBytes(Tuple tuple) {
       nullFlags.clear();
-      int size = StorageUtil.getRowByteSize(schema);
-      ByteBuffer bb = ByteBuffer.allocate(size+headerSize);
+      int size = 4096; // 4kb
+      ByteBuffer bb = ByteBuffer.allocate(size + headerSize);
       bb.position(headerSize);
       Column col;
       for (int i = 0; i < schema.size(); i++) {

@@ -165,6 +165,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return current;
   }
 
+  public LogicalNode visitExplain(PlanContext ctx, Stack<Expr> stack, Explain expr) throws PlanningException {
+    ctx.plan.setExplain();
+    return visit(ctx, stack, expr.getChild());
+  }
+
   /*===============================================================================================
     Data Manupulation Language (DML) SECTION
    ===============================================================================================*/

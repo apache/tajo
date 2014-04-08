@@ -178,6 +178,8 @@ public class SimpleParser {
             appender.append(" ");
           }
         }
+      } else { // skip unknown character
+        idx++;
       }
 
       lineNum++;

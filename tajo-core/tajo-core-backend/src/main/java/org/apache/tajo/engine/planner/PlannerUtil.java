@@ -55,6 +55,65 @@ public class PlannerUtil {
   }
 
   /**
+   * Checks whether the query is simple or not.
+   * The simple query can be defined as 'select * from tb_name [LIMIT X]'.
+   *
+   * @param plan The logical plan
+   * @return True if the query is a simple query.
+   */
+  public static boolean checkIfSimpleQuery(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+
+    // one block, without where clause, no group-by, no-sort, no-join
+    boolean isOneQueryBlock = plan.getQueryBlocks().size() == 1;
+    boolean simpleOperator = rootNode.getChild().getType() == NodeType.LIMIT
+        || rootNode.getChild().getType() == NodeType.SCAN;
+    boolean noOrderBy = !plan.getRootBlock().hasNode(NodeType.SORT);
+    boolean noGroupBy = !plan.getRootBlock().hasNode(NodeType.GROUP_BY);
+    boolean noWhere = !plan.getRootBlock().hasNode(NodeType.SELECTION);
+    boolean noJoin = !plan.getRootBlock().hasNode(NodeType.JOIN);
+    boolean singleRelation = plan.getRootBlock().hasNode(NodeType.SCAN)
+        && PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
+
+    boolean noComplexComputation = false;
+    if (singleRelation) {
+      ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
+      if (!scanNode.getTableDesc().hasPartition() && scanNode.hasTargets()
+          && scanNode.getTargets().length == scanNode.getInSchema().size()) {
+        noComplexComputation = true;
+        for (int i = 0; i < scanNode.getTargets().length; i++) {
+          noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD;
+          if (noComplexComputation) {
+            noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getNamedColumn().equals(scanNode.getInSchema().getColumn(i));
+          }
+          if (!noComplexComputation) {
+            return noComplexComputation;
+          }
+        }
+      }
+    }
+
+    return !checkIfDDLPlan(rootNode) &&
+        (simpleOperator && noComplexComputation  && isOneQueryBlock && noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
+  }
+
+  /**
+   * Checks whether the query has 'from clause' or not.
+   *
+   * @param plan The logical plan
+   * @return True if a query does not have 'from clause'.
+   */
+  public static boolean checkIfNonFromQuery(LogicalPlan plan) {
+    LogicalNode node = plan.getRootBlock().getRoot();
+
+    // one block, without where clause, no group-by, no-sort, no-join
+    boolean isOneQueryBlock = plan.getQueryBlocks().size() == 1;
+    boolean noRelation = !plan.getRootBlock().hasAlgebraicExpr(OpType.Relation);
+
+    return !checkIfDDLPlan(node) && noRelation && isOneQueryBlock;
+  }
+
+  /**
    * Get all RelationNodes which are descendant of a given LogicalNode.
    *
    * @param from The LogicalNode to start visiting LogicalNodes.
