@@ -366,6 +366,9 @@ public class TajoCli {
 
       if (status.getState() == QueryState.QUERY_ERROR) {
         sout.println("Internal error!");
+        if(status.getErrorMessage() != null && !status.getErrorMessage().isEmpty()) {
+          sout.println(status.getErrorMessage());
+        }
       } else if (status.getState() == QueryState.QUERY_FAILED) {
         sout.println("Query failed!");
       } else if (status.getState() == QueryState.QUERY_KILLED) {

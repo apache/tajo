@@ -184,20 +184,26 @@ public class TajoWorkerClientService extends AbstractService {
           return builder.build();
         }
 
-        queryMasterTask.touchSessionTime();
-        Query query = queryMasterTask.getQuery();
-
-        builder.setState(query.getState());
-        builder.setProgress(query.getProgress());
-        builder.setSubmitTime(query.getAppSubmitTime());
         builder.setHasResult(
             !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
                 queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())
         );
-        if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-          builder.setFinishTime(query.getFinishTime());
+
+        queryMasterTask.touchSessionTime();
+        Query query = queryMasterTask.getQuery();
+
+        if (query != null) {
+          builder.setState(query.getState());
+          builder.setProgress(query.getProgress());
+          builder.setSubmitTime(query.getAppSubmitTime());
+          if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            builder.setFinishTime(query.getFinishTime());
+          } else {
+            builder.setFinishTime(System.currentTimeMillis());
+          }
         } else {
-          builder.setFinishTime(System.currentTimeMillis());
+          builder.setState(queryMasterTask.getState());
+          builder.setErrorMessage(queryMasterTask.getErrorMessage());
         }
       }
       return builder.build();
