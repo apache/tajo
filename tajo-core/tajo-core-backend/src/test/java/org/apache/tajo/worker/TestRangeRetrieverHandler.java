@@ -356,7 +356,7 @@ public class TestRangeRetrieverHandler {
   private FileChunk getFileChunk(RangeRetrieverHandler handler, Schema keySchema,
                                  TupleRange range, boolean last) throws IOException {
     Map<String,List<String>> kvs = Maps.newHashMap();
-    RowStoreEncoder encoder = RowStoreEncoder.createInstance(keySchema);
+    RowStoreEncoder encoder = RowStoreUtil.createEncoder(keySchema);
     kvs.put("start", Lists.newArrayList(
         new String(Base64.encodeBase64(
             encoder.toBytes(range.getStart()),

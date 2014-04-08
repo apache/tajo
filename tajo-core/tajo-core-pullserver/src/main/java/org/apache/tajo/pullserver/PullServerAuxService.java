@@ -51,6 +51,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -559,7 +560,7 @@ public class PullServerAuxService extends AuxiliaryService {
     byte [] startBytes = Base64.decodeBase64(startKey);
     byte [] endBytes = Base64.decodeBase64(endKey);
 
-    RowStoreDecoder decoder = RowStoreDecoder.createInstance(keySchema);
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
     Tuple start;
     Tuple end;
     try {

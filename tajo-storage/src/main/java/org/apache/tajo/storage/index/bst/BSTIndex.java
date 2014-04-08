@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -113,7 +114,7 @@ public class BSTIndex implements IndexMethod {
       this.keySchema = keySchema;
       this.compartor = comparator;
       this.collector = new KeyOffsetCollector(comparator);
-      this.rowStoreEncoder = RowStoreEncoder.createInstance(keySchema);
+      this.rowStoreEncoder = RowStoreUtil.createEncoder(keySchema);
     }
 
    public void setLoadNum(int loadNum) {
@@ -315,7 +316,7 @@ public class BSTIndex implements IndexMethod {
       this.fileName = fileName;
       this.keySchema = keySchema;
       this.comparator = comparator;
-      this.rowStoreDecoder = RowStoreDecoder.createInstance(keySchema);
+      this.rowStoreDecoder = RowStoreUtil.createDecoder(keySchema);
     }
 
     public BSTIndexReader(final Path fileName) throws IOException {
@@ -340,7 +341,7 @@ public class BSTIndex implements IndexMethod {
       builder.mergeFrom(schemaBytes);
       SchemaProto proto = builder.build();
       this.keySchema = new Schema(proto);
-      this.rowStoreDecoder = RowStoreDecoder.createInstance(keySchema);
+      this.rowStoreDecoder = RowStoreUtil.createDecoder(keySchema);
 
       // comparator
       int compByteSize = indexIn.readInt();

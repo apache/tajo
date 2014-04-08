@@ -16,39 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.algebra;
 
-import org.junit.Test;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import com.google.common.base.Objects;
 
-import static org.junit.Assert.assertEquals;
+public class Explain extends UnaryOperator {
 
-public class TestCatalogUtil {
-  @Test
-  public final void testGetCanonicalName() {
-    String canonical = CatalogUtil.getCanonicalSignature("sum", CatalogUtil.newSimpleDataTypeArray(Type.INT4,
-        Type.INT8));
-    assertEquals("sum(int4,int8)", canonical);
+  public Explain(Expr operand) {
+    super(OpType.Explain);
+    setChild(operand);
   }
 
-  String [] sources = {
-      "A",
-      "Column_Name",
-      "COLUMN_NAME",
-      "컬럼"
-  };
+  public int hashCode() {
+    return Objects.hashCode(getChild());
+  }
 
-  String [] normalized = {
-      "a",
-      "column_name",
-      "column_name",
-      "컬럼"
-  };
-
-  @Test
-  public final void testNormalizeIdentifier() {
-    for (int i = 0; i < sources.length; i++) {
-      assertEquals(normalized[i], CatalogUtil.normalizeIdentifier(sources[i]));
-    }
+  @Override
+  boolean equalsTo(Expr expr) {
+    return true;
   }
 }

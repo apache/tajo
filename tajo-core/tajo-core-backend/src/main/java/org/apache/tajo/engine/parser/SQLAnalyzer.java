@@ -71,7 +71,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitSql(SqlContext ctx) {
-    return visit(ctx.statement());
+    Expr statement = visit(ctx.statement());
+    if (checkIfExist(ctx.explain_clause())) {
+      return new Explain(statement);
+    } else {
+      return statement;
+    }
   }
 
   @Override

@@ -896,7 +896,7 @@ public class TestPhysicalPlanner {
 
 
     // The below is for testing RangeRetrieverHandler.
-    RowStoreEncoder encoder = RowStoreEncoder.createInstance(keySchema);
+    RowStoreEncoder encoder = RowStoreUtil.createEncoder(keySchema);
     RangeRetrieverHandler handler = new RangeRetrieverHandler(
         new File(new Path(workDir, "output").toUri()), keySchema, comp);
     Map<String,List<String>> kvs = Maps.newHashMap();

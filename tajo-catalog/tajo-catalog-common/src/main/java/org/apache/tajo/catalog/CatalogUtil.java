@@ -150,15 +150,18 @@ public class CatalogUtil {
     boolean openQuote = identifier.charAt(0) == '"';
     boolean closeQuote = identifier.charAt(identifier.length() - 1) == '"';
 
-    if (openQuote ^ closeQuote || identifier.length() < 2) {
+    // if at least one quote mark exists, the identifier must be grater than equal to 2 characters,
+    if (openQuote ^ closeQuote && identifier.length() < 2) {
       throw new IllegalArgumentException("Invalid Identifier: " + identifier);
     }
 
+    // does not allow the empty identifier (''),
     if (openQuote && closeQuote && identifier.length() == 2) {
       throw new IllegalArgumentException("zero-length delimited identifier: " + identifier);
     }
 
-    return openQuote && closeQuote && identifier.length() > 2;
+    // Ensure the quote open and close
+    return openQuote && closeQuote;
   }
 
   public static boolean isFQColumnName(String tableName) {

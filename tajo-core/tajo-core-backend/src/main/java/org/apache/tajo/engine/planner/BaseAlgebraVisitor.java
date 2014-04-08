@@ -96,6 +96,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case ScalarSubQuery:
       current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
       break;
+    case Explain:
+      current = visitExplain(ctx, stack, (Explain) expr);
+      break;
 
     case CreateDatabase:
       current = visitCreateDatabase(ctx, stack, (CreateDatabase) expr);
@@ -405,6 +408,14 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   @Override
   public RESULT visitScalarSubQuery(CONTEXT ctx, Stack<Expr> stack, ScalarSubQuery expr) throws PlanningException {
     return visitDefaultUnaryExpr(ctx, stack, expr);
+  }
+
+  @Override
+  public RESULT visitExplain(CONTEXT ctx, Stack<Expr> stack, Explain expr) throws PlanningException {
+    stack.push(expr);
+    RESULT child = visit(ctx, stack, expr.getChild());
+    stack.pop();
+    return child;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
