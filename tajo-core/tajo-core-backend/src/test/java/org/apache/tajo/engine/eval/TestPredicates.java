@@ -277,7 +277,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testInPredicate() throws IOException {
+  public void testInPredicateWithConstant() throws IOException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -299,6 +299,26 @@ public class TestPredicates extends ExprTestBase {
         "2014-03-21,,2015-04-01",
         "select (substr(col2,1,4)::int4 in (2014,2015,2016)) is null from table1",
         new String[]{"t"});
+  }
+
+  @Test
+  public void testInPredicateWithSimpleExprs() throws IOException {
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", TEXT);
+    schema2.addColumn("col2", INT4);
+    schema2.addColumn("col3", TEXT);
+
+    testEval(schema2, "table1", "abc,2,3", "select col1 in ('a'||'b'||'c'), col2 in (1 + 1, 2 * 10, 2003) from table1",
+        new String[]{"t","t"});
+
+    testEval(schema2, "table1", "abc,2,3", "select col1 in ('a'||'b'), col2 in ('1'::int, '2'::int, 3) from table1",
+        new String[]{"f","t"});
+
+    testEval(schema2,
+        "table1",
+        "abc,,3",
+        "select col1 in (reverse('cba')), (col2 in ('1'::int, '2'::int, 3)) is null from table1",
+        new String[]{"t","t"});
   }
 
   //////////////////////////////////////////////////////////////////

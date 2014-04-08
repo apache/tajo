@@ -1192,7 +1192,7 @@ in_predicate_value
   ;
 
 in_value_list
-  : row_value_expression  ( COMMA row_value_expression )*
+  : row_value_predicand  ( COMMA row_value_predicand )*
   ;
 
 /*
