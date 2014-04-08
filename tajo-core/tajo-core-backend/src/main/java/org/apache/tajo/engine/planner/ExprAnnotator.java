@@ -221,10 +221,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitValueListExpr(Context ctx, Stack<Expr> stack, ValueListExpr expr) throws PlanningException {
     Datum[] values = new Datum[expr.getValues().length];
-    ConstEval [] constEvals = new ConstEval[expr.getValues().length];
+    EvalNode [] evalNodes = new EvalNode[expr.getValues().length];
     for (int i = 0; i < expr.getValues().length; i++) {
-      constEvals[i] = (ConstEval) visit(ctx, stack, expr.getValues()[i]);
-      values[i] = constEvals[i].getValue();
+      evalNodes[i] = visit(ctx, stack, expr.getValues()[i]);
+      if (!EvalTreeUtil.checkIfCanBeConstant(evalNodes[i])) {
+        throw new PlanningException("Non constant values cannot be included in IN PREDICATE.");
+      }
+      values[i] = EvalTreeUtil.evaluateImmediately(evalNodes[i]);
     }
     return new RowConstantEval(values);
   }
