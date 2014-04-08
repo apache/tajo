@@ -143,6 +143,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-728: Supports expression IN statement. (hyunsik)
+
     TAJO-725: Broadcast JOIN should supports multiple tables. (hyoungjunkim via jaehwa)
 
     TAJO-735: Remove multiple SLF4J bindings message. (hyoungjunkim via hyunsik)

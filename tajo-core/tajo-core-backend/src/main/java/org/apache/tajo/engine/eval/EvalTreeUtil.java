@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.TUtil;
@@ -323,5 +324,13 @@ public class EvalTreeUtil {
 
       return evalNode;
     }
+  }
+
+  public static boolean checkIfCanBeConstant(EvalNode evalNode) {
+    return findUniqueColumns(evalNode).size() == 0 && findDistinctAggFunction(evalNode).size() == 0;
+  }
+
+  public static Datum evaluateImmediately(EvalNode evalNode) {
+    return evalNode.eval(null, null);
   }
 }
