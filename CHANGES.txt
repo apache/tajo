@@ -679,6 +679,8 @@ Release 0.8.0 - unreleased
 
   SUB TASKS
 
+    TAJO-736: Add table management documentation. (hyunsik)
+
     TAJO-602: WorkerResourceManager should be broke down into 3 parts.
     (hyunsik)
 
