@@ -2,9 +2,8 @@
 Introduction to Partitioning
 **************************************
 
-======================
-Partition Key
-======================
+Table partitioning provides two benefits: easy table management and data pruning by partition keys.
+Currently, Apache Tajo only provides Apache Hive-compatible column partitioning.
 
 =========================
 Partitioning Methods
