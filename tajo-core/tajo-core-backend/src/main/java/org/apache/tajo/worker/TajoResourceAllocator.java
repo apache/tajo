@@ -92,6 +92,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
                                            int numTasks,
                                            int memoryMBPerTask) {
     //TODO consider disk slot
+
     TajoMasterProtocol.ClusterResourceSummary clusterResource = workerContext.getClusterResource();
     int clusterSlots = clusterResource == null ? 0 : clusterResource.getTotalMemoryMB() / memoryMBPerTask;
     clusterSlots =  Math.max(1, clusterSlots - 1); // reserve query master slot
@@ -225,7 +226,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
               .setMinMemoryMBPerContainer(requiredMemoryMB)
               .setMaxMemoryMBPerContainer(requiredMemoryMB)
               .setNumContainers(event.getRequiredNum())
-              .setResourceRequestPriority(TajoMasterProtocol.ResourceRequestPriority.MEMORY)
+              .setResourceRequestPriority(!event.isLeafQuery() ? TajoMasterProtocol.ResourceRequestPriority.MEMORY
+                  : TajoMasterProtocol.ResourceRequestPriority.DISK)
               .setMinDiskSlotPerContainer(requiredDiskSlots)
               .setMaxDiskSlotPerContainer(requiredDiskSlots)
               .setExecutionBlockId(event.getExecutionBlockId().getProto())

@@ -126,6 +126,11 @@ public class TajoWorker extends CompositeService {
 
   private TajoSystemMetrics workerSystemMetrics;
 
+  private static final float HDFS_DATANODE_STORAGE_SIZE;
+
+  static {
+    HDFS_DATANODE_STORAGE_SIZE = DiskUtil.getDataNodeStorageSize();
+  }
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
   }
@@ -525,6 +530,10 @@ public class TajoWorker extends CompositeService {
         workerMemoryMB = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
         workerCpuCoreNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
         workerDiskSlots = systemConf.getFloatVar(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
+
+        if(systemConf.getBoolVar(ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && HDFS_DATANODE_STORAGE_SIZE > 0){
+          workerDiskSlots = HDFS_DATANODE_STORAGE_SIZE;
+        }
       }
 
       systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
