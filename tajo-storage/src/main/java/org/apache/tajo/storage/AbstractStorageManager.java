@@ -90,6 +90,11 @@ public abstract class AbstractStorageManager {
       throws IOException {
     FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
+    return getFileScanner(meta, schema, path, status);
+  }
+
+  public Scanner getFileScanner(TableMeta meta, Schema schema, Path path, FileStatus status)
+      throws IOException {
     FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
     return getScanner(meta, schema, fragment);
   }
@@ -337,9 +342,8 @@ public abstract class AbstractStorageManager {
    * @return array of FileStatus objects
    * @throws IOException if zero items.
    */
-  protected List<FileStatus> listStatus(Path path) throws IOException {
+  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
     List<FileStatus> result = new ArrayList<FileStatus>();
-    Path[] dirs = new Path[]{path};
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
     }
@@ -392,18 +396,15 @@ public abstract class AbstractStorageManager {
    * so that Mappers process entire files.
    *
    *
-   * @param filename the file name to check
+   * @param path the file name to check
+   * @param status get the file length
    * @return is this file isSplittable?
    */
-  protected boolean isSplittable(TableMeta meta, Schema schema, Path filename) throws IOException {
-    Scanner scanner = getFileScanner(meta, schema, filename);
-    return scanner.isSplittable();
-  }
-
-
-  protected long computeSplitSize(long blockSize, long minSize,
-                                  long maxSize) {
-    return Math.max(minSize, Math.min(maxSize, blockSize));
+  protected boolean isSplittable(TableMeta meta, Schema schema, Path path, FileStatus status) throws IOException {
+    Scanner scanner = getFileScanner(meta, schema, path, status);
+    boolean split = scanner.isSplittable();
+    scanner.close();
+    return split;
   }
 
   private static final double SPLIT_SLOP = 1.1;   // 10% slop
@@ -428,22 +429,22 @@ public abstract class AbstractStorageManager {
    * A factory that makes the split for this class. It can be overridden
    * by sub-classes to make sub-types
    */
-  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length) {
+  protected FileFragment makeSplit(String fragmentId, Path file, long start, long length) {
     return new FileFragment(fragmentId, file, start, length);
   }
 
-  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
+  protected FileFragment makeSplit(String fragmentId, Path file, long start, long length,
                                    String[] hosts) {
     return new FileFragment(fragmentId, file, start, length, hosts);
   }
 
-  protected FileFragment makeSplit(String fragmentId, TableMeta meta, Path file, BlockLocation blockLocation,
-                                   int[] diskIds) throws IOException {
-    return new FileFragment(fragmentId, file, blockLocation, diskIds);
+  protected FileFragment makeSplit(String fragmentId, Path file, BlockLocation blockLocation)
+      throws IOException {
+    return new FileFragment(fragmentId, file, blockLocation);
   }
 
   // for Non Splittable. eg, compressed gzip TextFile
-  protected FileFragment makeNonSplit(String fragmentId, TableMeta meta, Path file, long start, long length,
+  protected FileFragment makeNonSplit(String fragmentId, Path file, long start, long length,
                                       BlockLocation[] blkLocations) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<String, Integer>();
@@ -535,77 +536,126 @@ public abstract class AbstractStorageManager {
    *
    * @throws IOException
    */
-  public List<FileFragment> getSplits(String tableName, TableMeta meta, Schema schema, Path inputPath) throws IOException {
+  public List<FileFragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
+      throws IOException {
     // generate splits'
 
-    List<FileFragment> splits = new ArrayList<FileFragment>();
-    FileSystem fs = inputPath.getFileSystem(conf);
-    List<FileStatus> files;
-    if (fs.isFile(inputPath)) {
-      files = Lists.newArrayList(fs.getFileStatus(inputPath));
-    } else {
-      files = listStatus(inputPath);
-    }
-    for (FileStatus file : files) {
-      Path path = file.getPath();
-      long length = file.getLen();
-      if (length > 0) {
-        BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-        boolean splittable = isSplittable(meta, schema, path);
-        if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
-          // supported disk volume
-          BlockStorageLocation[] blockStorageLocations = ((DistributedFileSystem) fs)
-              .getFileBlockStorageLocations(Arrays.asList(blkLocations));
-          if (splittable) {
-            for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
-              splits.add(makeSplit(tableName, meta, path, blockStorageLocation, getDiskIds(blockStorageLocation
-                  .getVolumeIds())));
-            }
-          } else { // Non splittable
-            long blockSize = blockStorageLocations[0].getLength();
-            if (blockSize >= length) {
-              for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
-                splits.add(makeSplit(tableName, meta, path, blockStorageLocation, getDiskIds(blockStorageLocation
-                    .getVolumeIds())));
-              }
-            } else {
-              splits.add(makeNonSplit(tableName, meta, path, 0, length, blockStorageLocations));
-            }
-          }
+    List<FileFragment> splits = Lists.newArrayList();
+    List<FileFragment> volumeSplits = Lists.newArrayList();
+    List<BlockLocation> blockLocations = Lists.newArrayList();
 
-        } else {
-          if (splittable) {
-
-            long minSize = Math.max(getMinSplitSize(), 1);
-
-            long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
-            long splitSize = Math.max(minSize, blockSize);
-            long bytesRemaining = length;
-
-            // for s3
-            while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
-              int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-              splits.add(makeSplit(tableName, meta, path, length - bytesRemaining, splitSize,
-                  blkLocations[blkIndex].getHosts()));
-              bytesRemaining -= splitSize;
-            }
-            if (bytesRemaining > 0) {
-              int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-              splits.add(makeSplit(tableName, meta, path, length - bytesRemaining, bytesRemaining,
-                  blkLocations[blkIndex].getHosts()));
-            }
-          } else { // Non splittable
-            splits.add(makeNonSplit(tableName, meta, path, 0, length, blkLocations));
-          }
-        }
+    for (Path p : inputs) {
+      FileSystem fs = p.getFileSystem(conf);
+      ArrayList<FileStatus> files = Lists.newArrayList();
+      if (fs.isFile(p)) {
+        files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
       } else {
-        //for zero length files
-        splits.add(makeSplit(tableName, meta, path, 0, length));
+        files.addAll(listStatus(p));
+      }
+
+      int previousSplitSize = splits.size();
+      for (FileStatus file : files) {
+        Path path = file.getPath();
+        long length = file.getLen();
+        if (length > 0) {
+          // Get locations of blocks of file
+          BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
+          boolean splittable = isSplittable(meta, schema, path, file);
+          if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
+
+            if (splittable) {
+              for (BlockLocation blockLocation : blkLocations) {
+                volumeSplits.add(makeSplit(tableName, path, blockLocation));
+              }
+              blockLocations.addAll(Arrays.asList(blkLocations));
+
+            } else { // Non splittable
+              long blockSize = blkLocations[0].getLength();
+              if (blockSize >= length) {
+                blockLocations.addAll(Arrays.asList(blkLocations));
+                for (BlockLocation blockLocation : blkLocations) {
+                  volumeSplits.add(makeSplit(tableName, path, blockLocation));
+                }
+              } else {
+                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
+              }
+            }
+
+          } else {
+            if (splittable) {
+
+              long minSize = Math.max(getMinSplitSize(), 1);
+
+              long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
+              long splitSize = Math.max(minSize, blockSize);
+              long bytesRemaining = length;
+
+              // for s3
+              while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
+                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+                splits.add(makeSplit(tableName, path, length - bytesRemaining, splitSize,
+                    blkLocations[blkIndex].getHosts()));
+                bytesRemaining -= splitSize;
+              }
+              if (bytesRemaining > 0) {
+                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+                splits.add(makeSplit(tableName, path, length - bytesRemaining, bytesRemaining,
+                    blkLocations[blkIndex].getHosts()));
+              }
+            } else { // Non splittable
+              splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
+            }
+          }
+        } else {
+          //for zero length files
+          splits.add(makeSplit(tableName, path, 0, length));
+        }
+      }
+      if(LOG.isDebugEnabled()){
+        LOG.debug("# of splits per partition: " + (splits.size() - previousSplitSize));
       }
     }
 
+    // Combine original fileFragments with new VolumeId information
+    setVolumeMeta(volumeSplits, blockLocations);
+    splits.addAll(volumeSplits);
     LOG.info("Total # of splits: " + splits.size());
     return splits;
+  }
+
+  private void setVolumeMeta(List<FileFragment> splits, final List<BlockLocation> blockLocations)
+      throws IOException {
+
+    int locationSize = blockLocations.size();
+    int splitSize = splits.size();
+    if (locationSize == 0 || splitSize == 0) return;
+
+    if (locationSize != splitSize) {
+      // splits and locations don't match up
+      LOG.warn("Number of block locations not equal to number of splits: "
+          + "#locations=" + locationSize
+          + " #splits=" + splitSize);
+      return;
+    }
+
+    DistributedFileSystem fs = (DistributedFileSystem)DistributedFileSystem.get(conf);
+    int lsLimit = conf.getInt(DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
+    int blockLocationIdx = 0;
+
+    Iterator<FileFragment> iter = splits.iterator();
+    while (locationSize > blockLocationIdx) {
+
+      int subSize = Math.min(locationSize - blockLocationIdx, lsLimit);
+      List<BlockLocation> locations = blockLocations.subList(blockLocationIdx, blockLocationIdx + subSize);
+      //BlockStorageLocation containing additional volume location information for each replica of each block.
+      BlockStorageLocation[] blockStorageLocations = fs.getFileBlockStorageLocations(locations);
+
+      for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
+        iter.next().setDiskIds(getDiskIds(blockStorageLocation.getVolumeIds()));
+        blockLocationIdx++;
+      }
+    }
+    LOG.info("# of splits with volumeId " + splitSize);
   }
 
   private static class InvalidInputException extends IOException {

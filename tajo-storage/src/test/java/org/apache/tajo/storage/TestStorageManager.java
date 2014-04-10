@@ -18,8 +18,11 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -28,14 +31,18 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestStorageManager {
 	private TajoConf conf;
@@ -43,6 +50,7 @@ public class TestStorageManager {
 	AbstractStorageManager sm = null;
   private Path testDir;
   private FileSystem fs;
+
 	@Before
 	public void setUp() throws Exception {
 		conf = new TajoConf();
@@ -90,4 +98,105 @@ public class TestStorageManager {
 		}
 		assertEquals(4,i);
 	}
+
+  @Test
+  public void testGetSplit() throws Exception {
+    final Configuration conf = new HdfsConfiguration();
+    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
+
+    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+        .numDataNodes(1).build();
+
+    int testCount = 100;
+    Path tablePath = new Path("/testGetSplit");
+    try {
+      DistributedFileSystem fs = cluster.getFileSystem();
+
+      // Create test partitions
+      List<Path> partitions = Lists.newArrayList();
+      for (int i =0; i < testCount; i++){
+        Path tmpFile = new Path(tablePath, String.valueOf(i));
+        DFSTestUtil.createFile(fs, new Path(tmpFile, "tmpfile.dat"), 10, (short) 2, 0xDEADDEADl);
+        partitions.add(tmpFile);
+      }
+
+      assertTrue(fs.exists(tablePath));
+      AbstractStorageManager sm = StorageManagerFactory.getStorageManager(new TajoConf(conf), tablePath);
+
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.INT4);
+      schema.addColumn("age",Type.INT4);
+      schema.addColumn("name",Type.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+
+      List<FileFragment> splits = Lists.newArrayList();
+      // Get FileFragments in partition batch
+      splits.addAll(sm.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
+      assertEquals(testCount, splits.size());
+      // -1 is unknown volumeId
+      assertEquals(-1, splits.get(0).getDiskIds()[0]);
+
+      splits.clear();
+      splits.addAll(sm.getSplits("data", meta, schema,
+          partitions.subList(0, partitions.size() / 2).toArray(new Path[partitions.size() / 2])));
+      assertEquals(testCount / 2, splits.size());
+      assertEquals(1, splits.get(0).getHosts().length);
+      assertEquals(-1, splits.get(0).getDiskIds()[0]);
+      fs.close();
+    } finally {
+      cluster.shutdown();
+
+      File dir = new File(testDataPath);
+      dir.delete();
+    }
+  }
+
+  @Test
+  public void testGetSplitWithBlockStorageLocationsBatching() throws Exception {
+    final Configuration conf = new HdfsConfiguration();
+    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
+
+    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+        .numDataNodes(2).build();
+
+    int testCount = 100;
+    Path tablePath = new Path("/testGetSplitWithBlockStorageLocationsBatching");
+    try {
+      DistributedFileSystem fs = cluster.getFileSystem();
+
+      // Create test files
+      for (int i = 0; i < testCount; i++) {
+        Path tmpFile = new Path(tablePath, "tmpfile" + i + ".dat");
+        DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
+      }
+      assertTrue(fs.exists(tablePath));
+      AbstractStorageManager sm = StorageManagerFactory.getStorageManager(new TajoConf(conf), tablePath);
+
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.INT4);
+      schema.addColumn("age", Type.INT4);
+      schema.addColumn("name", Type.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+
+      List<FileFragment> splits = Lists.newArrayList();
+      splits.addAll(sm.getSplits("data", meta, schema, tablePath));
+
+      assertEquals(testCount, splits.size());
+      assertEquals(2, splits.get(0).getHosts().length);
+      assertEquals(2, splits.get(0).getDiskIds().length);
+      assertNotEquals(-1, splits.get(0).getDiskIds()[0]);
+      fs.close();
+    } finally {
+      cluster.shutdown();
+
+      File dir = new File(testDataPath);
+      dir.delete();
+    }
+  }
 }

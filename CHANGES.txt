@@ -143,6 +143,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-717: Improve file splitting for large number of splits. (jinho)
+
     TAJO-356: Improve TajoClient to directly get query results in the first request.
     (hyunsik)
 

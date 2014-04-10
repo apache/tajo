@@ -44,8 +44,6 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
@@ -582,8 +580,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private final Set<QueryUnitAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private final Set<QueryUnitAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private Map<String, HostVolumeMapping> leafTaskHostMapping = new HashMap<String, HostVolumeMapping>();
-    private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
-        new HashMap<String, LinkedList<QueryUnitAttemptId>>();
+    private final Map<String, HashSet<QueryUnitAttemptId>> leafTasksRackMapping =
+        new HashMap<String, HashSet<QueryUnitAttemptId>>();
 
     private void addLeafTask(QueryUnitAttemptScheduleEvent event) {
       QueryUnitAttempt queryUnitAttempt = event.getQueryUnitAttempt();
@@ -604,13 +602,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           LOG.debug("Added attempt req to host " + host);
         }
 
-        LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(hostVolumeMapping.getRack());
+        HashSet<QueryUnitAttemptId> list = leafTasksRackMapping.get(hostVolumeMapping.getRack());
         if (list == null) {
-          list = new LinkedList<QueryUnitAttemptId>();
+          list = new HashSet<QueryUnitAttemptId>();
           leafTasksRackMapping.put(hostVolumeMapping.getRack(), list);
         }
 
-        if(!list.contains(queryUnitAttempt.getId())) list.add(queryUnitAttempt.getId());
+        list.add(queryUnitAttempt.getId());
 
         if (LOG.isDebugEnabled()) {
           LOG.debug("Added attempt req to rack " + hostVolumeMapping.getRack());
@@ -687,14 +685,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       //find task in rack
       if (attemptId == null) {
-        LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
-        while (list != null && list.size() > 0) {
-          QueryUnitAttemptId tId = list.removeFirst();
-
-          if (leafTasks.contains(tId)) {
-            leafTasks.remove(tId);
-            attemptId = tId;
-            break;
+        HashSet<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
+        if (list != null) {
+          synchronized (list) {
+            Iterator<QueryUnitAttemptId> iterator = list.iterator();
+            while (iterator.hasNext()) {
+              QueryUnitAttemptId tId = iterator.next();
+              iterator.remove();
+              if (leafTasks.contains(tId)) {
+                leafTasks.remove(tId);
+                attemptId = tId;
+                break;
+              }
+            }
           }
         }
       }
