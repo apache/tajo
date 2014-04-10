@@ -39,7 +39,6 @@ public class TajoDriver implements Driver, Closeable {
     try {
       DriverManager.registerDriver(new TajoDriver());
     } catch (SQLException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }

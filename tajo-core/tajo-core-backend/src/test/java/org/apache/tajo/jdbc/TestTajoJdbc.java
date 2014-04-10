@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
@@ -43,9 +42,8 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestTajoJdbc extends QueryTestCaseBase {
-  private static TpchTestBase tpch;
-
   private static InetSocketAddress tajoMasterAddress;
+
   @BeforeClass
   public static void setUp() throws Exception {
     tajoMasterAddress = testingCluster.getMaster().getTajoMasterClientService().getBindAddress();
@@ -56,7 +54,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public static void tearDown() throws Exception {
   }
 
-  private static String buildConnectionUri(String hostName, int port, String databaseNme) {
+  public static String buildConnectionUri(String hostName, int port, String databaseNme) {
     return "jdbc:tajo://" + hostName + ":" + port + "/" + databaseNme;
   }
 
@@ -65,6 +63,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
 
     Statement stmt = null;
     ResultSet res = null;
@@ -109,6 +108,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
 
     PreparedStatement stmt = null;
     ResultSet res = null;
@@ -189,18 +189,20 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
     DatabaseMetaData dbmd = conn.getMetaData();
 
     ResultSet rs = null;
 
     try {
-      rs = dbmd.getTables(null, null, null, null);
+      rs = dbmd.getTables("default", null, null, null);
 
       ResultSetMetaData rsmd = rs.getMetaData();
       int numCols = rsmd.getColumnCount();
       assertEquals(5, numCols);
 
-      Set<String> retrivedViaJavaAPI = new HashSet<String>(client.getTableList(DEFAULT_DATABASE_NAME));
+      Set<String> retrivedViaJavaAPI = new HashSet<String>(client.getTableList("default"));
 
       Set<String> retrievedViaJDBC = new HashSet<String>();
       while(rs.next()) {
@@ -212,6 +214,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         rs.close();
       }
     }
+
+    assertTrue(conn.isValid(100));
+    conn.close();
   }
 
   @Test
@@ -219,12 +224,13 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
-    DatabaseMetaData dbmd = conn.getMetaData();
+    assertTrue(conn.isValid(100));
 
+    DatabaseMetaData dbmd = conn.getMetaData();
     ResultSet rs = null;
 
     try {
-      String tableName = CatalogUtil.normalizeIdentifier("lineitem");
+      String tableName = "lineitem";
       rs = dbmd.getColumns(null, null, tableName, null);
 
       ResultSetMetaData rsmd = rs.getMetaData();
@@ -241,7 +247,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       while(rs.next()) {
         assertEquals(tableName, rs.getString("TABLE_NAME"));
         assertEquals(columns.get(numColumns).getSimpleName(), rs.getString("COLUMN_NAME"));
-        //TODO assert type
+        // TODO assert type
         numColumns++;
       }
 
@@ -251,6 +257,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         rs.close();
       }
     }
+
+    assertTrue(conn.isValid(100));
+    conn.close();
+    assertFalse(conn.isValid(100));
   }
 
   @Test
@@ -302,14 +312,19 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         }
       }
     } finally {
+      assertTrue(conns[0].isValid(100));
       conns[0].close();
+      assertFalse(conns[0].isValid(100));
+      assertTrue(conns[1].isValid(100));
       conns[1].close();
+      assertFalse(conns[1].isValid(100));
     }
   }
 
   @Test
   public void testMultipleConnectionsSequentialClose() throws Exception {
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(), DEFAULT_DATABASE_NAME);
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
 
     Connection[] conns = new Connection[2];
     conns[0] = DriverManager.getConnection(connUri);
@@ -357,126 +372,15 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     } finally {
       if(!conns[0].isClosed()) {
+        assertTrue(conns[0].isValid(100));
         conns[0].close();
+        assertFalse(conns[0].isValid(100));
       }
       if(!conns[1].isClosed()) {
+        assertTrue(conns[1].isValid(100));
         conns[1].close();
+        assertFalse(conns[1].isValid(100));
       }
     }
-  }
-
-  @Test
-  public void testSetAndGetCatalog() throws Exception {
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
-    Connection conn = DriverManager.getConnection(connUri);
-
-    assertDatabaseNotExists("jdbc_test1");
-    PreparedStatement pstmt = conn.prepareStatement("CREATE DATABASE jdbc_test1");
-    pstmt.executeUpdate();
-    assertDatabaseExists("jdbc_test1");
-    pstmt.close();
-
-    pstmt = conn.prepareStatement("CREATE DATABASE jdbc_test2");
-    pstmt.executeUpdate();
-    assertDatabaseExists("jdbc_test2");
-    pstmt.close();
-
-    conn.setCatalog("jdbc_test1");
-    assertEquals("jdbc_test1", conn.getCatalog());
-    conn.setCatalog("jdbc_test2");
-    assertEquals("jdbc_test2", conn.getCatalog());
-    conn.setCatalog("jdbc_test1");
-    assertEquals("jdbc_test1", conn.getCatalog());
-
-    conn.setCatalog(TajoConstants.DEFAULT_DATABASE_NAME);
-    pstmt = conn.prepareStatement("DROP DATABASE jdbc_test1");
-    pstmt.executeUpdate();
-    pstmt.close();
-    pstmt = conn.prepareStatement("DROP DATABASE jdbc_test2");
-    pstmt.executeUpdate();
-    pstmt.close();
-
-    conn.close();
-  }
-
-  @Test
-  public void testGetCatalogsAndTables() throws Exception {
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
-    Connection defaultConnect = DriverManager.getConnection(connUri);
-
-    Set<String> existingDatabases = new HashSet<String>();
-    DatabaseMetaData dbmd = defaultConnect.getMetaData();
-    ResultSet res = dbmd.getCatalogs();
-    while(res.next()) {
-      existingDatabases.add(res.getString(1));
-    }
-    res.close();
-
-    // create database "jdbc_test1" and its tables
-    assertDatabaseNotExists("jdbc_test1");
-    PreparedStatement pstmt = defaultConnect.prepareStatement("CREATE DATABASE jdbc_test1");
-    pstmt.executeUpdate();
-    assertDatabaseExists("jdbc_test1");
-    pstmt.close();
-    pstmt = defaultConnect.prepareStatement("CREATE TABLE jdbc_test1.table1 (age int)");
-    pstmt.executeUpdate();
-    pstmt.close();
-    pstmt = defaultConnect.prepareStatement("CREATE TABLE jdbc_test1.table2 (age int)");
-    pstmt.executeUpdate();
-    pstmt.close();
-
-    // create database "jdbc_test2" and its tables
-    pstmt = defaultConnect.prepareStatement("CREATE DATABASE jdbc_test2");
-    pstmt.executeUpdate();
-    assertDatabaseExists("jdbc_test2");
-    pstmt.close();
-
-    pstmt = defaultConnect.prepareStatement("CREATE TABLE jdbc_test2.table3 (age int)");
-    pstmt.executeUpdate();
-    pstmt.close();
-    pstmt = defaultConnect.prepareStatement("CREATE TABLE jdbc_test2.table4 (age int)");
-    pstmt.executeUpdate();
-    pstmt.close();
-
-    // verify getCatalogs()
-    Set<String> newDatabases = new HashSet<String>();
-    dbmd = defaultConnect.getMetaData();
-    res = dbmd.getCatalogs();
-    while(res.next()) {
-      newDatabases.add(res.getString(1));
-    }
-    res.close();
-    newDatabases.removeAll(existingDatabases);
-    assertEquals(2, newDatabases.size());
-    assertTrue(newDatabases.contains("jdbc_test1"));
-    assertTrue(newDatabases.contains("jdbc_test2"));
-
-    // verify getTables()
-    res = defaultConnect.getMetaData().getTables("jdbc_test1", null, null, null);
-    assertResultSet(res, "getTables1.result");
-    res.close();
-    res = defaultConnect.getMetaData().getTables("jdbc_test2", null, null, null);
-    assertResultSet(res, "getTables2.result");
-    res.close();
-
-    defaultConnect.close();
-
-    // jdbc1_test database connection test
-    String jdbcTest1ConnUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        "jdbc_test1");
-    Connection jdbcTest1Conn = DriverManager.getConnection(jdbcTest1ConnUri);
-    assertEquals("jdbc_test1", jdbcTest1Conn.getCatalog());
-    jdbcTest1Conn.close();
-
-    String jdbcTest2ConnUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        "jdbc_test2");
-    Connection jdbcTest2Conn = DriverManager.getConnection(jdbcTest2ConnUri);
-    assertEquals("jdbc_test2", jdbcTest2Conn.getCatalog());
-    jdbcTest2Conn.close();
-
-    executeString("DROP DATABASE jdbc_test1");
-    executeString("DROP DATABASE jdbc_test2");
   }
 }

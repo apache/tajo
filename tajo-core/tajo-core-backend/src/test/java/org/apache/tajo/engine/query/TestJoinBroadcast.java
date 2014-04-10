@@ -282,11 +282,11 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testJoinOnMultipleDatabases() throws Exception {
     executeString("CREATE DATABASE JOINS");
-    assertDatabaseExists("JOINS");
+    assertDatabaseExists("joins");
     executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-    assertTableExists("JOINS.part_");
+    assertTableExists("joins.part_");
     executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-    assertTableExists("JOINS.supplier_");
+    assertTableExists("joins.supplier_");
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

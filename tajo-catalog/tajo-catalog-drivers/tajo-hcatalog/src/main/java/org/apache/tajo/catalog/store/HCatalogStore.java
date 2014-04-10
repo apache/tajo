@@ -146,8 +146,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         if (!isPartitionKey) {
-          String fieldName = databaseName + CatalogUtil.IDENTIFIER_DELIMITER + tableName +
-              CatalogUtil.IDENTIFIER_DELIMITER + eachField.getName();
+          String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
+              CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
           TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(eachField.getType().toString());
           schema.addColumn(fieldName, dataType);
         }
@@ -234,8 +234,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
-            String fieldName = databaseName + CatalogUtil.IDENTIFIER_DELIMITER + tableName +
-                CatalogUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
+                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.addColumn(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
