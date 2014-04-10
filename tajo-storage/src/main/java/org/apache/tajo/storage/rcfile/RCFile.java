@@ -1134,14 +1134,14 @@ public class RCFile {
     private CompressionCodec codec = null;
     private Metadata metadata = null;
 
-    private final byte[] sync = new byte[SYNC_HASH_SIZE];
-    private final byte[] syncCheck = new byte[SYNC_HASH_SIZE];
+    private byte[] sync;
+    private byte[] syncCheck;
     private boolean syncSeen;
     private long lastSeenSyncPos = 0;
 
     private long headerEnd;
     private long start, end;
-    private long startOffset, endOffset;
+    private final long startOffset, endOffset;
     private int[] targetColumnIndexes;
 
     private int currentKeyLength;
@@ -1188,6 +1188,9 @@ public class RCFile {
 
     @Override
     public void init() throws IOException {
+      sync = new byte[SYNC_HASH_SIZE];
+      syncCheck = new byte[SYNC_HASH_SIZE];
+
       more = startOffset < endOffset;
       rowId = new LongWritable();
       readBytes = 0;

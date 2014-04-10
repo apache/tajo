@@ -237,10 +237,8 @@ public class Repartitioner {
                                                                           TableDesc table) throws IOException {
     List<FileFragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
-    for (Path path : partitionsScan.getInputPaths()) {
-      fragments.addAll(sm.getSplits(
-          scan.getCanonicalName(), table.getMeta(), table.getSchema(), path));
-    }
+    fragments.addAll(sm.getSplits(
+        scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
     partitionsScan.setInputPaths(null);
     return fragments;
   }

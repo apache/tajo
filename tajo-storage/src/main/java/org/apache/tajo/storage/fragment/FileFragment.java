@@ -50,16 +50,17 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     init(builder.build());
   }
 
-  public FileFragment(String tableName, Path uri, BlockLocation blockLocation, int[] diskIds)
+  public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
-    this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(),
-        blockLocation.getHosts(), diskIds);
+    this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null);
   }
 
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, int[] diskIds) {
+    this.set(tableName, uri, start, length, hosts, diskIds);
+  }
   // Non splittable
   public FileFragment(String tableName, Path uri, long start, long length, String[] hosts) {
-    this.set(tableName, uri, start, length, null, null);
-    this.hosts = hosts;
+    this.set(tableName, uri, start, length, hosts, null);
   }
 
   public FileFragment(String fragmentId, Path path, long start, long length) {
@@ -113,6 +114,10 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
       Arrays.fill(this.diskIds, -1);
     }
     return diskIds;
+  }
+
+  public void setDiskIds(int[] diskIds){
+    this.diskIds = diskIds;
   }
 
   public String getTableName() {
