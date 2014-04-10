@@ -407,17 +407,7 @@ public class QueryMasterTask extends CompositeService {
       /////////////////////////////////////////////////
       if (queryContext.hasOutputPath()) {
         outputDir = queryContext.getOutputPath();
-        if (queryContext.isOutputOverwrite()) {
-          if (defaultFS.exists(outputDir.getParent())) {
-            if (defaultFS.exists(outputDir)) {
-              defaultFS.delete(outputDir, true);
-              LOG.info("The output directory '" + outputDir + "' is cleaned.");
-            }
-          } else {
-            defaultFS.mkdirs(outputDir.getParent());
-            LOG.info("The output directory's parent '" + outputDir.getParent() + "' is created.");
-          }
-        } else {
+        if (!queryContext.isOutputOverwrite()) {
           if (defaultFS.exists(outputDir)) {
             throw new IOException("The output directory '" + outputDir + " already exists.");
           }

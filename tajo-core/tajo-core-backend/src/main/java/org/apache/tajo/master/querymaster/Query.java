@@ -396,8 +396,34 @@ public class Query implements EventHandler<QueryEvent> {
         finalOutputDir = queryContext.getOutputPath();
         try {
           FileSystem fs = stagingResultDir.getFileSystem(query.systemConf);
-          fs.rename(stagingResultDir, finalOutputDir);
-          LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+
+          if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
+
+            // it moves the original table into the temporary location.
+            // Then it moves the new result table into the original table location.
+            // Upon failed, it recovers the original table if possible.
+            boolean movedToOldTable = false;
+            boolean committed = false;
+            Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+            try {
+              if (fs.exists(finalOutputDir)) {
+                fs.rename(finalOutputDir, oldTableDir);
+                movedToOldTable = fs.exists(oldTableDir);
+              } else { // if the parent does not exist, make its parent directory.
+                fs.mkdirs(finalOutputDir.getParent());
+              }
+              fs.rename(stagingResultDir, finalOutputDir);
+              committed = fs.exists(finalOutputDir);
+            } catch (IOException ioe) {
+              // recover the old table
+              if (movedToOldTable && !committed) {
+                fs.rename(oldTableDir, finalOutputDir);
+              }
+            }
+          } else {
+            fs.rename(stagingResultDir, finalOutputDir);
+            LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+          }
         } catch (IOException e) {
           e.printStackTrace();
         }

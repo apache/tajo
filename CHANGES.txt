@@ -315,6 +315,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-563: INSERT OVERWRITE should not remove data before query success.
+    (hyunsik)
+
     TAJO-738: NPE occur when failed in QueryMaster's GlobalPlanner.build().
     (hyoungjunkim via hyunsik)
 

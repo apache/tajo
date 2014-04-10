@@ -26,6 +26,7 @@ public class TajoConstants {
   public static final String WAREHOUSE_DIR_NAME = "warehouse";
   public static final String SYSTEM_RESOURCE_DIR_NAME = "resource";
   public static final String RESULT_DIR_NAME="RESULT";
+  public static final String INSERT_OVERWIRTE_OLD_TABLE_NAME ="OLD_TABLE";
 
   public static final String DEFAULT_TABLESPACE_NAME = "default";
   public static final String DEFAULT_DATABASE_NAME = "default";
