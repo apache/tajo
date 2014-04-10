@@ -17,9 +17,11 @@
  */
 package org.apache.tajo.jdbc;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
@@ -40,6 +42,12 @@ import static org.apache.tajo.TajoConstants.DEFAULT_SCHEMA_NAME;
 public class TajoDatabaseMetaData implements DatabaseMetaData {
   private static final char SEARCH_STRING_ESCAPE = '\\';
 
+  private static final String KEYWORDS = "add,binary,boolean,explain,index,rename";
+  private static final String NUMERIC_FUNCTIONS =
+      "abs,acos,asin,atan,atan2,ceiling,cos,degrees,exp,,floor,mod,pi,pow," +
+      "radians,round,sign,sin,sqrt,tan";
+  private static final String STRING_FUNCTIONS = "ascii,chr,concat,left,length,ltrim,repeat,rtrim,substring";
+
   private final TajoConnection conn;
 
   public TajoDatabaseMetaData(TajoConnection conn) {
@@ -47,57 +55,47 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean allProceduresAreCallable()
-      throws SQLException {
+  public boolean allProceduresAreCallable() throws SQLException {
     return true;
   }
 
   @Override
-  public boolean allTablesAreSelectable()
-      throws SQLException {
+  public boolean allTablesAreSelectable() throws SQLException {
     return true;
   }
 
   @Override
-  public String getURL()
-      throws SQLException {
+  public String getURL() throws SQLException {
     return conn.getUri();
   }
 
   @Override
-  public String getUserName()
-      throws SQLException {
+  public String getUserName() throws SQLException {
     return "tajo";
   }
 
   @Override
-  public boolean isReadOnly()
-      throws SQLException {
+  public boolean isReadOnly() throws SQLException {
     return true;
   }
 
   @Override
-  public String getDatabaseProductName()
-      throws SQLException {
+  public String getDatabaseProductName() throws SQLException {
     return "Tajo";
   }
 
   @Override
-  public String getDatabaseProductVersion()
-      throws SQLException {
-    //TODO get from tajo master
+  public String getDatabaseProductVersion() throws SQLException {
     return TajoConstants.TAJO_VERSION;
   }
 
   @Override
-  public String getDriverName()
-      throws SQLException {
+  public String getDriverName() throws SQLException {
     return "tajo";
   }
 
   @Override
-  public String getDriverVersion()
-      throws SQLException {
+  public String getDriverVersion() throws SQLException {
     return TajoDriver.MAJOR_VERSION + "." + TajoDriver.MINOR_VERSION;
   }
 
@@ -112,32 +110,27 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public String getIdentifierQuoteString()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getIdentifierQuoteString not supported");
+  public String getIdentifierQuoteString() throws SQLException {
+    return CatalogConstants.IDENTIFIER_QUOTE_STRING;
   }
 
   @Override
-  public String getSQLKeywords()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getSQLKeywords not supported");
+  public String getSQLKeywords() throws SQLException {
+    return KEYWORDS;
   }
 
   @Override
-  public String getNumericFunctions()
-      throws SQLException {
-    return "";
+  public String getNumericFunctions() throws SQLException {
+    return NUMERIC_FUNCTIONS;
   }
 
   @Override
-  public String getStringFunctions()
-      throws SQLException {
-    return "";
+  public String getStringFunctions() throws SQLException {
+    return STRING_FUNCTIONS;
   }
 
   @Override
-  public String getSystemFunctions()
-      throws SQLException {
+  public String getSystemFunctions() throws SQLException {
     return "";
   }
 
@@ -154,164 +147,137 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public String getExtraNameCharacters()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getExtraNameCharacters not supported");
-  }
-
-  @Override
-  public String getSchemaTerm()
-      throws SQLException {
+  public String getExtraNameCharacters() throws SQLException {
     return "";
   }
 
   @Override
-  public String getProcedureTerm()
-      throws SQLException {
+  public String getSchemaTerm() throws SQLException {
+    return "";
+  }
+
+  @Override
+  public String getProcedureTerm()  throws SQLException {
     throw new SQLFeatureNotSupportedException("getProcedureTerm not supported");
   }
 
   @Override
-  public String getCatalogTerm()
-      throws SQLException {
+  public String getCatalogTerm() throws SQLException {
     return "database";
   }
 
   @Override
-  public String getCatalogSeparator()
-      throws SQLException {
-    return ".";
+  public String getCatalogSeparator() throws SQLException {
+    return CatalogConstants.IDENTIFIER_DELIMITER;
   }
 
   @Override
-  public int getMaxBinaryLiteralLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxBinaryLiteralLength not supported");
+  public int getMaxBinaryLiteralLength() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxCharLiteralLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxCharLiteralLength not supported");
+  public int getMaxCharLiteralLength() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxColumnNameLength()
-      throws SQLException {
-    return 128;
+  public int getMaxColumnNameLength() throws SQLException {
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
-  public int getMaxColumnsInGroupBy()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxColumnsInGroupBy not supported");
+  public int getMaxColumnsInGroupBy() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxColumnsInIndex()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxColumnsInIndex not supported");
+  public int getMaxColumnsInIndex() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxColumnsInOrderBy()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxColumnsInOrderBy not supported");
+  public int getMaxColumnsInOrderBy() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxColumnsInSelect()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxColumnsInSelect not supported");
+  public int getMaxColumnsInSelect() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxColumnsInTable()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxColumnsInTable not supported");
+  public int getMaxColumnsInTable() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxConnections()
-      throws SQLException {
+  public int getMaxConnections() throws SQLException {
     throw new SQLFeatureNotSupportedException("getMaxConnections not supported");
   }
 
   @Override
-  public int getMaxCursorNameLength()
-      throws SQLException {
+  public int getMaxCursorNameLength() throws SQLException {
     throw new SQLFeatureNotSupportedException("getMaxCursorNameLength not supported");
   }
 
   @Override
-  public int getMaxIndexLength()
-      throws SQLException {
+  public int getMaxIndexLength() throws SQLException {
     throw new SQLFeatureNotSupportedException("getMaxIndexLength not supported");
   }
 
   @Override
-  public int getMaxSchemaNameLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxSchemaNameLength not supported");
+  public int getMaxSchemaNameLength() throws SQLException {
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
-  public int getMaxProcedureNameLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxProcedureNameLength not supported");
+  public int getMaxProcedureNameLength() throws SQLException {
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
-  public int getMaxCatalogNameLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxCatalogNameLength not supported");
+  public int getMaxCatalogNameLength() throws SQLException {
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
-  public int getMaxRowSize()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxRowSize not supported");
+  public int getMaxRowSize() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public boolean doesMaxRowSizeIncludeBlobs()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("doesMaxRowSizeIncludeBlobs not supported");
+  public boolean doesMaxRowSizeIncludeBlobs() throws SQLException {
+    return false;
   }
 
   @Override
-  public int getMaxStatementLength()
-      throws SQLException {
+  public int getMaxStatementLength() throws SQLException {
     throw new SQLFeatureNotSupportedException("getMaxStatementLength not supported");
   }
 
   @Override
-  public int getMaxStatements()
-      throws SQLException {
+  public int getMaxStatements() throws SQLException {
     throw new SQLFeatureNotSupportedException("getMaxStatements not supported");
   }
 
   @Override
-  public int getMaxTableNameLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxTableNameLength not supported");
+  public int getMaxTableNameLength() throws SQLException {
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
-  public int getMaxTablesInSelect()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxTablesInSelect not supported");
+  public int getMaxTablesInSelect() throws SQLException {
+    return 0; // no limit
   }
 
   @Override
-  public int getMaxUserNameLength()
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxUserNameLength not supported");
+  public int getMaxUserNameLength() throws SQLException {
+    return CatalogConstants.MAX_USERNAME_LENGTH;
   }
 
   @Override
-  public int getDefaultTransactionIsolation()
-      throws SQLException {
+  public int getDefaultTransactionIsolation() throws SQLException {
     return Connection.TRANSACTION_NONE;
   }
 
@@ -334,7 +300,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern)
+  public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
+                                       String columnNamePattern)
       throws SQLException {
     throw new SQLFeatureNotSupportedException("stored procedures not supported");
   }
@@ -385,36 +352,46 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
                              @Nullable String tableNamePattern, @Nullable String [] types) throws SQLException {
     try {
       final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
-      final String resultCatalog;
-      if (catalog == null) {
-        resultCatalog = TajoConstants.DEFAULT_DATABASE_NAME;
-      } else {
-        resultCatalog = CatalogUtil.normalizeIdentifier(catalog);
+      String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
+
+      List<String> targetCatalogs = Lists.newArrayList();
+      if (catalog != null) {
+        targetCatalogs.add(catalog);
       }
 
-      String regtableNamePattern =
-          convertPattern(tableNamePattern == null ? null : CatalogUtil.normalizeIdentifier(tableNamePattern));
       try {
         TajoClient tajoClient = conn.getTajoClient();
-        List<String> tableNames = tajoClient.getTableList(resultCatalog);
-        for (String eachTableName: tableNames) {
-          if (eachTableName.matches(regtableNamePattern)) {
-            MetaDataTuple tuple = new MetaDataTuple(5);
 
-            int index = 0;
-            tuple.put(index++, new TextDatum(resultCatalog));         // TABLE_CAT
-            tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));   // TABLE_SCHEM
-            tuple.put(index++, new TextDatum(eachTableName));         // TABLE_NAME
-            tuple.put(index++, new TextDatum("TABLE"));               // TABLE_TYPE
-            tuple.put(index++, NullDatum.get());                      // REMARKS
+        // if catalog is null, all databases are targets.
+        if (targetCatalogs.isEmpty()) {
+          targetCatalogs.addAll(tajoClient.getAllDatabaseNames());
+        }
 
-            resultTables.add(tuple);
+        for (String databaseName : targetCatalogs) {
+          List<String> tableNames = tajoClient.getTableList(databaseName);
+          for (String eachTableName: tableNames) {
+            if (eachTableName.matches(regtableNamePattern)) {
+              MetaDataTuple tuple = new MetaDataTuple(5);
+
+              int index = 0;
+              tuple.put(index++, new TextDatum(databaseName));         // TABLE_CAT
+              tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));   // TABLE_SCHEM
+              tuple.put(index++, new TextDatum(eachTableName));         // TABLE_NAME
+              tuple.put(index++, new TextDatum("TABLE"));               // TABLE_TYPE
+              tuple.put(index++, NullDatum.get());                      // REMARKS
+
+              resultTables.add(tuple);
+            }
           }
         }
         Collections.sort(resultTables, new Comparator<MetaDataTuple> () {
           @Override
           public int compare(MetaDataTuple table1, MetaDataTuple table2) {
-            return table1.getText(2).compareTo(table2.getText(2));
+            int compVal = table1.getText(1).compareTo(table2.getText(1));
+            if (compVal == 0) {
+              compVal = table1.getText(2).compareTo(table2.getText(2));
+            }
+            return compVal;
           }
         });
       } catch (Exception e) {
@@ -475,8 +452,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getTableTypes()
-      throws SQLException {
+  public ResultSet getTableTypes() throws SQLException {
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
     MetaDataTuple tuple = new MetaDataTuple(1);
     tuple.put(0, new TextDatum("TABLE"));
@@ -506,53 +482,58 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getColumns(@Nullable String catalog, @Nullable String schemaPattern,
                               @Nullable String tableNamePattern, @Nullable String columnNamePattern)
       throws SQLException {
+
+    List<String> targetCatalogs = Lists.newArrayList();
+    if (catalog != null) {
+      targetCatalogs.add(catalog);
+    }
+
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
     try {
-      if (catalog == null) {
-        catalog = TajoConstants.DEFAULT_DATABASE_NAME;
+      if (targetCatalogs.isEmpty()) {
+        targetCatalogs.addAll(conn.getTajoClient().getAllDatabaseNames());
       }
+      for (String databaseName : targetCatalogs) {
+        String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
+        String regcolumnNamePattern = convertPattern(columnNamePattern == null ? null : columnNamePattern);
 
-      String regtableNamePattern =
-          convertPattern(tableNamePattern == null ? null : CatalogUtil.normalizeIdentifier(tableNamePattern));
-      String regcolumnNamePattern =
-          convertPattern(columnNamePattern == null ? null : CatalogUtil.normalizeIdentifier(columnNamePattern));
+        List<String> tables = conn.getTajoClient().getTableList(databaseName);
+        for (String table: tables) {
+          if (table.matches(regtableNamePattern)) {
+            TableDesc tableDesc = conn.getTajoClient().getTableDesc(CatalogUtil.buildFQName(databaseName, table));
+            int pos = 0;
+            for (Column column: tableDesc.getSchema().getColumns()) {
+              if (column.getSimpleName().matches(regcolumnNamePattern)) {
+                MetaDataTuple tuple = new MetaDataTuple(22);
 
-      List<String> tables = conn.getTajoClient().getTableList(catalog);
-      for (String table: tables) {
-        if (table.matches(regtableNamePattern)) {
-          TableDesc tableDesc = conn.getTajoClient().getTableDesc(table);
-          int pos = 0;
-          for (Column column: tableDesc.getSchema().getColumns()) {
-            if (column.getSimpleName().matches(regcolumnNamePattern)) {
-              MetaDataTuple tuple = new MetaDataTuple(22);
-
-              int index = 0;
-              tuple.put(index++, new TextDatum(catalog));  //TABLE_CAT
-              tuple.put(index++, new TextDatum(catalog));  //TABLE_SCHEM
-              tuple.put(index++, new TextDatum(table));  //TABLE_NAME
-              tuple.put(index++, new TextDatum(column.getSimpleName()));  //COLUMN_NAME
-              // TODO - DATA_TYPE
-              tuple.put(index++, new TextDatum("" + ResultSetUtil.tajoTypeToSqlType(column.getDataType())));
-              tuple.put(index++, new TextDatum(ResultSetUtil.toSqlType(column.getDataType())));  //TYPE_NAME
-              tuple.put(index++, new TextDatum("0"));  //COLUMN_SIZE
-              tuple.put(index++, new TextDatum("0"));  //BUFFER_LENGTH
-              tuple.put(index++, new TextDatum("0"));  //DECIMAL_DIGITS
-              tuple.put(index++, new TextDatum("0"));  //NUM_PREC_RADIX
-              tuple.put(index++, new TextDatum("" + DatabaseMetaData.columnNullable));  //NULLABLE
-              tuple.put(index++, NullDatum.get());  //REMARKS
-              tuple.put(index++, NullDatum.get());  //COLUMN_DEF
-              tuple.put(index++, NullDatum.get());  //SQL_DATA_TYPE
-              tuple.put(index++, NullDatum.get());  //SQL_DATETIME_SUB
-              tuple.put(index++, new TextDatum("0"));  //CHAR_OCTET_LENGTH
-              tuple.put(index++, new TextDatum("" + pos));  //ORDINAL_POSITION
-              tuple.put(index++, new TextDatum("YES"));  //IS_NULLABLE
-              tuple.put(index++, NullDatum.get());  //SCOPE_CATLOG
-              tuple.put(index++, NullDatum.get());  //SCOPE_SCHEMA
-              tuple.put(index++, NullDatum.get());  //SCOPE_TABLE
-              tuple.put(index++, new TextDatum("0"));  //SOURCE_DATA_TYPE
-              columns.add(tuple);
+                int index = 0;
+                tuple.put(index++, new TextDatum(databaseName));            // TABLE_CAT
+                tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));     // TABLE_SCHEM
+                tuple.put(index++, new TextDatum(table));                   // TABLE_NAME
+                tuple.put(index++, new TextDatum(column.getSimpleName()));  // COLUMN_NAME
+                // TODO - DATA_TYPE
+                tuple.put(index++, new TextDatum("" + ResultSetUtil.tajoTypeToSqlType(column.getDataType())));
+                tuple.put(index++, new TextDatum(ResultSetUtil.toSqlType(column.getDataType())));  //TYPE_NAME
+                tuple.put(index++, new TextDatum("0"));                     // COLUMN_SIZE
+                tuple.put(index++, new TextDatum("0"));                     // BUFFER_LENGTH
+                tuple.put(index++, new TextDatum("0"));                     // DECIMAL_DIGITS
+                tuple.put(index++, new TextDatum("0"));                     // NUM_PREC_RADIX
+                tuple.put(index++, new TextDatum("" + DatabaseMetaData.columnNullable));  // NULLABLE
+                tuple.put(index++, NullDatum.get());                        // REMARKS
+                tuple.put(index++, NullDatum.get());                        // COLUMN_DEF
+                tuple.put(index++, NullDatum.get());                        // SQL_DATA_TYPE
+                tuple.put(index++, NullDatum.get());                        // SQL_DATETIME_SUB
+                tuple.put(index++, new TextDatum("0"));                     // CHAR_OCTET_LENGTH
+                tuple.put(index++, new TextDatum("" + pos));                // ORDINAL_POSITION
+                tuple.put(index++, new TextDatum("YES"));                   // IS_NULLABLE
+                tuple.put(index++, NullDatum.get());                        // SCOPE_CATLOG
+                tuple.put(index++, NullDatum.get());                        // SCOPE_SCHEMA
+                tuple.put(index++, NullDatum.get());                        // SCOPE_TABLE
+                tuple.put(index++, new TextDatum("0"));                     // SOURCE_DATA_TYPE
+                columns.add(tuple);
+              }
+              pos++;
             }
-            pos++;
           }
         }
       }
@@ -618,14 +599,14 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable, String foreignCatalog, String foreignSchema, String foreignTable)
+  public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
+                                     String foreignCatalog, String foreignSchema, String foreignTable)
       throws SQLException {
     throw new SQLFeatureNotSupportedException("cross reference not supported");
   }
 
   @Override
-  public ResultSet getTypeInfo()
-      throws SQLException {
+  public ResultSet getTypeInfo() throws SQLException {
     throw new UnsupportedOperationException("getTypeInfo not supported");
   }
 
@@ -642,14 +623,12 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean insertsAreDetected(int type)
-      throws SQLException {
+  public boolean insertsAreDetected(int type) throws SQLException {
     return false;
   }
 
   @Override
-  public Connection getConnection()
-      throws SQLException {
+  public Connection getConnection() throws SQLException {
     return conn;
   }
 
@@ -745,20 +724,19 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
-      throws SQLException {
+  public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
     throw new SQLFeatureNotSupportedException("getFunctions not supported");
   }
 
   @Override
-  public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern, String columnNamePattern)
-      throws SQLException {
+  public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
+                                      String columnNamePattern) throws SQLException {
     throw new SQLFeatureNotSupportedException("getFunctionColumns not supported");
   }
 
   @Override
   public boolean isCatalogAtStart() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -783,12 +761,12 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean nullsAreSortedHigh() throws SQLException {
-    return true;
+    return false;
   }
 
   @Override
   public boolean nullsAreSortedLow() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -868,7 +846,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsAlterTableWithAddColumn() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -932,8 +910,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean supportsDataDefinitionAndDataManipulationTransactions()
-      throws SQLException {
+  public boolean supportsDataDefinitionAndDataManipulationTransactions() throws SQLException {
     return false;
   }
 
@@ -979,7 +956,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsGroupByUnrelated() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -1059,7 +1036,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public boolean supportsOrderByUnrelated() throws SQLException {
-    return false;
+    return true;
   }
 
   @Override
@@ -1084,8 +1061,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean supportsResultSetHoldability(int holdability)
-      throws SQLException {
+  public boolean supportsResultSetHoldability(int holdability) throws SQLException {
     return false;
   }
 
@@ -1170,8 +1146,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean supportsTransactionIsolationLevel(int level)
-      throws SQLException {
+  public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
     return false;
   }
 
@@ -1207,8 +1182,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @SuppressWarnings("unchecked")
   @Override
-  public <T> T unwrap(Class<T> iface)
-      throws SQLException {
+  public <T> T unwrap(Class<T> iface) throws SQLException {
     if (isWrapperFor(iface)) {
       return (T) this;
     }
@@ -1216,8 +1190,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public boolean isWrapperFor(Class<?> iface)
-      throws SQLException {
+  public boolean isWrapperFor(Class<?> iface) throws SQLException {
     return iface.isInstance(this);
   }
 

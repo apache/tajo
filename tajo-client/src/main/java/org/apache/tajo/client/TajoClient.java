@@ -84,15 +84,24 @@ public class TajoClient implements Closeable {
     this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), baseDatabase);
   }
 
+  /**
+   * Connect to TajoMaster
+   *
+   * @param conf TajoConf
+   * @param addr TajoMaster address
+   * @param baseDatabase The base database name. It is case sensitive. If it is null,
+   *                     the 'default' database will be used.
+   * @throws IOException
+   */
   public TajoClient(TajoConf conf, InetSocketAddress addr, @Nullable String baseDatabase) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
     this.tajoMasterAddr = addr;
     int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
-    //Don't share connection pool per client
+    // Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
     userInfo = UserGroupInformation.getCurrentUser();
-    this.baseDatabase = baseDatabase != null ? CatalogUtil.normalizeIdentifier(baseDatabase) : null;
+    this.baseDatabase = baseDatabase != null ? baseDatabase : null;
   }
 
   public boolean isConnected() {
@@ -204,8 +213,7 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.selectDatabase(null,
-            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
+        return tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)).getValue();
       }
     }.withRetries();
   }
@@ -535,35 +543,53 @@ public class TajoClient implements Closeable {
     }.withRetries();
   }
 
+  /**
+   * Create a database.
+   *
+   * @param databaseName The database name to be created. This name is case sensitive.
+   * @return True if created successfully.
+   * @throws ServiceException
+   */
   public boolean createDatabase(final String databaseName) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.createDatabase(null,
-            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
+        return tajoMasterService.createDatabase(null, convertSessionedString(databaseName)).getValue();
       }
     }.withRetries();
   }
 
+  /**
+   * Does the database exist?
+   *
+   * @param databaseName The database name to be checked. This name is case sensitive.
+   * @return True if so.
+   * @throws ServiceException
+   */
   public boolean existDatabase(final String databaseName) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existDatabase(null,
-            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
+        return tajoMasterService.existDatabase(null, convertSessionedString(databaseName)).getValue();
       }
     }.withRetries();
   }
 
+  /**
+   * Drop the database
+   *
+   * @param databaseName The database name to be dropped. This name is case sensitive.
+   * @return True if the database is dropped successfully.
+   * @throws ServiceException
+   */
   public boolean dropDatabase(final String databaseName) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.dropDatabase(null,
-            convertSessionedString(CatalogUtil.normalizeIdentifier(databaseName))).getValue();
+        return tajoMasterService.dropDatabase(null, convertSessionedString(databaseName)).getValue();
       }
     }.withRetries();
   }
@@ -579,26 +605,36 @@ public class TajoClient implements Closeable {
   }
 
   /**
-   * Test for the existence of table in catalog data.
-   * <p/>
-   * This will return true if table exists, false if not.
-   * @param name
-   * @return
-   * @throws ServiceException
+   * Does the table exist?
+   *
+   * @param tableName The table name to be checked. This name is case sensitive.
+   * @return True if so.
    */
-  public boolean existTable(final String name) throws ServiceException {
+  public boolean existTable(final String tableName) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existTable(null,
-            convertSessionedString(CatalogUtil.normalizeIdentifier(name))).getValue();
+        return tajoMasterService.existTable(null, convertSessionedString(tableName)).getValue();
       }
     }.withRetries();
   }
 
-  public TableDesc createExternalTable(final String name, final Schema schema, final Path path, final TableMeta meta)
+  /**
+   * Create an external table.
+   *
+   * @param tableName The table name to be created. This name is case sensitive. This name can be qualified or not.
+   *                  If the table name is not qualified, the current database in the session will be used.
+   * @param schema The schema
+   * @param path The external table location
+   * @param meta Table meta
+   * @return the created table description.
+   * @throws SQLException
+   * @throws ServiceException
+   */
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+                                       final TableMeta meta)
       throws SQLException, ServiceException {
     return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
@@ -609,7 +645,7 @@ public class TajoClient implements Closeable {
 
         CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setName(CatalogUtil.normalizeIdentifier(name));
+        builder.setName(tableName);
         builder.setSchema(schema.getProto());
         builder.setMeta(meta.getProto());
         builder.setPath(path.toUri().toString());
@@ -623,15 +659,22 @@ public class TajoClient implements Closeable {
     }.withRetries();
   }
 
+  /**
+   * Drop a table
+   *
+   * @param tableName The table name to be dropped. This name is case sensitive.
+   * @return True if the table is dropped successfully.
+   */
   public boolean dropTable(final String tableName) throws ServiceException {
     return dropTable(tableName, false);
   }
 
   /**
-   * Deletes table schema from catalog data and deletes data file in hdfs
-   * @param tableName
-   * @return
-   * @throws ServiceException
+   * Drop a table.
+   *
+   * @param tableName The table name to be dropped. This name is case sensitive.
+   * @param purge If purge is true, this call will remove the entry in catalog as well as the table contents.
+   * @return True if the table is dropped successfully.
    */
   public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
@@ -643,7 +686,7 @@ public class TajoClient implements Closeable {
 
         DropTableRequest.Builder builder = DropTableRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setName(CatalogUtil.normalizeIdentifier(tableName));
+        builder.setName(tableName);
         builder.setPurge(purge);
         return tajoMasterService.dropTable(null, builder.build()).getValue();
       }
@@ -697,10 +740,10 @@ public class TajoClient implements Closeable {
   }
 
   /**
-   * Get a list of table names. All table and column names are
-   * represented as lower-case letters.
+   * Get a list of table names.
    *
-   * @param databaseName The database name to show all tables. If it is null, this method will show all tables
+   * @param databaseName The database name to show all tables. This name is case sensitive.
+   *                     If it is null, this method will show all tables
    *                     in the current database of this session.
    */
   public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
@@ -709,14 +752,12 @@ public class TajoClient implements Closeable {
       public List<String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
 
-        final String normalizedDBName = databaseName == null ? null : CatalogUtil.normalizeIdentifier(databaseName);
-
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
         builder.setSessionId(sessionId);
-        if (normalizedDBName != null) {
-          builder.setDatabaseName(normalizedDBName);
+        if (databaseName != null) {
+          builder.setDatabaseName(databaseName);
         }
         GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
         return res.getTablesList();
@@ -724,6 +765,12 @@ public class TajoClient implements Closeable {
     }.withRetries();
   }
 
+  /**
+   * Get a table description
+   *
+   * @param tableName The table name to get. This name is case sensitive.
+   * @return Table description
+   */
   public TableDesc getTableDesc(final String tableName) throws ServiceException {
     return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {
@@ -734,7 +781,7 @@ public class TajoClient implements Closeable {
 
         GetTableDescRequest.Builder builder = GetTableDescRequest.newBuilder();
         builder.setSessionId(sessionId);
-        builder.setTableName(CatalogUtil.normalizeIdentifier(tableName));
+        builder.setTableName(tableName);
         TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
         if (res.getResultCode() == ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());

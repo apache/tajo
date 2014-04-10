@@ -21,7 +21,6 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -286,11 +285,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinOnMultipleDatabases() throws Exception {
     executeString("CREATE DATABASE JOINS");
-    assertDatabaseExists("JOINS");
+    assertDatabaseExists("joins");
     executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-    assertTableExists("JOINS.part_");
+    assertTableExists("joins.part_");
     executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-    assertTableExists("JOINS.supplier_");
+    assertTableExists("joins.supplier_");
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

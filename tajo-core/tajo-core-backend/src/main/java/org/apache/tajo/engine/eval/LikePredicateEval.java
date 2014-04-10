@@ -18,22 +18,19 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.util.StringUtils;
+
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class LikePredicateEval extends PatternMatchPredicateEval {
-  private static final String LIKE_ESCAPE_SPATIAL_CHARACTERS = "([.*${}?|\\^\\-\\[\\]])";
 
   public LikePredicateEval(boolean not, EvalNode field, ConstEval pattern, boolean caseSensitive) {
     super(EvalType.LIKE, not, field, pattern, caseSensitive);
   }
 
-  private String escapeRegexpForLike(String literal) {
-    return literal.replaceAll(LIKE_ESCAPE_SPATIAL_CHARACTERS, "\\\\$1");
-  }
-  
   protected void compile(String pattern) throws PatternSyntaxException {
-    String escaped = escapeRegexpForLike(pattern);
+    String escaped = StringUtils.escapeRegexp(pattern);
     String regex = escaped.replace("_", ".").replace("%", ".*");
     int flags = Pattern.DOTALL;
     if (caseInsensitive) {

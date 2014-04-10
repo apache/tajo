@@ -143,6 +143,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-745: APIs in TajoClient and JDBC should be case sensitive.
+
     TAJO-743: Change the default resource allocation policy of leaf tasks. (jinho)
 
     TAJO-717: Improve file splitting for large number of splits. (jinho)

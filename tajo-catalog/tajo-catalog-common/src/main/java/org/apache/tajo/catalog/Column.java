@@ -73,7 +73,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return True if a column includes a table name. Otherwise, it returns False.
    */
   public boolean hasQualifier() {
-    return name.split(CatalogUtil.IDENTIFIER_DELIMITER_REGEXP).length > 1;
+    return name.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length > 1;
   }
 
   /**

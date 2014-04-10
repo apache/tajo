@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 public class StringUtils {
+
   /**
    *
    * Given the time in long milliseconds, returns a
@@ -85,5 +86,15 @@ public class StringUtils {
 
   public static boolean isDigit(char character) {
     return '0' <= character && character <= '9';
+  }
+
+  private static final String REGEX_SPECIAL_CHARACTERS = "([.*${}?|\\^\\-\\[\\]])";
+  public static String escapeRegexp(String literal) {
+    return literal.replaceAll(REGEX_SPECIAL_CHARACTERS, "\\\\$1");
+  }
+
+  private static final String LIKE_SPECIAL_CHARACTERS = "([_%])";
+  public static String escapeLike(String literal) {
+    return literal.replaceAll(LIKE_SPECIAL_CHARACTERS, "\\\\$1");
   }
 }

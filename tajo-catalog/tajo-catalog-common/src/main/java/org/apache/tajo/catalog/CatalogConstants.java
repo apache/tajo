@@ -22,6 +22,13 @@ import parquet.hadoop.ParquetWriter;
 import parquet.hadoop.metadata.CompressionCodecName;
 
 public class CatalogConstants {
+  public final static String IDENTIFIER_DELIMITER_REGEXP = "\\.";
+  public final static String IDENTIFIER_DELIMITER = ".";
+  public final static String IDENTIFIER_QUOTE_STRING = "\"";
+  public final static int MAX_IDENTIFIER_LENGTH = 128;
+  // Linux and BSD's max username length is 32. For compatibility with other systems, we should follow it.
+  public final static int MAX_USERNAME_LENGTH = 32;
+
   public static final String STORE_CLASS="tajo.catalog.store.class";
 
   public static final String CONNECTION_ID = "tajo.catalog.connection.id";

@@ -307,16 +307,39 @@ public class QueryTestCaseBase {
     }
   }
 
+  /**
+   * Assert that the database exists.
+   * @param databaseName The database name to be checked. This name is case sensitive.
+   */
   public void assertDatabaseExists(String databaseName) throws ServiceException {
     assertTrue(client.existDatabase(databaseName));
   }
 
+  /**
+   * Assert that the database does not exists.
+   * @param databaseName The database name to be checked. This name is case sensitive.
+   */
   public void assertDatabaseNotExists(String databaseName) throws ServiceException {
     assertTrue(!client.existDatabase(databaseName));
   }
 
+  /**
+   * Assert that the table exists.
+   *
+   * @param tableName The table name to be checked. This name is case sensitive.
+   * @throws ServiceException
+   */
   public void assertTableExists(String tableName) throws ServiceException {
     assertTrue(client.existTable(tableName));
+  }
+
+  /**
+   * Assert that the table does not exist.
+   *
+   * @param tableName The table name to be checked. This name is case sensitive.
+   */
+  public void assertTableNotExists(String tableName) throws ServiceException {
+    assertTrue(!client.existTable(tableName));
   }
 
   public void assertColumnExists(String tableName,String columnName) throws ServiceException {
@@ -326,10 +349,6 @@ public class QueryTestCaseBase {
 
   private TableDesc fetchTableMetaData(String tableName) throws ServiceException {
     return client.getTableDesc(tableName);
-  }
-
-  public void assertTableNotExists(String tableName) throws ServiceException {
-    assertTrue(!client.existTable(tableName));
   }
 
   /**
@@ -433,15 +452,15 @@ public class QueryTestCaseBase {
 
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
-        String tableName = CatalogUtil.denormalizeIdentifier(createTable.getTableName());
+        String tableName = createTable.getTableName();
         assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
-        String createdTableName = CatalogUtil.denormalizeIdentifier(createdTable.getName());
+        String createdTableName = createdTable.getName();
 
         assertTrue("table '" + createdTableName + "' creation check", client.existTable(createdTableName));
         if (isLocalTable) {
-          createdTableGlobalSet.add(createdTableName);
+          createdTableGlobalSet.add(CatalogUtil.denormalizeIdentifier(createdTableName));
           createdTableNames.add(tableName);
         }
       } else if (expr.getType() == OpType.DropTable) {
