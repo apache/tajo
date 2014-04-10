@@ -55,6 +55,11 @@ public class WorkerHeartbeatService extends AbstractService {
   private TajoConf systemConf;
   private RpcConnectionPool connectionPool;
   private WorkerHeartbeatThread thread;
+  private static final float HDFS_DATANODE_STORAGE_SIZE;
+
+  static {
+    HDFS_DATANODE_STORAGE_SIZE = DiskUtil.getDataNodeStorageSize();
+  }
 
   public WorkerHeartbeatService(TajoWorker.WorkerContext context) {
     super(WorkerHeartbeatService.class.getSimpleName());
@@ -117,6 +122,10 @@ public class WorkerHeartbeatService extends AbstractService {
         workerMemoryMB = systemConf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
         workerCpuCoreNum = systemConf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
         workerDiskSlots = systemConf.getFloatVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
+
+        if (systemConf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && HDFS_DATANODE_STORAGE_SIZE > 0) {
+          workerDiskSlots = HDFS_DATANODE_STORAGE_SIZE;
+        }
       }
 
       systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
