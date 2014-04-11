@@ -419,11 +419,6 @@ public class QueryMasterTask extends CompositeService {
         LOG.info("The staging directory '" + stagingDir + "' is deleted");
       }
 
-      if (outputDir != null && defaultFS.exists(outputDir)) {
-        defaultFS.delete(outputDir, true);
-        LOG.info("The output directory '" + outputDir + "' is deleted");
-      }
-
       throw ioe;
     }
   }

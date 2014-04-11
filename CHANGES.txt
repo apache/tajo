@@ -915,6 +915,9 @@ Release 0.2.0 - released
 
   BUG FIXES
 
+    TAJO-754: failure of INSERT INTO may remove the target table.
+    (hyunsik)
+
     TAJO-682: RangePartitionAlgorithm should be improved to handle empty
     texts. (hyunsik)
 
