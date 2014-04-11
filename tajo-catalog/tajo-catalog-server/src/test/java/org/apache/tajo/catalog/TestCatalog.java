@@ -46,6 +46,7 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.CatalogConstants.CATALOG_URI;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestCatalog {
 	static final String FieldName1="f1";
@@ -716,4 +717,126 @@ public class TestCatalog {
     return alterTableDesc;
   }
 
+  public static class TestIntFunc extends Function {
+    public TestIntFunc() {
+      super(
+          new Column [] {
+              new Column("name", TajoDataTypes.Type.INT4),
+              new Column("id", TajoDataTypes.Type.INT4)
+          }
+      );
+    }
+    public FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
+    }
+  }
+
+  public static class TestFloatFunc extends Function {
+    public TestFloatFunc() {
+      super(
+          new Column [] {
+              new Column("name", TajoDataTypes.Type.FLOAT8),
+              new Column("id", TajoDataTypes.Type.INT4)
+          }
+      );
+    }
+    public FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
+    }
+  }
+
+  public static class TestAnyParamFunc extends Function {
+    public TestAnyParamFunc() {
+      super(
+          new Column [] {
+              new Column("name", Type.ANY),
+          }
+      );
+    }
+    public FunctionType getFunctionType() {
+      return FunctionType.GENERAL;
+    }
+  }
+
+  @Test
+  public final void testFindIntFunc() throws Exception {
+    assertFalse(catalog.containFunction("testint", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("testint", TestIntFunc.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4));
+    assertTrue(catalog.createFunction(meta));
+
+    // UPGRADE TO INT4 SUCCESS==> LOOK AT SECOND PARAM BELOW
+    FunctionDesc retrieved = catalog.getFunction("testint", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT2));
+
+    assertEquals(retrieved.getSignature(), "testint");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.INT4));
+    assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
+  }
+
+  @Test(expected=NoSuchFunctionException.class)
+  public final void testFindIntInvalidFunc() throws Exception {
+    assertFalse(catalog.containFunction("testintinvalid", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("testintinvalid", TestIntFunc.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4));
+    assertTrue(catalog.createFunction(meta));
+
+    //UPGRADE TO INT8 WILL FAIL ==> LOOK AT SECOND PARAM BELOW
+    catalog.getFunction("testintinvalid", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
+  }
+
+  @Test
+  public final void testFindFloatFunc() throws Exception {
+    assertFalse(catalog.containFunction("testfloat", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("testfloat", TestFloatFunc.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4));
+    assertTrue(catalog.createFunction(meta));
+
+    //UPGRADE TO FLOAT 8 SUCCESS==> LOOK AT FIRST PARAM BELOW
+    FunctionDesc retrieved = catalog.getFunction("testfloat",
+        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4));
+
+    assertEquals(retrieved.getSignature(), "testfloat");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.FLOAT8));
+    assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
+  }
+
+  @Test(expected=NoSuchFunctionException.class)
+  public final void testFindFloatInvalidFunc() throws Exception {
+    assertFalse(catalog.containFunction("testfloatinvalid", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("testfloatinvalid", TestFloatFunc.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4));
+    assertTrue(catalog.createFunction(meta));
+
+    //UPGRADE TO DECIMAL WILL FAIL ==> LOOK AT FIRST PARAM BELOW
+    catalog.getFunction("testfloatinvalid", CatalogUtil.newSimpleDataTypeArray(Type.DECIMAL, Type.INT4));
+  }
+
+  @Test
+  public final void testFindAnyTypeParamFunc() throws Exception {
+    assertFalse(catalog.containFunction("testany", FunctionType.GENERAL));
+    FunctionDesc meta = new FunctionDesc("testany", TestAnyParamFunc.class, FunctionType.GENERAL,
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.ANY));
+    assertTrue(catalog.createFunction(meta));
+
+    FunctionDesc retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.INT1));
+    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
+
+    retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.INT8));
+    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
+
+    retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4));
+    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
+
+    retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.TEXT));
+    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
+  }
 }
