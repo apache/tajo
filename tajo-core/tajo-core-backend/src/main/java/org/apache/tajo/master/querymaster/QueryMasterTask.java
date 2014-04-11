@@ -265,7 +265,9 @@ public class QueryMasterTask extends CompositeService {
     @Override
     public void handle(LocalTaskEvent event) {
       TajoContainerProxy proxy = (TajoContainerProxy) resourceAllocator.getContainers().get(event.getContainerId());
-      proxy.killTaskAttempt(event.getTaskAttemptId());
+      if (proxy != null) {
+        proxy.killTaskAttempt(event.getTaskAttemptId());
+      }
     }
   }
 

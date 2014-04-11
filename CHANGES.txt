@@ -143,6 +143,9 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-732: Support executing LINUX shell command and HDFS command.
+    (hyoungjun kim via hyunsik)
+
     TAJO-745: APIs in TajoClient and JDBC should be case sensitive.
 
     TAJO-743: Change the default resource allocation policy of leaf tasks. (jinho)
