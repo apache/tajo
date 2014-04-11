@@ -65,12 +65,26 @@ public class TajoAdmin {
     options.addOption("kill", null, true, "Kill a running query");
   }
 
-  private static void printUsage() {
+  private TajoConf tajoConf;
+  private TajoClient tajoClient;
+  private Writer writer;
+
+  public TajoAdmin(TajoConf tajoConf, Writer writer) {
+    this(tajoConf, writer, null);
+  }
+
+  public TajoAdmin(TajoConf tajoConf, Writer writer, TajoClient tajoClient) {
+    this.tajoConf = tajoConf;
+    this.writer = writer;
+    this.tajoClient = tajoClient;
+  }
+
+  private void printUsage() {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp( "admin [options]", options );
   }
 
-  private static String getQueryState(QueryState state) {
+  private String getQueryState(QueryState state) {
     String stateStr = "FAILED";
 
     if (TajoClient.isQueryRunnning(state)) {
@@ -82,9 +96,7 @@ public class TajoAdmin {
     return stateStr;
   }
 
-  public static void main(String [] args) throws ParseException, IOException, ServiceException, SQLException {
-    TajoConf conf = new TajoConf();
-
+  public void runCommand(String[] args) throws Exception {
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
 
@@ -115,49 +127,48 @@ public class TajoAdmin {
 
     // if there is no "-h" option,
     if(hostName == null) {
-      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
+      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
         // it checks if the client service address is given in configuration and distributed mode.
         // if so, it sets entryAddr.
-        hostName = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
+        hostName = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
       }
     }
     if (port == null) {
-      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
+      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
         // it checks if the client service address is given in configuration and distributed mode.
         // if so, it sets entryAddr.
-        port = Integer.parseInt(conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
+        port = Integer.parseInt(tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
       }
     }
 
     if (cmdType == 0) {
-        printUsage();
-        System.exit(0);
+      printUsage();
+      return;
     }
 
-    TajoClient client = null;
+
     if ((hostName == null) ^ (port == null)) {
       System.err.println("ERROR: cannot find valid Tajo server address");
-      System.exit(-1);
+      return;
     } else if (hostName != null && port != null) {
-      conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClient(conf);
+      tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
+      tajoClient = new TajoClient(tajoConf);
     } else if (hostName == null && port == null) {
-      client = new TajoClient(conf);
+      tajoClient = new TajoClient(tajoConf);
     }
 
-    Writer writer = new PrintWriter(System.out);
     switch (cmdType) {
       case 1:
-        processList(writer, client);
+        processList(writer);
         break;
       case 2:
-        processDesc(writer, client);
+        processDesc(writer);
         break;
       case 3:
-        processCluster(writer, client);
+        processCluster(writer);
         break;
       case 4:
-        processKill(writer, client, queryId);
+        processKill(writer, queryId);
         break;
       default:
         printUsage();
@@ -165,14 +176,11 @@ public class TajoAdmin {
     }
 
     writer.flush();
-    writer.close();
-
-    System.exit(0);
   }
 
-  public static void processDesc(Writer writer, TajoClient client) throws ParseException, IOException,
+  private void processDesc(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    List<BriefQueryInfo> queryList = client.getRunningQueryList();
+    List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
     for (BriefQueryInfo queryInfo : queryList) {
@@ -209,9 +217,9 @@ public class TajoAdmin {
     }
   }
 
-  public static void processCluster(Writer writer, TajoClient client) throws ParseException, IOException,
+  private void processCluster(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    List<WorkerResourceInfo> workerList = client.getClusterInfo();
+    List<WorkerResourceInfo> workerList = tajoClient.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
 
@@ -339,7 +347,7 @@ public class TajoAdmin {
     }
   }
 
-  private static void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException,
+  private void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException,
       IOException, ServiceException, SQLException {
     String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-10s %6$-12s %7$-10s%n";
     String line = String.format(fmtWorkerLine,
@@ -373,9 +381,9 @@ public class TajoAdmin {
     writer.write("\n\n");
   }
 
-  public static void processList(Writer writer, TajoClient client) throws ParseException, IOException,
+  private void processList(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    List<BriefQueryInfo> queryList = client.getRunningQueryList();
+    List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     String fmt = "%1$-20s %2$-7s %3$-20s %4$-30s%n";
     String line = String.format(fmt, "QueryId", "State", 
@@ -397,13 +405,26 @@ public class TajoAdmin {
     }
   }
 
-  public static void processKill(Writer writer, TajoClient client, String queryIdStr)
+  public void processKill(Writer writer, String queryIdStr)
       throws IOException, ServiceException {
-    boolean killedSuccessfully = client.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
+    boolean killedSuccessfully = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
     if (killedSuccessfully) {
       writer.write(queryIdStr + " is killed successfully.\n");
     } else {
       writer.write("killing query is failed.");
+    }
+  }
+
+  public static void main(String [] args) throws Exception {
+    TajoConf conf = new TajoConf();
+
+    Writer writer = new PrintWriter(System.out);
+    try {
+      TajoAdmin admin = new TajoAdmin(conf, writer);
+      admin.runCommand(args);
+    } finally {
+      writer.close();
+      System.exit(0);
     }
   }
 }

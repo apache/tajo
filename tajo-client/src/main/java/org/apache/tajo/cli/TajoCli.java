@@ -71,7 +71,10 @@ public class TajoCli {
       ConnectDatabaseCommand.class,
       ListDatabaseCommand.class,
       SetCommand.class,
-      UnsetCommand.class
+      UnsetCommand.class,
+      ExecExternalShellCommand.class,
+      HdfsCommand.class,
+      TajoAdminCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -106,12 +109,17 @@ public class TajoCli {
     public PrintWriter getOutput() {
       return sout;
     }
+
+    public TajoConf getConf() {
+      return conf;
+    }
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
     this.conf = new TajoConf(c);
     this.sin = in;
     this.reader = new ConsoleReader(sin, out);
+    this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
 
     CommandLineParser parser = new PosixParser();
@@ -153,7 +161,7 @@ public class TajoCli {
 
     if ((hostName == null) ^ (port == null)) {
       System.err.println("ERROR: cannot find valid Tajo server address");
-      System.exit(-1);
+      throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
       client = new TajoClient(conf, baseDatabase);
@@ -209,7 +217,7 @@ public class TajoCli {
          cmd = (TajoShellCommand) cons.newInstance(context);
       } catch (Exception e) {
         System.err.println(e.getMessage());
-        System.exit(-1);
+        throw new RuntimeException(e.getMessage());
       }
       commands.put(cmd.getCommand(), cmd);
     }
@@ -247,7 +255,6 @@ public class TajoCli {
 
     SimpleParser parser = new SimpleParser();
     while((line = reader.readLine(currentPrompt + "> ")) != null) {
-
       if (line.equals("")) {
         continue;
       }
@@ -278,8 +285,7 @@ public class TajoCli {
   public int executeMetaCommand(String line) throws Exception {
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
-      String arguments [];
-      arguments = metaCommand.split(" ");
+      String arguments [] = metaCommand.split(" ");
 
       TajoShellCommand invoked = commands.get(arguments[0]);
       if (invoked == null) {
