@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -51,6 +52,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
+import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 
 /**
@@ -780,28 +782,32 @@ public class CatalogServer extends AbstractService {
     }
 
     private boolean containFunction(String signature, FunctionType type, List<DataType> params) {
-      return findFunction(signature, type, params) != null;
+      return findFunction(signature, type, params,false) != null;
     }
 
     private List<FunctionDescProto> findFunction(String signature) {
       return functions.get(signature);
     }
 
-    private FunctionDescProto findFunction(String signature, List<DataType> params) {
+    private FunctionDescProto findFunction(String signature, List<TajoDataTypes.DataType> params) {
       if (functions.containsKey(signature)) {
         for (FunctionDescProto existing : functions.get(signature)) {
           if (existing.getParameterTypesList() != null && existing.getParameterTypesList().equals(params)) {
             return existing;
           }
         }
-      }
-      return null;
-    }
 
-    private FunctionDescProto findFunction(String signature, FunctionType type, List<DataType> params) {
-      if (functions.containsKey(signature)) {
+       /*
+       *
+       * FALL BACK to look for nearest match
+       * WORKING BUT BAD WAY TO IMPLEMENT.I WOULD RATHER implement compareTo in FunctionDesc to keep them
+       * in sorted order of param types LIKE INT1 SHOULD BE BEFORE INT2 should be before INT3 so on.
+       * Due to possibility of multiple parameters and types the permutation and combinations are endless
+       * to implement compareTo so decided to take the shortcut.
+       *
+       * */
         for (FunctionDescProto existing : functions.get(signature)) {
-          if (existing.getType() == type && existing.getParameterTypesList().equals(params)) {
+          if (existing.getParameterTypesList() != null && compareDataType(params, existing.getParameterTypesList())) {
             return existing;
           }
         }
@@ -809,8 +815,114 @@ public class CatalogServer extends AbstractService {
       return null;
     }
 
-    private FunctionDescProto findFunction(FunctionDescProto target) {
-      return findFunction(target.getSignature(), target.getType(), target.getParameterTypesList());
+    private FunctionDescProto findFunction(String signature, FunctionType type, List<TajoDataTypes.DataType> params,
+                                           boolean strictTypeCheck) {
+      if (functions.containsKey(signature)) {
+
+        if (strictTypeCheck) {
+          for (FunctionDescProto existing : functions.get(signature)) {
+            if (existing.getType() == type && existing.getParameterTypesList().equals(params)) {
+              return existing;
+            }
+          }
+        } else {
+          for (FunctionDescProto existing : functions.get(signature)) {
+            if (existing.getParameterTypesList() != null && compareDataType(params, existing.getParameterTypesList())) {
+              return existing;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    private FunctionDescProto findFunctionStrictType(FunctionDescProto target, boolean strictTypeCheck) {
+      return findFunction(target.getSignature(), target.getType(), target.getParameterTypesList(), strictTypeCheck);
+    }
+
+    private boolean compareDataType(final List<TajoDataTypes.DataType> params,
+                                    final List<TajoDataTypes.DataType> existing) {
+      if (params.size() != existing.size()) {
+        return false;
+      } else {
+
+        for (int index = 0; index < existing.size(); index++) {
+          Type existingDataType = existing.get(index).getType();
+          Type paramDataType = params.get(index).getType();
+          if (!(existingDataType.equals(paramDataType) || isCompatibleType(existingDataType, paramDataType))) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    private boolean isCompatibleType(final Type exitingType, final Type argType) {
+      boolean flag = false;
+      if (argType == Type.NULL_TYPE) {
+        flag = true;
+      } else if (exitingType == Type.ANY) {
+        flag = true;
+      } else if (argType.getNumber() > exitingType.getNumber()) {
+        // NO POINT IN GOING FORWARD BECAUSE THE DATA TYPE CANNOT BE UPPER CASTED
+        flag = false;
+      } else {
+        //argType.getNumber() < exitingType.getNumber()
+        int exitingTypeNumber = exitingType.getNumber();
+        int argTypeNumber = argType.getNumber();
+
+        if (Type.INT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.INT8.getNumber()) {
+          // INT1 ==> INT2 ==> INT4 ==> INT8
+          if (Type.INT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.UINT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.UINT8.getNumber()) {
+          // UINT1 ==> UINT2 ==> UINT4 ==> UINT8
+          if (Type.UINT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.FLOAT4.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.NUMERIC.getNumber()) {
+          //FLOAT4 ==> FLOAT8 ==> NUMERIC ==> DECIMAL
+          if (Type.FLOAT4.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.CHAR.getNumber() <= exitingTypeNumber && Type.TEXT.getNumber() <= exitingTypeNumber) {
+          //CHAR ==> NCHAR ==> VARCHAR ==> NVARCHAR ==> TEXT
+          if (Type.CHAR.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.BIT.getNumber() <= exitingTypeNumber && Type.VARBINARY.getNumber() <= exitingTypeNumber) {
+          // BIT ==> VARBIT ==> BINARY ==> VARBINARY
+          if (argTypeNumber >= 41 && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.INT1_ARRAY.getNumber() <= exitingTypeNumber
+            && Type.INT8_ARRAY.getNumber() <= exitingTypeNumber) {
+          // INT1_ARRAY ==> INT2_ARRAY ==> INT4_ARRAY ==> INT8_ARRAY
+          if (Type.INT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.UINT1_ARRAY.getNumber() <= exitingTypeNumber
+            && Type.UINT8_ARRAY.getNumber() <= exitingTypeNumber) {
+          // UINT1_ARRAY ==> UINT2_ARRAY ==> UINT4_ARRAY ==> UINT8_ARRAY
+          if (Type.UINT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.FLOAT4_ARRAY.getNumber() <= exitingTypeNumber
+            && Type.FLOAT8_ARRAY.getNumber() <= exitingTypeNumber) {
+          // FLOAT4_ARRAY ==> FLOAT8_ARRAY ==> NUMERIC_ARRAY ==> DECIMAL_ARRAY
+          if (Type.FLOAT4.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        } else if (Type.CHAR_ARRAY.getNumber() <= exitingTypeNumber
+            && Type.TEXT_ARRAY.getNumber() <= exitingTypeNumber) {
+          // CHAR_ARRAY ==> FLOAT8_ARRAY ==> NUMERIC_ARRAY ==> DECIMAL_ARRAY
+          if (Type.TEXT_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+            flag = true;
+          }
+        }
+      }
+      return flag;
     }
 
     @Override
@@ -819,7 +931,7 @@ public class CatalogServer extends AbstractService {
       FunctionSignature signature = FunctionSignature.create(funcDesc);
 
       if (functions.containsKey(funcDesc.getSignature())) {
-        FunctionDescProto found = findFunction(funcDesc);
+        FunctionDescProto found = findFunctionStrictType(funcDesc, true);
         if (found != null) {
           throw new AlreadyExistsFunctionException(signature.toString());
         }
@@ -853,7 +965,7 @@ public class CatalogServer extends AbstractService {
       FunctionDescProto function = null;
       if (request.hasFunctionType()) {
         if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
-          function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList());
+          function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList(),true);
         }
       } else {
         function = findFunction(request.getSignature(), request.getParameterTypesList());
