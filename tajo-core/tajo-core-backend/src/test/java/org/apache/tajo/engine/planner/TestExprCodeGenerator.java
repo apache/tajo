@@ -20,25 +20,25 @@ package org.apache.tajo.engine.planner;
 
 
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.Selection;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
-import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.datum.*;
+import org.apache.tajo.engine.eval.BasicEvalNodeVisitor;
+import org.apache.tajo.engine.eval.BinaryEval;
+import org.apache.tajo.engine.eval.ConstEval;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.storage.VTuple;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -128,28 +128,17 @@ public class TestExprCodeGenerator {
     return targets;
   }
 
-  public static EvalNode getRootSelection(String query) throws PlanningException {
-    Expr block = analyzer.parse(query);
-    LogicalPlan plan = null;
-    try {
-      Session session = LocalTajoTestingUtility.createDummySession();
-      plan = planner.createPlan(session, block);
-    } catch (PlanningException e) {
-      e.printStackTrace();
-    }
-
-    Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
-    return planner.getExprAnnotator().createEvalNode(plan, plan.getRootBlock(), selection.getQual());
-  }
-
   public static class CodeGenContext {
     private ClassWriter classWriter;
+    private MethodVisitor evalMethod;
+
     public CodeGenContext() {
       classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$NewMockUp", null);
+      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$EvalGen", null);
       classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
           null, null).visitEnd();
 
+      // constructor method
       MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
       methodVisitor.visitCode();
       methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
@@ -160,52 +149,257 @@ public class TestExprCodeGenerator {
     }
   }
 
-  public class EvalGen {
+  public static class EvalGen {
     public Datum eval(int x, int y) {
       return null;
     }
   }
 
-  public class ExprCodeGenerator extends BasicEvalNodeVisitor<CodeGenContext, Object> {
+  public static String getClassName(Class clazz) {
+    return clazz.getName().replace('.', '/');
+  }
+
+  public static class ExprCodeGenerator extends BasicEvalNodeVisitor<CodeGenContext, Object> {
 
     public EvalGen generate(EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
-        InvocationTargetException, InstantiationException {
+        InvocationTargetException, InstantiationException, PlanningException {
       CodeGenContext context = new CodeGenContext();
+
+      // evalMethod
+      context.evalMethod = context.classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
+          "(II)Lorg/apache/tajo/datum/Datum;", null, null);
+      context.evalMethod.visitCode();
+      context.evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
+
+      Class returnTypeClass;
+      String desc;
+      switch (expr.getValueType().getType()) {
+      case INT2:
+        returnTypeClass = Int2Datum.class;
+        desc = "(S)V";
+        break;
+      case INT4:
+        returnTypeClass = Int4Datum.class;
+        desc = "(I)V";
+        break;
+      case INT8:
+        returnTypeClass = Int8Datum.class;
+        desc = "(L)V";
+        break;
+      case FLOAT4:
+        returnTypeClass = Float4Datum.class;
+        desc = "(F)V";
+        break;
+      case FLOAT8:
+        returnTypeClass = Float8Datum.class;
+        desc = "(D)V";
+        break;
+      default:
+        throw new PlanningException("Unsupported type: " + expr.getValueType().getType());
+      }
+
+      context.evalMethod.visitTypeInsn(Opcodes.NEW, getClassName(returnTypeClass));
+      context.evalMethod.visitInsn(Opcodes.DUP);
+
       visitChild(context, expr, new Stack<EvalNode>());
-      //context.
-      return null;
+
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, getClassName(returnTypeClass), "<init>", desc);
+      context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, getClassName(Datum.class));
+      context.evalMethod.visitInsn(Opcodes.ARETURN);
+      context.evalMethod.visitMaxs(0, 0);
+      context.evalMethod.visitEnd();
+      context.classWriter.visitEnd();
+
+      MyClassLoader myClassLoader = new MyClassLoader();
+      Class aClass = myClassLoader.defineClass("org.Test3", context.classWriter.toByteArray());
+      Constructor constructor = aClass.getConstructor();
+      EvalGen r = (EvalGen) constructor.newInstance();
+      return r;
     }
 
     public Object visitPlus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval", "(II)Lorg/apache/tajo/datum/Datum;", null, null);
-      methodVisitor.visitCode();
-      methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
+      MethodVisitor methodVisitor = context.evalMethod;
 
-      methodVisitor.visitTypeInsn(Opcodes.NEW, "org/apache/tajo/datum/Int4Datum");
-      methodVisitor.visitInsn(Opcodes.DUP);
+      stack.push(evalNode);
+      visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
+      stack.pop();
 
-      methodVisitor.visitVarInsn(Opcodes.ILOAD, ((ConstEval) evalNode.getLeftExpr()).getValue().asInt4());
-      methodVisitor.visitVarInsn(Opcodes.ILOAD, ((ConstEval)evalNode.getRightExpr()).getValue().asInt4());
-      methodVisitor.visitInsn(Opcodes.IADD);
+      int opcode;
+      switch (evalNode.getValueType().getType()) {
+      case INT4:
+        opcode = Opcodes.IADD;
+        break;
+      case INT8:
+        opcode = Opcodes.LADD;
+        break;
+      case FLOAT4:
+        opcode = Opcodes.FADD;
+        break;
+      case FLOAT8:
+        opcode = Opcodes.DADD;
+        break;
+      default:
+        throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
+      }
 
-      methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/datum/Int4Datum", "<init>", "(I)V");
-      methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, "org/apache/tajo/datum/Datum");
-      methodVisitor.visitInsn(Opcodes.ARETURN);
-      methodVisitor.visitMaxs(0, 0);
-      methodVisitor.visitEnd();
-      context.classWriter.visitEnd();
+      methodVisitor.visitInsn(opcode);
+
+      return null;
+    }
+
+    public Object visitMinus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+      MethodVisitor methodVisitor = context.evalMethod;
+
+      stack.push(evalNode);
+      visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
+      stack.pop();
+
+      int opcode;
+      switch (evalNode.getValueType().getType()) {
+      case INT4:
+        opcode = Opcodes.ISUB;
+        break;
+      case INT8:
+        opcode = Opcodes.LSUB;
+        break;
+      case FLOAT4:
+        opcode = Opcodes.FSUB;
+        break;
+      case FLOAT8:
+        opcode = Opcodes.DSUB;
+        break;
+      default:
+        throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
+      }
+
+      methodVisitor.visitInsn(opcode);
+
+      return null;
+    }
+
+    @Override
+    public Object visitMultiply(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+      MethodVisitor methodVisitor = context.evalMethod;
+
+      stack.push(evalNode);
+      visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
+      stack.pop();
+
+      int opcode;
+      switch (evalNode.getValueType().getType()) {
+      case INT4:
+        opcode = Opcodes.IMUL;
+        break;
+      case INT8:
+        opcode = Opcodes.LMUL;
+        break;
+      case FLOAT4:
+        opcode = Opcodes.FMUL;
+        break;
+      case FLOAT8:
+        opcode = Opcodes.DMUL;
+        break;
+      default:
+        throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
+      }
+
+      methodVisitor.visitInsn(opcode);
+
+      return null;
+    }
+
+    @Override
+    public Object visitDivide(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+      MethodVisitor methodVisitor = context.evalMethod;
+
+      stack.push(evalNode);
+      visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
+      stack.pop();
+
+      int opcode;
+      switch (evalNode.getValueType().getType()) {
+      case INT4:
+        opcode = Opcodes.IDIV;
+        break;
+      case INT8:
+        opcode = Opcodes.LDIV;
+        break;
+      case FLOAT4:
+        opcode = Opcodes.FDIV;
+        break;
+      case FLOAT8:
+        opcode = Opcodes.DDIV;
+        break;
+      default:
+        throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
+      }
+
+      methodVisitor.visitInsn(opcode);
+
+      return null;
+    }
+
+    @Override
+    public Object visitModular(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+      MethodVisitor methodVisitor = context.evalMethod;
+
+      stack.push(evalNode);
+      visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
+      stack.pop();
+
+      int opcode;
+      switch (evalNode.getValueType().getType()) {
+      case INT4:
+        opcode = Opcodes.IREM;
+        break;
+      case INT8:
+        opcode = Opcodes.LREM;
+        break;
+      case FLOAT4:
+        opcode = Opcodes.FREM;
+        break;
+      case FLOAT8:
+        opcode = Opcodes.DREM;
+        break;
+      default:
+        throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
+      }
+
+      methodVisitor.visitInsn(opcode);
+
+      return null;
+    }
+
+    public Object visitConst(CodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
+      switch (evalNode.getValueType().getType()) {
+      case INT2:
+      case INT4:
+        context.evalMethod.visitLdcInsn(evalNode.getValue().asInt4());
+      }
       return null;
     }
   }
 
+
+
   @Test
   public void testGenerateCodeFromQuery() throws InvalidStatementException, PlanningException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-    CodeGenContext context = new CodeGenContext();
     ExprCodeGenerator generator = new ExprCodeGenerator();
 
-    Target [] targets = getRawTargets("select 1+2;", true);
+    Target [] targets = getRawTargets("select 1 + 2 * 3 % 6;", true);
+    long start = System.currentTimeMillis();
     EvalGen code = generator.generate(targets[0].getEvalTree());
-    code.eval(0, 0);
+    long end = System.currentTimeMillis();
+    System.out.println(code.eval(1,1));
+    long execute = System.currentTimeMillis();
+
+    System.out.println(end - start + " msec");
+    System.out.println(execute - end + " execute");
   }
 
   @Test
@@ -357,7 +551,7 @@ public class TestExprCodeGenerator {
     return cw.toByteArray();
   }
 
-  class MyClassLoader extends ClassLoader {
+  static class MyClassLoader extends ClassLoader {
     public Class defineClass(String name, byte[] b) {
       return defineClass(name, b, 0, b.length);
     }
