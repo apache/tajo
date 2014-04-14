@@ -62,6 +62,7 @@ schema_statement
   | drop_database_statement
   | create_table_statement
   | drop_table_statement
+  | alter_tablespace_statement
   | alter_table_statement
   ;
 
@@ -1385,6 +1386,10 @@ insert_statement
   <alter table>
 ===============================================================================
 */
+
+alter_tablespace_statement
+  : ALTER TABLESPACE space_name=identifier LOCATION uri=Character_String_Literal
+  ;
 
 alter_table_statement
   : ALTER TABLE table_name RENAME TO table_name

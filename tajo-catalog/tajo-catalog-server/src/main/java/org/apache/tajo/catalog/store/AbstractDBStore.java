@@ -45,6 +45,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
+
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
   protected final Configuration conf;
@@ -350,6 +352,64 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return tablespaceNames;
+  }
+
+  @Override
+  public TablespaceProto getTablespace(String spaceName) throws CatalogException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet resultSet = null;
+
+    try {
+      String sql = "SELECT SPACE_NAME, SPACE_URI FROM " + TB_SPACES + " WHERE SPACE_NAME=?";
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setString(1, spaceName);
+      resultSet = pstmt.executeQuery();
+
+      if (!resultSet.next()) {
+        throw new NoSuchTablespaceException(spaceName);
+      }
+
+      String retrieveSpaceName = resultSet.getString("SPACE_NAME");
+      String uri = resultSet.getString("SPACE_URI");
+
+      TablespaceProto.Builder builder = TablespaceProto.newBuilder();
+      builder.setSpaceName(retrieveSpaceName);
+      builder.setUri(uri);
+      return builder.build();
+
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, resultSet);
+    }
+  }
+
+  @Override
+  public void alterTablespace(AlterTablespaceProto alterProto) throws CatalogException {
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    if (alterProto.getCommandList().size() == 1) {
+      AlterTablespaceCommand command = alterProto.getCommand(0);
+      if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
+        AlterTablespaceProto.SetLocation setLocation = command.getLocation();
+        try {
+          String sql = "UPDATE " + TB_SPACES + " SET SPACE_URI=? WHERE SPACE_NAME=?";
+
+          conn = getConnection();
+          pstmt = conn.prepareStatement(sql);
+          pstmt.setString(1, setLocation.getUri());
+          pstmt.setString(2, alterProto.getSpaceName());
+          pstmt.executeUpdate();
+        } catch (SQLException se) {
+          throw new CatalogException(se);
+        } finally {
+          CatalogUtil.closeQuietly(pstmt);
+        }
+      }
+    }
   }
 
   @Override

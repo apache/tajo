@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -91,7 +92,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         throw new CatalogException(e);
       }
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
 
     return exist;
@@ -308,6 +311,23 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public Collection<String> getAllTablespaceNames() throws CatalogException {
     return Lists.newArrayList(TajoConstants.DEFAULT_TABLESPACE_NAME);
+  }
+
+  @Override
+  public TablespaceProto getTablespace(String spaceName) throws CatalogException {
+    if (spaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
+      TablespaceProto.Builder builder = TablespaceProto.newBuilder();
+      builder.setSpaceName(TajoConstants.DEFAULT_TABLESPACE_NAME);
+      builder.setUri(defaultTableSpaceUri);
+      return builder.build();
+    } else {
+      throw new CatalogException("tablespace concept is not supported in HCatalogStore");
+    }
+  }
+
+  @Override
+  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
+    throw new CatalogException("tablespace concept is not supported in HCatalogStore");
   }
 
   @Override
@@ -535,7 +555,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
   }
 
@@ -590,7 +612,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
   }
 
@@ -613,7 +637,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
   }
 
@@ -634,7 +660,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
   }
 
@@ -778,7 +806,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
-      client.release();
+      if (client != null) {
+        client.release();
+      }
     }
 
     return exist;

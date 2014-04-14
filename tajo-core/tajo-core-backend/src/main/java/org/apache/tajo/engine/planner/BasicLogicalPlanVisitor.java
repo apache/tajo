@@ -116,6 +116,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case DROP_TABLE:
         current = visitDropTable(context, plan, block, (DropTableNode) node, stack);
         break;
+      case ALTER_TABLESPACE:
+        current = visitAlterTablespace(context, plan, block, (AlterTablespaceNode) node, stack);
+        break;
       case ALTER_TABLE:
         current = visitAlterTable(context, plan, block, (AlterTableNode) node, stack);
         break;
@@ -301,6 +304,13 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
                                Stack<LogicalNode> stack) {
     return null;
   }
+
+  @Override
+  public RESULT visitAlterTablespace(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
+
   @Override
   public RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
                                  Stack<LogicalNode> stack) {

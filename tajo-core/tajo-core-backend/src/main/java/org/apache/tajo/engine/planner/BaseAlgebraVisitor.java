@@ -112,6 +112,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case DropTable:
       current = visitDropTable(ctx, stack, (DropTable) expr);
       break;
+    case AlterTablespace:
+      current = visitAlterTablespace(ctx, stack, (AlterTablespace) expr);
+      break;
     case AlterTable:
       current = visitAlterTable(ctx, stack, (AlterTable) expr);
       break;
@@ -449,9 +452,14 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
+  public RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws PlanningException {
+    return null;
+  }
+
+  @Override
   public RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException {
-        return null;
-    }
+    return null;
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section

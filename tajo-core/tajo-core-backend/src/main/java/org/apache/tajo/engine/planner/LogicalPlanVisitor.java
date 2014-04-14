@@ -83,6 +83,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitDropTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropTableNode node,
                         Stack<LogicalNode> stack) throws PlanningException;
 
-  RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
+  RESULT visitAlterTablespace(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTablespaceNode node,
                           Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
+                         Stack<LogicalNode> stack) throws PlanningException;
 }

@@ -22,6 +22,8 @@
 package org.apache.tajo.engine.planner.logical;
 
 
+import org.apache.tajo.engine.planner.AlterTablespaceNode;
+
 /**
  * This indicates a logical node type.
  */
@@ -49,6 +51,7 @@ public enum NodeType {
   DROP_DATABASE(DropDatabaseNode.class),
   CREATE_TABLE(CreateTableNode.class),
   DROP_TABLE(DropTableNode.class),
+  ALTER_TABLESPACE (AlterTablespaceNode.class),
   ALTER_TABLE (AlterTableNode.class);
 
   private final Class<? extends LogicalNode> baseClass;

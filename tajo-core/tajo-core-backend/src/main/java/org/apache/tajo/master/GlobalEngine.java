@@ -28,11 +28,13 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -59,6 +61,8 @@ import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.SerializedResultSet;
 
@@ -263,8 +267,8 @@ public class GlobalEngine extends AbstractService {
           responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
         }
         responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
+        LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
       }
-      LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
     }
     SubmitQueryResponse response = responseBuilder.build();
     return response;
@@ -310,10 +314,14 @@ public class GlobalEngine extends AbstractService {
         DropTableNode dropTable = (DropTableNode) root;
         dropTable(session, dropTable.getTableName(), dropTable.isIfExists(), dropTable.isPurge());
         return true;
+      case ALTER_TABLESPACE:
+        AlterTablespaceNode alterTablespace = (AlterTablespaceNode) root;
+        alterTablespace(session, alterTablespace);
+        return true;
       case ALTER_TABLE:
-         AlterTableNode alterTable = (AlterTableNode) root;
-         alterTable(session,alterTable);
-         return true;
+        AlterTableNode alterTable = (AlterTableNode) root;
+        alterTable(session,alterTable);
+        return true;
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -351,6 +359,29 @@ public class GlobalEngine extends AbstractService {
     }
 
     return plan;
+  }
+
+  /**
+   * Alter a given table
+   */
+  public void alterTablespace(final Session session, final AlterTablespaceNode alterTablespace) {
+
+    final CatalogService catalog = context.getCatalog();
+    final String spaceName = alterTablespace.getTablespaceName();
+
+    AlterTablespaceProto.Builder builder = AlterTablespaceProto.newBuilder();
+    builder.setSpaceName(spaceName);
+    if (alterTablespace.getSetType() == AlterTablespaceSetType.LOCATION) {
+      AlterTablespaceCommand.Builder commandBuilder = AlterTablespaceCommand.newBuilder();
+      commandBuilder.setType(AlterTablespaceProto.AlterTablespaceType.LOCATION);
+      commandBuilder.setLocation(AlterTablespaceProto.SetLocation.newBuilder().setUri(alterTablespace.getLocation()));
+      commandBuilder.build();
+      builder.addCommand(commandBuilder);
+    } else {
+      throw new RuntimeException("This 'ALTER TABLESPACE' is not supported yet.");
+    }
+
+    catalog.alterTablespace(builder.build());
   }
 
   /**

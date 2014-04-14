@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
@@ -1335,7 +1336,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public static String escapeDelimiter(String value) {
     try {
       String delimiter = StringEscapeUtils.unescapeJava(value);
-      delimiter = new String(new byte[]{Byte.valueOf(delimiter).byteValue()});
+      delimiter = new String(new byte[]{Byte.valueOf(delimiter).byteValue()}, Charset.defaultCharset());
       return StringEscapeUtils.escapeJava(delimiter);
     } catch (NumberFormatException e) {
     }
@@ -1432,6 +1433,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       time = new TimeValue(parts[0], parts[1], parts[2]);
     }
     return time;
+  }
+
+  @Override
+  public Expr visitAlter_tablespace_statement(@NotNull SQLParser.Alter_tablespace_statementContext ctx) {
+    AlterTablespace alter = new AlterTablespace(ctx.space_name.getText());
+    alter.setLocation(stripQuote(ctx.uri.getText()));
+    return alter;
   }
 
   @Override
