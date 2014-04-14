@@ -431,7 +431,7 @@ public class MemStore implements CatalogStore {
     List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     for (IndexDescProto proto : indexByColumn.values()) {
-      if (proto.equals(tableName)) {
+      if (proto.getTableIdentifier().getTableName().equals(tableName)) {
         protos.add(proto);
       }
     }

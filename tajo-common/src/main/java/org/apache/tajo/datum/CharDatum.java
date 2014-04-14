@@ -71,12 +71,12 @@ public class CharDatum extends Datum {
 
   @Override
 	public int asInt4() {
-		return Integer.valueOf(getString());
+		return Integer.parseInt(getString());
 	}
 
   @Override
 	public long asInt8() {
-		return Long.valueOf(getString());
+		return Long.parseLong(getString());
 	}
 
   @Override

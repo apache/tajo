@@ -97,7 +97,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     FieldEval eval = (FieldEval) super.clone();
-    eval.column = (Column) this.column.clone();
+    eval.column = this.column;
     eval.fieldId = fieldId;
     
     return eval;

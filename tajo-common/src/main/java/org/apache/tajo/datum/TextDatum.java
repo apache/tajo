@@ -61,12 +61,12 @@ public class TextDatum extends Datum {
 
   @Override
   public int asInt4() {
-    return Integer.valueOf(new String(bytes));
+    return Integer.parseInt(new String(bytes));
   }
 
   @Override
   public long asInt8() {
-    return Long.valueOf(new String(bytes));
+    return Long.parseLong(new String(bytes));
   }
 
   @Override

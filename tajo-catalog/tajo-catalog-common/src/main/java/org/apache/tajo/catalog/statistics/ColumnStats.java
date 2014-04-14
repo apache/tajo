@@ -129,7 +129,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
   public Object clone() throws CloneNotSupportedException {
     ColumnStats stat = (ColumnStats) super.clone();
     stat.builder = CatalogProtos.ColumnStatsProto.newBuilder();
-    stat.column = (Column) this.column.clone();
+    stat.column = this.column;
     stat.numDistVals = numDistVals;
     stat.numNulls = numNulls;
     stat.minValue = minValue;
