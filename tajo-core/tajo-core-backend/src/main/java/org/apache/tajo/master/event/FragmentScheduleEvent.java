@@ -21,9 +21,11 @@ package org.apache.tajo.master.event;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.storage.fragment.FileFragment;
 
+import java.util.Collection;
+
 public class FragmentScheduleEvent extends TaskSchedulerEvent {
   private final FileFragment leftFragment;
-  private final FileFragment rightFragment;
+  private final Collection<FileFragment> rightFragments;
 
   public FragmentScheduleEvent(final EventType eventType, final ExecutionBlockId blockId,
                                final FileFragment fragment) {
@@ -33,27 +35,27 @@ public class FragmentScheduleEvent extends TaskSchedulerEvent {
   public FragmentScheduleEvent(final EventType eventType,
                                final ExecutionBlockId blockId,
                                final FileFragment leftFragment,
-                               final FileFragment rightFragment) {
+                               final Collection<FileFragment> rightFragments) {
     super(eventType, blockId);
     this.leftFragment = leftFragment;
-    this.rightFragment = rightFragment;
+    this.rightFragments = rightFragments;
   }
 
-  public boolean hasRightFragment() {
-    return this.rightFragment != null;
+  public boolean hasRightFragments() {
+    return this.rightFragments != null && !this.rightFragments.isEmpty();
   }
 
   public FileFragment getLeftFragment() {
     return leftFragment;
   }
 
-  public FileFragment getRightFragment() { return rightFragment; }
+  public Collection<FileFragment> getRightFragments() { return rightFragments; }
 
   @Override
   public String toString() {
     return "FragmentScheduleEvent{" +
         "leftFragment=" + leftFragment +
-        ", rightFragment=" + rightFragment +
+        ", rightFragments=" + rightFragments +
         '}';
   }
 }

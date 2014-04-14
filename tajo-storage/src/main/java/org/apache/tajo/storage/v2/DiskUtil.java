@@ -18,17 +18,15 @@
 
 package org.apache.tajo.storage.v2;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
+import org.apache.hadoop.hdfs.server.common.Util;
+
+import java.io.*;
+import java.net.URI;
+import java.util.*;
+
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY;
 
 public class DiskUtil {
 
@@ -189,7 +187,17 @@ public class DiskUtil {
 			}
 		}
 	}
-	
+
+  public static int getDataNodeStorageSize(){
+    return getStorageDirs().size();
+  }
+
+  public static List<URI> getStorageDirs(){
+    Configuration conf = new HdfsConfiguration();
+    Collection<String> dirNames = conf.getTrimmedStringCollection(DFS_DATANODE_DATA_DIR_KEY);
+    return Util.stringCollectionAsURIs(dirNames);
+  }
+
 	public static void main(String[] args) throws Exception {
 		System.out.println("/dev/sde1".split("/").length);
 		for(String eachToken: "/dev/sde1".split("/")) {

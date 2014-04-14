@@ -36,6 +36,7 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
     super(context, inSchema, outSchema);
     this.leftChild = outer;
     this.rightChild = inner;
+    this.inputStats = new TableStats();
   }
 
   public PhysicalExec getLeftChild() {
@@ -51,8 +52,6 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
     leftChild.init();
     rightChild.init();
     progress = 0.0f;
-
-    inputStats = new TableStats();
   }
 
   @Override

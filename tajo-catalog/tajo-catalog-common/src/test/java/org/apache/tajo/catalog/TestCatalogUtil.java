@@ -30,4 +30,25 @@ public class TestCatalogUtil {
         Type.INT8));
     assertEquals("sum(int4,int8)", canonical);
   }
+
+  String [] sources = {
+      "A",
+      "Column_Name",
+      "COLUMN_NAME",
+      "컬럼"
+  };
+
+  String [] normalized = {
+      "a",
+      "column_name",
+      "column_name",
+      "컬럼"
+  };
+
+  @Test
+  public final void testNormalizeIdentifier() {
+    for (int i = 0; i < sources.length; i++) {
+      assertEquals(normalized[i], CatalogUtil.normalizeIdentifier(sources[i]));
+    }
+  }
 }

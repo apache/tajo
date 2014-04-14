@@ -223,6 +223,18 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLeftOuterJoinWithEmptyTable1() throws Exception {
+    /*
+    select
+      c_custkey,
+      empty_orders.o_orderkey,
+      empty_orders.o_orderstatus,
+      empty_orders.o_orderdate
+    from
+      customer left outer join empty_orders on c_custkey = o_orderkey
+    order by
+      c_custkey, o_orderkey;
+     */
+
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -273,11 +285,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinOnMultipleDatabases() throws Exception {
     executeString("CREATE DATABASE JOINS");
-    assertDatabaseExists("JOINS");
+    assertDatabaseExists("joins");
     executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-    assertTableExists("JOINS.part_");
+    assertTableExists("joins.part_");
     executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-    assertTableExists("JOINS.supplier_");
+    assertTableExists("joins.supplier_");
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

@@ -33,10 +33,30 @@ Please add the following configs to tajo-site.xml file:
   </property>
 
   <property>
+    <name>tajo.resource-tracker.rpc.address</name>
+    <value>hostname:26003</value>
+  </property>
+
+  <property>
     <name>tajo.catalog.client-rpc.address</name>
     <value>hostname:26005</value>
   </property>
 
+Workers
+--------------------------------------------------------
+
+The file ``conf/workers`` lists all host names of workers, one per line.
+By default, this file contains the single entry ``localhost``.
+You can easily add host names of workers via your favorite text editor.
+
+For example: ::
+
+  $ cat > conf/workers
+  host1.domain.com
+  host2.domain.com
+  ....
+
+  <ctrl + d>
 
 Make base directories and set permissions
 --------------------------------------------------------

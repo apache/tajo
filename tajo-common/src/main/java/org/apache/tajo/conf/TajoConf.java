@@ -105,6 +105,7 @@ public class TajoConf extends Configuration {
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024),
     WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
     WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
+    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false),
 
     // Tajo Worker Dedicated Resources
     WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false),
@@ -160,6 +161,7 @@ public class TajoConf extends Configuration {
     //////////////////////////////////////////
     // Distributed Query Execution Parameters
     //////////////////////////////////////////
+    DIST_QUERY_BROADCAST_JOIN_AUTO("tajo.dist-query.join.broadcast.auto", true),
     DIST_QUERY_BROADCAST_JOIN_THRESHOLD("tajo.dist-query.join.broadcast.threshold-bytes", (long)5 * 1048576),
 
     DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 128),
@@ -230,7 +232,7 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
-    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 1.0f),
+    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
     //////////////////////////////////
 

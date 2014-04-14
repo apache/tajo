@@ -46,6 +46,9 @@
   Map<String, Integer> portMap = new HashMap<String, Integer>();
 
   Collection<String> queryMasters = master.getContext().getResourceManager().getQueryMasters();
+  if (queryMasters == null || queryMasters.isEmpty()) {
+    queryMasters = master.getContext().getResourceManager().getWorkers().keySet();
+  }
   for(String eachQueryMasterKey: queryMasters) {
     Worker queryMaster = workers.get(eachQueryMasterKey);
     if(queryMaster != null) {
@@ -108,7 +111,7 @@
     <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Finished</th><th>Time</th><th>Status</th><th>sql</th></tr>
     <%
       for(QueryInProgress eachQuery: finishedQueries) {
-        long runTime = eachQuery.getQueryInfo().getFinishTime() >= 0 ?
+        long runTime = eachQuery.getQueryInfo().getFinishTime() > 0 ?
                 eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime() : -1;
         String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost())  +
                 "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
@@ -117,8 +120,8 @@
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
       <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
       <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
-      <td><%=eachQuery.getQueryInfo().getFinishTime() >= 0 ? df.format(eachQuery.getQueryInfo().getFinishTime()) : "N/A"%></td>
-      <td><%=runTime == -1 ? "N/A" : StringUtils.formatTime(runTime) %></td>
+      <td><%=eachQuery.getQueryInfo().getFinishTime() > 0 ? df.format(eachQuery.getQueryInfo().getFinishTime()) : "-"%></td>
+      <td><%=runTime == -1 ? "-" : StringUtils.formatTime(runTime) %></td>
       <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
     </tr>

@@ -83,7 +83,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
         for (GeneralSetFunctionExpr setFunction : exprs) {
           if (distinctValues == null && setFunction.isDistinct()) {
             distinctValues = setFunction.getParams();
-          } else if (distinctValues != null) {
+          } else if (distinctValues != null && setFunction.isDistinct()) {
             if (!Arrays.equals(distinctValues, setFunction.getParams())) {
               Expr [] differences = ObjectArrays.concat(distinctValues, setFunction.getParams(), Expr.class);
               throw new PlanningException("different DISTINCT columns are not supported yet: "
@@ -246,6 +246,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
 
   public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws PlanningException {
     Expr child = super.visitInsert(context, stack, expr);
+
+    if (!expr.isOverwrite()) {
+      context.state.addVerification("INSERT INTO statement is not supported yet.");
+    }
 
     if (expr.hasTableName()) {
       assertRelationExistence(context, expr.getTableName());

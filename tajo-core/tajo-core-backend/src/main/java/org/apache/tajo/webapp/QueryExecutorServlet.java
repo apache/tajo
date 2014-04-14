@@ -221,7 +221,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
     String queryRunnerId;
 
-    ClientProtos.GetQueryStatusResponse queryRespons;
+    ClientProtos.SubmitQueryResponse queryRespons;
     AtomicBoolean running = new AtomicBoolean(true);
     AtomicBoolean stop = new AtomicBoolean(false);
     QueryId queryId;

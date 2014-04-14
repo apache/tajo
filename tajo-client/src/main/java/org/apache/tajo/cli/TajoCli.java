@@ -24,21 +24,19 @@ import org.apache.commons.cli.*;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +71,10 @@ public class TajoCli {
       ConnectDatabaseCommand.class,
       ListDatabaseCommand.class,
       SetCommand.class,
-      UnsetCommand.class
+      UnsetCommand.class,
+      ExecExternalShellCommand.class,
+      HdfsCommand.class,
+      TajoAdminCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -108,12 +109,17 @@ public class TajoCli {
     public PrintWriter getOutput() {
       return sout;
     }
+
+    public TajoConf getConf() {
+      return conf;
+    }
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
     this.conf = new TajoConf(c);
     this.sin = in;
     this.reader = new ConsoleReader(sin, out);
+    this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
 
     CommandLineParser parser = new PosixParser();
@@ -155,7 +161,7 @@ public class TajoCli {
 
     if ((hostName == null) ^ (port == null)) {
       System.err.println("ERROR: cannot find valid Tajo server address");
-      System.exit(-1);
+      throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
       client = new TajoClient(conf, baseDatabase);
@@ -211,7 +217,7 @@ public class TajoCli {
          cmd = (TajoShellCommand) cons.newInstance(context);
       } catch (Exception e) {
         System.err.println(e.getMessage());
-        System.exit(-1);
+        throw new RuntimeException(e.getMessage());
       }
       commands.put(cmd.getCommand(), cmd);
     }
@@ -249,7 +255,6 @@ public class TajoCli {
 
     SimpleParser parser = new SimpleParser();
     while((line = reader.readLine(currentPrompt + "> ")) != null) {
-
       if (line.equals("")) {
         continue;
       }
@@ -280,8 +285,7 @@ public class TajoCli {
   public int executeMetaCommand(String line) throws Exception {
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
-      String arguments [];
-      arguments = metaCommand.split(" ");
+      String arguments [] = metaCommand.split(" ");
 
       TajoShellCommand invoked = commands.get(arguments[0]);
       if (invoked == null) {
@@ -302,22 +306,39 @@ public class TajoCli {
   }
 
   private void executeQuery(String statement) throws ServiceException {
-    ClientProtos.GetQueryStatusResponse response = client.executeQuery(statement);
+    ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
       sout.println("response is null");
-    }
-    else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
-      QueryId queryId = null;
-      try {
-        queryId = new QueryId(response.getQueryId());
-        if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-          sout.println("OK");
-        } else {
+    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+      if (response.getIsForwarded()) {
+        QueryId queryId = new QueryId(response.getQueryId());
+        try {
           waitForQueryCompleted(queryId);
-        }
-      } finally {
-        if(queryId != null) {
+        } finally {
           client.closeQuery(queryId);
+        }
+      } else {
+        if (!response.hasTableDesc() && !response.hasResultSet()) {
+          sout.println("Ok");
+        } else {
+
+          ResultSet resultSet;
+          int numBytes;
+          long maxRowNum;
+          try {
+            resultSet = TajoClient.createResultSet(client, response);
+            if (response.hasTableDesc()) {
+              numBytes = 0;
+            } else {
+              numBytes = response.getResultSet().getBytesNum();
+            }
+            maxRowNum = response.getMaxRowNum();
+            printResult(resultSet, maxRowNum, numBytes);
+          } catch (IOException ioe) {
+            sout.println(ioe.getMessage());
+          } catch (SQLException sqe) {
+            sout.println(sqe.getMessage());
+          }
         }
       }
     } else {
@@ -340,7 +361,7 @@ public class TajoCli {
       int initRetries = 0;
       int progressRetries = 0;
       while (true) {
-        // TODO - configurabl
+        // TODO - configurable
         status = client.getQueryStatus(queryId);
         if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
           Thread.sleep(Math.min(20 * initRetries, 1000));
@@ -366,6 +387,9 @@ public class TajoCli {
 
       if (status.getState() == QueryState.QUERY_ERROR) {
         sout.println("Internal error!");
+        if(status.getErrorMessage() != null && !status.getErrorMessage().isEmpty()) {
+          sout.println(status.getErrorMessage());
+        }
       } else if (status.getState() == QueryState.QUERY_FAILED) {
         sout.println("Query failed!");
       } else if (status.getState() == QueryState.QUERY_KILLED) {
@@ -376,68 +400,12 @@ public class TajoCli {
               + ", response time: " + (((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0)
               + " sec"));
           if (status.hasResult()) {
-            ResultSet res = null;
-            TableDesc desc = null;
-            if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-              res = client.createNullResultSet(queryId);
-            } else {
-              ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
-              desc = CatalogUtil.newTableDesc(response.getTableDesc());
-              conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
-              res = new TajoResultSet(client, queryId, conf, desc);
-            }
-            try {
-              if (res == null) {
-                sout.println("OK");
-                return;
-              }
-
-              ResultSetMetaData rsmd = res.getMetaData();
-
-              TableStats stat = desc.getStats();
-              String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
-              long resultRows = stat.getNumRows();
-              sout.println("result: " + desc.getPath() + ", " + resultRows + " rows (" + volume + ")");
-
-              int numOfColumns = rsmd.getColumnCount();
-              for (int i = 1; i <= numOfColumns; i++) {
-                if (i > 1) sout.print(",  ");
-                String columnName = rsmd.getColumnName(i);
-                sout.print(columnName);
-              }
-              sout.println("\n-------------------------------");
-
-              int numOfPrintedRows = 0;
-              while (res.next()) {
-                // TODO - to be improved to print more formatted text
-                for (int i = 1; i <= numOfColumns; i++) {
-                  if (i > 1) sout.print(",  ");
-                  String columnValue = res.getObject(i).toString();
-                  if(res.wasNull()){
-                    sout.print("null");
-                  } else {
-                    sout.print(columnValue);
-                  }
-                }
-                sout.println();
-                sout.flush();
-                numOfPrintedRows++;
-                if (numOfPrintedRows >= PRINT_LIMIT) {
-                  sout.print("continue... ('q' is quit)");
-                  sout.flush();
-                  if (sin.read() == 'q') {
-                    sout.println();
-                    break;
-                  }
-                  numOfPrintedRows = 0;
-                  sout.println();
-                }
-              }
-            } finally {
-              if(res != null) {
-                res.close();
-              }
-            }
+            ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
+            ResultSet res = TajoClient.createResultSet(client, queryId, response);
+            TableDesc desc = new TableDesc(response.getTableDesc());
+            long totalRowNum = desc.getStats().getNumRows();
+            long totalBytes = desc.getStats().getNumBytes();
+            printResult(res, totalRowNum, totalBytes);
           } else {
             sout.println("OK");
           }
@@ -446,6 +414,62 @@ public class TajoCli {
     } catch (Throwable t) {
       t.printStackTrace();
       System.err.println(t.getMessage());
+    }
+  }
+
+  private void printResult(ResultSet res, long rowNum, long numBytes) throws IOException, SQLException  {
+    try {
+      if (res == null) {
+        sout.println("OK");
+        return;
+      }
+
+      ResultSetMetaData rsmd = res.getMetaData();
+
+      String volume = FileUtil.humanReadableByteCount(numBytes, false);
+      String rowNumStr = rowNum == Integer.MAX_VALUE ? "unknown" : rowNum + "";
+      sout.println("result: " + rowNumStr + " rows (" + volume + ")");
+
+      int numOfColumns = rsmd.getColumnCount();
+      for (int i = 1; i <= numOfColumns; i++) {
+        if (i > 1) sout.print(",  ");
+        String columnName = rsmd.getColumnName(i);
+        sout.print(columnName);
+      }
+      sout.println("\n-------------------------------");
+
+      int numOfPrintedRows = 0;
+      while (res.next()) {
+        // TODO - to be improved to print more formatted text
+        for (int i = 1; i <= numOfColumns; i++) {
+          if (i > 1) sout.print(",  ");
+          String columnValue = res.getObject(i).toString();
+          if(res.wasNull()){
+            sout.print("null");
+          } else {
+            sout.print(columnValue);
+          }
+        }
+        sout.println();
+        sout.flush();
+        numOfPrintedRows++;
+        if (numOfPrintedRows >= PRINT_LIMIT) {
+          sout.print("continue... ('q' is quit)");
+          sout.flush();
+          if (sin.read() == 'q') {
+            sout.println();
+            break;
+          }
+          numOfPrintedRows = 0;
+          sout.println();
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    } finally {
+      if(res != null) {
+        res.close();
+      }
     }
   }
 

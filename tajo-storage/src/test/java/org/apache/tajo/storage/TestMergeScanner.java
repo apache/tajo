@@ -67,6 +67,7 @@ public class TestMergeScanner {
         {StoreType.RCFILE},
         {StoreType.TREVNI},
         {StoreType.PARQUET},
+        {StoreType.SEQUENCEFILE},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
         //{StoreType.ROWFILE},
 
@@ -93,6 +94,7 @@ public class TestMergeScanner {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
     Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, table1Path);
@@ -172,6 +174,7 @@ public class TestMergeScanner {
       case RCFILE:
       case TREVNI:
       case PARQUET:
+      case SEQUENCEFILE:
       case CSV:
         return true;
       default:

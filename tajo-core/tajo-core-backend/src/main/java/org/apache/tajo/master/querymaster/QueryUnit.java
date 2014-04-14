@@ -198,7 +198,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       readLock.unlock();
     }
   }
-	
+
 	public void setLogicalPlan(LogicalNode plan) {
 	  this.plan = plan;
 
@@ -230,7 +230,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
-  public void setFragment(FileFragment fragment) {
+  public void addFragment(FileFragment fragment, boolean useDataLocation) {
     Set<FragmentProto> fragmentProtos;
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
@@ -239,15 +239,23 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       fragMap.put(fragment.getTableName(), fragmentProtos);
     }
     fragmentProtos.add(fragment.getProto());
-    addDataLocation(fragment);
+    if (useDataLocation) {
+      addDataLocation(fragment);
+    }
     totalFragmentNum++;
+  }
+
+  public void addFragments(Collection<FileFragment> fragments) {
+    for (FileFragment eachFragment: fragments) {
+      addFragment(eachFragment, false);
+    }
   }
 
   public void setFragment(FragmentPair[] fragmentPairs) {
     for (FragmentPair eachFragmentPair : fragmentPairs) {
-      this.setFragment(eachFragmentPair.getLeftFragment());
+      this.addFragment(eachFragmentPair.getLeftFragment(), true);
       if (eachFragmentPair.getRightFragment() != null) {
-        this.setFragment(eachFragmentPair.getRightFragment());
+        this.addFragment(eachFragmentPair.getRightFragment(), true);
       }
     }
   }

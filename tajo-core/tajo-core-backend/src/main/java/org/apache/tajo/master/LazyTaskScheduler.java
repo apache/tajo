@@ -38,6 +38,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
@@ -196,7 +197,14 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
     if (event.getType() == EventType.T_SCHEDULE) {
       if (event instanceof FragmentScheduleEvent) {
         FragmentScheduleEvent castEvent = (FragmentScheduleEvent) event;
-        scheduledFragments.addFragment(new FragmentPair(castEvent.getLeftFragment(), castEvent.getRightFragment()));
+        Collection<FileFragment> rightFragments = castEvent.getRightFragments();
+        if (rightFragments == null || rightFragments.isEmpty()) {
+          scheduledFragments.addFragment(new FragmentPair(castEvent.getLeftFragment(), null));
+        } else {
+          for (FileFragment eachFragment: rightFragments) {
+            scheduledFragments.addFragment(new FragmentPair(castEvent.getLeftFragment(), eachFragment));
+          }
+        }
         initDiskBalancer(castEvent.getLeftFragment().getHosts(), castEvent.getLeftFragment().getDiskIds());
       } else if (event instanceof FetchScheduleEvent) {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;

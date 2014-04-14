@@ -833,6 +833,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
+    if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      return new SeqScanExec(ctx, sm, scanNode, null);
+    }
     Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
         "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");    
 

@@ -93,6 +93,9 @@ public class FragmentConvertor {
   public static <T extends Fragment> List<T> convert(Class<T> clazz, FragmentProto...fragments)
       throws IOException {
     List<T> list = Lists.newArrayList();
+    if (fragments == null) {
+      return list;
+    }
     for (FragmentProto proto : fragments) {
       list.add(convert(clazz, proto));
     }
@@ -102,6 +105,9 @@ public class FragmentConvertor {
   public static <T extends Fragment> List<T> convert(Configuration conf, StoreType storeType,
                                                            FragmentProto...fragments) throws IOException {
     List<T> list = Lists.newArrayList();
+    if (fragments == null) {
+      return list;
+    }
     for (FragmentProto proto : fragments) {
       list.add((T) convert(conf, storeType, proto));
     }
@@ -110,6 +116,9 @@ public class FragmentConvertor {
 
   public static List<FragmentProto> toFragmentProtoList(Fragment... fragments) {
     List<FragmentProto> list = Lists.newArrayList();
+    if (fragments == null) {
+      return list;
+    }
     for (Fragment fragment : fragments) {
       list.add(fragment.getProto());
     }

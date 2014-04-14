@@ -1,0 +1,4 @@
+REPOSITORY='tajo'
+REVIEWBOARD_URL='https://reviews.apache.org'
+TRACKING_BRANCH='origin/master'
+TARGET_GROUPS='Tajo'

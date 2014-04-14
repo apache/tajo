@@ -232,6 +232,10 @@ public class TaskAttemptContext {
   }
 
   public FragmentProto getTable(String id) {
+    if (fragmentMap.get(id) == null) {
+      //for empty table
+      return null;
+    }
     return fragmentMap.get(id).get(0);
   }
 
@@ -244,6 +248,10 @@ public class TaskAttemptContext {
   }
   
   public FragmentProto [] getTables(String id) {
+    if (fragmentMap.get(id) == null) {
+      //for empty table
+      return null;
+    }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
   

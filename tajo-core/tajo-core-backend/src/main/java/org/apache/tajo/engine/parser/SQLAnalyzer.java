@@ -71,7 +71,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitSql(SqlContext ctx) {
-    return visit(ctx.statement());
+    Expr statement = visit(ctx.statement());
+    if (checkIfExist(ctx.explain_clause())) {
+      return new Explain(statement);
+    } else {
+      return statement;
+    }
   }
 
   @Override
@@ -751,10 +756,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
     if (checkIfExist(ctx.in_value_list())) {
-      int size = ctx.in_value_list().row_value_expression().size();
-      Expr[] exprs = new Expr[size];
+      int size = ctx.in_value_list().row_value_predicand().size();
+      Expr [] exprs = new Expr[size];
       for (int i = 0; i < size; i++) {
-        exprs[i] = visitRow_value_expression(ctx.in_value_list().row_value_expression(i));
+        exprs[i] = visitRow_value_predicand(ctx.in_value_list().row_value_predicand(i));
       }
       return new ValueListExpr(exprs);
     } else {
@@ -1097,10 +1102,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       List<ListPartitionSpecifier> specifiers = Lists.newArrayList();
 
       for (List_value_partitionContext listValuePartition : partitions) {
-        int size = listValuePartition.in_value_list().row_value_expression().size();
-        Expr[] exprs = new Expr[size];
+        int size = listValuePartition.in_value_list().row_value_predicand().size();
+        Expr [] exprs = new Expr[size];
         for (int i = 0; i < size; i++) {
-          exprs[i] = visitRow_value_expression(listValuePartition.in_value_list().row_value_expression(i));
+          exprs[i] = visitRow_value_predicand(listValuePartition.in_value_list().row_value_predicand(i));
         }
         specifiers.add(new ListPartitionSpecifier(listValuePartition.partition_name().getText(),
             new ValueListExpr(exprs)));

@@ -36,12 +36,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import parquet.hadoop.ParquetOutputFormat;
+
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
-  public final static String IDENTIFIER_DELIMITER = ".";
-  public final static String IDENTIFIER_DELIMITER_REGEXP = "\\.";
 
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
@@ -66,7 +66,10 @@ public class CatalogUtil {
    * @return The normalized identifier
    */
   public static String normalizeIdentifier(String identifier) {
-    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);
+    if (identifier == null || identifier.equals("")) {
+      return identifier;
+    }
+    String [] splitted = identifier.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
 
     StringBuilder sb = new StringBuilder();
     boolean first = true;
@@ -74,7 +77,7 @@ public class CatalogUtil {
       if (first) {
         first = false;
       } else {
-        sb.append(IDENTIFIER_DELIMITER);
+        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
       }
       sb.append(normalizeIdentifierPart(part));
     }
@@ -99,7 +102,7 @@ public class CatalogUtil {
    * @return The denormalized identifier
    */
   public static String denormalizeIdentifier(String identifier) {
-    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);
+    String [] splitted = identifier.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
 
     StringBuilder sb = new StringBuilder();
     boolean first = true;
@@ -107,7 +110,7 @@ public class CatalogUtil {
       if (first) {
         first = false;
       } else {
-        sb.append(IDENTIFIER_DELIMITER);
+        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
       }
       sb.append(denormalizePart(part));
     }
@@ -148,23 +151,26 @@ public class CatalogUtil {
     boolean openQuote = identifier.charAt(0) == '"';
     boolean closeQuote = identifier.charAt(identifier.length() - 1) == '"';
 
-    if (openQuote ^ closeQuote || identifier.length() < 2) {
+    // if at least one quote mark exists, the identifier must be grater than equal to 2 characters,
+    if (openQuote ^ closeQuote && identifier.length() < 2) {
       throw new IllegalArgumentException("Invalid Identifier: " + identifier);
     }
 
+    // does not allow the empty identifier (''),
     if (openQuote && closeQuote && identifier.length() == 2) {
       throw new IllegalArgumentException("zero-length delimited identifier: " + identifier);
     }
 
-    return openQuote && closeQuote && identifier.length() > 2;
+    // Ensure the quote open and close
+    return openQuote && closeQuote;
   }
 
   public static boolean isFQColumnName(String tableName) {
-    return tableName.split(IDENTIFIER_DELIMITER_REGEXP).length == 3;
+    return tableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 3;
   }
 
   public static boolean isFQTableName(String tableName) {
-    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);
+    int lastDelimiterIdx = tableName.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
     return lastDelimiterIdx > -1;
   }
 
@@ -178,7 +184,7 @@ public class CatalogUtil {
   }
 
   public static String [] splitTableName(String tableName) {
-    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);
+    int lastDelimiterIdx = tableName.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
     if (lastDelimiterIdx > -1) {
       return new String [] {
           tableName.substring(0, lastDelimiterIdx),
@@ -196,7 +202,7 @@ public class CatalogUtil {
       if (first) {
         first = false;
       } else {
-        sb.append(IDENTIFIER_DELIMITER);
+        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
       }
 
       sb.append(id);
@@ -215,7 +221,7 @@ public class CatalogUtil {
    * @return The extracted qualifier
    */
   public static String extractQualifier(String name) {
-    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);
+    int lastDelimiterIdx = name.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
     if (lastDelimiterIdx > -1) {
       return name.substring(0, lastDelimiterIdx);
     } else {
@@ -233,7 +239,7 @@ public class CatalogUtil {
    * @return The extracted simple name
    */
   public static String extractSimpleName(String name) {
-    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);
+    int lastDelimiterIdx = name.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
     if (lastDelimiterIdx > -1) {
       // plus one means skipping a delimiter.
       return name.substring(lastDelimiterIdx + 1, name.length());
@@ -244,7 +250,7 @@ public class CatalogUtil {
 
   public static String getCanonicalTableName(String databaseName, String tableName) {
     StringBuilder sb = new StringBuilder(databaseName);
-    sb.append(IDENTIFIER_DELIMITER);
+    sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
     sb.append(tableName);
     return sb.toString();
   }
@@ -281,6 +287,8 @@ public class CatalogUtil {
       return StoreType.TREVNI;
     } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
       return StoreType.PARQUET;
+    } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
+      return StoreType.SEQUENCEFILE;
     } else {
       return null;
     }
@@ -288,9 +296,23 @@ public class CatalogUtil {
   public static Options newOptionsWithDefault(StoreType type) {
     Options options = new Options();
     if(StoreType.CSV == type){
-      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
     } else if(StoreType.RCFILE == type){
-      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.RCFILE_BINARY_SERDE);
+      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
+    } else if(StoreType.SEQUENCEFILE == type){
+      options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
+      options.put(CatalogConstants.SEQUENCEFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
+    } else if (type == StoreType.PARQUET) {
+      options.put(ParquetOutputFormat.BLOCK_SIZE,
+          CatalogConstants.PARQUET_DEFAULT_BLOCK_SIZE);
+      options.put(ParquetOutputFormat.PAGE_SIZE,
+          CatalogConstants.PARQUET_DEFAULT_PAGE_SIZE);
+      options.put(ParquetOutputFormat.COMPRESSION,
+          CatalogConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
+      options.put(ParquetOutputFormat.ENABLE_DICTIONARY,
+          CatalogConstants.PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
+      options.put(ParquetOutputFormat.VALIDATION,
+          CatalogConstants.PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
     }
 
     return options;
@@ -330,7 +352,7 @@ public class CatalogUtil {
     revisedSchema.clearFields();
     for (ColumnProto col : schema.getFieldsList()) {
       ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-      builder.setName(tableName + IDENTIFIER_DELIMITER + extractSimpleName(col.getName()));
+      builder.setName(tableName + CatalogConstants.IDENTIFIER_DELIMITER + extractSimpleName(col.getName()));
       revisedSchema.addFields(builder.build());
     }
 

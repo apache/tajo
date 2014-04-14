@@ -40,7 +40,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -199,7 +198,7 @@ public class TestTajoClient {
 
   @Test
   public final void testKillQuery() throws IOException, ServiceException, InterruptedException {
-    ClientProtos.GetQueryStatusResponse res = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
     Thread.sleep(1000);
     QueryId queryId = new QueryId(res.getQueryId());
     client.killQuery(queryId);
@@ -601,10 +600,10 @@ public class TestTajoClient {
     assertTrue(client.existTable(tableName));
 
     int numFinishedQueries = client.getFinishedQueryList().size();
-    ResultSet resultSet = client.executeQueryAndGetResult("select * from " + tableName);
+    ResultSet resultSet = client.executeQueryAndGetResult("select * from " + tableName + " order by deptname");
     assertNotNull(resultSet);
 
-    resultSet = client.executeQueryAndGetResult("select * from " + tableName);
+    resultSet = client.executeQueryAndGetResult("select * from " + tableName + " order by deptname");
     assertNotNull(resultSet);
     assertEquals(numFinishedQueries + 2, client.getFinishedQueryList().size());
 
@@ -617,8 +616,8 @@ public class TestTajoClient {
    */
   @Test(timeout = 20 * 1000)
   public final void testGetQueryStatusAndResultAfterFinish() throws Exception {
-    String sql = "select * from lineitem";
-    ClientProtos.GetQueryStatusResponse response = client.executeQuery(sql);
+    String sql = "select * from lineitem order by l_orderkey";
+    ClientProtos.SubmitQueryResponse response = client.executeQuery(sql);
 
     assertNotNull(response);
     QueryId queryId = new QueryId(response.getQueryId());

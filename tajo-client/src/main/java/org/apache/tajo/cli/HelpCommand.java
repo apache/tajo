@@ -57,6 +57,13 @@ public class HelpCommand extends TajoShellCommand {
     sout.println();
     sout.println();
 
+    sout.println("Tool");
+    sout.println("  \\!           execute a linux shell command");
+    sout.println("  \\dfs         execute a dfs command");
+    sout.println("  \\admin       execute tajo admin command");
+    sout.println();
+    sout.println();
+
     sout.println("Variables");
     sout.println("  \\set [[NAME] [VALUE]  set session variable or list session variables");
     sout.println("  \\unset NAME           unset session variable");

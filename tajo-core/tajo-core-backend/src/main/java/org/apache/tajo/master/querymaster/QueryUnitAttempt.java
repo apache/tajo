@@ -261,17 +261,19 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   private void fillTaskStatistics(TaskCompletionReport report) {
     this.progress = 1.0f;
 
+    List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
+
     if (report.getShuffleFileOutputsCount() > 0) {
       this.getQueryUnit().setShuffleFileOutputs(report.getShuffleFileOutputsList());
 
-      List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
             getId().getId(), p.getPartId(), getHost(), getPullServerPort());
         partitions.add(entry);
       }
-      this.getQueryUnit().setIntermediateData(partitions);
     }
+    this.getQueryUnit().setIntermediateData(partitions);
+
     if (report.hasInputStats()) {
       this.inputStats = report.getInputStats();
     }

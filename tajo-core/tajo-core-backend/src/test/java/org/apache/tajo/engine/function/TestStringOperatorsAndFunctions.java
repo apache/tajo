@@ -126,11 +126,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testRegexReplace() throws IOException {
     testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
 
-    // TODO - The following tests require the resolution of TAJO-215 (https://issues.apache.org/jira/browse/TAJO-215)
     // null test
-    // testSimpleEval("select regexp_replace(null, 'bc', '--') as col1 ", new String[]{""});
-    // testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{""});
-    // testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{""});
+    testSimpleEval("select regexp_replace(null, 'bc', '--') as col1 ", new String[]{""});
+    testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{""});
+    testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);

@@ -25,6 +25,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Prepare a hash table of the NOT IN side of the join. Scan the FROM side table.
@@ -76,9 +77,10 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
 
       // Try to find a hash bucket in in-memory hash table
       getKeyLeftTuple(leftTuple, leftKeyTuple);
-      if (tupleSlots.containsKey(leftKeyTuple)) {
+      List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+      if (rightTuples != null) {
         // if found, it gets a hash bucket from the hash table.
-        iterator = tupleSlots.get(leftKeyTuple).iterator();
+        iterator = rightTuples.iterator();
       } else {
         continue;
       }

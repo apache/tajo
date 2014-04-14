@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
@@ -65,7 +66,8 @@ public class TestCompressionStorages {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {StoreType.CSV},
-        {StoreType.RCFILE}
+        {StoreType.RCFILE},
+        {StoreType.SEQUENCEFILE}
     });
   }
 
@@ -77,6 +79,10 @@ public class TestCompressionStorages {
   @Test
   public void testGzipCodecCompressionData() throws IOException {
     if (storeType == StoreType.RCFILE) {
+      if( ZlibFactory.isNativeZlibLoaded(conf)) {
+        storageCompressionTest(storeType, GzipCodec.class);
+      }
+    } else if (storeType == StoreType.SEQUENCEFILE) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
         storageCompressionTest(storeType, GzipCodec.class);
       }
@@ -176,7 +182,9 @@ public class TestCompressionStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.putOption("compression.codec", codec.getCanonicalName());
+    meta.putOption("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putOption("rcfile.serde", TextSerializerDeserializer.class.getName());
+    meta.putOption("sequencefile.serde", TextSerializerDeserializer.class.getName());
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);

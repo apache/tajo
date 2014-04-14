@@ -212,13 +212,22 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
   @Test
   public final void testCtasWithManagedTable() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
-      ResultSet res = executeFile("CtasWithManagedTable.sql");
-      res.close();
+    ResultSet res = executeFile("CtasWithManagedTable.sql");
+    res.close();
 
-      assertFalse(client.existTable("MANAGED_TABLE1"));
-      assertTrue(client.existTable("\"MANAGED_TABLE1\""));
-      TableDesc desc =  client.getTableDesc("\"MANAGED_TABLE1\"");
+    if (testingCluster.isHCatalogStoreRunning()) {
+      assertTrue(client.existTable("managed_table1"));
+
+      TableDesc desc =  client.getTableDesc("managed_table1");
+
+      assertNotNull(desc);
+      assertEquals("managed_table1", desc.getPath().getName());
+    } else {
+      assertFalse(client.existTable("managed_Table1"));
+      assertTrue(client.existTable("MANAGED_TABLE1"));
+
+      TableDesc desc =  client.getTableDesc("MANAGED_TABLE1");
+
       assertNotNull(desc);
       assertEquals("MANAGED_TABLE1", desc.getPath().getName());
     }

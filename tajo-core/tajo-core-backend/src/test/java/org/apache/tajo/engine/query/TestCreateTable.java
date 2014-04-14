@@ -62,30 +62,30 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     executeString("CREATE TABLE D1.table1 (age int);").close();
     executeString("CREATE TABLE D1.table2 (age int);").close();
-    executeString("CREATE TABLE D2.table3 (age int);").close();
-    executeString("CREATE TABLE D2.table4 (age int);").close();
+    executeString("CREATE TABLE d2.table3 (age int);").close();
+    executeString("CREATE TABLE d2.table4 (age int);").close();
 
-    assertTableExists("D1.table1");
-    assertTableExists("D1.table2");
-    assertTableNotExists("D2.table1");
-    assertTableNotExists("D2.table2");
+    assertTableExists("d1.table1");
+    assertTableExists("d1.table2");
+    assertTableNotExists("d2.table1");
+    assertTableNotExists("d2.table2");
 
-    assertTableExists("D2.table3");
-    assertTableExists("D2.table4");
-    assertTableNotExists("D1.table3");
-    assertTableNotExists("D1.table4");
+    assertTableExists("d2.table3");
+    assertTableExists("d2.table4");
+    assertTableNotExists("d1.table3");
+    assertTableNotExists("d1.table4");
 
     executeString("DROP TABLE D1.table1");
     executeString("DROP TABLE D1.table2");
     executeString("DROP TABLE D2.table3");
     executeString("DROP TABLE D2.table4");
 
-    assertDatabaseExists("D1");
-    assertDatabaseExists("D2");
+    assertDatabaseExists("d1");
+    assertDatabaseExists("d2");
     executeString("DROP DATABASE D1").close();
     executeString("DROP DATABASE D2").close();
-    assertDatabaseNotExists("D1");
-    assertDatabaseNotExists("D2");
+    assertDatabaseNotExists("d1");
+    assertDatabaseNotExists("d2");
   }
 
   private final void assertPathOfCreatedTable(final String databaseName,
@@ -99,8 +99,8 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     ResultSet res = executeString(createTableStmt);
     res.close();
-    assertTableExists(CatalogUtil.denormalizeIdentifier(oldFQTableName));
-    TableDesc oldTableDesc = client.getTableDesc(CatalogUtil.denormalizeIdentifier(oldFQTableName));
+    assertTableExists(oldFQTableName);
+    TableDesc oldTableDesc = client.getTableDesc(oldFQTableName);
 
 
     // checking the existence of the table directory and validating the path
@@ -115,7 +115,7 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     // checking the existence of the new table directory and validating the path
     final String newFQTableName = CatalogUtil.buildFQName(databaseName, newTableName);
-    TableDesc newTableDesc = client.getTableDesc(CatalogUtil.denormalizeIdentifier(newFQTableName));
+    TableDesc newTableDesc = client.getTableDesc(newFQTableName);
     assertTrue(fs.exists(newTableDesc.getPath()));
     assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, newTableName), newTableDesc.getPath());
   }
@@ -142,12 +142,12 @@ public class TestCreateTable extends QueryTestCaseBase {
   public final void testCreateTableIfNotExists() throws Exception {
     executeString("CREATE DATABASE D3;").close();
 
-    assertTableNotExists("D3.table1");
+    assertTableNotExists("d3.table1");
     executeString("CREATE TABLE D3.table1 (age int);").close();
-    assertTableExists("D3.table1");
+    assertTableExists("d3.table1");
 
     executeString("CREATE TABLE IF NOT EXISTS D3.table1 (age int);").close();
-    assertTableExists("D3.table1");
+    assertTableExists("d3.table1");
 
     executeString("DROP TABLE D3.table1");
   }
@@ -156,15 +156,15 @@ public class TestCreateTable extends QueryTestCaseBase {
   public final void testDropTableIfExists() throws Exception {
     executeString("CREATE DATABASE D4;").close();
 
-    assertTableNotExists("D4.table1");
-    executeString("CREATE TABLE D4.table1 (age int);").close();
-    assertTableExists("D4.table1");
+    assertTableNotExists("d4.table1");
+    executeString("CREATE TABLE d4.table1 (age int);").close();
+    assertTableExists("d4.table1");
 
-    executeString("DROP TABLE D4.table1;").close();
-    assertTableNotExists("D4.table1");
+    executeString("DROP TABLE d4.table1;").close();
+    assertTableNotExists("d4.table1");
 
-    executeString("DROP TABLE IF EXISTS D4.table1");
-    assertTableNotExists("D4.table1");
+    executeString("DROP TABLE IF EXISTS d4.table1");
+    assertTableNotExists("d4.table1");
   }
 
   @Test

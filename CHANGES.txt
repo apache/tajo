@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-616: SequenceFile support. (jaehwa)
+
     TAJO-480: Umbrella Jira for adding ALTER TABLE statement.
     (Alvin Henrick via hyunsik)
 
@@ -141,11 +143,34 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-691: HashJoin or HashAggregation is too slow if there is many unique keys.
-    (hyoungjunkim via hyunsik)
+    TAJO-732: Support executing LINUX shell command and HDFS command.
+    (hyoungjun kim via hyunsik)
 
-    TAJO-685: Add prerequisite to the document of network functions and operators.
-    (jihoon)
+    TAJO-745: APIs in TajoClient and JDBC should be case sensitive.
+
+    TAJO-743: Change the default resource allocation policy of leaf tasks. (jinho)
+
+    TAJO-717: Improve file splitting for large number of splits. (jinho)
+
+    TAJO-356: Improve TajoClient to directly get query results in the first request.
+    (hyunsik)
+
+    TAJO-728: Supports expression IN statement. (hyunsik)
+
+    TAJO-725: Broadcast JOIN should supports multiple tables. (hyoungjunkim via jaehwa)
+
+    TAJO-735: Remove multiple SLF4J bindings message. (hyoungjunkim via hyunsik)
+
+    TAJO-709: Add .reviewboardrc and use rbt instead of post-review.
+    (David Chen via hyunsik)
+
+    TAJO-714: Enable setting Parquet tuning parameters. (David Chen via hyunsik)
+
+    TAJO-691: HashJoin or HashAggregation is too slow if there is many unique 
+    keys. (hyoungjunkim via hyunsik)
+
+    TAJO-685: Add prerequisite to the document of network functions and 
+    operators. (jihoon)
 
     TAJO-644: Support quoted identifiers. (hyunsik)
 
@@ -294,6 +319,18 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-563: INSERT OVERWRITE should not remove data before query success.
+    (hyunsik)
+
+    TAJO-738: NPE occur when failed in QueryMaster's GlobalPlanner.build().
+    (hyoungjunkim via hyunsik)
+
+    TAJO-739: A subquery with the same column alias caused planning error.
+    (hyoungjunkim via hyunsik)
+
+    TAJO-729: PreLogicalPlanVerifier verifies distinct aggregation functions
+    incorrectly. (hyunsik)
 
     TAJO-719: JUnit test failures. (jinho)
 
@@ -591,6 +628,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-730: Update Tajo site to reflect graduation. (hyunsik)
+
     TAJO-529: Fix warnings in tajo-algebra. (jaehwa)
 
     TAJO-700: Update site, wikis, pom.xml and other resources to point to the 
@@ -654,6 +693,11 @@ Release 0.8.0 - unreleased
     TAJO-319: Update homepage and bump tajo version to 0.8. (hyunsik)
 
   SUB TASKS
+
+    TAJO-215: Catalog should allow compatible types when finding functions.
+    (Alvin Henrick via hyunsik)
+
+    TAJO-736: Add table management documentation. (hyunsik)
 
     TAJO-602: WorkerResourceManager should be broke down into 3 parts.
     (hyunsik)
@@ -876,6 +920,9 @@ Release 0.2.0 - released
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-754: failure of INSERT INTO may remove the target table.
+    (hyunsik)
 
     TAJO-682: RangePartitionAlgorithm should be improved to handle empty
     texts. (hyunsik)

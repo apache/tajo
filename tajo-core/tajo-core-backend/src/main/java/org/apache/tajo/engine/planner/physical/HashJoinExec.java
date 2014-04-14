@@ -19,6 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -63,7 +65,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
         leftExec, rightExec);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
-    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
+    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(100000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
         leftExec.getSchema(), rightExec.getSchema());
@@ -94,16 +96,17 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
   }
 
+  long scanStartTime = 0;
   public Tuple next() throws IOException {
     if (first) {
       loadRightToHashTable();
+      scanStartTime = System.currentTimeMillis();
     }
 
     Tuple rightTuple;
     boolean found = false;
 
     while(!finished) {
-
       if (shouldGetLeftTuple) { // initially, it is true.
         // getting new outer
         leftTuple = leftChild.next(); // it comes from a disk
@@ -114,8 +117,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
         // getting corresponding right
         getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
-        if (tupleSlots.containsKey(leftKeyTuple)) { // finds right tuples on in-memory hash table.
-          iterator = tupleSlots.get(leftKeyTuple).iterator();
+        List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+        if (rightTuples != null) { // found right tuples on in-memory hash table.
+          iterator = rightTuples.iterator();
           shouldGetLeftTuple = false;
         } else {
           shouldGetLeftTuple = true;
@@ -140,7 +144,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
       }
     }
 
-    return outTuple;
+    return new VTuple(outTuple);
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -149,21 +153,21 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
     while ((tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
-      List<Tuple> newValue;
       for (int i = 0; i < rightKeyList.length; i++) {
         keyTuple.put(i, tuple.get(rightKeyList[i]));
       }
 
-      if (tupleSlots.containsKey(keyTuple)) {
-        newValue = tupleSlots.get(keyTuple);
+      List<Tuple> newValue = tupleSlots.get(keyTuple);
+
+      if (newValue != null) {
         newValue.add(tuple);
-        tupleSlots.put(keyTuple, newValue);
       } else {
         newValue = new ArrayList<Tuple>();
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       }
     }
+
     first = false;
   }
 
@@ -195,4 +199,5 @@ public class HashJoinExec extends BinaryPhysicalExec {
   public JoinNode getPlan() {
     return this.plan;
   }
+
 }

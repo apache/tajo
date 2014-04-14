@@ -83,7 +83,7 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_DELIMITER,
-          CatalogConstants.CSVFILE_DELIMITER_DEFAULT)).charAt(0);
+          CatalogConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
       this.columnNum = schema.size();
       String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
@@ -260,7 +260,7 @@ public class CSVFile {
       }
 
       //Delimiter
-      String delim  = meta.getOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+      String delim  = meta.getOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(CatalogConstants.CSVFILE_NULL));

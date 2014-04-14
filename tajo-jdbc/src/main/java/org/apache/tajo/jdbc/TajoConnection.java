@@ -19,11 +19,14 @@
 package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ServiceException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
 import java.util.List;
@@ -33,6 +36,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoConnection implements Connection {
+  private static Log LOG = LogFactory.getLog(TajoConnection.class);
+
   private final TajoClient tajoClient;
   private final AtomicBoolean closed = new AtomicBoolean(true);
   private final String rawURI;
@@ -247,8 +252,23 @@ public class TajoConnection implements Connection {
 
   @Override
   public boolean isValid(int timeout) throws SQLException {
-    // TODO - It should be changed to submit a simple query.
-    return tajoClient.isConnected();
+    try {
+      if (tajoClient.isConnected()) {
+        ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
+        boolean next = resultSet.next();
+        boolean valid = next && resultSet.getLong(1) == 1;
+        resultSet.close();
+        return valid;
+      } else {
+        return false;
+      }
+    } catch (ServiceException e) {
+      LOG.error("TajoMaster is not available.");
+      return false;
+    } catch (IOException e) {
+      LOG.error("JDBC connection is not valid.");
+      return false;
+    }
   }
 
   @Override

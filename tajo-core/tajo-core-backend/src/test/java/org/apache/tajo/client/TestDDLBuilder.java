@@ -43,7 +43,7 @@ public class TestDDLBuilder {
     schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
 
     meta1 = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
-    meta1.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.CSVFILE_DELIMITER_DEFAULT);
+    meta1.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
     meta1.putOption(CatalogConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
     Schema expressionSchema = new Schema();

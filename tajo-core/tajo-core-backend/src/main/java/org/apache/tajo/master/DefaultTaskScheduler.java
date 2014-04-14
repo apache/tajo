@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -186,17 +186,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if (context.isLeafQuery()) {
           QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
           QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
-          task.setFragment(castEvent.getLeftFragment());
+          task.addFragment(castEvent.getLeftFragment(), true);
           scheduledObjectNum++;
-          if (castEvent.getRightFragment() != null) {
-            task.setFragment(castEvent.getRightFragment());
-            scheduledObjectNum++;
+          if (castEvent.hasRightFragments()) {
+            task.addFragments(castEvent.getRightFragments());
+            //scheduledObjectNum += castEvent.getRightFragments().size();
           }
           subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
-          fragmentsForNonLeafTask[1] = castEvent.getRightFragment();
+          if (castEvent.hasRightFragments()) {
+            fragmentsForNonLeafTask[1] = castEvent.getRightFragments().toArray(new FileFragment[]{})[0];
+          }
         }
       } else if (event instanceof FetchScheduleEvent) {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
@@ -206,9 +208,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         scheduledObjectNum++;
         for (Entry<String, List<URI>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
-          task.setFragment(fragmentsForNonLeafTask[0]);
+          task.addFragment(fragmentsForNonLeafTask[0], true);
           if (fragmentsForNonLeafTask[1] != null) {
-            task.setFragment(fragmentsForNonLeafTask[1]);
+            task.addFragment(fragmentsForNonLeafTask[1], true);
           }
         }
         subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
@@ -512,10 +514,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     /**
-    *  volume of a host : 0 ~ n
-    *  compressed task, amazon s3, unKnown volume : -1
-    *  remote task : -2
-    */
+     *  volume of a host : 0 ~ n
+     *  compressed task, amazon s3, unKnown volume : -1
+     *  remote task : -2
+     */
     public int getLowestVolumeId(){
       Map.Entry<Integer, Integer> volumeEntry = null;
 
@@ -558,7 +560,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     public int getRemainingLocalTaskSize(){
-       return remainTasksNum.get();
+      return remainTasksNum.get();
     }
 
     public String getHost() {
@@ -578,8 +580,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private final Set<QueryUnitAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private final Set<QueryUnitAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private Map<String, HostVolumeMapping> leafTaskHostMapping = new HashMap<String, HostVolumeMapping>();
-    private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
-        new HashMap<String, LinkedList<QueryUnitAttemptId>>();
+    private final Map<String, HashSet<QueryUnitAttemptId>> leafTasksRackMapping =
+        new HashMap<String, HashSet<QueryUnitAttemptId>>();
 
     private void addLeafTask(QueryUnitAttemptScheduleEvent event) {
       QueryUnitAttempt queryUnitAttempt = event.getQueryUnitAttempt();
@@ -600,13 +602,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           LOG.debug("Added attempt req to host " + host);
         }
 
-        LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(hostVolumeMapping.getRack());
+        HashSet<QueryUnitAttemptId> list = leafTasksRackMapping.get(hostVolumeMapping.getRack());
         if (list == null) {
-          list = new LinkedList<QueryUnitAttemptId>();
+          list = new HashSet<QueryUnitAttemptId>();
           leafTasksRackMapping.put(hostVolumeMapping.getRack(), list);
         }
 
-        if(!list.contains(queryUnitAttempt.getId())) list.add(queryUnitAttempt.getId());
+        list.add(queryUnitAttempt.getId());
 
         if (LOG.isDebugEnabled()) {
           LOG.debug("Added attempt req to rack " + hostVolumeMapping.getRack());
@@ -683,14 +685,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       //find task in rack
       if (attemptId == null) {
-        LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
-        while (list != null && list.size() > 0) {
-          QueryUnitAttemptId tId = list.removeFirst();
-
-          if (leafTasks.contains(tId)) {
-            leafTasks.remove(tId);
-            attemptId = tId;
-            break;
+        HashSet<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
+        if (list != null) {
+          synchronized (list) {
+            Iterator<QueryUnitAttemptId> iterator = list.iterator();
+            while (iterator.hasNext()) {
+              QueryUnitAttemptId tId = iterator.next();
+              iterator.remove();
+              if (leafTasks.contains(tId)) {
+                leafTasks.remove(tId);
+                attemptId = tId;
+                break;
+              }
+            }
           }
         }
       }

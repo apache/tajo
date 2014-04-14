@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -71,7 +72,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     this.idxReader.open();
     LOG.info("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", "
         + idxReader.getLastKey());
-    this.decoder = RowStoreDecoder.createInstance(schema);
+    this.decoder = RowStoreUtil.createDecoder(schema);
   }
 
   @Override

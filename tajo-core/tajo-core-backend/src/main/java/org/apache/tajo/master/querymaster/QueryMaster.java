@@ -354,16 +354,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
   }
 
   private TajoHeartbeat buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
-    TajoHeartbeat queryHeartbeat = TajoHeartbeat.newBuilder()
-        .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
-        .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
-        .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
-        .setState(queryMasterTask.getState())
-        .setQueryId(queryMasterTask.getQueryId().getProto())
-        .setQueryProgress(queryMasterTask.getQuery().getProgress())
-        .setQueryFinishTime(queryMasterTask.getQuery().getFinishTime())
-        .build();
-    return queryHeartbeat;
+    TajoHeartbeat.Builder builder = TajoHeartbeat.newBuilder();
+
+    builder.setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName());
+    builder.setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort());
+    builder.setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort());
+    builder.setState(queryMasterTask.getState());
+    builder.setQueryId(queryMasterTask.getQueryId().getProto());
+
+    if (queryMasterTask.getQuery() != null) {
+      builder.setQueryProgress(queryMasterTask.getQuery().getProgress());
+      builder.setQueryFinishTime(queryMasterTask.getQuery().getFinishTime());
+    }
+    return builder.build();
   }
 
   private class QueryStartEventHandler implements EventHandler<QueryStartEvent> {
@@ -374,9 +377,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
           event.getQueryId(), event.getSession(), event.getQueryContext(), event.getSql(), event.getLogicalPlanJson());
 
       queryMasterTask.init(systemConf);
-      queryMasterTask.start();
+      if (!queryMasterTask.isInitError()) {
+        queryMasterTask.start();
+      }
+
       synchronized(queryMasterTasks) {
         queryMasterTasks.put(event.getQueryId(), queryMasterTask);
+      }
+
+      if (queryMasterTask.isInitError()) {
+        queryMasterContext.stopQuery(queryMasterTask.getQueryId());
+        return;
       }
     }
   }

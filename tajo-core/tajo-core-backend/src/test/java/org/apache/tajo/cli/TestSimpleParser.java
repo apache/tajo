@@ -28,6 +28,21 @@ import static org.junit.Assert.assertTrue;
 public class TestSimpleParser {
 
   @Test
+  public final void testSpecialCases() throws InvalidStatementException {
+    List<ParsedResult> res1 = SimpleParser.parseScript("");
+    assertEquals(0, res1.size());
+
+    List<ParsedResult> res2 = SimpleParser.parseScript("a");
+    assertEquals(1, res2.size());
+
+    List<ParsedResult> res3 = SimpleParser.parseScript("?");
+    assertEquals(0, res3.size());
+
+    List<ParsedResult> res4 = SimpleParser.parseScript("\\");
+    assertEquals(1, res4.size());
+  }
+
+  @Test
   public final void testMetaCommands() throws InvalidStatementException {
     List<ParsedResult> res1 = SimpleParser.parseScript("\\d");
     assertEquals(1, res1.size());

@@ -60,7 +60,7 @@
       <email>akarasulu@apache.org</email>
       <organization></organization>
       <roles>
-        <role>Mentor</role>
+        <role>PMC</role>
       </roles>
       <timezone></timezone>
     </developer>
@@ -70,7 +70,7 @@
       <email>chris.a.mattmann@jpl.nasa.gov</email>
       <organization>NASA JPL</organization>
       <roles>
-        <role>Mentor</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -80,7 +80,7 @@
       <email>ereisman@apache.org</email>
       <organization>Hortonworks</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -89,7 +89,7 @@
       <name>Henry Saputra</name>
       <email>hsaputra@apache.org</email>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -99,7 +99,7 @@
       <email>hyunsik@apache.org</email>
       <organization>Gruter</organization>
       <roles>
-        <role>PPMC</role>
+        <role>V.P.</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -109,7 +109,7 @@
       <email>blrunner@apache.org</email>
       <organization>Gruter</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -119,7 +119,7 @@
       <email>jghoman@apache.org</email>
       <organization>LinkedIn</organization>
       <roles>
-        <role>Champion</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -129,7 +129,7 @@
       <email>jhkim@apache.org</email>
       <organization>Gruter</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -139,9 +139,19 @@
       <email>jihoonson@apache.org</email>
       <organization>Korea University</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
+    </developer>
+    <developer>
+      <id></id>
+      <name>Min Zhou</name>
+      <email></email>
+      <organization>LinkedIn</organization>
+      <roles>
+        <role>Committer</role>
+      </roles>
+      <timezone>-8</timezone>
     </developer>
     <developer>
       <id>sirpkt</id>
@@ -149,7 +159,7 @@
       <email>keuntae.park@sk.com</email>
       <organization>SK Telecom</organization>
       <roles>
-        <role></role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -159,7 +169,7 @@
       <email>owen@hortonworks.com</email>
       <organization>Hortonworks</organization>
       <roles>
-        <role>Mentor</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -169,7 +179,7 @@
       <email>rsumbaly@apache.org</email>
       <organization>LinkedIn</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>-8</timezone>
     </developer>
@@ -179,7 +189,7 @@
       <email>swkim@apache.org</email>
       <organization>Inervit</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -189,7 +199,7 @@
       <email>yliu@apache.org</email>
       <organization>Intel</organization>
       <roles>
-        <role>PPMC</role>
+        <role>PMC</role>
       </roles>
       <timezone>+8</timezone>
     </developer>
@@ -197,46 +207,76 @@
 
   <contributors>
     <contributor>
+      <name>Alvin Henrick</name>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Camelia</name>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>DaeMyung Kang</name>
       <organization>Kakao</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>David Chen</name>
+      <organization>LinkedIn</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Dongmin Yu</name>
       <organization>InfiniLoop</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Hyoung Jun Kim</name>
       <organization>Gruter</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Ilhyun Suh</name>
+      <organization>Korea University</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Jae Young Lee</name>
       <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Tae-kyeong Goh</name>
+      <organization>Gruter</organization>
+      <roles><role>Logo Designer</role></roles>
     </contributor>
     <contributor>
       <name>KyoungBok Lee</name>
       <organization>Line</organization>
-    </contributor>
-    <contributor>
-      <name>Min Zhou</name>
-      <organization>LinkedIn</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Seungun Choe</name>
       <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Sergio Esteves</name>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>SeongHwa Ahn</name>
       <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Youngjun Park</name>
+      <organization>Gruter</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Wan Heo</name>
       <organization>Korea University</organization>
+      <roles><role>Contributor</role></roles>
     </contributor>
   </contributors>
 
@@ -254,20 +294,20 @@
   <mailingLists>
     <mailingList>
       <name>Development list</name>
-      <subscribe>mailto:dev-subscribe@tajo.incubator.apache.org
+      <subscribe>mailto:dev-subscribe@tajo.apache.org
       </subscribe>
-      <unsubscribe>mailto:dev-unsubscribe@tajo.incubator.apache.org
+      <unsubscribe>mailto:dev-unsubscribe@tajo.apache.org
       </unsubscribe>
-      <post>mailto:dev@tajo.incubator.apache.org</post>
+      <post>mailto:dev@tajo.apache.org</post>
       <archive>http://mail-archives.apache.org/mod_mbox/tajo-dev/</archive>
     </mailingList>
     <mailingList>
       <name>Commit list</name>
-      <subscribe>mailto:commits-subscribe@tajo.incubator.apache.org
+      <subscribe>mailto:commits-subscribe@tajo.apache.org
       </subscribe>
-      <unsubscribe>mailto:commits-unsubscribe@tajo.incubator.apache.org
+      <unsubscribe>mailto:commits-unsubscribe@tajo.apache.org
       </unsubscribe>
-      <post>mailto:commits@tajo.incubator.apache.org</post>
+      <post>mailto:commits@tajo.apache.org</post>
       <archive>http://mail-archives.apache.org/mod_mbox/tajo-commits/</archive>
     </mailingList>
   </mailingLists>

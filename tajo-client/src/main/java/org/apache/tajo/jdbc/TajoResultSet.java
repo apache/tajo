@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -42,11 +43,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoResultSet extends TajoResultSetBase {
+  private static final int INFINITE_ROW_NUM = Integer.MAX_VALUE;
+
   private FileSystem fs;
   private Scanner scanner;
   private TajoClient tajoClient;
   private TajoConf conf;
   private TableDesc desc;
+  private Long maxRowNum = null;
   private QueryId queryId;
   private AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -56,26 +60,36 @@ public class TajoResultSet extends TajoResultSetBase {
     init();
   }
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId,
-                       TajoConf conf, TableDesc desc) throws IOException {
+  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
-    this.desc = desc;
+    this.desc = table;
+    initScanner();
+    init();
+  }
 
+  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, long maxRowNum)
+      throws IOException {
+    this(tajoClient, queryId, conf, table);
+    this.maxRowNum = maxRowNum;
     initScanner();
     init();
   }
 
   private void initScanner() throws IOException {
     if(desc != null) {
-      this.schema = desc.getSchema();
-
+      schema = desc.getSchema();
       fs = FileScanner.getFileSystem(conf, desc.getPath());
-      this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : 0;
+      if (maxRowNum != null) {
+        this.totalRow = maxRowNum;
+      } else {
+        this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : INFINITE_ROW_NUM;
+      }
+
 
       List<FileFragment> frags = getFragments(desc.getPath());
-      scanner = new MergeScanner(conf, schema, desc.getMeta(), frags);
+      scanner = new MergeScanner(conf, desc.getSchema(), desc.getMeta(), frags);
     }
   }
 
@@ -128,7 +142,7 @@ public class TajoResultSet extends TajoResultSetBase {
     }
 
     try {
-      if(tajoClient != null) {
+      if(tajoClient != null && !queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         this.tajoClient.closeQuery(queryId);
       }
     } catch (Exception e) {
@@ -165,6 +179,11 @@ public class TajoResultSet extends TajoResultSetBase {
     if(scanner == null) {
       return null;
     }
+
+    if (maxRowNum != null && curRow >= maxRowNum) {
+      return null;
+    }
+
     Tuple tuple = scanner.next();
     if (tuple == null) {
       //query is closed automatically by querymaster but scanner is not
@@ -177,5 +196,13 @@ public class TajoResultSet extends TajoResultSetBase {
 
   public boolean hasResult() {
     return scanner != null;
+  }
+
+  public QueryId getQueryId() {
+    return queryId;
+  }
+
+  public TableDesc getTableDesc() {
+    return desc;
   }
 }
