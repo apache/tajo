@@ -270,6 +270,29 @@ message PartitionDescProto {
   optional string path = 5;
 }
 
+message TablespaceProto {
+  required string spaceName = 1;
+  required string uri = 2;
+}
+
+message AlterTablespaceProto {
+  required string spaceName = 1;
+  repeated AlterTablespaceCommand command = 2;
+
+  enum AlterTablespaceType {
+    LOCATION = 0;
+  }
+
+  message SetLocation {
+    required string uri = 1;
+  }
+
+  message AlterTablespaceCommand {
+    required AlterTablespaceType type = 1;
+    optional SetLocation location = 2;
+  }
+}
+
 message AlterTableDescProto {
   required string tableName = 1;
   optional string newTableName = 2 ;

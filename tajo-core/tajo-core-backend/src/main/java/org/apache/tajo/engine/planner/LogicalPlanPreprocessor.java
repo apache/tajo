@@ -414,6 +414,13 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   }
 
   @Override
+  public LogicalNode visitAlterTablespace(PreprocessContext ctx, Stack<Expr> stack, AlterTablespace expr)
+      throws PlanningException {
+    AlterTablespaceNode alterTablespace = ctx.plan.createNode(AlterTablespaceNode.class);
+    return alterTablespace;
+  }
+
+  @Override
   public LogicalNode visitAlterTable(PreprocessContext ctx, Stack<Expr> stack, AlterTable expr)
       throws PlanningException {
     AlterTableNode alterTableNode = ctx.plan.createNode(AlterTableNode.class);

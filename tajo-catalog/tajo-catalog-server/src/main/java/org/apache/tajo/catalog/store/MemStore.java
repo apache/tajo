@@ -34,6 +34,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import java.io.IOException;
 import java.util.*;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+
 /**
  * CatalogServer guarantees that all operations are thread-safe.
  * So, we don't need to consider concurrency problem here.
@@ -80,6 +83,34 @@ public class MemStore implements CatalogStore {
   @Override
   public Collection<String> getAllTablespaceNames() throws CatalogException {
     return tablespaces.keySet();
+  }
+
+  @Override
+  public TablespaceProto getTablespace(String spaceName) throws CatalogException {
+    if (!tablespaces.containsKey(spaceName)) {
+      throw new NoSuchTablespaceException(spaceName);
+    }
+
+    TablespaceProto.Builder builder = TablespaceProto.newBuilder();
+    builder.setSpaceName(spaceName);
+    builder.setUri(tablespaces.get(spaceName));
+    return builder.build();
+  }
+
+  @Override
+  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
+    if (!tablespaces.containsKey(alterProto.getSpaceName())) {
+      throw new NoSuchTablespaceException(alterProto.getSpaceName());
+    }
+
+    if (alterProto.getCommandList().size() > 0) {
+      for (CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand cmd : alterProto.getCommandList()) {
+        if(cmd.getType() == AlterTablespaceType.LOCATION) {
+          CatalogProtos.AlterTablespaceProto.SetLocation setLocation = cmd.getLocation();
+          tablespaces.put(alterProto.getSpaceName(), setLocation.getUri());
+        }
+      }
+    }
   }
 
   @Override

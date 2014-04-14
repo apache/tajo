@@ -124,6 +124,36 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
+  public TablespaceProto getTablespace(final String tablespaceName) {
+    try {
+      return new ServerCallable<TablespaceProto>(pool, catalogServerAddr, CatalogProtocol.class, false) {
+        public TablespaceProto call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.getTablespace(null, ProtoUtil.convertString(tablespaceName));
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public Boolean alterTablespace(final AlterTablespaceProto alterTablespace) {
+    try {
+      return new ServerCallable<Boolean>(pool, catalogServerAddr, CatalogProtocol.class, false) {
+        public Boolean call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.alterTablespace(null, alterTablespace).getValue();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  @Override
   public final Boolean createDatabase(final String databaseName, @Nullable final String tablespaceName) {
     try {
       return new ServerCallable<Boolean>(pool, catalogServerAddr, CatalogProtocol.class, false) {

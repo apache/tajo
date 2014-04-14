@@ -33,7 +33,6 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTableExists(createdNames.get(0));
     executeDDL("alter_table_rename_table_ddl.sql", null);
     assertTableExists("DEF");
-
   }
 
   @Test
