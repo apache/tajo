@@ -121,11 +121,6 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
     return Objects.hashCode(name, dataType);
 
   }
-  
-  @Override
-  public Object clone() {
-    return this;
-  }
 
   /**
    *

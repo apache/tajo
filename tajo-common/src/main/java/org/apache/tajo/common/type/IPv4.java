@@ -62,11 +62,11 @@ public class IPv4 implements Writable, Comparable<IPv4> {
 			token = tokenizer.nextToken(".");
 			if (token == null) {
 				throw new InvalidAddressException();
-			} else if (Integer.valueOf(token) < 0 || Integer.valueOf(token) > 255) {
+			} else if (Integer.parseInt(token) < 0 || Integer.parseInt(token) > 255) {
 				throw new InvalidAddressException();
 			}
 			//			ipBytes[i] = Short.valueOf(token).byteValue();
-			this.ipBytes[i] = (byte)(((Integer.valueOf(token) << 24) >> 24) & 0xFF);
+			this.ipBytes[i] = (byte)(((Integer.parseInt(token) << 24) >> 24) & 0xFF);
 		}
 	}
 	
@@ -91,7 +91,7 @@ public class IPv4 implements Writable, Comparable<IPv4> {
 		int maskIndex;
 		if ((maskIndex=addr.indexOf('/')) != -1) {
 			IPv4 other = new IPv4(addr.substring(0, maskIndex));
-			int maskLen = Integer.valueOf(addr.substring(maskIndex+1));
+			int maskLen = Integer.parseInt(addr.substring(maskIndex+1));
 			IPv4 subnetMask = IPv4.getSubnetMask(maskLen);
 			if (this.and(subnetMask).equals(other.and(subnetMask))) {
 				return true;

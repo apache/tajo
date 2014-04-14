@@ -140,7 +140,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     IndexDesc desc = (IndexDesc) super.clone();
     desc.indexName = indexName;
     desc.tableName = tableName;
-    desc.column = (Column) column.clone();
+    desc.column = column;
     desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;

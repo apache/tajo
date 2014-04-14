@@ -20,8 +20,6 @@ package org.apache.tajo.catalog;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -29,10 +27,11 @@ import org.apache.tajo.json.GsonObject;
 
 
 public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescProto>, GsonObject, Cloneable {
-  private final Log LOG = LogFactory.getLog(AlterTableDesc.class);
 
   protected CatalogProtos.AlterTableDescProto.Builder builder = null;
 
+  @Expose
+  protected AlterTableType alterTableType; //required
   @Expose
   protected String tableName;  // required
   @Expose
@@ -43,8 +42,6 @@ public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescP
   protected String newColumnName; //optional
   @Expose
   protected Column addColumn = null; //optiona
-  @Expose
-  protected AlterTableType alterTableType; //required
 
   public AlterTableDesc() {
     builder = CatalogProtos.AlterTableDescProto.newBuilder();
@@ -104,6 +101,18 @@ public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescP
     Gson gson = new GsonBuilder().setPrettyPrinting().
         excludeFieldsWithoutExposeAnnotation().create();
     return gson.toJson(this);
+  }
+
+  @Override
+  public AlterTableDesc clone() throws CloneNotSupportedException {
+    AlterTableDesc newAlter = (AlterTableDesc) super.clone();
+    newAlter.builder = CatalogProtos.AlterTableDescProto.newBuilder();
+    newAlter.alterTableType = alterTableType;
+    newAlter.tableName = tableName;
+    newAlter.newTableName = newTableName;
+    newAlter.columnName = newColumnName;
+    newAlter.addColumn = addColumn;
+    return newAlter;
   }
 
   @Override

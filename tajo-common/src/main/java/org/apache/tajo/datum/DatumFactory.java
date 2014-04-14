@@ -219,7 +219,7 @@ public class DatumFactory {
   }
 
   public static Int4Datum createInt4(String val) {
-    return new Int4Datum(Integer.valueOf(val));
+    return new Int4Datum(Integer.parseInt(val));
   }
 
   public static Int8Datum createInt8(long val) {
@@ -227,7 +227,7 @@ public class DatumFactory {
   }
 
   public static Int8Datum createInt8(String val) {
-    return new Int8Datum(Long.valueOf(val));
+    return new Int8Datum(Long.parseLong(val));
   }
 
   public static Float4Datum createFloat4(float val) {

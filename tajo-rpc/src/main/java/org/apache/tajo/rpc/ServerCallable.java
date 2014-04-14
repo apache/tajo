@@ -30,7 +30,6 @@ import org.apache.tajo.conf.TajoConf;
 
 public abstract class ServerCallable<T> {
   protected InetSocketAddress addr;
-  protected TajoConf tajoConf;
   protected long startTime;
   protected long endTime;
   protected Class protocol;

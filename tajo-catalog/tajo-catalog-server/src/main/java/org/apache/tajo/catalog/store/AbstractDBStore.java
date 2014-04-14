@@ -841,11 +841,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void renameColumn(final int tableId, final CatalogProtos.AlterColumnProto alterColumnProto) throws CatalogException {
+  private void renameColumn(final int tableId, final CatalogProtos.AlterColumnProto alterColumnProto)
+      throws CatalogException {
 
-    final String selectColumnSql = "SELECT COLUMN_NAME, DATA_TYPE, TYPE_LENGTH, ORDINAL_POSITION from " + TB_COLUMNS +" WHERE " + COL_TABLES_PK + " = ?" + " AND COLUMN_NAME = ?" ;
-    final String deleteColumnNameSql = "DELETE FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
-    final String insertNewColumnSql = "INSERT INTO " + TB_COLUMNS + " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?) ";
+    final String selectColumnSql =
+        "SELECT COLUMN_NAME, DATA_TYPE, TYPE_LENGTH, ORDINAL_POSITION from " + TB_COLUMNS +
+            " WHERE " + COL_TABLES_PK + " = ?" + " AND COLUMN_NAME = ?" ;
+    final String deleteColumnNameSql =
+        "DELETE FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
+    final String insertNewColumnSql =
+        "INSERT INTO " + TB_COLUMNS +
+            " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?) ";
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(selectColumnSql);
@@ -876,6 +882,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         //NOTE ==> Setting new column Name
         columnProto = columnProto.toBuilder().setName(alterColumnProto.getNewColumnName()).build();
         ordinalPostion = resultSet.getInt("ORDINAL_POSITION");
+      } else {
+        throw new NoSuchColumnException(alterColumnProto.getOldColumnName());
       }
 
       resultSet.close();

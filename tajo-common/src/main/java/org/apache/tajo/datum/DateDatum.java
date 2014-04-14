@@ -157,7 +157,7 @@ public class DateDatum extends Datum {
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       return DatumFactory.createBool(date.equals(((DateDatum) datum).date));
-    } else if (datum instanceof NullDatum  || datum.isNull()) {
+    } else if (datum.isNull()) {
       return datum;
     } else {
       throw new InvalidOperationException();
@@ -176,14 +176,11 @@ public class DateDatum extends Datum {
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof NullDatum) {
-        return false;
-    }
     if (obj instanceof DateDatum) {
       DateDatum another = (DateDatum) obj;
       return date.isEqual(another.date);
     } else {
-      throw new InvalidOperationException();
+      return false;
     }
   }
 

@@ -153,6 +153,8 @@ public class MemoryUtil {
         total += TIMESTAMP_DATUM;
         break;
 
+      default:
+        break;
       }
     }
 

@@ -117,7 +117,7 @@ public class Target implements Cloneable, GsonObject {
   public Object clone() throws CloneNotSupportedException {
     Target target = (Target) super.clone();
     target.expr = (EvalNode) expr.clone();
-    target.column = (Column) column.clone();
+    target.column = column;
     target.alias = alias != null ? alias : null;
 
     return target;

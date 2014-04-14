@@ -920,6 +920,8 @@ Release 0.2.0 - released
 
   BUG FIXES
 
+    TAJO-759: Fix findbug errors added recently. (hyunsik)
+
     TAJO-754: failure of INSERT INTO may remove the target table.
     (hyunsik)
 
