@@ -16,25 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver.listener;
+package org.apache.tajo.pullserver;
 
-import org.apache.hadoop.mapred.FadvisedFileRegion;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
+import org.apache.hadoop.io.ReadaheadPool;
 
-@Deprecated
-public class FileCloseListener implements ChannelFutureListener {
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
-  private FadvisedFileRegion filePart;
+/* tajo is not yet supported on Windows */
+public class FadvisedFileRegionWrapper extends org.apache.hadoop.mapred.FadvisedFileRegion {
+  public static final int DEFAULT_SHUFFLE_BUFFER_SIZE = 128 * 1024;
 
-  public FileCloseListener(FadvisedFileRegion filePart) {
-    this.filePart = filePart;
-  }
-
-  // TODO error handling; distinguish IO/connection failures,
-  //      attribute to appropriate spill output
-  @Override
-  public void operationComplete(ChannelFuture future) {
-    filePart.releaseExternalResources();
+  public FadvisedFileRegionWrapper(RandomAccessFile file, long position, long count,
+                                   boolean manageOsCache, int readaheadLength, ReadaheadPool readaheadPool,
+                                   String identifier) throws IOException {
+    super(file, position, count, manageOsCache, readaheadLength, readaheadPool,
+        identifier, DEFAULT_SHUFFLE_BUFFER_SIZE, true);
   }
 }

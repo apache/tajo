@@ -95,7 +95,7 @@ public class TestStorages {
       schema.addColumn("age", Type.INT8);
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
-      meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+      meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
       Path tablePath = new Path(testDir, "Splitable.data");
       Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
       appender.enableStats();
@@ -148,7 +148,7 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testProjection.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -209,7 +209,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);

@@ -24,12 +24,11 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 public class TestDDLBuilder {
@@ -43,8 +42,8 @@ public class TestDDLBuilder {
     schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
 
     meta1 = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
-    meta1.putOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
-    meta1.putOption(CatalogConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
+    meta1.putOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    meta1.putOption(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
     Schema expressionSchema = new Schema();
     expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);

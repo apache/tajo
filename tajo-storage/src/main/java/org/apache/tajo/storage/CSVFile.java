@@ -82,10 +82,10 @@ public class CSVFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_DELIMITER,
-          CatalogConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
+          StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
       this.columnNum = schema.size();
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(CatalogConstants.CSVFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -108,7 +108,7 @@ public class CSVFile {
         isShuffle = false;
       }
 
-      String codecName = this.meta.getOption(CatalogConstants.COMPRESSION_CODEC);
+      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
       if(!StringUtils.isEmpty(codecName)){
         codecFactory = new CompressionCodecFactory(conf);
         codec = codecFactory.getCodecByClassName(codecName);
@@ -139,7 +139,7 @@ public class CSVFile {
       }
 
       try {
-        String serdeClass = this.meta.getOption(CatalogConstants.CSVFILE_SERDE,
+        String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {
@@ -260,10 +260,10 @@ public class CSVFile {
       }
 
       //Delimiter
-      String delim  = meta.getOption(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
+      String delim  = meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(CatalogConstants.CSVFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -340,7 +340,7 @@ public class CSVFile {
       }
 
       try {
-        String serdeClass = this.meta.getOption(CatalogConstants.CSVFILE_SERDE,
+        String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       } catch (Exception e) {

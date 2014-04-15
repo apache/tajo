@@ -18,9 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import parquet.hadoop.ParquetWriter;
-import parquet.hadoop.metadata.CompressionCodecName;
-
 public class CatalogConstants {
   public final static String IDENTIFIER_DELIMITER_REGEXP = "\\.";
   public final static String IDENTIFIER_DELIMITER = ".";
@@ -54,50 +51,4 @@ public class CatalogConstants {
   public static final String COL_DATABASES_PK = "DB_ID";
   public static final String COL_TABLES_PK = "TID";
   public static final String COL_TABLES_NAME = "TABLE_NAME";
-
-  // table options
-  public static final String COMPRESSION_CODEC = "compression.codec";
-  public static final String COMPRESSION_TYPE = "compression.type";
-
-  public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
-  public static final String CSVFILE_NULL = "csvfile.null";
-  public static final String CSVFILE_SERDE = "csvfile.serde";
-
-
-  public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
-  public static final String SEQUENCEFILE_NULL = "sequencefile.null";
-  public static final String SEQUENCEFILE_SERDE = "sequencefile.serde";
-
-  public static final String RCFILE_NULL = "rcfile.null";
-  public static final String RCFILE_SERDE = "rcfile.serde";
-
-  public static final String DEFAULT_FIELD_DELIMITER = "|";
-  public static final String DEFAULT_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
-  public static final String DEFAULT_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
-
-  public static final String PARQUET_DEFAULT_BLOCK_SIZE;
-  public static final String PARQUET_DEFAULT_PAGE_SIZE;
-  public static final String PARQUET_DEFAULT_COMPRESSION_CODEC_NAME;
-  public static final String PARQUET_DEFAULT_IS_DICTIONARY_ENABLED;
-  public static final String PARQUET_DEFAULT_IS_VALIDATION_ENABLED;
-
-  static {
-    PARQUET_DEFAULT_BLOCK_SIZE =
-        Integer.toString(ParquetWriter.DEFAULT_BLOCK_SIZE);
-    PARQUET_DEFAULT_PAGE_SIZE =
-        Integer.toString(ParquetWriter.DEFAULT_PAGE_SIZE);
-
-    // When parquet-hadoop 1.3.3 is available, this should be changed to
-    // ParquetWriter.DEFAULT_COMPRESSION_CODEC_NAME.
-    PARQUET_DEFAULT_COMPRESSION_CODEC_NAME =
-        CompressionCodecName.UNCOMPRESSED.name().toLowerCase();
-
-    // When parquet-hadoop 1.3.3 is available, this should be changed to
-    // ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED.
-    PARQUET_DEFAULT_IS_DICTIONARY_ENABLED = "true";
-
-    // When parquet-hadoop 1.3.3 is available, this should be changed to
-    // ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED.
-    PARQUET_DEFAULT_IS_VALIDATION_ENABLED = "false";
-  }
 }

@@ -630,6 +630,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-753: Clean up of maven dependencies. (jinho)
+
     TAJO-730: Update Tajo site to reflect graduation. (hyunsik)
 
     TAJO-529: Fix warnings in tajo-algebra. (jaehwa)
