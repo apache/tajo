@@ -22,14 +22,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.FileUtil;
+import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.IOException;
 
-public class StorageUtil {
+public class StorageUtil extends StorageConstants{
   public static int getRowByteSize(Schema schema) {
     int sum = 0;
     for(Column col : schema.getColumns()) {
@@ -98,5 +98,25 @@ public class StorageUtil {
     }
     
     return new Path(parent, sb.toString());
+  }
+
+  public static Options newPhysicalProperties(CatalogProtos.StoreType type) {
+    Options options = new Options();
+    if (CatalogProtos.StoreType.CSV == type) {
+      options.put(CSVFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
+    } else if (CatalogProtos.StoreType.RCFILE == type) {
+      options.put(RCFILE_SERDE, DEFAULT_BINARY_SERDE);
+    } else if (CatalogProtos.StoreType.SEQUENCEFILE == type) {
+      options.put(SEQUENCEFILE_SERDE, DEFAULT_TEXT_SERDE);
+      options.put(SEQUENCEFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
+    } else if (type == CatalogProtos.StoreType.PARQUET) {
+      options.put(ParquetOutputFormat.BLOCK_SIZE, PARQUET_DEFAULT_BLOCK_SIZE);
+      options.put(ParquetOutputFormat.PAGE_SIZE, PARQUET_DEFAULT_PAGE_SIZE);
+      options.put(ParquetOutputFormat.COMPRESSION, PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
+      options.put(ParquetOutputFormat.ENABLE_DICTIONARY, PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
+      options.put(ParquetOutputFormat.VALIDATION, PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
+    }
+
+    return options;
   }
 }

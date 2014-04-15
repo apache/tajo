@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,15 +105,15 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(StringEscapeUtils.escapeJava(CatalogConstants.DEFAULT_FIELD_DELIMITER),
-        table1.getMeta().getOption(CatalogConstants.CSVFILE_DELIMITER));
+    assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
+        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
   @Test
   public void testTableUsingRCFileWithBinarySerde() throws Exception {
     Options options = new Options();
-    options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
+    options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.RCFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -133,15 +134,15 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(CatalogConstants.DEFAULT_BINARY_SERDE,
-        table1.getMeta().getOption(CatalogConstants.RCFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
+        table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
   @Test
   public void testTableUsingRCFileWithTextSerde() throws Exception {
     Options options = new Options();
-    options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
+    options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.RCFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -162,15 +163,15 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(CatalogConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(CatalogConstants.RCFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
   @Test
   public void testTableWithNullValue() throws Exception {
     Options options = new Options();
-    options.put(CatalogConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0001"));
-    options.put(CatalogConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\\N"));
+    options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0001"));
+    options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\\N"));
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
 
 
@@ -198,11 +199,11 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(table.getMeta().getOption(CatalogConstants.CSVFILE_DELIMITER),
-        table1.getMeta().getOption(CatalogConstants.CSVFILE_DELIMITER));
+    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
+        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
 
-    assertEquals(table.getMeta().getOption(CatalogConstants.CSVFILE_NULL),
-        table1.getMeta().getOption(CatalogConstants.CSVFILE_NULL));
+    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_NULL),
+        table1.getMeta().getOption(StorageConstants.CSVFILE_NULL));
     store.dropTable(DB_NAME, SUPPLIER);
   }
 
@@ -304,7 +305,7 @@ public class TestHCatalogStore {
   @Test
   public void testTableUsingSequenceFileWithBinarySerde() throws Exception {
     Options options = new Options();
-    options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
+    options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.SEQUENCEFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -325,15 +326,15 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(CatalogConstants.DEFAULT_BINARY_SERDE,
-        table1.getMeta().getOption(CatalogConstants.SEQUENCEFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
+        table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
   @Test
   public void testTableUsingSequenceFileWithTextSerde() throws Exception {
     Options options = new Options();
-    options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
+    options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.SEQUENCEFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -354,7 +355,7 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(CatalogConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(CatalogConstants.SEQUENCEFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 

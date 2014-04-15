@@ -36,8 +36,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import parquet.hadoop.ParquetOutputFormat;
-
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -292,30 +290,6 @@ public class CatalogUtil {
     } else {
       return null;
     }
-  }
-  public static Options newOptionsWithDefault(StoreType type) {
-    Options options = new Options();
-    if(StoreType.CSV == type){
-      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
-    } else if(StoreType.RCFILE == type){
-      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
-    } else if(StoreType.SEQUENCEFILE == type){
-      options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
-      options.put(CatalogConstants.SEQUENCEFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (type == StoreType.PARQUET) {
-      options.put(ParquetOutputFormat.BLOCK_SIZE,
-          CatalogConstants.PARQUET_DEFAULT_BLOCK_SIZE);
-      options.put(ParquetOutputFormat.PAGE_SIZE,
-          CatalogConstants.PARQUET_DEFAULT_PAGE_SIZE);
-      options.put(ParquetOutputFormat.COMPRESSION,
-          CatalogConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
-      options.put(ParquetOutputFormat.ENABLE_DICTIONARY,
-          CatalogConstants.PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
-      options.put(ParquetOutputFormat.VALIDATION,
-          CatalogConstants.PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
-    }
-
-    return options;
   }
 
   public static TableMeta newTableMeta(StoreType type) {

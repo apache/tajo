@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -1321,8 +1322,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
     }
 
-    // Set default options to be created.
-    Options options = CatalogUtil.newOptionsWithDefault(createTableNode.getStorageType());
+    // Set default storage properties to be created.
+    Options options = StorageUtil.newPhysicalProperties(createTableNode.getStorageType());
     if (expr.hasParams()) {
       options.putAll(expr.getParams());
     }

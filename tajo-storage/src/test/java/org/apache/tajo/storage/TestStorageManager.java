@@ -110,7 +110,7 @@ public class TestStorageManager {
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(1).build();
 
-    int testCount = 100;
+    int testCount = 10;
     Path tablePath = new Path("/testGetSplit");
     try {
       DistributedFileSystem fs = cluster.getFileSystem();
@@ -165,7 +165,7 @@ public class TestStorageManager {
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(2).build();
 
-    int testCount = 100;
+    int testCount = 10;
     Path tablePath = new Path("/testGetSplitWithBlockStorageLocationsBatching");
     try {
       DistributedFileSystem fs = cluster.getFileSystem();

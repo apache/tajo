@@ -22,7 +22,6 @@ import org.apache.hadoop.mapred.FadvisedFileRegion;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
-@Deprecated
 public class FileCloseListener implements ChannelFutureListener {
 
   private FadvisedFileRegion filePart;
@@ -35,6 +34,9 @@ public class FileCloseListener implements ChannelFutureListener {
   //      attribute to appropriate spill output
   @Override
   public void operationComplete(ChannelFuture future) {
+    if(future.isSuccess()){
+      filePart.transferSuccessful();
+    }
     filePart.releaseExternalResources();
   }
 }

@@ -146,7 +146,7 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testProjection.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -209,7 +209,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -271,11 +271,11 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
-    meta.putOption(CatalogConstants.CSVFILE_NULL, "\\\\N");
-    meta.putOption(CatalogConstants.RCFILE_NULL, "\\\\N");
-    meta.putOption(CatalogConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
-    meta.putOption(CatalogConstants.SEQUENCEFILE_NULL, "\\");
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
+    meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
+    meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -360,7 +360,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(CatalogConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -429,7 +429,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(CatalogConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -498,7 +498,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(CatalogConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -567,7 +567,7 @@ public class TestStorages {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.putOption(CatalogConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);

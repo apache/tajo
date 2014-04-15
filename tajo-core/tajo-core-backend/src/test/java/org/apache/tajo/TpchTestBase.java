@@ -22,9 +22,9 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
@@ -91,7 +91,7 @@ public class TpchTestBase {
   private void setUp() throws Exception {
     util = new LocalTajoTestingUtility();
     Options opt = new Options();
-    opt.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
+    opt.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     util.setup(names, paths, schemas, opt);
   }
 

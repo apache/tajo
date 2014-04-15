@@ -22,7 +22,6 @@ package org.apache.tajo.storage;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.net.util.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
@@ -52,6 +51,7 @@ public abstract class AbstractStorageManager {
   protected final FileSystem fs;
   protected final Path tableBaseDir;
   protected final boolean blocksMetadataEnabled;
+  private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
   /**
    * Cache of scanner handlers for each storage type.
@@ -492,15 +492,8 @@ public abstract class AbstractStorageManager {
     int[] diskIds = new int[volumeIds.length];
     for (int i = 0; i < volumeIds.length; i++) {
       int diskId = -1;
-      if (volumeIds[i] != null && volumeIds[i].isValid()) {
-        String volumeIdString = volumeIds[i].toString();
-        byte[] volumeIdBytes = Base64.decodeBase64(volumeIdString);
-
-        if (volumeIdBytes.length == 4) {
-          diskId = Bytes.toInt(volumeIdBytes);
-        } else if (volumeIdBytes.length == 1) {
-          diskId = (int) volumeIdBytes[0];  // support hadoop-2.0.2
-        }
+      if (volumeIds[i] != null && volumeIds[i].hashCode() > 0) {
+        diskId = volumeIds[i].hashCode() - zeroVolumeId.hashCode();
       }
       diskIds[i] = diskId;
     }

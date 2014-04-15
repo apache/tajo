@@ -39,6 +39,7 @@
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.8.0-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
+    <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
 
   <licenses>
@@ -589,7 +590,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/main/hadoop-${hadoop.version}</source>
+                <source>${extra.source.path}</source>
               </sources>
             </configuration>
           </execution>
@@ -601,7 +602,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/main/hadoop-${hadoop.version}</source>
+                 <source>${extra.source.path}</source>
               </sources>
             </configuration>
           </execution>
@@ -694,6 +695,11 @@
         <type>test-jar</type>
       </dependency>
 
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-client</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-common</artifactId>
@@ -875,9 +881,14 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.6</version>
+      </dependency>
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>15.0</version>
+        <version>11.0.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
@@ -899,6 +910,16 @@
         <groupId>joda-time</groupId>
         <artifactId>joda-time</artifactId>
         <version>2.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>10.8.2.2</version>
+      </dependency>
+      <dependency>
+        <groupId>jline</groupId>
+        <artifactId>jline</artifactId>
+        <version>2.11</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -973,6 +994,18 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>has-extra-source</id>
+      <activation>
+        <file>
+          <missing>src/main/hadoop-${hadoop.version}</missing>
+        </file>
+      </activation>
+      <properties>
+        <!-- default source path of tajo-0.8.0 -->
+        <extra.source.path>src/main/hadoop-2.3.0</extra.source.path>
+      </properties>
     </profile>
   </profiles>
 
