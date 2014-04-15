@@ -78,7 +78,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
   @Override
   public Object clone() throws CloneNotSupportedException {
     SortSpec key = (SortSpec) super.clone();
-    key.sortKey = (Column) sortKey.clone();
+    key.sortKey = sortKey;
     key.ascending = ascending;
     key.nullFirst = nullFirst;
 

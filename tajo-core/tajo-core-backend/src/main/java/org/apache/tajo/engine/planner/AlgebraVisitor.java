@@ -46,6 +46,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitDropDatabase(CONTEXT ctx, Stack<Expr> stack, DropDatabase expr) throws PlanningException;
   RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws PlanningException;
   RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws PlanningException;
+  RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws PlanningException;
   RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException;
 
     // Insert or Update
@@ -106,6 +107,4 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitTimestampLiteral(CONTEXT ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException;
   RESULT visitTimeLiteral(CONTEXT ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException;
   RESULT visitDateLiteral(CONTEXT ctx, Stack<Expr> stack, DateLiteral expr) throws PlanningException;
-
-
 }

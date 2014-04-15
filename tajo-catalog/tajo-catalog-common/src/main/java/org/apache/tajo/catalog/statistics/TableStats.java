@@ -192,12 +192,24 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       return;
     }
 
-    numRows = stat.numRows != null ? stat.numRows + numRows : numRows;
-    numBytes = stat.numBytes != null ? stat.numBytes + numBytes : numBytes;
-    numBlocks = stat.numBlocks != null ? stat.numBlocks + numBlocks : numBlocks;
-    numShuffleOutputs = stat.numShuffleOutputs != null ? stat.numShuffleOutputs + numShuffleOutputs : numShuffleOutputs;
-    avgRows = stat.avgRows != null ? stat.avgRows + avgRows : avgRows;
-    readBytes = stat.readBytes != null ? stat.readBytes + readBytes : readBytes;
+    if (stat.numRows != null) {
+      numRows += stat.numRows;
+    }
+    if (stat.numBytes != null) {
+      numBytes += stat.numBytes;
+    }
+    if (stat.numBlocks != null) {
+      numBlocks += stat.numBlocks;
+    }
+    if (stat.numShuffleOutputs != null) {
+      numShuffleOutputs += stat.numShuffleOutputs;
+    }
+    if (stat.avgRows != null) {
+      avgRows += stat.avgRows;
+    }
+    if (stat.readBytes != null) {
+      readBytes += stat.readBytes;
+    }
   }
 
   public void setValues(TableStats stat) {

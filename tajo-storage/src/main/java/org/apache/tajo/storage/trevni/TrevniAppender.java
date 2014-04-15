@@ -161,6 +161,7 @@ public class TrevniAppender extends FileAppender {
           case INET4:
           case INET6:
             writer.writeValue(t.get(i).asByteArray(), i);
+            break;
 
           default:
             break;

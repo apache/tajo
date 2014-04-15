@@ -45,6 +45,10 @@ import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.CatalogConstants.CATALOG_URI;
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -114,6 +118,77 @@ public class TestCatalog {
 	public static void tearDown() throws IOException {
 	  server.stop();
 	}
+
+  @Test
+  public void testGetTablespace() throws Exception {
+    //////////////////////////////////////////////////////////////////////////////
+    // Create two table spaces
+    //////////////////////////////////////////////////////////////////////////////
+
+    assertFalse(catalog.existTablespace("space1"));
+    assertTrue(catalog.createTablespace("space1", "hdfs://xxx.com/warehouse"));
+    assertTrue(catalog.existTablespace("space1"));
+
+    assertFalse(catalog.existTablespace("space2"));
+    assertTrue(catalog.createTablespace("space2", "hdfs://yyy.com/warehouse"));
+    assertTrue(catalog.existTablespace("space2"));
+
+    //////////////////////////////////////////////////////////////////////////////
+    // ALTER TABLESPACE space1
+    //////////////////////////////////////////////////////////////////////////////
+
+    // pre verification
+    CatalogProtos.TablespaceProto space1 = catalog.getTablespace("space1");
+    assertEquals("space1", space1.getSpaceName());
+    assertEquals("hdfs://xxx.com/warehouse", space1.getUri());
+
+    // ALTER TABLESPACE space1 LOCATION 'hdfs://zzz.com/warehouse';
+    AlterTablespaceProto.AlterTablespaceCommand.Builder commandBuilder =
+        AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
+    commandBuilder.setType(AlterTablespaceType.LOCATION);
+    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://zzz.com/warehouse"));
+    AlterTablespaceProto.Builder alter = AlterTablespaceProto.newBuilder();
+    alter.setSpaceName("space1");
+    alter.addCommand(commandBuilder.build());
+    catalog.alterTablespace(alter.build());
+
+    // Verify ALTER TABLESPACE space1
+    space1 = catalog.getTablespace("space1");
+    assertEquals("space1", space1.getSpaceName());
+    assertEquals("hdfs://zzz.com/warehouse", space1.getUri());
+
+    //////////////////////////////////////////////////////////////////////////////
+    // ALTER TABLESPACE space1
+    //////////////////////////////////////////////////////////////////////////////
+
+    // pre verification
+    CatalogProtos.TablespaceProto space2 = catalog.getTablespace("space2");
+    assertEquals("space2", space2.getSpaceName());
+    assertEquals("hdfs://yyy.com/warehouse", space2.getUri());
+
+    // ALTER TABLESPACE space1 LOCATION 'hdfs://zzz.com/warehouse';
+    commandBuilder = AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
+    commandBuilder.setType(AlterTablespaceType.LOCATION);
+    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://www.com/warehouse"));
+    alter = AlterTablespaceProto.newBuilder();
+    alter.setSpaceName("space2");
+    alter.addCommand(commandBuilder.build());
+    catalog.alterTablespace(alter.build());
+
+    // post verification
+    space1 = catalog.getTablespace("space2");
+    assertEquals("space2", space1.getSpaceName());
+    assertEquals("hdfs://www.com/warehouse", space1.getUri());
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Clean up
+    //////////////////////////////////////////////////////////////////////////////
+    assertTrue(catalog.dropTablespace("space1"));
+    assertFalse(catalog.existTablespace("space1"));
+    assertTrue(catalog.dropTablespace("space2"));
+    assertFalse(catalog.existTablespace("space2"));
+  }
 
   @Test
   public void testCreateAndDropDatabases() throws Exception {

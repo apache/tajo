@@ -91,7 +91,7 @@ public class TupleRange implements Comparable<TupleRange> {
 
     @Override
     public int compare(TupleRange left, TupleRange right) {
-      return -(left.compareTo(right));
+      return right.compareTo(left);
     }
   }
 }

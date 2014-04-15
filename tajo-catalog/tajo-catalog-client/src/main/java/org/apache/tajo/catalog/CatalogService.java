@@ -19,11 +19,14 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public interface CatalogService {
 
@@ -53,6 +56,20 @@ public interface CatalogService {
    * @return All tablespace names
    */
   Collection<String> getAllTablespaceNames();
+
+  /**
+   *
+   * @param tablespaceName Tablespace name to get
+   * @return Tablespace description
+   */
+  TablespaceProto getTablespace(String tablespaceName);
+
+  /**
+   *
+   * @param alterTablespace AlterTablespace
+   * @return True if update is successfully.
+   */
+  Boolean alterTablespace(AlterTablespaceProto alterTablespace);
 
   /**
    *

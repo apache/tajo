@@ -100,7 +100,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   protected ResultSet executeImmediate(String sql) throws SQLException {
     if (isClosed) {
-      throw new SQLFeatureNotSupportedException("Can't execute after statement has been closed");
+      throw new SQLException("Can't execute after statement has been closed");
     }
 
     try {
@@ -109,7 +109,7 @@ public class TajoPreparedStatement implements PreparedStatement {
       }
       resultSet = tajoClient.executeQueryAndGetResult(sql);
     } catch (Exception e) {
-      throw new SQLFeatureNotSupportedException(e.getMessage(), e);
+      throw new SQLException(e.getMessage(), e);
     }
     return resultSet;
   }

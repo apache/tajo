@@ -415,13 +415,12 @@ public class BSTIndex implements IndexMethod {
     public long find(Tuple key, boolean nextKey) throws IOException {
       synchronized (mutex) {
         int pos = -1;
-        switch (this.level) {
-          case ONE_LEVEL_INDEX:
+        if (this.level == ONE_LEVEL_INDEX) {
             pos = oneLevBS(key);
-            break;
-          case TWO_LEVEL_INDEX:
+        } else if (this.level == TWO_LEVEL_INDEX) {
             pos = twoLevBS(key, this.loadNum + 1);
-            break;
+        } else {
+          throw new IOException("More than TWL_LEVEL_INDEX is not supported.");
         }
 
         if (nextKey) {

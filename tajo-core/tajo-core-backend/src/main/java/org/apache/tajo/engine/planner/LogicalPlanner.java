@@ -68,7 +68,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     this.normalizer = new ExprNormalizer();
   }
 
-  public class PlanContext {
+  public static class PlanContext {
     Session session;
     LogicalPlan plan;
 
@@ -697,7 +697,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return groupingNode;
   }
 
-  public static final Column[] ALL= Lists.newArrayList().toArray(new Column[0]);
+  private static final Column[] ALL= Lists.newArrayList().toArray(new Column[0]);
 
   public static List<Column[]> generateCuboids(Column[] columns) {
     int numCuboids = (int) Math.pow(2, columns.length);
@@ -1469,6 +1469,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     dropTableNode.init(qualified, dropTable.isIfExists(), dropTable.isPurge());
     return dropTableNode;
+  }
+
+  public LogicalNode visitAlterTablespace(PlanContext context, Stack<Expr> stack, AlterTablespace alterTablespace) {
+    AlterTablespaceNode alter = context.queryBlock.getNodeFromExpr(alterTablespace);
+    alter.setTablespaceName(alterTablespace.getTablespaceName());
+    alter.setLocation(alterTablespace.getLocation());
+    return alter;
   }
 
   @Override

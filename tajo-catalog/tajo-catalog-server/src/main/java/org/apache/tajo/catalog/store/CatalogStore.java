@@ -28,7 +28,9 @@ import org.apache.tajo.catalog.exception.CatalogException;
 import java.util.Collection;
 import java.util.List;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public interface CatalogStore extends Closeable {
   /*************************** Tablespace ******************************/
@@ -39,6 +41,10 @@ public interface CatalogStore extends Closeable {
   void dropTablespace(String spaceName) throws CatalogException;
 
   Collection<String> getAllTablespaceNames() throws CatalogException;
+
+  TablespaceProto getTablespace(String spaceName) throws CatalogException;
+
+  void alterTablespace(AlterTablespaceProto alterProto) throws CatalogException;
 
   /*************************** Database ******************************/
   void createDatabase(String databaseName, String tablespaceName) throws CatalogException;

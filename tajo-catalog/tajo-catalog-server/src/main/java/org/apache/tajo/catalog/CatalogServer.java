@@ -19,15 +19,18 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -36,6 +39,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -46,11 +50,13 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
@@ -243,6 +249,10 @@ public class CatalogServer extends AbstractService {
 
       wlock.lock();
       try {
+        if (tablespaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
+          throw new CatalogException("default tablespace cannot be dropped.");
+        }
+
         if (!store.existTablespace(tablespaceName)) {
           throw new NoSuchTablespaceException(tablespaceName);
         }
@@ -287,6 +297,51 @@ public class CatalogServer extends AbstractService {
         throw new ServiceException(e);
       } finally {
         rlock.unlock();
+      }
+    }
+
+    @Override
+    public TablespaceProto getTablespace(RpcController controller, StringProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return store.getTablespace(request.getValue());
+      } catch (Exception e) {
+        LOG.error(e);
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public BoolProto alterTablespace(RpcController controller, AlterTablespaceProto request) throws ServiceException {
+      wlock.lock();
+      try {
+        if (!store.existTablespace(request.getSpaceName())) {
+          throw new NoSuchTablespaceException(request.getSpaceName());
+        }
+
+        if (request.getCommandList().size() > 0) {
+          for (AlterTablespaceCommand command : request.getCommandList()) {
+            if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
+              try {
+                URI uri = URI.create(command.getLocation().getUri());
+                Preconditions.checkArgument(uri.getScheme() != null);
+              } catch (Exception e) {
+                throw new ServiceException("ALTER TABLESPACE's LOCATION must be a URI form (scheme:///.../), but "
+                    + command.getLocation().getUri());
+              }
+            }
+          }
+        }
+
+        store.alterTablespace(request);
+        return ProtoUtil.TRUE;
+      } catch (Exception e) {
+        LOG.error(e);
+        throw new ServiceException(e);
+      } finally {
+        wlock.unlock();
       }
     }
 
