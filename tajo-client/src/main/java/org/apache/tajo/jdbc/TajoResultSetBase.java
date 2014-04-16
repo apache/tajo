@@ -177,7 +177,6 @@ public abstract class TajoResultSetBase implements ResultSet {
       case VARCHAR:  return d.asChars();
       case FLOAT4:  return d.asFloat4();
       case FLOAT8:  return d.asFloat8();
-      case DECIMAL:
       case NUMERIC:  return d.asFloat8();
       default: return d.asChars();
     }

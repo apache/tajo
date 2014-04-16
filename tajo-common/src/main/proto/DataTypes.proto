@@ -39,7 +39,6 @@ enum Type {
   FLOAT8 = 11; // variable-precision, inexact [8 bytes]
 
   NUMERIC = 12; // variable length
-  DECIMAL = 13; // variable length
 
   CHAR = 21; // fixed-width n-character string
   NCHAR = 22; // fixed width string supporting an international character set
@@ -82,7 +81,6 @@ enum Type {
   FLOAT8_ARRAY = 111;
 
   NUMERIC_ARRAY = 112;
-  DECIMAL_ARRAY = 113;
 
   CHAR_ARRAY = 121;
   NCHAR_ARRAY = 122;
