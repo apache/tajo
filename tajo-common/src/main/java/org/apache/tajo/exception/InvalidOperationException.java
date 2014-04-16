@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.datum.exception;
+package org.apache.tajo.exception;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 

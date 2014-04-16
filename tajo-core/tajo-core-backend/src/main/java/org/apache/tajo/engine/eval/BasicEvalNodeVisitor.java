@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.exception.UnsupportedException;
+
 import java.util.Stack;
 
 public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<CONTEXT, RESULT> {
@@ -132,7 +134,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         break;
 
       default:
-        throw new InvalidEvalException("Unknown EvalNode: " + evalNode);
+        throw new UnsupportedException("Unknown EvalType: " + evalNode);
     }
 
     return result;

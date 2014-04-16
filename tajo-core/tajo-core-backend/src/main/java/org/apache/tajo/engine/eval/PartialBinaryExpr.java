@@ -21,9 +21,10 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
-public class PartialBinaryExpr extends EvalNode {
+public class PartialBinaryExpr extends BinaryEval {
   
   public PartialBinaryExpr(EvalType type) {
     super(type);
@@ -45,9 +46,8 @@ public class PartialBinaryExpr extends EvalNode {
 
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
-    throw new InvalidEvalException(
-        "ERROR: the partial binary expression cannot be evluated: "
-            + this.toString() );
+    throw new InvalidOperationException("ERROR: the partial binary expression cannot be evluated: "
+            + this.toString());
   }
 
   @Override

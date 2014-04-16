@@ -22,23 +22,18 @@ package org.apache.tajo.engine.planner;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.OpType;
-import org.apache.tajo.algebra.Selection;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.engine.eval.BasicEvalNodeVisitor;
-import org.apache.tajo.engine.eval.BinaryEval;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.CodeGenUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -218,12 +213,7 @@ public class TestExprCodeGenerator {
     }
 
     public Object visitPlus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.evalMethod;
-
-      stack.push(evalNode);
-      visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-      stack.pop();
+      super.visitPlus(context, evalNode, stack);
 
       int opcode;
       switch (evalNode.getValueType().getType()) {
@@ -243,18 +233,13 @@ public class TestExprCodeGenerator {
         throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
       }
 
-      methodVisitor.visitInsn(opcode);
+      context.evalMethod.visitInsn(opcode);
 
       return null;
     }
 
     public Object visitMinus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.evalMethod;
-
-      stack.push(evalNode);
-      visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-      stack.pop();
+      super.visitMinus(context, evalNode, stack);
 
       int opcode;
       switch (evalNode.getValueType().getType()) {
@@ -274,19 +259,14 @@ public class TestExprCodeGenerator {
         throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
       }
 
-      methodVisitor.visitInsn(opcode);
+      context.evalMethod.visitInsn(opcode);
 
       return null;
     }
 
     @Override
     public Object visitMultiply(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.evalMethod;
-
-      stack.push(evalNode);
-      visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-      stack.pop();
+      super.visitMultiply(context, evalNode, stack);
 
       int opcode;
       switch (evalNode.getValueType().getType()) {
@@ -306,19 +286,14 @@ public class TestExprCodeGenerator {
         throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
       }
 
-      methodVisitor.visitInsn(opcode);
+      context.evalMethod.visitInsn(opcode);
 
       return null;
     }
 
     @Override
     public Object visitDivide(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.evalMethod;
-
-      stack.push(evalNode);
-      visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-      stack.pop();
+      super.visitDivide(context, evalNode, stack);
 
       int opcode;
       switch (evalNode.getValueType().getType()) {
@@ -338,19 +313,15 @@ public class TestExprCodeGenerator {
         throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
       }
 
-      methodVisitor.visitInsn(opcode);
+      context.evalMethod.visitInsn(opcode);
 
       return null;
     }
 
     @Override
     public Object visitModular(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-      MethodVisitor methodVisitor = context.evalMethod;
 
-      stack.push(evalNode);
-      visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-      stack.pop();
+      super.visitModular(context, evalNode, stack);
 
       int opcode;
       switch (evalNode.getValueType().getType()) {
@@ -370,7 +341,7 @@ public class TestExprCodeGenerator {
         throw new RuntimeException("Plus does not support:" + evalNode.getValueType().getType());
       }
 
-      methodVisitor.visitInsn(opcode);
+      context.evalMethod.visitInsn(opcode);
 
       return null;
     }
@@ -383,15 +354,24 @@ public class TestExprCodeGenerator {
       }
       return null;
     }
+
+    @Override
+    public Object visitCast(CodeGenContext context, CastEval signedEval, Stack<EvalNode> stack) {
+      super.visitCast(context, signedEval, stack);
+
+      TajoDataTypes.Type srcType = signedEval.getOperand().getValueType().getType();
+      TajoDataTypes.Type targetType = signedEval.getValueType().getType();
+      CodeGenUtil.insertCastInst(context.evalMethod, srcType, targetType);
+
+      return null;
+    }
   }
-
-
 
   @Test
   public void testGenerateCodeFromQuery() throws InvalidStatementException, PlanningException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
     ExprCodeGenerator generator = new ExprCodeGenerator();
 
-    Target [] targets = getRawTargets("select 1 + 2 * 3 % 6;", true);
+    Target [] targets = getRawTargets("select 5 + 2 * 3 % 6;", true);
     long start = System.currentTimeMillis();
     EvalGen code = generator.generate(targets[0].getEvalTree());
     long end = System.currentTimeMillis();
