@@ -290,6 +290,8 @@ public class CatalogUtil {
       return StoreType.PARQUET;
     } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
       return StoreType.SEQUENCEFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
+      return StoreType.AVRO;
     } else {
       return null;
     }

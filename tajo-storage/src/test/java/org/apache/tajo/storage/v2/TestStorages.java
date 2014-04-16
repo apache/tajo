@@ -53,6 +53,39 @@ public class TestStorages {
 	private TajoConf conf;
 	private static String TEST_PATH = "target/test-data/v2/TestStorages";
 
+  private static String TEST_PROJECTION_AVRO_SCHEMA =
+      "{\n" +
+      "  \"type\": \"record\",\n" +
+      "  \"namespace\": \"org.apache.tajo\",\n" +
+      "  \"name\": \"testProjection\",\n" +
+      "  \"fields\": [\n" +
+      "    { \"name\": \"id\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"age\", \"type\": \"long\" },\n" +
+      "    { \"name\": \"score\", \"type\": \"float\" }\n" +
+      "  ]\n" +
+      "}\n";
+
+  private static String TEST_VARIOUS_TYPES_AVRO_SCHEMA =
+      "{\n" +
+      "  \"type\": \"record\",\n" +
+      "  \"namespace\": \"org.apache.tajo\",\n" +
+      "  \"name\": \"testVariousTypes\",\n" +
+      "  \"fields\": [\n" +
+      "    { \"name\": \"col1\", \"type\": \"boolean\" },\n" +
+      "    { \"name\": \"col2\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"col3\", \"type\": \"string\" },\n" +
+      "    { \"name\": \"col4\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"col5\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"col6\", \"type\": \"long\" },\n" +
+      "    { \"name\": \"col7\", \"type\": \"float\" },\n" +
+      "    { \"name\": \"col8\", \"type\": \"double\" },\n" +
+      "    { \"name\": \"col9\", \"type\": \"string\" },\n" +
+      "    { \"name\": \"col10\", \"type\": \"bytes\" },\n" +
+      "    { \"name\": \"col11\", \"type\": \"bytes\" },\n" +
+      "    { \"name\": \"col12\", \"type\": \"null\" }\n" +
+      "  ]\n" +
+      "}\n";
+
   private StoreType storeType;
   private boolean splitable;
   private boolean statsable;
@@ -83,10 +116,11 @@ public class TestStorages {
         {StoreType.RCFILE, true, true},
         {StoreType.TREVNI, false, true},
         {StoreType.PARQUET, false, false},
+        {StoreType.AVRO, false, false},
         {StoreType.RAW, false, false},
     });
   }
-		
+
 	@Test
   public void testSplitable() throws IOException {
     if (splitable) {
@@ -149,6 +183,10 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    if (storeType == StoreType.AVRO) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+                     TEST_PROJECTION_AVRO_SCHEMA);
+    }
 
     Path tablePath = new Path(testDir, "testProjection.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
@@ -179,7 +217,8 @@ public class TestStorages {
       if (storeType == StoreType.RCFILE
           || storeType == StoreType.TREVNI
           || storeType == StoreType.CSV
-          || storeType == StoreType.PARQUET) {
+          || storeType == StoreType.PARQUET
+          || storeType == StoreType.AVRO) {
         assertTrue(tuple.get(0) == null || tuple.get(0) instanceof NullDatum);
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
@@ -210,6 +249,10 @@ public class TestStorages {
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    if (storeType == StoreType.AVRO) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+                     TEST_VARIOUS_TYPES_AVRO_SCHEMA);
+    }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);

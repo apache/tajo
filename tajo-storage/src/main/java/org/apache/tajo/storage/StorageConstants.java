@@ -48,6 +48,9 @@ public class StorageConstants {
   public static final String PARQUET_DEFAULT_IS_DICTIONARY_ENABLED;
   public static final String PARQUET_DEFAULT_IS_VALIDATION_ENABLED;
 
+  public static final String AVRO_SCHEMA_LITERAL = "avro.schema.literal";
+  public static final String AVRO_SCHEMA_URL = "avro.schema.url";
+
   static {
     PARQUET_DEFAULT_BLOCK_SIZE =
         Integer.toString(ParquetWriter.DEFAULT_BLOCK_SIZE);

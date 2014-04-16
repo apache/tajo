@@ -40,7 +40,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile</value>
+    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -70,6 +70,10 @@
   </property>
   <property>
     <name>tajo.storage.fragment.sequencefile.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.avro.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
 
@@ -144,10 +148,20 @@
     <value>org.apache.tajo.storage.sequencefile.SequenceFileScanner</value>
   </property>
 
+  <property>
+    <name>tajo.storage.scanner-handler.avro.class</name>
+    <value>org.apache.tajo.storage.avro.AvroScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.v2.avro.class</name>
+    <value>org.apache.tajo.storage.avro.AvroScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile</value>
+    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
   </property>
 
   <property>
@@ -183,5 +197,10 @@
   <property>
     <name>tajo.storage.appender-handler.sequencefile.class</name>
     <value>org.apache.tajo.storage.sequencefile.SequenceFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.avro.class</name>
+    <value>org.apache.tajo.storage.avro.AvroAppender</value>
   </property>
 </configuration>

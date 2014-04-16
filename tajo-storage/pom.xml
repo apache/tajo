@@ -35,6 +35,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <parquet.version>1.3.2</parquet.version>
+    <parquet.format.version>2.0.0</parquet.format.version>
   </properties>
 
   <repositories>
@@ -175,10 +177,6 @@
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <artifactId>avro-mapred</artifactId>
-          <groupId>org.apache.avro</groupId>
         </exclusion>
       </exclusions>
     </dependency>
