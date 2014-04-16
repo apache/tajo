@@ -18,10 +18,12 @@
 
 package org.apache.tajo.catalog;
 
-import org.junit.Test;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 public class TestCatalogUtil {
   @Test
@@ -50,5 +52,33 @@ public class TestCatalogUtil {
     for (int i = 0; i < sources.length; i++) {
       assertEquals(normalized[i], CatalogUtil.normalizeIdentifier(sources[i]));
     }
+  }
+
+  @Test
+  public final void testIsCompatibleType() {
+    assertFalse(CatalogUtil.isCompatibleType(Type.INT4, Type.INT8));
+    assertTrue(CatalogUtil.isCompatibleType(Type.INT8, Type.INT4));
+    assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT4, Type.FLOAT8));
+    assertTrue(CatalogUtil.isCompatibleType(Type.FLOAT8, Type.FLOAT4));
+
+    assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT8, Type.INT4));
+
+    assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT8_ARRAY, Type.TEXT_ARRAY));
+    assertFalse(CatalogUtil.isCompatibleType(Type.TEXT_ARRAY, Type.FLOAT8_ARRAY));
+  }
+
+  @Test
+  public final void testCompareDataTypeIncludeVariableLength() {
+    assertTrue(CatalogUtil.isMatchedFunction(
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4))
+    ));
+
+  assertFalse(CatalogUtil.isMatchedFunction(
+      Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4))
+  ));
+
+    assertTrue(CatalogUtil.isMatchedFunction(
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT8_ARRAY)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4, Type.INT4))
+    ));
   }
 }

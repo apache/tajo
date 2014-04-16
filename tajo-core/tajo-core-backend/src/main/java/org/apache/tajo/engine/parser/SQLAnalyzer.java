@@ -1193,11 +1193,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         } else if (exactType.NUMERIC() != null) {
           typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
         } else if (exactType.DECIMAL() != null || exactType.DEC() != null) {
-          typeDefinition = new DataTypeExpr(Type.DECIMAL.name());
+          typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
         }
 
-        if (typeDefinition.getTypeName().equals(Type.NUMERIC.name()) ||
-            typeDefinition.getTypeName().equals(Type.DECIMAL.name())) {
+        if (typeDefinition.getTypeName().equals(Type.NUMERIC.name())) {
           if (exactType.precision_param() != null) {
             if (exactType.precision_param().scale != null) {
               typeDefinition.setScale(

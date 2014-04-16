@@ -67,7 +67,7 @@ public class ResultSetUtil {
       return "float";
     case FLOAT8:
       return "float8";
-    case DECIMAL:
+    case NUMERIC:
       return "numeric";
     case VARBINARY:
       return "bytea";
@@ -100,8 +100,8 @@ public class ResultSetUtil {
       return Types.FLOAT;
     case FLOAT8:
       return Types.DOUBLE;
-    case DECIMAL:
-      return Types.DECIMAL;
+    case NUMERIC:
+      return Types.NUMERIC;
     case DATE:
       return Types.TIMESTAMP;
     case VARCHAR:
