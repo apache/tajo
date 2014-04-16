@@ -4,6 +4,8 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-711: Add Avro storage support. (David Chen via hyunsik)
+
     TAJO-746: Implements function COALESCE. (hyoungjunkim via hyunsik)
 
     TAJO-616: SequenceFile support. (jaehwa)
