@@ -51,6 +51,20 @@ public class TestMergeScanner {
   private TajoConf conf;
   AbstractStorageManager sm;
   private static String TEST_PATH = "target/test-data/TestMergeScanner";
+
+  private static String TEST_MULTIPLE_FILES_AVRO_SCHEMA =
+      "{\n" +
+      "  \"type\": \"record\",\n" +
+      "  \"namespace\": \"org.apache.tajo\",\n" +
+      "  \"name\": \"testMultipleFiles\",\n" +
+      "  \"fields\": [\n" +
+      "    { \"name\": \"id\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"file\", \"type\": \"string\" },\n" +
+      "    { \"name\": \"name\", \"type\": \"string\" },\n" +
+      "    { \"name\": \"age\", \"type\": \"long\" }\n" +
+      "  ]\n" +
+      "}\n";
+
   private Path testDir;
   private StoreType storeType;
   private FileSystem fs;
@@ -68,9 +82,9 @@ public class TestMergeScanner {
         {StoreType.TREVNI},
         {StoreType.PARQUET},
         {StoreType.SEQUENCEFILE},
+        {StoreType.AVRO},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
         //{StoreType.ROWFILE},
-
     });
   }
 
@@ -78,7 +92,7 @@ public class TestMergeScanner {
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
-    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni", "parquet");
+    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni", "parquet", "avro");
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
@@ -94,7 +108,11 @@ public class TestMergeScanner {
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newOptionsWithDefault(storeType));
+    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    if (storeType == StoreType.AVRO) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+                     TEST_MULTIPLE_FILES_AVRO_SCHEMA);
+    }
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
     Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, table1Path);
@@ -176,6 +194,7 @@ public class TestMergeScanner {
       case PARQUET:
       case SEQUENCEFILE:
       case CSV:
+      case AVRO:
         return true;
       default:
         return false;

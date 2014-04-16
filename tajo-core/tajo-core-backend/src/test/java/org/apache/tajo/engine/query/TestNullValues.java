@@ -20,10 +20,10 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.storage.StorageConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -52,7 +52,7 @@ public class TestNullValues {
         "3|filled|0.2"
     };
     Options opts = new Options();
-    opts.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
+    opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable1 where col3 is null");
@@ -78,7 +78,7 @@ public class TestNullValues {
         "3|filled|"
     };
     Options opts = new Options();
-    opts.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
+    opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable2 where col1 is not null");
@@ -113,7 +113,7 @@ public class TestNullValues {
         ",,,43578,19,13,6,3581,2557,1024"
     };
     Options opts = new Options();
-    opts.put(CatalogConstants.CSVFILE_DELIMITER, ",");
+    opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578");
@@ -146,8 +146,8 @@ public class TestNullValues {
         ",\\N,,43578"
     };
     Options opts = new Options();
-    opts.put(CatalogConstants.CSVFILE_DELIMITER, ",");
-    opts.put(CatalogConstants.CSVFILE_NULL, "\\\\N");
+    opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
+    opts.put(StorageConstants.CSVFILE_NULL, "\\\\N");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578");

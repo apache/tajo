@@ -4,6 +4,10 @@ Release 0.8.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-711: Add Avro storage support. (David Chen via hyunsik)
+
+    TAJO-746: Implements function COALESCE. (hyoungjunkim via hyunsik)
+
     TAJO-616: SequenceFile support. (jaehwa)
 
     TAJO-480: Umbrella Jira for adding ALTER TABLE statement.
@@ -322,6 +326,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-765: Incorrect Configuration Classpaths. (jinho)
+
     TAJO-563: INSERT OVERWRITE should not remove data before query success.
     (hyunsik)
 
@@ -629,6 +635,8 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-753: Clean up of maven dependencies. (jinho)
 
     TAJO-730: Update Tajo site to reflect graduation. (hyunsik)
 

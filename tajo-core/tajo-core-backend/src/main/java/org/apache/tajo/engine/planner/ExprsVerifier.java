@@ -152,7 +152,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
 
   private static boolean checkNumericType(DataType dataType) {
     int typeNumber = dataType.getType().getNumber();
-    return Type.INT1.getNumber() < typeNumber && typeNumber <= Type.DECIMAL.getNumber();
+    return Type.INT1.getNumber() < typeNumber && typeNumber <= Type.NUMERIC.getNumber();
   }
 
   private static boolean checkTextData(DataType dataType) {

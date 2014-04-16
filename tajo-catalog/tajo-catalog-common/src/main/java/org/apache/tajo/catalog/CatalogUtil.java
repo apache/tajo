@@ -25,7 +25,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.Connection;
@@ -34,9 +36,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import parquet.hadoop.ParquetOutputFormat;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -289,33 +290,11 @@ public class CatalogUtil {
       return StoreType.PARQUET;
     } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
       return StoreType.SEQUENCEFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
+      return StoreType.AVRO;
     } else {
       return null;
     }
-  }
-  public static Options newOptionsWithDefault(StoreType type) {
-    Options options = new Options();
-    if(StoreType.CSV == type){
-      options.put(CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
-    } else if(StoreType.RCFILE == type){
-      options.put(CatalogConstants.RCFILE_SERDE, CatalogConstants.DEFAULT_BINARY_SERDE);
-    } else if(StoreType.SEQUENCEFILE == type){
-      options.put(CatalogConstants.SEQUENCEFILE_SERDE, CatalogConstants.DEFAULT_TEXT_SERDE);
-      options.put(CatalogConstants.SEQUENCEFILE_DELIMITER, CatalogConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (type == StoreType.PARQUET) {
-      options.put(ParquetOutputFormat.BLOCK_SIZE,
-          CatalogConstants.PARQUET_DEFAULT_BLOCK_SIZE);
-      options.put(ParquetOutputFormat.PAGE_SIZE,
-          CatalogConstants.PARQUET_DEFAULT_PAGE_SIZE);
-      options.put(ParquetOutputFormat.COMPRESSION,
-          CatalogConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
-      options.put(ParquetOutputFormat.ENABLE_DICTIONARY,
-          CatalogConstants.PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
-      options.put(ParquetOutputFormat.VALIDATION,
-          CatalogConstants.PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
-    }
-
-    return options;
   }
 
   public static TableMeta newTableMeta(StoreType type) {
@@ -396,6 +375,286 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+  public static boolean isArrayType(TajoDataTypes.Type type) {
+    return type.toString().endsWith("_ARRAY");
+  }
+
+  /**
+   * Checking if the given parameter types are compatible to the defined types of the function.
+   * It also considers variable-length function invocations.
+   *
+   * @param definedTypes The defined function types
+   * @param givenTypes The given parameter types
+   * @return True if the parameter types are compatible to the defined types.
+   */
+  public static boolean isMatchedFunction(List<DataType> definedTypes, List<DataType> givenTypes) {
+
+    // below check handles the following cases:
+    //
+    //   defined arguments          given params    RESULT
+    //        ()                        ()            T
+    //        ()                       (arg1)         F
+
+    if (definedTypes == null || definedTypes.isEmpty()) { // if no defined argument
+      if (givenTypes == null || givenTypes.isEmpty()) {
+        return true; // if no defined argument as well as no given parameter
+      } else {
+        return false; // if no defined argument but there is one or more given parameters.
+      }
+    }
+
+    // if the number of the given parameters are less than, the invocation is invalid.
+    // It should already return false.
+    //
+    // below check handles the following example cases:
+    //
+    //   defined             given arguments
+    //     (a)                    ()
+    //    (a,b)                   (a)
+
+    int definedSize = definedTypes == null ? 0 : definedTypes.size();
+    int givenParamSize = givenTypes == null ? 0 : givenTypes.size();
+    int paramDiff = givenParamSize - definedSize;
+    if (paramDiff < 0) {
+      return false;
+    }
+
+    // if the lengths of both defined and given parameter types are the same to each other
+    if (paramDiff == 0) {
+      return checkIfMatchedNonVarLengthFunction(definedTypes, givenTypes, definedSize, true);
+
+    } else { // if variable length parameter match is suspected
+
+      // Invocation parameters can be divided into two parts: non-variable part and variable part.
+      //
+      // For example, the function definition is as follows:
+      //
+      // c = func(a int, b float, c text[])
+      //
+      // If the function invocation is as follows. We can divided them into two parts as we mentioned above.
+      //
+      // func(  1,   3.0,           'b',   'c',   'd',   ...)
+      //      <------------>       <----------------------->
+      //     non-variable part          variable part
+
+      // check if the candidate function is a variable-length function.
+      if (!checkIfVariableLengthParamDefinition(definedTypes)) {
+        return false;
+      }
+
+      // check only non-variable part
+      if (!checkIfMatchedNonVarLengthFunction(definedTypes, givenTypes, definedSize - 1, false)) {
+        return false;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // The below code is for checking the variable part of a candidate function.
+      ////////////////////////////////////////////////////////////////////////////////
+
+      // Get a primitive type of the last defined parameter (array)
+      TajoDataTypes.Type primitiveTypeOfLastDefinedParam =
+          getPrimitiveTypeOf(definedTypes.get(definedTypes.size() - 1).getType());
+
+      Type basisTypeOfVarLengthType = null;
+      Type [] varLengthTypesOfGivenParams = new Type[paramDiff + 1]; // including last parameter
+      for (int i = 0,j = (definedSize - 1); j < givenParamSize; i++, j++) {
+        varLengthTypesOfGivenParams[i] = givenTypes.get(j).getType();
+
+        // chooses one basis type for checking the variable part
+        if (givenTypes.get(j).getType() != Type.NULL_TYPE) {
+          basisTypeOfVarLengthType = givenTypes.get(j).getType();
+        }
+      }
+
+      // If basis type is null, it means that all params in variable part is NULL_TYPE.
+      // In this case, we set NULL_TYPE to the basis type.
+      if (basisTypeOfVarLengthType == null) {
+        basisTypeOfVarLengthType = Type.NULL_TYPE;
+      }
+
+      // Check if a basis param type is compatible to the variable parameter in the function definition.
+      if (!(primitiveTypeOfLastDefinedParam == basisTypeOfVarLengthType ||
+          isCompatibleType(primitiveTypeOfLastDefinedParam, basisTypeOfVarLengthType))) {
+        return false;
+      }
+
+      // If all parameters are equivalent to the basis type
+      for (TajoDataTypes.Type type : varLengthTypesOfGivenParams) {
+        if (type != Type.NULL_TYPE && type != basisTypeOfVarLengthType) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
+  /**
+   * It is used when the function definition and function invocation whose the number of parameters are the same.
+   *
+   * @param definedTypes The parameter definition of a function
+   * @param givenTypes invoked parameters
+   * @param n Should how many types be checked?
+   * @param lastArrayCompatible variable-length compatibility is allowed if true.
+   * @return True the parameter definition and invoked definition are compatible to each other
+   */
+  public static boolean checkIfMatchedNonVarLengthFunction(List<DataType> definedTypes, List<DataType> givenTypes,
+                                                           int n, boolean lastArrayCompatible) {
+    for (int i = 0; i < n; i++) {
+      Type definedType = definedTypes.get(i).getType();
+      Type givenType = givenTypes.get(i).getType();
+
+      if (lastArrayCompatible) {
+        if (!CatalogUtil.checkIfCompatibleIncludingArray(definedType, givenType)) {
+          return false;
+        }
+      } else {
+        if (!CatalogUtil.isCompatibleType(definedType, givenType)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if both are compatible to each other. This function includes
+   * the compatibility between primitive type and array type.
+   * For example, INT8 and INT8_ARRAY is compatible.
+   * This method is used to find variable-length functions.
+   *
+   * @param defined One parameter of the function definition
+   * @param given One parameter of the invoked parameters
+   * @return True if compatible.
+   */
+  public static boolean checkIfCompatibleIncludingArray(Type defined, Type given) {
+    boolean compatible = isCompatibleType(defined, given);
+
+    if (compatible) {
+      return true;
+    }
+
+    if (isArrayType(defined)) {
+      TajoDataTypes.Type primitiveTypeOfDefined = getPrimitiveTypeOf(defined);
+      return isCompatibleType(primitiveTypeOfDefined, given);
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Check if the parameter definition can be variable length.
+   *
+   * @param definedTypes The parameter definition of a function.
+   * @return True if the parameter definition can be variable length.
+   */
+  public static boolean checkIfVariableLengthParamDefinition(List<DataType> definedTypes) {
+    // Get the last param type of the function definition.
+    Type lastDefinedParamType = definedTypes.get(definedTypes.size() - 1).getType();
+
+    // Check if this function is variable function.
+    // if the last defined parameter is not array, it is not a variable length function. It will be false.
+    return CatalogUtil.isArrayType(lastDefinedParamType);
+  }
+
+  public static Type getPrimitiveTypeOf(Type arrayType) {
+    switch (arrayType) {
+    case BOOLEAN_ARRAY: return Type.BOOLEAN;
+    case UINT1_ARRAY: return Type.UINT1;
+    case UINT2_ARRAY: return Type.UINT2;
+    case UINT4_ARRAY: return Type.UINT4;
+    case UINT8_ARRAY: return Type.UINT8;
+    case INT1_ARRAY: return Type.INT1;
+    case INT2_ARRAY: return Type.INT2;
+    case INT4_ARRAY: return Type.INT4;
+    case INT8_ARRAY: return Type.INT8;
+    case FLOAT4_ARRAY: return Type.FLOAT4;
+    case FLOAT8_ARRAY: return Type.FLOAT8;
+    case NUMERIC_ARRAY: return Type.NUMERIC;
+    case CHAR_ARRAY: return Type.CHAR;
+    case NCHAR_ARRAY: return Type.NCHAR;
+    case VARCHAR_ARRAY: return Type.VARCHAR;
+    case NVARCHAR_ARRAY: return Type.NVARCHAR;
+    case TEXT_ARRAY: return Type.TEXT;
+    case DATE_ARRAY: return Type.DATE;
+    case TIME_ARRAY: return Type.TIME;
+    case TIMEZ_ARRAY: return Type.TIMEZ;
+    case TIMESTAMP_ARRAY: return Type.TIMESTAMP;
+    case TIMESTAMPZ_ARRAY: return Type.TIMESTAMPZ;
+    case INTERVAL_ARRAY: return Type.INTERVAL;
+    default: throw new InvalidOperationException("Invalid array type: " + arrayType.name());
+    }
+  }
+
+  public static boolean isCompatibleType(final Type definedType, final Type givenType) {
+    boolean flag = false;
+    if (givenType == Type.NULL_TYPE) {
+      flag = true;
+    } else if (definedType == Type.ANY) {
+      flag = true;
+    } else if (givenType.getNumber() > definedType.getNumber()) {
+      // NO POINT IN GOING FORWARD BECAUSE THE DATA TYPE CANNOT BE UPPER CASTED
+      flag = false;
+    } else {
+      //argType.getNumber() < exitingType.getNumber()
+      int exitingTypeNumber = definedType.getNumber();
+      int argTypeNumber = givenType.getNumber();
+
+      if (Type.INT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.INT8.getNumber()) {
+        // INT1 ==> INT2 ==> INT4 ==> INT8
+        if (Type.INT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.UINT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.UINT8.getNumber()) {
+        // UINT1 ==> UINT2 ==> UINT4 ==> UINT8
+        if (Type.UINT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.FLOAT4.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.NUMERIC.getNumber()) {
+        // FLOAT4 ==> FLOAT8 ==> NUMERIC ==> DECIMAL
+        if (Type.FLOAT4.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.CHAR.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.TEXT.getNumber()) {
+        // CHAR ==> NCHAR ==> VARCHAR ==> NVARCHAR ==> TEXT
+        if (Type.CHAR.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.BIT.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.VARBINARY.getNumber()) {
+        // BIT ==> VARBIT ==> BINARY ==> VARBINARY
+        if (Type.BIT.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.INT1_ARRAY.getNumber() <= exitingTypeNumber
+          && exitingTypeNumber <= Type.INT8_ARRAY.getNumber()) {
+        // INT1_ARRAY ==> INT2_ARRAY ==> INT4_ARRAY ==> INT8_ARRAY
+        if (Type.INT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.UINT1_ARRAY.getNumber() <= exitingTypeNumber
+          && exitingTypeNumber <= Type.UINT8_ARRAY.getNumber()) {
+        // UINT1_ARRAY ==> UINT2_ARRAY ==> UINT4_ARRAY ==> UINT8_ARRAY
+        if (Type.UINT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.FLOAT4_ARRAY.getNumber() <= exitingTypeNumber
+          && exitingTypeNumber <= Type.FLOAT8_ARRAY.getNumber()) {
+        // FLOAT4_ARRAY ==> FLOAT8_ARRAY ==> NUMERIC_ARRAY ==> DECIMAL_ARRAY
+        if (Type.FLOAT4_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      } else if (Type.CHAR_ARRAY.getNumber() <= exitingTypeNumber
+          && exitingTypeNumber <= Type.TEXT_ARRAY.getNumber()) {
+        // CHAR_ARRAY ==> NCHAR_ARRAY ==> VARCHAR_ARRAY ==> NVARCHAR_ARRAY ==> TEXT_ARRAY
+        if (Type.TEXT_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
+          flag = true;
+        }
+      }
+    }
+    return flag;
+  }
+
   public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
     CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
     builder.setDatabaseName(databaseName);
@@ -464,7 +723,8 @@ public class CatalogUtil {
     }
   }
 
-  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName, AlterTableType alterTableType) {
+  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName,
+                                            AlterTableType alterTableType) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setColumnName(oldColumName);

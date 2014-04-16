@@ -886,8 +886,8 @@ public class TestCatalog {
         CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4));
     assertTrue(catalog.createFunction(meta));
 
-    //UPGRADE TO DECIMAL WILL FAIL ==> LOOK AT FIRST PARAM BELOW
-    catalog.getFunction("testfloatinvalid", CatalogUtil.newSimpleDataTypeArray(Type.DECIMAL, Type.INT4));
+    // UPGRADE TO DECIMAL WILL FAIL ==> LOOK AT FIRST PARAM BELOW
+    catalog.getFunction("testfloatinvalid", CatalogUtil.newSimpleDataTypeArray(Type.NUMERIC, Type.INT4));
   }
 
   @Test

@@ -1495,7 +1495,7 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
     } else if (primitiveType.KW_DOUBLE() != null) {
       typeDefinition = new DataTypeExpr(TajoDataTypes.Type.FLOAT8.name());
     } else if (primitiveType.KW_DECIMAL() != null) {
-      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.DECIMAL.name());
+      typeDefinition = new DataTypeExpr(TajoDataTypes.Type.NUMERIC.name());
     } else if (primitiveType.KW_BOOLEAN() != null) {
       typeDefinition = new DataTypeExpr(TajoDataTypes.Type.BOOLEAN.name());
     } else if (primitiveType.KW_DATE() != null) {

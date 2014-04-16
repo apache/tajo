@@ -22,6 +22,7 @@ import org.apache.hadoop.mapred.FadvisedFileRegion;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
+@Deprecated
 public class FileCloseListener implements ChannelFutureListener {
 
   private FadvisedFileRegion filePart;
