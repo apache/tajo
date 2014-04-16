@@ -323,6 +323,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-765: Incorrect Configuration Classpaths. (jinho)
+
     TAJO-563: INSERT OVERWRITE should not remove data before query success.
     (hyunsik)
 
