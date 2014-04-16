@@ -1,0 +1,52 @@
+{
+  "distinct": false,
+  "targets": [
+    {
+      "child": {
+        "name": "dt",
+        "type": "Column"
+      },
+      "type": "Target"
+    },
+    {
+      "child": {
+        "function": {
+          "distinct": false,
+          "signature": "sum",
+          "params": [
+            {
+              "name": "xy",
+              "type": "Column"
+            }
+          ],
+          "type": "GeneralSetFunction"
+        },
+        "windowSpec": {
+          "sortSpecs": [
+            {
+              "key": {
+                "name": "dt",
+                "type": "Column"
+              },
+              "asc": true,
+              "nullFirst": false
+            }
+          ],
+          "type": "WindowSpec"
+        },
+        "type": "WindowFunction"
+      },
+      "type": "Target"
+    }
+  ],
+  "child": {
+    "relations": [
+      {
+        "tableName": "sum_example",
+        "type": "Relation"
+      }
+    ],
+    "type": "RelationList"
+  },
+  "type": "Projection"
+}

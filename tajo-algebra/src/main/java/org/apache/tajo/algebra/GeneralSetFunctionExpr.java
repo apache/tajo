@@ -39,10 +39,10 @@ public class GeneralSetFunctionExpr extends FunctionExpr {
    *
    * @param signature Function name
    * @param distinct True if this function is a distinct aggregation function
-   * @param param Function parameter
+   * @param params Function parameters
    */
-  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr param) {
-    this(OpType.GeneralSetFunction, signature, distinct, new Expr [] {param});
+  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr[] params) {
+    this(OpType.GeneralSetFunction, signature, distinct, params);
   }
 
   /**

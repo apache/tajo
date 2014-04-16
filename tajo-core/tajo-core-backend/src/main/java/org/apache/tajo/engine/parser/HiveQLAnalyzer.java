@@ -1160,8 +1160,8 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
         CountRowsFunctionExpr countRowsFunctionExpr = new CountRowsFunctionExpr();
         current = countRowsFunctionExpr;
       } else {
-        GeneralSetFunctionExpr setFunctionExpr = new GeneralSetFunctionExpr(signature, isDistinct,
-            visitSelectExpression(ctx.selectExpression(0)));
+        GeneralSetFunctionExpr setFunctionExpr = new GeneralSetFunctionExpr(signature, isDistinct, new Expr [] {
+            visitSelectExpression(ctx.selectExpression(0))});
         current = setFunctionExpr;
       }
     } else {

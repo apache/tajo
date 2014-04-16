@@ -19,10 +19,12 @@
 package org.apache.tajo.algebra;
 
 import com.google.gson.*;
+import com.google.gson.annotations.SerializedName;
 
 import java.lang.reflect.Type;
 
 public abstract class Expr implements JsonSerializable {
+  @SerializedName("type")
   protected OpType opType;
 
 	public Expr(OpType opType) {

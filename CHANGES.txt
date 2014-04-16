@@ -1,5 +1,15 @@
 Tajo Change Log
 
+
+Release 0.9.0 - unreleased
+
+  NEW FEATURES:
+
+
+  SUB TASKS:
+
+    TAJO-757: Add parser rule and algebraic expression for window function. (hyunsik)
+
 Release 0.8.0 - unreleased
 
   NEW FEATURES

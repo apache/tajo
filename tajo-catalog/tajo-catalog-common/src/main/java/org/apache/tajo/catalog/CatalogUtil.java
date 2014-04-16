@@ -713,8 +713,9 @@ public class CatalogUtil {
       "RIGHT",
       "SELECT", "SOME", "SYMMETRIC",
       "TABLE", "THEN", "TRAILING", "TRUE",
+      "OVER",
       "UNION", "UNIQUE", "USING",
-      "WHEN", "WHERE", "WITH"
+      "WHEN", "WHERE", "WINDOW", "WITH"
   };
 
   static {

@@ -41,6 +41,7 @@ public enum OpType {
   Relation(Relation.class),
   ScalarSubQuery(ScalarSubQuery.class),
   Explain(Explain.class),
+  Window(Window.class),
 
   // Data definition language
   CreateDatabase(CreateDatabase.class),
@@ -92,6 +93,8 @@ public enum OpType {
   Column(ColumnReferenceExpr.class),
   Target(NamedExpr.class),
   Function(FunctionExpr.class),
+  WindowFunction(WindowFunctionExpr.class),
+  WindowSpec(WindowSpecExpr.class),
   Asterisk(QualifiedAsteriskExpr.class),
 
   // Set Functions
