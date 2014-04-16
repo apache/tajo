@@ -25,10 +25,10 @@
 # export HADOOP_HOME=
 
 # The java implementation to use.  Required.
-# export JAVA_HOME=/usr
+# export JAVA_HOME=/usr/java/default
 
 # Extra Java CLASSPATH elements.  Optional.
-# export TAJO_CLASSPATH=
+# export TAJO_CLASSPATH=/xxx/extlib/*:/xxx/xxx.jar
 
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export TAJO_MASTER_HEAPSIZE=1000
