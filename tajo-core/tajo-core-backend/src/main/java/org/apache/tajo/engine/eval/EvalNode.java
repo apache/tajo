@@ -66,5 +66,10 @@ public abstract class EvalNode implements Cloneable, GsonObject {
   public abstract void postOrder(EvalNodeVisitor visitor);
 
   @Override
-  public abstract Object clone() throws CloneNotSupportedException;
+  public Object clone() throws CloneNotSupportedException {
+    EvalNode evalNode = (EvalNode) super.clone();
+    evalNode.type = type;
+    evalNode.returnType = returnType;
+    return evalNode;
+  }
 }

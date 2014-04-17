@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -57,11 +58,18 @@ public class EvalTreeUtil {
       if (evalNode.equals(target)) {
         EvalNode parent = stack.peek();
 
-        if (parent.getLeftExpr().equals(evalNode)) {
-          parent.setLeftExpr(tobeReplaced);
-        }
-        if (parent.getRightExpr().equals(evalNode)) {
-          parent.setRightExpr(tobeReplaced);
+        if (parent instanceof UnaryEval) {
+          ((UnaryEval)parent).setChild(tobeReplaced);
+        } else if (parent instanceof BinaryEval) {
+          BinaryEval binaryParent = (BinaryEval) parent;
+          if (binaryParent.getLeftExpr().equals(evalNode)) {
+            binaryParent.setLeftExpr(tobeReplaced);
+          }
+          if (binaryParent.getRightExpr().equals(evalNode)) {
+            binaryParent.setRightExpr(tobeReplaced);
+          }
+        } else {
+          throw new UnimplementedException(parent + " is not implemented yet.");
         }
       }
 
@@ -170,33 +178,18 @@ public class EvalTreeUtil {
    * to the target column
    */
   public static boolean containColumnRef(EvalNode expr, Column target) {
-    Set<EvalNode> exprSet = Sets.newHashSet();
-    _containColumnRef(expr, target, exprSet);
-    
-    return exprSet.size() > 0;
-  }
-  
-  private static void _containColumnRef(EvalNode expr, Column target, 
-      Set<EvalNode> exprSet) {
-    switch (expr.getType()) {
-    case FIELD:
-      FieldEval field = (FieldEval) expr;
-      if (field.getColumnName().equals(target.getSimpleName())) {
-        exprSet.add(field);
-      }
-      break;
-    case CONST:
-      return;
-    default: 
-      _containColumnRef(expr.getLeftExpr(), target, exprSet);
-      _containColumnRef(expr.getRightExpr(), target, exprSet);
-    }    
+    Set<Column> exprSet = findUniqueColumns(expr);
+    return exprSet.contains(target);
   }
 
-  public static boolean isJoinQual(EvalNode expr) {
-    return AlgebraicUtil.isComparisonOperator(expr) &&
-        expr.getLeftExpr().getType() == EvalType.FIELD &&
-        expr.getRightExpr().getType() == EvalType.FIELD;
+  public static boolean isJoinQual(EvalNode eval) {
+    if (AlgebraicUtil.isComparisonOperator(eval)) {
+      BinaryEval binaryEval = (BinaryEval) eval;
+      return binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+          binaryEval.getRightExpr().getType() == EvalType.FIELD;
+    } else {
+      return false;
+    }
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    

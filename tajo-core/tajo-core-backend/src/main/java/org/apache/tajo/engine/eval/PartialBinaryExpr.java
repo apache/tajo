@@ -31,7 +31,10 @@ public class PartialBinaryExpr extends BinaryEval {
   }
 
   public PartialBinaryExpr(EvalType type, EvalNode left, EvalNode right) {
-    super(type, left, right);
+    super(type);
+    this.leftExpr = left;
+    this.rightExpr = right;
+    // skip to determine the result type
   }
 
   @Override

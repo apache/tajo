@@ -309,13 +309,14 @@ public class PartitionedTableRewriter implements RewriteRule {
    */
   private boolean checkIfDisjunctiveButOneVariable(EvalNode evalNode) {
     if (evalNode.getType() == EvalType.OR) {
+      BinaryEval orEval = (BinaryEval) evalNode;
       boolean indexable =
-          checkIfIndexablePredicate(evalNode.getLeftExpr()) &&
-              checkIfIndexablePredicate(evalNode.getRightExpr());
+          checkIfIndexablePredicate(orEval.getLeftExpr()) &&
+              checkIfIndexablePredicate(orEval.getRightExpr());
 
       boolean sameVariable =
-          EvalTreeUtil.findUniqueColumns(evalNode.getLeftExpr())
-          .equals(EvalTreeUtil.findUniqueColumns(evalNode.getRightExpr()));
+          EvalTreeUtil.findUniqueColumns(orEval.getLeftExpr())
+          .equals(EvalTreeUtil.findUniqueColumns(orEval.getRightExpr()));
 
       return indexable && sameVariable;
     } else {

@@ -109,12 +109,14 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     JoinType joinType = joinNode.getJoinType();
     EvalNode joinQual = joinNode.getJoinQual();
     if (joinQual != null && isOuterJoin(joinType)) {
+      BinaryEval binaryJoinQual = (BinaryEval) joinQual;
 
       // if both are fields
-       if (joinQual.getLeftExpr().getType() == EvalType.FIELD && joinQual.getRightExpr().getType() == EvalType.FIELD) {
+       if (binaryJoinQual.getLeftExpr().getType() == EvalType.FIELD &&
+           binaryJoinQual.getRightExpr().getType() == EvalType.FIELD) {
 
-          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getQualifier();
-          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getQualifier();
+          String leftTableName = ((FieldEval) binaryJoinQual.getLeftExpr()).getQualifier();
+          String rightTableName = ((FieldEval) binaryJoinQual.getRightExpr()).getQualifier();
           List<String> nullSuppliers = Lists.newArrayList();
           Set<String> leftTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
               joinNode.getLeftChild()));
@@ -155,7 +157,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
          // retain in this outer join node's JoinQual those selection predicates
          // related to the outer join's null supplier(s)
-         List<EvalNode> matched2 = Lists.newArrayList();
+         List<BinaryEval> matched2 = Lists.newArrayList();
          for (EvalNode eval : cnf) {
 
             Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(eval);
@@ -177,16 +179,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
             }
 
             if(shouldKeep == true) {
-                matched2.add(eval);
+                matched2.add((BinaryEval) eval);
             }
 
           }
 
           //merge the retained predicates and establish them in the current outer join node. Then remove them from the cnf
-          EvalNode qual2 = null;
+          BinaryEval qual2 = null;
           if (matched2.size() > 1) {
              // merged into one eval tree
-             qual2 = AlgebraicUtil.createSingletonExprFromCNF(
+             qual2 = (BinaryEval) AlgebraicUtil.createSingletonExprFromCNF(
                  matched2.toArray(new EvalNode[matched2.size()]));
           } else if (matched2.size() == 1) {
              // if the number of matched expr is one
@@ -194,9 +196,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
           }
 
           if (qual2 != null) {
-             EvalNode conjQual2 = AlgebraicUtil.createSingletonExprFromCNF(joinNode.getJoinQual(), qual2);
-             joinNode.setJoinQual(conjQual2);
-             cnf.removeAll(matched2);
+            // more or one join quals always return a binary eval node.
+            EvalNode conjQual2 = AlgebraicUtil.createSingletonExprFromCNF(joinNode.getJoinQual(), qual2);
+            joinNode.setJoinQual((BinaryEval) conjQual2);
+            cnf.removeAll(matched2);
           } // for the remaining cnf, push it as usual
        }
     }

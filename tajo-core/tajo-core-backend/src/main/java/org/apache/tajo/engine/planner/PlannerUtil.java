@@ -538,8 +538,9 @@ public class PlannerUtil {
    */
   public static boolean isJoinQual(EvalNode qual) {
     if (AlgebraicUtil.isComparisonOperator(qual)) {
-      List<Column> left = EvalTreeUtil.findAllColumnRefs(qual.getLeftExpr());
-      List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
+      BinaryEval binaryEval = (BinaryEval) qual;
+      List<Column> left = EvalTreeUtil.findAllColumnRefs(binaryEval.getLeftExpr());
+      List<Column> right = EvalTreeUtil.findAllColumnRefs(binaryEval.getRightExpr());
 
       if (left.size() == 1 && right.size() == 1 &&
           !left.get(0).getQualifier().equals(right.get(0).getQualifier()))
@@ -603,10 +604,11 @@ public class PlannerUtil {
     @Override
     public void visit(EvalNode node) {
       if (EvalTreeUtil.isJoinQual(node)) {
+        BinaryEval binaryEval = (BinaryEval) node;
         Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression
-          Column column = EvalTreeUtil.findAllColumnRefs(node.getExpr(i)).get(0);
+          Column column = EvalTreeUtil.findAllColumnRefs(binaryEval.getExpr(i)).get(0);
           for (int j = 0; j < schemas.length; j++) {
             // check whether the column is for either outer or inner
             // 0 is outer, and 1 is inner

@@ -23,6 +23,7 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.engine.eval.BinaryEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -144,7 +145,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public Object clone() throws CloneNotSupportedException {
     JoinNode join = (JoinNode) super.clone();
     join.joinType = this.joinType;
-    join.joinQual = this.joinQual == null ? null : (EvalNode) this.joinQual.clone();
+    join.joinQual = this.joinQual == null ? null : (BinaryEval) this.joinQual.clone();
     if (hasTargets()) {
       join.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {

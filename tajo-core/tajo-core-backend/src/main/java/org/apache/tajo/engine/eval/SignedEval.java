@@ -80,8 +80,8 @@ public class SignedEval extends UnaryEval implements Cloneable {
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    SignedEval eval = (SignedEval) super.clone();
-    eval.negative = negative;
-    return eval;
+    SignedEval signedEval = (SignedEval) super.clone();
+    signedEval.negative = negative;
+    return signedEval;
   }
 }

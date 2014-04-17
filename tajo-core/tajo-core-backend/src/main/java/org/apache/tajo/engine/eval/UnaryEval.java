@@ -38,6 +38,10 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
     this.child = child;
   }
 
+  public void setChild(EvalNode child) {
+    this.child = child;
+  }
+
   public EvalNode getChild() {
     return child;
   }
@@ -86,8 +90,8 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    UnaryEval newEvalNode = (UnaryEval) super.clone();
-    newEvalNode.child = (EvalNode) this.child.clone();
-    return child;
+    UnaryEval unaryEval = (UnaryEval) super.clone();
+    unaryEval.child = (EvalNode) this.child.clone();
+    return unaryEval;
   }
 }
