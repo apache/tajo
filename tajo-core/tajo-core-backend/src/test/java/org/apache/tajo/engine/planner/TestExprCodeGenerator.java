@@ -24,6 +24,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
@@ -33,6 +34,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CodeGenUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -124,10 +126,14 @@ public class TestExprCodeGenerator {
   }
 
   public static class CodeGenContext {
+    private Schema schema;
+
     private ClassWriter classWriter;
     private MethodVisitor evalMethod;
 
-    public CodeGenContext() {
+    public CodeGenContext(Schema schema) {
+      this.schema = schema;
+
       classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
       classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$EvalGen", null);
       classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
@@ -145,7 +151,7 @@ public class TestExprCodeGenerator {
   }
 
   public static class EvalGen {
-    public Datum eval(int x, int y) {
+    public Datum eval(Tuple tuple) {
       return null;
     }
   }
@@ -154,40 +160,50 @@ public class TestExprCodeGenerator {
     return clazz.getName().replace('.', '/');
   }
 
-  public static class ExprCodeGenerator extends BasicEvalNodeVisitor<CodeGenContext, Object> {
+  public static class ExprCodeGenerator extends BasicEvalNodeVisitor<CodeGenContext, EvalNode> {
 
-    public EvalGen generate(EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
+
+    private static void invokeInitDatum(CodeGenContext context, Class clazz, String paramDesc) {
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, getClassName(clazz), "<init>", paramDesc);
+      context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, getClassName(Datum.class));
+      context.evalMethod.visitInsn(Opcodes.ARETURN);
+      context.evalMethod.visitMaxs(0, 0);
+      context.evalMethod.visitEnd();
+      context.classWriter.visitEnd();
+    }
+
+    public EvalGen generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
         InvocationTargetException, InstantiationException, PlanningException {
-      CodeGenContext context = new CodeGenContext();
+      CodeGenContext context = new CodeGenContext(schema);
 
       // evalMethod
       context.evalMethod = context.classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
-          "(II)Lorg/apache/tajo/datum/Datum;", null, null);
+          "(Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;", null, null);
       context.evalMethod.visitCode();
       context.evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
       Class returnTypeClass;
-      String desc;
+      String signatureDesc;
       switch (expr.getValueType().getType()) {
       case INT2:
         returnTypeClass = Int2Datum.class;
-        desc = "(S)V";
+        signatureDesc = "(S)V";
         break;
       case INT4:
         returnTypeClass = Int4Datum.class;
-        desc = "(I)V";
+        signatureDesc = "(I)V";
         break;
       case INT8:
         returnTypeClass = Int8Datum.class;
-        desc = "(L)V";
+        signatureDesc = "(L)V";
         break;
       case FLOAT4:
         returnTypeClass = Float4Datum.class;
-        desc = "(F)V";
+        signatureDesc = "(F)V";
         break;
       case FLOAT8:
         returnTypeClass = Float8Datum.class;
-        desc = "(D)V";
+        signatureDesc = "(D)V";
         break;
       default:
         throw new PlanningException("Unsupported type: " + expr.getValueType().getType());
@@ -198,12 +214,7 @@ public class TestExprCodeGenerator {
 
       visitChild(context, expr, new Stack<EvalNode>());
 
-      context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, getClassName(returnTypeClass), "<init>", desc);
-      context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, getClassName(Datum.class));
-      context.evalMethod.visitInsn(Opcodes.ARETURN);
-      context.evalMethod.visitMaxs(0, 0);
-      context.evalMethod.visitEnd();
-      context.classWriter.visitEnd();
+      invokeInitDatum(context, returnTypeClass, signatureDesc);
 
       MyClassLoader myClassLoader = new MyClassLoader();
       Class aClass = myClassLoader.defineClass("org.Test3", context.classWriter.toByteArray());
@@ -212,7 +223,11 @@ public class TestExprCodeGenerator {
       return r;
     }
 
-    public Object visitPlus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitField(CodeGenContext context, Stack<EvalNode> stack, FieldEval evalNode) {
+      return null;
+    }
+
+    public EvalNode visitPlus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
       super.visitPlus(context, evalNode, stack);
 
       int opcode;
@@ -238,7 +253,7 @@ public class TestExprCodeGenerator {
       return null;
     }
 
-    public Object visitMinus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitMinus(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
       super.visitMinus(context, evalNode, stack);
 
       int opcode;
@@ -265,7 +280,7 @@ public class TestExprCodeGenerator {
     }
 
     @Override
-    public Object visitMultiply(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitMultiply(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
       super.visitMultiply(context, evalNode, stack);
 
       int opcode;
@@ -292,7 +307,7 @@ public class TestExprCodeGenerator {
     }
 
     @Override
-    public Object visitDivide(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitDivide(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
       super.visitDivide(context, evalNode, stack);
 
       int opcode;
@@ -319,7 +334,7 @@ public class TestExprCodeGenerator {
     }
 
     @Override
-    public Object visitModular(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitModular(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
 
       super.visitModular(context, evalNode, stack);
 
@@ -346,17 +361,26 @@ public class TestExprCodeGenerator {
       return null;
     }
 
-    public Object visitConst(CodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitConst(CodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
       switch (evalNode.getValueType().getType()) {
       case INT2:
       case INT4:
         context.evalMethod.visitLdcInsn(evalNode.getValue().asInt4());
+        break;
+      case INT8:
+        context.evalMethod.visitLdcInsn(evalNode.getValue().asInt8());
+        break;
+      case FLOAT4:
+        context.evalMethod.visitLdcInsn(evalNode.getValue().asFloat4());
+        break;
+      case FLOAT8:
+        context.evalMethod.visitLdcInsn(evalNode.getValue().asFloat8());
       }
-      return null;
+      return evalNode;
     }
 
     @Override
-    public Object visitCast(CodeGenContext context, CastEval signedEval, Stack<EvalNode> stack) {
+    public EvalNode visitCast(CodeGenContext context, CastEval signedEval, Stack<EvalNode> stack) {
       super.visitCast(context, signedEval, stack);
 
       TajoDataTypes.Type srcType = signedEval.getOperand().getValueType().getType();
@@ -368,14 +392,15 @@ public class TestExprCodeGenerator {
   }
 
   @Test
-  public void testGenerateCodeFromQuery() throws InvalidStatementException, PlanningException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+  public void testGenerateCodeFromQuery() throws InvalidStatementException, PlanningException,
+      InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
     ExprCodeGenerator generator = new ExprCodeGenerator();
 
     Target [] targets = getRawTargets("select 5 + 2 * 3 % 6;", true);
     long start = System.currentTimeMillis();
-    EvalGen code = generator.generate(targets[0].getEvalTree());
+    EvalGen code = generator.generate(null, targets[0].getEvalTree());
     long end = System.currentTimeMillis();
-    System.out.println(code.eval(1,1));
+    System.out.println(code.eval(null));
     long execute = System.currentTimeMillis();
 
     System.out.println(end - start + " msec");
