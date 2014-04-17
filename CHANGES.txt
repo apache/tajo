@@ -147,6 +147,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-768: Improve the log4j configuration. (hyoungjunkim via jinho)
+
     TAJO-755: ALTER TABLESPACE LOCATION support. (hyunsilk)
     
     TAJO-732: Support executing LINUX shell command and HDFS command.
