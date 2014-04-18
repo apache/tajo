@@ -1,5 +1,11 @@
 Tajo Change Log
 
+Release 0.9.0 - unreleased
+
+  IMPROVEMENT
+
+    TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
+
 Release 0.8.0 - unreleased
 
   NEW FEATURES
@@ -146,6 +152,8 @@ Release 0.8.0 - unreleased
     (jihoon)
 
   IMPROVEMENTS
+
+    TAJO-768: Improve the log4j configuration. (hyoungjunkim via jinho)
 
     TAJO-755: ALTER TABLESPACE LOCATION support. (hyunsilk)
     
@@ -325,6 +333,11 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-741: GreedyHeuristicJoinOrderAlgorithm removes some join pairs. (jaehwa)
+
+    TAJO-772: TajoDump cannot dump upper/lower mixed case database names.
+    (hyunsik)
 
     TAJO-765: Incorrect Configuration Classpaths. (jinho)
 
@@ -635,6 +648,9 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-752: Escalate sub modules in tajo-core into the top-level modules.
+    (hyunsik)
 
     TAJO-753: Clean up of maven dependencies. (jinho)
 

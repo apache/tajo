@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -109,29 +110,38 @@ public class TajoDump {
     }
 
     PrintWriter writer = new PrintWriter(System.out);
+    dump(client, userInfo, baseDatabaseName, isDumpingAllDatabases, true, writer);
 
-    printHeader(writer, userInfo);
-
-    if (isDumpingAllDatabases) {
-      for (String databaseName : client.getAllDatabaseNames()) {
-        dumpDatabase(client, databaseName, writer);
-      }
-    } else {
-      dumpDatabase(client, baseDatabaseName, writer);
-    }
-    client.close();
-
-    writer.flush();
-    writer.close();
     System.exit(0);
   }
 
-  private static void printHeader(PrintWriter writer, UserGroupInformation userInfo) {
+  public static void dump(TajoClient client, UserGroupInformation userInfo, String baseDatabaseName,
+                   boolean isDumpingAllDatabases, boolean includeDate, PrintWriter out)
+      throws SQLException, ServiceException {
+    printHeader(out, userInfo, includeDate);
+
+    if (isDumpingAllDatabases) {
+      // sort database names in an ascending lexicographic order of the names.
+      List<String> sorted = new ArrayList<String>(client.getAllDatabaseNames());
+      Collections.sort(sorted);
+
+      for (String databaseName : sorted) {
+        dumpDatabase(client, databaseName, out);
+      }
+    } else {
+      dumpDatabase(client, baseDatabaseName, out);
+    }
+    out.flush();
+  }
+
+  private static void printHeader(PrintWriter writer, UserGroupInformation userInfo, boolean includeDate) {
     writer.write("--\n");
     writer.write("-- Tajo database dump\n");
     writer.write("--\n");
     writer.write("-- Dump user: " + userInfo.getUserName() + "\n");
-    writer.write("-- Dump date: " + toDateString() + "\n");
+    if (includeDate) {
+      writer.write("-- Dump date: " + toDateString() + "\n");
+    }
     writer.write("--\n");
     writer.write("\n");
   }
@@ -140,10 +150,10 @@ public class TajoDump {
       throws SQLException, ServiceException {
     writer.write("\n");
     writer.write("--\n");
-    writer.write(String.format("-- Database name: %s%n", databaseName));
+    writer.write(String.format("-- Database name: %s%n", CatalogUtil.denormalizeIdentifier(databaseName)));
     writer.write("--\n");
     writer.write("\n");
-    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", databaseName));
+    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", CatalogUtil.denormalizeIdentifier(databaseName)));
     writer.write("\n");
 
     // returned list is immutable.
@@ -151,8 +161,7 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        TableDesc table =
-            client.getTableDesc(CatalogUtil.denormalizeIdentifier(CatalogUtil.buildFQName(databaseName,tableName)));
+        TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
         if (table.isExternal()) {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {

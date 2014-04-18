@@ -93,7 +93,7 @@ fi
 
 # some variables
 export TAJO_LOGFILE=tajo-$TAJO_IDENT_STRING-$command-$HOSTNAME.log
-export TAJO_ROOT_LOGGER="INFO,DRFA"
+export TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-DRFA}"
 log=$TAJO_LOG_DIR/tajo-$TAJO_IDENT_STRING-$command-$HOSTNAME.out
 pid=$TAJO_PID_DIR/tajo-$TAJO_IDENT_STRING-$command.pid
 

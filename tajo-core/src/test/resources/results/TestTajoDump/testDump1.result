@@ -1,0 +1,17 @@
+--
+-- Tajo database dump
+--
+-- Dump user: hyunsik
+-- Dump date: 04/17/2014 13:33:45
+--
+
+
+--
+-- Database name: "TestTajoDump"
+--
+
+CREATE DATABASE IF NOT EXISTS "TestTajoDump";
+--
+-- Name: TestTajoDump.TableName1; Type: TABLE; Storage: CSV
+--
+CREATE TABLE "TestTajoDump"."TableName1" ("Age" INT4, "FirstName" TEXT, lastname TEXT) USING CSV WITH ('csvfile.delimiter'='|');

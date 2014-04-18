@@ -35,6 +35,7 @@ import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -250,8 +251,8 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_URL,
-                     "src/test/resources/testVariousTypes.avsc");
+      String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
+      meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
