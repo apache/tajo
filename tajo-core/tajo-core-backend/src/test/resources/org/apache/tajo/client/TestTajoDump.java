@@ -16,23 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.query;
+package org.apache.tajo.client;
 
-import org.apache.tajo.IntegrationTest;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 
-@Category(IntegrationTest.class)
-public class TestDropTable extends QueryTestCaseBase {
+public class TestTajoDump extends QueryTestCaseBase {
 
   @Test
-  public final void testDropManagedTable() throws Exception {
-    List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "abc");
-    assertTableExists(createdNames.get(0));
-    executeDDL("drop_table_ddl.sql", null);
-    assertTableNotExists("abc");
+  public void testDump1() throws Exception {
+    executeString("CREATE TABLE \"" +getCurrentDatabase() +
+        "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
+
+    UserGroupInformation userInfo = UserGroupInformation.getCurrentUser();
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    PrintWriter printWriter = new PrintWriter(bos);
+    TajoDump.dump(client, userInfo, getCurrentDatabase(), false, printWriter);
+    printWriter.flush();
+    printWriter.close();
+    assertStrings(new String(bos.toByteArray()));
+    bos.close();
   }
 }
