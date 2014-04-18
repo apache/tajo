@@ -51,7 +51,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-core-backend</artifactId>
+      <artifactId>tajo-core</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

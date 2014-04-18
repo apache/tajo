@@ -88,6 +88,7 @@
     <module>tajo-jdbc</module>
     <module>tajo-dist</module>
     <module>tajo-storage</module>
+    <module>tajo-yarn-pullserver</module>
   </modules>
 
   <build>
