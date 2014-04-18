@@ -114,7 +114,7 @@
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--proto_path=../tajo-common/src/main/proto</argument>
                 <argument>--proto_path=../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
-                <argument>--proto_path=../tajo-core/tajo-core-backend/src/main/proto</argument>
+                <argument>--proto_path=../tajo-core/tajo-core/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/ClientProtos.proto</argument>
                 <argument>src/main/proto/TajoMasterClientProtocol.proto</argument>

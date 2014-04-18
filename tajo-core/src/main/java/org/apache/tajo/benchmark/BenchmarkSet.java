@@ -56,7 +56,7 @@ public abstract class BenchmarkSet {
     File queryDir = new File(dir);
 
     if(!queryDir.exists()) {
-      queryDir = new File(System.getProperty("user.dir") + "/tajo-core/tajo-core-backend/" + dir);
+      queryDir = new File(System.getProperty("user.dir") + "/tajo-core/" + dir);
     }
 
     if(!queryDir.exists())

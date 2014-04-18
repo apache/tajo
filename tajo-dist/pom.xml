@@ -51,7 +51,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-core-backend</artifactId>
+      <artifactId>tajo-core</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -109,8 +109,10 @@
                       run cp -r $ROOT/tajo-algebra/target/tajo-algebra-${project.version}/* .
                       run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
                       run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
-                      run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}/* .
+                      run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}.jar .
+                      run cp -r $ROOT/tajo-yarn-pullserver/target/tajo-yarn-pullserver-${project.version}.jar .
                       run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .
+                      run cp -r $ROOT/tajo-core/target/lib .
                       run cp -r ${project.basedir}/src/main/bin .
                       run cp -r ${project.basedir}/src/main/conf .
                       run rm -rf lib/tajo-*-${project.version}.jar

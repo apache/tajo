@@ -75,7 +75,7 @@ public class TpchTestBase {
     for (int i = 0; i < names.length; i++) {
       file = new File("src/test/tpch/" + names[i] + ".tbl");
       if(!file.exists()) {
-        file = new File(System.getProperty("user.dir") + "/tajo-core/tajo-core-backend/src/test/tpch/" + names[i]
+        file = new File(System.getProperty("user.dir") + "/tajo-core/tajo-core/src/test/tpch/" + names[i]
             + ".tbl");
       }
       tables[i] = FileUtil.readTextFile(file).split("\n");

@@ -643,29 +643,24 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core</artifactId>
-        <version>${tajo.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core-backend</artifactId>
+        <artifactId>tajo-core</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core-backend</artifactId>
+        <artifactId>tajo-core</artifactId>
         <version>${tajo.version}</version>
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core-pullserver</artifactId>
+        <artifactId>tajo-yarn-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>

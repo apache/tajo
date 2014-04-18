@@ -642,6 +642,9 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-752: Escalate sub modules in tajo-core into the top-level modules.
+    (hyunsik)
+
     TAJO-753: Clean up of maven dependencies. (jinho)
 
     TAJO-529: Fix warnings in tajo-algebra. (jaehwa)

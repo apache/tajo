@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.Charset;
 
 public class FileUtil {
@@ -79,6 +80,10 @@ public class FileUtil {
 
   public static File getFile(String path) {
     return new File(path);
+  }
+
+  public static URL getResourcePath(String resource) {
+    return ClassLoader.getSystemResource(resource);
   }
 
   public static String readTextFileFromResource(String resource) throws IOException {

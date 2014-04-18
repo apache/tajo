@@ -36,8 +36,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * This unit tests uses a number of query files located in tajo/tajo-core/tajo-core-backend/test/queries.
- * So, you must set tajo/tajo-core/tajo-core-backend as the working directory.
+ * This unit tests uses a number of query files located in tajo/tajo-core/src/test/resources/queries.
+ * So, you must set tajo/tajo-core as the working directory.
  */
 public class TestSQLAnalyzer {
 
