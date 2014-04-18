@@ -278,4 +278,26 @@ public class TestSelectQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testDatabaseRef() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      executeString("CREATE DATABASE \"TestSelectQuery\"").close();
+      executeString("CREATE TABLE \"TestSelectQuery\".\"LineItem\" AS SELECT * FROM default.lineitem" ).close();
+
+      ResultSet res = executeFile("testDatabaseRef1.sql");
+      assertResultSet(res, "testDatabaseRef.result");
+      cleanupQuery(res);
+
+      res = executeFile("testDatabaseRef2.sql");
+      assertResultSet(res, "testDatabaseRef.result");
+      cleanupQuery(res);
+
+      res = executeFile("testDatabaseRef3.sql");
+      assertResultSet(res, "testDatabaseRef.result");
+      cleanupQuery(res);
+
+      executeString("DROP DATABASE \"TestSelectQuery\"").close();
+    }
+  }
 }

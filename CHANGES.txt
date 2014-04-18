@@ -325,6 +325,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-772: TajoDump cannot dump upper/lower mixed case database names.
+    (hyunsik)
+
     TAJO-765: Incorrect Configuration Classpaths. (jinho)
 
     TAJO-563: INSERT OVERWRITE should not remove data before query success.

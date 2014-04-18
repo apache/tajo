@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.planner.PlanString;
 
 public class CreateDatabaseNode extends LogicalNode implements Cloneable {
@@ -70,7 +71,8 @@ public class CreateDatabaseNode extends LogicalNode implements Cloneable {
 
   @Override
   public String toString() {
-    return "CREATE DATABASE " + (ifNotExists ? " IF NOT EXISTS " : "") + databaseName;
+    return "CREATE DATABASE " + (ifNotExists ? " IF NOT EXISTS " : "")
+        + CatalogUtil.denormalizeIdentifier(databaseName);
   }
 
   @Override

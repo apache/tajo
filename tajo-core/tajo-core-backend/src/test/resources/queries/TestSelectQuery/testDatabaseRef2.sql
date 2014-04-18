@@ -1,0 +1,1 @@
+SELECT "LineItem".L_ORDERKEY FROM "TestSelectQuery"."LineItem";

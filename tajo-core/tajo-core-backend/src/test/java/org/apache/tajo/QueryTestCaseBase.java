@@ -165,7 +165,7 @@ public class QueryTestCaseBase {
   @AfterClass
   public static void tearDownClass() throws ServiceException {
     for (String tableName : createdTableGlobalSet) {
-      client.updateQuery("DROP TABLE IF EXISTS " +tableName);
+      client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
     }
     createdTableGlobalSet.clear();
 
@@ -182,7 +182,13 @@ public class QueryTestCaseBase {
   }
 
   public QueryTestCaseBase() {
-    this.currentDatabase = CatalogUtil.normalizeIdentifier(getClass().getSimpleName());
+    // hive 0.12 does not support quoted identifier.
+    // So, we use lower case database names when Tajo uses HCatalogStore.
+    if (testingCluster.isHCatalogStoreRunning()) {
+      this.currentDatabase = getClass().getSimpleName().toLowerCase();
+    } else {
+      this.currentDatabase = getClass().getSimpleName();
+    }
     init();
   }
 
@@ -200,7 +206,7 @@ public class QueryTestCaseBase {
     try {
       // if the current database is "default", we don't need create it because it is already prepated at startup time.
       if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
-        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + currentDatabase);
+        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + CatalogUtil.denormalizeIdentifier(currentDatabase));
       }
       client.selectDatabase(currentDatabase);
     } catch (ServiceException e) {
@@ -285,10 +291,27 @@ public class QueryTestCaseBase {
     Path resultFile = getResultFile(resultFileName);
     assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
     try {
-      verifyResult(message, result, resultFile);
+      verifyResultText(message, result, resultFile);
     } catch (SQLException e) {
       throw new IOException(e);
     }
+  }
+
+  public final void assertStrings(String actual) throws IOException {
+    assertStrings(actual, name.getMethodName() + ".result");
+  }
+
+  public final void assertStrings(String actual, String resultFileName) throws IOException {
+    assertStrings("Result Verification", actual, resultFileName);
+  }
+
+  public final void assertStrings(String message, String actual, String resultFileName) throws IOException {
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    Path resultFile = getResultFile(resultFileName);
+    assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
+
+    String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
+    assertEquals(message, expectedResult, actual);
   }
 
   /**
@@ -381,7 +404,7 @@ public class QueryTestCaseBase {
     return sb.toString();
   }
 
-  private void verifyResult(String message, ResultSet res, Path resultFile) throws SQLException, IOException {
+  private void verifyResultText(String message, ResultSet res, Path resultFile) throws SQLException, IOException {
     String actualResult = resultSetToString(res);
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
     assertEquals(message, expectedResult.trim(), actualResult.trim());
@@ -460,7 +483,7 @@ public class QueryTestCaseBase {
 
         assertTrue("table '" + createdTableName + "' creation check", client.existTable(createdTableName));
         if (isLocalTable) {
-          createdTableGlobalSet.add(CatalogUtil.denormalizeIdentifier(createdTableName));
+          createdTableGlobalSet.add(createdTableName);
           createdTableNames.add(tableName);
         }
       } else if (expr.getType() == OpType.DropTable) {
