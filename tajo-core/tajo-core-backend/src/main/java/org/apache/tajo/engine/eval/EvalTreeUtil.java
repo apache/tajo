@@ -193,9 +193,23 @@ public class EvalTreeUtil {
     }    
   }
 
-  public static boolean isJoinQual(EvalNode expr) {
-    return AlgebraicUtil.isComparisonOperator(expr) &&
-        expr.getLeftExpr().getType() == EvalType.FIELD &&
+  /**
+   * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
+   *
+   * @param expr EvalNode to be evaluated
+   * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
+   *                         Otherwise, it only returns equi-join conditions.
+   * @return True if it is join condition.
+   */
+  public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
+    boolean joinComparator;
+    if (includeThetaJoin) {
+      joinComparator = AlgebraicUtil.isComparisonOperator(expr);
+    } else {
+      joinComparator = expr.getType() == EvalType.EQUAL;
+    }
+
+    return joinComparator && expr.getLeftExpr().getType() == EvalType.FIELD &&
         expr.getRightExpr().getType() == EvalType.FIELD;
   }
   

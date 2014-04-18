@@ -75,8 +75,9 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     // we have a boolean flag, initially false (whether this join key had at least one match on the left operand)
     this.matched = new HashMap<Tuple, Boolean>(10000);
 
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
-        outer.getSchema(), inner.getSchema());
+    // HashJoin only can manage equi join key pairs.
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(), inner.getSchema(),
+        false);
 
     leftKeyList = new int[joinKeyPairs.size()];
     rightKeyList = new int[joinKeyPairs.size()];

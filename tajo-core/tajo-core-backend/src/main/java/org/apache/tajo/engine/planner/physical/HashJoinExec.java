@@ -19,8 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -67,8 +65,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
     this.joinQual = plan.getJoinQual();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(100000);
 
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
-        leftExec.getSchema(), rightExec.getSchema());
+    // HashJoin only can manage equi join key pairs.
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
+        rightExec.getSchema(), false);
 
     leftKeyList = new int[joinKeyPairs.size()];
     rightKeyList = new int[joinKeyPairs.size()];

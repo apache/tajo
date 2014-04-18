@@ -162,7 +162,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    *
    * @return If there is no join condition between two relation, it returns NULL value.
    */
-  private static JoinEdge findJoin(LogicalPlan plan, JoinGraph graph, LogicalNode outer, LogicalNode inner) throws PlanningException {
+  private static JoinEdge findJoin(LogicalPlan plan, JoinGraph graph, LogicalNode outer, LogicalNode inner)
+      throws PlanningException {
     JoinEdge foundJoinEdge = null;
 
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
@@ -171,7 +172,13 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         // Find all joins between two relations and merge them into one join if possible
         if (graph.hasEdge(outerName, innerName)) {
           JoinEdge existJoinEdge = graph.getEdge(outerName, innerName);
-          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner, existJoinEdge.getJoinQual());
+          if (foundJoinEdge == null) {
+            foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
+                existJoinEdge.getJoinQual());
+          } else {
+            foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+                existJoinEdge.getJoinQual()));
+          }
         }
       }
     }

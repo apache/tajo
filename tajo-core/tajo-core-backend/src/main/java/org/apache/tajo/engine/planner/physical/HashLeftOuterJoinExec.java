@@ -72,7 +72,9 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     this.joinQual = plan.getJoinQual();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(), rightChild.getSchema());
+    // HashJoin only can manage equi join key pairs.
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(),
+        rightChild.getSchema(), false);
 
     leftKeyList = new int[joinKeyPairs.size()];
     rightKeyList = new int[joinKeyPairs.size()];

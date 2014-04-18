@@ -530,27 +530,10 @@ public class PlannerUtil {
     return schema;
   }
 
-  /**
-   * is it join qual or not?
-   *
-   * @param qual The condition to be checked
-   * @return true if two operands refers to columns and the operator is comparison,
-   */
-  public static boolean isJoinQual(EvalNode qual) {
-    if (AlgebraicUtil.isComparisonOperator(qual)) {
-      List<Column> left = EvalTreeUtil.findAllColumnRefs(qual.getLeftExpr());
-      List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
-
-      if (left.size() == 1 && right.size() == 1 &&
-          !left.get(0).getQualifier().equals(right.get(0).getQualifier()))
-        return true;
-    }
-
-    return false;
-  }
-
   public static SortSpec[][] getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
-    List<Column[]> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner);
+    // It is used for the merge join executor. The merge join only considers the equi-join.
+    // So, theta-join flag must be false.
+    List<Column[]> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner, false);
     SortSpec[] outerSortSpec = new SortSpec[joinKeyPairs.size()];
     SortSpec[] innerSortSpec = new SortSpec[joinKeyPairs.size()];
 
@@ -574,7 +557,7 @@ public class PlannerUtil {
    * @return the first array contains left table's columns, and the second array contains right table's columns.
    */
   public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema);
+    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema, true);
     Column[] leftColumns = new Column[joinKeys.size()];
     Column[] rightColumns = new Column[joinKeys.size()];
     for (int i = 0; i < joinKeys.size(); i++) {
@@ -585,24 +568,27 @@ public class PlannerUtil {
     return new Column[][]{leftColumns, rightColumns};
   }
 
-  public static List<Column[]> getJoinKeyPairs(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    JoinKeyPairFinder finder = new JoinKeyPairFinder(leftSchema, rightSchema);
+  public static List<Column[]> getJoinKeyPairs(EvalNode joinQual, Schema leftSchema, Schema rightSchema,
+                                               boolean includeThetaJoin) {
+    JoinKeyPairFinder finder = new JoinKeyPairFinder(includeThetaJoin, leftSchema, rightSchema);
     joinQual.preOrder(finder);
     return finder.getPairs();
   }
 
   public static class JoinKeyPairFinder implements EvalNodeVisitor {
+    private boolean includeThetaJoin;
     private final List<Column[]> pairs = Lists.newArrayList();
     private Schema[] schemas = new Schema[2];
 
-    public JoinKeyPairFinder(Schema outer, Schema inner) {
+    public JoinKeyPairFinder(boolean includeThetaJoin, Schema outer, Schema inner) {
+      this.includeThetaJoin = includeThetaJoin;
       schemas[0] = outer;
       schemas[1] = inner;
     }
 
     @Override
     public void visit(EvalNode node) {
-      if (EvalTreeUtil.isJoinQual(node)) {
+      if (EvalTreeUtil.isJoinQual(node, includeThetaJoin)) {
         Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression

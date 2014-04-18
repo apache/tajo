@@ -90,6 +90,34 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testJoinWithMultipleJoinQual1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testLeftOuterJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

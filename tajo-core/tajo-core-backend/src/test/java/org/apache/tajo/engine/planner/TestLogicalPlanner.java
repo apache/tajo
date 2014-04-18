@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.LocalTajoTestingUtility;
@@ -30,7 +31,8 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -39,6 +41,7 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +53,7 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestLogicalPlanner {
   private static TajoTestingCluster util;
@@ -412,6 +416,251 @@ public class TestLogicalPlanner {
     assertSchema(expected, plan.getOutSchema());
   }
 
+  private final void findJoinQual(EvalNode evalNode, Map<BinaryEval, Boolean> qualMap,
+                                  EvalType leftType, EvalType rightType)
+      throws IOException, PlanningException {
+    Preconditions.checkArgument(evalNode instanceof BinaryEval);
+    BinaryEval qual = (BinaryEval)evalNode;
+
+    if (qual.getLeftExpr().getType() == leftType && qual.getRightExpr().getType() == rightType) {
+      assertEquals(qual.getLeftExpr().getType(), EvalType.FIELD);
+      FieldEval leftField = (FieldEval)qual.getLeftExpr();
+
+      for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
+        FieldEval leftJoinField = (FieldEval)entry.getKey().getLeftExpr();
+
+        if (qual.getRightExpr().getType() == entry.getKey().getRightExpr().getType()) {
+          if (rightType == EvalType.FIELD) {
+            FieldEval rightField = (FieldEval)qual.getRightExpr();
+            FieldEval rightJoinField = (FieldEval)entry.getKey().getRightExpr();
+
+            if (leftJoinField.getColumnRef().getQualifiedName().equals(leftField.getColumnRef().getQualifiedName())
+                && rightField.getColumnRef().getQualifiedName().equals(rightJoinField.getColumnRef().getQualifiedName())) {
+              qualMap.put(entry.getKey(), Boolean.TRUE);
+            }
+          } else if (rightType == EvalType.CONST) {
+            ConstEval rightField = (ConstEval)qual.getRightExpr();
+            ConstEval rightJoinField = (ConstEval)entry.getKey().getRightExpr();
+
+            if (leftJoinField.getColumnRef().getQualifiedName().equals(leftField.getColumnRef().getQualifiedName()) &&
+                rightField.getValue().equals(rightJoinField.getValue())) {
+              qualMap.put(entry.getKey(), Boolean.TRUE);
+            }
+          } else if (rightType == EvalType.ROW_CONSTANT) {
+            RowConstantEval rightField = (RowConstantEval)qual.getRightExpr();
+            RowConstantEval rightJoinField = (RowConstantEval)entry.getKey().getRightExpr();
+
+            if (leftJoinField.getColumnRef().getQualifiedName().equals(leftField.getColumnRef().getQualifiedName())) {
+              assertEquals(rightField.getValues().length, rightJoinField.getValues().length);
+              for (int i = 0; i < rightField.getValues().length; i++) {
+                assertEquals(rightField.getValues()[i], rightJoinField.getValues()[i]);
+              }
+              qualMap.put(entry.getKey(), Boolean.TRUE);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual1() throws IOException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(
+        FileUtil.readTextFile(new File
+            ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual1.sql")));
+
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),expr);
+    LogicalNode node = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(node);
+
+    Schema expected = tpch.getOutSchema("q2");
+    assertSchema(expected, node.getOutSchema());
+
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer.optimize(plan);
+
+    LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
+    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    BinaryEval joinQual = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_regionkey", Type.INT4))
+        , new FieldEval(new Column("default.ps.ps_suppkey", Type.INT4))
+        );
+    qualMap.put(joinQual, Boolean.FALSE);
+
+    for(LogicalNode eachNode : nodes) {
+      JoinNode joinNode = (JoinNode)eachNode;
+      EvalNode[] evalNodes = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
+
+      for(EvalNode evalNode : evalNodes) {
+        findJoinQual(evalNode, qualMap, EvalType.FIELD, EvalType.FIELD);
+      }
+    }
+
+    for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        Preconditions.checkArgument(false,
+            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
+      }
+    }
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual2() throws IOException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(
+        FileUtil.readTextFile(new File
+            ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual2.sql")));
+
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),expr);
+    LogicalNode node = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(node);
+
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer.optimize(plan);
+
+    LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
+    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    BinaryEval joinQual = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_name", Type.TEXT))
+        , new ConstEval(new TextDatum("MOROCCO"))
+    );
+    qualMap.put(joinQual, Boolean.FALSE);
+
+    for(LogicalNode eachNode : nodes) {
+      ScanNode scanNode = (ScanNode)eachNode;
+      if (scanNode.hasQual()) {
+        EvalNode[] evalNodes = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
+
+        for(EvalNode evalNode : evalNodes) {
+          findJoinQual(evalNode, qualMap, EvalType.FIELD, EvalType.CONST);
+        }
+      }
+    }
+
+    for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        Preconditions.checkArgument(false,
+            "SelectionQual not found. -> required JoinQual:" + entry.getKey().toJson());
+      }
+    }
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual3() throws IOException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(
+        FileUtil.readTextFile(new File
+            ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual3.sql")));
+
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),expr);
+    LogicalNode node = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(node);
+
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer.optimize(plan);
+
+    LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
+    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    TextDatum[] datums = new TextDatum[3];
+    datums[0] = new TextDatum("ARGENTINA");
+    datums[1] = new TextDatum("ETHIOPIA");
+    datums[2] = new TextDatum("MOROCCO");
+
+    BinaryEval joinQual = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_name", Type.TEXT))
+        , new RowConstantEval(datums)
+    );
+    qualMap.put(joinQual, Boolean.FALSE);
+
+    for(LogicalNode eachNode : nodes) {
+      ScanNode scanNode = (ScanNode)eachNode;
+      if (scanNode.hasQual()) {
+        EvalNode[] evalNodes = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
+
+        for(EvalNode evalNode : evalNodes) {
+          findJoinQual(evalNode, qualMap, EvalType.FIELD, EvalType.ROW_CONSTANT);
+        }
+      }
+    }
+
+    for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        Preconditions.checkArgument(false,
+            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
+      }
+    }
+  }
+
+
+  @Test
+  public final void testJoinWithMultipleJoinQual4() throws IOException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(
+        FileUtil.readTextFile(new File
+            ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual4.sql")));
+
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),expr);
+    LogicalNode node = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(node);
+
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer.optimize(plan);
+
+    Map<BinaryEval, Boolean> scanMap = TUtil.newHashMap();
+    TextDatum[] datums = new TextDatum[3];
+    datums[0] = new TextDatum("ARGENTINA");
+    datums[1] = new TextDatum("ETHIOPIA");
+    datums[2] = new TextDatum("MOROCCO");
+
+    BinaryEval scanQual = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_name", Type.TEXT))
+        , new RowConstantEval(datums)
+    );
+    scanMap.put(scanQual, Boolean.FALSE);
+
+    Map<BinaryEval, Boolean> joinQualMap = TUtil.newHashMap();
+    BinaryEval joinQual = new BinaryEval(EvalType.GTH
+        , new FieldEval(new Column("default.t.n_nationkey", Type.INT4))
+        , new FieldEval(new Column("default.s.s_suppkey", Type.INT4))
+    );
+    joinQualMap.put(joinQual, Boolean.FALSE);
+
+    LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
+    for(LogicalNode eachNode : nodes) {
+      JoinNode joinNode = (JoinNode)eachNode;
+      if (joinNode.hasJoinQual()) {
+        EvalNode[] evalNodes = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
+
+        for(EvalNode evalNode : evalNodes) {
+          findJoinQual(evalNode, joinQualMap, EvalType.FIELD, EvalType.FIELD);
+        }
+      }
+    }
+
+    nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
+    for(LogicalNode eachNode : nodes) {
+      ScanNode scanNode = (ScanNode)eachNode;
+      if (scanNode.hasQual()) {
+        EvalNode[] evalNodes = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
+
+        for(EvalNode evalNode : evalNodes) {
+          findJoinQual(evalNode, scanMap, EvalType.FIELD, EvalType.ROW_CONSTANT);
+        }
+      }
+    }
+
+
+    for (Map.Entry<BinaryEval, Boolean> entry : joinQualMap.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        Preconditions.checkArgument(false,
+            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
+      }
+    }
+
+    for (Map.Entry<BinaryEval, Boolean> entry : scanMap.entrySet()) {
+      if (!entry.getValue().booleanValue()) {
+        Preconditions.checkArgument(false,
+            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
+      }
+    }
+  }
 
   static void testQuery7(LogicalNode plan) {
     assertEquals(NodeType.PROJECTION, plan.getType());

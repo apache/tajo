@@ -80,7 +80,7 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
     Set<EvalNode> nonJoinQuals = Sets.newHashSet();
     for (EvalNode singleQual : cnf) {
-      if (PlannerUtil.isJoinQual(singleQual)) {
+      if (EvalTreeUtil.isJoinQual(singleQual, true)) {
 
         String [] relations = guessRelationsFromJoinQual(block, singleQual);
         String leftExprRelName = relations[0];
