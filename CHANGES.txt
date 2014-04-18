@@ -340,6 +340,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-741: GreedyHeuristicJoinOrderAlgorithm removes some join pairs. (jaehwa)
+
     TAJO-772: TajoDump cannot dump upper/lower mixed case database names.
     (hyunsik)
 
@@ -652,6 +654,9 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-752: Escalate sub modules in tajo-core into the top-level modules.
+    (hyunsik)
 
     TAJO-753: Clean up of maven dependencies. (jinho)
 
