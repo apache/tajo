@@ -34,7 +34,9 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	@Expose protected EvalType type;
   @Expose protected DataType returnType = null;
 
-	
+  public EvalNode() {
+  }
+
 	public EvalNode(EvalType type) {
 		this.type = type;
 	}

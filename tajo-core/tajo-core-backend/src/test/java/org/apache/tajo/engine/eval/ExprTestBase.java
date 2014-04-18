@@ -43,6 +43,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -58,6 +59,16 @@ public class ExprTestBase {
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
   private static LogicalPlanVerifier annotatedPlanVerifier;
+
+  private boolean runtimeCodeGenFlag;
+
+  public ExprTestBase() {
+
+  }
+
+  public ExprTestBase(boolean runtimeCodeGenFlag) {
+    this.runtimeCodeGenFlag = runtimeCodeGenFlag;
+  }
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -181,10 +192,18 @@ public class ExprTestBase {
 
     try {
       targets = getRawTargets(query, condition);
+      TestExprCodeGenerator.ExprCodeGenerator codegen = null;
+      if (runtimeCodeGenFlag) {
+        codegen = new TestExprCodeGenerator.ExprCodeGenerator();
+      }
+
 
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
+        if (runtimeCodeGenFlag) {
+          eval = codegen.generate(inputSchema, eval);
+        }
         outTuple.put(i, eval.eval(inputSchema, vtuple));
       }
 
@@ -201,6 +220,9 @@ public class ExprTestBase {
       } else {
         assertFalse(e.getMessage(), true);
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      assertFalse(e.getMessage(), true);
     } finally {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);

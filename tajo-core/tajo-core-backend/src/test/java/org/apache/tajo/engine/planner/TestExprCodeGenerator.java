@@ -19,110 +19,51 @@
 package org.apache.tajo.engine.planner;
 
 
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.cli.InvalidStatementException;
-import org.apache.tajo.cli.ParsedResult;
-import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.CodeGenUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.Stack;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.assertFalse;
-
-public class TestExprCodeGenerator {
-
-  private static TajoTestingCluster util;
-  private static CatalogService cat;
-  private static SQLAnalyzer analyzer;
-  private static PreLogicalPlanVerifier preLogicalPlanVerifier;
-  private static LogicalPlanner planner;
-  private static LogicalOptimizer optimizer;
-  private static LogicalPlanVerifier annotatedPlanVerifier;
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.startCatalogCluster();
-    cat = util.getMiniCatalogCluster().getCatalog();
-    cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
-    cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      cat.createFunction(funcDesc);
-    }
-
-    analyzer = new SQLAnalyzer();
-    preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
-    planner = new LogicalPlanner(cat);
-    optimizer = new LogicalOptimizer(util.getConfiguration());
-    annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
+public class TestExprCodeGenerator extends ExprTestBase {
+  private static Schema schema;
+  static {
+    schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT2);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT8);
+    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
+  public TestExprCodeGenerator() {
+    super(true);
   }
 
-  /**
-   * verify query syntax and get raw targets.
-   *
-   * @param query a query for execution
-   * @param condition this parameter means whether it is for success case or is not for failure case.
-   * @return
-   * @throws PlanningException
-   */
-  private static Target[] getRawTargets(String query, boolean condition) throws PlanningException,
-      InvalidStatementException {
+  @Test
+  public void testArithmetic() throws IOException {
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
+  }
 
-    Session session = LocalTajoTestingUtility.createDummySession();
-    List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
-    if (parsedResults.size() > 1) {
-      throw new RuntimeException("this query includes two or more statements.");
-    }
-    Expr expr = analyzer.parse(parsedResults.get(0).getStatement());
-    VerificationState state = new VerificationState();
-    preLogicalPlanVerifier.verify(session, state, expr);
-    if (state.getErrorMessages().size() > 0) {
-      if (!condition && state.getErrorMessages().size() > 0) {
-        throw new PlanningException(state.getErrorMessages().get(0));
-      }
-      assertFalse(state.getErrorMessages().get(0), true);
-    }
-    LogicalPlan plan = planner.createPlan(session, expr, true);
-    optimizer.optimize(plan);
-    annotatedPlanVerifier.verify(session, state, plan);
-
-    if (state.getErrorMessages().size() > 0) {
-      assertFalse(state.getErrorMessages().get(0), true);
-    }
-
-    Target [] targets = plan.getRootBlock().getRawTargets();
-    if (targets == null) {
-      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getStatement());
-    }
-    return targets;
+  @Test
+  public void testGetField() throws IOException {
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 from table1;", new String [] {"1"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col2 from table1;", new String [] {"2"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col3 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col4 from table1;", new String [] {"4.5"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col5 from table1;", new String [] {"5.5"});
   }
 
   public static class CodeGenContext {
@@ -135,7 +76,7 @@ public class TestExprCodeGenerator {
       this.schema = schema;
 
       classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$EvalGen", null);
+      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, getClassName(EvalNode.class), null);
       classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
           null, null).visitEnd();
 
@@ -143,16 +84,10 @@ public class TestExprCodeGenerator {
       MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
       methodVisitor.visitCode();
       methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-      methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/engine/planner/TestExprCodeGenerator$EvalGen", "<init>", "()V");
+      methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, getClassName(EvalNode.class), "<init>", "()V");
       methodVisitor.visitInsn(Opcodes.RETURN);
       methodVisitor.visitMaxs(1, 1);
       methodVisitor.visitEnd();
-    }
-  }
-
-  public static class EvalGen {
-    public Datum eval(Tuple tuple) {
-      return null;
     }
   }
 
@@ -164,7 +99,8 @@ public class TestExprCodeGenerator {
 
 
     private static void invokeInitDatum(CodeGenContext context, Class clazz, String paramDesc) {
-      context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, getClassName(clazz), "<init>", paramDesc);
+      String slashedName = getClassName(clazz);
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, slashedName, "<init>", paramDesc);
       context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, getClassName(Datum.class));
       context.evalMethod.visitInsn(Opcodes.ARETURN);
       context.evalMethod.visitMaxs(0, 0);
@@ -172,15 +108,13 @@ public class TestExprCodeGenerator {
       context.classWriter.visitEnd();
     }
 
-    public EvalGen generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
+    public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
         InvocationTargetException, InstantiationException, PlanningException {
       CodeGenContext context = new CodeGenContext(schema);
-
       // evalMethod
       context.evalMethod = context.classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
-          "(Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;", null, null);
+          "(Lorg/apache/tajo/catalog/Schema;Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;", null, null);
       context.evalMethod.visitCode();
-      context.evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
       Class returnTypeClass;
       String signatureDesc;
@@ -195,7 +129,7 @@ public class TestExprCodeGenerator {
         break;
       case INT8:
         returnTypeClass = Int8Datum.class;
-        signatureDesc = "(L)V";
+        signatureDesc = "(J)V";
         break;
       case FLOAT4:
         returnTypeClass = Float4Datum.class;
@@ -219,11 +153,29 @@ public class TestExprCodeGenerator {
       MyClassLoader myClassLoader = new MyClassLoader();
       Class aClass = myClassLoader.defineClass("org.Test3", context.classWriter.toByteArray());
       Constructor constructor = aClass.getConstructor();
-      EvalGen r = (EvalGen) constructor.newInstance();
+      EvalNode r = (EvalNode) constructor.newInstance();
       return r;
     }
 
     public EvalNode visitField(CodeGenContext context, Stack<EvalNode> stack, FieldEval evalNode) {
+      int idx = context.schema.getColumnId(evalNode.getColumnRef().getQualifiedName());
+
+      String methodName;
+      String desc;
+      switch (evalNode.getValueType().getType()) {
+      case INT1:
+      case INT2:
+      case INT4: methodName = "getInt4"; desc = "(I)I"; break;
+      case INT8: methodName = "getInt8"; desc = "(I)J"; break;
+      case FLOAT4: methodName = "getFloat4"; desc = "(I)F"; break;
+      case FLOAT8: methodName = "getFloat8"; desc = "(I)D"; break;
+      default: throw new InvalidEvalException(evalNode.getType() + " is not supported yet");
+      }
+
+      context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
+      context.evalMethod.visitLdcInsn(idx);
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, getClassName(Tuple.class), methodName, desc);
+
       return null;
     }
 
@@ -391,16 +343,31 @@ public class TestExprCodeGenerator {
     }
   }
 
-  @Test
+  //@Test
   public void testGenerateCodeFromQuery() throws InvalidStatementException, PlanningException,
       InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
     ExprCodeGenerator generator = new ExprCodeGenerator();
 
-    Target [] targets = getRawTargets("select 5 + 2 * 3 % 6;", true);
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT2);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT8);
+    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+
+    Tuple tuple = new VTuple(5);
+    tuple.put(0, DatumFactory.createInt2((short) 1));
+    tuple.put(1, DatumFactory.createInt4(2));
+    tuple.put(2, DatumFactory.createInt8(3));
+    tuple.put(3, DatumFactory.createFloat4(4.0f));
+    tuple.put(4, DatumFactory.createFloat8(5.0f));
+
+    //Target [] targets = getRawTargets("select 5 + 2 * 3 % 6", true);
+    Target [] targets = null;
     long start = System.currentTimeMillis();
-    EvalGen code = generator.generate(null, targets[0].getEvalTree());
+    EvalNode code = generator.generate(null, targets[0].getEvalTree());
     long end = System.currentTimeMillis();
-    System.out.println(code.eval(null));
+    System.out.println(code.eval(schema, tuple));
     long execute = System.currentTimeMillis();
 
     System.out.println(end - start + " msec");
