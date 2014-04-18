@@ -230,11 +230,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       // set partition keys
-      if (table.getPartitionKeys() != null) {
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (null != partitionKeys) {
         Schema expressionSchema = new Schema();
         StringBuilder sb = new StringBuilder();
-        if (table.getPartitionKeys().size() > 0) {
-          List<FieldSchema> partitionKeys = table.getPartitionKeys();
+        if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());

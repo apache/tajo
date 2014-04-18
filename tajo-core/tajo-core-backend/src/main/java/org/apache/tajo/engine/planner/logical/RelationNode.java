@@ -39,6 +39,8 @@ public abstract class RelationNode extends LogicalNode {
 
   public abstract boolean hasAlias();
 
+  public abstract String getAlias();
+
   public abstract String getTableName();
 
   public abstract String getCanonicalName();

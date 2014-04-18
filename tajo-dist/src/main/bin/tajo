@@ -46,7 +46,6 @@
 #
 #   TAJO_CONF_DIR  Alternate conf dir. Default is ${TAJO_HOME}/conf.
 #
-#   TAJO_ROOT_LOGGER The root appender. Default is INFO,consoles
 #
 
 bin=`dirname "$0"`
@@ -343,12 +342,15 @@ elif [ "$COMMAND" = "catalog" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
 elif [ "$COMMAND" = "cli" ] ; then
   CLASS='org.apache.tajo.cli.TajoCli'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "admin" ] ; then
   CLASS='org.apache.tajo.client.TajoAdmin'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "dump" ] ; then
   CLASS='org.apache.tajo.client.TajoDump'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_DUMP_OPTS"
 else
   CLASS=$COMMAND
@@ -394,7 +396,11 @@ TAJO_OPTS="$TAJO_OPTS -Dtajo.log.dir=$TAJO_LOG_DIR"
 TAJO_OPTS="$TAJO_OPTS -Dtajo.log.file=$TAJO_LOGFILE"
 TAJO_OPTS="$TAJO_OPTS -Dtajo.home.dir=$TAJO_HOME"
 TAJO_OPTS="$TAJO_OPTS -Dtajo.id.str=$TAJO_IDENT_STRING"
-TAJO_OPTS="$TAJO_OPTS -Dtajo.root.logger=${TAJO_ROOT_LOGGER:-INFO,console}"
+TAJO_OPTS="$TAJO_OPTS -Dtajo.root.logger.appender=${TAJO_ROOT_LOGGER_APPENDER:-console}"
+if [ "x$TAJO_ROOT_LOGGER_LEVEL" != "x" ]; then
+  TAJO_OPTS="$TAJO_OPTS -Dtajo.root.logger.level=${TAJO_ROOT_LOGGER_LEVEL}"
+fi
+
 if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
   TAJO_OPTS="$TAJO_OPTS -Djava.library.path=$JAVA_LIBRARY_PATH"
 fi  

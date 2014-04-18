@@ -262,6 +262,26 @@ public class LogicalPlan {
     return found.getQualifiedName();
   }
 
+  public String resolveDatabase(QueryBlock block, String tableName) throws PlanningException {
+    List<String> found = new ArrayList<String>();
+    for (RelationNode relation : block.getRelations()) {
+      // check alias name or table name
+      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
+        // obtain the database name
+        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
+      }
+    }
+
+    if (found.size() == 0) {
+      return null;
+    } else if (found.size() > 1) {
+      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
+    }
+
+    return found.get(0);
+  }
+
   /**
    * It resolves a column.
    */
@@ -277,8 +297,12 @@ public class LogicalPlan {
         qualifier = columnRef.getQualifier();
         canonicalName = columnRef.getCanonicalName();
       } else {
-        qualifier = CatalogUtil.buildFQName(currentDatabase, columnRef.getQualifier());
-        canonicalName = CatalogUtil.buildFQName(currentDatabase, columnRef.getCanonicalName());
+        String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
+        if (resolvedDatabaseName == null) {
+          throw new NoSuchColumnException(columnRef.getQualifier());
+        }
+        qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
+        canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
       }
       qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 

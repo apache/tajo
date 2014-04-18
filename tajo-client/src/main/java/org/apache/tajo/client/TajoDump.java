@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -109,21 +110,27 @@ public class TajoDump {
     }
 
     PrintWriter writer = new PrintWriter(System.out);
+    dump(client, userInfo, baseDatabaseName, isDumpingAllDatabases, writer);
 
-    printHeader(writer, userInfo);
+    System.exit(0);
+  }
+
+  public static void dump(TajoClient client, UserGroupInformation userInfo, String baseDatabaseName,
+                   boolean isDumpingAllDatabases, PrintWriter out) throws SQLException, ServiceException {
+    printHeader(out, userInfo);
 
     if (isDumpingAllDatabases) {
-      for (String databaseName : client.getAllDatabaseNames()) {
-        dumpDatabase(client, databaseName, writer);
+      // sort database names in an ascending lexicographic order of the names.
+      List<String> sorted = new ArrayList<String>(client.getAllDatabaseNames());
+      Collections.sort(sorted);
+
+      for (String databaseName : sorted) {
+        dumpDatabase(client, databaseName, out);
       }
     } else {
-      dumpDatabase(client, baseDatabaseName, writer);
+      dumpDatabase(client, baseDatabaseName, out);
     }
-    client.close();
-
-    writer.flush();
-    writer.close();
-    System.exit(0);
+    out.flush();
   }
 
   private static void printHeader(PrintWriter writer, UserGroupInformation userInfo) {
@@ -140,10 +147,10 @@ public class TajoDump {
       throws SQLException, ServiceException {
     writer.write("\n");
     writer.write("--\n");
-    writer.write(String.format("-- Database name: %s%n", databaseName));
+    writer.write(String.format("-- Database name: %s%n", CatalogUtil.denormalizeIdentifier(databaseName)));
     writer.write("--\n");
     writer.write("\n");
-    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", databaseName));
+    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", CatalogUtil.denormalizeIdentifier(databaseName)));
     writer.write("\n");
 
     // returned list is immutable.
@@ -151,8 +158,7 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        TableDesc table =
-            client.getTableDesc(CatalogUtil.denormalizeIdentifier(CatalogUtil.buildFQName(databaseName,tableName)));
+        TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
         if (table.isExternal()) {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {

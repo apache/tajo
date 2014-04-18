@@ -79,6 +79,11 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
 	  return alias != null;
 	}
 
+  @Override
+  public String getAlias() {
+    return alias;
+  }
+
   public void setBroadcastTable(boolean broadcastTable) {
     this.broadcastTable = broadcastTable;
   }
