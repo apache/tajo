@@ -157,7 +157,7 @@ public class TestPlannerUtil {
     joinQuals[idx++] = new BinaryEval(EvalType.GEQ, f1, f2);
     joinQuals[idx] = new BinaryEval(EvalType.GTH, f1, f2);
     for (int i = 0; i < idx; i++) {
-      assertTrue(PlannerUtil.isJoinQual(joinQuals[idx]));
+      assertTrue(EvalTreeUtil.isJoinQual(joinQuals[idx], true));
     }
 
     BinaryEval [] wrongJoinQuals = new BinaryEval[5];
@@ -170,7 +170,7 @@ public class TestPlannerUtil {
     wrongJoinQuals[idx] = new BinaryEval(EvalType.EQUAL, f1, f3);
 
     for (int i = 0; i < idx; i++) {
-      assertFalse(PlannerUtil.isJoinQual(wrongJoinQuals[idx]));
+      assertFalse(EvalTreeUtil.isJoinQual(wrongJoinQuals[idx], true));
     }
   }
 
@@ -188,23 +188,23 @@ public class TestPlannerUtil {
     FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
+    EvalNode equiJoinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
 
     // the case where part is the outer and partsupp is the inner.
-    List<Column[]> pairs = PlannerUtil.getJoinKeyPairs(joinQual, outerSchema,  innerSchema);
+    List<Column[]> pairs = PlannerUtil.getJoinKeyPairs(equiJoinQual, outerSchema,  innerSchema, false);
     assertEquals(1, pairs.size());
     assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
     assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
 
     // after exchange of outer and inner
-    pairs = PlannerUtil.getJoinKeyPairs(joinQual, innerSchema, outerSchema);
+    pairs = PlannerUtil.getJoinKeyPairs(equiJoinQual, innerSchema, outerSchema, false);
     assertEquals("people.fid1", pairs.get(0)[0].getQualifiedName());
     assertEquals("employee.id1", pairs.get(0)[1].getQualifiedName());
 
     // composited join key test
     EvalNode joinQual2 = new BinaryEval(EvalType.EQUAL, f3, f4);
-    EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, joinQual, joinQual2);
-    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, outerSchema,  innerSchema);
+    EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, equiJoinQual, joinQual2);
+    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, outerSchema,  innerSchema, false);
     assertEquals(2, pairs.size());
     assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
     assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
@@ -212,12 +212,28 @@ public class TestPlannerUtil {
     assertEquals("people.fid2", pairs.get(1)[1].getQualifiedName());
 
     // after exchange of outer and inner
-    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, innerSchema,  outerSchema);
+    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, innerSchema,  outerSchema, false);
     assertEquals(2, pairs.size());
     assertEquals("people.fid1", pairs.get(0)[0].getQualifiedName());
     assertEquals("employee.id1", pairs.get(0)[1].getQualifiedName());
     assertEquals("people.fid2", pairs.get(1)[0].getQualifiedName());
     assertEquals("employee.id2", pairs.get(1)[1].getQualifiedName());
+
+    // Theta join (f1 <= f2)
+    EvalNode thetaJoinQual = new BinaryEval(EvalType.LEQ, f1, f2);
+    pairs = PlannerUtil.getJoinKeyPairs(thetaJoinQual, outerSchema,  innerSchema, true);
+    assertEquals(1, pairs.size());
+    assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
+
+    // Composite Theta join (f1 <= f2 AND f3 = f4)
+    EvalNode compositeThetaJoin = new BinaryEval(EvalType.AND, thetaJoinQual, joinQual2);
+    pairs = PlannerUtil.getJoinKeyPairs(compositeThetaJoin, outerSchema,  innerSchema, true);
+    assertEquals(2, pairs.size());
+    assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
+    assertEquals("employee.id2", pairs.get(1)[0].getQualifiedName());
+    assertEquals("people.fid2", pairs.get(1)[1].getQualifiedName());
   }
 
   @Test

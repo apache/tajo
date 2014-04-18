@@ -325,6 +325,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-741: GreedyHeuristicJoinOrderAlgorithm removes some join pairs. (jaehwa)
+
     TAJO-772: TajoDump cannot dump upper/lower mixed case database names.
     (hyunsik)
 

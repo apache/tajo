@@ -19,6 +19,7 @@
 package org.apache.tajo.master.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -647,5 +648,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     public String getPullAddress() {
       return pullHost + ":" + port;
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(taskId, attemptId, partId, pullHost, port);
+    }
+
   }
 }

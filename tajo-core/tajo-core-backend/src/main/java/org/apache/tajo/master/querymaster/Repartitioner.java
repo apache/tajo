@@ -114,8 +114,6 @@ public class Repartitioner {
       }
     }
 
-    //LOG.info(String.format("Left Volume: %d, Right Volume: %d", stats[0], stats[1]));
-
     // If one of inner join tables has no input data,
     // it should return zero rows.
     JoinNode joinNode = PlannerUtil.findMostBottomNode(execBlock.getPlan(), NodeType.JOIN);
@@ -180,7 +178,11 @@ public class Repartitioner {
             int emptyPartitionId = 0;
             if (hashEntries.containsKey(emptyPartitionId)) {
               Map<String, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
-              tbNameToInterm.put(scan.getCanonicalName(), new ArrayList<IntermediateEntry>());
+              if (tbNameToInterm.containsKey(scan.getCanonicalName()))
+                tbNameToInterm.get(scan.getCanonicalName())
+                    .addAll(new ArrayList<IntermediateEntry>());
+              else
+                tbNameToInterm.put(scan.getCanonicalName(), new ArrayList<IntermediateEntry>());
             } else {
               Map<String, List<IntermediateEntry>> tbNameToInterm = new HashMap<String, List<IntermediateEntry>>();
               tbNameToInterm.put(scan.getCanonicalName(), new ArrayList<IntermediateEntry>());
