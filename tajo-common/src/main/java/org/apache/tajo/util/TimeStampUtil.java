@@ -30,19 +30,22 @@ public class TimeStampUtil {
     }
 
     public static long getHour(DateTime dateTime) {
-        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.clockhourOfDay()), 0, 0, 0));
+        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.hourOfDay()), 0, 0, 0));
     }
 
     public static long getMinute(DateTime dateTime) {
-        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.clockhourOfDay()), dateTime.get(DateTimeFieldType.minuteOfHour()), 0, 0));
+        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.hourOfDay()),
+            dateTime.get(DateTimeFieldType.minuteOfHour()), 0, 0));
     }
 
     public static long getSecond(DateTime dateTime) {
-        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.clockhourOfDay()), dateTime.get(DateTimeFieldType.minuteOfHour()), dateTime.get(DateTimeFieldType.secondOfMinute()), 0));
+        return convertToMicroSeconds(dateTime.withTime(dateTime.get(DateTimeFieldType.hourOfDay()),
+            dateTime.get(DateTimeFieldType.minuteOfHour()), dateTime.get(DateTimeFieldType.secondOfMinute()), 0));
     }
 
     public static long getMonth(DateTime dateTime) {
-        return convertToMicroSeconds(dateTime.withTimeAtStartOfDay().withDate(dateTime.getYear(),dateTime.getMonthOfYear(),1));
+        return convertToMicroSeconds(dateTime.withTimeAtStartOfDay().withDate(dateTime.getYear(),
+            dateTime.getMonthOfYear(),1));
     }
 
     public static long getDayOfWeek(DateTime dateTime,int week) {
