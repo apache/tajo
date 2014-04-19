@@ -28,6 +28,7 @@ import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.engine.codegen.ExprCodeGenerator;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
@@ -192,9 +193,9 @@ public class ExprTestBase {
 
     try {
       targets = getRawTargets(query, condition);
-      TestExprCodeGenerator.ExprCodeGenerator codegen = null;
+      ExprCodeGenerator codegen = null;
       if (runtimeCodeGenFlag) {
-        codegen = new TestExprCodeGenerator.ExprCodeGenerator();
+        codegen = new ExprCodeGenerator();
       }
 
 

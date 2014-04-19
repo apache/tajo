@@ -177,6 +177,18 @@ public class TUtil {
     }
   }
 
+  public static <KEY1, KEY2, VALUE> boolean containsInNestedMap(Map<KEY1, Map<KEY2, VALUE>> map, KEY1 k1, KEY2 k2) {
+    return map.containsKey(k1) && map.get(k1).containsKey(k2);
+  }
+
+  public static <KEY1, KEY2, VALUE> VALUE getFromNestedMap(Map<KEY1, Map<KEY2, VALUE>> map, KEY1 k1, KEY2 k2) {
+    if (map.containsKey(k1)) {
+      return map.get(k1).get(k2);
+    } else {
+      return null;
+    }
+  }
+
   public static String collectionToString(Collection objects) {
     boolean first = true;
     StringBuilder sb = new StringBuilder();

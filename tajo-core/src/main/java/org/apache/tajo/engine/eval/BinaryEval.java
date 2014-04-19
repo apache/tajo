@@ -103,6 +103,9 @@ public class BinaryEval extends EvalNode implements Cloneable {
    */
   private DataType determineType(DataType left, DataType right) throws InvalidEvalException {
     switch (left.getType()) {
+
+    case INT1:
+    case INT2:
     case INT4: {
       switch(right.getType()) {
       case INT2:
@@ -115,6 +118,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case INT8: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4:
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
@@ -125,6 +129,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case FLOAT4: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4:
       case INT8:
@@ -135,6 +140,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case FLOAT8: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4:
       case INT8:

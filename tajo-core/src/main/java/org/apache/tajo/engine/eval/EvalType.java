@@ -38,6 +38,11 @@ public enum EvalType {
   MULTIPLY(BinaryEval.class, "*"),
   DIVIDE(BinaryEval.class, "/"),
 
+  // Binary Bitwise expressions
+  BIT_AND(BinaryEval.class, "&"),
+  BIT_OR(BinaryEval.class, "|"),
+  BIT_XOR(BinaryEval.class, "|"),
+
   // Function
   AGG_FUNCTION(AggregationFunctionCallEval.class),
   FUNCTION(GeneralFunctionEval.class),
