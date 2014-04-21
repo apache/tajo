@@ -336,6 +336,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-652: logical planner cannot handle alias on partition columns.
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-675: maximum frame size of frameDecoder should be increased. (jinho)
 
     TAJO-748: Shuffle output numbers of join may be inconsistent. (jaehwa)

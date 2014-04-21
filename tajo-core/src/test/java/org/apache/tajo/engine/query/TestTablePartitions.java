@@ -187,6 +187,21 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeFile("case10.sql");
     assertResultSet(res, "case10.result");
     res.close();
+
+    // alias partition column
+    res = executeFile("case11.sql");
+    assertResultSet(res, "case11.result");
+    res.close();
+
+    // alias partition column in group by, order by
+    res = executeFile("case12.sql");
+    assertResultSet(res, "case12.result");
+    res.close();
+
+    // alias partition column in subquery
+    res = executeFile("case13.sql");
+    assertResultSet(res, "case13.result");
+    res.close();
   }
 
   @Test
