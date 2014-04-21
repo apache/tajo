@@ -25,6 +25,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.DefaultChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
@@ -66,6 +67,8 @@ public class NettyServerBase {
 
   public void init(ChannelPipelineFactory pipeline, int workerNum) {
     ChannelFactory factory = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
+
+    DefaultChannelFuture.setUseDeadLockChecker(false);
 
     pipelineFactory = pipeline;
     bootstrap = new ServerBootstrap(factory);
