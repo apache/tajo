@@ -36,6 +36,10 @@ public class NotEval extends EvalNode implements Cloneable {
     this.childEval = childEval;
   }
 
+  public void setChild(EvalNode child) {
+    this.childEval = child;
+  }
+
   public EvalNode getChild() {
     return childEval;
   }

@@ -159,6 +159,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-737: Change version message when daemon starts up. (hyunsik)
+
     TAJO-768: Improve the log4j configuration. (hyoungjunkim via jinho)
 
     TAJO-755: ALTER TABLESPACE LOCATION support. (hyunsilk)
@@ -339,6 +341,18 @@ Release 0.8.0 - unreleased
     (Keuntae Park via jihoon)
 
   BUG FIXES
+
+    TAJO-652: logical planner cannot handle alias on partition columns.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-675: maximum frame size of frameDecoder should be increased. (jinho)
+
+    TAJO-748: Shuffle output numbers of join may be inconsistent. (jaehwa)
+
+    TAJO-777: Partition column in function parameter occurs NPE.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-763: Out of range problem in utc_usec_to(). (Ilhyun Suh via hyunsik)
 
     TAJO-741: GreedyHeuristicJoinOrderAlgorithm removes some join pairs. (jaehwa)
 

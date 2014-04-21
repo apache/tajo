@@ -1,0 +1,1 @@
+select pow(key, 2) from testQueryCasesOnColumnPartitionedTable

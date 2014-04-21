@@ -57,11 +57,69 @@ public class EvalTreeUtil {
       if (evalNode.equals(target)) {
         EvalNode parent = stack.peek();
 
-        if (parent.getLeftExpr().equals(evalNode)) {
-          parent.setLeftExpr(tobeReplaced);
-        }
-        if (parent.getRightExpr().equals(evalNode)) {
-          parent.setRightExpr(tobeReplaced);
+        if (parent instanceof BetweenPredicateEval) {
+          BetweenPredicateEval between = (BetweenPredicateEval) parent;
+          if (between.getPredicand().equals(evalNode)) {
+            between.setPredicand(tobeReplaced);
+          }
+          if (between.getBegin().equals(evalNode)) {
+            between.setBegin(tobeReplaced);
+          }
+          if (between.getEnd().equals(evalNode)) {
+            between.setEnd(tobeReplaced);
+          }
+
+        } else if (parent instanceof CaseWhenEval) {
+          CaseWhenEval caseWhen = (CaseWhenEval) parent;
+
+          // Here, we need to only consider only 'Else'
+          // because IfElseEval is handled in the below condition.
+          if (caseWhen.hasElse() && caseWhen.getElse().equals(evalNode)) {
+            caseWhen.setElseResult(tobeReplaced);
+          }
+        } else if (parent instanceof CaseWhenEval.IfThenEval) {
+          CaseWhenEval.IfThenEval ifThen = (CaseWhenEval.IfThenEval) parent;
+          if (ifThen.getCondition().equals(evalNode)) {
+            ifThen.setCondition(tobeReplaced);
+          }
+          if (ifThen.getResult().equals(evalNode)) {
+            ifThen.setResult(tobeReplaced);
+          }
+        } else if (parent instanceof CastEval) {
+          CastEval cast = (CastEval) parent;
+          if (cast.getOperand().equals(evalNode)) {
+            cast.setOperand(tobeReplaced);
+          }
+
+       } else if (parent instanceof FunctionEval) {
+          FunctionEval functionEval = (FunctionEval) parent;
+          EvalNode [] arguments = functionEval.getArgs();
+          for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i].equals(evalNode)) {
+              arguments[i] = tobeReplaced;
+            }
+          }
+          functionEval.setArgs(arguments);
+
+        } else if (parent instanceof NotEval) {
+          NotEval not = (NotEval) parent;
+          if (not.getChild().equals(evalNode)) {
+            not.setChild(tobeReplaced);
+          }
+
+        } else if (parent instanceof SignedEval) {
+          SignedEval sign = (SignedEval) parent;
+          if (sign.getChild().equals(evalNode)) {
+            sign.setChild(tobeReplaced);
+          }
+
+        } else {
+          if (parent.getLeftExpr() != null && parent.getLeftExpr().equals(evalNode)) {
+            parent.setLeftExpr(tobeReplaced);
+          }
+          if (parent.getRightExpr() != null && parent.getRightExpr().equals(evalNode)) {
+            parent.setRightExpr(tobeReplaced);
+          }
         }
       }
 

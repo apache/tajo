@@ -118,6 +118,6 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    assertEquals(10, count);
+    assertEquals(6, count);
   }
 }

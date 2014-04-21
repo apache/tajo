@@ -152,6 +152,56 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeFile("case3.sql");
     assertResultSet(res, "case3.result");
     res.close();
+
+    // select pow(key, 2) from testQueryCasesOnColumnPartitionedTable
+    res = executeFile("case4.sql");
+    assertResultSet(res, "case4.result");
+    res.close();
+
+    // select round(pow(key + 1, 2)) from testQueryCasesOnColumnPartitionedTable
+    res = executeFile("case5.sql");
+    assertResultSet(res, "case5.result");
+    res.close();
+
+    // select col1, key from testQueryCasesOnColumnPartitionedTable order by pow(key, 2) desc
+    res = executeFile("case6.sql");
+    assertResultSet(res, "case6.result");
+    res.close();
+
+    // select col1, key from testQueryCasesOnColumnPartitionedTable WHERE key BETWEEN 35 AND 48;
+    res = executeFile("case7.sql");
+    assertResultSet(res, "case7.result");
+    res.close();
+
+    // select col1, CASE key WHEN 36 THEN key WHEN 49 THEN key ELSE key END from testQueryCasesOnColumnPartitionedTable;
+    res = executeFile("case8.sql");
+    assertResultSet(res, "case8.result");
+    res.close();
+
+    // select col1, CAST(key AS INT) from testQueryCasesOnColumnPartitionedTable;
+    res = executeFile("case9.sql");
+    assertResultSet(res, "case9.result");
+    res.close();
+
+    // select col1, (!(key > 35)) from testQueryCasesOnColumnPartitionedTable;
+    res = executeFile("case10.sql");
+    assertResultSet(res, "case10.result");
+    res.close();
+
+    // alias partition column
+    res = executeFile("case11.sql");
+    assertResultSet(res, "case11.result");
+    res.close();
+
+    // alias partition column in group by, order by
+    res = executeFile("case12.sql");
+    assertResultSet(res, "case12.result");
+    res.close();
+
+    // alias partition column in subquery
+    res = executeFile("case13.sql");
+    assertResultSet(res, "case13.result");
+    res.close();
   }
 
   @Test
