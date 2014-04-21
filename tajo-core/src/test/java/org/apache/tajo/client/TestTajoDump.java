@@ -29,16 +29,18 @@ public class TestTajoDump extends QueryTestCaseBase {
 
   @Test
   public void testDump1() throws Exception {
-    executeString("CREATE TABLE \"" +getCurrentDatabase() +
-        "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      executeString("CREATE TABLE \"" + getCurrentDatabase() +
+          "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
-    UserGroupInformation userInfo = UserGroupInformation.getCurrentUser();
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    PrintWriter printWriter = new PrintWriter(bos);
-    TajoDump.dump(client, userInfo, getCurrentDatabase(), false, printWriter);
-    printWriter.flush();
-    printWriter.close();
-    assertStrings(new String(bos.toByteArray()));
-    bos.close();
+      UserGroupInformation userInfo = UserGroupInformation.getCurrentUser();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      PrintWriter printWriter = new PrintWriter(bos);
+      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+      printWriter.flush();
+      printWriter.close();
+      assertStrings(new String(bos.toByteArray()));
+      bos.close();
+    }
   }
 }

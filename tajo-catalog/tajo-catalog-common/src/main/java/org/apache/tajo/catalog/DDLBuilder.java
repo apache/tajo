@@ -54,7 +54,6 @@ public class DDLBuilder {
     sb.append("--\n")
         .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
         .append(" Storage: ").append(desc.getMeta().getStoreType().name());
-    sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
     sb.append("CREATE TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());

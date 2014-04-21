@@ -110,14 +110,15 @@ public class TajoDump {
     }
 
     PrintWriter writer = new PrintWriter(System.out);
-    dump(client, userInfo, baseDatabaseName, isDumpingAllDatabases, writer);
+    dump(client, userInfo, baseDatabaseName, isDumpingAllDatabases, true, true, writer);
 
     System.exit(0);
   }
 
   public static void dump(TajoClient client, UserGroupInformation userInfo, String baseDatabaseName,
-                   boolean isDumpingAllDatabases, PrintWriter out) throws SQLException, ServiceException {
-    printHeader(out, userInfo);
+                   boolean isDumpingAllDatabases, boolean includeUserName, boolean includeDate, PrintWriter out)
+      throws SQLException, ServiceException {
+    printHeader(out, userInfo, includeUserName, includeDate);
 
     if (isDumpingAllDatabases) {
       // sort database names in an ascending lexicographic order of the names.
@@ -133,12 +134,16 @@ public class TajoDump {
     out.flush();
   }
 
-  private static void printHeader(PrintWriter writer, UserGroupInformation userInfo) {
+  private static void printHeader(PrintWriter writer, UserGroupInformation userInfo, boolean includeUSerName,
+                                  boolean includeDate) {
     writer.write("--\n");
     writer.write("-- Tajo database dump\n");
-    writer.write("--\n");
-    writer.write("-- Dump user: " + userInfo.getUserName() + "\n");
-    writer.write("-- Dump date: " + toDateString() + "\n");
+    if (includeUSerName) {
+      writer.write("--\nDump user: " + userInfo.getUserName() + "\n");
+    }
+    if (includeDate) {
+      writer.write("\n-- Dump date: " + toDateString() + "\n");
+    }
     writer.write("--\n");
     writer.write("\n");
   }
@@ -151,7 +156,7 @@ public class TajoDump {
     writer.write("--\n");
     writer.write("\n");
     writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", CatalogUtil.denormalizeIdentifier(databaseName)));
-    writer.write("\n");
+    writer.write("\n\n");
 
     // returned list is immutable.
     List<String> tableNames = TUtil.newList(client.getTableList(databaseName));

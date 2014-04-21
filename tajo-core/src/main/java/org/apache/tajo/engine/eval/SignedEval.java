@@ -39,6 +39,10 @@ public class SignedEval extends EvalNode implements Cloneable {
     return negative;
   }
 
+  public void setChild(EvalNode child) {
+    this.childEval = child;
+  }
+
   public EvalNode getChild() {
     return childEval;
   }
