@@ -153,6 +153,8 @@ Release 0.8.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-737: Change version message when daemon starts up. (hyunsik)
+
     TAJO-768: Improve the log4j configuration. (hyoungjunkim via jinho)
 
     TAJO-755: ALTER TABLESPACE LOCATION support. (hyunsilk)

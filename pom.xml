@@ -78,6 +78,7 @@
   </properties>
 
   <modules>
+    <module>tajo-maven-plugins</module>
     <module>tajo-project</module>
     <module>tajo-common</module>
     <module>tajo-algebra</module>
