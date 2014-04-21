@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -32,9 +33,16 @@ import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.TUtil;
 import org.joda.time.DateTime;
 
+import javax.xml.crypto.Data;
+import java.util.Map;
 import java.util.Stack;
+
+import static org.apache.tajo.common.TajoDataTypes.Type;
 
 /**
  * <code>ExprAnnotator</code> makes an annotated expression called <code>EvalNode</code> from an
@@ -160,7 +168,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       throw new IllegalStateException("Wrong Expr Type: " + expr.getType());
     }
 
-    return new BinaryEval(evalType, left, right);
+    return createBinaryNode(evalType, left, right);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -292,6 +300,36 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   // Arithmetic Operators
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public static Pair<EvalNode, EvalNode> wrapCastsIfNecessary(EvalType type, EvalNode lhs, EvalNode rhs) {
+    Type lhsType = lhs.getValueType().getType();
+    Type rhsType = rhs.getValueType().getType();
+
+    // If one of both is NULL, it just returns the original types without casting.
+    if (lhsType == Type.NULL_TYPE || rhsType == Type.NULL_TYPE) {
+      return new Pair<EvalNode, EvalNode>(lhs, rhs);
+    }
+
+    Type toBeCasted = TUtil.getFromNestedMap(IMPLICIT_CAST_MAP, lhsType, rhsType);
+    if (toBeCasted == null) {
+      throw new InvalidCastException(lhsType, rhsType);
+    }
+
+    // Overwrite lhs, rhs, or both with cast expression.
+    if (lhsType != toBeCasted) {
+      lhs = new CastEval(lhs, CatalogUtil.newSimpleDataType(toBeCasted));
+    }
+    if (rhsType != toBeCasted) {
+      rhs = new CastEval(rhs, CatalogUtil.newSimpleDataType(toBeCasted));
+    }
+
+    return new Pair<EvalNode, EvalNode>(lhs, rhs);
+  }
+
+  private static BinaryEval createBinaryNode(EvalType type, EvalNode lhs, EvalNode rhs) {
+    Pair<EvalNode, EvalNode> pair = wrapCastsIfNecessary(type, lhs, rhs);
+    return new BinaryEval(type, pair.getFirst(), pair.getSecond());
+  }
+
   @Override
   public EvalNode visitPlus(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     stack.push(expr);
@@ -299,7 +337,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.PLUS, left, right);
+    return createBinaryNode(EvalType.PLUS, left, right);
   }
 
   @Override
@@ -309,7 +347,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.MINUS, left, right);
+    return createBinaryNode(EvalType.MINUS, left, right);
   }
 
   @Override
@@ -319,7 +357,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.MULTIPLY, left, right);
+    return createBinaryNode(EvalType.MULTIPLY, left, right);
   }
 
   @Override
@@ -329,7 +367,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.DIVIDE, left, right);
+    return createBinaryNode(EvalType.DIVIDE, left, right);
   }
 
   @Override
@@ -339,7 +377,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.MODULAR, left, right);
+    return createBinaryNode(EvalType.MODULAR, left, right);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,7 +492,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         CatalogProtos.FunctionType.DISTINCT_AGGREGATION : CatalogProtos.FunctionType.AGGREGATION;
     givenArgs[0] = visit(ctx, stack, params[0]);
     if (setFunction.getSignature().equalsIgnoreCase("count")) {
-      paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
+      paramTypes[0] = CatalogUtil.newSimpleDataType(Type.ANY);
     } else {
       paramTypes[0] = givenArgs[0].getValueType();
     }
@@ -627,5 +665,61 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     results[3] = fraction;
 
     return results;
+  }
+
+  static final Map<Type, Map<Type, Type>> IMPLICIT_CAST_MAP = Maps.newHashMap();
+  static {
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.INT1, Type.INT1);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.INT2, Type.INT2);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT1, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.INT1, Type.INT2);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.INT2, Type.INT2);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT2, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.INT1, Type.INT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.INT2, Type.INT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT4, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT1, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT2, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT4, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.FLOAT4, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT1, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT2, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT4, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.INT1, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.INT2, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.INT4, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.INT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.FLOAT4, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT8, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TEXT, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
   }
 }

@@ -153,6 +153,20 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
     return match;
   }
 
+  public static boolean isComparisonEval(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == EvalType.EQUAL;
+    match |= type == EvalType.NOT_EQUAL;
+    match |= type == EvalType.LTH;
+    match |= type == EvalType.LEQ;
+    match |= type == EvalType.GTH;
+    match |= type == EvalType.GEQ;
+
+    return match;
+  }
+
   private RESULT visitDefaultBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     stack.push(binaryEval);
     RESULT result = visitChild(context, binaryEval.getLeftExpr(), stack);

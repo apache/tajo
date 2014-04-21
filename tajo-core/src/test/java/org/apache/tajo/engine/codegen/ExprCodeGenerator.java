@@ -22,9 +22,12 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.planner.ExprAnnotator;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.Pair;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -40,7 +43,9 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
   public EvalNode visitChild(CodeGenContext context, EvalNode evalNode, Stack<EvalNode> stack) {
     try {
       if (isArithmeticEval(evalNode)) {
-        visitArithmeticOperator(context, (BinaryEval) evalNode, stack);
+        visitArithmeticEval(context, (BinaryEval) evalNode, stack);
+      } else if (isComparisonEval(evalNode)) {
+        visitComparisonEval(context, (BinaryEval) evalNode, stack);
       } else {
         super.visitChild(context, evalNode, stack);
       }
@@ -72,6 +77,10 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
     Class returnTypeClass;
     String signatureDesc;
     switch (expr.getValueType().getType()) {
+    case BOOLEAN:
+      returnTypeClass = BooleanDatum.class;
+      signatureDesc = "(Z)V";
+      break;
     case INT2:
       returnTypeClass = Int2Datum.class;
       signatureDesc = "(S)V";
@@ -132,7 +141,7 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
     return null;
   }
 
-  public EvalNode visitArithmeticOperator(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
+  public EvalNode visitArithmeticEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
       throws CodeGenException {
     stack.push(evalNode);
     super.visitChild(context, evalNode.getLeftExpr(), stack);
@@ -141,6 +150,46 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
 
     int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getValueType());
     context.evalMethod.visitInsn(opCode);
+    return evalNode;
+  }
+
+  public EvalNode visitComparisonEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
+      throws CodeGenException {
+    stack.push(evalNode);
+    super.visitChild(context, evalNode.getLeftExpr(), stack);
+    super.visitChild(context, evalNode.getRightExpr(), stack);
+    stack.pop();
+
+//    int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getLeftExpr().getValueType());
+//    context.evalMethod.visitInsn(opCode);
+
+    Label lfalse = new Label();
+    Label lafter = new Label();
+    switch (evalNode.getType()) {
+    case EQUAL:
+      context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPNE, lfalse);
+      break;
+    case NOT_EQUAL:
+      context.evalMethod.visitJumpInsn(Opcodes.IFEQ, lfalse);
+      break;
+    case LTH:
+      context.evalMethod.visitJumpInsn(Opcodes.IFGE, lfalse);
+      break;
+    case LEQ:
+      context.evalMethod.visitJumpInsn(Opcodes.IFGT, lfalse);
+      break;
+    case GTH:
+      context.evalMethod.visitJumpInsn(Opcodes.IFLE, lfalse);
+      break;
+    case GEQ:
+      context.evalMethod.visitJumpInsn(Opcodes.IFLT, lfalse);
+      break;
+    }
+    context.evalMethod.visitLdcInsn(Boolean.TRUE);
+    context.evalMethod.visitJumpInsn(Opcodes.GOTO, lafter);
+    context.evalMethod.visitLabel(lfalse);
+    context.evalMethod.visitLdcInsn(Boolean.FALSE);
+    context.evalMethod.visitLabel(lafter);
     return evalNode;
   }
 

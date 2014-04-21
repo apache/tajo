@@ -54,7 +54,7 @@ public class BooleanDatum extends Datum {
       new Datum [] {NullDatum.get(), TRUE, FALSE          }  // false
   };
 
-  protected BooleanDatum(boolean val) {
+  private BooleanDatum(boolean val) {
     super(TajoDataTypes.Type.BOOLEAN);
     this.val = val;
   }

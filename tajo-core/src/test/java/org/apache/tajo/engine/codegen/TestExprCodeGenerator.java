@@ -52,9 +52,11 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testArithmetic() throws IOException {
-//    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
-//    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col2 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col3 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col2 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col3 from table1;", new String [] {"4"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col4 from table1;", new String [] {"5.5"});
+    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col5 from table1;", new String [] {"6.5"});
   }
 
   @Test
@@ -66,11 +68,15 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "1,2,3,4.5,5.5", "select col5 from table1;", new String [] {"5.5"});
   }
 
+  @Test
+  public void testComparison() throws IOException {
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = 1;", new String [] {"t"});
+  }
+
   public static String getClassName(Class clazz) {
     return clazz.getName().replace('.', '/');
   }
 
-  @Test
   public void testGenerateCode() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
       InstantiationException {
     MyClassLoader myClassLoader = new MyClassLoader();
@@ -87,7 +93,6 @@ public class TestExprCodeGenerator extends ExprTestBase {
     }
   }
 
-  @Test
   public void testGenerateObjectReturn() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
       InstantiationException {
     MyClassLoader myClassLoader = new MyClassLoader();
@@ -137,7 +142,6 @@ public class TestExprCodeGenerator extends ExprTestBase {
     return cw.toByteArray();
   }
 
-  @Test
   public void testGenerateCodePlus() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
       InstantiationException {
     MyClassLoader myClassLoader = new MyClassLoader();
