@@ -365,13 +365,11 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  // It doesn't run as expected because of TAJO-747 bug.
-  // Thus, we need to block this method until resolving this bug.
-//  @Test
-//  public final void testBroadcastSubquery2() throws Exception {
-//    ResultSet res = executeQuery();
-//    assertResultSet(res);
-//    cleanupQuery(res);
-//  }
+  @Test
+  public final void testBroadcastSubquery2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 
 }
