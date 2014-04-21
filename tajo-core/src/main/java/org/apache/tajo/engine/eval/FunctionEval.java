@@ -64,7 +64,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public boolean isDistinct() {
     return funcDesc.getFuncType() == DISTINCT_AGGREGATION || funcDesc.getFuncType() == DISTINCT_UDA;
   }
-	
+
 	public EvalNode [] getArgs() {
 	  return this.argEvals;
 	}

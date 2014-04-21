@@ -334,6 +334,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-777: Partition column in function parameter occurs NPE.
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-763: Out of range problem in utc_usec_to(). (Ilhyun Suh via hyunsik)
 
     TAJO-741: GreedyHeuristicJoinOrderAlgorithm removes some join pairs. (jaehwa)

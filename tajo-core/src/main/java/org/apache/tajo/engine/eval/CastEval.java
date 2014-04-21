@@ -36,6 +36,10 @@ public class CastEval extends EvalNode {
     this.target = target;
   }
 
+  public void setOperand(EvalNode operand) {
+    this.operand = operand;
+  }
+
   public EvalNode getOperand() {
     return operand;
   }

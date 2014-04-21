@@ -280,8 +280,8 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   public RESULT visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
-    result = visitChild(context, evalNode.getConditionExpr(), stack);
-    visitChild(context, evalNode.getResultExpr(), stack);
+    result = visitChild(context, evalNode.getCondition(), stack);
+    visitChild(context, evalNode.getResult(), stack);
     stack.pop();
     return result;
   }
