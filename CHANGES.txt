@@ -334,6 +334,8 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-748: Shuffle output numbers of join may be inconsistent. (jaehwa)
+
     TAJO-777: Partition column in function parameter occurs NPE.
     (Hyoungjun Kim via hyunsik)
 
