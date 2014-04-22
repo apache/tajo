@@ -336,6 +336,9 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-786: TajoDataMetaDatabase::getSchemas creates invalid MetaDataTuple.
+    (hyunsik)
+
     TAJO-652: logical planner cannot handle alias on partition columns.
     (Hyoungjun Kim via hyunsik)
 

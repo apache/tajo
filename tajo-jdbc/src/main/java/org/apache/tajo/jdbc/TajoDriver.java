@@ -31,7 +31,7 @@ public class TajoDriver implements Driver, Closeable {
   public static final int JDBC_VERSION_MAJOR = 4;
   public static final int JDBC_VERSION_MINOR = 0;
 
-  public static final String TAJO_JDBC_URL_PREFIX = "jdbc:tajo://";
+  public static final String TAJO_JDBC_URL_PREFIX = "jdbc:tajo:";
 
   protected static TajoConf jdbcTajoConf = new TajoConf();
 
@@ -52,7 +52,7 @@ public class TajoDriver implements Driver, Closeable {
 
   @Override
   public Connection connect(String url, Properties properties) throws SQLException {
-    return new TajoConnection(url, properties);
+    return acceptsURL(url) ? new TajoConnection(url, properties) : null;
   }
 
   @Override
