@@ -10,7 +10,8 @@ Tajo Master Configuration Defaults
 ============================  ==============================================================  ===========   ===============  
 Tajo Master Umbilical Rpc     tajo.master.umbilical-rpc.address                                             localhost:26001 
 Tajo Master Client Rpc        tajo.master.client-rpc.address                                                localhost:26002 
-Tajo Master Info Http         tajo.master.info-http.address                                                 0.0.0.0:26080   
+Tajo Master Info Http         tajo.master.info-http.address                                                 0.0.0.0:26080
+Tajo Resource Tracker Rpc     tajo.resource-tracker.rpc.address                                             localhost:26003
 Tajo Catalog Client Rpc       tajo.catalog.client-rpc.address                                               localhost:26005
 ============================  ==============================================================  ===========   ===============  
 

@@ -71,7 +71,7 @@ Also, you can execute SQL queries as follows: ::
   4,  jkl,  4.5,  d
   5,  mno,  5.6,  e
 
-  tajo> exit
+  tajo> \q
   bye
 
 Feel free to enjoy Tajo with SQL standards. 

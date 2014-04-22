@@ -57,13 +57,18 @@ In order to specify the resource capacity of each worker, you should add the fol
 
 .. note:: 
   
-  Currently, QueryMaster requests 512MB memory and 1.0 disk per task for the backward compatibility.
+  Currently, QueryMaster requests 512MB memory and 0.5 disk per task for the backward compatibility.
+
+.. note::
+
+  If ``tajo.worker.resource.dfs-dir-aware`` is set to ``true`` in ``tajo-site.xml``, the worker will aware of and use the number of HDFS datanode's data dirs in the node.
+  In other words, ``tajo.worker.resource.disks`` is ignored.
 
 ------------
  Example
 ------------
 
-Assume that you want to give 5120 MB memory, 6.0 disks, and 24 cores on each worker. The example configuration is as follows:
+Assume that you want to give 5120 MB memory, 4 disks, and 24 cores on each worker. The example configuration is as follows:
 
 ``tajo-site.xml``
 
@@ -81,7 +86,7 @@ Assume that you want to give 5120 MB memory, 6.0 disks, and 24 cores on each wor
   
   <property>
     <name>tajo.worker.resource.tajo.worker.resource.disks</name>
-    <value>6.0</value>
+    <value>4.0</value>
   </property>  
 
 --------------------
