@@ -128,6 +128,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWhereCond2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testWhereCondWithAlias1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
