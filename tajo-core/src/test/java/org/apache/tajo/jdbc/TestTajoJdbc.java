@@ -59,6 +59,19 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   }
 
   @Test
+  public void testAcceptURL() throws SQLException {
+    TajoDriver driver = new TajoDriver();
+    assertTrue(driver.acceptsURL("jdbc:tajo:"));
+    assertFalse(driver.acceptsURL("jdbc:taju:"));
+  }
+
+  @Test(expected = SQLException.class)
+  public void testGetConnection() throws SQLException {
+    DriverManager.getConnection("jdbc:taju://" + tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort()
+        + "/default");
+  }
+
+  @Test
   public void testStatement() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         DEFAULT_DATABASE_NAME);
