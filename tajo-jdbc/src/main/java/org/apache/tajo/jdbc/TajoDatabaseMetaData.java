@@ -419,7 +419,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       throw new SQLException(e);
     }
 
-    MetaDataTuple tuple = new MetaDataTuple(1);
+    MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));
     tuple.put(1, new TextDatum(databaseName));
 
@@ -454,7 +454,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getTableTypes() throws SQLException {
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
-    MetaDataTuple tuple = new MetaDataTuple(1);
+    MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum("TABLE"));
     columns.add(tuple);
 
@@ -502,7 +502,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
           if (table.matches(regtableNamePattern)) {
             TableDesc tableDesc = conn.getTajoClient().getTableDesc(CatalogUtil.buildFQName(databaseName, table));
             int pos = 0;
-            for (Column column: tableDesc.getSchema().getColumns()) {
+
+            for (Column column: tableDesc.getLogicalSchema().getColumns()) {
               if (column.getSimpleName().matches(regcolumnNamePattern)) {
                 MetaDataTuple tuple = new MetaDataTuple(22);
 
@@ -701,7 +702,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       throw new SQLException(e);
     }
 
-    MetaDataTuple tuple = new MetaDataTuple(1);
+    MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));
     tuple.put(1, new TextDatum(databaseName));
 

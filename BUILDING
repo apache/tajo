@@ -16,15 +16,16 @@ Maven main modules:
          - tajo-project           (Parent POM for all Tajo Maven modules. )
                                   (All plugins & dependencies versions are defined here.)
          - tajo-algebra
-         - tajo-catalog
-         - tajo-client
          - tajo-common
-         - tajo-core
-         - tajo-docs
-         - tajo-jdbc
-         - tajo-project
          - tajo-rpc
+         - tajo-catalog
          - tajo-storage
+         - tajo-yarn-pullserver
+         - tajo-core
+         - tajo-client
+         - tajo-jdbc
+         - tajo-maven-plugin
+         - tajo-docs
          - tajo-dist              (Tajo distribution assembler)
 
 --------------------------------------------------------------------------------
@@ -42,6 +43,7 @@ Maven build goals:
  Build options:
   * Use -Dtar to create a TAR with the distribution (using -Pdist)
   * Use -Dhadoop.version to build with the specific hadoop version (-Dhadoop.version=2.3.0)
+    * Currently, 2.2.0, 2.3.0, and 2.4.0 are supported.
 
  Tests options:
   * Use -DskipTests to skip tests when running the following Maven goals:
@@ -55,6 +57,6 @@ Building distributions:
 
 Create binary distribution
 
-  $ mvn package -Pdist -DskipTests -Dtar
+  $ mvn clean install -Pdist -DskipTests -Dtar
 
 --------------------------------------------------------------------------------

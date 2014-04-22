@@ -6,6 +6,11 @@ Release 0.9.0 - unreleased
 
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
 
+
+  SUB TASKS
+
+    TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
+
 Release 0.8.0 - unreleased
 
   NEW FEATURES
@@ -336,6 +341,11 @@ Release 0.8.0 - unreleased
 
   BUG FIXES
 
+    TAJO-787: FilterPushDownRule::visitSubQuery does not consider aliased columns. (jaehwa)
+
+    TAJO-786: TajoDataMetaDatabase::getSchemas creates invalid MetaDataTuple.
+    (hyunsik)
+
     TAJO-652: logical planner cannot handle alias on partition columns.
     (Hyoungjun Kim via hyunsik)
 
@@ -662,6 +672,8 @@ Release 0.8.0 - unreleased
     TAJO-293: querymasters directory not found in single node setup. (hyunsik)
 
   TASKS
+
+    TAJO-788: Update Tajo documentation and README, and BUILDING. (hyunsik)
 
     TAJO-752: Escalate sub modules in tajo-core into the top-level modules.
     (hyunsik)
