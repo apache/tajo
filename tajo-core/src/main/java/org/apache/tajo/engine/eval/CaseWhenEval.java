@@ -64,7 +64,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
   @Override
   public DataType getValueType() {
-    return whens.get(0).getResultExpr().getValueType();
+    return whens.get(0).getResult().getValueType();
   }
 
   @Override
@@ -175,11 +175,19 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       return result.eval(schema, tuple);
     }
 
-    public EvalNode getConditionExpr() {
+    public void setCondition(EvalNode condition) {
+      this.condition = condition;
+    }
+
+    public EvalNode getCondition() {
       return this.condition;
     }
 
-    public EvalNode getResultExpr() {
+    public void setResult(EvalNode result) {
+      this.result = result;
+    }
+
+    public EvalNode getResult() {
       return this.result;
     }
 

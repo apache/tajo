@@ -140,33 +140,6 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
     return result;
   }
 
-  public static boolean isArithmeticEval(EvalNode evalNode) {
-    EvalType type = evalNode.getType();
-    boolean match = false;
-
-    match |= type == EvalType.PLUS;
-    match |= type == EvalType.MINUS;
-    match |= type == EvalType.MULTIPLY;
-    match |= type == EvalType.DIVIDE;
-    match |= type == EvalType.MODULAR;
-
-    return match;
-  }
-
-  public static boolean isComparisonEval(EvalNode evalNode) {
-    EvalType type = evalNode.getType();
-    boolean match = false;
-
-    match |= type == EvalType.EQUAL;
-    match |= type == EvalType.NOT_EQUAL;
-    match |= type == EvalType.LTH;
-    match |= type == EvalType.LEQ;
-    match |= type == EvalType.GTH;
-    match |= type == EvalType.GEQ;
-
-    return match;
-  }
-
   private RESULT visitDefaultBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     stack.push(binaryEval);
     RESULT result = visitChild(context, binaryEval.getLeftExpr(), stack);
@@ -309,8 +282,8 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   public RESULT visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
-    result = visitChild(context, evalNode.getConditionExpr(), stack);
-    visitChild(context, evalNode.getResultExpr(), stack);
+    result = visitChild(context, evalNode.getCondition(), stack);
+    visitChild(context, evalNode.getResult(), stack);
     stack.pop();
     return result;
   }

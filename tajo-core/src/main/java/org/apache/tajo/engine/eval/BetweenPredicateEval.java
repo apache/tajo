@@ -46,12 +46,24 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     this.end = end;
   }
 
+  public void setPredicand(EvalNode predicand) {
+    this.predicand = predicand;
+  }
+
   public EvalNode getPredicand() {
     return predicand;
   }
 
+  public void setBegin(EvalNode begin) {
+    this.begin = begin;
+  }
+
   public EvalNode getBegin() {
     return begin;
+  }
+
+  public void setEnd(EvalNode end) {
+    this.end = end;
   }
 
   public EvalNode getEnd() {

@@ -210,6 +210,10 @@ public class GlobalPlanner {
     throw new PlanningException("Invalid State");
   }
 
+  private static boolean checkIfCanBeOneOfBroadcastJoin(LogicalNode node) {
+    return node.getType() == NodeType.SCAN || node.getType() == NodeType.PARTITIONS_SCAN;
+  }
+
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
                                         ExecutionBlock leftBlock, ExecutionBlock rightBlock)
       throws PlanningException {
@@ -218,6 +222,7 @@ public class GlobalPlanner {
 
     boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
 
+    // to check when the tajo.dist-query.join.broadcast.auto property is true
     if (autoBroadcast && joinNode.isCandidateBroadcast()) {
       long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
       List<LogicalNode> broadtargetTables = new ArrayList<LogicalNode>();
@@ -234,7 +239,6 @@ public class GlobalPlanner {
         }
       }
 
-      //large table must be one
       if (numLargeTables <= 1 && !broadtargetTables.isEmpty()) {
         currentBlock = masterPlan.newExecutionBlock();
         currentBlock.setPlan(joinNode);
@@ -246,6 +250,49 @@ public class GlobalPlanner {
         for (LogicalNode eachNode: joinNode.getBroadcastTargets()) {
           context.execBlockMap.remove(eachNode.getPID());
         }
+        return currentBlock;
+      }
+    }
+
+    LogicalNode leftNode = joinNode.getLeftChild();
+    LogicalNode rightNode = joinNode.getRightChild();
+
+    boolean leftBroadcasted = false;
+    boolean rightBroadcasted = false;
+
+    // Although broadcast join property is false, we need to handle boradcast join.
+    // It must, Shuffle output numbers of join will be consistent.
+    if (checkIfCanBeOneOfBroadcastJoin(leftNode) && checkIfCanBeOneOfBroadcastJoin(rightNode)) {
+      ScanNode leftScan = (ScanNode) leftNode;
+      ScanNode rightScan = (ScanNode) rightNode;
+
+      TableDesc leftDesc = leftScan.getTableDesc();
+      TableDesc rightDesc = rightScan.getTableDesc();
+      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
+
+      if (leftDesc.getStats().getNumBytes() < broadcastThreshold) {
+        leftBroadcasted = true;
+      }
+      if (rightDesc.getStats().getNumBytes() < broadcastThreshold) {
+        rightBroadcasted = true;
+      }
+
+      if (leftBroadcasted || rightBroadcasted) {
+        currentBlock = masterPlan.newExecutionBlock();
+        currentBlock.setPlan(joinNode);
+        if (leftBroadcasted) {
+          currentBlock.addBroadcastTable(leftScan.getCanonicalName());
+          LOG.info("The left table " + rightScan.getCanonicalName() + " ("
+              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+        }
+        if (rightBroadcasted) {
+          currentBlock.addBroadcastTable(rightScan.getCanonicalName());
+          LOG.info("The right table " + rightScan.getCanonicalName() + " ("
+              + rightScan.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+        }
+
+        context.execBlockMap.remove(leftScan.getPID());
+        context.execBlockMap.remove(rightScan.getPID());
         return currentBlock;
       }
     }

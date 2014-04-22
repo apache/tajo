@@ -58,18 +58,56 @@ public class EvalTreeUtil {
       if (evalNode.equals(target)) {
         EvalNode parent = stack.peek();
 
-        if (parent instanceof UnaryEval) {
-          ((UnaryEval)parent).setChild(tobeReplaced);
+        if (parent instanceof BetweenPredicateEval) {
+          BetweenPredicateEval between = (BetweenPredicateEval) parent;
+          if (between.getPredicand().equals(evalNode)) {
+            between.setPredicand(tobeReplaced);
+          }
+          if (between.getBegin().equals(evalNode)) {
+            between.setBegin(tobeReplaced);
+          }
+          if (between.getEnd().equals(evalNode)) {
+            between.setEnd(tobeReplaced);
+          }
+
+        } else if (parent instanceof CaseWhenEval) {
+          CaseWhenEval caseWhen = (CaseWhenEval) parent;
+
+          // Here, we need to only consider only 'Else'
+          // because IfElseEval is handled in the below condition.
+          if (caseWhen.hasElse() && caseWhen.getElse().equals(evalNode)) {
+            caseWhen.setElseResult(tobeReplaced);
+          }
+        } else if (parent instanceof CaseWhenEval.IfThenEval) {
+          CaseWhenEval.IfThenEval ifThen = (CaseWhenEval.IfThenEval) parent;
+          if (ifThen.getCondition().equals(evalNode)) {
+            ifThen.setCondition(tobeReplaced);
+          }
+          if (ifThen.getResult().equals(evalNode)) {
+            ifThen.setResult(tobeReplaced);
+          }
+       } else if (parent instanceof FunctionEval) {
+          FunctionEval functionEval = (FunctionEval) parent;
+          EvalNode [] arguments = functionEval.getArgs();
+          for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i].equals(evalNode)) {
+              arguments[i] = tobeReplaced;
+            }
+          }
+          functionEval.setArgs(arguments);
+
+        } else if (parent instanceof UnaryEval) {
+          if (((UnaryEval)parent).getChild().equals(evalNode)) {
+            ((UnaryEval)parent).setChild(tobeReplaced);
+          }
         } else if (parent instanceof BinaryEval) {
-          BinaryEval binaryParent = (BinaryEval) parent;
-          if (binaryParent.getLeftExpr().equals(evalNode)) {
-            binaryParent.setLeftExpr(tobeReplaced);
+          BinaryEval binary = (BinaryEval) parent;
+          if (binary.getLeftExpr() != null && binary.getLeftExpr().equals(evalNode)) {
+            binary.setLeftExpr(tobeReplaced);
           }
-          if (binaryParent.getRightExpr().equals(evalNode)) {
-            binaryParent.setRightExpr(tobeReplaced);
+          if (binary.getRightExpr() != null && binary.getRightExpr().equals(evalNode)) {
+            binary.setRightExpr(tobeReplaced);
           }
-        } else {
-          throw new UnimplementedException(parent + " is not implemented yet.");
         }
       }
 

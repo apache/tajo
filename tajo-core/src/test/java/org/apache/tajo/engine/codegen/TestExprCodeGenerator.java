@@ -70,11 +70,53 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testComparison() throws IOException {
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = 1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col5 from table1;", new String [] {"t"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col5 from table1;", new String [] {"t"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col5 from table1;", new String [] {"t"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col5 from table1;", new String [] {"f"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col5 from table1;", new String [] {"f"});
   }
 
-  public static String getClassName(Class clazz) {
-    return clazz.getName().replace('.', '/');
+  @Test
+  public void testUnary() throws IOException {
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col1 from table1;", new String [] {"-1"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col2 from table1;", new String [] {"-2"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col3 from table1;", new String [] {"-3"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col4 from table1;", new String [] {"-4.5"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col5 from table1;", new String [] {"-6.5"});
+
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select (col1 = col5) from table1;", new String [] {"f"});
+    testEval(schema, "table1", "1,2,3,4.5,6.5", "select NOT (col1 = col5) from table1;", new String [] {"t"});
   }
 
   public void testGenerateCode() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,

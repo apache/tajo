@@ -742,6 +742,24 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         taskNum = Math.min(taskNum, slots);
         LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
 
+        // The shuffle output numbers of join may be inconsistent by execution block order.
+        // Thus, we need to compare the number with DataChannel output numbers.
+        // If the number is right, the number and DataChannel output numbers will be consistent.
+        int outerShuffleOutptNum = 0, innerShuffleOutputNum = 0;
+        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(outer.getId())) {
+          outerShuffleOutptNum = Math.max(outerShuffleOutptNum, eachChannel.getShuffleOutputNum());
+        }
+
+        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
+          innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
+        }
+
+        if (outerShuffleOutptNum != innerShuffleOutputNum
+            && taskNum != outerShuffleOutptNum
+            && taskNum != innerShuffleOutputNum) {
+          taskNum = Math.max(outerShuffleOutptNum, innerShuffleOutputNum);
+        }
+
         return taskNum;
 
         // Is this subquery the first step of group-by?

@@ -78,6 +78,44 @@ public enum EvalType {
     this.operatorName = text;
   }
 
+  public static boolean isLogicalEval(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == AND;
+    match |= type == OR;
+    match |= type == NOT;
+
+    return match;
+  }
+
+  public static boolean isComparisonEval(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == EQUAL;
+    match |= type == NOT_EQUAL;
+    match |= type == LTH;
+    match |= type == LEQ;
+    match |= type == GTH;
+    match |= type == GEQ;
+
+    return match;
+  }
+
+  public static boolean isArithmeticEval(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == PLUS;
+    match |= type == MINUS;
+    match |= type == MULTIPLY;
+    match |= type == DIVIDE;
+    match |= type == MODULAR;
+
+    return match;
+  }
+
   public String getOperatorName() {
     return operatorName != null ? operatorName : name();
   }

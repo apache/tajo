@@ -1,0 +1,1 @@
+select col1, key from testQueryCasesOnColumnPartitionedTable order by pow(key, 2) desc

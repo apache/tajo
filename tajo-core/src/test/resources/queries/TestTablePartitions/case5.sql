@@ -1,0 +1,1 @@
+select round(pow(key + 1, 2)) from testQueryCasesOnColumnPartitionedTable

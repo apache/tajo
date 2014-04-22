@@ -22,10 +22,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.planner.ExprAnnotator;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.Pair;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -35,31 +33,86 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Stack;
 
-/**
-* Created by hyunsik on 4/19/14.
-*/
-public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.CodeGenContext, EvalNode> {
+import static org.apache.tajo.common.TajoDataTypes.Type;
 
-  public EvalNode visitChild(CodeGenContext context, EvalNode evalNode, Stack<EvalNode> stack) {
-    try {
-      if (isArithmeticEval(evalNode)) {
-        visitArithmeticEval(context, (BinaryEval) evalNode, stack);
-      } else if (isComparisonEval(evalNode)) {
-        visitComparisonEval(context, (BinaryEval) evalNode, stack);
-      } else {
-        super.visitChild(context, evalNode, stack);
-      }
-    } catch (CodeGenException e) {
-      e.printStackTrace();
+public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.CodeGenContext> {
+
+  public static final byte UNKNOWN = 0;
+  public static final byte TRUE = 1;
+  public static final byte FALSE = 2;
+
+  /** 0 - UNKNOWN, 1 - TRUE, 2 - FALSE */
+  @SuppressWarnings("unused")
+  public static final byte [] THREE_VALUES = new byte[]  {UNKNOWN, TRUE, FALSE};
+  @SuppressWarnings("unused")
+  public static final byte [] NOT_LOGIC =    new byte[] {UNKNOWN, FALSE, TRUE};
+  @SuppressWarnings("unused")
+  public static final byte [][] AND_LOGIC = new byte [][] {
+      //          unknown  true     false
+      new byte [] {UNKNOWN, UNKNOWN, FALSE},   // unknown
+      new byte [] {UNKNOWN, TRUE,    FALSE},   // true
+      new byte [] {FALSE,   FALSE,   FALSE}    // false
+  };
+  @SuppressWarnings("unused")
+  public static final byte [][] OR_LOGIC = new byte [][] {
+      //          unknown  true     false
+      new byte [] {UNKNOWN, TRUE,    UNKNOWN}, // unknown
+      new byte [] {TRUE,    TRUE,    TRUE},    // true
+      new byte [] {UNKNOWN, TRUE,    FALSE}    // false
+  };
+
+  public EvalNode visitBinaryEval(CodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+    if (EvalType.isArithmeticEval(binaryEval)) {
+      return visitArithmeticEval(context, binaryEval, stack);
+    } else if (EvalType.isComparisonEval(binaryEval)) {
+      return visitComparisonEval(context, binaryEval, stack);
+    } else {
+      return super.visit(context, binaryEval, stack);
     }
-
-    return evalNode;
   }
 
-  private static void invokeInitDatum(CodeGenContext context, Class clazz, String paramDesc) {
-    String slashedName = TestExprCodeGenerator.getClassName(clazz);
-    context.evalMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, slashedName, "<init>", paramDesc);
-    context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, TestExprCodeGenerator.getClassName(Datum.class));
+  public EvalNode visitUnaryEval(CodeGenContext context, Stack<EvalNode> stack, UnaryEval unary) {
+    stack.push(unary);
+    if (unary.getType() == EvalType.CAST) {
+      visit(context, unary.getChild(), stack);
+
+      CastEval cast = (CastEval) unary;
+      Type srcType = cast.getOperand().getValueType().getType();
+      Type targetType = cast.getValueType().getType();
+      CodeGenUtil.insertCastInst(context.evalMethod, srcType, targetType);
+
+    } else if (unary.getType() == EvalType.NOT) {
+      context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC,
+          CodeGenUtil.getInternalName(ExprCodeGenerator.class), "NOT_LOGIC", "[B");
+      visit(context, unary.getChild(), stack);
+      context.evalMethod.visitInsn(Opcodes.BALOAD);
+
+    } else if (unary.getType() == EvalType.SIGNED) {
+      visit(context, unary.getChild(), stack);
+      SignedEval signed = (SignedEval) unary;
+      switch (signed.getValueType().getType()) {
+      case BOOLEAN:
+      case CHAR:
+      case INT1:
+      case INT2:
+      case INT4: context.evalMethod.visitInsn(Opcodes.INEG); break;
+      case INT8: context.evalMethod.visitInsn(Opcodes.LNEG); break;
+      case FLOAT4: context.evalMethod.visitInsn(Opcodes.FNEG); break;
+      case FLOAT8: context.evalMethod.visitInsn(Opcodes.DNEG); break;
+      default: throw new InvalidEvalException(unary.getType() + " operation to " + signed.getChild() + " is invalid.");
+      }
+
+    } else {
+      super.visit(context, unary, stack);
+    }
+    stack.pop();
+    return unary;
+  }
+
+  private static void invokeInitDatum(CodeGenContext context, String methodName, String paramDesc) {
+    String slashedName = CodeGenUtil.getInternalName(DatumFactory.class);
+    context.evalMethod.visitMethodInsn(Opcodes.INVOKESTATIC, slashedName, methodName, paramDesc);
+    context.evalMethod.visitTypeInsn(Opcodes.CHECKCAST, CodeGenUtil.getInternalName(Datum.class));
     context.evalMethod.visitInsn(Opcodes.ARETURN);
     context.evalMethod.visitMaxs(0, 0);
     context.evalMethod.visitEnd();
@@ -73,44 +126,42 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
     context.evalMethod = context.classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
         "(Lorg/apache/tajo/catalog/Schema;Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;", null, null);
     context.evalMethod.visitCode();
+    context.evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
-    Class returnTypeClass;
+    String methodName;
     String signatureDesc;
     switch (expr.getValueType().getType()) {
     case BOOLEAN:
-      returnTypeClass = BooleanDatum.class;
-      signatureDesc = "(Z)V";
+      methodName = "createBool";
+      signatureDesc = "(I)L" + CodeGenUtil.getInternalName(Datum.class) +";" ;
       break;
     case INT2:
-      returnTypeClass = Int2Datum.class;
-      signatureDesc = "(S)V";
+      methodName = "createInt2";
+      signatureDesc = "(S)L" + CodeGenUtil.getInternalName(Int2Datum.class) +";" ;
       break;
     case INT4:
-      returnTypeClass = Int4Datum.class;
-      signatureDesc = "(I)V";
+      methodName = "createInt4";
+      signatureDesc = "(I)L" + CodeGenUtil.getInternalName(Int4Datum.class) +";" ;
       break;
     case INT8:
-      returnTypeClass = Int8Datum.class;
-      signatureDesc = "(J)V";
+      methodName = "createInt8";
+      signatureDesc = "(J)L" + CodeGenUtil.getInternalName(Int8Datum.class) +";" ;
       break;
     case FLOAT4:
-      returnTypeClass = Float4Datum.class;
-      signatureDesc = "(F)V";
+      methodName = "createFloat4";
+      signatureDesc = "(F)L" + CodeGenUtil.getInternalName(Float4Datum.class) +";" ;
       break;
     case FLOAT8:
-      returnTypeClass = Float8Datum.class;
-      signatureDesc = "(D)V";
+      methodName = "createFloat8";
+      signatureDesc = "(D)L" + CodeGenUtil.getInternalName(Float8Datum.class) +";" ;
       break;
     default:
       throw new PlanningException("Unsupported type: " + expr.getValueType().getType());
     }
 
-    context.evalMethod.visitTypeInsn(Opcodes.NEW, TestExprCodeGenerator.getClassName(returnTypeClass));
-    context.evalMethod.visitInsn(Opcodes.DUP);
+    visit(context, expr, new Stack<EvalNode>());
 
-    visitChild(context, expr, new Stack<EvalNode>());
-
-    invokeInitDatum(context, returnTypeClass, signatureDesc);
+    invokeInitDatum(context, methodName, signatureDesc);
 
     TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
     Class aClass = myClassLoader.defineClass("org.Test3", context.classWriter.toByteArray());
@@ -136,16 +187,16 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
 
     context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
     context.evalMethod.visitLdcInsn(idx);
-    context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, TestExprCodeGenerator.getClassName(Tuple.class), methodName, desc);
+    context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, CodeGenUtil.getInternalName(Tuple.class),
+        methodName, desc);
 
     return null;
   }
 
-  public EvalNode visitArithmeticEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
-      throws CodeGenException {
+  public EvalNode visitArithmeticEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
-    super.visitChild(context, evalNode.getLeftExpr(), stack);
-    super.visitChild(context, evalNode.getRightExpr(), stack);
+    visit(context, evalNode.getLeftExpr(), stack);
+    visit(context, evalNode.getRightExpr(), stack);
     stack.pop();
 
     int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getValueType());
@@ -153,43 +204,83 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
     return evalNode;
   }
 
+  public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
+    return
+        dataType.getType() == Type.CHAR ||
+        dataType.getType() == Type.INT1 ||
+        dataType.getType() == Type.INT2 ||
+        dataType.getType() == Type.INT4;
+  }
+
   public EvalNode visitComparisonEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
       throws CodeGenException {
     stack.push(evalNode);
-    super.visitChild(context, evalNode.getLeftExpr(), stack);
-    super.visitChild(context, evalNode.getRightExpr(), stack);
+    visit(context, evalNode.getLeftExpr(), stack);
+    visit(context, evalNode.getRightExpr(), stack);
     stack.pop();
-
-//    int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getLeftExpr().getValueType());
-//    context.evalMethod.visitInsn(opCode);
 
     Label lfalse = new Label();
     Label lafter = new Label();
-    switch (evalNode.getType()) {
-    case EQUAL:
-      context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPNE, lfalse);
-      break;
-    case NOT_EQUAL:
-      context.evalMethod.visitJumpInsn(Opcodes.IFEQ, lfalse);
-      break;
-    case LTH:
-      context.evalMethod.visitJumpInsn(Opcodes.IFGE, lfalse);
-      break;
-    case LEQ:
-      context.evalMethod.visitJumpInsn(Opcodes.IFGT, lfalse);
-      break;
-    case GTH:
-      context.evalMethod.visitJumpInsn(Opcodes.IFLE, lfalse);
-      break;
-    case GEQ:
-      context.evalMethod.visitJumpInsn(Opcodes.IFLT, lfalse);
-      break;
+
+    if (isJVMInternalInt(evalNode.getLeftExpr().getValueType())) {
+      switch (evalNode.getType()) {
+      case EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPNE, lfalse);
+        break;
+      case NOT_EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPEQ, lfalse);
+        break;
+      case LTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGE, lfalse);
+        break;
+      case LEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGT, lfalse);
+        break;
+      case GTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLE, lfalse);
+        break;
+      case GEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLT, lfalse);
+        break;
+      }
+
+      context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE
+      context.evalMethod.visitJumpInsn(Opcodes.GOTO, lafter);
+      context.evalMethod.visitLabel(lfalse);
+      context.evalMethod.visitInsn(Opcodes.ICONST_2); // FALSE
+      context.evalMethod.visitLabel(lafter);
+    } else {
+      int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getLeftExpr().getValueType());
+      context.evalMethod.visitInsn(opCode);
+
+      switch (evalNode.getType()) {
+      case EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IFNE, lfalse);
+        break;
+      case NOT_EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IFEQ, lfalse);
+        break;
+      case LTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IFGE, lfalse);
+        break;
+      case LEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IFGT, lfalse);
+        break;
+      case GTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IFLE, lfalse);
+        break;
+      case GEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IFLT, lfalse);
+        break;
+      }
+
+      context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE
+      context.evalMethod.visitJumpInsn(Opcodes.GOTO, lafter);
+      context.evalMethod.visitLabel(lfalse);
+      context.evalMethod.visitInsn(Opcodes.ICONST_2); // FALSE
+      context.evalMethod.visitLabel(lafter);
     }
-    context.evalMethod.visitLdcInsn(Boolean.TRUE);
-    context.evalMethod.visitJumpInsn(Opcodes.GOTO, lafter);
-    context.evalMethod.visitLabel(lfalse);
-    context.evalMethod.visitLdcInsn(Boolean.FALSE);
-    context.evalMethod.visitLabel(lafter);
+
     return evalNode;
   }
 
@@ -211,17 +302,6 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
     return evalNode;
   }
 
-  @Override
-  public EvalNode visitCast(CodeGenContext context, CastEval signedEval, Stack<EvalNode> stack) {
-    super.visitCast(context, signedEval, stack);
-
-    TajoDataTypes.Type srcType = signedEval.getOperand().getValueType().getType();
-    TajoDataTypes.Type targetType = signedEval.getValueType().getType();
-    CodeGenUtil.insertCastInst(context.evalMethod, srcType, targetType);
-
-    return null;
-  }
-
   public static class CodeGenContext {
     private Schema schema;
 
@@ -232,7 +312,7 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
       this.schema = schema;
 
       classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, TestExprCodeGenerator.getClassName(EvalNode.class), null);
+      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, CodeGenUtil.getInternalName(EvalNode.class), null);
       classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
           null, null).visitEnd();
 
@@ -240,7 +320,7 @@ public class ExprCodeGenerator extends BasicEvalNodeVisitor<ExprCodeGenerator.Co
       MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
       methodVisitor.visitCode();
       methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-      methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, TestExprCodeGenerator.getClassName(EvalNode.class), "<init>", "()V");
+      methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, CodeGenUtil.getInternalName(EvalNode.class), "<init>", "()V");
       methodVisitor.visitInsn(Opcodes.RETURN);
       methodVisitor.visitMaxs(1, 1);
       methodVisitor.visitEnd();

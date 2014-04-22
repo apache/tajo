@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Column;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 public class AlgebraicUtil {
   
@@ -133,6 +134,38 @@ public class AlgebraicUtil {
       return false;
     }
   }
+
+  private static class AlgebraicOptimizer extends SimpleEvalNodeVisitor<Object> {
+
+    @Override
+    public EvalNode visitBinaryEval(Object context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+      stack.push(binaryEval);
+      EvalNode lhs = visit(context, binaryEval.getLeftExpr(), stack);
+      EvalNode rhs = visit(context, binaryEval.getRightExpr(), stack);
+      stack.pop();
+
+      if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
+        return new ConstEval(binaryEval.eval(null, null));
+      }
+
+      return binaryEval;
+    }
+
+    @Override
+    public EvalNode visitUnaryEval(Object context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+      stack.push(unaryEval);
+      EvalNode child = visit(context, unaryEval.getChild(), stack);
+      stack.pop();
+
+      if (child.getType() == EvalType.CONST) {
+        return new ConstEval(unaryEval.eval(null, null));
+      }
+
+      return unaryEval;
+    }
+  }
+
+  private final static AlgebraicOptimizer algebraicOptimizer = new AlgebraicOptimizer();
   
   /**
    * Simplify the given expr. That is, all subexprs consisting of only constants
@@ -142,44 +175,7 @@ public class AlgebraicUtil {
    * @return the simplified expr
    */
   public static EvalNode eliminateConstantExprs(EvalNode expr) {
-
-    if (expr.getType() == EvalType.FIELD) {
-      return expr;
-    }
-    
-    switch (expr.getType()) {
-    case AND:
-    case OR:
-    case EQUAL:
-    case NOT_EQUAL:
-    case LTH:
-    case LEQ:
-    case GTH:
-    case GEQ:
-    case PLUS:
-    case MINUS:
-    case MULTIPLY:
-    case DIVIDE:
-    case MODULAR: // all types are binary
-      BinaryEval binaryEval = (BinaryEval) expr;
-      EvalNode left = binaryEval.getLeftExpr();
-      EvalNode right = binaryEval.getRightExpr();
-
-      left = eliminateConstantExprs(left);
-      right = eliminateConstantExprs(right);
-
-      if (left.getType() == EvalType.CONST && right.getType() == EvalType.CONST) {
-        return new ConstEval(expr.eval(null, null));
-      } else {
-        return new BinaryEval(expr.getType(), left, right);
-      }
-
-    case CONST:
-      return expr;
-      
-    default: new AlgebraicException("Wrong expression: " + expr);
-    }
-    return expr;
+    return algebraicOptimizer.visit(null, expr, new Stack<EvalNode>());
   }
   
   /** 

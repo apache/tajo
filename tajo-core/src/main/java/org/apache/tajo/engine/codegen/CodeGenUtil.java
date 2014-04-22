@@ -94,7 +94,7 @@ public class CodeGenUtil {
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT8, Opcodes.DCMPG);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TEXT, Opcodes.IF_ACMPEQ);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TEXT, Opcodes.IF_ACMPNE);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT1, Opcodes.IF_ICMPNE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT2, Opcodes.IF_ICMPNE);
@@ -144,7 +144,7 @@ public class CodeGenUtil {
     return TUtil.containsInNestedMap(OpCodesMap, evalType, returnType.getType());
   }
 
-  public static int getOpCode(EvalType evalType, TajoDataTypes.DataType returnType) throws CodeGenException {
+  public static int getOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
     if (!isPrimitiveOpCode(evalType, returnType)) {
       throw new CodeGenException("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
     }
@@ -211,5 +211,9 @@ public class CodeGenUtil {
     }
 
     method.visitInsn(opCode);
+  }
+
+  public static String getInternalName(Class clazz) {
+    return clazz.getName().replace('.', '/');
   }
 }

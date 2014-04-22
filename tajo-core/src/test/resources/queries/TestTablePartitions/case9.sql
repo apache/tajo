@@ -1,0 +1,1 @@
+select col1, CAST(key AS INT) from testQueryCasesOnColumnPartitionedTable;

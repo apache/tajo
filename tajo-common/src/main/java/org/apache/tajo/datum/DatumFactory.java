@@ -182,6 +182,10 @@ public class DatumFactory {
     return BooleanDatum.THREE_VALUES[(int)val];
   }
 
+  public static Datum createBool(int val) {
+    return BooleanDatum.THREE_VALUES[val];
+  }
+
   public static BooleanDatum createBool(boolean val) {
     return val ? BooleanDatum.TRUE : BooleanDatum.FALSE;
   }

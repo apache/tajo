@@ -1,0 +1,1 @@
+select key as key_alias from testQueryCasesOnColumnPartitionedTable
