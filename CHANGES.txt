@@ -6,6 +6,11 @@ Release 0.9.0 - unreleased
 
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
 
+
+  SUB TASKS
+
+    TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
+
 Release 0.8.0 - unreleased
 
   NEW FEATURES

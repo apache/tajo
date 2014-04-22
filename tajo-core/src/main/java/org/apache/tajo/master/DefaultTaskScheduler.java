@@ -269,12 +269,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
       int qSize = taskRequestQueue.size();
       if (qSize != 0 && qSize % 1000 == 0) {
-        LOG.info("Size of event-queue in YarnRMContainerAllocator is " + qSize);
+        LOG.info("Size of event-queue in DefaultTaskScheduler is " + qSize);
       }
       int remCapacity = taskRequestQueue.remainingCapacity();
       if (remCapacity < 1000) {
         LOG.warn("Very low remaining capacity in the event-queue "
-            + "of YarnRMContainerAllocator: " + remCapacity);
+            + "of DefaultTaskScheduler: " + remCapacity);
       }
 
       taskRequestQueue.add(event);
