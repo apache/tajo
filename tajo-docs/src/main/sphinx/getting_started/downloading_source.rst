@@ -8,13 +8,13 @@ You can get either the source code release of Apache Tajo or check out the devel
 Dowload the latest source release
 ================================================
 
-Choose a download site from this list of `Apache Download Mirrors <http://www.apache.org/dyn/closer.cgi/incubator/tajo>`_.
+Choose a download site from this list of `Apache Download Mirrors <http://www.apache.org/dyn/closer.cgi/tajo>`_.
 Click on the suggested mirror link. This will take you to a mirror of Tajo Releases. 
-Download the file that ends in .tar.gz to your local filesystem; e.g. tajo-0.8.0-incubating.tar.gz. 
+Download the file that ends in .tar.gz to your local filesystem; e.g. tajo-x.y.z-src.tar.gz.
 
 Decompress and untar your download and then change into the unpacked directory. ::
 
-  tar xzvf tajo-0.8.0-incubating.tar.gz
+  tar xzvf tajo-x.y.z-src.tar.gz
 
 ================================================
 Get the source code via Git

@@ -340,7 +340,7 @@
           <excludeSubProjects>false</excludeSubProjects>
           <numUnapprovedLicenses>0</numUnapprovedLicenses>
           <excludes>
-            <exclude>CHANGES.txt</exclude>
+            <exclude>CHANGES</exclude>
             <exclude>**/workers</exclude>
             <exclude>**/querymasters</exclude>
             <exclude>**/*.sql</exclude>
