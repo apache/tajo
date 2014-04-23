@@ -17,17 +17,16 @@
   limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.8.0</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
+  <version>0.8.0</version>
   <description>Tajo Project POM</description>
   <name>Tajo Project POM</name>
   <packaging>pom</packaging>
@@ -37,7 +36,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.3.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.8.0</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -59,11 +58,11 @@
       <id>akarasulu</id>
       <name>Alex Karasulu</name>
       <email>akarasulu@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>Mentor</role>
       </roles>
-      <timezone></timezone>
+      <timezone />
     </developer>
     <developer>
       <id>mattmann</id>
@@ -150,7 +149,7 @@
       <email>keuntae.park@sk.com</email>
       <organization>SK Telecom</organization>
       <roles>
-        <role></role>
+        <role />
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -250,6 +249,7 @@
     <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
     <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
     <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
+    <tag>release-0.8.0-rc0</tag>
   </scm>
 
   <mailingLists>
@@ -419,7 +419,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -433,7 +433,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -447,7 +447,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -460,7 +460,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -474,7 +474,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -487,7 +487,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -500,7 +500,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
