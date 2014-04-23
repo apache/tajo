@@ -21,13 +21,12 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <artifactId>tajo-algebra</artifactId>
   <packaging>jar</packaging>
   <name>Tajo Algebra</name>
-  <version>0.8.0-SNAPSHOT</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
