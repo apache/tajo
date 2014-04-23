@@ -245,7 +245,11 @@ public class TajoConf extends Configuration {
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
     //CLI
-    CLI_MAX_COLUMN("tajo.cli.max_columns", 120)
+    CLI_MAX_COLUMN("tajo.cli.max_columns", 120),
+    CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
+    CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
+    CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
+    CLI__OUTPUT_FORMATTER_CLASS("tajo.cli.otuptu.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter");
     ;
 
     public final String varname;

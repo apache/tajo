@@ -119,7 +119,7 @@ public class QueryInfo {
 
   @Override
   public String toString() {
-    return queryId.toString() + "state=" + queryState +",progress=" + progress + ", queryMaster="
+    return queryId.toString() + ",state=" + queryState +",progress=" + progress + ", queryMaster="
         + getQueryMasterHost();
   }
 }

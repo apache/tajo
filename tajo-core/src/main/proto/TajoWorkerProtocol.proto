@@ -57,7 +57,8 @@ message TaskCompletionReport {
 
 message TaskFatalErrorReport {
   required QueryUnitAttemptIdProto id = 1;
-  optional string error_message = 2;
+  optional string errorMessage = 2;
+  optional string errorTrace = 3;
 }
 
 message QueryUnitRequestProto {

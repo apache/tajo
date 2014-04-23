@@ -549,13 +549,16 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     @Override
     public TaskState transition(QueryUnit task, TaskEvent taskEvent) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
-      LOG.info("=============================================================");
-      LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + " <<<");
-      LOG.info("=============================================================");
       task.failedAttempts++;
       task.finishedAttempts++;
+      boolean retry = task.failedAttempts < task.maxAttempts;
 
-      if (task.failedAttempts < task.maxAttempts) {
+      LOG.info("====================================================================================");
+      LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + ", " +
+          "retry:" + retry + ", attempts:" +  task.failedAttempts + " <<<");
+      LOG.info("====================================================================================");
+
+      if (retry) {
         if (task.successfulAttempt == null) {
           task.addAndScheduleAttempt();
         }

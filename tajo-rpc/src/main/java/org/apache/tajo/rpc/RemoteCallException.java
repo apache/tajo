@@ -27,11 +27,15 @@ import java.io.Writer;
 
 public class RemoteCallException extends RemoteException {
   private int seqId;
+  private String originExceptionClass;
 
   public RemoteCallException(int seqId, MethodDescriptor methodDesc,
                              Throwable t) {
     super("Remote call error occurs when " + methodDesc.getFullName() + "is called:", t);
     this.seqId = seqId;
+    if (t != null) {
+      originExceptionClass = t.getClass().getCanonicalName();
+    }
   }
 
   public RemoteCallException(int seqId, Throwable t) {
@@ -42,7 +46,10 @@ public class RemoteCallException extends RemoteException {
   public RpcResponse getResponse() {
     RpcResponse.Builder builder = RpcResponse.newBuilder();
     builder.setId(seqId);
-    builder.setErrorMessage(getStackTraceString(getCause()));
+    builder.setErrorMessage(getCause().getMessage());
+    builder.setErrorTrace(getStackTraceString(getCause()));
+    builder.setErrorClass(originExceptionClass);
+
     return builder.build();
   }
 

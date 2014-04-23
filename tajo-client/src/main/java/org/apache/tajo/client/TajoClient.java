@@ -180,7 +180,9 @@ public class TajoClient implements Closeable {
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
       if (response.getState() == CreateSessionResponse.ResultState.SUCCESS) {
         sessionId = response.getSessionId();
-        LOG.info(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+        }
       } else {
         throw new InvalidClientSessionException(response.getMessage());
       }

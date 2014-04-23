@@ -34,7 +34,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -60,7 +59,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
@@ -156,9 +154,10 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
       String errorMessage = t.getMessage();
       if (t.getMessage() == null) {
-        errorMessage = StringUtils.stringifyException(t);
+        errorMessage = t.getClass().getName();
       }
       responseBuilder.setErrorMessage(errorMessage);
+      responseBuilder.setErrorTrace(StringUtils.stringifyException(t));
       return responseBuilder.build();
     }
   }

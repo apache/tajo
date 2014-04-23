@@ -57,20 +57,21 @@ public abstract class NettyClientBase implements Closeable {
       this.bootstrap.setOption("keepAlive", true);
 
       connect(addr);
-    } catch (Throwable t) {
+    } catch (IOException e) {
       close();
+      throw e;
+    } catch (Throwable t) {
       throw new IOException("Connect error to " + addr + " cause " + t.getMessage(), t.getCause());
     }
   }
 
-  public void connect(InetSocketAddress addr) {
+  public void connect(InetSocketAddress addr) throws Exception {
     if(addr.isUnresolved()){
        addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
     }
     this.channelFuture = bootstrap.connect(addr);
     this.channelFuture.awaitUninterruptibly();
     if (!channelFuture.isSuccess()) {
-      channelFuture.getCause().printStackTrace();
       throw new RuntimeException(channelFuture.getCause());
     }
   }
@@ -80,6 +81,9 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public InetSocketAddress getRemoteAddress() {
+    if (channelFuture == null || channelFuture.getChannel() == null) {
+      return null;
+    }
     return (InetSocketAddress) channelFuture.getChannel().getRemoteAddress();
   }
 
@@ -100,9 +104,9 @@ public abstract class NettyClientBase implements Closeable {
     if(this.bootstrap != null) {
       // This line will shutdown the factory
       // this.bootstrap.releaseExternalResources();
-      if(LOG.isDebugEnabled()) {
-        LOG.debug("Proxy is disconnected from " +
-            getRemoteAddress().getHostName() + ":" + getRemoteAddress().getPort());
+      InetSocketAddress address = getRemoteAddress();
+      if (address != null) {
+        LOG.debug("Proxy is disconnected from " + address.getHostName() + ":" + address.getPort());
       }
     }
   }
