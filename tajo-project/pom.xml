@@ -22,11 +22,11 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.8.0</version>
+    <version>0.8.1-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
   <description>Tajo Project POM</description>
   <name>Tajo Project POM</name>
   <packaging>pom</packaging>
@@ -36,7 +36,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.3.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.8.0</tajo.version>
+    <tajo.version>0.8.1-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -249,7 +249,7 @@
     <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
     <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
     <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
-    <tag>release-0.8.0-rc0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <mailingLists>

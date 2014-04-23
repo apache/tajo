@@ -21,13 +21,13 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0</version>
+    <version>0.8.1-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <name>Tajo Yarn PullServer</name>
   <artifactId>tajo-yarn-pullserver</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
 
   <dependencies>
     <dependency>

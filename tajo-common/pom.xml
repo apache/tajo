@@ -17,12 +17,12 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0</version>
+    <version>0.8.1-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
 
   <artifactId>tajo-common</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
   <name>Tajo Common</name>
   <description>Tajo Common Package</description>
   <packaging>jar</packaging>

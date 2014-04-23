@@ -22,13 +22,13 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0</version>
+    <version>0.8.1-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <artifactId>tajo-client</artifactId>
   <packaging>jar</packaging>
   <name>Tajo Client</name>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

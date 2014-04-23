@@ -20,12 +20,12 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0</version>
+    <version>0.8.1-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
 
   <artifactId>tajo-storage</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Tajo Storage</name>
   <description>Tajo Storage Package</description>
