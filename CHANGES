@@ -661,6 +661,8 @@ Release 0.8.0 - unreleased
 
   TASKS
 
+    TAJO-517: Publish Tajo jar to a public maven repository. (hyunsik)
+
     TAJO-788: Update Tajo documentation and README, and BUILDING. (hyunsik)
 
     TAJO-752: Escalate sub modules in tajo-core into the top-level modules.
