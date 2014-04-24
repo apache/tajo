@@ -92,6 +92,9 @@ public class TestTimestampDatum {
   public final void testAsTextBytes() {
     Datum d = DatumFactory.createTimeStamp("1980-04-01 01:50:01");
     assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
+
+    d = DatumFactory.createTimeStamp("1980-04-01 01:50:01.578");
+    assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
   }
 
   @Test

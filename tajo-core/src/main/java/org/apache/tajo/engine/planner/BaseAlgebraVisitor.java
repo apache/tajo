@@ -249,7 +249,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case TimestampLiteral:
       current = visitTimestampLiteral(ctx, stack, (TimestampLiteral) expr);
       break;
-
+    case IntervalLiteral:
+      current = visitIntervalLiteral(ctx, stack, (IntervalLiteral) expr);
+      break;
 
 
     default:
@@ -724,6 +726,11 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
 
   @Override
   public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitIntervalLiteral(CONTEXT ctx, Stack<Expr> stack, IntervalLiteral expr) throws PlanningException {
     return null;
   }
 

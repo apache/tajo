@@ -550,6 +550,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
+  public EvalNode visitIntervalLiteral(Context ctx, Stack<Expr> stack, IntervalLiteral expr) throws PlanningException {
+    return new ConstEval(new IntervalDatum(expr.getExprStr()));
+  }
+
+  @Override
   public EvalNode visitTimeLiteral(Context ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
     TimeValue timeValue = expr.getTime();
     int [] times = timeToIntArray(timeValue.getHours(),
