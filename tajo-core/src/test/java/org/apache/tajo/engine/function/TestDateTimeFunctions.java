@@ -250,4 +250,10 @@ public class TestDateTimeFunctions extends ExprTestBase {
      testSimpleEval("select utc_usec_to('year' ,1274259481071200);", new String[]{1262304000000000L+""});
      testSimpleEval("select utc_usec_to('week' ,1207929480000000, 2);", new String[]{1207612800000000L+""});
   }
+
+  @Test
+  public void testToDate() throws IOException {
+    testSimpleEval("select to_date('2014-01-04', 'yyyy-MM-dd')", new String[]{"2014-01-04"});
+    testSimpleEval("select to_date('2014-01-04', 'yyyy-MM-dd') + interval '1 day'", new String[]{"2014-01-05 00:00:00"});
+  }
 }

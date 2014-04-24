@@ -213,6 +213,8 @@ public class Int8Datum extends NumericDatum {
       return DatumFactory.createFloat8(val + datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
+    case DATE:
+      return new DateDatum(((DateDatum)datum).getDate().plusDays(asInt4()));
     case NULL_TYPE:
       return datum;
     default:
@@ -233,6 +235,8 @@ public class Int8Datum extends NumericDatum {
       return DatumFactory.createFloat8(val - datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
+    case DATE:
+      return new DateDatum(((DateDatum)datum).getDate().minusDays(asInt4()));
     case NULL_TYPE:
       return datum;
     default:
@@ -253,6 +257,10 @@ public class Int8Datum extends NumericDatum {
       return DatumFactory.createFloat8(val * datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val * datum.asFloat8());
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum)datum;
+      int intVal = asInt4();
+      return new IntervalDatum(interval.getMonths() * intVal, interval.getMilliSeconds() * asInt8());
     case NULL_TYPE:
       return datum;
     default:

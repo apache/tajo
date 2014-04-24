@@ -105,7 +105,8 @@ public enum OpType {
   NullLiteral(NullLiteral.class),
   TimeLiteral(TimeLiteral.class),
   DateLiteral(DateLiteral.class),
-  TimestampLiteral(TimestampLiteral.class);
+  TimestampLiteral(TimestampLiteral.class),
+  IntervalLiteral(IntervalLiteral.class);
 
   private Class baseClass;
 

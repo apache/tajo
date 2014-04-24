@@ -1,5 +1,20 @@
 Tajo Change Log
 
+Release 0.8.1 - unreleased
+
+  NEW FEATURES
+
+    TAJO-761: Implements INTERVAL type. (Hyoungjun Kim via hyunsik)
+
+  IMPROVEMENT
+
+    TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
+    TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
+
+  SUB TASKS
+
+    TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
+
 Release 0.8.0
 
   NEW FEATURES
