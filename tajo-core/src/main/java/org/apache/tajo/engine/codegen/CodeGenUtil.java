@@ -20,12 +20,12 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.util.TUtil;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.util.Map;
 
@@ -151,69 +151,158 @@ public class CodeGenUtil {
     return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.getType());
   }
 
-  public static void insertCastInst(MethodVisitor method, TajoDataTypes.Type srcType, TajoDataTypes.Type targetType) {
-    Integer opCode = null;
-
-    switch(srcType) {
-    case BIT:
-    case CHAR:
+  public static void insertCastInst(MethodVisitor method, TajoDataTypes.DataType srcType,
+                                    TajoDataTypes.DataType targetType) {
+    TajoDataTypes.Type srcRawType = srcType.getType();
+    TajoDataTypes.Type targetRawType = targetType.getType();
+    switch(srcRawType) {
+    case BOOLEAN:
+    case CHAR: {
+      if (srcType.hasLength() && srcType.getLength() == 1) {
+        switch (targetType.getType()) {
+        case CHAR:
+        case INT1:
+        case INT2:
+        case INT4: break;
+        case INT8:   method.visitInsn(Opcodes.I2L); break;
+        case FLOAT4: method.visitInsn(Opcodes.I2F); break;
+        case FLOAT8: method.visitInsn(Opcodes.I2D); break;
+        case TEXT:   addStringValueOfChar(method); break;
+        default:
+          throw new InvalidCastException(srcType, targetType);
+        }
+      } else {
+        switch (targetRawType) {
+        case CHAR:
+        case INT1:
+        case INT2:
+        case INT4: addParseInt4(method); break;
+        case INT8: addParseInt8(method); break;
+        case FLOAT4: addParseFloat4(method); break;
+        case FLOAT8: addParseFloat8(method); break;
+        case TEXT: break;
+        default: throw new InvalidCastException(srcType, targetType);
+        }
+      }
+      break;
+    }
     case INT1:
     case INT2:
     case INT4:
-      switch (targetType) {
+      switch (targetType.getType()) {
       case CHAR:
-      case INT1: opCode = Opcodes.I2C; break;
-      case INT2: opCode = Opcodes.I2S; break;
+      case INT1: method.visitInsn(Opcodes.I2C); break;
+      case INT2: method.visitInsn(Opcodes.I2S); break;
       case INT4: return;
-      case INT8: opCode = Opcodes.I2L; break;
-      case FLOAT4: opCode = Opcodes.I2F; break;
-      case FLOAT8: opCode = Opcodes.I2D; break;
+      case INT8: method.visitInsn(Opcodes.I2L); break;
+      case FLOAT4: method.visitInsn(Opcodes.I2F); break;
+      case FLOAT8: method.visitInsn(Opcodes.I2D); break;
+      case TEXT: addStringValueOfInt4(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
     case INT8:
-      switch (targetType) {
+      switch (targetRawType) {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: opCode = Opcodes.L2I; break;
+      case INT4: method.visitInsn(Opcodes.L2I); break;
       case INT8: return;
-      case FLOAT4: opCode = Opcodes.L2F; break;
-      case FLOAT8: opCode = Opcodes.L2F; break;
+      case FLOAT4: method.visitInsn(Opcodes.L2F); break;
+      case FLOAT8: method.visitInsn(Opcodes.L2F); break;
+      case TEXT: addStringValueOfInt8(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
     case FLOAT4:
-      switch (targetType) {
+      switch (targetRawType) {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: opCode = Opcodes.F2I; break;
-      case INT8: opCode = Opcodes.F2L; break;
+      case INT4: method.visitInsn(Opcodes.F2I); break;
+      case INT8: method.visitInsn(Opcodes.F2L); break;
       case FLOAT4: return;
-      case FLOAT8: opCode = Opcodes.F2D; break;
+      case FLOAT8: method.visitInsn(Opcodes.F2D); break;
+      case TEXT: addStringValueOfFloat4(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
     case FLOAT8:
-      switch (targetType) {
+      switch (targetRawType) {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: opCode = Opcodes.D2I; break;
-      case INT8: opCode = Opcodes.D2L; break;
-      case FLOAT4: opCode = Opcodes.D2F; break;
+      case INT4: method.visitInsn(Opcodes.D2I); break;
+      case INT8: method.visitInsn(Opcodes.D2L); break;
+      case FLOAT4: method.visitInsn(Opcodes.D2F); break;
       case FLOAT8: return;
+      case TEXT: addStringValueOfFloat8(method); break;
+      default: throw new InvalidCastException(srcType, targetType);
+      }
+      break;
+    case TEXT:
+      switch (targetRawType) {
+      case CHAR:
+      case INT1:
+      case INT2:
+      case INT4: addParseInt4(method); break;
+      case INT8: addParseInt8(method); break;
+      case FLOAT4: addParseFloat4(method); break;
+      case FLOAT8: addParseFloat8(method); break;
+      case TEXT: break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
     default: throw new InvalidCastException(srcType, targetType);
     }
-
-    method.visitInsn(opCode);
   }
 
   public static String getInternalName(Class clazz) {
     return clazz.getName().replace('.', '/');
+  }
+
+  public static void addStringValueOfChar(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+        "valueOf", "(C)L" + Type.getInternalName(String.class) + ";");
+  }
+
+  public static void addStringValueOfInt4(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+        "valueOf", "(I)L" + Type.getInternalName(String.class) + ";");
+  }
+
+  public static void addStringValueOfInt8(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+        "valueOf", "(J)L" + Type.getInternalName(String.class) + ";");
+  }
+
+  public static void addStringValueOfFloat4(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+        "valueOf", "(F)L" + Type.getInternalName(String.class) + ";");
+  }
+
+  public static void addStringValueOfFloat8(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+        "valueOf", "(D)L" + Type.getInternalName(String.class) + ";");
+  }
+
+  public static void addParseInt4(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+        "parseInt", "(L" + Type.getInternalName(String.class) + ";)I");
+  }
+
+  public static void addParseInt8(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+        "parseLong", "(L" + Type.getInternalName(String.class) + ";)J");
+  }
+
+  public static void addParseFloat4(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class),
+        "parseFloat", "(L" + Type.getInternalName(String.class) + ";)F");
+  }
+
+  public static void addParseFloat8(MethodVisitor method) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+        "parseDouble", "(L" + Type.getInternalName(String.class) + ";)D");
   }
 }

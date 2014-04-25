@@ -33,7 +33,6 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
       result = visitBinaryEval(context, stack, (BinaryEval) evalNode);
     } else {
 
-
       switch (evalNode.getType()) {
       // Column and Value reference expressions
       case CONST:
@@ -79,29 +78,28 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
 
   public EvalNode visitUnaryEval(CONTEXT context, Stack<EvalNode> stack, UnaryEval unaryEval) {
     stack.push(unaryEval);
-    EvalNode result = visit(context, unaryEval.getChild(), stack);
+    visit(context, unaryEval.getChild(), stack);
     stack.pop();
-    return result;
+    return unaryEval;
   }
 
   public EvalNode visitBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     stack.push(binaryEval);
-    EvalNode result = visit(context, binaryEval.getLeftExpr(), stack);
+    visit(context, binaryEval.getLeftExpr(), stack);
     visit(context, binaryEval.getRightExpr(), stack);
     stack.pop();
-    return result;
+    return binaryEval;
   }
 
   private EvalNode visitDefaultFunctionEval(CONTEXT context, Stack<EvalNode> stack, FunctionEval functionEval) {
-    EvalNode result = null;
     stack.push(functionEval);
     if (functionEval.getArgs() != null) {
       for (EvalNode arg : functionEval.getArgs()) {
-        result = visit(context, arg, stack);
+        visit(context, arg, stack);
       }
     }
     stack.pop();
-    return result;
+    return functionEval;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,32 +125,30 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
 
   public EvalNode visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
-    EvalNode result = visit(context, evalNode.getPredicand(), stack);
+    visit(context, evalNode.getPredicand(), stack);
     visit(context, evalNode.getBegin(), stack);
     visit(context, evalNode.getEnd(), stack);
-    return result;
+    return evalNode;
   }
 
   public EvalNode visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
-    EvalNode result = null;
     stack.push(evalNode);
     for (CaseWhenEval.IfThenEval ifThenEval : evalNode.getIfThenEvals()) {
-      result = visitIfThen(context, ifThenEval, stack);
+      visitIfThen(context, ifThenEval, stack);
     }
     if (evalNode.hasElse()) {
-      result = visit(context, evalNode.getElse(), stack);
+      visit(context, evalNode.getElse(), stack);
     }
     stack.pop();
-    return result;
+    return evalNode;
   }
 
   public EvalNode visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
-    EvalNode result;
     stack.push(evalNode);
-    result = visit(context, evalNode.getCondition(), stack);
+    visit(context, evalNode.getCondition(), stack);
     visit(context, evalNode.getResult(), stack);
     stack.pop();
-    return result;
+    return evalNode;
   }
 
   public EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {

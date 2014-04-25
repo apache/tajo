@@ -721,5 +721,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INET4, Type.INET4, Type.INET4);
   }
 }

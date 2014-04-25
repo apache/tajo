@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.codegen;
 
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.common.TajoDataTypes;
@@ -39,11 +40,16 @@ public class TestExprCodeGenerator extends ExprTestBase {
   private static Schema schema;
   static {
     schema = new Schema();
+    schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT8);
     schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
     schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 1));
+    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
+    schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
   }
 
   public TestExprCodeGenerator() {
@@ -51,72 +57,105 @@ public class TestExprCodeGenerator extends ExprTestBase {
   }
 
   @Test
+  public void testCast() throws IOException {
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col0::text from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col1::text from table1;", new String [] {"1"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col2::text from table1;", new String [] {"2"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col3::text from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col4::text from table1;", new String [] {"4.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col5::text from table1;", new String [] {"6.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1", "select col6::text from table1;", new String [] {"7.1"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,7.1,abc", "select col7::text from table1;", new String [] {"a"});
+  }
+
+  @Test
   public void testArithmetic() throws IOException {
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col2 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col3 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col4 from table1;", new String [] {"5.5"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 + col5 from table1;", new String [] {"6.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col2 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col3 from table1;", new String [] {"4"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col4 from table1;", new String [] {"5.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col5 from table1;", new String [] {"6.5"});
   }
 
   @Test
   public void testGetField() throws IOException {
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col4 from table1;", new String [] {"4.5"});
-    testEval(schema, "table1", "1,2,3,4.5,5.5", "select col5 from table1;", new String [] {"5.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col1 from table1;", new String [] {"1"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col2 from table1;", new String [] {"2"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col3 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col4 from table1;", new String [] {"4.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col5 from table1;", new String [] {"5.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col6 from table1;", new String [] {"F6"});
+    testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6,abc,t", "select col8 from table1;", new String [] {"t"});
+  }
+
+  @Test
+  public void testNullComparison() throws IOException {
+    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,t,", "select col3 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,t,", "select col2 from table1;", new String [] {"0"});
   }
 
   @Test
   public void testComparison() throws IOException {
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
 
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <> col5 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col5 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 1 < col5 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 < col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 < col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 < col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 < col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 < col5 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 <= col5 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <= col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <= col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <= col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <= col5 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 > col5 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 > col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 > col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 > col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 > col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 > col5 from table1;", new String [] {"f"});
 
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select 3 >= col5 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 >= col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 >= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 >= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 >= col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 >= col5 from table1;", new String [] {"f"});
   }
 
   @Test
   public void testUnary() throws IOException {
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col4 from table1;", new String [] {"-4.5"});
-    testEval(schema, "table1", "1,2,3,4.5,6.5", "select -col5 from table1;", new String [] {"-6.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col1 from table1;", new String [] {"-1"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col2 from table1;", new String [] {"-2"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col3 from table1;", new String [] {"-3"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col4 from table1;", new String [] {"-4.5"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col5 from table1;", new String [] {"-6.5"});
 
     testEval(schema, "table1", "1,2,3,4.5,6.5", "select (col1 = col5) from table1;", new String [] {"f"});
     testEval(schema, "table1", "1,2,3,4.5,6.5", "select NOT (col1 = col5) from table1;", new String [] {"t"});
+  }
+
+  @Test
+  public void testAndOr() throws IOException {
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true and true;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true and false;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false and true;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false and false;", new String [] {"f"});
+
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true or true;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true or false;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false or true;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false or false;", new String [] {"f"});
   }
 
   public void testGenerateCode() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,

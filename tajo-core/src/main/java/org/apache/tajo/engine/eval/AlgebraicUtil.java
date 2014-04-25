@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
 import org.apache.tajo.catalog.Column;
 
 import java.util.ArrayList;
@@ -144,6 +145,13 @@ public class AlgebraicUtil {
       EvalNode rhs = visit(context, binaryEval.getRightExpr(), stack);
       stack.pop();
 
+      if (!binaryEval.getLeftExpr().equals(lhs)) {
+        binaryEval.setLeftExpr(lhs);
+      }
+      if (!binaryEval.getRightExpr().equals(rhs)) {
+        binaryEval.setRightExpr(rhs);
+      }
+
       if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
         return new ConstEval(binaryEval.eval(null, null));
       }
@@ -162,6 +170,20 @@ public class AlgebraicUtil {
       }
 
       return unaryEval;
+    }
+
+    public EvalNode visitFuncCall(Object context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+      boolean constant = true;
+
+      for (EvalNode arg : evalNode.getArgs()) {
+        constant &= (arg.getType() == EvalType.CONST);
+      }
+
+      if (constant) {
+        return new ConstEval(evalNode.eval(null, null));
+      } else {
+        return evalNode;
+      }
     }
   }
 
