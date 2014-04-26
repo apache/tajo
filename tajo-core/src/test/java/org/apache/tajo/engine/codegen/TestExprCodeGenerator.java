@@ -21,12 +21,9 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
-import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -462,53 +459,57 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col6::int8 from table1;", new String [] {"9"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col7::int8 from table1;", new String [] {"10"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col4 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col5 from table1;", new String [] {"-5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col6::int8 from table1;", new String [] {"-6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col7::int8 from table1;", new String [] {"-7"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col0 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col1 from table1;", new String [] {"2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col2 from table1;", new String [] {"1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col3 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col4 from table1;", new String [] {
+        (new Long(3) - new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col5 from table1;", new String [] {
+        (new Long(3) - new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col6::int8 from table1;", new String [] {"-3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col7::int8 from table1;", new String [] {"-4"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col6::int8 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col7::int8 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col1 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col2 from table1;", new String [] {"6"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col3 from table1;", new String [] {"9"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col4 from table1;", new String [] {
+        (new Long(3) * new Float("4.1"))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col5 from table1;", new String [] {
+        (new Long(3) * new Double("5.1"))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col6::int8 from table1;", new String [] {"18"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col7::int8 from table1;", new String [] {"21"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col2 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col2 from table1;", new String [] {"1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col6::int8 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col7::int8 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col4 from table1;", new String [] {"3.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col5 from table1;", new String [] {"3.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col6::int8 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col7::int8 from table1;", new String [] {"3"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col0 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col3 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col5 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col6::int8 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col7::int8 from table1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col0 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col5 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col6::int8 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col7::int8 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col2 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col5 from table1;", new String [] {"f"});
@@ -516,26 +517,26 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col7::int8 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col3 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col5 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col6::int8 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col7::int8 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col5 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col6::int8 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col7::int8 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col2 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col3 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col5 from table1;", new String [] {"t"});
@@ -555,90 +556,107 @@ public class TestExprCodeGenerator extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col5 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col6::int1 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col7::int1 from table1;", new String [] {"7"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col0 from table1;", new String [] {"4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col1 from table1;", new String [] {"5.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col2 from table1;", new String [] {"6.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col3 from table1;", new String [] {"7.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col4 from table1;", new String [] {"8.2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col5 from table1;", new String [] {
+        (new Float(4.1) + new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col6::float4 from table1;", new String [] {"10.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col7::float4 from table1;", new String [] {"11.1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col4 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col5 from table1;", new String [] {"-5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col6::int1 from table1;", new String [] {"-6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col7::int1 from table1;", new String [] {"-7"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col0 from table1;", new String [] {"4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col1 from table1;", new String [] {"3.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col2 from table1;", new String [] {"2.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col3 from table1;", new String [] {
+        (new Float(4.1) - new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col4 from table1;", new String [] {"0.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col5 from table1;", new String [] {
+        (new Float(4.1) - new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col6::float4 from table1;", new String [] {
+        (new Float(4.1) - new Float(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col7::float4 from table1;", new String [] {
+        (new Float(4.1) - new Float(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col0 from table1;", new String [] {"0.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col1 from table1;", new String [] {"4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col2 from table1;", new String [] {"8.2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col3 from table1;", new String [] {
+        (new Float(4.1) * new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col4 from table1;", new String [] {
+        (new Float(4.1) * new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col5 from table1;", new String [] {
+        (new Float(4.1) * new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col6::float4 from table1;", new String [] {
+        (new Float(4.1) * new Float(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col7::float4 from table1;", new String [] {
+        (new Float(4.1) * new Float(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col1 from table1;", new String [] {
+        (new Float(4.1) % new Integer(1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col2 from table1;", new String [] {
+        (new Float(4.1) % new Integer(2))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col3 from table1;", new String [] {
+        (new Float(4.1) % new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col4 from table1;", new String [] {
+        (new Float(4.1) % new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col5 from table1;", new String [] {
+        (new Float(4.1) % new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col6::float4 from table1;", new String [] {
+        (new Float(4.1) % new Float(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col7::int1 from table1;", new String [] {
+        (new Float(4.1) % new Float(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col0 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col2 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col5 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col6::int1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col7::int1 from table1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col0 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col2 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col5 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col6::int1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col7::int1 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col3 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col5 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col6::int1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col7::int1 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col5 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col6::int1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col7::int1 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col5 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col6::int1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col7::int1 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col5 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col6::int1 from table1;", new String [] {"t"});
@@ -657,94 +675,112 @@ public class TestExprCodeGenerator extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col5 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col6::int1 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col7::int1 from table1;", new String [] {"7"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col0 from table1;", new String [] {"5.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col1 from table1;", new String [] {"6.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col2 from table1;", new String [] {"7.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col3 from table1;", new String [] {"8.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col4 from table1;", new String [] {
+        (new Double(5.1) + new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col5 from table1;", new String [] {"10.2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col6::int1 from table1;", new String [] {"11.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col7::int1 from table1;", new String [] {"12.1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col4 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col5 from table1;", new String [] {"-5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col6::int1 from table1;", new String [] {"-6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col7::int1 from table1;", new String [] {"-7"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col0 from table1;", new String [] {"5.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col1 from table1;", new String [] {"4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col2 from table1;", new String [] {
+        (new Double(5.1) - new Integer(2))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col3 from table1;", new String [] {
+        (new Double(5.1) - new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col4 from table1;", new String [] {
+        (new Double(5.1) - new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col5 from table1;", new String [] {"0.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col6::float8 from table1;", new String [] {
+        (new Double(5.1) - new Double(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col7::float8 from table1;", new String [] {
+        (new Double(5.1) - new Double(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col0 from table1;", new String [] {"0.0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col1 from table1;", new String [] {"5.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col2 from table1;", new String [] {"10.2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col3 from table1;", new String [] {
+        (new Double(5.1) * new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col4 from table1;", new String [] {
+        (new Double(5.1) * new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col5 from table1;", new String [] {
+        (new Double(5.1) * new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col6::float8 from table1;", new String [] {
+        (new Double(5.1) * new Double(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col7::float8 from table1;", new String [] {
+        (new Double(5.1) * new Double(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col1 from table1;", new String [] {
+        (new Double(5.1) % new Integer(1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col2 from table1;", new String [] {
+        (new Double(5.1) % new Integer(2))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col3 from table1;", new String [] {
+        (new Double(5.1) % new Long(3))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col4 from table1;", new String [] {
+        (new Double(5.1) % new Float(4.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col5 from table1;", new String [] {
+        (new Double(5.1) % new Double(5.1))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col6::float8 from table1;", new String [] {
+        (new Double(5.1) % new Double(6))+""});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col7::float8 from table1;", new String [] {
+        (new Double(5.1) % new Double(7))+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col0 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col1 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col2 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col5 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col6::float8 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col7::float8 from table1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col0 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col2 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col3 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col5 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col6::float8 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col7::float8 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col0 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col4 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col6::float8 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col7::float8 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col2 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col3 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col5 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col6::float8 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col7::float8 from table1;", new String [] {"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col4 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col5 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col6::float8 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col7::float8 from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col4 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col0 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col1 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col2 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col3 from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col6::float8 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col7::float8 from table1;", new String [] {"t"});
   }
 
   @Test
@@ -802,7 +838,7 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
 //    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is not null from table1;", new String [] {"f"}); TODO
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
+//    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is not null from table1;", new String [] {"f"});
   }
@@ -848,23 +884,39 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testUnary() throws IOException {
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select +col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select +col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select +col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select +col4 from table1;", new String [] {"4.5"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select +col5 from table1;", new String [] {"6.5"});
+    schema = new Schema();
+    schema.addColumn("col0", TajoDataTypes.Type.INT1);
+    schema.addColumn("col1", TajoDataTypes.Type.INT2);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT8);
+    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
 
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col4 from table1;", new String [] {"-4.5"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select -col5 from table1;", new String [] {"-6.5"});
 
-    testEval(schema, "table1", ",1,2,3,4.5,6.5", "select col0 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", ",1,2,3,4.5,6.5", "select col0 is not null from table1;", new String [] {"f"});
+    // sign test
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col1 from table1;", new String [] {"1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col2 from table1;", new String [] {"2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col3 from table1;", new String [] {"3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col4 from table1;", new String [] {"4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col5 from table1;", new String [] {"5.1"});
 
-    //testEval(schema, "table1", "1,2,3,4.5,6.5", "select (col1 = col5) from table1;", new String [] {"f"});
-    //testEval(schema, "table1", "1,2,3,4.5,6.5", "select NOT (col1 = col5) from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col1 from table1;", new String [] {"-1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col2 from table1;", new String [] {"-2"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col3 from table1;", new String [] {"-3"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col4 from table1;", new String [] {"-4.1"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col5 from table1;", new String [] {"-5.1"});
+
+    // not test
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select col8 from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select NOT (col8) from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select NOT(NOT (col8)) from table1;", new String [] {"t"});
+
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,", "select col8 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,", "select (NOT (col8)) is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,", "select (NOT(NOT (col8))) is null from table1;", new String [] {"t"});
   }
 
   @Test

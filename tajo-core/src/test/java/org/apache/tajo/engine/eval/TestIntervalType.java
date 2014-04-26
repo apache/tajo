@@ -18,7 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.junit.Test;
 
 import java.io.IOException;

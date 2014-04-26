@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.codegen;
 
+import com.sun.org.apache.bcel.internal.generic.POP;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
@@ -87,20 +88,25 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     } else if (unary.getType() == EvalType.NOT) {
 
+      visit(context, unary.getChild(), stack);
+      context.evalMethod.visitVarInsn(Opcodes.ISTORE, 9);
+      context.evalMethod.visitVarInsn(Opcodes.ISTORE, 10);
+
       Label ifNull = new Label();
       Label endIf = new Label();
 
+      context.evalMethod.visitVarInsn(Opcodes.ILOAD, 9);
       emitNullityCheck(context, ifNull);
 
       context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(ExprCodeGenerator.class),
           "NOT_LOGIC", "[B");
-      visit(context, unary.getChild(), stack);
+      context.evalMethod.visitVarInsn(Opcodes.ILOAD, 10);
       context.evalMethod.visitInsn(Opcodes.BALOAD);
-
       context.evalMethod.visitInsn(Opcodes.ICONST_1);
       emitGotoLabel(context, endIf);
 
       emitLabel(context, ifNull);
+      emitNullTerm(context, unary.getValueType());
       context.evalMethod.visitInsn(Opcodes.ICONST_0);
 
       emitLabel(context, endIf);
@@ -279,58 +285,89 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public EvalNode visitField(CodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
-    int idx = context.schema.getColumnId(field.getColumnRef().getQualifiedName());
+    printOut(context, "enter visitField");
 
-    String methodName;
-    String desc;
+    if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
+      printOut(context, "visitField >> NULL");
+      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+    } else {
+      String methodName;
+      String desc;
 
-    context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
-    context.evalMethod.visitLdcInsn(idx);
-    context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class),
-        "isNull", "(I)Z");
+      int idx = context.schema.getColumnId(field.getColumnRef().getQualifiedName());
 
-    context.evalMethod.visitLdcInsn(true);
+      context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
+      context.evalMethod.visitLdcInsn(idx);
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class),
+          "isNull", "(I)Z");
 
-    Label ifNull = new Label();
-    Label afterAll = new Label();
-    context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
+      context.evalMethod.visitLdcInsn(true);
 
-    switch (field.getValueType().getType()) {
-    case NULL_TYPE: context.evalMethod.visitInsn(Opcodes.ICONST_0); return field;
-    case BOOLEAN: methodName = "getByte"; desc = "(I)B"; break;
-    case CHAR: {
-      if (field.getValueType().hasLength() && field.getValueType().getLength() == 1) {
-        methodName = "getChar"; desc = "(I)C";
-      } else {
-        methodName = "getText"; desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class)+";";
+      Label ifNull = new Label();
+      Label afterAll = new Label();
+      context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
+
+      switch (field.getValueType().getType()) {
+      case BOOLEAN:
+        methodName = "getByte";
+        desc = "(I)B";
+        break;
+      case CHAR: {
+        if (field.getValueType().hasLength() && field.getValueType().getLength() == 1) {
+          methodName = "getChar";
+          desc = "(I)C";
+        } else {
+          methodName = "getText";
+          desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class) + ";";
+        }
+        break;
       }
-      break;
+      case INT1:
+      case INT2:
+      case INT4:
+        methodName = "getInt4";
+        desc = "(I)I";
+        break;
+      case INT8:
+        methodName = "getInt8";
+        desc = "(I)J";
+        break;
+      case FLOAT4:
+        methodName = "getFloat4";
+        desc = "(I)F";
+        break;
+      case FLOAT8:
+        methodName = "getFloat8";
+        desc = "(I)D";
+        break;
+      case TEXT:
+        methodName = "getText";
+        desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class) + ";";
+        break;
+      case TIMESTAMP:
+        methodName = "getTimestamp";
+        desc = "(I)L" + org.objectweb.asm.Type.getInternalName(Datum.class) + ";";
+        break;
+      default:
+        throw new InvalidEvalException(field.getValueType() + " is not supported yet");
+      }
+
+      printOut(context, "visitField >> NOT NULL");
+      context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
+      context.evalMethod.visitLdcInsn(idx);
+      context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class), methodName, desc);
+
+      context.evalMethod.visitInsn(Opcodes.ICONST_1); // not null
+      context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterAll);
+
+      context.evalMethod.visitLabel(ifNull);
+      printOut(context, "visitField >> NULL");
+      emitNullTerm(context, field.getValueType());
+      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+
+      context.evalMethod.visitLabel(afterAll);
     }
-    case INT1:
-    case INT2:
-    case INT4: methodName = "getInt4"; desc = "(I)I"; break;
-    case INT8: methodName = "getInt8"; desc = "(I)J"; break;
-    case FLOAT4: methodName = "getFloat4"; desc = "(I)F"; break;
-    case FLOAT8: methodName = "getFloat8"; desc = "(I)D"; break;
-    case TEXT: methodName = "getText"; desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class)+";"; break;
-    case TIMESTAMP: methodName = "getTimestamp"; desc = "(I)L" + org.objectweb.asm.Type.getInternalName(Datum.class)+";"; break;
-    default: throw new InvalidEvalException(field.getValueType() + " is not supported yet");
-    }
-
-    printOut(context, "visitField >> NOT NULL");
-    context.evalMethod.visitVarInsn(Opcodes.ALOAD, 2);
-    context.evalMethod.visitLdcInsn(idx);
-    context.evalMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class), methodName, desc);
-    context.evalMethod.visitInsn(Opcodes.ICONST_1); // not null
-    context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterAll);
-
-    context.evalMethod.visitLabel(ifNull);
-    printOut(context, "visitField >> NULL");
-    emitNullTerm(context, field.getValueType());
-    context.evalMethod.visitInsn(Opcodes.ICONST_0);
-    context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterAll);
-
-    context.evalMethod.visitLabel(afterAll);
     return field;
   }
 
