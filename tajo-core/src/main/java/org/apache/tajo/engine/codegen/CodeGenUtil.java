@@ -66,12 +66,12 @@ public class CodeGenUtil {
     TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT4, Opcodes.FDIV);
     TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT8, Opcodes.DMUL);
 
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT1, Opcodes.IREM);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT2, Opcodes.IREM);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT4, Opcodes.IREM);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT8, Opcodes.LREM);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT4, Opcodes.FREM);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT8, Opcodes.DREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT1, Opcodes.IREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT2, Opcodes.IREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT4, Opcodes.IREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT8, Opcodes.LREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, FLOAT4, Opcodes.FREM);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, FLOAT8, Opcodes.DREM);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.BIT_AND, INT1, Opcodes.IAND);
     TUtil.putToNestedMap(OpCodesMap, EvalType.BIT_AND, INT2, Opcodes.IAND);
@@ -167,7 +167,7 @@ public class CodeGenUtil {
         case INT8:   method.visitInsn(Opcodes.I2L); break;
         case FLOAT4: method.visitInsn(Opcodes.I2F); break;
         case FLOAT8: method.visitInsn(Opcodes.I2D); break;
-        case TEXT:   addStringValueOfChar(method); break;
+        case TEXT:   emitStringValueOfChar(method); break;
         default:
           throw new InvalidCastException(srcType, targetType);
         }
@@ -176,7 +176,7 @@ public class CodeGenUtil {
         case CHAR:
         case INT1:
         case INT2:
-        case INT4: addParseInt4(method); break;
+        case INT4: emitParseInt4(method); break;
         case INT8: addParseInt8(method); break;
         case FLOAT4: addParseFloat4(method); break;
         case FLOAT8: addParseFloat8(method); break;
@@ -197,7 +197,7 @@ public class CodeGenUtil {
       case INT8: method.visitInsn(Opcodes.I2L); break;
       case FLOAT4: method.visitInsn(Opcodes.I2F); break;
       case FLOAT8: method.visitInsn(Opcodes.I2D); break;
-      case TEXT: addStringValueOfInt4(method); break;
+      case TEXT: emitStringValueOfInt4(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -209,8 +209,8 @@ public class CodeGenUtil {
       case INT4: method.visitInsn(Opcodes.L2I); break;
       case INT8: return;
       case FLOAT4: method.visitInsn(Opcodes.L2F); break;
-      case FLOAT8: method.visitInsn(Opcodes.L2F); break;
-      case TEXT: addStringValueOfInt8(method); break;
+      case FLOAT8: method.visitInsn(Opcodes.L2D); break;
+      case TEXT: emitStringValueOfInt8(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -223,7 +223,7 @@ public class CodeGenUtil {
       case INT8: method.visitInsn(Opcodes.F2L); break;
       case FLOAT4: return;
       case FLOAT8: method.visitInsn(Opcodes.F2D); break;
-      case TEXT: addStringValueOfFloat4(method); break;
+      case TEXT: emitStringValueOfFloat4(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -236,7 +236,7 @@ public class CodeGenUtil {
       case INT8: method.visitInsn(Opcodes.D2L); break;
       case FLOAT4: method.visitInsn(Opcodes.D2F); break;
       case FLOAT8: return;
-      case TEXT: addStringValueOfFloat8(method); break;
+      case TEXT: emitStringValueOfFloat8(method); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -245,7 +245,7 @@ public class CodeGenUtil {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: addParseInt4(method); break;
+      case INT4: emitParseInt4(method); break;
       case INT8: addParseInt8(method); break;
       case FLOAT4: addParseFloat4(method); break;
       case FLOAT8: addParseFloat8(method); break;
@@ -261,38 +261,38 @@ public class CodeGenUtil {
     return clazz.getName().replace('.', '/');
   }
 
-  public static void addStringValueOfChar(MethodVisitor method) {
+  public static void emitStringValueOfChar(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(C)L" + Type.getInternalName(String.class) + ";");
   }
 
-  public static void addStringValueOfInt4(MethodVisitor method) {
+  public static void emitStringValueOfInt4(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(I)L" + Type.getInternalName(String.class) + ";");
   }
 
-  public static void addStringValueOfInt8(MethodVisitor method) {
+  public static void emitStringValueOfInt8(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(J)L" + Type.getInternalName(String.class) + ";");
   }
 
-  public static void addStringValueOfFloat4(MethodVisitor method) {
+  public static void emitStringValueOfFloat4(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(F)L" + Type.getInternalName(String.class) + ";");
   }
 
-  public static void addStringValueOfFloat8(MethodVisitor method) {
+  public static void emitStringValueOfFloat8(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(D)L" + Type.getInternalName(String.class) + ";");
   }
 
-  public static void addParseInt4(MethodVisitor method) {
+  public static void emitParseInt4(MethodVisitor method) {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
         "parseInt", "(L" + Type.getInternalName(String.class) + ";)I");
   }
 
   public static void addParseInt8(MethodVisitor method) {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Long.class),
         "parseLong", "(L" + Type.getInternalName(String.class) + ";)J");
   }
 
@@ -302,7 +302,7 @@ public class CodeGenUtil {
   }
 
   public static void addParseFloat8(MethodVisitor method) {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class),
         "parseDouble", "(L" + Type.getInternalName(String.class) + ";)D");
   }
 }

@@ -108,10 +108,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
     case INT2:
     case INT4: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4: return CatalogUtil.newSimpleDataType(Type.INT4);
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
       }
     }
@@ -122,7 +123,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT2:
       case INT4:
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4:
+      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
       }
     }
@@ -132,7 +133,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT1:
       case INT2:
       case INT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
       }

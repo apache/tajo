@@ -697,14 +697,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT2, Type.INT8);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT4, Type.INT8);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.INT8, Type.INT8);
-    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.FLOAT4, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.FLOAT4, Type.FLOAT4);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.FLOAT8, Type.FLOAT8);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.INT8, Type.TEXT, Type.TEXT);
 
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT1, Type.FLOAT4);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT2, Type.FLOAT4);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT4, Type.FLOAT4);
-    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT8, Type.FLOAT8);
+    TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.INT8, Type.FLOAT4);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.FLOAT4, Type.FLOAT4);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.FLOAT8, Type.FLOAT8);
     TUtil.putToNestedMap(IMPLICIT_CAST_MAP, Type.FLOAT4, Type.TEXT, Type.TEXT);
