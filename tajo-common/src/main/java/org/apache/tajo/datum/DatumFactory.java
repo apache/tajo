@@ -51,6 +51,8 @@ public class DatumFactory {
         return TextDatum.class;
       case TIMESTAMP:
         return TimestampDatum.class;
+      case INTERVAL:
+        return IntervalDatum.class;
       case DATE:
         return DateDatum.class;
       case TIME:
@@ -95,6 +97,8 @@ public class DatumFactory {
       return createTime(value);
     case TIMESTAMP:
       return createTimeStamp(value);
+    case INTERVAL:
+      return createInterval(value);
     case BLOB:
       return createBlob(value);
     case INET4:
@@ -284,6 +288,10 @@ public class DatumFactory {
 
   public static TimestampDatum createTimeStamp(String timeStamp) {
     return new TimestampDatum(timeStamp);
+  }
+
+  public static IntervalDatum createInterval(String intervalStr) {
+    return new IntervalDatum(intervalStr);
   }
 
   public static DateDatum createDate(Datum datum) {

@@ -188,17 +188,19 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     stack.push(expr);
 
     Expr param;
-    for (int i = 0; i < expr.getParams().length; i++) {
-      param = expr.getParams()[i];
-      visit(ctx, stack, param);
+    Expr[] paramExprs = expr.getParams();
+    if (paramExprs != null) {
+      for (int i = 0; i < paramExprs.length; i++) {
+        param = paramExprs[i];
+        visit(ctx, stack, param);
 
-      if (OpType.isAggregationFunction(param.getType())) {
-        String referenceName = ctx.plan.generateUniqueColumnName(param);
-        ctx.aggExprs.add(new NamedExpr(param, referenceName));
-        expr.getParams()[i] = new ColumnReferenceExpr(referenceName);
+        if (OpType.isAggregationFunction(param.getType())) {
+          String referenceName = ctx.plan.generateUniqueColumnName(param);
+          ctx.aggExprs.add(new NamedExpr(param, referenceName));
+          expr.getParams()[i] = new ColumnReferenceExpr(referenceName);
+        }
       }
     }
-
     stack.pop();
 
     return expr;

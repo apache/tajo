@@ -365,7 +365,7 @@ public class Task {
 
   public void run() {
     startTime = System.currentTimeMillis();
-    String errorMessage = null;
+    Exception error = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
 
@@ -381,6 +381,7 @@ public class Task {
         this.executor = taskRunnerContext.getTQueryEngine().
             createPlan(context, plan);
         this.executor.init();
+
         while(!killed && executor.next() != null) {
         }
         this.executor.close();
@@ -388,9 +389,8 @@ public class Task {
         this.executor = null;
       }
     } catch (Exception e) {
-      // errorMessage will be sent to master.
-      errorMessage = ExceptionUtils.getStackTrace(e);
-      LOG.error(errorMessage);
+      error = e ;
+      LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
       context.setProgress(1.0f);
@@ -409,8 +409,9 @@ public class Task {
           TaskFatalErrorReport.Builder errorBuilder =
               TaskFatalErrorReport.newBuilder()
                   .setId(getId().getProto());
-          if (errorMessage != null) {
-            errorBuilder.setErrorMessage(errorMessage);
+          if (error != null) {
+            errorBuilder.setErrorMessage(error.getMessage());
+            errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
           masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
@@ -444,7 +445,7 @@ public class Task {
       finishTime = System.currentTimeMillis();
 
       cleanupTask();
-      LOG.info("Task Counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
+      LOG.info("Worker's task counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
           + ", killed: " + killedTasksNum + ", failed: " + failedTasksNum);
     }
   }

@@ -1057,7 +1057,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
         }
 
-        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d",
+        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d)",
             subQuery.getId(),
             subQuery.getTotalScheduledObjectsCount(),
             subQuery.succeededObjectCount,

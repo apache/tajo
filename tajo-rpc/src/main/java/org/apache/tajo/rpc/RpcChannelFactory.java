@@ -96,7 +96,9 @@ public final class RpcChannelFactory {
     if(LOG.isDebugEnabled()) {
       LOG.debug("Shutdown Shared RPC Pool");
     }
-    factory.releaseExternalResources();
+    if (factory != null) {
+      factory.releaseExternalResources();
+    }
     factory = null;
   }
 }

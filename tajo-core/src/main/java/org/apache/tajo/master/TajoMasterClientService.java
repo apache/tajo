@@ -481,6 +481,7 @@ public class TajoMasterClientService extends AbstractService {
             new QueryInfo(queryId)));
         return BOOL_TRUE;
       } catch (Throwable t) {
+        t.printStackTrace();
         throw new ServiceException(t);
       }
     }

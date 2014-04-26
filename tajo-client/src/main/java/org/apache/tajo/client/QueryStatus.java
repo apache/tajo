@@ -30,6 +30,7 @@ public class QueryStatus {
   private long finishTime;
   private boolean hasResult;
   private String errorText;
+  private String errorTrace;
   private String queryMasterHost;
   private int queryMasterPort;
 
@@ -42,6 +43,9 @@ public class QueryStatus {
     hasResult = proto.getHasResult();
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
+    }
+    if (proto.hasErrorTrace()) {
+      errorTrace = proto.getErrorTrace();
     }
 
     queryMasterHost = proto.getQueryMasterHost();
@@ -83,4 +87,9 @@ public class QueryStatus {
   public String getErrorMessage() {
     return errorText;
   }
+
+  public String getErrorTrace() {
+    return errorTrace;
+  }
+
 }

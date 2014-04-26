@@ -79,6 +79,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case DATE:
       case TIME:
       case TIMESTAMP:
+      case INTERVAL:
         bytes = datum.asTextBytes();
         length = bytes.length;
         out.write(bytes);
@@ -158,6 +159,10 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case TIMESTAMP:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createTimeStamp(new String(bytes, offset, length));
+        break;
+      case INTERVAL:
+        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
+            : DatumFactory.createInterval(new String(bytes, offset, length));
         break;
       case PROTOBUF: {
         if (isNull(bytes, offset, length, nullCharacters)) {

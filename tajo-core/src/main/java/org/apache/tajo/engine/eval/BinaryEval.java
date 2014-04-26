@@ -114,6 +114,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
       case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
       }
     }
 
@@ -125,6 +127,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
       case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
       }
     }
 
@@ -136,6 +140,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
       }
     }
 
@@ -147,6 +152,41 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT8:
       case FLOAT4:
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      }
+    }
+
+    case DATE: {
+      switch(right.getType()) {
+      case INT2:
+      case INT4:
+      case INT8: return CatalogUtil.newSimpleDataType(Type.DATE);
+      case INTERVAL:
+      case TIME: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
+      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
+      }
+    }
+
+    case TIME: {
+      switch(right.getType()) {
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIME);
+      case TIME: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
+      }
+    }
+
+    case TIMESTAMP: {
+      switch (right.getType()) {
+      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
+      case TIMESTAMP: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      }
+    }
+
+    case INTERVAL: {
+      switch (right.getType()) {
+      case INTERVAL:
+      case FLOAT4:
+      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
       }
     }
 

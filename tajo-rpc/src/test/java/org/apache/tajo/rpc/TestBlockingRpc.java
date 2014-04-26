@@ -30,6 +30,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class TestBlockingRpc {
-  public static String MESSAGE = "TestBlockingRpc";
+  public static final String MESSAGE = "TestBlockingRpc";
 
   private BlockingRpcServer server;
   private BlockingRpcClient client;
@@ -73,7 +75,7 @@ public class TestBlockingRpc {
         .setX3(3.15d)
         .setX4(2.0f).build();
     SumResponse response1 = stub.sum(null, request);
-    assertTrue(8.15d == response1.getResult());
+    assertEquals(8.15d, response1.getResult(), 1e-15);
 
     EchoMessage message = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -100,7 +102,7 @@ public class TestBlockingRpc {
       }
     }.withRetries();
 
-    assertTrue(8.15d == response.getResult());
+    assertEquals(8.15d, response.getResult(), 1e-15);
 
     response =
         new ServerCallable<SumResponse>(RpcConnectionPool.newPool(new TajoConf(), getClass().getSimpleName(), 2),
@@ -114,6 +116,39 @@ public class TestBlockingRpc {
         }.withoutRetries();
 
     assertTrue(8.15d == response.getResult());
+  }
+
+  @Test
+  public void testThrowException() throws Exception {
+    EchoMessage message = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+
+    try {
+      stub.throwException(null, message);
+      fail("RpcCall should throw exception");
+    } catch (Throwable t) {
+      assertTrue(t instanceof TajoServiceException);
+      assertEquals("Exception Test", t.getMessage());
+      TajoServiceException te = (TajoServiceException)t;
+      assertEquals("org.apache.tajo.rpc.test.DummyProtocol", te.getProtocol());
+      assertEquals(server.getListenAddress().getAddress().getHostAddress() + ":" + server.getListenAddress().getPort(),
+          te.getRemoteAddress());
+    }
+  }
+
+  @Test
+  public void testConnectionFailed() throws Exception {
+    try {
+      int port = server.getListenAddress().getPort() + 1;
+      new BlockingRpcClient(DummyProtocol.class,
+          NetUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)));
+      fail("Connection should be failed.");
+    } catch (Throwable t) {
+      assertTrue(t instanceof IOException);
+      assertNotNull(t.getCause());
+      assertTrue(t.getCause() instanceof ConnectException);
+      assertTrue(t.getCause().getMessage().indexOf("Connection refused") >= 0);
+    }
   }
 
   @Test

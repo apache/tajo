@@ -141,13 +141,48 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   private static void checkArithmeticOperand(VerificationState state, BinaryEval evalNode) {
     EvalNode leftExpr = evalNode.getLeftExpr();
     EvalNode rightExpr = evalNode.getRightExpr();
-    if (!(checkNumericType(leftExpr.getValueType()) && checkNumericType(rightExpr.getValueType()))) {
+
+    DataType leftDataType = leftExpr.getValueType();
+    DataType rightDataType = rightExpr.getValueType();
+
+    Type leftType = leftDataType.getType();
+    Type rightType = rightDataType.getType();
+
+    if (leftType == Type.DATE &&
+          (checkIntType(rightDataType) ||
+              rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+      return;
+    }
+
+    if (leftType == Type.INTERVAL &&
+        (checkNumericType(rightDataType) ||
+            rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME ||
+            rightType == Type.TIMESTAMP)) {
+      return;
+    }
+
+    if (leftType == Type.TIME &&
+        (rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+      return;
+    }
+
+    if (leftType == Type.TIMESTAMP &&
+        (rightType == Type.TIMESTAMP || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+      return;
+    }
+
+    if (!(checkNumericType(leftDataType) && checkNumericType(rightDataType))) {
       state.addVerification("No operator matches the given name and argument type(s): " + evalNode.toString());
     }
   }
 
   private static boolean checkNetworkType(DataType dataType) {
     return dataType.getType() == Type.INET4 || dataType.getType() == Type.INET6;
+  }
+
+  private static boolean checkIntType(DataType dataType) {
+    int typeNumber = dataType.getType().getNumber();
+    return Type.INT1.getNumber() < typeNumber && typeNumber <= Type.INT8.getNumber();
   }
 
   private static boolean checkNumericType(DataType dataType) {

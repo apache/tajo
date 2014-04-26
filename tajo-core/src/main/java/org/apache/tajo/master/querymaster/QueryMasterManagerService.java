@@ -186,7 +186,11 @@ public class QueryMasterManagerService extends CompositeService
     try {
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
           new QueryId(report.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
-      queryMasterTask.getEventHandler().handle(new TaskFatalErrorEvent(report));
+      if (queryMasterTask != null) {
+        queryMasterTask.handleTaskFailed(report);
+      } else {
+        LOG.warn("No QueryMasterTask: " + new QueryUnitAttemptId(report.getId()));
+      }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

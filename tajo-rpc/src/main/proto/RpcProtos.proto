@@ -26,5 +26,7 @@ message RpcRequest {
 message RpcResponse {
   required int32 id = 1;
   optional bytes response_message = 2;
-  optional string error_message = 3;
+  optional string error_class = 3;
+  optional string error_message = 4;
+  optional string error_trace = 5;
 }

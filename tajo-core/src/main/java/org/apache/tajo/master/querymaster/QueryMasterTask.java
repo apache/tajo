@@ -48,6 +48,7 @@ import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoContainerProxy;
@@ -64,8 +65,7 @@ import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,6 +114,9 @@ public class QueryMasterTask extends CompositeService {
   private TajoMetrics queryMetrics;
 
   private Throwable initError;
+
+  private final List<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics =
+      new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
                          QueryId queryId, Session session, QueryContext queryContext, String sql,
@@ -216,6 +219,22 @@ public class QueryMasterTask extends CompositeService {
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     ExecutionBlockId id = event.getExecutionBlockId();
     query.getSubQuery(id).handleTaskRequestEvent(event);
+  }
+
+  public void handleTaskFailed(TajoWorkerProtocol.TaskFatalErrorReport report) {
+    synchronized(diagnostics) {
+      if (diagnostics.size() < 10) {
+        diagnostics.add(report);
+      }
+    }
+
+    getEventHandler().handle(new TaskFatalErrorEvent(report));
+  }
+
+  public Collection<TajoWorkerProtocol.TaskFatalErrorReport> getDiagnostics() {
+    synchronized(diagnostics) {
+      return Collections.unmodifiableCollection(diagnostics);
+    }
   }
 
   private class SubQueryEventDispatcher implements EventHandler<SubQueryEvent> {
