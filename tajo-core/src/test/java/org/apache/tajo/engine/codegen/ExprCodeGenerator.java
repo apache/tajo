@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.codegen;
 
-import com.sun.org.apache.bcel.internal.generic.POP;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
@@ -372,22 +371,47 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public EvalNode visitAndOrEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    if (evalNode.getType() == EvalType.AND) {
-      context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC,
-          CodeGenUtil.getInternalName(ExprCodeGenerator.class), "AND_LOGIC", "[[B");
-    } else if (evalNode.getType() == EvalType.OR) {
-      context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC,
-          CodeGenUtil.getInternalName(ExprCodeGenerator.class), "OR_LOGIC", "[[B");
-    } else {
-      throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
-    }
 
     stack.push(evalNode);
     visit(context, evalNode.getLeftExpr(), stack);
-    context.evalMethod.visitInsn(Opcodes.AALOAD);
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, 3);
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, 4);
+
     visit(context, evalNode.getRightExpr(), stack);
-    context.evalMethod.visitInsn(Opcodes.BALOAD);
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, 5);
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, 6);
     stack.pop();
+
+    Label ifNullCommon = new Label();
+    Label afterEnd = new Label();
+
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, 3);      // < left_child, right_child, nullflag
+    emitNullityCheck(context, ifNullCommon);                  // < left_child, right_child
+
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, 5);      // < left_child, right_child, nullflag
+    emitNullityCheck(context, ifNullCommon);                 // < left_child, right_child
+
+    if (evalNode.getType() == EvalType.AND) {
+      context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC,
+          org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "AND_LOGIC", "[[B");
+    } else if (evalNode.getType() == EvalType.OR) {
+      context.evalMethod.visitFieldInsn(Opcodes.GETSTATIC,
+          org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "OR_LOGIC", "[[B");
+    } else {
+      throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
+    }
+    emitLoad(context, evalNode.getLeftExpr(), 4);
+    context.evalMethod.visitInsn(Opcodes.AALOAD);
+    emitLoad(context, evalNode.getRightExpr(), 6);
+    context.evalMethod.visitInsn(Opcodes.BALOAD);
+    context.evalMethod.visitInsn(Opcodes.ICONST_1);
+    emitGotoLabel(context, afterEnd);
+
+    emitLabel(context, ifNullCommon);
+    context.evalMethod.visitInsn(Opcodes.ICONST_0);
+    context.evalMethod.visitInsn(Opcodes.ICONST_0);                                     // < dummy_value, nullflag
+
+    emitLabel(context, afterEnd);
 
     return evalNode;
   }
@@ -491,21 +515,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     emitGotoLabel(context, afterEnd);
 
     emitLabel(context, ifNullCommon);
-    if (evalNode.getValueType().getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
-      context.evalMethod.visitLdcInsn(0L); // null
-    } else if (evalNode.getValueType().getType() == TajoDataTypes.Type.FLOAT8) {
-      context.evalMethod.visitLdcInsn(0.0d); // null
-    } else if (evalNode.getValueType().getType() == TajoDataTypes.Type.FLOAT4) {
-      context.evalMethod.visitLdcInsn(0.0f); // null
-    } else if (evalNode.getValueType().getType() == TajoDataTypes.Type.CHAR && evalNode.getValueType().getLength() == 1) {
-      context.evalMethod.visitInsn(Opcodes.ICONST_0);
-    } else if (evalNode.getValueType().getType() == TajoDataTypes.Type.CHAR && evalNode.getValueType().getLength() > 1) {
-      context.evalMethod.visitLdcInsn(""); // null
-    } else if (evalNode.getValueType().getType() == TajoDataTypes.Type.TEXT) {
-      context.evalMethod.visitLdcInsn(""); // null
-    } else {
-      context.evalMethod.visitInsn(Opcodes.ICONST_0);
-    }
+    emitNullTerm(context, evalNode.getValueType());
     context.evalMethod.visitInsn(Opcodes.ICONST_0);                                     // < dummy_value, nullflag
 
     emitLabel(context, afterEnd);

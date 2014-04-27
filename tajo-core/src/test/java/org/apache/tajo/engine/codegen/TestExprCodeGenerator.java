@@ -930,6 +930,14 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true or false;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false or true;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select false or false;", new String [] {"f"});
+
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (true and true) and false;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (true and false) and true;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (false and true) and true;", new String [] {"f"});
+
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (1 < 2) and true;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (1 < 2) and false;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (1 < 2) or false;", new String [] {"t"});
   }
 
   public static class NewMockUp {
