@@ -81,7 +81,7 @@ public class TajoCli {
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
-  private static final Options options;
+  protected static final Options options;
   private static final String HOME_DIR = System.getProperty("user.home");
   private static final String HISTORY_FILE = ".tajo_history";
 
@@ -91,6 +91,8 @@ public class TajoCli {
     options.addOption("f", "file", true, "execute commands from file, then exit");
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
+    options.addOption("conf", "conf", true, "configuration value");
+    options.addOption("param", "param", true, "parameter value in SQL file");
     options.addOption("help", "help", false, "help");
   }
 
@@ -124,8 +126,8 @@ public class TajoCli {
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
     Class formatterClass = conf.getClass(conf.getVar(ConfVars.CLI__OUTPUT_FORMATTER_CLASS),
-            DefaultTajoCliOutputFormatter.class);
-
+        DefaultTajoCliOutputFormatter.class);
+    
     this.outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
     this.outputFormatter.init(conf);
 
@@ -148,6 +150,16 @@ public class TajoCli {
     String baseDatabase = null;
     if (cmd.getArgList().size() > 0) {
       baseDatabase = (String) cmd.getArgList().get(0);
+    }
+
+    if (cmd.getOptionValues("conf") != null) {
+      for (String eachParam: cmd.getOptionValues("conf")) {
+        String[] tokens = eachParam.split("=");
+        if (tokens.length != 2) {
+          continue;
+        }
+        conf.set(tokens[0], tokens[1]);
+      }
     }
 
     // if there is no "-h" option,
@@ -189,9 +201,11 @@ public class TajoCli {
     }
     if (cmd.hasOption("f")) {
       outputFormatter.setScirptMode();
+      cmd.getOptionValues("");
       File sqlFile = new File(cmd.getOptionValue("f"));
       if (sqlFile.exists()) {
         String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
+        script = replaceParam(script, cmd.getOptionValues("param"));
         executeScript(script);
         sout.flush();
         System.exit(0);
@@ -202,6 +216,26 @@ public class TajoCli {
     }
 
     addShutdownHook();
+  }
+
+  public TajoCliContext getContext() {
+    return context;
+  }
+
+  protected static String replaceParam(String script, String[] params) {
+    if (params == null || params.length == 0) {
+      return script;
+    }
+
+    for (String eachParam: params) {
+      String[] tokens = eachParam.split("=");
+      if (tokens.length != 2) {
+        continue;
+      }
+      script = script.replace("${" + tokens[0] + "}", tokens[1]);
+    }
+
+    return script;
   }
 
   private void initHistory() {
