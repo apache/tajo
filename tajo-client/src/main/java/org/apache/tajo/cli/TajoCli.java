@@ -340,8 +340,10 @@ public class TajoCli {
         invoked.invoke(arguments);
       } catch (IllegalArgumentException ige) {
         outputFormatter.printErrorMessage(sout, ige);
+        return -1;
       } catch (Exception e) {
         outputFormatter.printErrorMessage(sout, e);
+        return -1;
       }
     }
 

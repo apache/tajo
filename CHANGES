@@ -15,6 +15,10 @@ Release 0.9.0 - unreleased
     TAJO-758: Supports parameter values in the SQL file.
     (Hyoungjun Kim via hyunsik)
 
+  BUG FIXES
+
+    TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
+
   SUB TASKS
 
     TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
