@@ -18,15 +18,16 @@
 
 package org.apache.tajo.master;
 
-import java.net.URI;
+import org.apache.tajo.worker.FetchImpl;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class ScheduledFetches {
-  private List<Map<String, List<URI>>> fetches = new ArrayList<Map<String, List<URI>>>();
+  private List<Map<String, List<FetchImpl>>> fetches = new ArrayList<Map<String, List<FetchImpl>>>();
 
-  public void addFetch(Map<String, List<URI>> fetch) {
+  public void addFetch(Map<String, List<FetchImpl>> fetch) {
     this.fetches.add(fetch);
   }
 
@@ -34,11 +35,11 @@ public class ScheduledFetches {
     return fetches.size() > 0;
   }
 
-  public Map<String, List<URI>> getNextFetch() {
+  public Map<String, List<FetchImpl>> getNextFetch() {
     return hasNextFetch() ? fetches.get(0) : null;
   }
 
-  public Map<String, List<URI>> popNextFetch() {
+  public Map<String, List<FetchImpl>> popNextFetch() {
     return hasNextFetch() ? fetches.remove(0) : null;
   }
 

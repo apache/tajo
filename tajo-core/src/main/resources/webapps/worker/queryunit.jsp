@@ -40,6 +40,7 @@
 <%@ page import="java.util.Set" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
 <%@ page import="org.apache.tajo.worker.TaskHistory" %>
+<%@ page import="org.apache.tajo.worker.FetchImpl" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -108,11 +109,13 @@
 
     String fetchInfo = "";
     delim = "";
-    for (Map.Entry<String, Set<URI>> e : queryUnit.getFetchMap().entrySet()) {
+    for (Map.Entry<String, Set<FetchImpl>> e : queryUnit.getFetchMap().entrySet()) {
         fetchInfo += delim + "<b>" + e.getKey() + "</b>";
         delim = "<br/>";
-        for (URI t : e.getValue()) {
-            fetchInfo += delim + t;
+        for (FetchImpl f : e.getValue()) {
+            for (URI uri : f.getSimpleURIs()){
+                fetchInfo += delim + uri;
+            }
         }
     }
 

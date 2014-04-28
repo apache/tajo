@@ -181,7 +181,7 @@ public class Fetcher {
                   sb.append(name).append(" = ").append(value);
                 }
                 if (this.length == -1 && name.equals("Content-Length")) {
-                  this.length = Long.valueOf(value);
+                  this.length = Long.parseLong(value);
                 }
               }
             }

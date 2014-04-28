@@ -39,6 +39,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -47,6 +48,7 @@ import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -55,7 +57,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE;
 
@@ -66,7 +67,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE;
 public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
-  private static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
+  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, SubQuery subQuery)
@@ -282,23 +283,16 @@ public class Repartitioner {
 
   private static void addJoinShuffle(SubQuery subQuery, int partitionId,
                                      Map<String, List<IntermediateEntry>> grouppedPartitions) {
-    Map<String, List<URI>> fetches = new HashMap<String, List<URI>>();
+    Map<String, List<FetchImpl>> fetches = new HashMap<String, List<FetchImpl>>();
     for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
-      Map<String, List<IntermediateEntry>> requests;
+      Collection<FetchImpl> requests;
       if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
-          requests = mergeHashShuffleRequest(grouppedPartitions.get(execBlock.getId().toString()));
+          requests = mergeShuffleRequest(execBlock.getId(), partitionId, HASH_SHUFFLE,
+              grouppedPartitions.get(execBlock.getId().toString()));
       } else {
         return;
       }
-      Set<URI> fetchURIs = TUtil.newHashSet();
-      for (Entry<String, List<IntermediateEntry>> requestPerNode : requests.entrySet()) {
-        Collection<URI> uris = createHashFetchURL(requestPerNode.getKey(),
-            execBlock.getId(),
-            partitionId, HASH_SHUFFLE,
-            requestPerNode.getValue());
-        fetchURIs.addAll(uris);
-      }
-      fetches.put(execBlock.getId().toString(), Lists.newArrayList(fetchURIs));
+      fetches.put(execBlock.getId().toString(), Lists.newArrayList(requests));
     }
     SubQuery.scheduleFetches(subQuery, fetches);
   }
@@ -309,17 +303,23 @@ public class Repartitioner {
    *
    * @return key: pullserver's address, value: a list of requests
    */
-  private static Map<String, List<IntermediateEntry>> mergeHashShuffleRequest(List<IntermediateEntry> partitions) {
-    Map<String, List<IntermediateEntry>> mergedPartitions = new HashMap<String, List<IntermediateEntry>>();
+  private static Collection<FetchImpl> mergeShuffleRequest(ExecutionBlockId ebid, int partitionId,
+                                                          TajoWorkerProtocol.ShuffleType type,
+                                                          List<IntermediateEntry> partitions) {
+    Map<QueryUnit.PullHost, FetchImpl> mergedPartitions = new HashMap<QueryUnit.PullHost, FetchImpl>();
+
     for (IntermediateEntry partition : partitions) {
-      if (mergedPartitions.containsKey(partition.getPullAddress())) {
-        mergedPartitions.get(partition.getPullAddress()).add(partition);
+      QueryUnit.PullHost host = partition.getPullHost();
+      if (mergedPartitions.containsKey(host)) {
+        FetchImpl fetch = mergedPartitions.get(partition.getPullHost());
+        fetch.addPart(partition.getTaskId(), partition.getAttemptId());
       } else {
-        mergedPartitions.put(partition.getPullAddress(), TUtil.newList(partition));
+        FetchImpl fetch = new FetchImpl(host, type, ebid, partitionId);
+        fetch.addPart(partition.getTaskId(), partition.getAttemptId());
+        mergedPartitions.put(partition.getPullHost(), fetch);
       }
     }
-
-    return mergedPartitions;
+    return mergedPartitions.values();
   }
 
   public static void scheduleFragmentsForNonLeafTasks(TaskSchedulerContext schedulerContext,
@@ -388,38 +388,39 @@ public class Repartitioner {
     FileFragment dummyFragment = new FileFragment(scan.getTableName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
     SubQuery.scheduleFragment(subQuery, dummyFragment);
 
-    List<String> basicFetchURIs = new ArrayList<String>();
+    List<FetchImpl> fetches = new ArrayList<FetchImpl>();
     List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
     for (ExecutionBlock childBlock : childBlocks) {
       SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
       for (QueryUnit qu : childExecSM.getQueryUnits()) {
         for (IntermediateEntry p : qu.getIntermediateData()) {
-          String uri = createBasicFetchUri(p.getPullHost(), p.getPullPort(), childBlock.getId(), p.taskId, p.attemptId);
-          basicFetchURIs.add(uri);
+          FetchImpl fetch = new FetchImpl(p.getPullHost(), RANGE_SHUFFLE, childBlock.getId(), 0);
+          fetch.addPart(p.getTaskId(), p.getAttemptId());
+          fetches.add(fetch);
         }
       }
     }
 
     boolean ascendingFirstKey = sortSpecs[0].isAscending();
-    SortedMap<TupleRange, Collection<URI>> map;
+    SortedMap<TupleRange, Collection<FetchImpl>> map;
     if (ascendingFirstKey) {
-      map = new TreeMap<TupleRange, Collection<URI>>();
+      map = new TreeMap<TupleRange, Collection<FetchImpl>>();
     } else {
-      map = new TreeMap<TupleRange, Collection<URI>>(new TupleRange.DescendingTupleRangeComparator());
+      map = new TreeMap<TupleRange, Collection<FetchImpl>>(new TupleRange.DescendingTupleRangeComparator());
     }
 
-    Set<URI> uris;
+    Set<FetchImpl> fetchSet;
     try {
       RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(sortSchema);
       for (int i = 0; i < ranges.length; i++) {
-        uris = new HashSet<URI>();
-        for (String uri: basicFetchURIs) {
+        fetchSet = new HashSet<FetchImpl>();
+        for (FetchImpl fetch: fetches) {
           String rangeParam =
               TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
-          URI finalUri = URI.create(uri + "&" + rangeParam);
-          uris.add(finalUri);
+          fetch.setRangeParams(rangeParam);
+          fetchSet.add(fetch);
         }
-        map.put(ranges[i], uris);
+        map.put(ranges[i], fetchSet);
       }
 
     } catch (UnsupportedEncodingException e) {
@@ -431,37 +432,22 @@ public class Repartitioner {
     schedulerContext.setEstimatedTaskNum(determinedTaskNum);
   }
 
-  public static void scheduleFetchesByRoundRobin(SubQuery subQuery, Map<?, Collection<URI>> partitions,
+  public static void scheduleFetchesByRoundRobin(SubQuery subQuery, Map<?, Collection<FetchImpl>> partitions,
                                                    String tableName, int num) {
     int i;
-    Map<String, List<URI>>[] fetchesArray = new Map[num];
+    Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];
     for (i = 0; i < num; i++) {
-      fetchesArray[i] = new HashMap<String, List<URI>>();
+      fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
     }
     i = 0;
-    for (Entry<?, Collection<URI>> entry : partitions.entrySet()) {
-      Collection<URI> value = entry.getValue();
+    for (Entry<?, Collection<FetchImpl>> entry : partitions.entrySet()) {
+      Collection<FetchImpl> value = entry.getValue();
       TUtil.putCollectionToNestedList(fetchesArray[i++], tableName, value);
       if (i == num) i = 0;
     }
-    for (Map<String, List<URI>> eachFetches : fetchesArray) {
+    for (Map<String, List<FetchImpl>> eachFetches : fetchesArray) {
       SubQuery.scheduleFetches(subQuery, eachFetches);
     }
-  }
-
-  public static String createBasicFetchUri(String hostName, int port,
-                                           ExecutionBlockId childSid,
-                                           int taskId, int attemptId) {
-    String scheme = "http://";
-    StringBuilder sb = new StringBuilder(scheme);
-    sb.append(hostName).append(":").append(port).append("/?")
-        .append("qid=").append(childSid.getQueryId().toString())
-        .append("&sid=").append(childSid.getId())
-        .append("&").append("ta=").append(taskId).append("_").append(attemptId)
-        .append("&").append("p=0")
-        .append("&").append("type=r");
-
-    return sb.toString();
   }
 
   public static void scheduleHashShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
@@ -483,8 +469,8 @@ public class Repartitioner {
     fragments.add(frag);
     SubQuery.scheduleFragments(subQuery, fragments);
 
-    Map<String, List<IntermediateEntry>> hashedByHost;
-    Map<Integer, Collection<URI>> finalFetchURI = new HashMap<Integer, Collection<URI>>();
+    Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost;
+    Map<Integer, Collection<FetchImpl>> finalFetches = new HashMap<Integer, Collection<FetchImpl>>();
 
     for (ExecutionBlock block : masterPlan.getChilds(execBlock)) {
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
@@ -496,14 +482,15 @@ public class Repartitioner {
       Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
       for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
         hashedByHost = hashByHost(interm.getValue());
-        for (Entry<String, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
-          Collection<URI> uris = createHashFetchURL(e.getKey(), block.getId(),
-              interm.getKey(), channel.getShuffleType(), e.getValue());
+        for (Entry<QueryUnit.PullHost, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
 
-          if (finalFetchURI.containsKey(interm.getKey())) {
-            finalFetchURI.get(interm.getKey()).addAll(uris);
+          FetchImpl fetch = new FetchImpl(e.getKey(), channel.getShuffleType(),
+              block.getId(), interm.getKey(), e.getValue());
+
+          if (finalFetches.containsKey(interm.getKey())) {
+            finalFetches.get(interm.getKey()).add(fetch);
           } else {
-            finalFetchURI.put(interm.getKey(), TUtil.newList(uris));
+            finalFetches.put(interm.getKey(), TUtil.newList(fetch));
           }
         }
       }
@@ -511,8 +498,8 @@ public class Repartitioner {
 
     GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
     // get a proper number of tasks
-    int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
-    LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetchURI.size());
+    int determinedTaskNum = Math.min(maxNum, finalFetches.size());
+    LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetches.size());
     if (groupby != null && groupby.getGroupingColumns().length == 0) {
       determinedTaskNum = 1;
       LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
@@ -521,61 +508,70 @@ public class Repartitioner {
     // set the proper number of tasks to the estimated task num
     schedulerContext.setEstimatedTaskNum(determinedTaskNum);
     // divide fetch uris into the the proper number of tasks in a round robin manner.
-    scheduleFetchesByRoundRobin(subQuery, finalFetchURI, scan.getTableName(), determinedTaskNum);
+    scheduleFetchesByRoundRobin(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
     LOG.info(subQuery.getId() + ", DeterminedTaskNum : " + determinedTaskNum);
   }
 
-  public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
-                                       int partitionId, ShuffleType type, List<IntermediateEntry> entries) {
+
+  public static List<URI> createFetchURL(FetchImpl fetch, boolean includeParts) {
     String scheme = "http://";
+
     StringBuilder urlPrefix = new StringBuilder(scheme);
-    urlPrefix.append(hostAndPort).append("/?")
-        .append("qid=").append(ebid.getQueryId().toString())
-        .append("&sid=").append(ebid.getId())
-        .append("&p=").append(partitionId)
+    urlPrefix.append(fetch.getPullHost().getHost()).append(":").append(fetch.getPullHost().getPort()).append("/?")
+        .append("qid=").append(fetch.getExecutionBlockId().getQueryId().toString())
+        .append("&sid=").append(fetch.getExecutionBlockId().getId())
+        .append("&p=").append(fetch.getPartitionId())
         .append("&type=");
-    if (type == HASH_SHUFFLE) {
+    if (fetch.getType() == HASH_SHUFFLE) {
       urlPrefix.append("h");
-    } else if (type == RANGE_SHUFFLE) {
-      urlPrefix.append("r");
+    } else if (fetch.getType() == RANGE_SHUFFLE) {
+      urlPrefix.append("r").append("&").append(fetch.getRangeParams());
     }
-    urlPrefix.append("&ta=");
 
-    // If the get request is longer than 2000 characters,
-    // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
-    // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
-    // The below code transforms a long request to multiple requests.
-    List<String> taskIdsParams = new ArrayList<String>();
-    boolean first = true;
-    StringBuilder taskIdListBuilder = new StringBuilder();
-    for (IntermediateEntry entry: entries) {
-      StringBuilder taskAttemptId = new StringBuilder();
+    List<URI> fetchURLs = new ArrayList<URI>();
+    if(includeParts){
+      // If the get request is longer than 2000 characters,
+      // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
+      // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
+      // The below code transforms a long request to multiple requests.
+      List<String> taskIdsParams = new ArrayList<String>();
+      StringBuilder taskIdListBuilder = new StringBuilder();
+      List<Integer> taskIds = fetch.getTaskIds();
+      List<Integer> attemptIds = fetch.getAttemptIds();
+      boolean first = true;
 
-      if (!first) { // when comma is added?
-        taskAttemptId.append(",");
-      } else {
-        first = false;
+      for (int i = 0; i < taskIds.size(); i++) {
+        StringBuilder taskAttemptId = new StringBuilder();
+
+        if (!first) { // when comma is added?
+          taskAttemptId.append(",");
+        } else {
+          first = false;
+        }
+
+        int taskId = taskIds.get(i);
+        int attemptId = attemptIds.get(i);
+        taskAttemptId.append(taskId).append("_").append(attemptId);
+
+        if (taskIdListBuilder.length() + taskAttemptId.length()
+            > HTTP_REQUEST_MAXIMUM_LENGTH) {
+          taskIdsParams.add(taskIdListBuilder.toString());
+          taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
+        } else {
+          taskIdListBuilder.append(taskAttemptId);
+        }
       }
-
-      taskAttemptId.append(entry.getTaskId()).append("_").
-          append(entry.getAttemptId());
-      if (taskIdListBuilder.length() + taskAttemptId.length()
-          > HTTP_REQUEST_MAXIMUM_LENGTH) {
+      // if the url params remain
+      if (taskIdListBuilder.length() > 0) {
         taskIdsParams.add(taskIdListBuilder.toString());
-        taskIdListBuilder = new StringBuilder(entry.getTaskId() + "_" + entry.getAttemptId());
-      } else {
-        taskIdListBuilder.append(taskAttemptId);
       }
-    }
 
-    // if the url params remain
-    if (taskIdListBuilder.length() > 0) {
-      taskIdsParams.add(taskIdListBuilder.toString());
-    }
-
-    Collection<URI> fetchURLs = new ArrayList<URI>();
-    for (String param : taskIdsParams) {
-      fetchURLs.add(URI.create(urlPrefix + param));
+      urlPrefix.append("&ta=");
+      for (String param : taskIdsParams) {
+        fetchURLs.add(URI.create(urlPrefix + param));
+      }
+    } else {
+      fetchURLs.add(URI.create(urlPrefix.toString()));
     }
 
     return fetchURLs;
@@ -594,16 +590,16 @@ public class Repartitioner {
     return hashed;
   }
 
-  public static Map<String, List<IntermediateEntry>> hashByHost(List<IntermediateEntry> entries) {
-    Map<String, List<IntermediateEntry>> hashed = new HashMap<String, List<IntermediateEntry>>();
+  public static Map<QueryUnit.PullHost, List<IntermediateEntry>> hashByHost(List<IntermediateEntry> entries) {
+    Map<QueryUnit.PullHost, List<IntermediateEntry>> hashed = new HashMap<QueryUnit.PullHost, List<IntermediateEntry>>();
 
-    String hostName;
+    QueryUnit.PullHost host;
     for (IntermediateEntry entry : entries) {
-      hostName = entry.getPullHost() + ":" + entry.getPullPort();
-      if (hashed.containsKey(hostName)) {
-        hashed.get(hostName).add(entry);
+      host = entry.getPullHost();
+      if (hashed.containsKey(host)) {
+        hashed.get(host).add(entry);
       } else {
-        hashed.put(hostName, TUtil.newList(entry));
+        hashed.put(host, TUtil.newList(entry));
       }
     }
 

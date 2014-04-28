@@ -27,8 +27,8 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.worker.FetchImpl;
 
-import java.net.URI;
 import java.util.List;
 
 public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUnitRequestProto> {
@@ -40,8 +40,8 @@ public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUn
 	public String getSerializedData();
 	public boolean isInterQuery();
 	public void setInterQuery();
-	public void addFetch(String name, URI uri);
-	public List<TajoWorkerProtocol.Fetch> getFetches();
+	public void addFetch(String name, FetchImpl fetch);
+	public List<FetchImpl> getFetches();
   public boolean shouldDie();
   public void setShouldDie();
   public QueryContext getQueryContext();

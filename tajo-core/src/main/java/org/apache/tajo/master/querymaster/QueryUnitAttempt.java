@@ -33,6 +33,7 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.querymaster.QueryUnit.PullHost;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -273,9 +274,10 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     if (report.getShuffleFileOutputsCount() > 0) {
       this.getQueryUnit().setShuffleFileOutputs(report.getShuffleFileOutputsList());
 
+      PullHost host = new PullHost(getHost(), getPullServerPort());
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
-            getId().getId(), p.getPartId(), getHost(), getPullServerPort());
+            getId().getId(), p.getPartId(), host);
         partitions.add(entry);
       }
     }

@@ -40,9 +40,9 @@ import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -484,11 +484,11 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
     }
 
     if (!context.isLeafQuery()) {
-      Map<String, List<URI>> fetch = scheduledFetches.getNextFetch();
+      Map<String, List<FetchImpl>> fetch = scheduledFetches.getNextFetch();
       scheduledFetches.popNextFetch();
 
-      for (Entry<String, List<URI>> fetchEntry : fetch.entrySet()) {
-        for (URI eachValue : fetchEntry.getValue()) {
+      for (Entry<String, List<FetchImpl>> fetchEntry : fetch.entrySet()) {
+        for (FetchImpl eachValue : fetchEntry.getValue()) {
           taskAssign.addFetch(fetchEntry.getKey(), eachValue);
         }
       }

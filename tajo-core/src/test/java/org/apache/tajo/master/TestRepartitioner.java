@@ -23,13 +23,16 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
-import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.FetchImpl;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -44,12 +47,18 @@ public class TestRepartitioner {
 
     List<QueryUnit.IntermediateEntry> intermediateEntries = TUtil.newList();
     for (int i = 0; i < 1000; i++) {
-      intermediateEntries.add(new QueryUnit.IntermediateEntry(i, 0, partitionId, hostName, port));
+      intermediateEntries.add(new QueryUnit.IntermediateEntry(i, 0, partitionId, new QueryUnit.PullHost(hostName, port)));
     }
 
-    Collection<URI> uris = Repartitioner.
-        createHashFetchURL(hostName + ":" + port, sid, partitionId,
-                TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE, intermediateEntries);
+    FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE,
+        sid, partitionId, intermediateEntries);
+
+    fetch.setName(sid.toString());
+
+    TajoWorkerProtocol.FetchProto proto = fetch.getProto();
+    fetch = new FetchImpl(proto);
+    assertEquals(proto, fetch.getProto());
+    List<URI> uris = fetch.getURIs();
 
     List<String> taList = TUtil.newList();
     for (URI uri : uris) {
