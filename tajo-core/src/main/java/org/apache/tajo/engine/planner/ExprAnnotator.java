@@ -120,24 +120,56 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    */
   private static EvalNode convertType(EvalNode evalNode, DataType toType) {
 
+    // if original and toType is the same, we don't need type conversion.
     if (evalNode.getValueType() == toType) {
       return evalNode;
     }
+    // the conversion to null is not allowed.
+    if (evalNode.getValueType().getType() == Type.NULL_TYPE || toType.getType() == Type.NULL_TYPE) {
+      return evalNode;
+    }
 
-    if (evalNode.getType() == EvalType.ROW_CONSTANT) {
+    if (evalNode.getType() == EvalType.BETWEEN) {
+      BetweenPredicateEval between = (BetweenPredicateEval) evalNode;
+
+      between.setPredicand(convertType(between.getPredicand(), toType));
+      between.setBegin(convertType(between.getBegin(), toType));
+      between.setEnd(convertType(between.getEnd(), toType));
+
+      return between;
+
+    } else if (evalNode.getType() == EvalType.CASE) {
+
+      CaseWhenEval caseWhenEval = (CaseWhenEval) evalNode;
+      for (CaseWhenEval.IfThenEval ifThen : caseWhenEval.getIfThenEvals()) {
+        ifThen.setResult(convertType(ifThen.getResult(), toType));
+      }
+
+      if (caseWhenEval.hasElse()) {
+        caseWhenEval.setElseResult(convertType(caseWhenEval.getElse(), toType));
+      }
+
+      return caseWhenEval;
+
+    } else if (evalNode.getType() == EvalType.ROW_CONSTANT) {
       RowConstantEval original = (RowConstantEval) evalNode;
 
       Datum[] datums = original.getValues();
       Datum[] convertedDatum = new Datum[datums.length];
+
       for (int i = 0; i < datums.length; i++) {
         convertedDatum[i] = DatumFactory.cast(datums[i], toType);
       }
+
       RowConstantEval convertedRowConstant = new RowConstantEval(convertedDatum);
+
       return convertedRowConstant;
+
     } else if (evalNode.getType() == EvalType.CONST) {
       ConstEval original = (ConstEval) evalNode;
       ConstEval newConst = new ConstEval(DatumFactory.cast(original.getValue(), toType));
       return newConst;
+
     } else {
       return new CastEval(evalNode, toType);
     }
@@ -254,15 +286,15 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode end = visit(ctx, stack, between.end());
     stack.pop();
 
+    // implicit type conversion
     DataType widestType = getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
-    predicand = convertType(predicand, widestType);
-    begin = convertType(begin, widestType);
-    end = convertType(end, widestType);
 
     BetweenPredicateEval betweenEval = new BetweenPredicateEval(
         between.isNot(),
         between.isSymmetric(),
         predicand, begin, end);
+
+    betweenEval = (BetweenPredicateEval) convertType(betweenEval, widestType);
     return betweenEval;
   }
 
@@ -283,19 +315,19 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       caseWhenEval.setElseResult(visit(ctx, stack, caseWhen.getElseResult()));
     }
 
-    DataType widestType = null;
-    for (CaseWhenEval.IfThenEval ifThen : caseWhenEval.getIfThenEvals()) {
-      widestType = getWidestType(ifThen.getResult().getValueType(), caseWhenEval.getElse().getValueType());
+    // Getting the widest type from all if-then expressions and else expression.
+    DataType widestType = caseWhenEval.getIfThenEvals().get(0).getResult().getValueType();
+    for (int i = 1; i < caseWhenEval.getIfThenEvals().size(); i++) {
+      widestType = getWidestType(caseWhenEval.getIfThenEvals().get(i).getResult().getValueType(), widestType);
+    }
+    if (caseWhen.hasElseResult()) {
+      widestType = getWidestType(widestType, caseWhenEval.getElse().getValueType());
     }
 
     assertEval(widestType != null, "Invalid Type Conversion for CaseWhen");
 
-    for (CaseWhenEval.IfThenEval ifThen : caseWhenEval.getIfThenEvals()) {
-      ifThen.setResult(convertType(ifThen.getResult(), widestType));
-    }
-    if (caseWhenEval.hasElse()) {
-      caseWhenEval.setElseResult(convertType(caseWhenEval.getElse(), widestType));
-    }
+    // implicit type conversion
+    caseWhenEval = (CaseWhenEval) convertType(caseWhenEval, widestType);
 
     return caseWhenEval;
   }
@@ -395,7 +427,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   private static BinaryEval createBinaryNode(EvalType type, EvalNode lhs, EvalNode rhs) {
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rhs);
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rhs); // implicit type conversion
     return new BinaryEval(type, pair.getFirst(), pair.getSecond());
   }
 
@@ -503,6 +535,27 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
+
+    // trying the implicit type conversion between actual parameter types and the definition types.
+    if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
+      DataType lastDataType = null;
+      for (int i = 0; i < givenArgs.length; i++) {
+        if (i < (funcDesc.getParamTypes().length - 1)) { // variable length
+          lastDataType = funcDesc.getParamTypes()[i];
+        } else {
+          lastDataType = CatalogUtil.newSimpleDataType(CatalogUtil.getPrimitiveTypeOf(lastDataType.getType()));
+        }
+        givenArgs[i] = convertType(givenArgs[i], lastDataType);
+      }
+    } else {
+      assertEval(funcDesc.getParamTypes().length == givenArgs.length,
+          "The number of parameters is mismatched to the function definition: " + funcDesc.toString());
+      // According to our function matching method, each given argument can be casted to the definition parameter.
+      for (int i = 0; i < givenArgs.length; i++) {
+        givenArgs[i] = convertType(givenArgs[i], funcDesc.getParamTypes()[i]);
+      }
+    }
+
 
     try {
     CatalogProtos.FunctionType functionType = funcDesc.getFuncType();

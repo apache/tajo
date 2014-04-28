@@ -286,7 +286,7 @@ public class TestMathFunctions extends ExprTestBase {
     schema.addColumn("col3", FLOAT4);
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select sqrt(col1 + col2 + col3) from table1",
-        new String[]{"1.1401754466632896"});
+        new String[]{"1.1401754564651765"});
 
 
     Schema schema2 = new Schema();
@@ -352,7 +352,7 @@ public class TestMathFunctions extends ExprTestBase {
     schema.addColumn("col2", FLOAT4);
     schema.addColumn("col3", FLOAT4);
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
-        new String[]{"1.0913928968221236"});
+        new String[]{"1.0913929030771317"});
 
     Schema schema2 = new Schema();
     schema2.addColumn("col1", FLOAT8);

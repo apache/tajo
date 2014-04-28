@@ -550,6 +550,10 @@ public class CatalogUtil {
    * @return True if the parameter definition can be variable length.
    */
   public static boolean checkIfVariableLengthParamDefinition(List<DataType> definedTypes) {
+    if (definedTypes.size() < 1) {
+      return false;
+    }
+
     // Get the last param type of the function definition.
     Type lastDefinedParamType = definedTypes.get(definedTypes.size() - 1).getType();
 
@@ -559,6 +563,9 @@ public class CatalogUtil {
   }
 
   public static Type getPrimitiveTypeOf(Type arrayType) {
+    if (!isArrayType(arrayType)) {
+      return arrayType;
+    }
     switch (arrayType) {
     case BOOLEAN_ARRAY: return Type.BOOLEAN;
     case UINT1_ARRAY: return Type.UINT1;
