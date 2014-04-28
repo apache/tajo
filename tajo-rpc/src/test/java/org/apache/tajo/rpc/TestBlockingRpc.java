@@ -147,7 +147,6 @@ public class TestBlockingRpc {
       assertTrue(t instanceof IOException);
       assertNotNull(t.getCause());
       assertTrue(t.getCause() instanceof ConnectException);
-      assertTrue(t.getCause().getMessage().indexOf("Connection refused") >= 0);
     }
   }
 

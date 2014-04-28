@@ -33,11 +33,6 @@ public class ExecExternalShellCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] command) throws Exception {
-    if (command.length < 2) {
-      context.getOutput().println("ERROR: No shell command.");
-      return;
-    }
-
     StringBuilder shellCommand = new StringBuilder();
     String prefix = "";
     for(int i = 1; i < command.length; i++) {
@@ -45,10 +40,15 @@ public class ExecExternalShellCommand extends TajoShellCommand {
       prefix = " ";
     }
 
+    String builtCommand = shellCommand.toString();
+    if (command.length < 2) {
+      throw new IOException("ERROR: '" + builtCommand + "' is an invalid command.");
+    }
+
     String[] execCommand = new String[3];
     execCommand[0] = "/bin/bash";
     execCommand[1] = "-c";
-    execCommand[2] = shellCommand.toString();
+    execCommand[2] = builtCommand;
 
     PrintWriter sout = context.getOutput();
 

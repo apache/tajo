@@ -56,9 +56,9 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -945,7 +945,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.getId(), leftFragment, rightFragments));
   }
 
-  public static void scheduleFetches(SubQuery subQuery, Map<String, List<URI>> fetches) {
+  public static void scheduleFetches(SubQuery subQuery, Map<String, List<FetchImpl>> fetches) {
     subQuery.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), fetches));
   }

@@ -68,17 +68,29 @@ message QueryUnitRequestProto {
     required bool clusteredOutput = 4;
     required string serializedData = 5;
     optional bool interQuery = 6 [default = false];
-    repeated Fetch fetches = 7;
+    repeated FetchProto fetches = 7;
     optional bool shouldDie = 8;
     optional KeyValueSetProto queryContext = 9;
     optional DataChannelProto dataChannel = 10;
     optional EnforcerProto enforcer = 11;
 }
 
-message Fetch {
-    required string name = 1;
-    required string urls = 2;
+message FetchProto {
+    required string host = 1;
+    required int32 port = 2;
+    required ShuffleType type = 3;
+    required ExecutionBlockIdProto executionBlockId = 4;
+    required int32 partitionId = 5;
+    required string name = 6;
+    optional string rangeParams = 7;
+    optional bool hasNext = 8 [default = false];
+
+    //repeated part
+    repeated int32 taskId = 9 [packed=true];
+    repeated int32 attemptId = 10 [packed=true];
 }
+
+
 
 message QueryUnitResponseProto {
     required string id = 1;

@@ -8,12 +8,18 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-789: Improve shuffle URI. (jinho)
+
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
 
     TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
 
     TAJO-758: Supports parameter values in the SQL file.
     (Hyoungjun Kim via hyunsik)
+
+  BUG FIXES
+
+    TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   SUB TASKS
 

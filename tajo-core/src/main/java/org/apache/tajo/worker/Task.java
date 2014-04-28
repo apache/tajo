@@ -28,7 +28,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -54,7 +53,6 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.ApplicationIdUtils;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.File;
@@ -192,8 +190,8 @@ public class Task {
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
-    for (Fetch f : request.getFetches()) {
-      LOG.info("Table Id: " + f.getName() + ", url: " + f.getUrls());
+    for (FetchImpl f : request.getFetches()) {
+      LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {
@@ -622,7 +620,7 @@ public class Task {
   }
 
   private List<Fetcher> getFetchRunners(TaskAttemptContext ctx,
-                                        List<Fetch> fetches) throws IOException {
+                                        List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
 
@@ -639,15 +637,17 @@ public class Task {
       int i = 0;
       File storeFile;
       List<Fetcher> runnerList = Lists.newArrayList();
-      for (Fetch f : fetches) {
-        storeDir = new File(inputDir.toString(), f.getName());
-        if (!storeDir.exists()) {
-          storeDir.mkdirs();
+      for (FetchImpl f : fetches) {
+        for (URI uri : f.getURIs()) {
+          storeDir = new File(inputDir.toString(), f.getName());
+          if (!storeDir.exists()) {
+            storeDir.mkdirs();
+          }
+          storeFile = new File(storeDir, "in_" + i);
+          Fetcher fetcher = new Fetcher(uri, storeFile, channelFactory);
+          runnerList.add(fetcher);
+          i++;
         }
-        storeFile = new File(storeDir, "in_" + i);
-        Fetcher fetcher = new Fetcher(URI.create(f.getUrls()), storeFile, channelFactory);
-        runnerList.add(fetcher);
-        i++;
       }
       ctx.addFetchPhase(runnerList.size(), new File(inputDir.toString()));
       return runnerList;
@@ -737,19 +737,6 @@ public class Task {
       }
     }
   }
-
-  public static final String FILECACHE = "filecache";
-  public static final String APPCACHE = "appcache";
-  public static final String USERCACHE = "usercache";
-
-  String fileCache;
-  public String getFileCacheDir() {
-    fileCache = USERCACHE + "/" + "hyunsik" + "/" + APPCACHE + "/" +
-        ConverterUtils.toString(ApplicationIdUtils.queryIdToAppId(taskId.getQueryUnitId().getExecutionBlockId().getQueryId())) +
-        "/" + "output";
-    return fileCache;
-  }
-
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
         StorageUtil.concatPath(

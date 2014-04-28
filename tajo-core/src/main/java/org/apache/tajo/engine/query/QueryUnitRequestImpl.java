@@ -21,11 +21,11 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
+import org.apache.tajo.worker.FetchImpl;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private boolean clusteredOutput;
 	private String serializedData;     // logical node
 	private Boolean interQuery;
-	private List<Fetch> fetches;
+	private List<FetchImpl> fetches;
   private Boolean shouldDie;
   private QueryContext queryContext;
   private DataChannel dataChannel;
@@ -177,16 +177,13 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	  maybeInitBuilder();
 	  this.interQuery = true;
 	}
-	
-	public void addFetch(String name, URI uri) {
-	  maybeInitBuilder();
-	  initFetches();
-	  fetches.add(
-	  Fetch.newBuilder()
-	    .setName(name)
-	    .setUrls(uri.toString()).build());
-	  
-	}
+
+  public void addFetch(String name, FetchImpl fetch) {
+    maybeInitBuilder();
+    initFetches();
+    fetch.setName(name);
+    fetches.add(fetch);
+  }
 
   public QueryContext getQueryContext() {
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
@@ -236,7 +233,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     return this.enforcer;
   }
 
-  public List<Fetch> getFetches() {
+  public List<FetchImpl> getFetches() {
 	  initFetches();    
 
     return this.fetches;
@@ -247,9 +244,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
       return;
     }
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-    this.fetches = new ArrayList<Fetch>();
-    for(Fetch fetch : p.getFetchesList()) {
-      fetches.add(fetch);
+    this.fetches = new ArrayList<FetchImpl>();
+    for(TajoWorkerProtocol.FetchProto fetch : p.getFetchesList()) {
+      fetches.add(new FetchImpl(fetch));
     }
 	}
 
@@ -300,9 +297,11 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (this.interQuery != null) {
 		  builder.setInterQuery(this.interQuery);
 		}
-		if (this.fetches != null) {
-		  builder.addAllFetches(this.fetches);
-		}
+    if (this.fetches != null) {
+      for (int i = 0; i < fetches.size(); i++) {
+        builder.addFetches(fetches.get(i).getProto());
+      }
+    }
     if (this.shouldDie != null) {
       builder.setShouldDie(this.shouldDie);
     }

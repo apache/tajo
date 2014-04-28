@@ -40,6 +40,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.net.URI;
 import java.util.*;
@@ -63,7 +64,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	private List<ScanNode> scan;
 	
 	private Map<String, Set<FragmentProto>> fragMap;
-	private Map<String, Set<URI>> fetchMap;
+	private Map<String, Set<FetchImpl>> fetchMap;
 
   private int totalFragmentNum;
 
@@ -269,18 +270,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return succeededHost;
   }
 	
-	public void addFetches(String tableId, Collection<URI> urilist) {
-	  Set<URI> uris;
+	public void addFetches(String tableId, Collection<FetchImpl> fetches) {
+	  Set<FetchImpl> fetchSet;
     if (fetchMap.containsKey(tableId)) {
-      uris = fetchMap.get(tableId);
+      fetchSet = fetchMap.get(tableId);
     } else {
-      uris = Sets.newHashSet();
+      fetchSet = Sets.newHashSet();
     }
-    uris.addAll(urilist);
-    fetchMap.put(tableId, uris);
+    fetchSet.addAll(fetches);
+    fetchMap.put(tableId, fetchSet);
 	}
 	
-	public void setFetches(Map<String, Set<URI>> fetches) {
+	public void setFetches(Map<String, Set<FetchImpl>> fetches) {
 	  this.fetchMap.clear();
 	  this.fetchMap.putAll(fetches);
 	}
@@ -301,19 +302,19 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		return taskId;
 	}
 	
-	public Collection<URI> getFetchHosts(String tableId) {
+	public Collection<FetchImpl> getFetchHosts(String tableId) {
 	  return fetchMap.get(tableId);
 	}
 	
-	public Collection<Set<URI>> getFetches() {
+	public Collection<Set<FetchImpl>> getFetches() {
 	  return fetchMap.values();
 	}
 
-  public Map<String, Set<URI>> getFetchMap() {
+  public Map<String, Set<FetchImpl>> getFetchMap() {
     return fetchMap;
   }
 	
-	public Collection<URI> getFetch(ScanNode scan) {
+	public Collection<FetchImpl> getFetch(ScanNode scan) {
 	  return this.fetchMap.get(scan.getTableName());
 	}
 	
@@ -323,21 +324,24 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	
 	@Override
 	public String toString() {
-		String str = new String(plan.getType() + " \n");
+    StringBuilder builder = new StringBuilder();
+    builder.append(plan.getType() + " \n");
 		for (Entry<String, Set<FragmentProto>> e : fragMap.entrySet()) {
-		  str += e.getKey() + " : ";
+		  builder.append(e.getKey()).append(" : ");
       for (FragmentProto fragment : e.getValue()) {
-        str += fragment + ", ";
+        builder.append(fragment).append(", ");
       }
 		}
-		for (Entry<String, Set<URI>> e : fetchMap.entrySet()) {
-      str += e.getKey() + " : ";
-      for (URI t : e.getValue()) {
-        str += t + " ";
+		for (Entry<String, Set<FetchImpl>> e : fetchMap.entrySet()) {
+      builder.append(e.getKey()).append(" : ");
+      for (FetchImpl t : e.getValue()) {
+        for (URI uri : t.getURIs()){
+          builder.append(uri).append(" ");
+        }
       }
     }
 		
-		return str;
+		return builder.toString();
 	}
 	
 	public void setStats(TableStats stats) {
@@ -612,20 +616,52 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.intermediateData;
   }
 
+  public static class PullHost {
+    String host;
+    int port;
+    public PullHost(String pullServerAddr, int pullServerPort){
+      this.host = pullServerAddr;
+      this.port = pullServerPort;
+    }
+    public String getHost() {
+      return host;
+    }
+
+    public int getPort() {
+      return this.port;
+    }
+
+    public String getPullAddress() {
+      return host + ":" + port;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(host, port);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof PullHost) {
+        PullHost other = (PullHost) obj;
+        return host.equals(other.host) && port == other.port;
+      }
+
+      return false;
+    }
+  }
+
   public static class IntermediateEntry {
     int taskId;
     int attemptId;
     int partId;
-    String pullHost;
-    int port;
+    PullHost host;
 
-    public IntermediateEntry(int taskId, int attemptId, int partId,
-                             String pullServerAddr, int pullServerPort) {
+    public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {
       this.taskId = taskId;
       this.attemptId = attemptId;
       this.partId = partId;
-      this.pullHost = pullServerAddr;
-      this.port = pullServerPort;
+      this.host = host;
     }
 
     public int getTaskId() {
@@ -640,22 +676,13 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       return this.partId;
     }
 
-    public String getPullHost() {
-      return this.pullHost;
-    }
-
-    public int getPullPort() {
-      return port;
-    }
-
-    public String getPullAddress() {
-      return pullHost + ":" + port;
+    public PullHost getPullHost() {
+      return this.host;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(taskId, attemptId, partId, pullHost, port);
+      return Objects.hashCode(taskId, partId, attemptId, host);
     }
-
   }
 }
