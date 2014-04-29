@@ -73,7 +73,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	
 	public TableDesc(TableDescProto proto) {
 	  this(proto.getTableName(), new Schema(proto.getSchema()),
-        new TableMeta(proto.getMeta()), new Path(proto.getPath()), proto.getIsExternal());
+        new TableMeta(proto.getMeta()), proto.hasPath() ? new Path(proto.getPath()) : null, proto.getIsExternal());
     if(proto.hasStats()) {
       this.stats = new TableStats(proto.getStats());
     }

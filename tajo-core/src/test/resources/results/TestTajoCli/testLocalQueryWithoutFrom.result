@@ -1,0 +1,8 @@
+?literal,  ?literal_1
+-------------------------------
+abc,  123
+(1 rows, , 0 B selected)
+?substr
+-------------------------------
+123
+(1 rows, , 0 B selected)
