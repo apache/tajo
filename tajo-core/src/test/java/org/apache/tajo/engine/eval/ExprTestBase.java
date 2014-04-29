@@ -198,7 +198,6 @@ public class ExprTestBase {
         codegen = new ExprCodeGenerator();
       }
 
-
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
