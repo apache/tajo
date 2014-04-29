@@ -22,6 +22,7 @@
 <%@ page import="org.apache.tajo.catalog.CatalogService" %>
 <%@ page import="org.apache.tajo.catalog.Column" %>
 <%@ page import="org.apache.tajo.catalog.TableDesc" %>
+<%@ page import="org.apache.tajo.catalog.partition.PartitionMethodDesc" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.util.FileUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
@@ -134,16 +135,33 @@
         out.write("<tr><td width='30' align='right'>" + columnIndex + "</td><td width='320'>" + eachColumn.getSimpleName() + "</td><td width='150'>" + eachColumn.getDataType().getType() + "</td></tr>");
         columnIndex++;
       }
+      out.write("</table>");
+      out.write("</div>");
 
+      if (tableDesc.getPartitionMethod() != null) {
+        PartitionMethodDesc partition = tableDesc.getPartitionMethod();
+        List<Column> partitionColumns = partition.getExpressionSchema().getColumns();
+        String partitionColumnStr = "";
+        String prefix = "";
+        for (Column eachColumn: partitionColumns) {
+          partitionColumnStr += prefix + eachColumn.toString();
+          prefix = "<br/>";
+        }
+        out.write("<div style='margin-top:10px'>");
+        out.write("  <div style=''>Partition</div>");
+        out.write("  <table border='1' class='border_table'>");
+        out.write("    <tr><td width='100'>Type</td><td width='410'>" + partition.getPartitionType().name() + "</td></tr>");
+        out.write("    <tr><td>Columns</td><td>" + partitionColumnStr + "</td></tr>");
+        out.write("  </table>");
+        out.write("</div>");
+      }
       String optionStr = "";
       String prefix = "";
       for(Map.Entry<String, String> entry: tableDesc.getMeta().toMap().entrySet()) {
         optionStr += prefix + "'" + entry.getKey() + "'='" + entry.getValue() + "'";
         prefix = "<br/>";
       }
-      out.write("</table>");
 %>
-          </div>
           <div style='margin-top:10px'>
             <div style=''>Detail</div>
             <table border="1" class='border_table'>
