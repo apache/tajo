@@ -14,6 +14,9 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-805: Multiple constant in selection emits some columns. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-802: No partition columns in WEB catalog page.
     (Hyoungjun Kim via hyunsik)
 
