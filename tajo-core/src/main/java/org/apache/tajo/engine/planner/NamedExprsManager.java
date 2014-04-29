@@ -300,7 +300,7 @@ public class NamedExprsManager {
       // If the expression is already evaluated, it should use the FieldEval to access a field value.
       // But, if this reference name is not primary name, it cannot use the reference name.
       // It changes the given reference name to the primary name.
-      if (isEvaluated(normalized) && !isPrimaryName(refId, referenceName)) {
+      if (evalNode.getType() != EvalType.CONST && isEvaluated(normalized) && !isPrimaryName(refId, referenceName)) {
         return new Target(new FieldEval(getPrimaryName(refId),evalNode.getValueType()), referenceName);
       }
 
