@@ -85,12 +85,6 @@ public class EvalTreeUtil {
           if (ifThen.getResult().equals(evalNode)) {
             ifThen.setResult(tobeReplaced);
           }
-        } else if (parent instanceof CastEval) {
-          CastEval cast = (CastEval) parent;
-          if (cast.getOperand().equals(evalNode)) {
-            cast.setOperand(tobeReplaced);
-          }
-
        } else if (parent instanceof FunctionEval) {
           FunctionEval functionEval = (FunctionEval) parent;
           EvalNode [] arguments = functionEval.getArgs();
@@ -101,24 +95,17 @@ public class EvalTreeUtil {
           }
           functionEval.setArgs(arguments);
 
-        } else if (parent instanceof NotEval) {
-          NotEval not = (NotEval) parent;
-          if (not.getChild().equals(evalNode)) {
-            not.setChild(tobeReplaced);
+        } else if (parent instanceof UnaryEval) {
+          if (((UnaryEval)parent).getChild().equals(evalNode)) {
+            ((UnaryEval)parent).setChild(tobeReplaced);
           }
-
-        } else if (parent instanceof SignedEval) {
-          SignedEval sign = (SignedEval) parent;
-          if (sign.getChild().equals(evalNode)) {
-            sign.setChild(tobeReplaced);
+        } else if (parent instanceof BinaryEval) {
+          BinaryEval binary = (BinaryEval) parent;
+          if (binary.getLeftExpr() != null && binary.getLeftExpr().equals(evalNode)) {
+            binary.setLeftExpr(tobeReplaced);
           }
-
-        } else {
-          if (parent.getLeftExpr() != null && parent.getLeftExpr().equals(evalNode)) {
-            parent.setLeftExpr(tobeReplaced);
-          }
-          if (parent.getRightExpr() != null && parent.getRightExpr().equals(evalNode)) {
-            parent.setRightExpr(tobeReplaced);
+          if (binary.getRightExpr() != null && binary.getRightExpr().equals(evalNode)) {
+            binary.setRightExpr(tobeReplaced);
           }
         }
       }
@@ -228,27 +215,8 @@ public class EvalTreeUtil {
    * to the target column
    */
   public static boolean containColumnRef(EvalNode expr, Column target) {
-    Set<EvalNode> exprSet = Sets.newHashSet();
-    _containColumnRef(expr, target, exprSet);
-    
-    return exprSet.size() > 0;
-  }
-  
-  private static void _containColumnRef(EvalNode expr, Column target, 
-      Set<EvalNode> exprSet) {
-    switch (expr.getType()) {
-    case FIELD:
-      FieldEval field = (FieldEval) expr;
-      if (field.getColumnName().equals(target.getSimpleName())) {
-        exprSet.add(field);
-      }
-      break;
-    case CONST:
-      return;
-    default: 
-      _containColumnRef(expr.getLeftExpr(), target, exprSet);
-      _containColumnRef(expr.getRightExpr(), target, exprSet);
-    }    
+    Set<Column> exprSet = findUniqueColumns(expr);
+    return exprSet.contains(target);
   }
 
   /**
@@ -260,15 +228,22 @@ public class EvalTreeUtil {
    * @return True if it is join condition.
    */
   public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
-    boolean joinComparator;
-    if (includeThetaJoin) {
-      joinComparator = AlgebraicUtil.isComparisonOperator(expr);
-    } else {
-      joinComparator = expr.getType() == EvalType.EQUAL;
-    }
+    if (expr instanceof BinaryEval) {
+      boolean joinComparator;
+      if (includeThetaJoin) {
+        joinComparator = EvalType.isComparisonOperator(expr);
+      } else {
+        joinComparator = expr.getType() == EvalType.EQUAL;
+      }
 
-    return joinComparator && expr.getLeftExpr().getType() == EvalType.FIELD &&
-        expr.getRightExpr().getType() == EvalType.FIELD;
+      BinaryEval binaryEval = (BinaryEval) expr;
+      boolean isBothTermFields =
+          binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+          binaryEval.getRightExpr().getType() == EvalType.FIELD;
+      return joinComparator && isBothTermFields;
+    } else {
+      return false;
+    }
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    

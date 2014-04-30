@@ -21,52 +21,62 @@ package org.apache.tajo.engine.eval;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NumericDatum;
 import org.apache.tajo.storage.Tuple;
 
-public class SignedEval extends UnaryEval implements Cloneable {
-  @Expose private boolean negative;
+public abstract class UnaryEval extends EvalNode implements Cloneable {
+  @Expose protected EvalNode child;
 
-  public SignedEval(boolean negative, EvalNode childEval) {
-    super(EvalType.SIGNED, childEval);
-    this.negative = negative;
+  public UnaryEval(EvalType type) {
+    super(type);
   }
 
-  public boolean isNegative() {
-    return negative;
+  public UnaryEval(EvalType type, EvalNode child) {
+    super(type);
+    this.child = child;
+  }
+
+  public void setChild(EvalNode child) {
+    this.child = child;
+  }
+
+  public EvalNode getChild() {
+    return child;
   }
 
   @Override
-  public DataType getValueType() {
-    return child.getValueType();
+  public TajoDataTypes.DataType getValueType() {
+    return null;
   }
 
   @Override
   public String getName() {
-    return "?";
+    return null;
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    NumericDatum result = child.eval(schema, tuple);
-    if (negative) {
-      return result.inverseSign();
-    }
-    return result;
+  public <T extends Datum> T eval(Schema schema, Tuple tuple) {
+    return null;
   }
 
   @Override
-  public String toString() {
-    return (negative ? "-" : "+") + child.toString();
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+    child.preOrder(visitor);
+  }
+
+  @Override
+  public void postOrder(EvalNodeVisitor visitor) {
+    child.postOrder(visitor);
+    visitor.visit(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof SignedEval) {
-      SignedEval other = (SignedEval) obj;
-      return super.equals(other) && negative == other.negative;
+    if (obj instanceof UnaryEval) {
+      UnaryEval another = (UnaryEval) obj;
+      return type == another.type && child.equals(another.child);
     } else {
       return false;
     }
@@ -74,13 +84,13 @@ public class SignedEval extends UnaryEval implements Cloneable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(type, negative, child);
+    return Objects.hashCode(type, child);
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    SignedEval signedEval = (SignedEval) super.clone();
-    signedEval.negative = negative;
-    return signedEval;
+    UnaryEval unaryEval = (UnaryEval) super.clone();
+    unaryEval.child = (EvalNode) this.child.clone();
+    return unaryEval;
   }
 }

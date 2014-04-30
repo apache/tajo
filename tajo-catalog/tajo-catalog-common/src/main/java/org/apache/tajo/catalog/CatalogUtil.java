@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.Connection;
@@ -550,6 +550,10 @@ public class CatalogUtil {
    * @return True if the parameter definition can be variable length.
    */
   public static boolean checkIfVariableLengthParamDefinition(List<DataType> definedTypes) {
+    if (definedTypes.size() < 1) { // if no parameter function
+      return false;
+    }
+
     // Get the last param type of the function definition.
     Type lastDefinedParamType = definedTypes.get(definedTypes.size() - 1).getType();
 
@@ -558,8 +562,11 @@ public class CatalogUtil {
     return CatalogUtil.isArrayType(lastDefinedParamType);
   }
 
-  public static Type getPrimitiveTypeOf(Type arrayType) {
-    switch (arrayType) {
+  public static Type getPrimitiveTypeOf(Type type) {
+    if (!isArrayType(type)) { // If the type is already primitive, it will just return the type.
+      return type;
+    }
+    switch (type) {
     case BOOLEAN_ARRAY: return Type.BOOLEAN;
     case UINT1_ARRAY: return Type.UINT1;
     case UINT2_ARRAY: return Type.UINT2;
@@ -583,7 +590,7 @@ public class CatalogUtil {
     case TIMESTAMP_ARRAY: return Type.TIMESTAMP;
     case TIMESTAMPZ_ARRAY: return Type.TIMESTAMPZ;
     case INTERVAL_ARRAY: return Type.INTERVAL;
-    default: throw new InvalidOperationException("Invalid array type: " + arrayType.name());
+    default: throw new InvalidOperationException("Invalid array type: " + type.name());
     }
   }
 

@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.AlgebraicUtil;
+import org.apache.tajo.engine.eval.BinaryEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -36,7 +37,7 @@ import java.util.Set;
 
 public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
 
-  private String [] guessRelationsFromJoinQual(LogicalPlan.QueryBlock block, EvalNode joinCondition)
+  private String [] guessRelationsFromJoinQual(LogicalPlan.QueryBlock block, BinaryEval joinCondition)
       throws PlanningException {
 
     // Note that we can guarantee that each join qual used here is a singleton.
@@ -82,7 +83,7 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     for (EvalNode singleQual : cnf) {
       if (EvalTreeUtil.isJoinQual(singleQual, true)) {
 
-        String [] relations = guessRelationsFromJoinQual(block, singleQual);
+        String [] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
         String leftExprRelName = relations[0];
         String rightExprRelName = relations[1];
 

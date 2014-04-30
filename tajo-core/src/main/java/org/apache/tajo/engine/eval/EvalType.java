@@ -38,6 +38,11 @@ public enum EvalType {
   MULTIPLY(BinaryEval.class, "*"),
   DIVIDE(BinaryEval.class, "/"),
 
+  // Binary Bitwise expressions
+  BIT_AND(BinaryEval.class, "&"),
+  BIT_OR(BinaryEval.class, "|"),
+  BIT_XOR(BinaryEval.class, "|"),
+
   // Function
   AGG_FUNCTION(AggregationFunctionCallEval.class),
   FUNCTION(GeneralFunctionEval.class),
@@ -71,6 +76,45 @@ public enum EvalType {
   EvalType(Class<? extends EvalNode> type, String text) {
     this(type);
     this.operatorName = text;
+  }
+
+  public static boolean isLogicalOperator(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == AND;
+    match |= type == OR;
+    match |= type == NOT;
+
+    return match;
+  }
+
+  public static boolean isComparisonOperator(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == EQUAL;
+    match |= type == NOT_EQUAL;
+    match |= type == LTH;
+    match |= type == LEQ;
+    match |= type == GTH;
+    match |= type == GEQ;
+    match |= type == BETWEEN;
+
+    return match;
+  }
+
+  public static boolean isArithmeticOperator(EvalNode evalNode) {
+    EvalType type = evalNode.getType();
+    boolean match = false;
+
+    match |= type == PLUS;
+    match |= type == MINUS;
+    match |= type == MULTIPLY;
+    match |= type == DIVIDE;
+    match |= type == MODULAR;
+
+    return match;
   }
 
   public String getOperatorName() {

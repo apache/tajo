@@ -589,10 +589,11 @@ public class PlannerUtil {
     @Override
     public void visit(EvalNode node) {
       if (EvalTreeUtil.isJoinQual(node, includeThetaJoin)) {
+        BinaryEval binaryEval = (BinaryEval) node;
         Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression
-          Column column = EvalTreeUtil.findAllColumnRefs(node.getExpr(i)).get(0);
+          Column column = EvalTreeUtil.findAllColumnRefs(binaryEval.getExpr(i)).get(0);
           for (int j = 0; j < schemas.length; j++) {
             // check whether the column is for either outer or inner
             // 0 is outer, and 1 is inner

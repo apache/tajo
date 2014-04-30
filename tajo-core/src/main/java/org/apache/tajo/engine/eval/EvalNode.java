@@ -32,56 +32,22 @@ import org.apache.tajo.storage.Tuple;
  */
 public abstract class EvalNode implements Cloneable, GsonObject {
 	@Expose protected EvalType type;
-	@Expose protected EvalNode leftExpr;
-	@Expose protected EvalNode rightExpr;
-	
+  @Expose protected DataType returnType = null;
+
+  public EvalNode() {
+  }
+
 	public EvalNode(EvalType type) {
 		this.type = type;
-	}
-	
-	public EvalNode(EvalType type, EvalNode left, EvalNode right) {
-		this(type);
-		this.leftExpr = left;
-		this.rightExpr = right;
 	}
 	
 	public EvalType getType() {
 		return this.type;
 	}
 	
-	public void setLeftExpr(EvalNode expr) {
-		this.leftExpr = expr;
-	}
-	
-	public <T extends EvalNode> T getLeftExpr() {
-		return (T) this.leftExpr;
-	}
-	
-	public void setRightExpr(EvalNode expr) {
-		this.rightExpr = expr;
-	}
-	
-	public <T extends EvalNode> T getRightExpr() {
-		return (T) this.rightExpr;
-	}
-
-  public EvalNode getExpr(int id) {
-    if (id == 0) {
-      return this.leftExpr;
-    } else if (id == 1) {
-      return this.rightExpr;
-    } else {
-      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available (" + id + " is not available)");
-    }
-  }
-	
 	public abstract DataType getValueType();
 	
 	public abstract String getName();
-	
-	public String toString() {
-		return "(" + this.type + "(" + leftExpr.toString() + " " + rightExpr.toString() + "))";
-	}
 
   @Override
 	public String toJson() {
@@ -91,28 +57,16 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
 
   @Deprecated
-	public void preOrder(EvalNodeVisitor visitor) {
-	  visitor.visit(this);
-	  leftExpr.preOrder(visitor);
-	  rightExpr.preOrder(visitor);
-	}
+  public abstract  void preOrder(EvalNodeVisitor visitor);
 
   @Deprecated
-	public void postOrder(EvalNodeVisitor visitor) {
-	  leftExpr.postOrder(visitor);
-	  rightExpr.postOrder(visitor);	  	  
-	  visitor.visit(this);
-	}
+  public abstract void postOrder(EvalNodeVisitor visitor);
 
-  public abstract boolean equals(Object obj);
-	
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-	  EvalNode node = (EvalNode) super.clone();
-	  node.type = type;
-	  node.leftExpr = leftExpr != null ? (EvalNode) leftExpr.clone() : null;
-	  node.rightExpr = rightExpr != null ? (EvalNode) rightExpr.clone() : null;
-	  
-	  return node;
-	}
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    EvalNode evalNode = (EvalNode) super.clone();
+    evalNode.type = type;
+    evalNode.returnType = returnType;
+    return evalNode;
+  }
 }

@@ -20,8 +20,8 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
@@ -205,9 +205,9 @@ public class Float4Datum extends NumericDatum {
     case INT4:
       return DatumFactory.createFloat4(val + datum.asInt4());
     case INT8:
-      return DatumFactory.createFloat8(val + datum.asInt8());
+      return DatumFactory.createFloat4(val + datum.asInt8());
     case FLOAT4:
-      return DatumFactory.createFloat8(val + datum.asFloat4());
+      return DatumFactory.createFloat4(val + datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
     case DATE:
@@ -227,9 +227,9 @@ public class Float4Datum extends NumericDatum {
     case INT4:
       return DatumFactory.createFloat4(val - datum.asInt4());
     case INT8:
-      return DatumFactory.createFloat8(val - datum.asInt8());
+      return DatumFactory.createFloat4(val - datum.asInt8());
     case FLOAT4:
-      return DatumFactory.createFloat8(val - datum.asFloat4());
+      return DatumFactory.createFloat4(val - datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
     case DATE:
@@ -249,9 +249,9 @@ public class Float4Datum extends NumericDatum {
     case INT4:
       return DatumFactory.createFloat4(val * datum.asInt4());
     case INT8:
-      return DatumFactory.createFloat8(val * datum.asInt8());
+      return DatumFactory.createFloat4(val * datum.asInt8());
     case FLOAT4:
-      return DatumFactory.createFloat8(val * datum.asFloat4());
+      return DatumFactory.createFloat4(val * datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val * datum.asFloat8());
     case INTERVAL:
@@ -272,9 +272,9 @@ public class Float4Datum extends NumericDatum {
     case INT4:
       return DatumFactory.createFloat4(val / datum.asInt4());
     case INT8:
-      return DatumFactory.createFloat8(val / datum.asInt8());
+      return DatumFactory.createFloat4(val / datum.asInt8());
     case FLOAT4:
-      return DatumFactory.createFloat8(val / datum.asFloat4());
+      return DatumFactory.createFloat4(val / datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val / datum.asFloat8());
     case NULL_TYPE:
@@ -288,15 +288,15 @@ public class Float4Datum extends NumericDatum {
   public Datum modular(Datum datum) {
     switch (datum.type()) {
       case INT2:
-        return DatumFactory.createFloat4(val / datum.asInt2());
+        return DatumFactory.createFloat4(val % datum.asInt2());
       case INT4:
-        return DatumFactory.createFloat4(val / datum.asInt4());
+        return DatumFactory.createFloat4(val % datum.asInt4());
       case INT8:
-        return DatumFactory.createFloat4(val / datum.asInt8());
+        return DatumFactory.createFloat4(val % datum.asInt8());
       case FLOAT4:
-        return DatumFactory.createFloat4(val / datum.asFloat4());
+        return DatumFactory.createFloat4(val % datum.asFloat4());
       case FLOAT8:
-        return DatumFactory.createFloat8(val / datum.asFloat8());
+        return DatumFactory.createFloat8(val % datum.asFloat8());
       case NULL_TYPE:
         return datum;
       default:

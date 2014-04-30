@@ -20,8 +20,8 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;

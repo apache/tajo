@@ -20,7 +20,7 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidOperationException;
 
 import java.util.Arrays;
 

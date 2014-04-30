@@ -196,7 +196,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   
   @Override
   public String toString() {
-	  return getProto().toString();
+	  return getHelpSignature();
   }
   
   public String toJson() {

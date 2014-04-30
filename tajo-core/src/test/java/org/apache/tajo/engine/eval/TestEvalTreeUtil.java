@@ -228,14 +228,14 @@ public class TestEvalTreeUtil {
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
-    EvalNode node = exprs.iterator().next();
+    BinaryEval node = (BinaryEval) exprs.iterator().next();
     assertEquals(EvalType.LTH, node.getType());
     assertEquals(EvalType.PLUS, node.getLeftExpr().getType());
     assertEquals(new ConstEval(DatumFactory.createInt4(4)), node.getRightExpr());
 
     Column col2 = new Column("default.people.age", TajoDataTypes.Type.INT4);
     exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
-    node = exprs.iterator().next();
+    node = (BinaryEval) exprs.iterator().next();
     assertEquals(EvalType.GTH, node.getType());
     assertEquals("default.people.age", node.getLeftExpr().getName());
     assertEquals(new ConstEval(DatumFactory.createInt4(5)), node.getRightExpr());
@@ -250,8 +250,8 @@ public class TestEvalTreeUtil {
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     
     assertEquals(2, cnf.length);
-    EvalNode first = cnf[0];
-    EvalNode second = cnf[1];
+    BinaryEval first = (BinaryEval) cnf[0];
+    BinaryEval second = (BinaryEval) cnf[1];
     
     FieldEval field = first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
@@ -322,7 +322,7 @@ public class TestEvalTreeUtil {
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     EvalNode node = getRootSelection(QUERIES[3]);
     // we expect that score < 3
-    EvalNode transposed = AlgebraicUtil.transpose(node, col1);
+    BinaryEval transposed = (BinaryEval) AlgebraicUtil.transpose(node, col1);
     assertEquals(EvalType.GTH, transposed.getType());
     FieldEval field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
@@ -330,7 +330,7 @@ public class TestEvalTreeUtil {
 
     node = getRootSelection(QUERIES[4]);
     // we expect that score < 3
-    transposed = AlgebraicUtil.transpose(node, col1);
+    transposed = (BinaryEval) AlgebraicUtil.transpose(node, col1);
     assertEquals(EvalType.LTH, transposed.getType());
     field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());

@@ -120,6 +120,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         datum = isNullText(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createChar(new String(bytes, offset, length).trim());
         break;
+      case INT1:
       case INT2:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createInt2((short) Bytes.parseInt(bytes, offset, length));

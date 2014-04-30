@@ -47,7 +47,8 @@ public abstract class ClassUtil {
     return classSet;
   }
 
-  private static void findClasses(Set<Class> matchedClassSet, File root, File file, boolean includeJars, Class type, String packageFilter) {
+  private static void findClasses(Set<Class> matchedClassSet, File root, File file, boolean includeJars, Class type,
+                                  String packageFilter) {
     if (file.isDirectory()) {
       for (File child : file.listFiles()) {
         findClasses(matchedClassSet, root, child, includeJars, type, packageFilter);
@@ -98,7 +99,7 @@ public abstract class ClassUtil {
   }
 
   private static boolean isTestClass(String qualifiedClassName) {
-    String className = getClassName(qualifiedClassName);
+    String className = getSimpleClassName(qualifiedClassName);
     if(className == null) {
       return false;
     }
@@ -133,7 +134,7 @@ public abstract class ClassUtil {
     return false;
   }
 
-  private static String getClassName(String qualifiedClassName) {
+  private static String getSimpleClassName(String qualifiedClassName) {
     String[] tokens = qualifiedClassName.split("\\.");
     if (tokens.length == 0) {
       return qualifiedClassName;

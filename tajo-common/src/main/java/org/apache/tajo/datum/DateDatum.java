@@ -19,8 +19,8 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.*;
 import org.joda.time.format.DateTimeFormat;

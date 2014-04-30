@@ -19,8 +19,8 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
@@ -46,42 +46,42 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public boolean asBool() {
-    throw new InvalidCastException(type + " cannot be casted to BOOL type");
+    throw new InvalidCastException(type, Type.BOOLEAN);
   }
 
   public byte asByte() {
-    throw new InvalidCastException(type + " cannot be casted to BYTE type");
+    throw new InvalidCastException(type, Type.BIT);
   }
 
   public char asChar() {
-    throw new InvalidCastException(type + " cannot be casted to CHAR type");
+    throw new InvalidCastException(type, Type.CHAR);
   }
 
   public short asInt2() {
-    throw new InvalidCastException(type + " cannot be casted to SHORT type");
+    throw new InvalidCastException(type, Type.INT2);
   }
   public int asInt4() {
-    throw new InvalidCastException(type + " cannot be casted to INT type");
+    throw new InvalidCastException(type, Type.INT1);
   }
 
   public long asInt8() {
-    throw new InvalidCastException(type + " cannot be casted to LONG type");
+    throw new InvalidCastException(type, Type.INT8);
   }
 
   public byte [] asByteArray() {
-    throw new InvalidCastException(type + " cannot be casted to BYTES type");
+    throw new InvalidCastException(type, Type.BLOB);
   }
 
   public float asFloat4() {
-    throw new InvalidCastException(type + " cannot be casted to FLOAT type");
+    throw new InvalidCastException(type, Type.FLOAT4);
   }
 
   public double asFloat8() {
-    throw new InvalidCastException(type + " cannot be casted to DOUBLE type");
+    throw new InvalidCastException(type, Type.FLOAT8);
   }
 
   public String asChars() {
-    throw new InvalidCastException(type + " cannot be casted to STRING type");
+    throw new InvalidCastException(type, Type.TEXT);
   }
 
   public byte[] asTextBytes() {

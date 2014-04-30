@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -27,21 +26,23 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class BinaryEval extends EvalNode implements Cloneable {
-  @Expose private DataType returnType = null;
+  @Expose protected EvalNode leftExpr;
+  @Expose protected EvalNode rightExpr;
 
-  /**
-   * @param type
-   */
+  protected BinaryEval(EvalType type) {
+    super(type);
+  }
+
   public BinaryEval(EvalType type, EvalNode left, EvalNode right) {
-    super(type, left, right);
-    Preconditions.checkNotNull(type);
-    Preconditions.checkNotNull(left);
-    Preconditions.checkNotNull(right);
+    super(type);
+    this.leftExpr = left;
+    this.rightExpr = right;
 
     if(
         type == EvalType.AND ||
@@ -70,13 +71,43 @@ public class BinaryEval extends EvalNode implements Cloneable {
     this(expr.type, expr.leftExpr, expr.rightExpr);
   }
 
+  public void setLeftExpr(EvalNode expr) {
+    this.leftExpr = expr;
+  }
+
+  public <T extends EvalNode> T getLeftExpr() {
+    return (T) this.leftExpr;
+  }
+
+  public void setRightExpr(EvalNode expr) {
+    this.rightExpr = expr;
+  }
+
+  public <T extends EvalNode> T getRightExpr() {
+    return (T) this.rightExpr;
+  }
+
+  public EvalNode getExpr(int id) {
+    if (id == 0) {
+      return this.leftExpr;
+    } else if (id == 1) {
+      return this.rightExpr;
+    } else {
+      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available (" + id + " is not available)");
+    }
+  }
+
   /**
    * This is verified by ExprsVerifier.checkArithmeticOperand().
    */
   private DataType determineType(DataType left, DataType right) throws InvalidEvalException {
     switch (left.getType()) {
+
+    case INT1:
+    case INT2:
     case INT4: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4: return CatalogUtil.newSimpleDataType(Type.INT4);
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
@@ -89,10 +120,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case INT8: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4:
       case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4:
+      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
       case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
       case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
@@ -101,10 +133,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case FLOAT4: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
-      case INT4:
-      case INT8:
-      case FLOAT4:
+      case INT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
+      case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
+      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
       case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
       case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
       }
@@ -112,6 +145,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
     case FLOAT8: {
       switch(right.getType()) {
+      case INT1:
       case INT2:
       case INT4:
       case INT8:
@@ -200,7 +234,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       }
       return DatumFactory.createText(lhs.asChars() + rhs.asChars());
     default:
-      throw new InvalidEvalException("We does not support " + type + " expression yet");
+      throw new InvalidOperationException("Unknown binary operation: " + type);
     }
   }
 
@@ -214,8 +248,22 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	  return returnType;
 	}
 
+  @Deprecated
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+    leftExpr.preOrder(visitor);
+    rightExpr.preOrder(visitor);
+  }
+
+  @Deprecated
+  public void postOrder(EvalNodeVisitor visitor) {
+    leftExpr.postOrder(visitor);
+    rightExpr.postOrder(visitor);
+    visitor.visit(this);
+  }
+
 	public String toString() {
-		return leftExpr +" " + type.getOperatorName() + " "+rightExpr;
+		return leftExpr +" " + type.getOperatorName() + " "+ rightExpr;
 	}
 
   @Override
@@ -237,9 +285,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    BinaryEval eval = (BinaryEval) super.clone();
-    eval.returnType = returnType;
+    BinaryEval node = (BinaryEval) super.clone();
+    node.type = type;
+    node.leftExpr = leftExpr != null ? (EvalNode) leftExpr.clone() : null;
+    node.rightExpr = rightExpr != null ? (EvalNode) rightExpr.clone() : null;
 
-    return eval;
+    return node;
   }
 }

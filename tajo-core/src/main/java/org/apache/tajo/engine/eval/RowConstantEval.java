@@ -76,4 +76,14 @@ public class RowConstantEval extends EvalNode {
   public void postOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    RowConstantEval rowConstantEval = (RowConstantEval) super.clone();
+    if (values != null) {
+      rowConstantEval.values = new Datum[values.length];
+      System.arraycopy(values, 0, rowConstantEval.values, 0, values.length);
+    }
+    return rowConstantEval;
+  }
 }

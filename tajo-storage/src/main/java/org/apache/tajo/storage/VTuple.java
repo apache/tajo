@@ -19,8 +19,10 @@
 package org.apache.tajo.storage;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.datum.*;
-import org.apache.tajo.datum.exception.InvalidCastException;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.Inet4Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.UnimplementedException;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -158,11 +160,11 @@ public class VTuple implements Tuple, Cloneable {
 	}
 
 	public InetAddress getIPv6(int fieldId) {
-		throw new InvalidCastException("IPv6 is unsupported yet");
+		throw new UnimplementedException("IPv6 is unsupported yet");
 	}
 
 	public byte[] getIPv6Bytes(int fieldId) {
-	  throw new InvalidCastException("IPv6 is unsupported yet");
+	  throw new UnimplementedException("IPv6 is unsupported yet");
 	}
 
   @Override

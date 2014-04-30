@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.datum.exception;
+package org.apache.tajo.exception;
+
+import org.apache.tajo.common.TajoDataTypes;
 
 public class InvalidCastException extends RuntimeException {
 	private static final long serialVersionUID = -7689027447969916148L;
@@ -24,10 +26,11 @@ public class InvalidCastException extends RuntimeException {
 	public InvalidCastException() {
 	}
 
-	/**
-	 * @param message
-	 */
-	public InvalidCastException(String message) {
-		super(message);
+	public InvalidCastException(TajoDataTypes.DataType src, TajoDataTypes.DataType target) {
+		super(src.getType().name() + " value cannot be casted to " + target.getType().name());
 	}
+
+  public InvalidCastException(TajoDataTypes.Type src, TajoDataTypes.Type target) {
+    super(src.name() + " value cannot be casted to " + target.name());
+  }
 }

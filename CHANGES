@@ -12,6 +12,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-797: Implicit type conversion support. (hyunsik)
+
     TAJO-804: Bump up Parquet version to 1.4.2. (hyunsik)
 
     TAJO-425: RAWFILE_SYNC_INTERVAL has not default value. (jinho)

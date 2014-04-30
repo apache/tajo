@@ -187,18 +187,18 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
 
   private static boolean checkNumericType(DataType dataType) {
     int typeNumber = dataType.getType().getNumber();
-    return Type.INT1.getNumber() < typeNumber && typeNumber <= Type.NUMERIC.getNumber();
+    return Type.INT1.getNumber() <= typeNumber && typeNumber <= Type.NUMERIC.getNumber();
   }
 
   private static boolean checkTextData(DataType dataType) {
     int typeNumber = dataType.getType().getNumber();
-    return Type.CHAR.getNumber() < typeNumber && typeNumber <= Type.TEXT.getNumber();
+    return Type.CHAR.getNumber() <= typeNumber && typeNumber <= Type.TEXT.getNumber();
   }
 
   private static boolean checkDateTime(DataType dataType) {
     int typeNumber = dataType.getType().getNumber();
-    return (Type.DATE.getNumber() < typeNumber && typeNumber <= Type.INTERVAL.getNumber()) ||
-        (Type.TIMEZ.getNumber() < typeNumber && typeNumber <= Type.TIMESTAMPZ.getNumber());
+    return (Type.DATE.getNumber() <= typeNumber && typeNumber <= Type.INTERVAL.getNumber()) ||
+        (Type.TIMEZ.getNumber() <= typeNumber && typeNumber <= Type.TIMESTAMPZ.getNumber());
   }
 
   @Override
