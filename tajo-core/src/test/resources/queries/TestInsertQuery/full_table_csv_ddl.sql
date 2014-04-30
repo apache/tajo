@@ -1,0 +1,1 @@
+create table full_table_csv as select * from default.lineitem

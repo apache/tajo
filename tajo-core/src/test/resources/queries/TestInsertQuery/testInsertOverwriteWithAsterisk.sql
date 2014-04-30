@@ -1,0 +1,1 @@
+insert overwrite into full_table_csv select * from default.lineitem where l_orderkey = 3;

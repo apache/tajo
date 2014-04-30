@@ -41,8 +41,6 @@ import org.apache.tajo.datum.Datum;
  * Users should use {@link ParquetAppender} and not this class directly.
  */
 public class TajoWriteSupport extends WriteSupport<Tuple> {
-  private static final String TAJO_SCHEMA = "parquet.tajo.schema";
-
   private RecordConsumer recordConsumer;
   private MessageType rootSchema;
   private Schema rootTajoSchema;
@@ -66,8 +64,6 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
   @Override
   public WriteContext init(Configuration configuration) {
     Map<String, String> extraMetaData = new HashMap<String, String>();
-    extraMetaData.put(TajoReadSupport.TAJO_SCHEMA_METADATA_KEY,
-                      rootTajoSchema.toJson());
     return new WriteContext(rootSchema, extraMetaData);
   }
 

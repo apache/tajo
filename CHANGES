@@ -16,6 +16,9 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-806: CreateTableNode in CTAS uses a wrong schema as output schema and 
+    table schema. (hyunsik)
+
     TAJO-805: Multiple constant in selection emits some columns. 
     (Hyoungjun Kim via hyunsik)
 
@@ -25,7 +28,6 @@ Release 0.8.1 - unreleased
   SUB TASKS
 
     TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
-
 
 
 Release 0.8.0
