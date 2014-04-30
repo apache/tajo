@@ -71,9 +71,8 @@ public class RowFile {
         throws IOException {
       super(conf, schema, meta, fragment);
 
-      SYNC_INTERVAL =
-          conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
-              SYNC_SIZE * 100);
+      SYNC_INTERVAL = conf.getInt(ConfVars.ROWFILE_SYNC_INTERVAL.varname,
+          ConfVars.ROWFILE_SYNC_INTERVAL.defaultIntVal) * SYNC_SIZE;
 
       nullFlags = new BitArray(schema.size());
       tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE / 8);
@@ -321,8 +320,8 @@ public class RowFile {
     }
 
     public void init() throws IOException {
-      SYNC_INTERVAL = conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
-
+      SYNC_INTERVAL = conf.getInt(ConfVars.ROWFILE_SYNC_INTERVAL.varname,
+          ConfVars.ROWFILE_SYNC_INTERVAL.defaultIntVal);
       fs = path.getFileSystem(conf);
 
       if (!fs.exists(path.getParent())) {

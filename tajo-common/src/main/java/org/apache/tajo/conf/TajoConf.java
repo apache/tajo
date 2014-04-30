@@ -147,7 +147,7 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
     // Storage Configuration
     //////////////////////////////////
-    RAWFILE_SYNC_INTERVAL("rawfile.sync.interval", null),
+    ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
     MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),

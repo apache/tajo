@@ -54,7 +54,6 @@ public class TestRowFile {
   public void setup() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
   }
 
   @After
@@ -84,7 +83,7 @@ public class TestRowFile {
     appender.enableStats();
     appender.init();
 
-    int tupleNum = 100;
+    int tupleNum = 200;
     Tuple tuple;
     Datum stringDatum = DatumFactory.createText("abcdefghijklmnopqrstuvwxyz");
     Set<Integer> idSet = Sets.newHashSet();
