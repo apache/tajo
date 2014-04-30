@@ -6,8 +6,6 @@ Release 0.9.0 - unreleased
 
     TAJO-761: Implements INTERVAL type. (Hyoungjun Kim via hyunsik)
 
-    TAJO-780: Implements ADD_MONTHS() function. (Hyoungjun Kim via hyunsik)
-
   IMPROVEMENT
 
     TAJO-425: RAWFILE_SYNC_INTERVAL has not default value. (jinho)
