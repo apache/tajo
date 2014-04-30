@@ -42,11 +42,6 @@ public class TajoReadSupport extends ReadSupport<Tuple> {
   private Schema requestedSchema;
 
   /**
-   * The key for the Tajo schema stored in the Parquet file metadata.
-   */
-  public static final String TAJO_SCHEMA_METADATA_KEY = "tajo.schema";
-
-  /**
    * Creates a new TajoReadSupport.
    *
    * @param requestedSchema The Tajo schema of the requested projection passed
@@ -100,16 +95,7 @@ public class TajoReadSupport extends ReadSupport<Tuple> {
       Map<String, String> keyValueMetaData,
       MessageType fileSchema,
       ReadContext readContext) {
-    Schema tajoReadSchema = null;
-    String metadataReadSchema = keyValueMetaData.get(TAJO_SCHEMA_METADATA_KEY);
-    if (metadataReadSchema != null) {
-      tajoReadSchema = CatalogGsonHelper.fromJson(
-          metadataReadSchema, Schema.class);
-    } else {
-      tajoReadSchema = readSchema;
-    }
     MessageType parquetRequestedSchema = readContext.getRequestedSchema();
-    return new TajoRecordMaterializer(parquetRequestedSchema, requestedSchema,
-                                      tajoReadSchema);
+    return new TajoRecordMaterializer(parquetRequestedSchema, requestedSchema, readSchema);
   }
 }

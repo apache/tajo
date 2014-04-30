@@ -1371,8 +1371,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           createTableNode.setOutSchema(tableSchema);
           createTableNode.setTableSchema(tableSchema);
         } else {
-          createTableNode.setOutSchema(subQuery.getOutSchema());
-          createTableNode.setTableSchema(subQuery.getOutSchema());
+          // Convert the schema of subquery into the target table's one.
+          Schema schema = new Schema(subQuery.getOutSchema());
+          schema.setQualifier(createTableNode.getTableName());
+          createTableNode.setOutSchema(schema);
+          createTableNode.setTableSchema(schema);
         }
       }
 

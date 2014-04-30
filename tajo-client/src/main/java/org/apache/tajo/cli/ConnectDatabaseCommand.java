@@ -39,7 +39,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
     } else if (cmd.length == 2) {
 
       if (!client.existDatabase(cmd[1])) {
-        context.getOutput().write(cmd[1] + " database not found\n");
+        context.getOutput().write("Database '" + cmd[1] + "' not found\n");
       } else {
         try {
           if (client.selectDatabase(cmd[1])) {

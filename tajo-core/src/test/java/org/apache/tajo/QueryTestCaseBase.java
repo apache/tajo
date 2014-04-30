@@ -224,7 +224,7 @@ public class QueryTestCaseBase {
   }
 
   protected ResultSet executeString(String sql) throws Exception {
-    return testBase.execute(sql);
+    return client.executeQueryAndGetResult(sql);
   }
 
   /**
