@@ -8,6 +8,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-617: Rename BIN/tajo_dump BIN/tajo-dump. (jinho)
+
     TAJO-789: Improve shuffle URI. (jinho)
 
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
