@@ -290,7 +290,7 @@ public class GlobalEngine extends AbstractService {
         return QueryIdFactory.NULL_QUERY_ID;
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
       throw new IOException(e.getMessage(), e);
     }
   }

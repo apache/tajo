@@ -16,6 +16,9 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-792: Insert table error with database name. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-806: CreateTableNode in CTAS uses a wrong schema as output schema and 
     table schema. (hyunsik)
 

@@ -34,7 +34,6 @@ import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -256,7 +255,8 @@ public class TestInsertQuery extends QueryTestCaseBase {
       CatalogService catalog = testingCluster.getMaster().getCatalog();
       assertTrue(catalog.existsTable(getCurrentDatabase(), "full_table_parquet"));
 
-      res = executeString("insert overwrite into full_table_parquet select * from default.lineitem where l_orderkey = 3");
+      res = executeString(
+          "insert overwrite into full_table_parquet select * from default.lineitem where l_orderkey = 3");
       res.close();
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "full_table_parquet");
       if (!testingCluster.isHCatalogStoreRunning()) {
@@ -270,6 +270,23 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertResultSet(res, "testInsertOverwriteWithAsteriskUsingParquet2.result");
 
       executeString("DROP TABLE full_table_parquet_ddl PURGE");
+    }
+  }
+
+  @Test
+  public final void testInsertOverwriteWithDatabase() throws Exception {
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeQuery();
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
     }
   }
 }
