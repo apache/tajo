@@ -12,6 +12,8 @@ Release 0.8.1 - unreleased
 
     TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
 
+    TAJO-804: Bump up Parquet version to 1.4.2. (hyunsik)
+
   BUGS
 
     TAJO-805: Multiple constant in selection emits some columns. 
