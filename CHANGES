@@ -8,6 +8,8 @@ Release 0.9.0 - unreleased
 
     TAJO-790: Implements ADD_MONTHS() function. (Hyoungjun Kim via hyunsik)
 
+    TAJO-791: Implements ADD_DAYS() function. (Hyoungjun Kim via hyunsik)
+
   IMPROVEMENT
 
     TAJO-425: RAWFILE_SYNC_INTERVAL has not default value. (jinho)
