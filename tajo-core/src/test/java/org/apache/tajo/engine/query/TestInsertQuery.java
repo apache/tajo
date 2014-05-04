@@ -25,90 +25,76 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
-public class TestInsertQuery {
-  private static TpchTestBase tpch;
-  public TestInsertQuery() throws IOException {
-    super();
-  }
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    tpch = TpchTestBase.getInstance();
-  }
+public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwrite() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwrite");
-    ResultSet res = tpch.execute("create table " + tableName +" (col1 int4, col2 int4, col3 float8)");
-    res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-
-    res = tpch.execute("insert overwrite into " + tableName
-        + " select l_orderkey, l_partkey, l_quantity from lineitem");
+    ResultSet res = executeFile("table1_ddl.sql");
     res.close();
 
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeFile("testInsertOverwrite.sql");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+
+    executeString("DROP TABLE table1 PURGE");
   }
 
   @Test
   public final void testInsertOverwriteSmallerColumns() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("insertoverwritesmallercolumns");
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float8)");
+    ResultSet res = executeFile("table1_ddl.sql");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-    TableDesc originalDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
 
-    res = tpch.execute("insert overwrite into " + tableName + " select l_orderkey from lineitem");
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+    TableDesc originalDesc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+
+    res = executeFile("testInsertOverwriteSmallerColumns.sql");
     res.close();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
     assertEquals(originalDesc.getSchema(), desc.getSchema());
+
+    executeString("DROP TABLE table1 PURGE");
   }
 
   @Test
   public final void testInsertOverwriteWithTargetColumns() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwriteWithTargetColumns");
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float8)");
+    ResultSet res = executeFile("table1_ddl.sql");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-    TableDesc originalDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
 
-    res = tpch.execute(
-        "insert overwrite into " + tableName + " (col1, col3) select l_orderkey, l_quantity from lineitem");
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+    TableDesc originalDesc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+
+    res = executeFile("testInsertOverwriteWithTargetColumns.sql");
     res.close();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
-    res = tpch.execute("select * from " + tableName);
+    res = executeString("select * from " + CatalogUtil.denormalizeIdentifier(getCurrentDatabase()) + ".table1");
 
     assertTrue(res.next());
     assertEquals(1, res.getLong(1));
@@ -143,21 +129,22 @@ public class TestInsertQuery {
     res.close();
 
     assertEquals(originalDesc.getSchema(), desc.getSchema());
+
+    executeString("DROP TABLE table1 PURGE");
   }
 
   @Test
   public final void testInsertOverwriteWithAsterisk() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testinsertoverwritewithasterisk");
-    ResultSet res = tpch.execute("create table " + tableName + " as select * from lineitem");
+    ResultSet res = executeFile("full_table_csv_ddl.sql");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = tpch.execute("insert overwrite into " + tableName + " select * from lineitem where l_orderkey = 3");
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "full_table_csv"));
+
+    res = executeString("insert overwrite into full_table_csv select * from default.lineitem where l_orderkey = 3");
     res.close();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "full_table_csv");
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
   }
@@ -165,28 +152,26 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteIntoSelect() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("insertoverwriteintoselect");
-    ResultSet res = tpch.execute(
-        "create table " + tableName + " as select l_orderkey from lineitem");
+    ResultSet res = executeString("create table " + tableName + " as select l_orderkey from default.lineitem");
     assertFalse(res.next());
     res.close();
 
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-    TableDesc orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
+    TableDesc orderKeys = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, orderKeys.getStats().getNumRows().intValue());
     }
 
     // this query will result in the two rows.
-    res = tpch.execute(
-        "insert overwrite into " + tableName + " select l_orderkey from lineitem where l_orderkey = 3");
+    res = executeString("insert overwrite into " + tableName + " select l_orderkey from default.lineitem where l_orderkey = 3");
     assertFalse(res.next());
     res.close();
 
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-    orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
+    orderKeys = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, orderKeys.getStats().getNumRows().intValue());
     }
   }
@@ -194,26 +179,25 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteCapitalTableName() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testInsertOverwriteCapitalTableName");
-    ResultSet res = tpch.execute("create table " + tableName + " as select * from lineitem");
+    ResultSet res = executeString("create table " + tableName + " as select * from default.lineitem");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = tpch.execute("insert overwrite into " + tableName + " select * from lineitem where l_orderkey = 3");
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
+
+    res = executeString("insert overwrite into " + tableName + " select * from default.lineitem where l_orderkey = 3");
     res.close();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
   }
 
   @Test
   public final void testInsertOverwriteLocation() throws Exception {
-    ResultSet res =
-        tpch.execute("insert overwrite into location '/tajo-data/testInsertOverwriteCapitalTableName' select * from lineitem where l_orderkey = 3");
+    ResultSet res = executeQuery();
     res.close();
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
     assertTrue(fs.exists(new Path("/tajo-data/testInsertOverwriteCapitalTableName")));
     assertEquals(1, fs.listStatus(new Path("/tajo-data/testInsertOverwriteCapitalTableName")).length);
   }
@@ -221,22 +205,22 @@ public class TestInsertQuery {
   @Test
   public final void testInsertOverwriteWithCompression() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testInsertOverwriteWithCompression");
-    ResultSet res = tpch.execute("create table " + tableName + " (col1 int4, col2 int4, col3 float8) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')");
+    ResultSet res = executeFile("testInsertOverwriteWithCompression_ddl.sql");
     res.close();
-    TajoTestingCluster cluster = tpch.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = tpch.execute("insert overwrite into " + tableName + " select  l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey = 3");
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
+
+    res = executeQuery();
     res.close();
-    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    if (!cluster.isHCatalogStoreRunning()) {
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
 
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
     assertTrue(fs.exists(desc.getPath()));
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    CompressionCodecFactory factory = new CompressionCodecFactory(testingCluster.getConfiguration());
 
     for (FileStatus file : fs.listStatus(desc.getPath())) {
       CompressionCodec codec = factory.getCodec(file.getPath());
@@ -246,17 +230,63 @@ public class TestInsertQuery {
 
   @Test
   public final void testInsertOverwriteLocationWithCompression() throws Exception {
-    ResultSet res = tpch.execute("insert overwrite into location '/tajo-data/testInsertOverwriteLocationWithCompression' USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') select * from lineitem where l_orderkey = 3");
-    res.close();
-    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
-    Path path = new Path("/tajo-data/testInsertOverwriteLocationWithCompression");
-    assertTrue(fs.exists(path));
-    assertEquals(1, fs.listStatus(path).length);
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      ResultSet res = executeQuery();
+      res.close();
+      FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
+      Path path = new Path("/tajo-data/testInsertOverwriteLocationWithCompression");
+      assertTrue(fs.exists(path));
+      assertEquals(1, fs.listStatus(path).length);
 
-    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
-    for (FileStatus file : fs.listStatus(path)){
-      CompressionCodec codec = factory.getCodec(file.getPath());
-      assertTrue(codec instanceof DeflateCodec);
+      CompressionCodecFactory factory = new CompressionCodecFactory(testingCluster.getConfiguration());
+      for (FileStatus file : fs.listStatus(path)){
+        CompressionCodec codec = factory.getCodec(file.getPath());
+        assertTrue(codec instanceof DeflateCodec);
+      }
+    }
+  }
+
+  @Test
+  public final void testInsertOverwriteWithAsteriskUsingParquet() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      ResultSet res = executeFile("full_table_parquet_ddl.sql");
+      res.close();
+
+      CatalogService catalog = testingCluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(getCurrentDatabase(), "full_table_parquet"));
+
+      res = executeString(
+          "insert overwrite into full_table_parquet select * from default.lineitem where l_orderkey = 3");
+      res.close();
+      TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "full_table_parquet");
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        assertEquals(2, desc.getStats().getNumRows().intValue());
+      }
+
+      res = executeString("select * from full_table_parquet;");
+      assertResultSet(res);
+
+      res = executeString("select l_orderkey, l_partkey from full_table_parquet;");
+      assertResultSet(res, "testInsertOverwriteWithAsteriskUsingParquet2.result");
+
+      executeString("DROP TABLE full_table_parquet_ddl PURGE");
+    }
+  }
+
+  @Test
+  public final void testInsertOverwriteWithDatabase() throws Exception {
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeQuery();
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
     }
   }
 }

@@ -30,10 +30,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class IntervalDatum extends Datum {
-  static final long MINUTE_MILLIS = 60 * 1000;
-  static final long HOUR_MILLIS = 60 * MINUTE_MILLIS;
-  static final long DAY_MILLIS = 24 * HOUR_MILLIS;
-  static final long MONTH_MILLIS = 30 * DAY_MILLIS;
+  public static final long MINUTE_MILLIS = 60 * 1000;
+  public static final long HOUR_MILLIS = 60 * MINUTE_MILLIS;
+  public static final long DAY_MILLIS = 24 * HOUR_MILLIS;
+  public static final long MONTH_MILLIS = 30 * DAY_MILLIS;
 
   static enum DATE_UNIT {
     CENTURY, DECADE, YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MICROSEC, MILLISEC, TIMEZONE,

@@ -550,7 +550,7 @@ public class CatalogUtil {
    * @return True if the parameter definition can be variable length.
    */
   public static boolean checkIfVariableLengthParamDefinition(List<DataType> definedTypes) {
-    if (definedTypes.size() < 1) {
+    if (definedTypes.size() < 1) { // if no parameter function
       return false;
     }
 
@@ -562,11 +562,11 @@ public class CatalogUtil {
     return CatalogUtil.isArrayType(lastDefinedParamType);
   }
 
-  public static Type getPrimitiveTypeOf(Type arrayType) {
-    if (!isArrayType(arrayType)) {
-      return arrayType;
+  public static Type getPrimitiveTypeOf(Type type) {
+    if (!isArrayType(type)) { // If the type is already primitive, it will just return the type.
+      return type;
     }
-    switch (arrayType) {
+    switch (type) {
     case BOOLEAN_ARRAY: return Type.BOOLEAN;
     case UINT1_ARRAY: return Type.UINT1;
     case UINT2_ARRAY: return Type.UINT2;
@@ -590,7 +590,7 @@ public class CatalogUtil {
     case TIMESTAMP_ARRAY: return Type.TIMESTAMP;
     case TIMESTAMPZ_ARRAY: return Type.TIMESTAMPZ;
     case INTERVAL_ARRAY: return Type.INTERVAL;
-    default: throw new InvalidOperationException("Invalid array type: " + arrayType.name());
+    default: throw new InvalidOperationException("Invalid array type: " + type.name());
     }
   }
 

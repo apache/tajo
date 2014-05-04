@@ -65,11 +65,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public EvalNode visitBinaryEval(CodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
-    if (EvalType.isLogicalEval(binaryEval)) {
+    if (EvalType.isLogicalOperator(binaryEval)) {
       return visitAndOrEval(context, binaryEval, stack);
-    } else if (EvalType.isArithmeticEval(binaryEval)) {
+    } else if (EvalType.isArithmeticOperator(binaryEval)) {
       return visitArithmeticEval(context, binaryEval, stack);
-    } else if (EvalType.isComparisonEval(binaryEval)) {
+    } else if (EvalType.isComparisonOperator(binaryEval)) {
       return visitComparisonEval(context, binaryEval, stack);
     } else {
       stack.push(binaryEval);

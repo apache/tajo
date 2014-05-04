@@ -50,7 +50,7 @@ public class TajoDump {
 
   private static void printUsage() {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp( "tajo_dump [options] [database name]", options);
+    formatter.printHelp( "tajo-dump [options] [database name]", options);
   }
 
   private static Pair<String, Integer> getConnectionAddr(TajoConf conf, CommandLine cmd) {

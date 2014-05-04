@@ -6,7 +6,19 @@ Release 0.9.0 - unreleased
 
     TAJO-761: Implements INTERVAL type. (Hyoungjun Kim via hyunsik)
 
+    TAJO-790: Implements ADD_MONTHS() function. (Hyoungjun Kim via hyunsik)
+
+    TAJO-791: Implements ADD_DAYS() function. (Hyoungjun Kim via hyunsik)
+
   IMPROVEMENT
+
+    TAJO-797: Implicit type conversion support. (hyunsik)
+
+    TAJO-804: Bump up Parquet version to 1.4.2. (hyunsik)
+
+    TAJO-425: RAWFILE_SYNC_INTERVAL has not default value. (jinho)
+
+    TAJO-617: Rename BIN/tajo_dump BIN/tajo-dump. (jinho)
 
     TAJO-789: Improve shuffle URI. (jinho)
 
@@ -18,6 +30,21 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-792: Insert table error with database name. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-806: CreateTableNode in CTAS uses a wrong schema as output schema and 
+    table schema. (hyunsik)
+
+    TAJO-805: Multiple constant in selection emits some columns. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-799: Local query without FROM throws IllegalArgumentException in 
+    CLI. (Hyoungjun Kim via hyunsik)
+
+    TAJO-802: No partition columns in WEB catalog page. 
+    (Hyoungjun Kim via hyunsik)
 
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 

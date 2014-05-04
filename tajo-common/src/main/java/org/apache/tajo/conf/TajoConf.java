@@ -147,7 +147,7 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
     // Storage Configuration
     //////////////////////////////////
-    RAWFILE_SYNC_INTERVAL("rawfile.sync.interval", null),
+    ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
     MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
@@ -249,7 +249,7 @@ public class TajoConf extends Configuration {
     CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
     CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
     CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
-    CLI__OUTPUT_FORMATTER_CLASS("tajo.cli.otuptu.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter");
+    CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter");
     ;
 
     public final String varname;

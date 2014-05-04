@@ -21,14 +21,56 @@ package org.apache.tajo.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.FileUtil;
+import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestTajoCli {
+  protected static final TpchTestBase testBase;
+
+  /** the base path of result directories */
+  protected static final Path resultBasePath;
+
+  static {
+    testBase = TpchTestBase.getInstance();
+    URL resultBaseURL = ClassLoader.getSystemResource("results");
+    resultBasePath = new Path(resultBaseURL.toString());
+  }
+
+  private TajoCli tajoCli;
+  private Path currentResultPath;
+
+  @Rule
+  public TestName name = new TestName();
+
+  public TestTajoCli() {
+    String className = getClass().getSimpleName();
+    currentResultPath = new Path(resultBasePath, className);
+  }
+
+  @After
+  public void teadDown() {
+    if (tajoCli != null) {
+      tajoCli.close();
+    }
+  }
+
   @Test
   public void testParseParam() throws Exception {
     String[] args = new String[]{"-f", "test.sql", "--param", "test1=10", "--param", "test2=20"};
@@ -66,9 +108,9 @@ public class TestTajoCli {
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
-    TajoCli shell = new TajoCli(tajoConf, args, System.in, System.out);
-    assertEquals("false", shell.getContext().getConf().get("tajo.cli.print.pause"));
-    assertEquals("256", shell.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
+    tajoCli = new TajoCli(tajoConf, args, System.in, System.out);
+    assertEquals("false", tajoCli.getContext().getConf().get("tajo.cli.print.pause"));
+    assertEquals("256", tajoCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
   }
 
   @Test
@@ -79,5 +121,35 @@ public class TestTajoCli {
 
     String expected = "select * from lineitem where l_tax > 10 and l_returnflag > 'A'";
     assertEquals(expected, TajoCli.replaceParam(sql, params));
+  }
+
+  @Test
+  public void testLocalQueryWithoutFrom() throws Exception {
+    String sql = "select 'abc', '123'; select substr('123456', 1,3);";
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeScript(sql);
+    String consoleResult = new String(out.toByteArray());
+
+    assertOutputResult(consoleResult);
+  }
+
+  private void assertOutputResult(String actual) throws Exception {
+    String resultFileName = name.getMethodName() + ".result";
+    FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    Path resultFile = StorageUtil.concatPath(currentResultPath, resultFileName);
+    assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
+
+    String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
+    assertEquals(expectedResult, actual);
+  }
+
+  public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
+    @Override
+    protected String getResponseTimeReadable(float responseTime) {
+      return "";
+    }
   }
 }

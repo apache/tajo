@@ -125,9 +125,8 @@ public class TajoCli {
     this.reader = new ConsoleReader(sin, out);
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
-    Class formatterClass = conf.getClass(conf.getVar(ConfVars.CLI__OUTPUT_FORMATTER_CLASS),
+    Class formatterClass = conf.getClass(ConfVars.CLI_OUTPUT_FORMATTER_CLASS.varname,
         DefaultTajoCliOutputFormatter.class);
-    
     this.outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
     this.outputFormatter.init(conf);
 
@@ -475,6 +474,13 @@ public class TajoCli {
 
   private void printInvalidCommand(String command) {
     sout.println("Invalid command " + command +". Try \\? for help.");
+  }
+
+  public void close() {
+    //for testcase
+    if (client != null) {
+      client.close();
+    }
   }
 
   public static void main(String [] args) throws Exception {

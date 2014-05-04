@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.sun.xml.bind.v2.runtime.reflect.opt.Const;
 import org.apache.tajo.catalog.Column;
 
 import java.util.ArrayList;
@@ -73,10 +72,7 @@ public class AlgebraicUtil {
       EvalNode lTerm = null;
       EvalNode rTerm = null;
 
-      if (left.getType() == EvalType.PLUS
-          || left.getType() == EvalType.MINUS
-          || left.getType() == EvalType.MULTIPLY
-          || left.getType() == EvalType.DIVIDE) { // we can ensure that left is binary.
+      if (EvalType.isArithmeticOperator(left)) { // we can ensure that left is binary.
 
         // If the left-left term is a variable, the left-right term is transposed.
         if (EvalTreeUtil.containColumnRef(((BinaryEval)left).getLeftExpr(), target)) {
@@ -222,56 +218,50 @@ public class AlgebraicUtil {
   /**
    * Split the left term and transform it into the right deep expression.
    * 
-   * @param binEvalNode - notice the left term of this expr will be eliminated
+   * @param binary - notice the left term of this expr will be eliminated
    * after done.
    * @return the separated expression changed into the right deep expression.  
    * For example, the expr 'x * y' is transformed into '* x'.  
    *
    */
-  public static PartialBinaryExpr splitLeftTerm(BinaryEval binEvalNode) {
+  public static PartialBinaryExpr splitLeftTerm(BinaryEval binary) {
     
-    if (!(binEvalNode.getType() == EvalType.PLUS
-        || binEvalNode.getType() == EvalType.MINUS
-        || binEvalNode.getType() == EvalType.MULTIPLY
-        || binEvalNode.getType() == EvalType.DIVIDE)) {
-      throw new AlgebraicException("Invalid algebraic operation: " + binEvalNode);
+    if (!(EvalType.isArithmeticOperator(binary))) {
+      throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     
-    if (binEvalNode.getLeftExpr() instanceof BinaryEval) {
-      return splitLeftTerm((BinaryEval) binEvalNode.getLeftExpr());
+    if (binary.getLeftExpr() instanceof BinaryEval) {
+      return splitLeftTerm((BinaryEval) binary.getLeftExpr());
     }
     
     PartialBinaryExpr splitted = 
-        new PartialBinaryExpr(binEvalNode.getType(), null, binEvalNode.getLeftExpr());
-    binEvalNode.setLeftExpr(null);
+        new PartialBinaryExpr(binary.getType(), null, binary.getLeftExpr());
+    binary.setLeftExpr(null);
     return splitted;
   }
   
   /**
    * Split the left term and transform it into the right deep expression.
    * 
-   * @param expr - to be splited
+   * @param binary - to be splited
    * @return the separated expression changed into the right deep expression.
    * For example, the expr 'x * y' is transformed into '* y'. 
    *
    * @throws CloneNotSupportedException
    */
-  public static PartialBinaryExpr splitRightTerm(BinaryEval expr) {
+  public static PartialBinaryExpr splitRightTerm(BinaryEval binary) {
     
-    if (!(expr.getType() == EvalType.PLUS
-        || expr.getType() == EvalType.MINUS
-        || expr.getType() == EvalType.MULTIPLY
-        || expr.getType() == EvalType.DIVIDE)) {
-      throw new AlgebraicException("Invalid algebraic operation: " + expr);
+    if (!(EvalType.isArithmeticOperator(binary))) {
+      throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     
-    if (expr.getRightExpr() instanceof BinaryEval) {
-      return splitRightTerm((BinaryEval) expr.getRightExpr());
+    if (binary.getRightExpr() instanceof BinaryEval) {
+      return splitRightTerm((BinaryEval) binary.getRightExpr());
     }
     
     PartialBinaryExpr splitted = 
-        new PartialBinaryExpr(expr.getType(), null, expr.getRightExpr());
-    expr.setRightExpr(null);
+        new PartialBinaryExpr(binary.getType(), null, binary.getRightExpr());
+    binary.setRightExpr(null);
     return splitted;
   }
   
@@ -316,15 +306,6 @@ public class AlgebraicUtil {
     }
     
     return rewritten;
-  }
-
-  public static boolean isComparisonOperator(EvalNode expr) {
-    return expr.getType() == EvalType.EQUAL ||
-        expr.getType() == EvalType.LEQ ||
-        expr.getType() == EvalType.LTH ||
-        expr.getType() == EvalType.GEQ ||
-        expr.getType() == EvalType.GTH ||
-        expr.getType() == EvalType.BETWEEN;
   }
 
   public static boolean isIndexableOperator(EvalNode expr) {

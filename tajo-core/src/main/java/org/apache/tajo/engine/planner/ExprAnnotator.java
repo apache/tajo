@@ -76,6 +76,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
+  /**
+   * It checks both terms in binary expression. If one of both needs type conversion, it inserts a cast expression.
+   *
+   * @param lhs left hand side term
+   * @param rhs right hand side term
+   * @return a pair including left/right hand side terms
+   */
   public static Pair<EvalNode, EvalNode> convertTypesIfNecessary(EvalNode lhs, EvalNode rhs) {
     Type lhsType = lhs.getValueType().getType();
     Type rhsType = rhs.getValueType().getType();
@@ -99,6 +106,21 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     return new Pair<EvalNode, EvalNode>(lhs, rhs);
   }
 
+  /**
+   * It picks out the widest range type among given <code>types</code>.
+   *
+   * Example:
+   * <ul>
+   *   <li>int, int8  -> int8 </li>
+   *   <li>int4, int8, float4  -> float4 </li>
+   *   <li>float4, float8 -> float8</li>
+   *   <li>float4, text -> exception!</li>
+   * </ul>
+   *
+   * @param types A list of DataTypes
+   * @return The widest DataType
+   * @throws PlanningException when types are not compatible, it throws the exception.
+   */
   static DataType getWidestType(DataType...types) throws PlanningException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
@@ -427,7 +449,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   private static BinaryEval createBinaryNode(EvalType type, EvalNode lhs, EvalNode rhs) {
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rhs); // implicit type conversion
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rhs); // implicit type conversion if necessary
     return new BinaryEval(type, pair.getFirst(), pair.getSecond());
   }
 
@@ -794,6 +816,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     return results;
   }
 
+  /** It is the relationship graph of type conversions. It represents each type can be converted to which types. */
   static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
   static {
     TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT1, Type.INT1);

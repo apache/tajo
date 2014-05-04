@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;

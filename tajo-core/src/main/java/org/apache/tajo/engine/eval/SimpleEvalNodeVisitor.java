@@ -22,6 +22,10 @@ import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
 
+/**
+ * It provides simple visitor methods for an expression tree. Since <code>SimpleEvalNodeVisitor</code> provides
+ * fewer visitor methods, it allows users to write a simple rewriter for expression trees.
+ */
 public class SimpleEvalNodeVisitor<CONTEXT> {
 
   public EvalNode visit(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {

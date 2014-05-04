@@ -1153,15 +1153,24 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    *
    * We use the following terms, such target table, target column
    * <pre>
-   * INSERT INTO    TB_NAME        (col1, col2)          SELECT    c1,   c2        FROM ...
-   *                ^^^^^^^        ^^^^^^^^^^^^                  ^^^^^^^^^^^^
-   *             target table   target columns (or schema)     projected columns (or schema)
+   * INSERT INTO    [DATABASE_NAME.]TB_NAME        (col1, col2)          SELECT    c1,   c2        FROM ...
+   *                 ^^^^^^^^^^^^^^ ^^^^^^^        ^^^^^^^^^^^^                  ^^^^^^^^^^^^
+   *               target database target table  target columns (or schema)     projected columns (or schema)
    * </pre>
    */
   private InsertNode buildInsertIntoTablePlan(PlanContext context, InsertNode insertNode, Insert expr)
       throws PlanningException {
     // Get and set a target table
-    TableDesc desc = catalog.getTableDesc(context.session.getCurrentDatabase(), expr.getTableName());
+    String databaseName;
+    String tableName;
+    if (CatalogUtil.isFQTableName(expr.getTableName())) {
+      databaseName = CatalogUtil.extractQualifier(expr.getTableName());
+      tableName = CatalogUtil.extractSimpleName(expr.getTableName());
+    } else {
+      databaseName = context.session.getCurrentDatabase();
+      tableName = expr.getTableName();
+    }
+    TableDesc desc = catalog.getTableDesc(databaseName, tableName);
     insertNode.setTargetTable(desc);
 
     //
@@ -1371,8 +1380,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           createTableNode.setOutSchema(tableSchema);
           createTableNode.setTableSchema(tableSchema);
         } else {
-          createTableNode.setOutSchema(subQuery.getOutSchema());
-          createTableNode.setTableSchema(subQuery.getOutSchema());
+          // Convert the schema of subquery into the target table's one.
+          Schema schema = new Schema(subQuery.getOutSchema());
+          schema.setQualifier(createTableNode.getTableName());
+          createTableNode.setOutSchema(schema);
+          createTableNode.setTableSchema(schema);
         }
       }
 

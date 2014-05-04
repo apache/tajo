@@ -31,9 +31,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestSQLExpression extends ExprTestBase {
 
-  public TestSQLExpression() {
-  }
-
   @Test
   public void testQuotedIdentifiers() throws IOException {
     Schema schema = new Schema();
@@ -392,7 +389,7 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col3 from table1;", new String [] {"-1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col4 from table1;", new String [] {"-2.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col5 from table1;", new String [] {
-        (new Integer(2) - new Double(5.1))+""});
+        (new Integer(2) - 5.1d) +""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col6::int4 from table1;", new String [] {"-4"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col7::int4 from table1;", new String [] {"-5"});
 
@@ -497,7 +494,7 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col4 from table1;", new String [] {
         (new Long(3) - new Float(4.1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col5 from table1;", new String [] {
-        (new Long(3) - new Double(5.1))+""});
+        (new Long(3) - 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col6::int8 from table1;", new String [] {"-3"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col7::int8 from table1;", new String [] {"-4"});
 
@@ -593,7 +590,7 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col3 from table1;", new String [] {"7.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col4 from table1;", new String [] {"8.2"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col5 from table1;", new String [] {
-        (new Float(4.1) + new Double(5.1))+""});
+        (new Float(4.1) + 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col6::float4 from table1;", new String [] {"10.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col7::float4 from table1;", new String [] {"11.1"});
 
@@ -604,11 +601,11 @@ public class TestSQLExpression extends ExprTestBase {
         (new Float(4.1) - new Long(3))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col4 from table1;", new String [] {"0.0"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col5 from table1;", new String [] {
-        (new Float(4.1) - new Double(5.1))+""});
+        (new Float(4.1) - 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col6::float4 from table1;", new String [] {
-        (new Float(4.1) - new Float(6))+""});
+        (4.1f - 6f)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col7::float4 from table1;", new String [] {
-        (new Float(4.1) - new Float(7))+""});
+        (4.1f - 7f)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col0 from table1;", new String [] {"0.0"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col1 from table1;", new String [] {"4.1"});
@@ -618,11 +615,11 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col4 from table1;", new String [] {
         (new Float(4.1) * new Float(4.1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col5 from table1;", new String [] {
-        (new Float(4.1) * new Double(5.1))+""});
+        (new Float(4.1) * 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col6::float4 from table1;", new String [] {
-        (new Float(4.1) * new Float(6))+""});
+        (new Float(4.1) * 6f)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col7::float4 from table1;", new String [] {
-        (new Float(4.1) * new Float(7))+""});
+        (new Float(4.1) * 7f)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col1 from table1;", new String [] {
         (new Float(4.1) % new Integer(1))+""});
@@ -633,11 +630,11 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col4 from table1;", new String [] {
         (new Float(4.1) % new Float(4.1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col5 from table1;", new String [] {
-        (new Float(4.1) % new Double(5.1))+""});
+        (new Float(4.1) % 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col6::float4 from table1;", new String [] {
-        (new Float(4.1) % new Float(6))+""});
+        (new Float(4.1) % 6f)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col7::int1 from table1;", new String [] {
-        (new Float(4.1) % new Float(7))+""});
+        (new Float(4.1) % 7f)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col0 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col1 from table1;", new String [] {"f"});
@@ -711,7 +708,7 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col2 from table1;", new String [] {"7.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col3 from table1;", new String [] {"8.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col4 from table1;", new String [] {
-        (new Double(5.1) + new Float(4.1))+""});
+        (5.1d + 4.1f)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col5 from table1;", new String [] {"10.2"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col6::int1 from table1;", new String [] {"11.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col7::int1 from table1;", new String [] {"12.1"});
@@ -719,45 +716,45 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col0 from table1;", new String [] {"5.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col1 from table1;", new String [] {"4.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col2 from table1;", new String [] {
-        (new Double(5.1) - new Integer(2))+""});
+        (5.1d - new Integer(2))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col3 from table1;", new String [] {
-        (new Double(5.1) - new Long(3))+""});
+        (5.1d - 3l)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col4 from table1;", new String [] {
-        (new Double(5.1) - new Float(4.1))+""});
+        (5.1d - 4.1f)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col5 from table1;", new String [] {"0.0"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col6::float8 from table1;", new String [] {
-        (new Double(5.1) - new Double(6))+""});
+        (5.1d - 6d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col7::float8 from table1;", new String [] {
-        (new Double(5.1) - new Double(7))+""});
+        (5.1d - 7d)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col0 from table1;", new String [] {"0.0"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col1 from table1;", new String [] {"5.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col2 from table1;", new String [] {"10.2"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col3 from table1;", new String [] {
-        (new Double(5.1) * new Long(3))+""});
+        (5.1d * new Long(3))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col4 from table1;", new String [] {
-        (new Double(5.1) * new Float(4.1))+""});
+        (5.1d * new Float(4.1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col5 from table1;", new String [] {
-        (new Double(5.1) * new Double(5.1))+""});
+        (5.1d * 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col6::float8 from table1;", new String [] {
-        (new Double(5.1) * new Double(6))+""});
+        (5.1d * 6d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col7::float8 from table1;", new String [] {
-        (new Double(5.1) * new Double(7))+""});
+        (5.1d * 7d)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col1 from table1;", new String [] {
-        (new Double(5.1) % new Integer(1))+""});
+        (5.1d % new Integer(1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col2 from table1;", new String [] {
-        (new Double(5.1) % new Integer(2))+""});
+        (5.1d % new Integer(2))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col3 from table1;", new String [] {
-        (new Double(5.1) % new Long(3))+""});
+        (5.1d % new Long(3))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col4 from table1;", new String [] {
-        (new Double(5.1) % new Float(4.1))+""});
+        (5.1d % new Float(4.1))+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col5 from table1;", new String [] {
-        (new Double(5.1) % new Double(5.1))+""});
+        (5.1d % 5.1d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col6::float8 from table1;", new String [] {
-        (new Double(5.1) % new Double(6))+""});
+        (5.1d % 6d)+""});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col7::float8 from table1;", new String [] {
-        (new Double(5.1) % new Double(7))+""});
+        (5.1d % 7d)+""});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col0 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col1 from table1;", new String [] {"f"});

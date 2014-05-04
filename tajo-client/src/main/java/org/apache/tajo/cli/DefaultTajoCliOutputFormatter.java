@@ -53,17 +53,21 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   private String getQuerySuccessMessage(TableDesc tableDesc, float responseTime, int totalPrintedRows, String postfix) {
     TableStats stat = tableDesc.getStats();
-    String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
-    long resultRows = stat.getNumRows();
+    String volume = stat == null ? "0 B" : FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
+    long resultRows = stat == null ? 0 : stat.getNumRows();
 
     long realNumRows = resultRows != 0 ? resultRows : totalPrintedRows;
-    return "(" + realNumRows + " rows, " + responseTime + " sec, " + volume + " " + postfix + ")";
+    return "(" + realNumRows + " rows, " + getResponseTimeReadable(responseTime) + ", " + volume + " " + postfix + ")";
+  }
+
+  protected String getResponseTimeReadable(float responseTime) {
+    return responseTime + " sec";
   }
 
   @Override
   public void printResult(PrintWriter sout, InputStream sin, TableDesc tableDesc,
                           float responseTime, ResultSet res) throws Exception {
-    long resultRows = tableDesc.getStats().getNumRows();
+    long resultRows = tableDesc.getStats() == null ? 0 : tableDesc.getStats().getNumRows();
     if (resultRows == 0) {
       resultRows = Integer.MAX_VALUE;
     }
@@ -115,6 +119,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       }
     }
     sout.println(getQuerySuccessMessage(tableDesc, responseTime, totalPrintedRows, "selected"));
+    sout.flush();
   }
 
   @Override
@@ -125,7 +130,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printProgress(PrintWriter sout, QueryStatus status) {
     sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
-        + "%, response time: " + ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0) + " sec");
+        + "%, response time: "
+        + getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)));
     sout.flush();
   }
 

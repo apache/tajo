@@ -23,7 +23,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.planner.logical.UnaryNode;
 import org.apache.tajo.storage.Tuple;
 
 public abstract class UnaryEval extends EvalNode implements Cloneable {

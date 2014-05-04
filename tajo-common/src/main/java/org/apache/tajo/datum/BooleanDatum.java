@@ -29,6 +29,7 @@ public class BooleanDatum extends Datum {
   public static final BooleanDatum TRUE = new BooleanDatum(true);
   public static final BooleanDatum FALSE = new BooleanDatum(false);
 
+  // Three-valued Login Constants
   public static final byte UNKNOWN_INT = 0;
   public static final byte TRUE_INT = 1;
   public static final byte FALSE_INT = 2;

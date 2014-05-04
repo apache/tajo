@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;

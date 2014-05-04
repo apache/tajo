@@ -78,7 +78,7 @@ public enum EvalType {
     this.operatorName = text;
   }
 
-  public static boolean isLogicalEval(EvalNode evalNode) {
+  public static boolean isLogicalOperator(EvalNode evalNode) {
     EvalType type = evalNode.getType();
     boolean match = false;
 
@@ -89,7 +89,7 @@ public enum EvalType {
     return match;
   }
 
-  public static boolean isComparisonEval(EvalNode evalNode) {
+  public static boolean isComparisonOperator(EvalNode evalNode) {
     EvalType type = evalNode.getType();
     boolean match = false;
 
@@ -99,11 +99,12 @@ public enum EvalType {
     match |= type == LEQ;
     match |= type == GTH;
     match |= type == GEQ;
+    match |= type == BETWEEN;
 
     return match;
   }
 
-  public static boolean isArithmeticEval(EvalNode evalNode) {
+  public static boolean isArithmeticOperator(EvalNode evalNode) {
     EvalType type = evalNode.getType();
     boolean match = false;
 

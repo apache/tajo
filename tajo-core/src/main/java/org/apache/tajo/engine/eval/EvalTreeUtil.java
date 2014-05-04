@@ -26,7 +26,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -232,7 +231,7 @@ public class EvalTreeUtil {
     if (expr instanceof BinaryEval) {
       boolean joinComparator;
       if (includeThetaJoin) {
-        joinComparator = AlgebraicUtil.isComparisonOperator(expr);
+        joinComparator = EvalType.isComparisonOperator(expr);
       } else {
         joinComparator = expr.getType() == EvalType.EQUAL;
       }
