@@ -52,6 +52,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-810: TAJO-810: Update Tajo site for 0.8.0 release. (hyunsik)
+
     TAJO-605: Rename Options to KeyValueList. (jinho)
 
   SUB TASKS
