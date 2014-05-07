@@ -1,4 +1,4 @@
-package org.apache.tajo.jdbc; /**
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,8 @@ package org.apache.tajo.jdbc; /**
  * limitations under the License.
  */
 
+package org.apache.tajo.jdbc;
+
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -28,6 +30,12 @@ import java.util.List;
 public class TajoMetaDataResultSet extends TajoResultSetBase {
   private List<MetaDataTuple> values;
 
+  public TajoMetaDataResultSet(Schema schema, List<MetaDataTuple> values) {
+    init();
+    this.schema = schema;
+    setDataTuples(values);
+  }
+
   public TajoMetaDataResultSet(List<String> columns, List<Type> types, List<MetaDataTuple> values) {
     init();
     schema = new Schema();
@@ -38,8 +46,12 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
         schema.addColumn(columnName, types.get(index++));
       }
     }
+    setDataTuples(values);
+  }
+
+  protected void setDataTuples(List<MetaDataTuple> values) {
     this.values = values;
-    totalRow = values == null ? 0 : values.size();
+    this.totalRow = values == null ? 0 : values.size();
   }
 
   @Override

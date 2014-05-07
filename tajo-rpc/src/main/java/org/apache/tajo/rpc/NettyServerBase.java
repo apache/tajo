@@ -68,8 +68,6 @@ public class NettyServerBase {
   public void init(ChannelPipelineFactory pipeline, int workerNum) {
     ChannelFactory factory = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
 
-    DefaultChannelFuture.setUseDeadLockChecker(false);
-
     pipelineFactory = pipeline;
     bootstrap = new ServerBootstrap(factory);
     bootstrap.setPipelineFactory(pipelineFactory);
