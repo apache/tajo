@@ -556,8 +556,9 @@ public class PlannerUtil {
   /**
    * @return the first array contains left table's columns, and the second array contains right table's columns.
    */
-  public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema, true);
+  public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema,
+                                                   Schema rightSchema, boolean includeThetaJoin) {
+    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema, includeThetaJoin);
     Column[] leftColumns = new Column[joinKeys.size()];
     Column[] rightColumns = new Column[joinKeys.size()];
     for (int i = 0; i < joinKeys.size(); i++) {

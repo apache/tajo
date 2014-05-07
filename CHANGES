@@ -16,6 +16,8 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
+
     TAJO-792: Insert table error with database name. 
     (Hyoungjun Kim via hyunsik)
 

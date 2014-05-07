@@ -18,6 +18,8 @@
 
 package org.apache.tajo.master;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -25,27 +27,37 @@ import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.engine.eval.BinaryEval;
+import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
 public class TestGlobalPlanner {
+  private static Log LOG = LogFactory.getLog(TestGlobalPlanner.class);
 
   private static TajoTestingCluster util;
   private static CatalogService catalog;
@@ -126,6 +138,82 @@ public class TestGlobalPlanner {
   @Test
   public void testJoin() throws Exception {
     buildPlan("select n_name, r_name, n_regionkey, r_regionkey from nation, region");
+  }
+
+  @Test
+  public void testThetaJoinKeyPairs() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    sb.append("select n_nationkey, n_name, n_regionkey, t.cnt");
+    sb.append(" from nation n");
+    sb.append(" join");
+    sb.append(" (");
+    sb.append("   select r_regionkey, count(*) as cnt");
+    sb.append("   from nation n");
+    sb.append("   join region r on (n.n_regionkey = r.r_regionkey)");
+    sb.append("   group by r_regionkey");
+    sb.append(" ) t  on  (n.n_regionkey = t.r_regionkey)");
+    sb.append(" and n.n_nationkey > t.cnt ");
+    sb.append(" order by n_nationkey");
+
+    MasterPlan plan = buildPlan(sb.toString());
+    ExecutionBlock root = plan.getRoot();
+
+    Map<BinaryEval, Boolean> evalMap = TUtil.newHashMap();
+    BinaryEval eval1 = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_regionkey", TajoDataTypes.Type.INT4))
+        , new FieldEval(new Column("default.t.r_regionkey", TajoDataTypes.Type.INT4))
+    );
+    evalMap.put(eval1, Boolean.FALSE);
+
+    BinaryEval eval2 = new BinaryEval(EvalType.EQUAL
+        , new FieldEval(new Column("default.n.n_nationkey", TajoDataTypes.Type.INT4))
+        , new FieldEval(new Column("default.t.cnt", TajoDataTypes.Type.INT4))
+    );
+    evalMap.put(eval2, Boolean.FALSE);
+
+    visitChildExecutionBLock(plan, root, evalMap);
+
+    // Find required shuffleKey.
+    Assert.assertTrue(evalMap.get(eval1).booleanValue());
+
+    // Find that ShuffleKeys only includes equi-join conditions
+    Assert.assertFalse(evalMap.get(eval2).booleanValue());
+  }
+
+  private void visitChildExecutionBLock(MasterPlan plan, ExecutionBlock parentBlock,
+                                        Map<BinaryEval, Boolean> qualMap) throws Exception {
+    boolean isExistLeftField, isExistRightField;
+
+    for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
+      FieldEval leftField = (FieldEval)entry.getKey().getLeftExpr();
+      FieldEval rightField = (FieldEval)entry.getKey().getRightExpr();
+
+      for (ExecutionBlock block : plan.getChilds(parentBlock))  {
+        isExistLeftField = false;
+        isExistRightField = false;
+
+        if (plan.getIncomingChannels(block.getId()) != null) {
+          for (DataChannel channel :plan.getIncomingChannels(block.getId())) {
+            if (channel.getShuffleKeys() != null) {
+              for (Column column : channel.getShuffleKeys()) {
+                if (column.getQualifiedName().equals(leftField.getColumnRef().getQualifiedName())) {
+                  isExistLeftField = true;
+                } else if (column.getQualifiedName().
+                    equals(rightField.getColumnRef().getQualifiedName())) {
+                  isExistRightField = true;
+                }
+              }
+            }
+          }
+
+          if(isExistLeftField && isExistRightField) {
+            qualMap.put(entry.getKey(), Boolean.TRUE);
+          }
+        }
+
+        visitChildExecutionBLock(plan, block, qualMap);
+      }
+    }
   }
 
   @Test

@@ -167,8 +167,9 @@ public class GlobalPlanner {
     DataChannel channel = new DataChannel(childBlock, parent, HASH_SHUFFLE, 32);
     channel.setStoreType(storeType);
     if (join.getJoinType() != JoinType.CROSS) {
+      // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
-          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema());
+          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema(), false);
       if (leftTable) {
         channel.setShuffleKeys(joinColumns[0]);
       } else {
