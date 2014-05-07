@@ -15,6 +15,9 @@
 
 language: java
 
+git:
+  depth: 150
+
 jdk:
   - openjdk6
 
