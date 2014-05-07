@@ -40,6 +40,7 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -153,7 +154,7 @@ public class GlobalPlanner {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
-    TableMeta meta = new TableMeta(channel.getStoreType(), new Options());
+    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
     TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);
@@ -167,8 +168,9 @@ public class GlobalPlanner {
     DataChannel channel = new DataChannel(childBlock, parent, HASH_SHUFFLE, 32);
     channel.setStoreType(storeType);
     if (join.getJoinType() != JoinType.CROSS) {
+      // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
-          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema());
+          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema(), false);
       if (leftTable) {
         channel.setShuffleKeys(joinColumns[0]);
       } else {

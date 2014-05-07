@@ -36,6 +36,7 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -247,7 +248,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
@@ -313,7 +314,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
     meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
@@ -406,7 +407,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
@@ -475,7 +476,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
@@ -544,7 +545,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
@@ -613,7 +614,7 @@ public class TestStorages {
     schema.addColumn("col12", Type.NULL_TYPE);
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
@@ -671,7 +672,7 @@ public class TestStorages {
       schema.addColumn("col2", Type.TIME);
       schema.addColumn("col3", Type.TIMESTAMP);
 
-      Options options = new Options();
+      KeyValueSet options = new KeyValueSet();
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.util.Map;
 
@@ -94,7 +95,7 @@ public class DDLBuilder {
   }
 
   private static void buildWithClause(StringBuilder sb, TableMeta meta) {
-    Options options = meta.getOptions();
+    KeyValueSet options = meta.getOptions();
     if (options != null && options.size() > 0) {
       boolean first = true;
       sb.append(" WITH (");

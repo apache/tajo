@@ -36,6 +36,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -83,13 +84,13 @@ public class TestPlannerUtil {
     TableDesc student =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV,
-            new Options(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV,
-            new Options(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir());
     catalog.createTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,

@@ -35,6 +35,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -46,7 +47,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.CatalogConstants.CATALOG_URI;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
@@ -235,7 +235,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema1,
-        new TableMeta(StoreType.CSV, new Options()),
+        new TableMeta(StoreType.CSV, new KeyValueSet()),
         path, true);
     return table;
   }
@@ -356,7 +356,7 @@ public class TestCatalog {
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
         StoreType.CSV,
-        new Options(),
+        new KeyValueSet(),
         path);
 
 		assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
@@ -563,7 +563,7 @@ public class TestCatalog {
         .addColumn("score", Type.FLOAT8);
 
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
@@ -603,7 +603,7 @@ public class TestCatalog {
         .addColumn("score", Type.FLOAT8);
 
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
@@ -641,7 +641,7 @@ public class TestCatalog {
         .addColumn("score", Type.FLOAT8);
 
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
@@ -678,7 +678,7 @@ public class TestCatalog {
         .addColumn("score", Type.FLOAT8);
 
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 
@@ -715,7 +715,7 @@ public class TestCatalog {
         .addColumn("score", Type.FLOAT8);
 
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
 

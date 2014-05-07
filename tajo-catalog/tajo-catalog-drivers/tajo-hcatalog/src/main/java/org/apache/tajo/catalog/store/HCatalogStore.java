@@ -47,6 +47,7 @@ import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 import java.util.*;
@@ -108,7 +109,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     Path path = null;
     CatalogProtos.StoreType storeType = null;
     org.apache.tajo.catalog.Schema schema = null;
-    Options options = null;
+    KeyValueSet options = null;
     TableStats stats = null;
     PartitionMethodDesc partitions = null;
 
@@ -165,7 +166,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       stats = new TableStats();
-      options = new Options();
+      options = new KeyValueSet();
       options.putAll(table.getParameters());
       Properties properties = table.getMetadata();
       if (properties != null) {

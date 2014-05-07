@@ -20,7 +20,7 @@ package org.apache.tajo.catalog.json;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.*;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonSerDerAdapter;
@@ -37,14 +37,14 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 
     CatalogProtos.StoreType type = CatalogProtos.StoreType.valueOf(jsonObject.get("store").getAsString());
 
-    Options options = null;
+    KeyValueSet keyValueSet = null;
     if (jsonObject.get("options") != null) {
-      options = context.deserialize(jsonObject.get("options"), Options.class);
+      keyValueSet = context.deserialize(jsonObject.get("options"), KeyValueSet.class);
     } else {
       throw new JsonParseException("Options not found in json");
 
     }
-		return new TableMeta(type, options);
+		return new TableMeta(type, keyValueSet);
 	}
 
 	@Override
@@ -52,7 +52,7 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 			JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
     jsonObj.addProperty("store", src.getStoreType().name());
-    jsonObj.add("options", context.serialize(src.getOptions(), Options.class));
+    jsonObj.add("options", context.serialize(src.getOptions(), KeyValueSet.class));
 		return jsonObj;
 	}
 

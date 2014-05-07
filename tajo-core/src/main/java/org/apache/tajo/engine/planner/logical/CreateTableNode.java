@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
@@ -117,7 +117,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     createTableNode.storageType = storageType;
     createTableNode.external = external;
     createTableNode.path = path != null ? new Path(path.toString()) : null;
-    createTableNode.options = (Options) (options != null ? options.clone() : null);
+    createTableNode.options = (KeyValueSet) (options != null ? options.clone() : null);
     createTableNode.ifNotExists = ifNotExists;
     return createTableNode;
   }
