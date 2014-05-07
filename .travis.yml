@@ -21,9 +21,9 @@ git:
 jdk:
   - openjdk6
 
-install:
-  - wget https://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz -O /tmp/protobuf-2.5.0.tar.gz
-  - tar -xzvf /tmp/protobuf-2.5.0.tar.gz
-  - cd protobuf-2.5.0 && ./configure --prefix=/usr && make && sudo make install
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/local
 
-script: mvn clean install -Phcatalog-0.12.0
+script: dev-support/travis-build.sh
