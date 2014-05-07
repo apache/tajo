@@ -17,12 +17,14 @@
 # limitations under the License.
 
 PROTOBUF_VERSION=2.5.0
-SRC=`pwd`
 INSTALL=${HOME}/local
 
-if [ ! -f ${INSTALL}/bin/protoc ]
-then
+if [ ! -d ${INSTALL} ]; then
+  echo "mkdir -p ${INSTALL}"
+  mkdir -p ${INSTALL}
+fi
 
+if [ ! -f ${INSTALL}/bin/protoc ]; then
     cd ${INSTALL}
     echo "Fetching protobuf"
     N="protobuf-${PROTOBUF_VERSION}"
@@ -35,8 +37,3 @@ then
     ./configure --with-pic --prefix=${INSTALL} --with-gflags=${INSTALL}
     make -j4 install
 fi
-
-cd ${SRC}
-
-echo "mvn clean install -Phcatalog-0.12.0"
-mvn clean install -Phcatalog-0.12.0

@@ -26,4 +26,6 @@ cache:
   - $HOME/.m2
   - $HOME/local
 
-script: dev-support/travis-build.sh
+install: ./dev-support/travis-install-dependencies.sh
+
+script: mvn clean install -Phcatalog-0.12.0 
