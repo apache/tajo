@@ -40,6 +40,7 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -153,7 +154,7 @@ public class GlobalPlanner {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
-    TableMeta meta = new TableMeta(channel.getStoreType(), new Options());
+    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
     TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);

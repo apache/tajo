@@ -20,7 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
@@ -51,7 +51,7 @@ public class TestNullValues {
         "2||",
         "3|filled|0.2"
     };
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
@@ -77,7 +77,7 @@ public class TestNullValues {
         "||",
         "3|filled|"
     };
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
@@ -112,7 +112,7 @@ public class TestNullValues {
         ",,,,672287821,1301460,1,313895860387,126288907,1024",
         ",,,43578,19,13,6,3581,2557,1024"
     };
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
@@ -145,7 +145,7 @@ public class TestNullValues {
         "\\N,,,,672287821,",
         ",\\N,,43578"
     };
-    Options opts = new Options();
+    KeyValueSet opts = new KeyValueSet();
     opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
     opts.put(StorageConstants.CSVFILE_NULL, "\\\\N");
     ResultSet res = TajoTestingCluster

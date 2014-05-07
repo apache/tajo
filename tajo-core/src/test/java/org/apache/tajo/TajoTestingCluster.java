@@ -33,7 +33,7 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -560,7 +560,7 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              Options option,
+                              KeyValueSet option,
                               String[][] tables,
                               String query) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();

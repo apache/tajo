@@ -19,7 +19,7 @@
 package org.apache.tajo.master.session;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.common.ProtoObject;
 
 import java.util.HashMap;
@@ -49,8 +49,8 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
     userName = proto.getUsername();
     currentDatabase = proto.getCurrentDatabase();
     lastAccessTime = proto.getLastAccessTime();
-    Options options = new Options(proto.getVariables());
-    sessionVariables = options.getAllKeyValus();
+    KeyValueSet keyValueSet = new KeyValueSet(proto.getVariables());
+    sessionVariables = keyValueSet.getAllKeyValus();
   }
 
   public String getSessionId() {
@@ -112,7 +112,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
     builder.setUsername(userName);
     builder.setCurrentDatabase(currentDatabase);
     builder.setLastAccessTime(lastAccessTime);
-    Options variables = new Options();
+    KeyValueSet variables = new KeyValueSet();
     variables.putAll(this.sessionVariables);
     builder.setVariables(variables.getProto());
     return builder.build();

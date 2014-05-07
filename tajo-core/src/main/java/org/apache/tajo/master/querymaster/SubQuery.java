@@ -56,6 +56,7 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
@@ -576,7 +577,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       storeType = storeTableNode.getStorageType();
     }
     schema = channel.getSchema();
-    meta = CatalogUtil.newTableMeta(storeType, new Options());
+    meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
   }

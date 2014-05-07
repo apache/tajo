@@ -20,7 +20,7 @@ package org.apache.tajo.engine.planner.logical;
 
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
@@ -33,7 +33,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
   @Expose protected StoreType storageType = StoreType.CSV;
-  @Expose protected Options options;
+  @Expose protected KeyValueSet options;
 
   protected PersistentStoreNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
@@ -51,11 +51,11 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
     return this.options != null;
   }
 
-  public Options getOptions() {
+  public KeyValueSet getOptions() {
     return this.options;
   }
 
-  public void setOptions(Options options) {
+  public void setOptions(KeyValueSet options) {
     this.options = options;
   }
 
@@ -84,7 +84,7 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
   public Object clone() throws CloneNotSupportedException {
     PersistentStoreNode store = (PersistentStoreNode) super.clone();
     store.storageType = storageType != null ? storageType : null;
-    store.options = options != null ? (Options) options.clone() : null;
+    store.options = options != null ? (KeyValueSet) options.clone() : null;
     return store;
   }
 }

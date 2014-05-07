@@ -16,48 +16,48 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.json.CatalogGsonHelper;
-import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.util.TUtil;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonObject {
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
+
+public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, GsonObject {
 	private KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
 	
 	@Expose private Map<String,String> keyVals;
 	
-	public Options() {
+	public KeyValueSet() {
     keyVals = TUtil.newHashMap();
 	}
 	
-	public Options(KeyValueSetProto proto) {
+	public KeyValueSet(KeyValueSetProto proto) {
     this.keyVals = TUtil.newHashMap();
     for(KeyValueProto keyval : proto.getKeyvalList()) {
       this.keyVals.put(keyval.getKey(), keyval.getValue());
     }
 	}
 	
-	public Options(Options options) {
+	public KeyValueSet(KeyValueSet keyValueSet) {
 	  this();
-	  this.keyVals.putAll(options.keyVals);
+	  this.keyVals.putAll(keyValueSet.keyVals);
 	}
 	
-	public static Options create() {
-	  return new Options();
+	public static KeyValueSet create() {
+	  return new KeyValueSet();
 	}
 	
-	public static Options create(Options options) {
-    return new Options(options);
+	public static KeyValueSet create(KeyValueSet keyValueSet) {
+    return new KeyValueSet(keyValueSet);
   }
 
   public int size() {
@@ -74,9 +74,9 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
     }
   }
 	
-	public void putAll(Options options) {
-    if (options != null) {
-	    this.keyVals.putAll(options.keyVals);
+	public void putAll(KeyValueSet keyValueSet) {
+    if (keyValueSet != null) {
+	    this.keyVals.putAll(keyValueSet.keyVals);
     }
 	}
 	
@@ -108,8 +108,8 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
 
     @Override
 	public boolean equals(Object object) {
-		if(object instanceof Options) {
-			Options other = (Options)object;
+		if(object instanceof KeyValueSet) {
+			KeyValueSet other = (KeyValueSet)object;
 			for(Entry<String, String> entry : other.keyVals.entrySet()) {
 				if(!keyVals.get(entry.getKey()).equals(entry.getValue()))
 					return false;
@@ -122,10 +122,10 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {    
-    Options options = (Options) super.clone();
-    options.builder = KeyValueSetProto.newBuilder();
-    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) : null;
-    return options;
+    KeyValueSet keyValueSet = (KeyValueSet) super.clone();
+    keyValueSet.builder = KeyValueSetProto.newBuilder();
+    keyValueSet.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) : null;
+    return keyValueSet;
 	}
 	
 	@Override
@@ -150,6 +150,6 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
 	}
   
   public String toJson() {
-    return CatalogGsonHelper.toJson(this, Options.class);
+    return CommonGsonHelper.toJson(this, KeyValueSet.class);
   }
 }

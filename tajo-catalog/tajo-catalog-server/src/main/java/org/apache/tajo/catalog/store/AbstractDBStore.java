@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
@@ -46,6 +47,8 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -713,7 +716,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         }
 
         pstmt = conn.prepareStatement(propSQL);
-        for (CatalogProtos.KeyValueProto entry : table.getMeta().getParams().getKeyvalList()) {
+        for (KeyValueProto entry : table.getMeta().getParams().getKeyvalList()) {
           pstmt.setInt(1, tableId);
           pstmt.setString(2, entry.getKey());
           pstmt.setString(3, entry.getValue());
@@ -1905,9 +1908,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return builder.build();
   }
 
-  private CatalogProtos.KeyValueSetProto resultToKeyValueSetProto(final ResultSet res) throws SQLException {
-    CatalogProtos.KeyValueSetProto.Builder setBuilder = CatalogProtos.KeyValueSetProto.newBuilder();
-    CatalogProtos.KeyValueProto.Builder builder = CatalogProtos.KeyValueProto.newBuilder();
+  private KeyValueSetProto resultToKeyValueSetProto(final ResultSet res) throws SQLException {
+    KeyValueSetProto.Builder setBuilder = KeyValueSetProto.newBuilder();
+    KeyValueProto.Builder builder = KeyValueProto.newBuilder();
     while (res.next()) {
       builder.setKey(res.getString("key_"));
       builder.setValue(res.getString("value_"));

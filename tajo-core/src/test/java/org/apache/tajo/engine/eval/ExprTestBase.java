@@ -39,6 +39,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -174,7 +175,7 @@ public class ExprTestBase {
         }
       }
       cat.createTable(new TableDesc(qualifiedTableName, inputSchema,
-          CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
+          CatalogProtos.StoreType.CSV, new KeyValueSet(), CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets;

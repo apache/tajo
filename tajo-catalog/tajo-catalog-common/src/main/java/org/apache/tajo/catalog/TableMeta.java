@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.util.Map;
 
@@ -41,16 +42,16 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
   private boolean viaProto = false;
 
 	@Expose protected StoreType storeType;
-	@Expose protected Options options;
+	@Expose protected KeyValueSet options;
 	
 	private TableMeta() {
 	  builder = TableProto.newBuilder();
 	}
 	
-	public TableMeta(StoreType type, Options options) {
+	public TableMeta(StoreType type, KeyValueSet options) {
 	  this();
     this.storeType = type;
-    this.options = new Options(options);
+    this.options = new KeyValueSet(options);
   }
 	
 	public TableMeta(TableProto proto) {
@@ -70,7 +71,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 		return this.storeType;		
 	}
 	
-  public void setOptions(Options options) {
+  public void setOptions(KeyValueSet options) {
     maybeInitBuilder();
     this.options = options;
   }
@@ -88,7 +89,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     if (!p.hasParams()) {
       return null;
     }
-    this.options = new Options(p.getParams());
+    this.options = new KeyValueSet(p.getParams());
     return options.get(key);
   }
 
@@ -100,11 +101,11 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     if (!p.hasParams()) {
       return null;
     }
-    this.options = new Options(p.getParams());
+    this.options = new KeyValueSet(p.getParams());
     return options.get(key, defaultValue);
   }
 
-  public Options getOptions() {
+  public KeyValueSet getOptions() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (options != null) {
       return this.options;
@@ -112,7 +113,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     if (!p.hasParams()) {
       return null;
     }
-    this.options = new Options(p.getParams());
+    this.options = new KeyValueSet(p.getParams());
     return options;
   }
 
@@ -139,7 +140,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	  TableMeta meta = (TableMeta) super.clone();
     meta.builder = TableProto.newBuilder();
     meta.storeType = getStoreType();
-    meta.options = (Options) (toMap() != null ? options.clone() : null);
+    meta.options = (KeyValueSet) (toMap() != null ? options.clone() : null);
     
     return meta;
 	}
