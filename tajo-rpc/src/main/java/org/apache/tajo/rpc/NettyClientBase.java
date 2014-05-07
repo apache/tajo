@@ -24,15 +24,19 @@ import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public abstract class NettyClientBase implements Closeable {
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
+  private static final int CLIENT_CONNECTION_TIMEOUT_SEC = 60;
 
   protected ClientBootstrap bootstrap;
   private ChannelFuture channelFuture;
@@ -71,6 +75,21 @@ public abstract class NettyClientBase implements Closeable {
     }
     this.channelFuture = bootstrap.connect(addr);
     this.channelFuture.awaitUninterruptibly();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    this.channelFuture.addListener(new ChannelFutureListener() {
+      @Override
+      public void operationComplete(ChannelFuture future) throws Exception {
+        latch.countDown();
+      }
+    });
+
+    try {
+      latch.await(CLIENT_CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+    }
+
+
     if (!channelFuture.isSuccess()) {
       throw new RuntimeException(channelFuture.getCause());
     }

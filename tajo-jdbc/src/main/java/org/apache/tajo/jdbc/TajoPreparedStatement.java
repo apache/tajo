@@ -60,7 +60,7 @@ public class TajoPreparedStatement implements PreparedStatement {
   /**
    * keep the current ResultRet update count
    */
-  private final int updateCount = 0;
+  private int updateCount = 0;
 
   /**
    *

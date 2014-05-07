@@ -377,6 +377,7 @@
             <exclude>**/sphinx_rtd_theme/**/*</exclude>
             <!-- tajo-doc -->
             <exclude>**/*.rst</exclude>
+            <exclude>**/resources/*</exclude>
           </excludes>
         </configuration>
       </plugin>

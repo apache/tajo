@@ -21,10 +21,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -350,64 +347,58 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getTables(@Nullable String catalog, @Nullable String schemaPattern,
                              @Nullable String tableNamePattern, @Nullable String [] types) throws SQLException {
-    try {
-      final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
-      String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
+    final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
+    String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
 
-      List<String> targetCatalogs = Lists.newArrayList();
-      if (catalog != null) {
-        targetCatalogs.add(catalog);
-      }
-
-      try {
-        TajoClient tajoClient = conn.getTajoClient();
-
-        // if catalog is null, all databases are targets.
-        if (targetCatalogs.isEmpty()) {
-          targetCatalogs.addAll(tajoClient.getAllDatabaseNames());
-        }
-
-        for (String databaseName : targetCatalogs) {
-          List<String> tableNames = tajoClient.getTableList(databaseName);
-          for (String eachTableName: tableNames) {
-            if (eachTableName.matches(regtableNamePattern)) {
-              MetaDataTuple tuple = new MetaDataTuple(5);
-
-              int index = 0;
-              tuple.put(index++, new TextDatum(databaseName));         // TABLE_CAT
-              tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));   // TABLE_SCHEM
-              tuple.put(index++, new TextDatum(eachTableName));         // TABLE_NAME
-              tuple.put(index++, new TextDatum("TABLE"));               // TABLE_TYPE
-              tuple.put(index++, NullDatum.get());                      // REMARKS
-
-              resultTables.add(tuple);
-            }
-          }
-        }
-        Collections.sort(resultTables, new Comparator<MetaDataTuple> () {
-          @Override
-          public int compare(MetaDataTuple table1, MetaDataTuple table2) {
-            int compVal = table1.getText(1).compareTo(table2.getText(1));
-            if (compVal == 0) {
-              compVal = table1.getText(2).compareTo(table2.getText(2));
-            }
-            return compVal;
-          }
-        });
-      } catch (Exception e) {
-        e.printStackTrace();
-        throw new SQLException(e);
-      }
-      TajoMetaDataResultSet result = new TajoMetaDataResultSet(
-          Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS"),
-          Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR),
-          resultTables);
-
-      return result;
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new SQLException(e.getMessage(), e);
+    List<String> targetCatalogs = Lists.newArrayList();
+    if (catalog != null) {
+      targetCatalogs.add(catalog);
     }
+
+    try {
+      TajoClient tajoClient = conn.getTajoClient();
+
+      // if catalog is null, all databases are targets.
+      if (targetCatalogs.isEmpty()) {
+        targetCatalogs.addAll(tajoClient.getAllDatabaseNames());
+      }
+
+      for (String databaseName : targetCatalogs) {
+        List<String> tableNames = tajoClient.getTableList(databaseName);
+        for (String eachTableName: tableNames) {
+          if (eachTableName.matches(regtableNamePattern)) {
+            MetaDataTuple tuple = new MetaDataTuple(5);
+
+            int index = 0;
+            tuple.put(index++, new TextDatum(databaseName));         // TABLE_CAT
+            tuple.put(index++, new TextDatum(DEFAULT_SCHEMA_NAME));   // TABLE_SCHEM
+            tuple.put(index++, new TextDatum(eachTableName));         // TABLE_NAME
+            tuple.put(index++, new TextDatum("TABLE"));               // TABLE_TYPE
+            tuple.put(index++, NullDatum.get());                      // REMARKS
+
+            resultTables.add(tuple);
+          }
+        }
+      }
+      Collections.sort(resultTables, new Comparator<MetaDataTuple> () {
+        @Override
+        public int compare(MetaDataTuple table1, MetaDataTuple table2) {
+          int compVal = table1.getText(1).compareTo(table2.getText(1));
+          if (compVal == 0) {
+            compVal = table1.getText(2).compareTo(table2.getText(2));
+          }
+          return compVal;
+        }
+      });
+    } catch (Throwable e) {
+      throw new SQLException(e);
+    }
+    TajoMetaDataResultSet result = new TajoMetaDataResultSet(
+        Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS"),
+        Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR),
+        resultTables);
+
+    return result;
   }
 
   @Override
@@ -551,8 +542,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
               , Type.INT4, Type.INT4, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR
               , Type.VARCHAR, Type.INT4)
           , columns);
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (Throwable e) {
       throw new SQLException(e);
     }
   }
@@ -582,28 +572,44 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   }
 
   @Override
-  public ResultSet getPrimaryKeys(String catalog, String schema, String table)
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("primary keys not supported");
+  public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
+    return new TajoMetaDataResultSet(
+        Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME")
+        , Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.INT4, Type.VARCHAR)
+        , new ArrayList<MetaDataTuple>());
+  }
+
+  private final static Schema importedExportedSchema = new Schema()
+      .addColumn("PKTABLE_CAT", Type.VARCHAR)   // 0
+      .addColumn("PKTABLE_SCHEM", Type.VARCHAR) // 1
+      .addColumn("PKTABLE_NAME", Type.VARCHAR)  // 2
+      .addColumn("PKCOLUMN_NAME", Type.VARCHAR) // 3
+      .addColumn("FKTABLE_CAT", Type.VARCHAR)   // 4
+      .addColumn("FKTABLE_SCHEM", Type.VARCHAR) // 5
+      .addColumn("FKTABLE_NAME", Type.VARCHAR)  // 6
+      .addColumn("FKCOLUMN_NAME", Type.VARCHAR) // 7
+      .addColumn("KEY_SEQ", Type.INT2)          // 8
+      .addColumn("UPDATE_RULE", Type.INT2)      // 9
+      .addColumn("DELETE_RULE", Type.INT2)      // 10
+      .addColumn("FK_NAME", Type.VARCHAR)       // 11
+      .addColumn("PK_NAME", Type.VARCHAR)       // 12
+      .addColumn("DEFERRABILITY", Type.INT2);   // 13
+
+  @Override
+  public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
+    return new TajoMetaDataResultSet(importedExportedSchema, new ArrayList<MetaDataTuple>());
   }
 
   @Override
-  public ResultSet getImportedKeys(String catalog, String schema, String table)
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("imported keys not supported");
-  }
-
-  @Override
-  public ResultSet getExportedKeys(String catalog, String schema, String table)
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException("exported keys not supported");
+  public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
+    return new TajoMetaDataResultSet(importedExportedSchema, new ArrayList<MetaDataTuple>());
   }
 
   @Override
   public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
                                      String foreignCatalog, String foreignSchema, String foreignTable)
       throws SQLException {
-    throw new SQLFeatureNotSupportedException("cross reference not supported");
+    return new TajoMetaDataResultSet(importedExportedSchema, new ArrayList<MetaDataTuple>());
   }
 
   @Override
