@@ -34,6 +34,6 @@ if [ ! -f ${INSTALL}/bin/protoc ]; then
 
     echo "Building protobuf"
     cd ${N}
-    ./configure --with-pic --prefix=${INSTALL} --with-gflags=${INSTALL}
-    make -j4 install
+    ./configure --with-pic --prefix=${INSTALL} --with-gflags=${INSTALL} > /dev/null
+    make -j4 install > /dev/null
 fi
