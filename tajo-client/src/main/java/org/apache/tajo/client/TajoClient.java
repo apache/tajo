@@ -104,6 +104,10 @@ public class TajoClient implements Closeable {
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
   }
 
+  public void setSessionId(TajoIdProtos.SessionIdProto sessionId) {
+      this.sessionId = sessionId;
+  }
+
   public boolean isConnected() {
     try {
       return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isConnected();
