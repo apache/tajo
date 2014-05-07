@@ -21,10 +21,11 @@ git:
 jdk:
   - openjdk6
 
+env: PATH=$PATH:$HOME/local/bin
+
 cache:
   directories:
   - $HOME/.m2
-  - $HOME/local
 
 install: ./dev-support/travis-install-dependencies.sh
 
