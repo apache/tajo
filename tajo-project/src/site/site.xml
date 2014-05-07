@@ -43,8 +43,10 @@
   </bannerRight>
 
   <poweredBy>
+    <!--
     <logo name="ApacheCon 2014" href="http://events.linuxfoundation.org/events/apachecon-north-america"
           img="http://www.apache.org/events/current-event-328x78.png"/>
+    -->
     <logo name="Maven" href="http://maven.apache.org/" img="http://maven.apache.org/images/logos/maven-feather.png"/>
   </poweredBy>
 
@@ -86,9 +88,9 @@
 
     <menu name="Tajo">
       <item name="Overview" href="index.html" />
-      <item name="License" href="http://www.apache.org/licenses/" />
+      <item name="License" href="license.html" />
       <item name="Downloads" href="downloads.html" />
-      <item name="Getting Started" href="tajo-0.2.0-doc.html#GettingStarted" />
+      <item name="Getting Started" href="docs/0.8.0/getting_started.html" />
     </menu>
 
     <menu name="Community">
@@ -102,7 +104,7 @@
 
     <menu name="Documentation">
       <item name="Current (Dev)" href="docs/current/index.html" />
-      <item name="0.8.0-SNAPSHOT" href="docs/0.8.0/index.html" />
+      <item name="0.8.0" href="docs/0.8.0/index.html" />
       <item name="0.2.0-incubating release" href="tajo-0.2.0-doc.html" />
     </menu>
 
@@ -137,7 +139,9 @@
       <sideBarEnabled>true</sideBarEnabled>
       <sourceLineNumbersEnabled>false</sourceLineNumbersEnabled>
       <profile>production</profile>
-      <googleSearch />
+      <googleSearch>
+        <sitesearch>http://tajo.apache.org</sitesearch>
+      </googleSearch>
 
       <twitter>
         <user>ApacheTajo</user>

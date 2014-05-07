@@ -144,9 +144,9 @@
       <timezone>+9</timezone>
     </developer>
     <developer>
-      <id></id>
+      <id>mzhou</id>
       <name>Min Zhou</name>
-      <email></email>
+      <email>mzhou@apache.org</email>
       <organization>LinkedIn</organization>
       <roles>
         <role>Committer</role>
