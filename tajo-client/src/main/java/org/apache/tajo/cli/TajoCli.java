@@ -343,6 +343,8 @@ public class TajoCli {
       } catch (Exception e) {
         outputFormatter.printErrorMessage(sout, e);
         return -1;
+      } finally {
+        context.getOutput().flush();
       }
     }
 
