@@ -46,6 +46,14 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     this.end = end;
   }
 
+  public boolean isNot() {
+    return not;
+  }
+
+  public boolean isSymmetric() {
+    return symmetric;
+  }
+
   public void setPredicand(EvalNode predicand) {
     this.predicand = predicand;
   }

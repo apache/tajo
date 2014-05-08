@@ -150,6 +150,231 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return unary;
   }
 
+  private void loadBetweenPayload(CodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack,
+                                  Label ifNull) {
+    EvalNode predicand = between.getPredicand();
+    EvalNode begin = between.getBegin();
+    EvalNode end = between.getEnd();
+
+    int predNullVarId = 3;
+    int predVarId = 4;
+    visit(context, predicand, stack);                                 // < predicand, predicand_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, predNullVarId);      // < predicand (store nullflag to 3)
+    int beginNullVarId = emitStore(context, predicand, predVarId);    // <
+
+    visit(context, begin, stack);                                    // < begin, left_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, beginNullVarId);  // < begin, store left_nullflag to x
+    int beginVarId = beginNullVarId + 1;
+    int endNullVarId = emitStore(context, begin, beginVarId);
+
+    visit(context, end, stack);                                         // < end, right_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, endNullVarId);      // < end, store right_nullflag
+    int endVarId = endNullVarId + 1;
+    emitStore(context, end, endVarId);                                // <
+
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, predNullVarId);    // x, y , z
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, beginNullVarId);   // x, y & z
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, endNullVarId);     // x & y & z
+    context.evalMethod.visitInsn(Opcodes.IAND);
+    context.evalMethod.visitInsn(Opcodes.IAND);
+
+    emitNullityCheck(context, ifNull);
+  }
+
+  public EvalNode visitBetween(CodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack) {
+    EvalNode predicand = between.getPredicand();
+    EvalNode begin = between.getBegin();
+    EvalNode end = between.getEnd();
+
+    stack.push(between);
+
+    int predNullVarId = 3;
+    int predVarId = 4;
+    visit(context, predicand, stack);                                 // < predicand, predicand_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, predNullVarId);      // < predicand (store nullflag to 3)
+    int beginNullVarId = emitStore(context, predicand, predVarId);    // <
+
+    visit(context, begin, stack);                                    // < begin, left_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, beginNullVarId);  // < begin, store left_nullflag to x
+    int beginVarId = beginNullVarId + 1;
+    int endNullVarId = emitStore(context, begin, beginVarId);
+
+    visit(context, end, stack);                                         // < end, right_nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ISTORE, endNullVarId);      // < end, store right_nullflag
+    int endVarId = endNullVarId + 1;
+    emitStore(context, end, endVarId);                                // <
+
+    stack.pop();
+
+    Label ifNullCommon = new Label();
+    Label ifNotMatched = new Label();
+
+    Label afterEnd = new Label();
+
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, predNullVarId);    // x, y , z
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, beginNullVarId);   // x, y & z
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, endNullVarId);     // x & y & z
+    context.evalMethod.visitInsn(Opcodes.IAND);
+    context.evalMethod.visitInsn(Opcodes.IAND);
+    emitNullityCheck(context, ifNullCommon);
+
+    if (between.isSymmetric()) {
+      Label ifFirstMatchFailed = new Label();
+      Label ifSecondMatchFailed = new Label();
+      Label secondCheck = new Label();
+      Label finalDisjunctive = new Label();
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // second check
+      //////////////////////////////////////////////////////////////////////////////////////////
+
+      // predicand <= begin
+      emitLoad(context, begin, beginVarId);
+      emitLoad(context, predicand, predVarId);
+
+      // inverse the operator LEQ -> GTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.LEQ, ifFirstMatchFailed);
+
+      // end <= predicand
+      emitLoad(context, end, endVarId);
+      emitLoad(context, predicand, predVarId);
+      // inverse the operator GEQ -> LTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.GEQ, ifFirstMatchFailed);
+
+      context.evalMethod.visitInsn(Opcodes.ICONST_1);
+      emitGotoLabel(context, secondCheck);
+
+      emitLabel(context, ifFirstMatchFailed);
+      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // second check
+      //////////////////////////////////////////////////////////////////////////////////////////
+      emitLabel(context, secondCheck);
+
+      // predicand <= end
+      emitLoad(context, end, endVarId);
+      emitLoad(context, predicand, predVarId);
+
+      // inverse the operator LEQ -> GTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.LEQ, ifSecondMatchFailed);
+
+      // end <= predicand
+      emitLoad(context, begin, beginVarId);
+      emitLoad(context, predicand, predVarId);
+      // inverse the operator GEQ -> LTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.GEQ, ifSecondMatchFailed);
+
+      context.evalMethod.visitInsn(Opcodes.ICONST_1);
+      emitGotoLabel(context, finalDisjunctive);
+
+      emitLabel(context, ifSecondMatchFailed);
+      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+
+      emitLabel(context, finalDisjunctive);
+      context.evalMethod.visitInsn(Opcodes.IOR);
+      context.evalMethod.visitJumpInsn(Opcodes.IFEQ, ifNotMatched);
+    } else {
+      // predicand <= begin
+      emitLoad(context, begin, beginVarId);
+      emitLoad(context, predicand, predVarId);
+
+      // inverse the operator LEQ -> GTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.LEQ, ifNotMatched);
+
+      // end <= predicand
+      emitLoad(context, end, endVarId);
+      emitLoad(context, predicand, predVarId);
+      // inverse the operator GEQ -> LTH
+      emitIfCmp(context, predicand.getValueType(), EvalType.GEQ, ifNotMatched);
+    }
+    if (between.isNot()) { // IF MATCHED
+      emitPushFalse(context);
+    } else {
+      emitPushTrue(context);
+    }
+    emitGotoLabel(context, afterEnd);
+
+    emitLabel(context, ifNotMatched); // IF NOT MATCHED
+    if (between.isNot()) {
+      emitPushTrue(context);
+    } else {
+      emitPushFalse(context);
+    }
+    emitGotoLabel(context, afterEnd);
+
+    emitLabel(context, ifNullCommon); // IF NULL
+    emitPushNull(context);
+
+    emitLabel(context, afterEnd);
+
+    return between;
+  }
+
+  private void emitPushTrue(CodeGenContext context) {
+    context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE VALUE
+    context.evalMethod.visitInsn(Opcodes.ICONST_1); // NOT NULL FLAG
+  }
+
+  private void emitPushFalse(CodeGenContext context) {
+    context.evalMethod.visitInsn(Opcodes.ICONST_2); // TRUE VALUE
+    context.evalMethod.visitInsn(Opcodes.ICONST_1); // NOT NULL FLAG
+  }
+
+  private void emitPushNull(CodeGenContext context) {
+    context.evalMethod.visitInsn(Opcodes.ICONST_0); // TRUE VALUE
+    context.evalMethod.visitInsn(Opcodes.ICONST_0); // NOT NULL FLAG
+  }
+
+  private void emitIfCmp(CodeGenContext context, TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
+    if (isJVMInternalInt(dataType)) {
+      switch (evalType) {
+      case EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPNE, elseLabel);
+        break;
+      case NOT_EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPEQ, elseLabel);
+        break;
+      case LTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGE, elseLabel);
+        break;
+      case LEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGT, elseLabel);
+        break;
+      case GTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLE, elseLabel);
+        break;
+      case GEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLT, elseLabel);
+        break;
+      }
+    } else {
+      int opCode = CodeGenUtil.getOpCode(evalType, dataType);
+      context.evalMethod.visitInsn(opCode);
+
+      switch (evalType) {
+      case EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IFNE, elseLabel);
+        break;
+      case NOT_EQUAL:
+        context.evalMethod.visitJumpInsn(Opcodes.IFEQ, elseLabel);
+        break;
+      case LTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IFGE, elseLabel);
+        break;
+      case LEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IFGT, elseLabel);
+        break;
+      case GTH:
+        context.evalMethod.visitJumpInsn(Opcodes.IFLE, elseLabel);
+        break;
+      case GEQ:
+        context.evalMethod.visitJumpInsn(Opcodes.IFLT, elseLabel);
+        break;
+      }
+    }
+  }
+
   private void emitGotoLabel(CodeGenContext context, Label label) {
     context.evalMethod.visitJumpInsn(Opcodes.GOTO, label);
   }
@@ -425,7 +650,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public static int emitStore(CodeGenContext context, EvalNode evalNode, int idx) {
-    int nextIdx;
     switch (evalNode.getValueType().getType()) {
     case BOOLEAN:
     case CHAR:
@@ -500,11 +724,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     Label ifNullCommon = new Label();
     Label afterEnd = new Label();
 
-    context.evalMethod.visitVarInsn(Opcodes.ILOAD, 3);      // < left_child, right_child, nullflag
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, 3);        // < left_child, right_child, nullflag
     emitNullityCheck(context, ifNullCommon);                  // < left_child, right_child
 
-    context.evalMethod.visitVarInsn(Opcodes.ILOAD, rNullVarId);      // < left_child, right_child, nullflag
-    emitNullityCheck(context, ifNullCommon);                 // < left_child, right_child
+    context.evalMethod.visitVarInsn(Opcodes.ILOAD, rNullVarId); // < left_child, right_child, nullflag
+    emitNullityCheck(context, ifNullCommon);                    // < left_child, right_child
 
     emitLoad(context, evalNode.getLeftExpr(), 4);
     emitLoad(context, evalNode.getRightExpr(), rValVarId);
@@ -559,75 +783,16 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     emitLoad(context, evalNode.getLeftExpr(), 4);                     // < lhs
     emitLoad(context, evalNode.getRightExpr(), rValVarId);            // < lhs, rhs
 
+    emitIfCmp(context, evalNode.getLeftExpr().getValueType(), evalNode.getType(), ifNotMatched);
 
-    if (isJVMInternalInt(evalNode.getLeftExpr().getValueType())) {
+    context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE
+    context.evalMethod.visitInsn(Opcodes.ICONST_1);
+    context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
 
-      switch (evalNode.getType()) {
-      case EQUAL:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPNE, ifNotMatched);
-        break;
-      case NOT_EQUAL:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNotMatched);
-        break;
-      case LTH:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGE, ifNotMatched);
-        break;
-      case LEQ:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPGT, ifNotMatched);
-        break;
-      case GTH:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLE, ifNotMatched);
-        break;
-      case GEQ:
-        context.evalMethod.visitJumpInsn(Opcodes.IF_ICMPLT, ifNotMatched);
-        break;
-      }
-
-      context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE
-      context.evalMethod.visitInsn(Opcodes.ICONST_1);
-      context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
-
-      context.evalMethod.visitLabel(ifNotMatched);
-      context.evalMethod.visitInsn(Opcodes.ICONST_2); // FALSE
-      context.evalMethod.visitInsn(Opcodes.ICONST_1);
-      context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
-
-
-    } else {
-
-      int opCode = CodeGenUtil.getOpCode(evalNode.getType(), evalNode.getLeftExpr().getValueType());
-      context.evalMethod.visitInsn(opCode);
-
-      switch (evalNode.getType()) {
-      case EQUAL:
-        context.evalMethod.visitJumpInsn(Opcodes.IFNE, ifNotMatched);
-        break;
-      case NOT_EQUAL:
-        context.evalMethod.visitJumpInsn(Opcodes.IFEQ, ifNotMatched);
-        break;
-      case LTH:
-        context.evalMethod.visitJumpInsn(Opcodes.IFGE, ifNotMatched);
-        break;
-      case LEQ:
-        context.evalMethod.visitJumpInsn(Opcodes.IFGT, ifNotMatched);
-        break;
-      case GTH:
-        context.evalMethod.visitJumpInsn(Opcodes.IFLE, ifNotMatched);
-        break;
-      case GEQ:
-        context.evalMethod.visitJumpInsn(Opcodes.IFLT, ifNotMatched);
-        break;
-      }
-
-      context.evalMethod.visitInsn(Opcodes.ICONST_1); // TRUE
-      context.evalMethod.visitInsn(Opcodes.ICONST_1);
-      context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
-
-      context.evalMethod.visitLabel(ifNotMatched);
-      context.evalMethod.visitInsn(Opcodes.ICONST_2); // FALSE
-      context.evalMethod.visitInsn(Opcodes.ICONST_1);
-      context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
-    }
+    context.evalMethod.visitLabel(ifNotMatched);
+    context.evalMethod.visitInsn(Opcodes.ICONST_2); // FALSE
+    context.evalMethod.visitInsn(Opcodes.ICONST_1);
+    context.evalMethod.visitJumpInsn(Opcodes.GOTO, afterEnd);
 
     context.evalMethod.visitLabel(ifNull);
     context.evalMethod.visitInsn(Opcodes.ICONST_0); // NULL

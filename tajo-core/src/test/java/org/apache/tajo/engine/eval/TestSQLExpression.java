@@ -31,6 +31,10 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestSQLExpression extends ExprTestBase {
 
+  public TestSQLExpression() {
+    super(true);
+  }
+
   @Test
   public void testQuotedIdentifiers() throws IOException {
     Schema schema = new Schema();

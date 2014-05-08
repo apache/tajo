@@ -883,6 +883,75 @@ public class TestExprCodeGenerator extends ExprTestBase {
   }
 
   @Test
+  public void testBetweenAsymmetric() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT4);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    testEval(schema, "table1", "0,", "select col1 between 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "1,", "select col1 between 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "2,", "select col1 between 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "3,", "select col1 between 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "4,", "select col1 between 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "5,", "select (col2 between 1 and 3) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 between 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "1,", "select col1 between 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "2,", "select col1 between 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "3,", "select col1 between 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "4,", "select col1 between 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "5,", "select (col2 between 3 and 1) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 not between 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "1,", "select col1 not between 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "2,", "select col1 not between 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "3,", "select col1 not between 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "4,", "select col1 not between 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "5,", "select (col2 not between 1 and 3) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 not between 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "1,", "select col1 not between 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "2,", "select col1 not between 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "3,", "select col1 not between 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "4,", "select col1 not between 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "5,", "select (col2 not between 3 and 1) is null from table1", new String[]{"t"});
+  }
+
+  @Test
+  public void testBetweenSymmetric() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT4);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    testEval(schema, "table1", "0,", "select col1 between symmetric 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "1,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "2,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "3,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "4,", "select col1 between symmetric 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "5,", "select (col2 between symmetric 1 and 3) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 not between symmetric 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "1,", "select col1 not between symmetric 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "2,", "select col1 not between symmetric 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "3,", "select col1 not between symmetric 1 and 3 from table1", new String[]{"f"});
+    testEval(schema, "table1", "4,", "select col1 not between symmetric 1 and 3 from table1", new String[]{"t"});
+    testEval(schema, "table1", "5,", "select (col2 not between symmetric 1 and 3) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 between symmetric 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "1,", "select col1 between symmetric 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "2,", "select col1 between symmetric 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "3,", "select col1 between symmetric 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "4,", "select col1 between symmetric 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "5,", "select (col2 between symmetric 3 and 1) is null from table1", new String[]{"t"});
+
+    testEval(schema, "table1", "0,", "select col1 not between symmetric 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "1,", "select col1 not between symmetric 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "2,", "select col1 not between symmetric 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "3,", "select col1 not between symmetric 3 and 1 from table1", new String[]{"f"});
+    testEval(schema, "table1", "4,", "select col1 not between symmetric 3 and 1 from table1", new String[]{"t"});
+    testEval(schema, "table1", "5,", "select (col2 not between symmetric 3 and 1) is null from table1",
+        new String[]{"t"});
+  }
+
+  @Test
   public void testUnary() throws IOException {
     schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
