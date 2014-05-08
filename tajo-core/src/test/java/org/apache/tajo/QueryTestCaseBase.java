@@ -253,7 +253,7 @@ public class QueryTestCaseBase {
     if (parsedResults.size() > 1) {
       assertNotNull("This script \"" + queryFileName + "\" includes two or more queries");
     }
-    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getStatement());
+    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getHistoryStatement());
     assertNotNull("Query succeeded test", result);
     return result;
   }
@@ -470,13 +470,13 @@ public class QueryTestCaseBase {
 
     for (ParsedResult parsedResult : parsedResults) {
       // parse a statement
-      Expr expr = sqlParser.parse(parsedResult.getStatement());
+      Expr expr = sqlParser.parse(parsedResult.getHistoryStatement());
       assertNotNull(ddlFilePath + " cannot be parsed", expr);
 
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
         String tableName = createTable.getTableName();
-        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getStatement()));
+        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
@@ -491,7 +491,7 @@ public class QueryTestCaseBase {
         String tableName = dropTable.getTableName();
         assertTrue("table '" + tableName + "' existence check",
             client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
-        assertTrue("table drop is failed.", client.updateQuery(parsedResult.getStatement()));
+        assertTrue("table drop is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
         assertFalse("table '" + tableName + "' dropped check",
             client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
         if (isLocalTable) {
