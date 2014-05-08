@@ -150,37 +150,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return unary;
   }
 
-  private void loadBetweenPayload(CodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack,
-                                  Label ifNull) {
-    EvalNode predicand = between.getPredicand();
-    EvalNode begin = between.getBegin();
-    EvalNode end = between.getEnd();
-
-    int predNullVarId = 3;
-    int predVarId = 4;
-    visit(context, predicand, stack);                                 // < predicand, predicand_nullflag
-    context.evalMethod.visitVarInsn(Opcodes.ISTORE, predNullVarId);      // < predicand (store nullflag to 3)
-    int beginNullVarId = emitStore(context, predicand, predVarId);    // <
-
-    visit(context, begin, stack);                                    // < begin, left_nullflag
-    context.evalMethod.visitVarInsn(Opcodes.ISTORE, beginNullVarId);  // < begin, store left_nullflag to x
-    int beginVarId = beginNullVarId + 1;
-    int endNullVarId = emitStore(context, begin, beginVarId);
-
-    visit(context, end, stack);                                         // < end, right_nullflag
-    context.evalMethod.visitVarInsn(Opcodes.ISTORE, endNullVarId);      // < end, store right_nullflag
-    int endVarId = endNullVarId + 1;
-    emitStore(context, end, endVarId);                                // <
-
-    context.evalMethod.visitVarInsn(Opcodes.ILOAD, predNullVarId);    // x, y , z
-    context.evalMethod.visitVarInsn(Opcodes.ILOAD, beginNullVarId);   // x, y & z
-    context.evalMethod.visitVarInsn(Opcodes.ILOAD, endNullVarId);     // x & y & z
-    context.evalMethod.visitInsn(Opcodes.IAND);
-    context.evalMethod.visitInsn(Opcodes.IAND);
-
-    emitNullityCheck(context, ifNull);
-  }
-
   public EvalNode visitBetween(CodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack) {
     EvalNode predicand = between.getPredicand();
     EvalNode begin = between.getBegin();
@@ -875,6 +844,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.evalMethod.visitInsn(Opcodes.ICONST_1);
     }
 
+    return evalNode;
+  }
+
+  public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+    // TODO
     return evalNode;
   }
 
