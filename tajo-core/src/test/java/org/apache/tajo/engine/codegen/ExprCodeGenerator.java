@@ -406,12 +406,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       break;
     case CHAR:
       methodName = "createChar";
-      if (expr.getValueType().getLength() == 1) {
-        signatureDesc = "(C)L"+ org.objectweb.asm.Type.getInternalName(CharDatum.class) + ";";
-      } else {
+//      if (expr.getValueType().getLength() == 1) {
+//        signatureDesc = "(C)L"+ org.objectweb.asm.Type.getInternalName(CharDatum.class) + ";";
+//      } else {
         signatureDesc = "(L" + org.objectweb.asm.Type.getInternalName(String.class) + ";)L"
             + org.objectweb.asm.Type.getInternalName(CharDatum.class) + ";";
-      }
+//      }
       break;
     case INT1:
     case INT2:
@@ -538,13 +538,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
         desc = "(I)B";
         break;
       case CHAR: {
-        if (field.getValueType().hasLength() && field.getValueType().getLength() == 1) {
-          methodName = "getChar";
-          desc = "(I)C";
-        } else {
+//        if (field.getValueType().hasLength() && field.getValueType().getLength() == 1) {
+//          methodName = "getChar";
+//          desc = "(I)C";
+//        } else {
           methodName = "getText";
           desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class) + ";";
-        }
+//        }
         break;
       }
       case INT1:
@@ -698,9 +698,9 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.evalMethod.visitLdcInsn(0.0d); // null
     } else if (type.getType() == TajoDataTypes.Type.FLOAT4) {
       context.evalMethod.visitLdcInsn(0.0f); // null
-    } else if (type.getType() == TajoDataTypes.Type.CHAR && type.getLength() == 1) {
-      context.evalMethod.visitInsn(Opcodes.ICONST_0);
-    } else if (type.getType() == TajoDataTypes.Type.CHAR && type.getLength() > 1) {
+//    } else if (type.getType() == TajoDataTypes.Type.CHAR && type.getLength() == 1) {
+//      context.evalMethod.visitInsn(Opcodes.ICONST_0);
+    } else if (type.getType() == TajoDataTypes.Type.CHAR) {
       context.evalMethod.visitLdcInsn(""); // null
     } else if (type.getType() == TajoDataTypes.Type.TEXT) {
       context.evalMethod.visitLdcInsn(""); // null
