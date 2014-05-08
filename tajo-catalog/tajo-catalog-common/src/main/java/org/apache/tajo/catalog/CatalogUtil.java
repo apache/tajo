@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.Connection;
@@ -298,10 +299,10 @@ public class CatalogUtil {
   }
 
   public static TableMeta newTableMeta(StoreType type) {
-    return new TableMeta(type, new Options());
+    return new TableMeta(type, new KeyValueSet());
   }
 
-  public static TableMeta newTableMeta(StoreType type, Options options) {
+  public static TableMeta newTableMeta(StoreType type, KeyValueSet options) {
     return new TableMeta(type, options);
   }
 

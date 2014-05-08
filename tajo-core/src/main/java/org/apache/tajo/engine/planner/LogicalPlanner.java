@@ -43,6 +43,7 @@ import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -1282,7 +1283,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       insertNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
     }
     if (expr.hasParams()) {
-      Options options = new Options();
+      KeyValueSet options = new KeyValueSet();
       options.putAll(expr.getParams());
       insertNode.setOptions(options);
     }
@@ -1332,12 +1333,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Set default storage properties to be created.
-    Options options = StorageUtil.newPhysicalProperties(createTableNode.getStorageType());
+    KeyValueSet keyValueSet = StorageUtil.newPhysicalProperties(createTableNode.getStorageType());
     if (expr.hasParams()) {
-      options.putAll(expr.getParams());
+      keyValueSet.putAll(expr.getParams());
     }
 
-    createTableNode.setOptions(options);
+    createTableNode.setOptions(keyValueSet);
 
     if (expr.hasPartition()) {
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {

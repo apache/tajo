@@ -18,16 +18,17 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
-import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class TestOptions {
+public class TestKeyValueSet {
 	@Test
 	public final void testPutAndGet() {
-		Options opts = new Options();
+		KeyValueSet opts = new KeyValueSet();
 		opts.put("name", "abc");
 		opts.put("delimiter", ",");
 		
@@ -37,19 +38,19 @@ public class TestOptions {
 
 	@Test
 	public final void testGetProto() {		
-		Options opts = new Options();
+		KeyValueSet opts = new KeyValueSet();
 		opts.put("name", "abc");
 		opts.put("delimiter", ",");
 		
-		KeyValueSetProto proto = opts.getProto();
-		Options opts2 = new Options(proto);
+		PrimitiveProtos.KeyValueSetProto proto = opts.getProto();
+		KeyValueSet opts2 = new KeyValueSet(proto);
 		
 		assertEquals(opts, opts2);
 	}
 	
 	@Test
 	public final void testDelete() {
-		Options opts = new Options();
+		KeyValueSet opts = new KeyValueSet();
 		opts.put("name", "abc");
 		opts.put("delimiter", ",");
 		
@@ -57,7 +58,7 @@ public class TestOptions {
 		assertEquals("abc", opts.delete("name"));
 		assertNull(opts.get("name"));
 		
-		Options opts2 = new Options(opts.getProto());
+		KeyValueSet opts2 = new KeyValueSet(opts.getProto());
 		assertNull(opts2.get("name"));
 	}
 }

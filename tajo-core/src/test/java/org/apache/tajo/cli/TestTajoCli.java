@@ -23,6 +23,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -43,12 +44,13 @@ import static org.junit.Assert.assertTrue;
 
 public class TestTajoCli {
   protected static final TpchTestBase testBase;
+  protected static final TajoTestingCluster cluster;
 
   /** the base path of result directories */
   protected static final Path resultBasePath;
-
   static {
     testBase = TpchTestBase.getInstance();
+    cluster = testBase.getTestingCluster();
     URL resultBaseURL = ClassLoader.getSystemResource("results");
     resultBasePath = new Path(resultBaseURL.toString());
   }
@@ -65,7 +67,7 @@ public class TestTajoCli {
   }
 
   @After
-  public void teadDown() {
+  public void tearDown() {
     if (tajoCli != null) {
       tajoCli.close();
     }
@@ -136,13 +138,86 @@ public class TestTajoCli {
     assertOutputResult(consoleResult);
   }
 
+  @Test
+  public void testConnectDatabase() throws Exception {
+    String databaseName;
+
+    if (cluster.isHCatalogStoreRunning()) {
+      databaseName = "TEST_CONNECTION_DATABASE".toLowerCase();
+    } else {
+      databaseName = "TEST_CONNECTION_DATABASE";
+    }
+    String sql = "create database \"" + databaseName + "\";";
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeScript(sql);
+
+    tajoCli.executeMetaCommand("\\c " + databaseName);
+    assertEquals(databaseName, tajoCli.getContext().getCurrentDatabase());
+
+    tajoCli.executeMetaCommand("\\c default");
+    assertEquals("default", tajoCli.getContext().getCurrentDatabase());
+
+    tajoCli.executeMetaCommand("\\c \"" + databaseName + "\"");
+    assertEquals(databaseName, tajoCli.getContext().getCurrentDatabase());
+  }
+
+  @Test
+  public void testDescTable() throws Exception {
+    String tableName;
+    if (cluster.isHCatalogStoreRunning()) {
+      tableName = "TEST_DESC_TABLE".toLowerCase();
+    } else {
+      tableName = "TEST_DESC_TABLE";
+    }
+
+    String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4);";
+
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeScript(sql);
+
+    tajoCli.executeMetaCommand("\\d " + tableName);
+    tajoCli.executeMetaCommand("\\d \"" + tableName + "\"");
+
+    String consoleResult = new String(out.toByteArray());
+
+    FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
+    if (!cluster.isHCatalogStoreRunning()) {
+      assertOutputResult("testDescTable.result", consoleResult, new String[]{"${table.path}"},
+          new String[]{fs.getUri() + "/tajo/warehouse/default/" + tableName});
+    }
+  }
+
   private void assertOutputResult(String actual) throws Exception {
-    String resultFileName = name.getMethodName() + ".result";
+    assertOutputResult(name.getMethodName() + ".result", actual);
+  }
+
+  private void assertOutputResult(String expectedResultFile, String actual) throws Exception {
+    assertOutputResult(expectedResultFile, actual, null, null);
+  }
+
+  private void assertOutputResult(String expectedResultFile, String actual, String[] paramKeys, String[] paramValues)
+      throws Exception {
     FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    Path resultFile = StorageUtil.concatPath(currentResultPath, resultFileName);
+    Path resultFile = StorageUtil.concatPath(currentResultPath, expectedResultFile);
     assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
 
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
+
+    if (paramKeys != null) {
+      for (int i = 0; i < paramKeys.length; i++) {
+        if (i < paramValues.length) {
+          expectedResult = expectedResult.replace(paramKeys[i], paramValues[i]);
+        }
+      }
+    }
     assertEquals(expectedResult, actual);
   }
 

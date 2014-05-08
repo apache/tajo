@@ -45,6 +45,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.Closeable;
@@ -102,6 +103,10 @@ public class TajoClient implements Closeable {
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
     userInfo = UserGroupInformation.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
+  }
+
+  public void setSessionId(TajoIdProtos.SessionIdProto sessionId) {
+      this.sessionId = sessionId;
   }
 
   public boolean isConnected() {
@@ -227,11 +232,11 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        Options options = new Options();
-        options.putAll(variables);
+        KeyValueSet keyValueSet = new KeyValueSet();
+        keyValueSet.putAll(variables);
         UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
-            .setSetVariables(options.getProto()).build();
+            .setSetVariables(keyValueSet.getProto()).build();
 
         return tajoMasterService.updateSessionVariables(null, request).getValue();
       }
@@ -285,8 +290,8 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        Options options = new Options(tajoMasterService.getAllSessionVariables(null, sessionId));
-        return options.getAllKeyValus();
+        KeyValueSet keyValueSet = new KeyValueSet(tajoMasterService.getAllSessionVariables(null, sessionId));
+        return keyValueSet.getAllKeyValus();
       }
     }.withRetries();
   }

@@ -31,6 +31,11 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-800: CLI's meta command should be aware "TABLE_NAME" style. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
+
     TAJO-792: Insert table error with database name. 
     (Hyoungjun Kim via hyunsik)
 
@@ -48,11 +53,17 @@ Release 0.9.0 - unreleased
 
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
+  TASKS
+
+    TAJO-810: TAJO-810: Update Tajo site for 0.8.0 release. (hyunsik)
+
+    TAJO-605: Rename Options to KeyValueList. (jinho)
+
   SUB TASKS
 
     TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
 
-Release 0.8.0 - unreleased
+Release 0.8.0
 
   NEW FEATURES
 
@@ -801,7 +812,7 @@ Release 0.8.0 - unreleased
 
     TAJO-686: Integration test aborted. (jinho)
 
-Release 0.2.0 - released
+Release 0.2.0
 
   NEW FEATURES
 

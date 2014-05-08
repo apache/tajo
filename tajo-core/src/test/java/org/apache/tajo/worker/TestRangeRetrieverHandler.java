@@ -46,6 +46,7 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
 import org.junit.After;
 import org.junit.Before;
@@ -177,7 +178,7 @@ public class TestRangeRetrieverHandler {
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW, new Options());
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
     SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
 
@@ -299,7 +300,7 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RAW, new Options());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
     SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, outputMeta, schema,
         StorageUtil.concatPath(testDir, "output", "output"));
     scanner.init();

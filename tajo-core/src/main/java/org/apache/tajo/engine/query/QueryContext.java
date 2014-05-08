@@ -19,14 +19,14 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.NodeType;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
-public class QueryContext extends Options {
+public class QueryContext extends KeyValueSet {
   public static final String COMMAND_TYPE = "tajo.query.command";
 
   public static final String STAGING_DIR = "tajo.query.staging_dir";
