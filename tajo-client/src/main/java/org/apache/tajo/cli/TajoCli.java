@@ -305,7 +305,7 @@ public class TajoCli {
 
       if (parsedResults.size() > 0) {
         for (ParsedResult parsed : parsedResults) {
-          history.addStatement(parsed.getStatement() + (parsed.getType() == STATEMENT ? ";":""));
+          history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";":""));
         }
       }
       executeParsedResults(parsedResults);
@@ -471,11 +471,11 @@ public class TajoCli {
 
   private void printUsage() {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp( "tsql [options] [database]", options );
+    formatter.printHelp("tsql [options] [database]", options);
   }
 
   private void printInvalidCommand(String command) {
-    sout.println("Invalid command " + command +". Try \\? for help.");
+    sout.println("Invalid command " + command + ". Try \\? for help.");
   }
 
   public void close() {

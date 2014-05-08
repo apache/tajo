@@ -493,7 +493,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Statement getStatement() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getStatement not supported");
+    throw new SQLFeatureNotSupportedException("getHistoryStatement not supported");
   }
 
   @Override

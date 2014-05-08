@@ -105,7 +105,7 @@ public class ExprTestBase {
     if (parsedResults.size() > 1) {
       throw new RuntimeException("this query includes two or more statements.");
     }
-    Expr expr = analyzer.parse(parsedResults.get(0).getStatement());
+    Expr expr = analyzer.parse(parsedResults.get(0).getHistoryStatement());
     VerificationState state = new VerificationState();
     preLogicalPlanVerifier.verify(session, state, expr);
     if (state.getErrorMessages().size() > 0) {
@@ -124,7 +124,7 @@ public class ExprTestBase {
 
     Target [] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getStatement());
+      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
     }
     for (Target t : targets) {
       assertJsonSerDer(t.getEvalTree());

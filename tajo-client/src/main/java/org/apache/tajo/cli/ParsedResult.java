@@ -26,15 +26,21 @@ public class ParsedResult {
   }
 
   private final StatementType type;
+  private final String historyStatement;
   private final String statement;
 
-  public ParsedResult(StatementType type, String statement) {
+  public ParsedResult(StatementType type, String statement, String historyStatement) {
     this.type = type;
     this.statement = statement;
+    this.historyStatement = historyStatement;
   }
 
   public StatementType getType() {
     return type;
+  }
+
+  public String getHistoryStatement() {
+    return historyStatement.trim();
   }
 
   public String getStatement() {
@@ -42,6 +48,6 @@ public class ParsedResult {
   }
 
   public String toString() {
-    return "(" + type.name() + ") " + statement;
+    return "(" + type.name() + ") " + historyStatement;
   }
 }
