@@ -307,6 +307,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     CodeGenContext context = new CodeGenContext(evalMethod, schema);
 
     visit(context, expr, new Stack<EvalNode>());
+
     context.convertToDatum(expr.getValueType(), true);
     context.method.visitInsn(Opcodes.ARETURN);
     context.method.visitMaxs(0, 0);
@@ -327,14 +328,20 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public EvalNode visitCast(CodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
+    TajoDataTypes.DataType  srcType = cast.getOperand().getValueType();
+    TajoDataTypes.DataType targetType = cast.getValueType();
+
+    if (srcType.equals(targetType)) {
+      visit(context, cast.getChild(), stack);
+      return cast;
+    }
+
     visit(context, cast.getChild(), stack);
 
     Label ifNull = new Label();
     Label afterEnd = new Label();
     context.emitNullityCheck(ifNull);
 
-    TajoDataTypes.DataType  srcType = cast.getOperand().getValueType();
-    TajoDataTypes.DataType targetType = cast.getValueType();
     context.castInsn(srcType, targetType);
     context.pushNullFlag(true);
     emitGotoLabel(context, afterEnd);
@@ -480,6 +487,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
   public static int emitStore(CodeGenContext context, EvalNode evalNode, int idx) {
     switch (evalNode.getValueType().getType()) {
+    case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
     case INT1:
@@ -602,11 +610,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   public EvalNode visitConst(CodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
     switch (evalNode.getValueType().getType()) {
     case NULL_TYPE:
-      context.method.visitInsn(Opcodes.ICONST_0); // UNKNOWN
+      //context.push(0); // UNKNOWN
+      context.push(evalNode.getValue().asInt4());
       break;
     case BOOLEAN:
       context.push(evalNode.getValue().asInt4());
       break;
+
     case INT1:
     case INT2:
     case INT4:
@@ -621,6 +631,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     case FLOAT8:
       context.push(evalNode.getValue().asFloat8());
       break;
+    case CHAR:
     case TEXT:
       context.push(evalNode.getValue().asChars());
       break;
@@ -652,7 +663,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(VTuple.class));
     context.method.visitInsn(Opcodes.DUP);
     context.aload(3);
-    context.newInstance(VTuple.class, new Class[] {Datum[].class});
+    context.newInstance(VTuple.class, new Class[]{Datum[].class});
     context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Tuple.class));
     context.astore(5);
 
@@ -669,7 +680,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       e.printStackTrace();
     }
 
-    context.invokeVirtual(Datum.class, "asChars", String.class, new Class[] {});
+    context.convertToJavaType(func.getValueType());
     context.pushNullFlag(true);
     return func;
   }

@@ -26,6 +26,7 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 import org.objectweb.asm.Label;
@@ -342,11 +343,11 @@ public class GeneratorAdapter {
   }
 
   public void pushBooleanOfThreeValuedLogic(boolean value) {
-    method.visitInsn(value ? Opcodes.ICONST_1 : Opcodes.ICONST_2); // TRUE VALUE
+    push(value ? 1 : 2); // TRUE or FALSE
   }
 
   public void pushNullOfThreeValuedLogic() {
-    method.visitInsn(Opcodes.ICONST_0); // TRUE VALUE
+    push(0); // NULL of three valued logic
   }
 
   public void pushNullFlag(boolean trueIfNotNull) {
@@ -377,7 +378,9 @@ public class GeneratorAdapter {
   }
 
   public void pushDummyValue(TajoDataTypes.DataType type) {
-    if (type.getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
+    if (type.getType() == NULL_TYPE) {
+      pushNullOfThreeValuedLogic();
+    } else if (type.getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
       method.visitLdcInsn(0L); // null
     } else if (type.getType() == TajoDataTypes.Type.FLOAT8) {
       method.visitLdcInsn(0.0d); // null
@@ -540,6 +543,33 @@ public class GeneratorAdapter {
     return clazz.getName().replace('.', '/');
   }
 
+  public void convertToJavaType(TajoDataTypes.DataType type) {
+    switch (type.getType()) {
+    case BOOLEAN:
+    case INT1:
+    case INT2:
+      invokeVirtual(Datum.class, "asInt2", String.class, new Class[] {});
+      break;
+    case INT4:
+      invokeVirtual(Datum.class, "asInt4", String.class, new Class[] {});
+      break;
+    case INT8:
+      invokeVirtual(Datum.class, "asInt8", String.class, new Class[] {});
+      break;
+    case FLOAT4:
+      invokeVirtual(Datum.class, "asFloat4", String.class, new Class[] {});
+      break;
+    case FLOAT8:
+      invokeVirtual(Datum.class, "asFloat8", String.class, new Class[] {});
+      break;
+    case TEXT:
+      invokeVirtual(Datum.class, "asChars", String.class, new Class[]{});
+      break;
+    default:
+      throw new UnsupportedException("Unsupported type: " + type);
+    }
+  }
+
   public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
     String methodName;
     Class returnType;
@@ -553,7 +583,7 @@ public class GeneratorAdapter {
     case CHAR:
       methodName = "createChar";
       returnType = CharDatum.class;
-      paramTypes = new Class[] {CharDatum.class};
+      paramTypes = new Class[] {String.class};
       break;
     case INT1:
     case INT2:

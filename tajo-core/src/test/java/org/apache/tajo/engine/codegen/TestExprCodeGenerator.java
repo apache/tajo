@@ -845,6 +845,14 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testComparison() throws IOException {
+//    testSimpleEval("select 1 = null;", new String [] {""});
+//    testSimpleEval("select 1 <> null;", new String [] {""});
+//    testSimpleEval("select 1 > null;", new String [] {""});
+//    testSimpleEval("select 1 >= null;", new String [] {""});
+//    testSimpleEval("select 1 < null;", new String [] {""});
+//    testSimpleEval("select 1 <= null;", new String [] {""});
+
+
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
