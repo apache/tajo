@@ -133,7 +133,7 @@ public class DiskUtil {
 		return new String(result, 0, length);
 	}
 	
-	private static List<DiskDeviceInfo> getDefaultDiskDeviceInfos() {
+	public static List<DiskDeviceInfo> getDefaultDiskDeviceInfos() {
 		DiskDeviceInfo diskDeviceInfo = new DiskDeviceInfo(0);
 		diskDeviceInfo.setName("default");
 		
