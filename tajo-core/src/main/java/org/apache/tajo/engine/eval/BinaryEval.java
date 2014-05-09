@@ -34,6 +34,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class BinaryEval extends EvalNode implements Cloneable {
   @Expose protected EvalNode leftExpr;
   @Expose protected EvalNode rightExpr;
+  @Expose protected DataType returnType;
 
   protected BinaryEval(EvalType type) {
     super(type);

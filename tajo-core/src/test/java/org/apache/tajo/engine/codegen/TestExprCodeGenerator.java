@@ -1133,4 +1133,11 @@ public class TestExprCodeGenerator extends ExprTestBase {
       return defineClass(name, b, 0, b.length);
     }
   }
+
+  @Test
+  public void testFunction() throws IOException {
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('abc');", new String [] {"ABC"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('bbc');", new String [] {"BBC"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('chs');", new String [] {"CHS"});
+  }
 }

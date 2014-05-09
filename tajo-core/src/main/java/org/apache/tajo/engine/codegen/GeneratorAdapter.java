@@ -313,7 +313,7 @@ public class GeneratorAdapter {
     } else if (clazz == double.class) {
       return "D";
     } else if (clazz.isArray()) {
-      return "[[" + getDescription(clazz.getComponentType());
+      return "[" + getDescription(clazz.getComponentType());
     } else {
       return "L" + getInternalName(clazz) + ";";
     }
@@ -540,7 +540,7 @@ public class GeneratorAdapter {
     return clazz.getName().replace('.', '/');
   }
 
-  public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) throws PlanningException {
+  public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
     String methodName;
     Class returnType;
     Class [] paramTypes;
@@ -587,7 +587,7 @@ public class GeneratorAdapter {
       paramTypes = new Class[] {String.class};
       break;
     default:
-      throw new PlanningException("Unsupported type: " + type.getType().name());
+      throw new RuntimeException("Unsupported type: " + type.getType().name());
     }
 
     Label ifNull = new Label();
@@ -658,5 +658,47 @@ public class GeneratorAdapter {
   public void emitParseFloat8() {
     method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class),
         "parseDouble", "(L" + Type.getInternalName(String.class) + ";)D");
+  }
+
+  public void newArray(final Class clazz) {
+    int typeCode;
+    if (clazz == boolean.class) {
+      typeCode = Opcodes.T_BOOLEAN;
+    } else if (clazz == char.class) {
+      typeCode = Opcodes.T_CHAR;
+    } else if (clazz == byte.class) {
+      typeCode = Opcodes.T_BYTE;
+    } else if (clazz == short.class) {
+      typeCode = Opcodes.T_SHORT;
+    } else if (clazz == int.class) {
+      typeCode = Opcodes.T_INT;
+    } else if (clazz == long.class) {
+      typeCode = Opcodes.T_LONG;
+    } else if (clazz == float.class) {
+      typeCode = Opcodes.T_FLOAT;
+    } else if (clazz == double.class) {
+      typeCode = Opcodes.T_DOUBLE;
+    } else {
+      method.visitTypeInsn(Opcodes.ANEWARRAY, getInternalName(clazz));
+      return;
+    }
+
+    method.visitIntInsn(Opcodes.NEWARRAY, typeCode);
+  }
+
+  public void aastore(int varId) {
+    method.visitVarInsn(Opcodes.AASTORE, varId);
+  }
+
+  public void aaload(int varId) {
+    method.visitVarInsn(Opcodes.AALOAD, varId);
+  }
+
+  public void astore(int varId) {
+    method.visitVarInsn(Opcodes.ASTORE, varId);
+  }
+
+  public void aload(int varId) {
+    method.visitVarInsn(Opcodes.ALOAD, varId);
   }
 }

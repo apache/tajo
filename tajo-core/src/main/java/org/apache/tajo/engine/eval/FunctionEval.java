@@ -45,6 +45,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 		this.argEvals = argEvals;
 	}
 
+  public FunctionDesc getFuncDesc() {
+    return funcDesc;
+  }
+
   public ParamType [] getParamType() {
     ParamType [] paramTypes = new ParamType[argEvals.length];
     for (int i = 0; i < argEvals.length; i++) {
@@ -72,7 +76,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public void setArgs(EvalNode [] args) {
     this.argEvals = args;
   }
-	
+
 	public DataType getValueType() {
 		return this.funcDesc.getReturnType();
 	}

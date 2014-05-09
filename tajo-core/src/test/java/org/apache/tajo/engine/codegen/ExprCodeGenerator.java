@@ -18,11 +18,13 @@
 
 package org.apache.tajo.engine.codegen;
 
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.mockito.asm.Type;
@@ -629,13 +631,46 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   }
 
   public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
+
+
     int paramNum = func.getArgs().length;
     context.push(paramNum);
-    context.newInstance(VTuple.class, new Class[] {int.class});
+    context.newArray(Datum.class); // new Datum[paramNum]
+    context.astore(3);
 
     stack.push(func);
+    EvalNode [] params = func.getArgs();
+    for (int paramIdx = 0; paramIdx < func.getArgs().length; paramIdx++) {
+      context.aload(3);       // array ref
+      context.method.visitLdcInsn(paramIdx); // array idx
+      visit(context, params[paramIdx], stack);
+      context.convertToDatum(params[paramIdx].getValueType(), true);  // value
+      context.method.visitInsn(Opcodes.AASTORE);
+    }
+    stack.pop();
 
-    // TODO
+    context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(VTuple.class));
+    context.method.visitInsn(Opcodes.DUP);
+    context.aload(3);
+    context.newInstance(VTuple.class, new Class[] {Datum[].class});
+    context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Tuple.class));
+    context.astore(5);
+
+    FunctionDesc desc = func.getFuncDesc();
+    try {
+
+      context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(desc.getFuncClass()));
+      context.method.visitInsn(Opcodes.DUP);
+      context.method.visitMethodInsn(Opcodes.INVOKESPECIAL, GeneratorAdapter.getInternalName(desc.getFuncClass()),
+          "<init>", "()V");
+      context.aload(5);
+      context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
+    } catch (InternalException e) {
+      e.printStackTrace();
+    }
+
+    context.invokeVirtual(Datum.class, "asChars", String.class, new Class[] {});
+    context.pushNullFlag(true);
     return func;
   }
 
