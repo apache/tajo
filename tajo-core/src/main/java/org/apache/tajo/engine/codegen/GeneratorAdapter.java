@@ -21,15 +21,22 @@ package org.apache.tajo.engine.codegen;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.*;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.beans.MethodDescriptor;
+import java.lang.reflect.Array;
 import java.util.Map;
+import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
@@ -211,7 +218,7 @@ public class GeneratorAdapter {
     method.visitLdcInsn(value);
   }
 
-  public void emitIfCmp(TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
+  public void ifCmp(TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
     if (isJVMInternalInt(dataType)) {
       switch (evalType) {
       case EQUAL:
@@ -260,7 +267,7 @@ public class GeneratorAdapter {
     }
   }
 
-  public void loadInsn(TajoDataTypes.DataType dataType, int idx) {
+  public void load(TajoDataTypes.DataType dataType, int idx) {
     switch (dataType.getType()) {
     case BOOLEAN:
     case CHAR:
@@ -282,6 +289,56 @@ public class GeneratorAdapter {
       method.visitVarInsn(Opcodes.ALOAD, idx);
       break;
     }
+  }
+
+  public static String getDescription(Class clazz) {
+    if (clazz == null) {
+      return "";
+    } else if (clazz == void.class) {
+      return "V";
+    } else if (clazz == boolean.class) {
+      return "Z";
+    } else if (clazz == char.class) {
+      return "C";
+    } else if (clazz == byte.class) {
+      return "B";
+    } else if (clazz == short.class) {
+      return "S";
+    } else if (clazz == int.class) {
+      return "I";
+    } else if (clazz == long.class) {
+      return "J";
+    } else if (clazz == float.class) {
+      return "F";
+    } else if (clazz == double.class) {
+      return "D";
+    } else if (clazz.isArray()) {
+      return "[[" + getDescription(clazz.getComponentType());
+    } else {
+      return "L" + getInternalName(clazz) + ";";
+    }
+  }
+
+  public static String getMethodDescription(Class returnType, Class [] argumentTypes) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("(");
+    if (argumentTypes != null) {
+      for (Class argType : argumentTypes) {
+        builder.append(getDescription(argType));
+      }
+    }
+    builder.append(")");
+
+    builder.append(getDescription(returnType));
+    return builder.toString();
+  }
+
+  public Label newLabel() {
+    return new Label();
+  }
+
+  public void gotoLabel(Label label) {
+    method.visitJumpInsn(Opcodes.GOTO, label);
   }
 
   public void pushBooleanOfThreeValuedLogic(boolean value) {
@@ -319,12 +376,6 @@ public class GeneratorAdapter {
     emitNullityCheck(ifNull);
   }
 
-
-  public void pushNullFlagAndDummyValue(boolean trueIfNotNull, TajoDataTypes.DataType type) {
-    pushDummyValue(type);
-    pushNullFlag(trueIfNotNull);
-  }
-
   public void pushDummyValue(TajoDataTypes.DataType type) {
     if (type.getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
       method.visitLdcInsn(0L); // null
@@ -341,6 +392,31 @@ public class GeneratorAdapter {
     } else {
       method.visitInsn(Opcodes.ICONST_0);
     }
+  }
+
+  public void newInstance(Class owner, Class [] paramTypes) {
+    method.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), "<init>",
+        getMethodDescription(void.class, paramTypes));
+  }
+
+  public void invokeSpecial(Class owner, String methodName, Class returnType, Class [] paramTypes) {
+    method.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), methodName,
+        getMethodDescription(returnType, paramTypes));
+  }
+
+  public void invokeStatic(Class owner, String methodName, Class returnType, Class [] paramTypes) {
+    method.visitMethodInsn(Opcodes.INVOKESTATIC, getInternalName(owner), methodName,
+        getMethodDescription(returnType, paramTypes));
+  }
+
+  public void invokeVirtual(Class owner, String methodName, Class returnType, Class [] paramTypes) {
+    method.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(owner), methodName,
+        getMethodDescription(returnType, paramTypes));
+  }
+
+  public void invokeInterface(Class owner, String methodName, Class returnType, Class [] paramTypes) {
+    method.visitMethodInsn(Opcodes.INVOKEINTERFACE, Type.getInternalName(owner), methodName,
+        getMethodDescription(returnType, paramTypes));
   }
 
   public static boolean isPrimitiveOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
@@ -462,6 +538,81 @@ public class GeneratorAdapter {
 
   public static String getInternalName(Class clazz) {
     return clazz.getName().replace('.', '/');
+  }
+
+  public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) throws PlanningException {
+    String methodName;
+    Class returnType;
+    Class [] paramTypes;
+    switch (type.getType()) {
+    case BOOLEAN:
+      methodName = "createBool";
+      returnType = Datum.class;
+      paramTypes = new Class[] {int.class};
+      break;
+    case CHAR:
+      methodName = "createChar";
+      returnType = CharDatum.class;
+      paramTypes = new Class[] {CharDatum.class};
+      break;
+    case INT1:
+    case INT2:
+      methodName = "createInt2";
+      returnType = Int2Datum.class;
+      paramTypes = new Class[] {short.class};
+      break;
+    case INT4:
+      methodName = "createInt4";
+      returnType = Int4Datum.class;
+      paramTypes = new Class[] {int.class};
+      break;
+    case INT8:
+      methodName = "createInt8";
+      returnType = Int8Datum.class;
+      paramTypes = new Class[] {long.class};
+      break;
+    case FLOAT4:
+      methodName = "createFloat4";
+      returnType = Float4Datum.class;
+      paramTypes = new Class[] {float.class};
+      break;
+    case FLOAT8:
+      methodName = "createFloat8";
+      returnType = Float8Datum.class;
+      paramTypes = new Class[] {double.class};
+      break;
+    case TEXT:
+      methodName = "createText";
+      returnType = TextDatum.class;
+      paramTypes = new Class[] {String.class};
+      break;
+    default:
+      throw new PlanningException("Unsupported type: " + type.getType().name());
+    }
+
+    Label ifNull = new Label();
+    Label afterAll = new Label();
+
+    method.visitJumpInsn(Opcodes.IFEQ, ifNull);
+    invokeStatic(DatumFactory.class, methodName, returnType, paramTypes);
+    method.visitJumpInsn(Opcodes.GOTO, afterAll);
+
+    method.visitLabel(ifNull);
+    emitPop(type);
+    invokeStatic(NullDatum.class, "get", NullDatum.class, null);
+
+    method.visitLabel(afterAll);
+    if (castToDatum) {
+      method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Datum.class));
+    }
+  }
+
+  public void emitPop(TajoDataTypes.DataType type) {
+    if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TajoDataTypes.Type.FLOAT8) {
+      method.visitInsn(Opcodes.POP2);
+    } else {
+      method.visitInsn(Opcodes.POP);
+    }
   }
 
   public void emitStringValueOfChar() {

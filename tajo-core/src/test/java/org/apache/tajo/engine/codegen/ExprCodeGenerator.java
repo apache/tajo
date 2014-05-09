@@ -24,12 +24,14 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.mockito.asm.Type;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Stack;
@@ -193,15 +195,15 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       //////////////////////////////////////////////////////////////////////////////////////////
 
       // predicand <= begin
-      context.loadInsn(begin.getValueType(), beginVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
-      context.emitIfCmp(predicand.getValueType(), EvalType.LEQ, ifFirstMatchFailed);
+      context.load(begin.getValueType(), beginVarId);
+      context.load(predicand.getValueType(), predVarId);
+      context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifFirstMatchFailed);
 
       // end <= predicand
-      context.loadInsn(end.getValueType(), endVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
+      context.load(end.getValueType(), endVarId);
+      context.load(predicand.getValueType(), predVarId);
       // inverse the operator GEQ -> LTH
-      context.emitIfCmp(predicand.getValueType(), EvalType.GEQ, ifFirstMatchFailed);
+      context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifFirstMatchFailed);
 
       context.push(true);
       emitGotoLabel(context, secondCheck);
@@ -215,17 +217,17 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       emitLabel(context, secondCheck);
 
       // predicand <= end
-      context.loadInsn(end.getValueType(), endVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
+      context.load(end.getValueType(), endVarId);
+      context.load(predicand.getValueType(), predVarId);
 
       // inverse the operator LEQ -> GTH
-      context.emitIfCmp(predicand.getValueType(), EvalType.LEQ, ifSecondMatchFailed);
+      context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifSecondMatchFailed);
 
       // end <= predicand
-      context.loadInsn(begin.getValueType(), beginVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
+      context.load(begin.getValueType(), beginVarId);
+      context.load(predicand.getValueType(), predVarId);
       // inverse the operator GEQ -> LTH
-      context.emitIfCmp(predicand.getValueType(), EvalType.GEQ, ifSecondMatchFailed);
+      context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifSecondMatchFailed);
 
       context.push(true);
       emitGotoLabel(context, finalDisjunctive);
@@ -238,14 +240,14 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.method.visitJumpInsn(Opcodes.IFEQ, ifNotMatched);
     } else {
       // predicand <= begin
-      context.loadInsn(begin.getValueType(), beginVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
-      context.emitIfCmp(predicand.getValueType(), EvalType.LEQ, ifNotMatched);
+      context.load(begin.getValueType(), beginVarId);
+      context.load(predicand.getValueType(), predVarId);
+      context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifNotMatched);
 
       // end <= predicand
-      context.loadInsn(end.getValueType(), endVarId);
-      context.loadInsn(predicand.getValueType(), predVarId);
-      context.emitIfCmp(predicand.getValueType(), EvalType.GEQ, ifNotMatched);
+      context.load(end.getValueType(), endVarId);
+      context.load(predicand.getValueType(), predVarId);
+      context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifNotMatched);
     }
 
     // IF MATCHED
@@ -275,11 +277,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     context.method.visitLabel(label);
   }
 
-  private static void invokeInitDatum(CodeGenContext context, String methodName, String paramDesc) {
-    String slashedName = GeneratorAdapter.getInternalName(DatumFactory.class);
-    context.method.visitMethodInsn(Opcodes.INVOKESTATIC, slashedName, methodName, paramDesc);
-  }
-
   public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, PlanningException {
 
@@ -293,84 +290,22 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
     methodVisitor.visitCode();
     methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, GeneratorAdapter.getInternalName(EvalNode.class), "<init>", "()V");
+    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, GeneratorAdapter.getInternalName(EvalNode.class), "<init>",
+        "()V");
     methodVisitor.visitInsn(Opcodes.RETURN);
     methodVisitor.visitMaxs(1, 1);
     methodVisitor.visitEnd();
 
     // method
     MethodVisitor evalMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
-        "(Lorg/apache/tajo/catalog/Schema;Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;", null, null);
+        GeneratorAdapter.getMethodDescription(Datum.class, new Class [] {Schema.class, Tuple.class}), null, null);
     evalMethod.visitCode();
     evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
     CodeGenContext context = new CodeGenContext(evalMethod, schema);
 
-    String methodName;
-    String signatureDesc;
-    switch (expr.getValueType().getType()) {
-    case BOOLEAN:
-      methodName = "createBool";
-      signatureDesc = "(I)L" + org.objectweb.asm.Type.getInternalName(Datum.class) +";" ;
-      break;
-    case CHAR:
-      methodName = "createChar";
-//      if (expr.getValueType().getLength() == 1) {
-//        signatureDesc = "(C)L"+ org.objectweb.asm.Type.getInternalName(CharDatum.class) + ";";
-//      } else {
-        signatureDesc = "(L" + org.objectweb.asm.Type.getInternalName(String.class) + ";)L"
-            + org.objectweb.asm.Type.getInternalName(CharDatum.class) + ";";
-//      }
-      break;
-    case INT1:
-    case INT2:
-      methodName = "createInt2";
-      signatureDesc = "(S)L" + org.objectweb.asm.Type.getInternalName(Int2Datum.class) +";" ;
-      break;
-    case INT4:
-      methodName = "createInt4";
-      signatureDesc = "(I)L" + org.objectweb.asm.Type.getInternalName(Int4Datum.class) +";" ;
-      break;
-    case INT8:
-      methodName = "createInt8";
-      signatureDesc = "(J)L" + org.objectweb.asm.Type.getInternalName(Int8Datum.class) +";" ;
-      break;
-    case FLOAT4:
-      methodName = "createFloat4";
-      signatureDesc = "(F)L" + org.objectweb.asm.Type.getInternalName(Float4Datum.class) +";" ;
-      break;
-    case FLOAT8:
-      methodName = "createFloat8";
-      signatureDesc = "(D)L" + org.objectweb.asm.Type.getInternalName(Float8Datum.class) +";" ;
-      break;
-    case TEXT:
-      methodName = "createText";
-      signatureDesc = "(L" + org.objectweb.asm.Type.getInternalName(String.class) + ";)L"
-          + org.objectweb.asm.Type.getInternalName(TextDatum.class) +";" ;
-      break;
-    default:
-      throw new PlanningException("Unsupported type: " + expr.getValueType().getType());
-    }
-
-    Label ifNull = new Label();
-    Label afterAll = new Label();
-
     visit(context, expr, new Stack<EvalNode>());
-
-    context.method.visitJumpInsn(Opcodes.IFEQ, ifNull);
-
-    printOut(context, "generate:: NOT NULL");
-    invokeInitDatum(context, methodName, signatureDesc);
-    context.method.visitJumpInsn(Opcodes.GOTO, afterAll);
-
-    context.method.visitLabel(ifNull);
-    printOut(context, "generate:: NULL");
-    emitPop(context, expr.getValueType());
-    context.method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(NullDatum.class), "get",
-        "()L" + Type.getInternalName(NullDatum.class) + ";");
-
-    context.method.visitLabel(afterAll);
-    context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Datum.class));
+    context.convertToDatum(expr.getValueType(), true);
     context.method.visitInsn(Opcodes.ARETURN);
     context.method.visitMaxs(0, 0);
     context.method.visitEnd();
@@ -386,7 +321,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   private void printOut(CodeGenContext context, String message) {
     context.method.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
     context.push(message);
-    context.method.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+    context.invokeVirtual(PrintStream.class, "println", void.class, new Class [] {String.class});
   }
 
   public EvalNode visitCast(CodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
@@ -403,7 +338,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     emitGotoLabel(context, afterEnd);
 
     emitLabel(context, ifNull);
-    emitPop(context, srcType);
+    context.emitPop(srcType);
     context.pushDummyValue(targetType);
     context.pushNullFlag(false);
     printOut(context, "endIfNull");
@@ -421,14 +356,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.pushNullFlag(false);
     } else {
       String methodName;
-      String desc;
-
       int idx = context.schema.getColumnId(field.getColumnRef().getQualifiedName());
 
       context.method.visitVarInsn(Opcodes.ALOAD, 2);
       context.push(idx);
-      context.method.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class),
-          "isNull", "(I)Z");
+      context.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
 
       context.push(true);
 
@@ -436,46 +368,51 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       Label afterAll = new Label();
       context.method.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
 
+      Class returnType;
+      Class [] paramTypes;
       switch (field.getValueType().getType()) {
       case BOOLEAN:
         methodName = "getByte";
-        desc = "(I)B";
+        returnType = byte.class;
+        paramTypes = new Class[] {int.class};
         break;
       case CHAR: {
-//        if (field.getValueType().hasLength() && field.getValueType().getLength() == 1) {
-//          methodName = "getChar";
-//          desc = "(I)C";
-//        } else {
-          methodName = "getText";
-          desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class) + ";";
-//        }
+        methodName = "getText";
+        returnType = String.class;
+        paramTypes = new Class[] {int.class};
         break;
       }
       case INT1:
       case INT2:
       case INT4:
         methodName = "getInt4";
-        desc = "(I)I";
+        returnType = int.class;
+        paramTypes = new Class [] {int.class};
         break;
       case INT8:
         methodName = "getInt8";
-        desc = "(I)J";
+        returnType = long.class;
+        paramTypes = new Class [] {int.class};
         break;
       case FLOAT4:
         methodName = "getFloat4";
-        desc = "(I)F";
+        returnType = float.class;
+        paramTypes = new Class [] {int.class};
         break;
       case FLOAT8:
         methodName = "getFloat8";
-        desc = "(I)D";
+        returnType = double.class;
+        paramTypes = new Class [] {int.class};
         break;
       case TEXT:
         methodName = "getText";
-        desc = "(I)L" + org.objectweb.asm.Type.getInternalName(String.class) + ";";
+        returnType = String.class;
+        paramTypes = new Class [] {int.class};
         break;
       case TIMESTAMP:
         methodName = "getTimestamp";
-        desc = "(I)L" + org.objectweb.asm.Type.getInternalName(Datum.class) + ";";
+        returnType = TimestampDatum.class;
+        paramTypes = new Class [] {int.class};
         break;
       default:
         throw new InvalidEvalException(field.getValueType() + " is not supported yet");
@@ -483,13 +420,14 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
       context.method.visitVarInsn(Opcodes.ALOAD, 2);
       context.push(idx);
-      context.method.visitMethodInsn(Opcodes.INVOKEINTERFACE, org.objectweb.asm.Type.getInternalName(Tuple.class), methodName, desc);
+      context.invokeInterface(Tuple.class, methodName, returnType, paramTypes);
 
       context.pushNullFlag(true); // not null
       context.method.visitJumpInsn(Opcodes.GOTO, afterAll);
 
       context.method.visitLabel(ifNull);
-      context.pushNullFlagAndDummyValue(false, field.getValueType());
+      context.pushDummyValue(field.getValueType());
+      context.pushNullFlag(false);
 
       context.method.visitLabel(afterAll);
     }
@@ -522,9 +460,9 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     } else {
       throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
     }
-    context.loadInsn(evalNode.getLeftExpr().getValueType(), 4);
+    context.load(evalNode.getLeftExpr().getValueType(), 4);
     context.method.visitInsn(Opcodes.AALOAD);
-    context.loadInsn(evalNode.getRightExpr().getValueType(), 6);
+    context.load(evalNode.getRightExpr().getValueType(), 6);
     context.method.visitInsn(Opcodes.BALOAD);
     context.method.visitInsn(Opcodes.ICONST_1);
     emitGotoLabel(context, afterEnd);
@@ -573,8 +511,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.emitNullityCheck(ifNullCommon, 3, rNullVarId);
 
-    context.loadInsn(evalNode.getLeftExpr().getValueType(), 4);
-    context.loadInsn(evalNode.getRightExpr().getValueType(), rValVarId);
+    context.load(evalNode.getLeftExpr().getValueType(), 4);
+    context.load(evalNode.getRightExpr().getValueType(), rValVarId);
 
     int opCode = GeneratorAdapter.getOpCode(evalNode.getType(), evalNode.getValueType());
     context.method.visitInsn(opCode);
@@ -582,7 +520,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     emitGotoLabel(context, afterEnd);
 
     emitLabel(context, ifNullCommon);
-    context.pushNullFlagAndDummyValue(false, evalNode.getValueType());
+    context.pushDummyValue(evalNode.getValueType());
+    context.pushNullFlag(false);
 
     emitLabel(context, afterEnd);
 
@@ -610,10 +549,10 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.emitNullityCheck(ifNull, 3, rNullVarId);
 
-    context.loadInsn(evalNode.getLeftExpr().getValueType(), 4);                     // < lhs
-    context.loadInsn(evalNode.getRightExpr().getValueType(), rValVarId);            // < lhs, rhs
+    context.load(evalNode.getLeftExpr().getValueType(), 4);                     // < lhs
+    context.load(evalNode.getRightExpr().getValueType(), rValVarId);            // < lhs, rhs
 
-    context.emitIfCmp(evalNode.getLeftExpr().getValueType(), evalNode.getType(), ifNotMatched);
+    context.ifCmp(evalNode.getLeftExpr().getValueType(), evalNode.getType(), ifNotMatched);
 
     context.pushBooleanOfThreeValuedLogic(true);
     context.pushNullFlag(true);
@@ -633,14 +572,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  private static void emitPop(CodeGenContext context, TajoDataTypes.DataType type) {
-    if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TajoDataTypes.Type.FLOAT8) {
-      context.method.visitInsn(Opcodes.POP2);
-    } else {
-      context.method.visitInsn(Opcodes.POP);
-    }
-  }
-
   public EvalNode visitIsNull(CodeGenContext context, IsNullEval isNullEval, Stack<EvalNode> stack) {
 
     visit(context, isNullEval.getChild(), stack);
@@ -650,12 +581,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.emitNullityCheck(ifNull);
 
-    emitPop(context, isNullEval.getChild().getValueType());
+    context.emitPop(isNullEval.getChild().getValueType());
     context.pushBooleanOfThreeValuedLogic(isNullEval.isNot() ? true : false);
     context.method.visitJumpInsn(Opcodes.GOTO, endIf);
 
     context.method.visitLabel(ifNull);
-    emitPop(context, isNullEval.getChild().getValueType());
+    context.emitPop(isNullEval.getChild().getValueType());
     context.pushBooleanOfThreeValuedLogic(isNullEval.isNot() ? false : true);
 
     emitLabel(context, endIf);
@@ -697,9 +628,15 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
+    int paramNum = func.getArgs().length;
+    context.push(paramNum);
+    context.newInstance(VTuple.class, new Class[] {int.class});
+
+    stack.push(func);
+
     // TODO
-    return evalNode;
+    return func;
   }
 
   public static class CodeGenContext extends GeneratorAdapter {
