@@ -168,17 +168,17 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     int predVarId = 4;
     visit(context, predicand, stack);                                 // < predicand, predicand_nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, predNullVarId);      // < predicand (store nullflag to 3)
-    int beginNullVarId = emitStore(context, predicand, predVarId);    // <
+    int beginNullVarId = store(context, predicand, predVarId);    // <
 
     visit(context, begin, stack);                                    // < begin, left_nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, beginNullVarId);  // < begin, store left_nullflag to x
     int beginVarId = beginNullVarId + 1;
-    int endNullVarId = emitStore(context, begin, beginVarId);
+    int endNullVarId = store(context, begin, beginVarId);
 
     visit(context, end, stack);                                         // < end, right_nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, endNullVarId);      // < end, store right_nullflag
     int endVarId = endNullVarId + 1;
-    emitStore(context, end, endVarId);                                // <
+    store(context, end, endVarId);                                // <
 
     stack.pop();
 
@@ -304,7 +304,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     // method
     MethodVisitor evalMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "eval",
-        GeneratorAdapter.getMethodDescription(Datum.class, new Class [] {Schema.class, Tuple.class}), null, null);
+        GeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class}), null, null);
     evalMethod.visitCode();
     evalMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
@@ -328,7 +328,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   private void printOut(CodeGenContext context, String message) {
     context.method.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
     context.push(message);
-    context.invokeVirtual(PrintStream.class, "println", void.class, new Class [] {String.class});
+    context.invokeVirtual(PrintStream.class, "println", void.class, new Class[]{String.class});
   }
 
   public EvalNode visitCast(CodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
@@ -489,7 +489,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public static int emitStore(CodeGenContext context, EvalNode evalNode, int idx) {
+  public static int store(CodeGenContext context, EvalNode evalNode, int idx) {
     switch (evalNode.getValueType().getType()) {
     case NULL_TYPE:
     case BOOLEAN:
@@ -512,12 +512,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     stack.push(evalNode);
     visit(context, evalNode.getLeftExpr(), stack);          // < left_child, push nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, 3);     // < left_child
-    int rNullVarId = emitStore(context, evalNode.getLeftExpr(), 4);
+    int rNullVarId = store(context, evalNode.getLeftExpr(), 4);
 
     visit(context, evalNode.getRightExpr(), stack);         // < left_child, right_child, nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, rNullVarId);     // < left_child, right_child
     int rValVarId = rNullVarId + 1;
-    emitStore(context, evalNode.getRightExpr(), rValVarId);
+    store(context, evalNode.getRightExpr(), rValVarId);
     stack.pop();
 
     Label ifNullCommon = new Label();
@@ -550,12 +550,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     visit(context, evalNode.getLeftExpr(), stack);                    // < lhs, l_null
     context.method.visitVarInsn(Opcodes.ISTORE, 3);               // < lhs
-    int rNullVarId = emitStore(context, evalNode.getLeftExpr(), 4);   // <
+    int rNullVarId = store(context, evalNode.getLeftExpr(), 4);   // <
 
     visit(context, evalNode.getRightExpr(), stack);                   // < rhs, r_nullflag
     context.method.visitVarInsn(Opcodes.ISTORE, rNullVarId);      // < rhs
     int rValVarId = rNullVarId + 1;
-    emitStore(context, evalNode.getRightExpr(), rValVarId);           // <
+    store(context, evalNode.getRightExpr(), rValVarId);           // <
     stack.pop();
 
     Label ifNull = new Label();
@@ -593,22 +593,21 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     stack.push(evalNode);
 
     visit(context, evalNode.getLeftExpr(), stack);                    // < lhs, l_null
-    context.method.visitVarInsn(Opcodes.ISTORE, 3);               // < lhs
-    int rNullVarId = emitStore(context, evalNode.getLeftExpr(), 4);   // <
+    final int LHS_NULLFLAG = context.istore();               // < lhs
+    final int LHS = context.store(evalNode.getLeftExpr());
 
     visit(context, evalNode.getRightExpr(), stack);                   // < rhs, r_nullflag
-    context.method.visitVarInsn(Opcodes.ISTORE, rNullVarId);      // < rhs
-    int rValVarId = rNullVarId + 1;
-    emitStore(context, evalNode.getRightExpr(), rValVarId);           // <
+    int RHS_NULLFLAG = context.istore();
+    int RHS = context.store(evalNode.getRightExpr());           // <
     stack.pop();
 
     Label ifNull = new Label();
     Label afterEnd = new Label();
 
-    context.emitNullityCheck(ifNull, 3, rNullVarId);
+    context.emitNullityCheck(ifNull, LHS_NULLFLAG, RHS_NULLFLAG);
 
-    context.load(evalNode.getLeftExpr().getValueType(), 4);                     // < lhs
-    context.load(evalNode.getRightExpr().getValueType(), rValVarId);            // < lhs, rhs
+    context.load(evalNode.getLeftExpr().getValueType(), LHS);                     // < lhs
+    context.load(evalNode.getRightExpr().getValueType(), RHS);            // < lhs, rhs
 
     context.invokeVirtual(String.class, "concat", String.class, new Class[] {String.class});
     context.pushNullFlag(true);
@@ -702,12 +701,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     int paramNum = func.getArgs().length;
     context.push(paramNum);
     context.newArray(Datum.class); // new Datum[paramNum]
-    context.astore("param_array");
+    final int DATUM_ARRAY = context.astore();
 
     stack.push(func);
     EvalNode [] params = func.getArgs();
     for (int paramIdx = 0; paramIdx < func.getArgs().length; paramIdx++) {
-      context.aload("param_array");       // array ref
+      context.aload(DATUM_ARRAY);       // array ref
       context.method.visitLdcInsn(paramIdx); // array idx
       visit(context, params[paramIdx], stack);
       context.convertToDatum(params[paramIdx].getValueType(), true);  // value
@@ -717,11 +716,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.push(paramNum);
     context.newArray(ParamType.class); // new Datum[paramNum]
-    context.astore("paramTypes");
+    final int PARAM_TYPE_ARRAY = context.astore();
 
     ParamType [] paramTypes = getParamTypes(func.getArgs());
     for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
-      context.aload("paramTypes");
+      context.aload(PARAM_TYPE_ARRAY);
       context.method.visitLdcInsn(paramIdx);
       context.method.visitFieldInsn(Opcodes.GETSTATIC, GeneratorAdapter.getInternalName(ParamType.class),
           paramTypes[paramIdx].name(), GeneratorAdapter.getDescription(ParamType.class));
@@ -730,32 +729,32 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(VTuple.class));
     context.method.visitInsn(Opcodes.DUP);
-    context.aload("param_array");
-    context.newInstance(VTuple.class, new Class[]{Datum[].class});
-    context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Tuple.class));
-    context.astore("tuple");
+    context.aload(DATUM_ARRAY);
+    context.newInstance(VTuple.class, new Class[]{Datum[].class});  // new VTuple(datum [])
+    context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Tuple.class)); // cast to Tuple
+    final int TUPLE = context.astore();
 
     FunctionDesc desc = func.getFuncDesc();
     try {
       context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(desc.getFuncClass()));
-      context.astore("functionInstance");
+      int FUNC_INSTANCE = context.astore();
 
-      context.aload("functionInstance");
+      context.aload(FUNC_INSTANCE);
       context.method.visitMethodInsn(Opcodes.INVOKESPECIAL, GeneratorAdapter.getInternalName(desc.getFuncClass()),
           "<init>", "()V"); // func
 
-      context.aload("functionInstance");
-      context.aload("paramTypes");
+      context.aload(FUNC_INSTANCE);
+      context.aload(PARAM_TYPE_ARRAY);
       context.invokeVirtual(desc.getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
 
-      context.aload("functionInstance");
-      context.aload("tuple");
+      context.aload(FUNC_INSTANCE);
+      context.aload(TUPLE);
       context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
     } catch (InternalException e) {
       e.printStackTrace();
     }
 
-    context.convertToJavaType(func.getValueType());
+    context.convertToPrimitive(func.getValueType());
     context.pushNullFlag(true);
     return func;
   }

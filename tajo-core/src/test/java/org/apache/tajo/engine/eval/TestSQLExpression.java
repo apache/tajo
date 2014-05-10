@@ -883,7 +883,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testNullComparisons() throws IOException {
-    testSimpleEval("select 1 > null", new String[] {"t"});
+    testSimpleEval("select (1 > null) is null", new String[] {"t"});
 
     testSimpleEval("select null is null", new String[] {"t"});
     testSimpleEval("select null is not null", new String[] {"f"});

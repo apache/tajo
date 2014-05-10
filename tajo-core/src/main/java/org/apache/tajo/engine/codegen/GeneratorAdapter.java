@@ -271,6 +271,7 @@ public class GeneratorAdapter {
 
   public void load(TajoDataTypes.DataType dataType, int idx) {
     switch (dataType.getType()) {
+    case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
     case INT1:
@@ -539,25 +540,26 @@ public class GeneratorAdapter {
     return clazz.getName().replace('.', '/');
   }
 
-  public void convertToJavaType(TajoDataTypes.DataType type) {
+  public void convertToPrimitive(TajoDataTypes.DataType type) {
     switch (type.getType()) {
     case BOOLEAN:
     case INT1:
     case INT2:
-      invokeVirtual(Datum.class, "asInt2", String.class, new Class[] {});
+      invokeVirtual(Datum.class, "asInt2", short.class, new Class[] {});
       break;
     case INT4:
-      invokeVirtual(Datum.class, "asInt4", String.class, new Class[] {});
+      invokeVirtual(Datum.class, "asInt4", int.class, new Class[] {});
       break;
     case INT8:
-      invokeVirtual(Datum.class, "asInt8", String.class, new Class[] {});
+      invokeVirtual(Datum.class, "asInt8", long.class, new Class[] {});
       break;
     case FLOAT4:
-      invokeVirtual(Datum.class, "asFloat4", String.class, new Class[] {});
+      invokeVirtual(Datum.class, "asFloat4", float.class, new Class[] {});
       break;
     case FLOAT8:
-      invokeVirtual(Datum.class, "asFloat8", String.class, new Class[] {});
+      invokeVirtual(Datum.class, "asFloat8", double.class, new Class[] {});
       break;
+    case CHAR:
     case TEXT:
       invokeVirtual(Datum.class, "asChars", String.class, new Class[]{});
       break;
@@ -723,45 +725,6 @@ public class GeneratorAdapter {
 
   private Map<String, Integer> localVariablesMap = new HashMap<String, Integer>();
 
-  public void aastore(String name) {
-    if (localVariablesMap.containsKey(name)) {
-      int varId = localVariablesMap.get(name);
-      method.visitVarInsn(Opcodes.AASTORE, varId);
-    } else {
-      int varId = nextVarId++;
-      method.visitVarInsn(Opcodes.AALOAD, varId);
-      localVariablesMap.put(name, varId);
-    }
-  }
-
-  public void aastore(int varId) {
-    method.visitVarInsn(Opcodes.AASTORE, varId);
-  }
-
-  public void aaload(int varId) {
-    method.visitVarInsn(Opcodes.AALOAD, varId);
-  }
-
-  public void istore(String name) {
-    if (localVariablesMap.containsKey(name)) {
-      int varId = localVariablesMap.get(name);
-      method.visitVarInsn(Opcodes.ISTORE, varId);
-    } else {
-      int varId = nextVarId++;
-      method.visitVarInsn(Opcodes.ISTORE, varId);
-      localVariablesMap.put(name, varId);
-    }
-  }
-
-  public void iload(String name) {
-    if (localVariablesMap.containsKey(name)) {
-      int varId = localVariablesMap.get(name);
-      method.visitVarInsn(Opcodes.ILOAD, varId);
-    } else {
-      throw new RuntimeException("No such variable name: " + name);
-    }
-  }
-
   public void astore(String name) {
     if (localVariablesMap.containsKey(name)) {
       int varId = localVariablesMap.get(name);
@@ -771,6 +734,12 @@ public class GeneratorAdapter {
       method.visitVarInsn(Opcodes.ASTORE, varId);
       localVariablesMap.put(name, varId);
     }
+  }
+
+  public int astore() {
+    int varId = getCurVarIdAndIncrease();
+    method.visitVarInsn(Opcodes.ASTORE, varId);
+    return varId;
   }
 
   public void astore(int varId) {
@@ -788,5 +757,48 @@ public class GeneratorAdapter {
 
   public void aload(int varId) {
     method.visitVarInsn(Opcodes.ALOAD, varId);
+  }
+
+  public int istore() {
+    int varId = getCurVarIdAndIncrease();
+    method.visitVarInsn(Opcodes.ISTORE, varId);
+    return varId;
+  }
+
+  public void iload(int varId) {
+    method.visitVarInsn(Opcodes.ILOAD, varId);
+  }
+
+  private int getCurVarIdAndIncrease() {
+    int varId = nextVarId++;
+    return varId;
+  }
+
+  private int getCurVarIdAndIncrease(TajoDataTypes.DataType type) {
+    int varId = nextVarId;
+    nextVarId += getWordSize(type);
+    return varId;
+  }
+
+  public int store(EvalNode evalNode) {
+    int varId = nextVarId;
+    nextVarId += GeneratorAdapter.getWordSize(evalNode.getValueType());
+
+    switch (evalNode.getValueType().getType()) {
+    case NULL_TYPE:
+    case BOOLEAN:
+    case CHAR:
+    case INT1:
+    case INT2:
+    case INT4:
+      method.visitVarInsn(Opcodes.ISTORE, varId);
+      break;
+    case INT8: method.visitVarInsn(Opcodes.LSTORE, varId); break;
+    case FLOAT4: method.visitVarInsn(Opcodes.FSTORE, varId); break;
+    case FLOAT8: method.visitVarInsn(Opcodes.DSTORE, varId); break;
+    default: method.visitVarInsn(Opcodes.ASTORE, varId); break;
+    }
+
+    return varId;
   }
 }

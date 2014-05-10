@@ -845,12 +845,12 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testComparison() throws IOException {
-//    testSimpleEval("select 1 = null;", new String [] {""});
-//    testSimpleEval("select 1 <> null;", new String [] {""});
-//    testSimpleEval("select 1 > null;", new String [] {""});
-//    testSimpleEval("select 1 >= null;", new String [] {""});
-//    testSimpleEval("select 1 < null;", new String [] {""});
-//    testSimpleEval("select 1 <= null;", new String [] {""});
+    testSimpleEval("select 1 = null;", new String [] {""});
+    testSimpleEval("select 1 <> null;", new String [] {""});
+    testSimpleEval("select 1 > null;", new String [] {""});
+    testSimpleEval("select 1 >= null;", new String [] {""});
+    testSimpleEval("select 1 < null;", new String [] {""});
+    testSimpleEval("select 1 <= null;", new String [] {""});
 
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
@@ -1017,125 +1017,6 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (1 < 2) or false;", new String [] {"t"});
   }
 
-  public static class NewMockUp {
-    public Datum eval(int x, int y) {
-      return null;
-    }
-  }
-
-  public static byte[] getBytecodeForObjectReturn() {
-    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-    cw.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test3", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$NewMockUp", null);
-    cw.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
-        null, null).visitEnd();
-
-    MethodVisitor methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/engine/planner/TestExprCodeGenerator$NewMockUp", "<init>", "()V");
-    methodVisitor.visitInsn(Opcodes.RETURN);
-    methodVisitor.visitMaxs(1, 1);
-    methodVisitor.visitEnd();
-
-    methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "eval", "(II)Lorg/apache/tajo/datum/Datum;", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-
-    methodVisitor.visitTypeInsn(Opcodes.NEW, "org/apache/tajo/datum/Int4Datum");
-    methodVisitor.visitInsn(Opcodes.DUP);
-
-    methodVisitor.visitVarInsn(Opcodes.ILOAD, 1);
-    methodVisitor.visitVarInsn(Opcodes.ILOAD, 2);
-    methodVisitor.visitInsn(Opcodes.IADD);
-
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/datum/Int4Datum", "<init>", "(I)V");
-    methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, "org/apache/tajo/datum/Datum");
-    methodVisitor.visitInsn(Opcodes.ARETURN);
-    methodVisitor.visitMaxs(0, 0);
-    methodVisitor.visitEnd();
-    cw.visitEnd();
-    return cw.toByteArray();
-  }
-
-  public void testGenerateCodePlus() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
-      InstantiationException {
-    MyClassLoader myClassLoader = new MyClassLoader();
-    Class aClass = myClassLoader.defineClass("org.Test2", getBytecodeForPlus());
-    Constructor constructor = aClass.getConstructor();
-    PlusExpr r = (PlusExpr) constructor.newInstance();
-    System.out.println(r.eval(1, 3));
-  }
-
-  public static class PlusExpr {
-    public int eval(int x, int y) {
-      return x + y;
-    }
-  }
-
-  public static byte[] getBytecodeForPlus() {
-    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-    cw.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test2", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$PlusExpr", null);
-    cw.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
-        null, null).visitEnd();
-
-    System.out.println(Opcodes.ACC_PUBLIC);
-    MethodVisitor methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/engine/planner/TestExprCodeGenerator$PlusExpr", "<init>", "()V");
-    methodVisitor.visitInsn(Opcodes.RETURN);
-    methodVisitor.visitMaxs(1, 1);
-    methodVisitor.visitEnd();
-
-    methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "eval", "(II)I", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitVarInsn(Opcodes.ILOAD, 1);
-    methodVisitor.visitVarInsn(Opcodes.ILOAD, 2);
-    methodVisitor.visitInsn(Opcodes.IADD);
-    methodVisitor.visitInsn(Opcodes.IRETURN);
-    methodVisitor.visitMaxs(0, 0);
-    methodVisitor.visitEnd();
-    cw.visitEnd();
-    return cw.toByteArray();
-  }
-
-  public static byte[] getBytecodeForClass() {
-    ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-    cw.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/Test2", null, "org/apache/tajo/engine/planner/TestExprCodeGenerator$Example", null);
-    cw.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;",
-        null, null).visitEnd();
-
-    System.out.println(Opcodes.ACC_PUBLIC);
-    MethodVisitor methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/engine/planner/TestExprCodeGenerator$Example", "<init>", "()V");
-    methodVisitor.visitInsn(Opcodes.RETURN);
-    methodVisitor.visitMaxs(1, 1);
-    methodVisitor.visitEnd();
-
-
-    methodVisitor = cw.visitMethod(Opcodes.ACC_PUBLIC, "run", "(Ljava/lang/String;)V", null, null);
-    methodVisitor.visitCode();
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J");
-    methodVisitor.visitVarInsn(Opcodes.LSTORE, 2);
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-    methodVisitor.visitVarInsn(Opcodes.ALOAD, 1);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/apache/tajo/engine/planner/TestExprCodeGenerator$Example", "run", "(Ljava/lang/String;)V");
-    methodVisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J");
-    methodVisitor.visitVarInsn(Opcodes.LLOAD, 2);
-    methodVisitor.visitInsn(Opcodes.LSUB);
-    methodVisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(J)V");
-    methodVisitor.visitInsn(Opcodes.RETURN);
-    methodVisitor.visitMaxs(5, 4);
-    methodVisitor.visitEnd();
-
-    cw.visitEnd();
-    return cw.toByteArray();
-  }
-
   static class MyClassLoader extends ClassLoader {
     public Class defineClass(String name, byte[] b) {
       return defineClass(name, b, 0, b.length);
@@ -1153,7 +1034,9 @@ public class TestExprCodeGenerator extends ExprTestBase {
 
   @Test
   public void testStringConcat() throws IOException {
-//    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});
+    testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
+
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);

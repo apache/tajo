@@ -417,11 +417,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitConcatenate(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     stack.push(expr);
-    EvalNode left = visit(ctx, stack, expr.getLeft());
-    EvalNode right = visit(ctx, stack, expr.getRight());
+    EvalNode lhs = visit(ctx, stack, expr.getLeft());
+    EvalNode rhs = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.CONCATENATE, left, right);
+    if (lhs.getValueType().getType() != Type.TEXT) {
+      lhs = convertType(lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+    if (rhs.getValueType().getType() != Type.TEXT) {
+      rhs = convertType(rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+
+    return new BinaryEval(EvalType.CONCATENATE, lhs, rhs);
   }
 
   private EvalNode visitPatternMatchPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
