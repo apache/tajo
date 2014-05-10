@@ -29,13 +29,13 @@ import static org.junit.Assert.assertEquals;
 public class TestGeneratorAdapter {
   @Test
   public void testGetDescription() throws Exception {
-    assertEquals("I", GeneratorAdapter.getDescription(int.class));
-    assertEquals("Ljava/lang/String;", GeneratorAdapter.getDescription(String.class));
+    assertEquals("I", TajoGeneratorAdapter.getDescription(int.class));
+    assertEquals("Ljava/lang/String;", TajoGeneratorAdapter.getDescription(String.class));
   }
 
   @Test
   public void getMethodDescription() throws Exception {
     assertEquals("(Lorg/apache/tajo/catalog/Schema;Lorg/apache/tajo/storage/Tuple;)Lorg/apache/tajo/datum/Datum;",
-        GeneratorAdapter.getMethodDescription(Datum.class, new Class [] {Schema.class, Tuple.class}));
+        TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class}));
   }
 }

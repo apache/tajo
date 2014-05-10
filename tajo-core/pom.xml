@@ -249,6 +249,12 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>asm</artifactId>
+          <groupId>asm</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -373,10 +379,11 @@
       <artifactId>gmetric4j</artifactId>
       <version>1.0.3</version>
     </dependency>
+
     <dependency>
-      <groupId>asm</groupId>
+      <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>3.3.1</version>
+      <version>4.2</version>
     </dependency>
   </dependencies>
 

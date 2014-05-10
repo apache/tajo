@@ -24,27 +24,18 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
+import org.objectweb.asm.commons.Method;
 
-import java.beans.MethodDescriptor;
-import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
 
-public class GeneratorAdapter {
+public class TajoGeneratorAdapter {
 
   public static final Map<EvalType, Map<TajoDataTypes.Type, Integer>> OpCodesMap = Maps.newHashMap();
 
@@ -151,10 +142,16 @@ public class GeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT8, Opcodes.DCMPG);
   }
 
-  protected final MethodVisitor method;
+  protected final int access;
+  protected final Method method;
+  protected final ClassVisitor clsVisitor;
+  protected final MethodVisitor methodvisitor;
 
-  public GeneratorAdapter(MethodVisitor methodVisitor) {
-    this.method = methodVisitor;
+  public TajoGeneratorAdapter(int access, Method method, ClassVisitor clsVisitor, MethodVisitor methodVisitor) {
+    this.access = access;
+    this.method = method;
+    this.clsVisitor = clsVisitor;
+    this.methodvisitor = methodVisitor;
   }
 
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
@@ -174,96 +171,96 @@ public class GeneratorAdapter {
   }
 
   public void push(final boolean value) {
-    method.visitInsn(value ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
+    methodvisitor.visitInsn(value ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
   }
 
   public void push(final int value) {
     if (value >= -1 && value <= 5) {
-      method.visitInsn(Opcodes.ICONST_0 + value);
+      methodvisitor.visitInsn(Opcodes.ICONST_0 + value);
     } else if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
-      method.visitIntInsn(Opcodes.BIPUSH, value);
+      methodvisitor.visitIntInsn(Opcodes.BIPUSH, value);
     } else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-      method.visitIntInsn(Opcodes.SIPUSH, value);
+      methodvisitor.visitIntInsn(Opcodes.SIPUSH, value);
     } else {
-      method.visitLdcInsn(new Integer(value));
+      methodvisitor.visitLdcInsn(new Integer(value));
     }
   }
 
   public void push(final long value) {
     if (value == 0L || value == 1L) {
-      method.visitInsn(Opcodes.LCONST_0 + (int) value);
+      methodvisitor.visitInsn(Opcodes.LCONST_0 + (int) value);
     } else {
-      method.visitLdcInsn(new Long(value));
+      methodvisitor.visitLdcInsn(new Long(value));
     }
   }
 
   public void push(final float value) {
     int bits = Float.floatToIntBits(value);
     if (bits == 0L || bits == 0x3f800000 || bits == 0x40000000) { // 0..2
-      method.visitInsn(Opcodes.FCONST_0 + (int) value);
+      methodvisitor.visitInsn(Opcodes.FCONST_0 + (int) value);
     } else {
-      method.visitLdcInsn(new Float(value));
+      methodvisitor.visitLdcInsn(new Float(value));
     }
   }
 
   public void push(final double value) {
     long bits = Double.doubleToLongBits(value);
     if (bits == 0L || bits == 0x3ff0000000000000L) { // +0.0d and 1.0d
-      method.visitInsn(Opcodes.DCONST_0 + (int) value);
+      methodvisitor.visitInsn(Opcodes.DCONST_0 + (int) value);
     } else {
-      method.visitLdcInsn(new Double(value));
+      methodvisitor.visitLdcInsn(new Double(value));
     }
   }
 
   public void push(final String value) {
     Preconditions.checkNotNull(value);
-    method.visitLdcInsn(value);
+    methodvisitor.visitLdcInsn(value);
   }
 
   public void ifCmp(TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
     if (isJVMInternalInt(dataType)) {
       switch (evalType) {
       case EQUAL:
-        method.visitJumpInsn(Opcodes.IF_ICMPNE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPNE, elseLabel);
         break;
       case NOT_EQUAL:
-        method.visitJumpInsn(Opcodes.IF_ICMPEQ, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, elseLabel);
         break;
       case LTH:
-        method.visitJumpInsn(Opcodes.IF_ICMPGE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPGE, elseLabel);
         break;
       case LEQ:
-        method.visitJumpInsn(Opcodes.IF_ICMPGT, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPGT, elseLabel);
         break;
       case GTH:
-        method.visitJumpInsn(Opcodes.IF_ICMPLE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPLE, elseLabel);
         break;
       case GEQ:
-        method.visitJumpInsn(Opcodes.IF_ICMPLT, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IF_ICMPLT, elseLabel);
         break;
       }
     } else {
-      int opCode = GeneratorAdapter.getOpCode(evalType, dataType);
-      method.visitInsn(opCode);
+      int opCode = TajoGeneratorAdapter.getOpCode(evalType, dataType);
+      methodvisitor.visitInsn(opCode);
 
       switch (evalType) {
       case EQUAL:
-        method.visitJumpInsn(Opcodes.IFNE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFNE, elseLabel);
         break;
       case NOT_EQUAL:
-        method.visitJumpInsn(Opcodes.IFEQ, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFEQ, elseLabel);
         break;
       case LTH:
-        method.visitJumpInsn(Opcodes.IFGE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFGE, elseLabel);
         break;
       case LEQ:
-        method.visitJumpInsn(Opcodes.IFGT, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFGT, elseLabel);
         break;
       case GTH:
-        method.visitJumpInsn(Opcodes.IFLE, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFLE, elseLabel);
         break;
       case GEQ:
-        method.visitJumpInsn(Opcodes.IFLT, elseLabel);
+        methodvisitor.visitJumpInsn(Opcodes.IFLT, elseLabel);
         break;
       }
     }
@@ -277,19 +274,19 @@ public class GeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
-      method.visitVarInsn(Opcodes.ILOAD, idx);
+      methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
-      method.visitVarInsn(Opcodes.LLOAD, idx);
+      methodvisitor.visitVarInsn(Opcodes.LLOAD, idx);
       break;
     case FLOAT4:
-      method.visitVarInsn(Opcodes.FLOAD, idx);
+      methodvisitor.visitVarInsn(Opcodes.FLOAD, idx);
       break;
     case FLOAT8:
-      method.visitVarInsn(Opcodes.DLOAD, idx);
+      methodvisitor.visitVarInsn(Opcodes.DLOAD, idx);
       break;
     default:
-      method.visitVarInsn(Opcodes.ALOAD, idx);
+      methodvisitor.visitVarInsn(Opcodes.ALOAD, idx);
       break;
     }
   }
@@ -341,7 +338,7 @@ public class GeneratorAdapter {
   }
 
   public void gotoLabel(Label label) {
-    method.visitJumpInsn(Opcodes.GOTO, label);
+    methodvisitor.visitJumpInsn(Opcodes.GOTO, label);
   }
 
   public void pushBooleanOfThreeValuedLogic(boolean value) {
@@ -357,7 +354,7 @@ public class GeneratorAdapter {
   }
 
   public void emitNullityCheck(Label ifNull) {
-    method.visitJumpInsn(Opcodes.IFEQ, ifNull);
+    methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);
   }
 
   /**
@@ -369,11 +366,11 @@ public class GeneratorAdapter {
   public void emitNullityCheck(Label ifNull, int ... varIds) {
     // TODO - ANDing can be reduced if we interleave IAND into a sequence of ILOAD instructions.
     for (int varId : varIds) {
-      method.visitVarInsn(Opcodes.ILOAD, varId);
+      methodvisitor.visitVarInsn(Opcodes.ILOAD, varId);
     }
     if (varIds.length > 1) {
       for (int i = 0; i < varIds.length - 1; i++) {
-        method.visitInsn(Opcodes.IAND);
+        methodvisitor.visitInsn(Opcodes.IAND);
       }
     }
     emitNullityCheck(ifNull);
@@ -396,27 +393,27 @@ public class GeneratorAdapter {
   }
 
   public void newInstance(Class owner, Class [] paramTypes) {
-    method.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), "<init>",
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), "<init>",
         getMethodDescription(void.class, paramTypes));
   }
 
   public void invokeSpecial(Class owner, String methodName, Class returnType, Class [] paramTypes) {
-    method.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), methodName,
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, getInternalName(owner), methodName,
         getMethodDescription(returnType, paramTypes));
   }
 
   public void invokeStatic(Class owner, String methodName, Class returnType, Class [] paramTypes) {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, getInternalName(owner), methodName,
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, getInternalName(owner), methodName,
         getMethodDescription(returnType, paramTypes));
   }
 
   public void invokeVirtual(Class owner, String methodName, Class returnType, Class [] paramTypes) {
-    method.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(owner), methodName,
+    methodvisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(owner), methodName,
         getMethodDescription(returnType, paramTypes));
   }
 
   public void invokeInterface(Class owner, String methodName, Class returnType, Class [] paramTypes) {
-    method.visitMethodInsn(Opcodes.INVOKEINTERFACE, Type.getInternalName(owner), methodName,
+    methodvisitor.visitMethodInsn(Opcodes.INVOKEINTERFACE, Type.getInternalName(owner), methodName,
         getMethodDescription(returnType, paramTypes));
   }
 
@@ -443,9 +440,9 @@ public class GeneratorAdapter {
         case INT1:
         case INT2:
         case INT4: break;
-        case INT8:   method.visitInsn(Opcodes.I2L); break;
-        case FLOAT4: method.visitInsn(Opcodes.I2F); break;
-        case FLOAT8: method.visitInsn(Opcodes.I2D); break;
+        case INT8:   methodvisitor.visitInsn(Opcodes.I2L); break;
+        case FLOAT4: methodvisitor.visitInsn(Opcodes.I2F); break;
+        case FLOAT8: methodvisitor.visitInsn(Opcodes.I2D); break;
         case TEXT:   emitStringValueOfChar(); break;
         default:
           throw new InvalidCastException(srcType, targetType);
@@ -470,12 +467,12 @@ public class GeneratorAdapter {
     case INT4:
       switch (targetType.getType()) {
       case CHAR:
-      case INT1: method.visitInsn(Opcodes.I2C); break;
-      case INT2: method.visitInsn(Opcodes.I2S); break;
+      case INT1: methodvisitor.visitInsn(Opcodes.I2C); break;
+      case INT2: methodvisitor.visitInsn(Opcodes.I2S); break;
       case INT4: return;
-      case INT8: method.visitInsn(Opcodes.I2L); break;
-      case FLOAT4: method.visitInsn(Opcodes.I2F); break;
-      case FLOAT8: method.visitInsn(Opcodes.I2D); break;
+      case INT8: methodvisitor.visitInsn(Opcodes.I2L); break;
+      case FLOAT4: methodvisitor.visitInsn(Opcodes.I2F); break;
+      case FLOAT8: methodvisitor.visitInsn(Opcodes.I2D); break;
       case TEXT: emitStringValueOfInt4(); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
@@ -485,10 +482,10 @@ public class GeneratorAdapter {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: method.visitInsn(Opcodes.L2I); break;
+      case INT4: methodvisitor.visitInsn(Opcodes.L2I); break;
       case INT8: return;
-      case FLOAT4: method.visitInsn(Opcodes.L2F); break;
-      case FLOAT8: method.visitInsn(Opcodes.L2D); break;
+      case FLOAT4: methodvisitor.visitInsn(Opcodes.L2F); break;
+      case FLOAT8: methodvisitor.visitInsn(Opcodes.L2D); break;
       case TEXT: emitStringValueOfInt8(); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
@@ -498,10 +495,10 @@ public class GeneratorAdapter {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: method.visitInsn(Opcodes.F2I); break;
-      case INT8: method.visitInsn(Opcodes.F2L); break;
+      case INT4: methodvisitor.visitInsn(Opcodes.F2I); break;
+      case INT8: methodvisitor.visitInsn(Opcodes.F2L); break;
       case FLOAT4: return;
-      case FLOAT8: method.visitInsn(Opcodes.F2D); break;
+      case FLOAT8: methodvisitor.visitInsn(Opcodes.F2D); break;
       case TEXT: emitStringValueOfFloat4(); break;
       default: throw new InvalidCastException(srcType, targetType);
       }
@@ -511,9 +508,9 @@ public class GeneratorAdapter {
       case CHAR:
       case INT1:
       case INT2:
-      case INT4: method.visitInsn(Opcodes.D2I); break;
-      case INT8: method.visitInsn(Opcodes.D2L); break;
-      case FLOAT4: method.visitInsn(Opcodes.D2F); break;
+      case INT4: methodvisitor.visitInsn(Opcodes.D2I); break;
+      case INT8: methodvisitor.visitInsn(Opcodes.D2L); break;
+      case FLOAT4: methodvisitor.visitInsn(Opcodes.D2F); break;
       case FLOAT8: return;
       case TEXT: emitStringValueOfFloat8(); break;
       default: throw new InvalidCastException(srcType, targetType);
@@ -541,6 +538,18 @@ public class GeneratorAdapter {
   }
 
   public void convertToPrimitive(TajoDataTypes.DataType type) {
+
+    Label ifNull = new Label();
+    Label afterAll = new Label();
+
+    // datum
+    int datum = astore();
+
+    aload(datum);
+    invokeVirtual(Datum.class, "isNotNull", boolean.class, new Class [] {});
+    methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);  // datum
+
+    aload(datum);
     switch (type.getType()) {
     case BOOLEAN:
     case INT1:
@@ -566,6 +575,15 @@ public class GeneratorAdapter {
     default:
       throw new UnsupportedException("Unsupported type: " + type);
     }
+
+    pushNullFlag(true);
+    gotoLabel(afterAll);
+
+    methodvisitor.visitLabel(ifNull);
+    pushDummyValue(type);
+    pushNullFlag(false);
+
+    methodvisitor.visitLabel(afterAll);
   }
 
   public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
@@ -576,7 +594,7 @@ public class GeneratorAdapter {
     case NULL_TYPE:
       invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
       if (castToDatum) {
-        method.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(Datum.class));
+        methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(Datum.class));
       }
       return;
 
@@ -628,70 +646,70 @@ public class GeneratorAdapter {
     Label ifNull = new Label();
     Label afterAll = new Label();
 
-    method.visitJumpInsn(Opcodes.IFEQ, ifNull);
+    methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);
     invokeStatic(DatumFactory.class, methodName, returnType, paramTypes);
-    method.visitJumpInsn(Opcodes.GOTO, afterAll);
+    methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 
-    method.visitLabel(ifNull);
+    methodvisitor.visitLabel(ifNull);
     emitPop(type);
     invokeStatic(NullDatum.class, "get", NullDatum.class, null);
 
-    method.visitLabel(afterAll);
+    methodvisitor.visitLabel(afterAll);
     if (castToDatum) {
-      method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Datum.class));
+      methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(Datum.class));
     }
   }
 
   public void emitPop(TajoDataTypes.DataType type) {
     if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TajoDataTypes.Type.FLOAT8) {
-      method.visitInsn(Opcodes.POP2);
+      methodvisitor.visitInsn(Opcodes.POP2);
     } else {
-      method.visitInsn(Opcodes.POP);
+      methodvisitor.visitInsn(Opcodes.POP);
     }
   }
 
   public void emitStringValueOfChar() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(C)L" + Type.getInternalName(String.class) + ";");
   }
 
   public void emitStringValueOfInt4() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(I)L" + Type.getInternalName(String.class) + ";");
   }
 
   public void emitStringValueOfInt8() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(J)L" + Type.getInternalName(String.class) + ";");
   }
 
   public void emitStringValueOfFloat4() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(F)L" + Type.getInternalName(String.class) + ";");
   }
 
   public void emitStringValueOfFloat8() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class),
         "valueOf", "(D)L" + Type.getInternalName(String.class) + ";");
   }
 
   public void emitParseInt4() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class),
         "parseInt", "(L" + Type.getInternalName(String.class) + ";)I");
   }
 
   public void emitParseInt8() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Long.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Long.class),
         "parseLong", "(L" + Type.getInternalName(String.class) + ";)J");
   }
 
   public void emitParseFloat4() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class),
         "parseFloat", "(L" + Type.getInternalName(String.class) + ";)F");
   }
 
   public void emitParseFloat8() {
-    method.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class),
+    methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class),
         "parseDouble", "(L" + Type.getInternalName(String.class) + ";)D");
   }
 
@@ -714,11 +732,11 @@ public class GeneratorAdapter {
     } else if (clazz == double.class) {
       typeCode = Opcodes.T_DOUBLE;
     } else {
-      method.visitTypeInsn(Opcodes.ANEWARRAY, getInternalName(clazz));
+      methodvisitor.visitTypeInsn(Opcodes.ANEWARRAY, getInternalName(clazz));
       return;
     }
 
-    method.visitIntInsn(Opcodes.NEWARRAY, typeCode);
+    methodvisitor.visitIntInsn(Opcodes.NEWARRAY, typeCode);
   }
 
   private int nextVarId = 3;
@@ -728,45 +746,45 @@ public class GeneratorAdapter {
   public void astore(String name) {
     if (localVariablesMap.containsKey(name)) {
       int varId = localVariablesMap.get(name);
-      method.visitVarInsn(Opcodes.ASTORE, varId);
+      methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
     } else {
       int varId = nextVarId++;
-      method.visitVarInsn(Opcodes.ASTORE, varId);
+      methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
       localVariablesMap.put(name, varId);
     }
   }
 
   public int astore() {
     int varId = getCurVarIdAndIncrease();
-    method.visitVarInsn(Opcodes.ASTORE, varId);
+    methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
     return varId;
   }
 
   public void astore(int varId) {
-    method.visitVarInsn(Opcodes.ASTORE, varId);
+    methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
   }
 
   public void aload(String name) {
     if (localVariablesMap.containsKey(name)) {
       int varId = localVariablesMap.get(name);
-      method.visitVarInsn(Opcodes.ALOAD, varId);
+      methodvisitor.visitVarInsn(Opcodes.ALOAD, varId);
     } else {
       throw new RuntimeException("No such variable name: " + name);
     }
   }
 
   public void aload(int varId) {
-    method.visitVarInsn(Opcodes.ALOAD, varId);
+    methodvisitor.visitVarInsn(Opcodes.ALOAD, varId);
   }
 
   public int istore() {
     int varId = getCurVarIdAndIncrease();
-    method.visitVarInsn(Opcodes.ISTORE, varId);
+    methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
     return varId;
   }
 
   public void iload(int varId) {
-    method.visitVarInsn(Opcodes.ILOAD, varId);
+    methodvisitor.visitVarInsn(Opcodes.ILOAD, varId);
   }
 
   private int getCurVarIdAndIncrease() {
@@ -782,7 +800,7 @@ public class GeneratorAdapter {
 
   public int store(EvalNode evalNode) {
     int varId = nextVarId;
-    nextVarId += GeneratorAdapter.getWordSize(evalNode.getValueType());
+    nextVarId += TajoGeneratorAdapter.getWordSize(evalNode.getValueType());
 
     switch (evalNode.getValueType().getType()) {
     case NULL_TYPE:
@@ -791,12 +809,12 @@ public class GeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
-      method.visitVarInsn(Opcodes.ISTORE, varId);
+      methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
       break;
-    case INT8: method.visitVarInsn(Opcodes.LSTORE, varId); break;
-    case FLOAT4: method.visitVarInsn(Opcodes.FSTORE, varId); break;
-    case FLOAT8: method.visitVarInsn(Opcodes.DSTORE, varId); break;
-    default: method.visitVarInsn(Opcodes.ASTORE, varId); break;
+    case INT8: methodvisitor.visitVarInsn(Opcodes.LSTORE, varId); break;
+    case FLOAT4: methodvisitor.visitVarInsn(Opcodes.FSTORE, varId); break;
+    case FLOAT8: methodvisitor.visitVarInsn(Opcodes.DSTORE, varId); break;
+    default: methodvisitor.visitVarInsn(Opcodes.ASTORE, varId); break;
     }
 
     return varId;

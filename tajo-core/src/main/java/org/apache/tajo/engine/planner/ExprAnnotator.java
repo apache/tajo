@@ -824,7 +824,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   /** It is the relationship graph of type conversions. It represents each type can be converted to which types. */
-  static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
+  public static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
   static {
     TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT1, Type.INT1);
     TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT2, Type.INT2);

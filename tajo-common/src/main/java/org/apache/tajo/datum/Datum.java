@@ -45,6 +45,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     return false;
   }
 
+  public boolean isNotNull() {
+    return true;
+  }
+
   public boolean asBool() {
     throw new InvalidCastException(type, Type.BOOLEAN);
   }
