@@ -38,6 +38,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Stack;
 
+import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
+
 public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.CodeGenContext> {
 
   public static final byte UNKNOWN = 0;
@@ -75,6 +77,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       return visitArithmeticEval(context, binaryEval, stack);
     } else if (EvalType.isComparisonOperator(binaryEval)) {
       return visitComparisonEval(context, binaryEval, stack);
+    } else if (binaryEval.getType() == EvalType.CONCATENATE) {
+      return visitStringConcat(context, binaryEval, stack);
     } else {
       stack.push(binaryEval);
       visit(context, binaryEval.getLeftExpr(), stack);
@@ -526,6 +530,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     int opCode = GeneratorAdapter.getOpCode(evalNode.getType(), evalNode.getValueType());
     context.method.visitInsn(opCode);
+
     context.pushNullFlag(true);
     emitGotoLabel(context, afterEnd);
 
@@ -575,6 +580,42 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     context.method.visitLabel(ifNull);
     context.pushNullOfThreeValuedLogic();
+    context.pushNullFlag(false);
+
+    context.method.visitLabel(afterEnd);
+
+    return evalNode;
+  }
+
+  public EvalNode visitStringConcat(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
+      throws CodeGenException {
+
+    stack.push(evalNode);
+
+    visit(context, evalNode.getLeftExpr(), stack);                    // < lhs, l_null
+    context.method.visitVarInsn(Opcodes.ISTORE, 3);               // < lhs
+    int rNullVarId = emitStore(context, evalNode.getLeftExpr(), 4);   // <
+
+    visit(context, evalNode.getRightExpr(), stack);                   // < rhs, r_nullflag
+    context.method.visitVarInsn(Opcodes.ISTORE, rNullVarId);      // < rhs
+    int rValVarId = rNullVarId + 1;
+    emitStore(context, evalNode.getRightExpr(), rValVarId);           // <
+    stack.pop();
+
+    Label ifNull = new Label();
+    Label afterEnd = new Label();
+
+    context.emitNullityCheck(ifNull, 3, rNullVarId);
+
+    context.load(evalNode.getLeftExpr().getValueType(), 4);                     // < lhs
+    context.load(evalNode.getRightExpr().getValueType(), rValVarId);            // < lhs, rhs
+
+    context.invokeVirtual(String.class, "concat", String.class, new Class[] {String.class});
+    context.pushNullFlag(true);
+    context.method.visitJumpInsn(Opcodes.GOTO, afterEnd);
+
+    context.method.visitLabel(ifNull);
+    context.pushDummyValue(evalNode.getValueType());
     context.pushNullFlag(false);
 
     context.method.visitLabel(afterEnd);
@@ -641,18 +682,32 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
+  public static ParamType [] getParamTypes(EvalNode [] arguments) {
+    ParamType[] paramTypes = new ParamType[arguments.length];
+    for (int i = 0; i < arguments.length; i++) {
+      if (arguments[i].getType() == EvalType.CONST) {
+        if (arguments[i].getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
+          paramTypes[i] = ParamType.NULL;
+        } else {
+          paramTypes[i] = ParamType.CONSTANT;
+        }
+      } else {
+        paramTypes[i] = ParamType.VARIABLE;
+      }
+    }
+    return paramTypes;
+  }
+
   public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
-
-
     int paramNum = func.getArgs().length;
     context.push(paramNum);
     context.newArray(Datum.class); // new Datum[paramNum]
-    context.astore(3);
+    context.astore("param_array");
 
     stack.push(func);
     EvalNode [] params = func.getArgs();
     for (int paramIdx = 0; paramIdx < func.getArgs().length; paramIdx++) {
-      context.aload(3);       // array ref
+      context.aload("param_array");       // array ref
       context.method.visitLdcInsn(paramIdx); // array idx
       visit(context, params[paramIdx], stack);
       context.convertToDatum(params[paramIdx].getValueType(), true);  // value
@@ -660,21 +715,41 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     }
     stack.pop();
 
+    context.push(paramNum);
+    context.newArray(ParamType.class); // new Datum[paramNum]
+    context.astore("paramTypes");
+
+    ParamType [] paramTypes = getParamTypes(func.getArgs());
+    for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
+      context.aload("paramTypes");
+      context.method.visitLdcInsn(paramIdx);
+      context.method.visitFieldInsn(Opcodes.GETSTATIC, GeneratorAdapter.getInternalName(ParamType.class),
+          paramTypes[paramIdx].name(), GeneratorAdapter.getDescription(ParamType.class));
+      context.method.visitInsn(Opcodes.AASTORE);
+    }
+
     context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(VTuple.class));
     context.method.visitInsn(Opcodes.DUP);
-    context.aload(3);
+    context.aload("param_array");
     context.newInstance(VTuple.class, new Class[]{Datum[].class});
     context.method.visitTypeInsn(Opcodes.CHECKCAST, GeneratorAdapter.getInternalName(Tuple.class));
-    context.astore(5);
+    context.astore("tuple");
 
     FunctionDesc desc = func.getFuncDesc();
     try {
-
       context.method.visitTypeInsn(Opcodes.NEW, GeneratorAdapter.getInternalName(desc.getFuncClass()));
-      context.method.visitInsn(Opcodes.DUP);
+      context.astore("functionInstance");
+
+      context.aload("functionInstance");
       context.method.visitMethodInsn(Opcodes.INVOKESPECIAL, GeneratorAdapter.getInternalName(desc.getFuncClass()),
-          "<init>", "()V");
-      context.aload(5);
+          "<init>", "()V"); // func
+
+      context.aload("functionInstance");
+      context.aload("paramTypes");
+      context.invokeVirtual(desc.getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
+
+      context.aload("functionInstance");
+      context.aload("tuple");
       context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
     } catch (InternalException e) {
       e.printStackTrace();

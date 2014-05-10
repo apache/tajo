@@ -36,6 +36,7 @@ import org.objectweb.asm.Type;
 
 import java.beans.MethodDescriptor;
 import java.lang.reflect.Array;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
@@ -381,19 +382,15 @@ public class GeneratorAdapter {
     if (type.getType() == NULL_TYPE) {
       pushNullOfThreeValuedLogic();
     } else if (type.getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
-      method.visitLdcInsn(0L); // null
+      push(0L);
     } else if (type.getType() == TajoDataTypes.Type.FLOAT8) {
-      method.visitLdcInsn(0.0d); // null
+      push(0.0d);
     } else if (type.getType() == TajoDataTypes.Type.FLOAT4) {
-      method.visitLdcInsn(0.0f); // null
-//    } else if (type.getType() == TajoDataTypes.Type.CHAR && type.getLength() == 1) {
-//      context.method.visitInsn(Opcodes.ICONST_0);
-    } else if (type.getType() == TajoDataTypes.Type.CHAR) {
-      method.visitLdcInsn(""); // null
-    } else if (type.getType() == TajoDataTypes.Type.TEXT) {
-      method.visitLdcInsn(""); // null
+      push(0.0f);
+    } else if (type.getType() == TajoDataTypes.Type.CHAR || type.getType() == TajoDataTypes.Type.TEXT) {
+      push("");
     } else {
-      method.visitInsn(Opcodes.ICONST_0);
+      push(0);
     }
   }
 
@@ -433,8 +430,7 @@ public class GeneratorAdapter {
     return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.getType());
   }
 
-  public void castInsn(TajoDataTypes.DataType srcType,
-                       TajoDataTypes.DataType targetType) {
+  public void castInsn(TajoDataTypes.DataType srcType, TajoDataTypes.DataType targetType) {
     TajoDataTypes.Type srcRawType = srcType.getType();
     TajoDataTypes.Type targetRawType = targetType.getType();
     switch(srcRawType) {
@@ -575,6 +571,13 @@ public class GeneratorAdapter {
     Class returnType;
     Class [] paramTypes;
     switch (type.getType()) {
+    case NULL_TYPE:
+      invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
+      if (castToDatum) {
+        method.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(Datum.class));
+      }
+      return;
+
     case BOOLEAN:
       methodName = "createBool";
       returnType = Datum.class;
@@ -716,6 +719,21 @@ public class GeneratorAdapter {
     method.visitIntInsn(Opcodes.NEWARRAY, typeCode);
   }
 
+  private int nextVarId = 3;
+
+  private Map<String, Integer> localVariablesMap = new HashMap<String, Integer>();
+
+  public void aastore(String name) {
+    if (localVariablesMap.containsKey(name)) {
+      int varId = localVariablesMap.get(name);
+      method.visitVarInsn(Opcodes.AASTORE, varId);
+    } else {
+      int varId = nextVarId++;
+      method.visitVarInsn(Opcodes.AALOAD, varId);
+      localVariablesMap.put(name, varId);
+    }
+  }
+
   public void aastore(int varId) {
     method.visitVarInsn(Opcodes.AASTORE, varId);
   }
@@ -724,8 +742,48 @@ public class GeneratorAdapter {
     method.visitVarInsn(Opcodes.AALOAD, varId);
   }
 
+  public void istore(String name) {
+    if (localVariablesMap.containsKey(name)) {
+      int varId = localVariablesMap.get(name);
+      method.visitVarInsn(Opcodes.ISTORE, varId);
+    } else {
+      int varId = nextVarId++;
+      method.visitVarInsn(Opcodes.ISTORE, varId);
+      localVariablesMap.put(name, varId);
+    }
+  }
+
+  public void iload(String name) {
+    if (localVariablesMap.containsKey(name)) {
+      int varId = localVariablesMap.get(name);
+      method.visitVarInsn(Opcodes.ILOAD, varId);
+    } else {
+      throw new RuntimeException("No such variable name: " + name);
+    }
+  }
+
+  public void astore(String name) {
+    if (localVariablesMap.containsKey(name)) {
+      int varId = localVariablesMap.get(name);
+      method.visitVarInsn(Opcodes.ASTORE, varId);
+    } else {
+      int varId = nextVarId++;
+      method.visitVarInsn(Opcodes.ASTORE, varId);
+      localVariablesMap.put(name, varId);
+    }
+  }
+
   public void astore(int varId) {
     method.visitVarInsn(Opcodes.ASTORE, varId);
+  }
+
+  public void aload(String name) {
+    if (localVariablesMap.containsKey(name)) {
+      int varId = localVariablesMap.get(name);
+      method.visitVarInsn(Opcodes.ALOAD, varId);
+    } else {
+      throw new RuntimeException("No such variable name: " + name);
+    }
   }
 
   public void aload(int varId) {

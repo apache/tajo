@@ -18,8 +18,11 @@
 
 package example;
 
+import org.apache.tajo.engine.eval.FunctionEval;
+
 public class Example {
   public void run(String msg) {
-    System.out.println(msg);
+    FunctionEval.ParamType [] paramTypes = new FunctionEval.ParamType[3];
+    paramTypes[0] = FunctionEval.ParamType.CONSTANT;
   }
 }

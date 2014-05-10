@@ -1147,5 +1147,16 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('abc');", new String [] {"ABC"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('bbc');", new String [] {"BBC"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('chs');", new String [] {"CHS"});
+
+    testSimpleEval("select ltrim('xxtrim', 'xx') ", new String[]{"trim"});
+  }
+
+  @Test
+  public void testStringConcat() throws IOException {
+//    testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    testEval(schema, "table1", "  trim,  abc", "select ltrim(col1) || ltrim(col2) from table1", new String[]{"trimabc"});
   }
 }
