@@ -166,21 +166,17 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
     stack.push(between);
 
-    int predNullVarId = 3;
-    int predVarId = 4;
-    visit(context, predicand, stack);                                 // < predicand, predicand_nullflag
-    context.methodvisitor.visitVarInsn(Opcodes.ISTORE, predNullVarId);      // < predicand (store nullflag to 3)
-    int beginNullVarId = store(context, predicand.getValueType(), predVarId);    // <
+    visit(context, predicand, stack);
+    final int PREDICAND_NULLFLAG = context.istore();
+    final int PREDICAND = context.store(predicand.getValueType());
 
-    visit(context, begin, stack);                                    // < begin, left_nullflag
-    context.methodvisitor.visitVarInsn(Opcodes.ISTORE, beginNullVarId);  // < begin, store left_nullflag to x
-    int beginVarId = beginNullVarId + 1;
-    int endNullVarId = store(context, begin.getValueType(), beginVarId);
+    visit(context, begin, stack);
+    final int BEGIN_NULLFLAG = context.istore();
+    final int BEGIN = context.store(begin.getValueType());
 
     visit(context, end, stack);                                         // < end, right_nullflag
-    context.methodvisitor.visitVarInsn(Opcodes.ISTORE, endNullVarId);      // < end, store right_nullflag
-    int endVarId = endNullVarId + 1;
-    store(context, end.getValueType(), endVarId);                                // <
+    final int END_NULLFLAG = context.istore();
+    final int END = context.store(end.getValueType());                                // <
 
     stack.pop();
 
@@ -190,7 +186,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     Label afterEnd = new Label();
 
 
-    context.emitNullityCheck(ifNullCommon, predNullVarId, beginNullVarId, endNullVarId);
+    context.emitNullityCheck(ifNullCommon, PREDICAND_NULLFLAG, BEGIN_NULLFLAG, END_NULLFLAG);
 
     if (between.isSymmetric()) {
       Label ifFirstMatchFailed = new Label();
@@ -203,13 +199,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       //////////////////////////////////////////////////////////////////////////////////////////
 
       // predicand <= begin
-      context.load(begin.getValueType(), beginVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(begin.getValueType(), BEGIN);
+      context.load(predicand.getValueType(), PREDICAND);
       context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifFirstMatchFailed);
 
       // end <= predicand
-      context.load(end.getValueType(), endVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(end.getValueType(), END);
+      context.load(predicand.getValueType(), PREDICAND);
       // inverse the operator GEQ -> LTH
       context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifFirstMatchFailed);
 
@@ -225,15 +221,15 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       emitLabel(context, secondCheck);
 
       // predicand <= end
-      context.load(end.getValueType(), endVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(end.getValueType(), END);
+      context.load(predicand.getValueType(), PREDICAND);
 
       // inverse the operator LEQ -> GTH
       context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifSecondMatchFailed);
 
       // end <= predicand
-      context.load(begin.getValueType(), beginVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(begin.getValueType(), BEGIN);
+      context.load(predicand.getValueType(), PREDICAND);
       // inverse the operator GEQ -> LTH
       context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifSecondMatchFailed);
 
@@ -248,13 +244,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNotMatched);
     } else {
       // predicand <= begin
-      context.load(begin.getValueType(), beginVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(begin.getValueType(), BEGIN);
+      context.load(predicand.getValueType(), PREDICAND);
       context.ifCmp(predicand.getValueType(), EvalType.LEQ, ifNotMatched);
 
       // end <= predicand
-      context.load(end.getValueType(), endVarId);
-      context.load(predicand.getValueType(), predVarId);
+      context.load(end.getValueType(), END);
+      context.load(predicand.getValueType(), PREDICAND);
       context.ifCmp(predicand.getValueType(), EvalType.GEQ, ifNotMatched);
     }
 
@@ -501,22 +497,21 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
   public EvalNode visitArithmeticEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getLeftExpr(), stack);          // < left_child, push nullflag
-    context.methodvisitor.visitVarInsn(Opcodes.ISTORE, 3);     // < left_child
-    int rNullVarId = store(context, evalNode.getLeftExpr().getValueType(), 4);
+    int LHS_NULLFLAG = context.istore();
+    int LHS = context.store(evalNode.getLeftExpr().getValueType());
 
     visit(context, evalNode.getRightExpr(), stack);         // < left_child, right_child, nullflag
-    context.methodvisitor.visitVarInsn(Opcodes.ISTORE, rNullVarId);     // < left_child, right_child
-    int rValVarId = rNullVarId + 1;
-    store(context, evalNode.getRightExpr().getValueType(), rValVarId);
+    int RHS_NULLFLAG = context.istore();
+    int RHS = context.store(evalNode.getRightExpr().getValueType());
     stack.pop();
 
-    Label ifNullCommon = new Label();
+    Label ifNull = new Label();
     Label afterEnd = new Label();
 
-    context.emitNullityCheck(ifNullCommon, 3, rNullVarId);
+    context.emitNullityCheck(ifNull, LHS_NULLFLAG, RHS_NULLFLAG);
 
-    context.load(evalNode.getLeftExpr().getValueType(), 4);
-    context.load(evalNode.getRightExpr().getValueType(), rValVarId);
+    context.load(evalNode.getLeftExpr().getValueType(), LHS);
+    context.load(evalNode.getRightExpr().getValueType(), RHS);
 
     int opCode = TajoGeneratorAdapter.getOpCode(evalNode.getType(), evalNode.getValueType());
     context.methodvisitor.visitInsn(opCode);
@@ -524,7 +519,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     context.pushNullFlag(true);
     emitGotoLabel(context, afterEnd);
 
-    emitLabel(context, ifNullCommon);
+    emitLabel(context, ifNull);
     context.pushDummyValue(evalNode.getValueType());
     context.pushNullFlag(false);
 
