@@ -12,6 +12,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-807: Implement Round(numeric, int) function.
+    (Seungun Choe via hyunsik)
+
     TAJO-797: Implicit type conversion support. (hyunsik)
 
     TAJO-804: Bump up Parquet version to 1.4.2. (hyunsik)
@@ -58,8 +61,12 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-817: tajo-core should not skip deploy. (hyunsik)
+
+    TAJO-814: Set up Travis CI builds. (hyunsik)
+
     TAJO-820: Add missing license header to 0.8.0 release announcement. 
-    (hyunsik)
+    (hyunsik)    
 
     TAJO-810: TAJO-810: Update Tajo site for 0.8.0 release. (hyunsik)
 

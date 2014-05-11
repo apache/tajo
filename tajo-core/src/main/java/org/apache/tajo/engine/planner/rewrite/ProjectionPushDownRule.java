@@ -55,7 +55,6 @@ public class ProjectionPushDownRule extends
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized) || !plan.getRootBlock().hasTableExpression()) {
-      LOG.info("This query skips the logical optimization step.");
       return false;
     }
 

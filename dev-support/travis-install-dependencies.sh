@@ -1,4 +1,5 @@
-##
+#!/bin/bash -x
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,12 +15,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-# log4j configuration used during build and unit tests
+PROTOBUF_VERSION=2.5.0
+INSTALL=${HOME}/local
 
-log4j.rootLogger=info,stdout
-log4j.threshhold=INFO
-log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.stdout.layout.ConversionPattern=%d{ISO8601} %p: %c (%M(%L)) - %m%n
+if [ ! -d ${INSTALL} ]; then
+  echo "mkdir -p ${INSTALL}"
+  mkdir -p ${INSTALL}
+fi
+
+if [ ! -f ${INSTALL}/bin/protoc ]; then
+    cd ${INSTALL}
+    echo "Fetching protobuf"
+    N="protobuf-${PROTOBUF_VERSION}"
+    wget -q https://protobuf.googlecode.com/files/${N}.tar.gz
+    tar -xzvf ${N}.tar.gz > /dev/null
+    rm ${N}.tar.gz
+
+    echo "Building protobuf"
+    cd ${N}
+    ./configure --with-pic --prefix=${INSTALL} --with-gflags=${INSTALL} > /dev/null
+    make -j4 install > /dev/null
+fi
