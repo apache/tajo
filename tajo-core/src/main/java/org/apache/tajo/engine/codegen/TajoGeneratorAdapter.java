@@ -660,7 +660,7 @@ public class TajoGeneratorAdapter {
     methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 
     methodvisitor.visitLabel(ifNull);
-    emitPop(type);
+    pop(type);
     invokeStatic(NullDatum.class, "get", NullDatum.class, null);
 
     methodvisitor.visitLabel(afterAll);
@@ -669,7 +669,7 @@ public class TajoGeneratorAdapter {
     }
   }
 
-  public void emitPop(TajoDataTypes.DataType type) {
+  public void pop(TajoDataTypes.DataType type) {
     if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TajoDataTypes.Type.FLOAT8) {
       methodvisitor.visitInsn(Opcodes.POP2);
     } else {

@@ -985,6 +985,23 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
     schema.addColumn("col9", TajoDataTypes.Type.INT4);
 
-    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,", "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;", new String [] {"10"});
+    testEval(schema, "table1",
+        "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 between 1 and 3 then 10 else 100 end from table1;",
+        new String [] {"10"});
+
+    testEval(schema, "table1",
+        "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 > 1 then 10 when col1 > 2 then 20 else 100 end from table1;",
+        new String [] {"100"});
+
+    testEval(schema, "table1",
+        "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;",
+        new String [] {"10"});
+    testEval(schema, "table1",
+        "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from table1;",
+        new String [] {"t"});
   }
 }
