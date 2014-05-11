@@ -971,4 +971,20 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select (false OR 1 > null) is null", new String[] {"t"}); // false - unknown -> unknown
     testSimpleEval("select (false OR false)", new String[] {"f"}); // false - false -> false
   }
+
+  @Test
+  public void testCaseWhens() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT1);
+    schema.addColumn("col2", TajoDataTypes.Type.INT2);
+    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    schema.addColumn("col4", TajoDataTypes.Type.INT8);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col7", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    schema.addColumn("col9", TajoDataTypes.Type.INT4);
+
+    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,", "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;", new String [] {"10"});
+  }
 }

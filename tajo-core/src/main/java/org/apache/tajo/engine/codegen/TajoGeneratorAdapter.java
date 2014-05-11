@@ -27,8 +27,12 @@ import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.TUtil;
-import org.objectweb.asm.*;
-import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.TableSwitchGenerator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -143,20 +147,19 @@ public class TajoGeneratorAdapter {
   }
 
   protected final int access;
-  protected final Method method;
-  protected final ClassVisitor clsVisitor;
   protected final MethodVisitor methodvisitor;
 
-  public TajoGeneratorAdapter(int access, Method method, ClassVisitor clsVisitor, MethodVisitor methodVisitor) {
+  protected final GeneratorAdapter generatorAdapter;
+
+  public TajoGeneratorAdapter(int access, MethodVisitor methodVisitor, String name, String desc) {
     this.access = access;
-    this.method = method;
-    this.clsVisitor = clsVisitor;
     this.methodvisitor = methodVisitor;
+    generatorAdapter = new GeneratorAdapter(methodVisitor, access, "eval", desc);
   }
 
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
     return
-        dataType.getType() == TajoDataTypes.Type.CHAR ||
+        dataType.getType() == TajoDataTypes.Type.BOOLEAN ||
             dataType.getType() == TajoDataTypes.Type.INT1 ||
             dataType.getType() == TajoDataTypes.Type.INT2 ||
             dataType.getType() == TajoDataTypes.Type.INT4;
@@ -218,6 +221,7 @@ public class TajoGeneratorAdapter {
   }
 
   public void ifCmp(TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
+
     if (isJVMInternalInt(dataType)) {
       switch (evalType) {
       case EQUAL:
@@ -240,8 +244,13 @@ public class TajoGeneratorAdapter {
         break;
       }
     } else {
-      int opCode = TajoGeneratorAdapter.getOpCode(evalType, dataType);
-      methodvisitor.visitInsn(opCode);
+
+      if (dataType.getType() == TEXT) {
+        invokeVirtual(String.class, "compareTo", int.class, new Class[]{String.class});
+      } else {
+        int opCode = TajoGeneratorAdapter.getOpCode(evalType, dataType);
+        methodvisitor.visitInsn(opCode);
+      }
 
       switch (evalType) {
       case EQUAL:
@@ -777,6 +786,18 @@ public class TajoGeneratorAdapter {
     methodvisitor.visitVarInsn(Opcodes.ALOAD, varId);
   }
 
+  public void dup() {
+    methodvisitor.visitInsn(Opcodes.DUP);
+  }
+
+  public void pop() {
+    methodvisitor.visitInsn(Opcodes.POP);
+  }
+
+  public void pop2() {
+    methodvisitor.visitInsn(Opcodes.POP2);
+  }
+
   public int istore() {
     int varId = getCurVarIdAndIncrease();
     methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
@@ -798,11 +819,11 @@ public class TajoGeneratorAdapter {
     return varId;
   }
 
-  public int store(EvalNode evalNode) {
+  public int store(TajoDataTypes.DataType type) {
     int varId = nextVarId;
-    nextVarId += TajoGeneratorAdapter.getWordSize(evalNode.getValueType());
+    nextVarId += TajoGeneratorAdapter.getWordSize(type);
 
-    switch (evalNode.getValueType().getType()) {
+    switch (type.getType()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -818,5 +839,37 @@ public class TajoGeneratorAdapter {
     }
 
     return varId;
+  }
+
+  public static interface SwitchCaseGenerator extends TableSwitchGenerator {
+    int size();
+    int min();
+    int max();
+    int key(int index);
+    void generateCase(int index, Label end);
+    void generateDefault();
+  }
+
+  public static class SwitchCase implements Comparable<SwitchCase> {
+    private final int index;
+    private final EvalNode thanResult;
+
+    public SwitchCase(int index, EvalNode thanResult) {
+      this.index = index;
+      this.thanResult = thanResult;
+    }
+
+    public int key() {
+      return index;
+    }
+
+    public EvalNode result() {
+      return thanResult;
+    }
+
+    @Override
+    public int compareTo(SwitchCase o) {
+      return index - o.index;
+    }
   }
 }

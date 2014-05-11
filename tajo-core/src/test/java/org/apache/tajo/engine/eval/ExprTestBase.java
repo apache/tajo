@@ -62,7 +62,7 @@ public class ExprTestBase {
   private static LogicalOptimizer optimizer;
   private static LogicalPlanVerifier annotatedPlanVerifier;
 
-  private boolean runtimeCodeGenFlag;
+  private boolean runtimeCodeGenFlag = true;
 
   public ExprTestBase() {
 

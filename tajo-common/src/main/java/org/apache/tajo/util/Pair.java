@@ -19,8 +19,8 @@
 package org.apache.tajo.util;
 
 public class Pair<T1, T2> {
-  private final T1 value1;
-  private final T2 value2;
+  protected final T1 value1;
+  protected final T2 value2;
 
   public Pair(T1 value1, T2 value2) {
     this.value1 = value1;
