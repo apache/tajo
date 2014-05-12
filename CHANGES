@@ -37,6 +37,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-823: Missing INET4 handling in DatumFactory.cast(). (jihoon)
+
     TAJO-803: INSERT INTO without FROM throws ClassCastException.
     (Hyoungjun Kim via hyunsik)
 
