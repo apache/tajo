@@ -67,6 +67,7 @@ message QueryRequest {
   optional SessionIdProto sessionId = 1;
   required string query = 2;
   repeated KeyValueProto setVariables = 3;
+  required bool isJson = 4;
 }
 
 message UpdateQueryResponse {

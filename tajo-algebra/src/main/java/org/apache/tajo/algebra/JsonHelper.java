@@ -20,6 +20,7 @@ package org.apache.tajo.algebra;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.tajo.algebra.CreateTable.PartitionMethodDescExpr;
 
 public class JsonHelper {
   private static JsonHelper instance;
@@ -37,9 +38,11 @@ public class JsonHelper {
   }
 
   private void initBuilder() {
-    builder = new GsonBuilder().setPrettyPrinting();
+    builder = new GsonBuilder().setPrettyPrinting().
+        excludeFieldsWithoutExposeAnnotation();
     builder.registerTypeAdapter(OpType.class, new OpType.JsonSerDer());
     builder.registerTypeAdapter(Expr.class, new Expr.JsonSerDer());
+    builder.registerTypeAdapter(PartitionMethodDescExpr.class, new PartitionMethodDescExpr.JsonSerDer());
   }
 
 

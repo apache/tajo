@@ -4,6 +4,9 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-494: Extend TajoClient to run a query with a plan context serialized as the 
+    JSON form. (jihoon)
+
     TAJO-761: Implements INTERVAL type. (Hyoungjun Kim via hyunsik)
 
     TAJO-790: Implements ADD_MONTHS() function. (Hyoungjun Kim via hyunsik)

@@ -1,0 +1,210 @@
+/*
+ select
+ s_acctbal,
+ s_name,
+ n_name,
+ JOINS.part_.p_partkey,
+ p_mfgr,
+ JOINS.supplier_.s_address,
+ JOINS.supplier_.s_phone,
+ s_comment
+ from
+ JOINS.part_,
+ JOINS.supplier_,
+ partsupp,
+ nation,
+ region
+ where
+ p_partkey = ps_partkey
+ and s_suppkey = ps_suppkey
+ and s_nationkey = n_nationkey
+ and n_regionkey = r_regionkey
+ order by
+ s_acctbal,
+ s_name,
+ n_name,
+ p_partkey;
+ */
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "ColumnName": "s_acctbal",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "s_name",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "n_name",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "joins.part_",
+                "ColumnName": "p_partkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "p_mfgr",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "joins.supplier_",
+                "ColumnName": "s_address",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "joins.supplier_",
+                "ColumnName": "s_phone",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "s_comment",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "SortSpecs": [
+            {
+                "SortKey": {
+                    "ColumnName": "s_acctbal",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "s_name",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "n_name",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "p_partkey",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            }
+        ],
+        "Expr": {
+            "SelectCondition": {
+                "LeftExpr": {
+                    "LeftExpr": {
+                        "ColumnName": "p_partkey",
+                        "OpType": "Column"
+                    },
+                    "RightExpr": {
+                        "ColumnName": "ps_partkey",
+                        "OpType": "Column"
+                    },
+                    "OpType": "Equals"
+                },
+                "RightExpr": {
+                    "LeftExpr": {
+                        "LeftExpr": {
+                            "ColumnName": "s_suppkey",
+                            "OpType": "Column"
+                        },
+                        "RightExpr": {
+                            "ColumnName": "ps_suppkey",
+                            "OpType": "Column"
+                        },
+                        "OpType": "Equals"
+                    },
+                    "RightExpr": {
+                        "LeftExpr": {
+                            "LeftExpr": {
+                                "ColumnName": "s_nationkey",
+                                "OpType": "Column"
+                            },
+                            "RightExpr": {
+                                "ColumnName": "n_nationkey",
+                                "OpType": "Column"
+                            },
+                            "OpType": "Equals"
+                        },
+                        "RightExpr": {
+                            "LeftExpr": {
+                                "ColumnName": "n_regionkey",
+                                "OpType": "Column"
+                            },
+                            "RightExpr": {
+                                "ColumnName": "r_regionkey",
+                                "OpType": "Column"
+                            },
+                            "OpType": "Equals"
+                        },
+                        "OpType": "And"
+                    },
+                    "OpType": "And"
+                },
+                "OpType": "And"
+            },
+            "Expr": {
+                "Relations": [
+                    {
+                        "TableName": "joins.part_",
+                        "OpType": "Relation"
+                    },
+                    {
+                        "TableName": "joins.supplier_",
+                        "OpType": "Relation"
+                    },
+                    {
+                        "TableName": "partsupp",
+                        "OpType": "Relation"
+                    },
+                    {
+                        "TableName": "nation",
+                        "OpType": "Relation"
+                    },
+                    {
+                        "TableName": "region",
+                        "OpType": "Relation"
+                    }
+                ],
+                "OpType": "RelationList"
+            },
+            "OpType": "Filter"
+        },
+        "OpType": "Sort"
+    },
+    "OpType": "Projection"
+}

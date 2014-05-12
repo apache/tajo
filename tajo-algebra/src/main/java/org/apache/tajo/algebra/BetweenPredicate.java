@@ -19,15 +19,21 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class BetweenPredicate extends Expr {
+  @Expose @SerializedName("IsNot")
   private boolean not;
   // if symmetric is not set, asymmetric is implicit.
+  @Expose @SerializedName("IsSymmetric")
   private boolean symmetric = false;
+  @Expose @SerializedName("Predicand")
   private Expr predicand;
+  @Expose @SerializedName("Begin")
   private Expr begin;
+  @Expose @SerializedName("End")
   private Expr end;
-
 
   public BetweenPredicate(boolean not, boolean symmetric, Expr predicand, Expr begin, Expr end) {
     super(OpType.Between);

@@ -32,11 +32,10 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.HiveQLAnalyzer;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -93,7 +92,7 @@ public class QueryMasterTask extends CompositeService {
 
   private MasterPlan masterPlan;
 
-  private String sql;
+  private String jsonExpr;
 
   private String logicalPlanJson;
 
@@ -119,7 +118,7 @@ public class QueryMasterTask extends CompositeService {
       new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, Session session, QueryContext queryContext, String sql,
+                         QueryId queryId, Session session, QueryContext queryContext, String jsonExpr,
                          String logicalPlanJson) {
 
     super(QueryMasterTask.class.getName());
@@ -127,7 +126,7 @@ public class QueryMasterTask extends CompositeService {
     this.queryId = queryId;
     this.session = session;
     this.queryContext = queryContext;
-    this.sql = sql;
+    this.jsonExpr = jsonExpr;
     this.logicalPlanJson = logicalPlanJson;
     this.querySubmitTime = System.currentTimeMillis();
   }
@@ -243,7 +242,6 @@ public class QueryMasterTask extends CompositeService {
       if(LOG.isDebugEnabled()) {
         LOG.debug("SubQueryEventDispatcher:" + id + "," + event.getType());
       }
-      //Query query = queryMasterTasks.get(id.getQueryId()).getQuery();
       query.getSubQuery(id).handle(event);
     }
   }
@@ -255,7 +253,6 @@ public class QueryMasterTask extends CompositeService {
       if(LOG.isDebugEnabled()) {
         LOG.debug("TaskEventDispatcher>" + taskId + "," + event.getType());
       }
-      //Query query = queryMasterTasks.get(taskId.getExecutionBlockId().getQueryId()).getQuery();
       QueryUnit task = query.getSubQuery(taskId.getExecutionBlockId()).
           getQueryUnit(taskId);
       task.handle(event);
@@ -266,7 +263,6 @@ public class QueryMasterTask extends CompositeService {
       implements EventHandler<TaskAttemptEvent> {
     public void handle(TaskAttemptEvent event) {
       QueryUnitAttemptId attemptId = event.getTaskAttemptId();
-      //Query query = queryMasterTasks.get(attemptId.getQueryUnitId().getExecutionBlockId().getQueryId()).getQuery();
       SubQuery subQuery = query.getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
       QueryUnit task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
       QueryUnitAttempt attempt = task.getAttempt(attemptId);
@@ -277,7 +273,6 @@ public class QueryMasterTask extends CompositeService {
   private class TaskSchedulerDispatcher
       implements EventHandler<TaskSchedulerEvent> {
     public void handle(TaskSchedulerEvent event) {
-      //Query query = queryMasterTasks.get(event.getExecutionBlockId().getQueryId()).getQuery();
       SubQuery subQuery = query.getSubQuery(event.getExecutionBlockId());
       subQuery.getTaskScheduler().handle(event);
     }
@@ -330,14 +325,7 @@ public class QueryMasterTask extends CompositeService {
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
-      Expr expr;
-      if (queryContext.isHiveQueryMode()) {
-        HiveQLAnalyzer HiveQLAnalyzer = new HiveQLAnalyzer();
-        expr = HiveQLAnalyzer.parse(sql);
-      } else {
-        SQLAnalyzer analyzer = new SQLAnalyzer();
-        expr = analyzer.parse(sql);
-      }
+      Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       LogicalPlan plan = planner.createPlan(session, expr);
       optimizer.optimize(plan);
 

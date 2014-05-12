@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class FunctionExpr extends Expr {
+  @Expose @SerializedName("Signature")
   private String signature;
+  @Expose @SerializedName("FuncParams")
   private Expr[] params;
 
   public FunctionExpr(String signature) {
@@ -77,9 +81,5 @@ public class FunctionExpr extends Expr {
     FunctionExpr another = (FunctionExpr) expr;
     return signature.equals(another.signature) &&
         TUtil.checkEquals(params, another.params);
-  }
-
-  public String toJson() {
-    return JsonHelper.toJson(this);
   }
 }

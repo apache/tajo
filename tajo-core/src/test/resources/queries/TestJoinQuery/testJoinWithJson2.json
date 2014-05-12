@@ -1,0 +1,219 @@
+/*
+ select t.n_nationkey, t.n_name, t.n_regionkey, t.n_comment, ps.ps_availqty, s.s_suppkey
+ from (
+ select n_nationkey, n_name, n_regionkey, n_comment
+ from nation n
+ join region r on (n.n_regionkey = r.r_regionkey)
+ ) t
+ join supplier s on (s.s_nationkey = t.n_nationkey)
+ join partsupp ps on (s.s_suppkey = ps.ps_suppkey)
+ where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO');
+ */
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "Qualifier": "t",
+                "ColumnName": "n_nationkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "t",
+                "ColumnName": "n_name",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "t",
+                "ColumnName": "n_regionkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "t",
+                "ColumnName": "n_comment",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "ps",
+                "ColumnName": "ps_availqty",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "s",
+                "ColumnName": "s_suppkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "SelectCondition": {
+            "IsNot": false,
+            "LeftExpr": {
+                "Qualifier": "t",
+                "ColumnName": "n_name",
+                "OpType": "Column"
+            },
+            "RightExpr": {
+                "Values": [
+                    {
+                        "Value": "ARGENTINA",
+                        "ValueType": "String",
+                        "OpType": "Literal"
+                    },
+                    {
+                        "Value": "ETHIOPIA",
+                        "ValueType": "String",
+                        "OpType": "Literal"
+                    },
+                    {
+                        "Value": "MOROCCO",
+                        "ValueType": "String",
+                        "OpType": "Literal"
+                    }
+                ],
+                "OpType": "ValueList"
+            },
+            "OpType": "InPredicate"
+        },
+        "Expr": {
+            "Relations": [
+                {
+                    "JoinType": "INNER",
+                    "JoinCondition": {
+                        "LeftExpr": {
+                            "Qualifier": "s",
+                            "ColumnName": "s_suppkey",
+                            "OpType": "Column"
+                        },
+                        "RightExpr": {
+                            "Qualifier": "ps",
+                            "ColumnName": "ps_suppkey",
+                            "OpType": "Column"
+                        },
+                        "OpType": "Equals"
+                    },
+                    "IsNatural": false,
+                    "LeftExpr": {
+                        "JoinType": "INNER",
+                        "JoinCondition": {
+                            "LeftExpr": {
+                                "Qualifier": "s",
+                                "ColumnName": "s_nationkey",
+                                "OpType": "Column"
+                            },
+                            "RightExpr": {
+                                "Qualifier": "t",
+                                "ColumnName": "n_nationkey",
+                                "OpType": "Column"
+                            },
+                            "OpType": "Equals"
+                        },
+                        "IsNatural": false,
+                        "LeftExpr": {
+                            "SubPlan": {
+                                "IsDistinct": false,
+                                "Projections": [
+                                    {
+                                        "Expr": {
+                                            "ColumnName": "n_nationkey",
+                                            "OpType": "Column"
+                                        },
+                                        "OpType": "Target"
+                                    },
+                                    {
+                                        "Expr": {
+                                            "ColumnName": "n_name",
+                                            "OpType": "Column"
+                                        },
+                                        "OpType": "Target"
+                                    },
+                                    {
+                                        "Expr": {
+                                            "ColumnName": "n_regionkey",
+                                            "OpType": "Column"
+                                        },
+                                        "OpType": "Target"
+                                    },
+                                    {
+                                        "Expr": {
+                                            "ColumnName": "n_comment",
+                                            "OpType": "Column"
+                                        },
+                                        "OpType": "Target"
+                                    }
+                                ],
+                                "Expr": {
+                                    "Relations": [
+                                        {
+                                            "JoinType": "INNER",
+                                            "JoinCondition": {
+                                                "LeftExpr": {
+                                                    "Qualifier": "n",
+                                                    "ColumnName": "n_regionkey",
+                                                    "OpType": "Column"
+                                                },
+                                                "RightExpr": {
+                                                    "Qualifier": "r",
+                                                    "ColumnName": "r_regionkey",
+                                                    "OpType": "Column"
+                                                },
+                                                "OpType": "Equals"
+                                            },
+                                            "IsNatural": false,
+                                            "LeftExpr": {
+                                                "TableName": "nation",
+                                                "TableAlias": "n",
+                                                "OpType": "Relation"
+                                            },
+                                            "RightExpr": {
+                                                "TableName": "region",
+                                                "TableAlias": "r",
+                                                "OpType": "Relation"
+                                            },
+                                            "OpType": "Join"
+                                        }
+                                    ],
+                                    "OpType": "RelationList"
+                                },
+                                "OpType": "Projection"
+                            },
+                            "TableName": "t",
+                            "OpType": "TablePrimaryTableSubQuery"
+                        },
+                        "RightExpr": {
+                            "TableName": "supplier",
+                            "TableAlias": "s",
+                            "OpType": "Relation"
+                        },
+                        "OpType": "Join"
+                    },
+                    "RightExpr": {
+                        "TableName": "partsupp",
+                        "TableAlias": "ps",
+                        "OpType": "Relation"
+                    },
+                    "OpType": "Join"
+                }
+            ],
+            "OpType": "RelationList"
+        },
+        "OpType": "Filter"
+    },
+    "OpType": "Projection"
+}

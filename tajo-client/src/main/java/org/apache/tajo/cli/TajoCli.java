@@ -301,15 +301,19 @@ public class TajoCli {
         continue;
       }
 
-      List<ParsedResult> parsedResults = parser.parseLines(line);
+      if (line.startsWith("{")) {
+        executeJsonQuery(line);
+      } else {
+        List<ParsedResult> parsedResults = parser.parseLines(line);
 
-      if (parsedResults.size() > 0) {
-        for (ParsedResult parsed : parsedResults) {
-          history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";":""));
+        if (parsedResults.size() > 0) {
+          for (ParsedResult parsed : parsedResults) {
+            history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
+          }
+          executeParsedResults(parsedResults);
+          currentPrompt = updatePrompt(parser.getState());
         }
       }
-      executeParsedResults(parsedResults);
-      currentPrompt = updatePrompt(parser.getState());
     }
     return code;
   }
@@ -349,6 +353,29 @@ public class TajoCli {
     }
 
     return 0;
+  }
+
+  private void executeJsonQuery(String json) throws ServiceException {
+    long startTime = System.currentTimeMillis();
+    ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
+    if (response == null) {
+      outputFormatter.printErrorMessage(sout, "response is null");
+    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+      if (response.getIsForwarded()) {
+        QueryId queryId = new QueryId(response.getQueryId());
+        waitForQueryCompleted(queryId);
+      } else {
+        if (!response.hasTableDesc() && !response.hasResultSet()) {
+          outputFormatter.printMessage(sout, "OK");
+        } else {
+          localQueryCompleted(response, startTime);
+        }
+      }
+    } else {
+      if (response.hasErrorMessage()) {
+        outputFormatter.printErrorMessage(sout, response.getErrorMessage());
+      }
+    }
   }
 
   private void executeQuery(String statement) throws ServiceException {

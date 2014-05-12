@@ -1,0 +1,65 @@
+// select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity;
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "AliasName": "max_quantity",
+            "Expr": {
+                "IsDistinct": false,
+                "Signature": "max",
+                "FuncParams": [
+                    {
+                        "ColumnName": "l_quantity",
+                        "OpType": "Column"
+                    }
+                ],
+                "OpType": "GeneralSetFunction"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "l_orderkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "SortSpecs": [
+            {
+                "SortKey": {
+                    "ColumnName": "max_quantity",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            }
+        ],
+        "Expr": {
+            "Groups": [
+                {
+                    "GroupType": "OrdinaryGroup",
+                    "Dimensions": [
+                        {
+                            "ColumnName": "l_orderkey",
+                            "OpType": "Column"
+                        }
+                    ]
+                }
+            ],
+            "Expr": {
+                "Relations": [
+                    {
+                        "TableName": "lineitem",
+                        "OpType": "Relation"
+                    }
+                ],
+                "OpType": "RelationList"
+            },
+            "OpType": "Aggregation"
+        },
+        "OpType": "Sort"
+    },
+    "OpType": "Projection"
+}

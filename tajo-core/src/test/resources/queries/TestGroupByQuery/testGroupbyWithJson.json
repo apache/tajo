@@ -1,0 +1,98 @@
+// select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
+// having total >= 2 or num = 3;
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "ColumnName": "l_orderkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "AliasName": "total",
+            "Expr": {
+                "IsDistinct": false,
+                "Signature": "avg",
+                "FuncParams": [
+                    {
+                        "ColumnName": "l_partkey",
+                        "OpType": "Column"
+                    }
+                ],
+                "OpType": "GeneralSetFunction"
+            },
+            "OpType": "Target"
+        },
+        {
+            "AliasName": "num",
+            "Expr": {
+                "IsDistinct": false,
+                "Signature": "sum",
+                "FuncParams": [
+                    {
+                        "ColumnName": "l_linenumber",
+                        "OpType": "Column"
+                    }
+                ],
+                "OpType": "GeneralSetFunction"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "HavingCondition": {
+            "LeftExpr": {
+                "LeftExpr": {
+                    "ColumnName": "total",
+                    "OpType": "Column"
+                },
+                "RightExpr": {
+                    "Value": "2",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "GreaterThanOrEquals"
+            },
+            "RightExpr": {
+                "LeftExpr": {
+                    "ColumnName": "num",
+                    "OpType": "Column"
+                },
+                "RightExpr": {
+                    "Value": "3",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "Equals"
+            },
+            "OpType": "Or"
+        },
+        "Expr": {
+            "Groups": [
+                {
+                    "GroupType": "OrdinaryGroup",
+                    "Dimensions": [
+                        {
+                            "ColumnName": "l_orderkey",
+                            "OpType": "Column"
+                        }
+                    ]
+                }
+            ],
+            "Expr": {
+                "Relations": [
+                    {
+                        "TableName": "lineitem",
+                        "OpType": "Relation"
+                    }
+                ],
+                "OpType": "RelationList"
+            },
+            "OpType": "Aggregation"
+        },
+        "OpType": "Having"
+    },
+    "OpType": "Projection"
+}

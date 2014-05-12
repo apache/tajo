@@ -132,8 +132,8 @@ message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
     required SessionProto session = 2;
     required KeyValueSetProto queryContext = 3;
-    required StringProto sql = 4;
-    optional StringProto logicalPlanJson = 5;
+    required StringProto exprInJson = 5;
+    optional StringProto logicalPlanJson = 6;
 }
 
 message GetTaskRequestProto {

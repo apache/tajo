@@ -21,8 +21,11 @@ package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class SetOperation extends BinaryOperator {
+  @Expose @SerializedName("IsDistinct")
   private boolean distinct = true;
 
   public SetOperation(OpType type, Expr left, Expr right, boolean distinct) {

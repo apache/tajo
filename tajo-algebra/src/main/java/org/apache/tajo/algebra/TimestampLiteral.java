@@ -19,9 +19,13 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class TimestampLiteral extends Expr {
+  @Expose @SerializedName("Date")
   private DateValue date;
+  @Expose @SerializedName("Time")
   private TimeValue time;
 
   public TimestampLiteral(DateValue date, TimeValue time) {

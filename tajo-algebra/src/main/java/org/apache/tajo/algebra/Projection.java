@@ -19,11 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Projection extends UnaryOperator implements Cloneable {
+  @Expose @SerializedName("IsDistinct")
   private boolean distinct = false;
-
+  @Expose @SerializedName("Projections")
   private NamedExpr[] targets;
 
   public Projection() {

@@ -19,12 +19,21 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Map;
+
 public class CreateDatabase extends Expr {
+  @Expose @SerializedName("DatabaseName")
   private String databaseName;
+  @Expose @SerializedName("TablespaceName")
   private String tablespaceName;
+  @Expose @SerializedName("IfNotExists")
   private boolean ifNotExists;
+  @Expose @SerializedName("DatabaseProperties")
+  private Map<String, String> params;
 
   public CreateDatabase(final String databaseName, final String tablespaceName, final boolean ifNotExists) {
     super(OpType.CreateDatabase);
@@ -47,6 +56,18 @@ public class CreateDatabase extends Expr {
 
   public boolean isIfNotExists() {
     return ifNotExists;
+  }
+
+  public boolean hasParams() {
+    return params != null;
+  }
+
+  public void setParams(Map<String, String> params) {
+    this.params = params;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
   }
 
   @Override

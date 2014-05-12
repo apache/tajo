@@ -142,4 +142,47 @@ public class TestExpr {
 
     return sort;
   }
+
+  @Test
+  public void testJson() {
+    Expr left1 = new BinaryOperator(OpType.Plus,
+        new LiteralValue("1", LiteralType.Unsigned_Integer),
+        new LiteralValue("2", LiteralType.Unsigned_Integer));
+
+    Expr right1 = new BinaryOperator(OpType.Multiply,
+        new LiteralValue("2", LiteralType.Unsigned_Integer),
+        new LiteralValue("3", LiteralType.Unsigned_Integer));
+
+    Expr origin = new BinaryOperator(OpType.Plus, left1, right1);
+    String json = origin.toJson();
+    Expr fromJson = JsonHelper.fromJson(json, Expr.class);
+    assertEquals(origin, fromJson);
+  }
+
+  @Test
+  public void testJson2() {
+    Expr expr = new BinaryOperator(OpType.LessThan,
+        new LiteralValue("1", LiteralType.Unsigned_Integer),
+        new LiteralValue("2", LiteralType.Unsigned_Integer));
+
+    Relation relation = new Relation("employee");
+    Selection selection = new Selection(expr);
+    selection.setChild(relation);
+
+    Aggregation aggregation = new Aggregation();
+    aggregation.setTargets(new NamedExpr[]{
+            new NamedExpr(new ColumnReferenceExpr("col1"))
+        }
+    );
+
+    aggregation.setChild(selection);
+
+    Sort.SortSpec spec = new Sort.SortSpec(new ColumnReferenceExpr("col2"));
+    Sort sort = new Sort(new Sort.SortSpec[]{spec});
+    sort.setChild(aggregation);
+
+    String json = sort.toJson();
+    Expr fromJson = JsonHelper.fromJson(json, Expr.class);
+    assertEquals(sort, fromJson);
+  }
 }

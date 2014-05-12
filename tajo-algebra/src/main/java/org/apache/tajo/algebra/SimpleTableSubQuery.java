@@ -33,8 +33,4 @@ public class SimpleTableSubQuery extends UnaryOperator {
   boolean equalsTo(Expr expr) {
     return true;
   }
-
-  public String toJson() {
-    return JsonHelper.toJson(this);
-  }
 }

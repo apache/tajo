@@ -19,9 +19,12 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Sort extends UnaryOperator {
+  @Expose @SerializedName("SortSpecs")
   private SortSpec [] sortSpecs;
 
   public Sort(final SortSpec [] sortSpecs) {
@@ -54,8 +57,11 @@ public class Sort extends UnaryOperator {
   }
 
   public static class SortSpec {
+    @Expose @SerializedName("SortKey")
     private Expr key;
+    @Expose @SerializedName("IsAsc")
     private boolean asc = true;
+    @Expose @SerializedName("IsNullFirst")
     private boolean nullFirst = false;
 
     public SortSpec(final Expr key) {

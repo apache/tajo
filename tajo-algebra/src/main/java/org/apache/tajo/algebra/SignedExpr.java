@@ -19,8 +19,11 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class SignedExpr extends UnaryOperator {
+  @Expose @SerializedName("IsNegative")
   private boolean negative;
 
   public SignedExpr(boolean negative, Expr operand) {

@@ -15,11 +15,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 /**
  * Describes SQL Standard set function (e.g., sum, min, max, avg, and count)
  */
 public class GeneralSetFunctionExpr extends FunctionExpr {
+  @Expose @SerializedName("IsDistinct")
   private boolean distinct = false;
 
   /**

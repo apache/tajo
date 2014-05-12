@@ -1,0 +1,108 @@
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "Qualifier": "a",
+                "ColumnName": "n_regionkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "b",
+                "ColumnName": "r_regionkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "a",
+                "ColumnName": "n_name",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "Qualifier": "b",
+                "ColumnName": "r_name",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "Relations": [
+            {
+                "JoinType": "INNER",
+                "JoinCondition": {
+                    "LeftExpr": {
+                        "Qualifier": "a",
+                        "ColumnName": "n_regionkey",
+                        "OpType": "Column"
+                    },
+                    "RightExpr": {
+                        "Qualifier": "b",
+                        "ColumnName": "r_regionkey",
+                        "OpType": "Column"
+                    },
+                    "OpType": "Equals"
+                },
+                "IsNatural": false,
+                "LeftExpr": {
+                    "SubPlan": {
+                        "IsDistinct": false,
+                        "Projections": [
+                            {
+                                "Expr": {
+                                    "OpType": "Asterisk"
+                                },
+                                "OpType": "Target"
+                            }
+                        ],
+                        "Expr": {
+                            "SelectCondition": {
+                                "IsNot": false,
+                                "IsCaseInsensitive": false,
+                                "LeftExpr": {
+                                    "ColumnName": "n_name",
+                                    "OpType": "Column"
+                                },
+                                "RightExpr": {
+                                    "Value": "A%",
+                                    "ValueType": "String",
+                                    "OpType": "Literal"
+                                },
+                                "OpType": "LikePredicate"
+                            },
+                            "Expr": {
+                                "Relations": [
+                                    {
+                                        "TableName": "nation",
+                                        "OpType": "Relation"
+                                    }
+                                ],
+                                "OpType": "RelationList"
+                            },
+                            "OpType": "Filter"
+                        },
+                        "OpType": "Projection"
+                    },
+                    "TableName": "a",
+                    "OpType": "TablePrimaryTableSubQuery"
+                },
+                "RightExpr": {
+                    "TableName": "region",
+                    "TableAlias": "b",
+                    "OpType": "Relation"
+                },
+                "OpType": "Join"
+            }
+        ],
+        "OpType": "RelationList"
+    },
+    "OpType": "Projection"
+}

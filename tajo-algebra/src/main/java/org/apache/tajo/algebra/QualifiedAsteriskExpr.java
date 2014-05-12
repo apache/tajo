@@ -19,10 +19,13 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class QualifiedAsteriskExpr extends Expr {
   private final static String ASTERISK = "*";
+  @Expose @SerializedName("Qualifier")
   private String qualifier;
 
   public QualifiedAsteriskExpr() {

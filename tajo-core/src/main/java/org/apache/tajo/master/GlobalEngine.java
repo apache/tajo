@@ -30,6 +30,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
@@ -109,16 +110,18 @@ public class GlobalEngine extends AbstractService {
     super.stop();
   }
 
-  public SubmitQueryResponse executeQuery(Session session, String sql)
-      throws InterruptedException, IOException, IllegalQueryStatusException {
-
-    LOG.info("SQL: " + sql);
+  public SubmitQueryResponse executeQuery(Session session, String query, boolean isJson) {
+    LOG.info("Query: " + query);
     QueryContext queryContext = new QueryContext();
+    Expr planningContext;
 
     try {
-      // setting environment variables
-      String [] cmds = sql.split(" ");
-      if(cmds != null) {
+      if (isJson) {
+        planningContext = buildExpressionFromJson(query);
+      } else {
+        // setting environment variables
+        String [] cmds = query.split(" ");
+        if(cmds != null) {
           if(cmds[0].equalsIgnoreCase("set")) {
             String[] params = cmds[1].split("=");
             context.getConf().set(params[0], params[1]);
@@ -128,21 +131,14 @@ public class GlobalEngine extends AbstractService {
             responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
             return responseBuilder.build();
           }
+        }
+
+        planningContext = buildExpressionFromSql(queryContext, query);
       }
 
-      final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
-      LOG.info("hive.query.mode:" + hiveQueryMode);
-
-      if (hiveQueryMode) {
-        context.getSystemMetrics().counter("Query", "numHiveMode").inc();
-        queryContext.setHiveQueryMode();
-      }
-
-      context.getSystemMetrics().counter("Query", "totalQuery").inc();
-
-      Expr planningContext = hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+      String jsonExpr = planningContext.toJson();
       LogicalPlan plan = createLogicalPlan(session, planningContext);
-      SubmitQueryResponse response = executeQueryInternal(queryContext, session, plan, sql);
+      SubmitQueryResponse response = executeQueryInternal(queryContext, session, plan, query, jsonExpr);
       return response;
     } catch (Throwable t) {
       context.getSystemMetrics().counter("Query", "errorQuery").inc();
@@ -162,10 +158,30 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
+  public Expr buildExpressionFromJson(String json) {
+    return JsonHelper.fromJson(json, Expr.class);
+  }
+
+  public Expr buildExpressionFromSql(QueryContext queryContext, String sql)
+      throws InterruptedException, IOException, IllegalQueryStatusException {
+    final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
+    LOG.info("hive.query.mode:" + hiveQueryMode);
+
+    if (hiveQueryMode) {
+      context.getSystemMetrics().counter("Query", "numHiveMode").inc();
+      queryContext.setHiveQueryMode();
+    }
+
+    context.getSystemMetrics().counter("Query", "totalQuery").inc();
+
+    return hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+  }
+
   private SubmitQueryResponse executeQueryInternal(QueryContext queryContext,
                                                       Session session,
                                                       LogicalPlan plan,
-                                                      String sql) throws Exception {
+                                                      String sql,
+                                                      String jsonExpr) throws Exception {
 
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
@@ -252,7 +268,7 @@ public class GlobalEngine extends AbstractService {
       QueryJobManager queryJobManager = this.context.getQueryJobManager();
       QueryInfo queryInfo;
 
-      queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, rootNode);
+      queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
 
       if(queryInfo == null) {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
@@ -273,11 +289,17 @@ public class GlobalEngine extends AbstractService {
     return response;
   }
 
-  public QueryId updateQuery(Session session, String sql) throws IOException, SQLException, PlanningException {
+  public QueryId updateQuery(Session session, String sql, boolean isJson) throws IOException, SQLException, PlanningException {
     try {
       LOG.info("SQL: " + sql);
-      // parse the query
-      Expr expr = analyzer.parse(sql);
+
+      Expr expr;
+      if (isJson) {
+        expr = JsonHelper.fromJson(sql, Expr.class);
+      } else {
+        // parse the query
+        expr = analyzer.parse(sql);
+      }
 
       LogicalPlan plan = createLogicalPlan(session, expr);
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();

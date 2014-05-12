@@ -57,4 +57,25 @@ public class TestTableSubQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testGroupbySubqueryWithJson() throws Exception {
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinSubqueryWithJson() throws Exception {
+    /*
+    SELECT
+      A.n_regionkey, B.r_regionkey, A.n_name, B.r_name
+    FROM
+      (SELECT * FROM nation WHERE n_name LIKE 'A%') A
+    JOIN region B ON A.n_regionkey=B.r_regionkey;
+    */
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

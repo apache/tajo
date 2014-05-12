@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Aggregation extends UnaryOperator {
+  @Expose @SerializedName("Targets")
   private NamedExpr[] namedExprs;
+  @Expose @SerializedName("Groups")
   private GroupElement [] groups;
 
   public Aggregation() {
@@ -64,7 +68,9 @@ public class Aggregation extends UnaryOperator {
   }
 
   public static class GroupElement implements JsonSerializable {
+    @Expose @SerializedName("GroupType")
     private GroupType group_type;
+    @Expose @SerializedName("Dimensions")
     private Expr [] grouping_sets;
 
     public GroupElement(GroupType groupType, Expr[] grouping_sets) {
