@@ -170,10 +170,9 @@ public class TestHCatalogStore {
   @Test
   public void testTableWithNullValue() throws Exception {
     Options options = new Options();
-    options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0001"));
-    options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\\N"));
+    options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
+    options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\u0003"));
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
-
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
@@ -186,7 +185,6 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, SUPPLIER)));
-
 
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
@@ -204,7 +202,15 @@ public class TestHCatalogStore {
 
     assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_NULL),
         table1.getMeta().getOption(StorageConstants.CSVFILE_NULL));
+
+    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
+        StringEscapeUtils.escapeJava("\u0002"));
+
+    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_NULL),
+        StringEscapeUtils.escapeJava("\u0003"));
+
     store.dropTable(DB_NAME, SUPPLIER);
+
   }
 
   @Test
