@@ -354,10 +354,15 @@ public class TajoClient implements Closeable {
         return this.getQueryResultAndWait(queryId);
       }
     } else {
-      if (response.hasResultSet() || response.hasTableDesc()) {
-        return createResultSet(this, response);
-      } else {
+      // If a non-forwarded insert into query
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() < 0) {
         return this.createNullResultSet(queryId);
+      } else {
+        if (response.hasResultSet() || response.hasTableDesc()) {
+          return createResultSet(this, response);
+        } else {
+          return this.createNullResultSet(queryId);
+        }
       }
     }
   }

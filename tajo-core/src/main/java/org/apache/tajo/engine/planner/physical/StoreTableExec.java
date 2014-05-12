@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.CatalogUtil;
@@ -93,7 +90,9 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender.close();
       // Collect statistics data
       context.setResultStats(appender.getStats());
-      context.addShuffleFileOutput(0, context.getTaskId().toString());
+      if (context.getTaskId() != null) {
+        context.addShuffleFileOutput(0, context.getTaskId().toString());
+      }
     }
 
     appender = null;

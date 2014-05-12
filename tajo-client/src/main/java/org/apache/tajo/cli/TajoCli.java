@@ -404,10 +404,18 @@ public class TajoCli {
   private void localQueryCompleted(ClientProtos.SubmitQueryResponse response, long startTime) {
     ResultSet res = null;
     try {
-      res = TajoClient.createResultSet(client, response);
+      QueryId queryId = new QueryId(response.getQueryId());
       float responseTime = ((float)(System.currentTimeMillis() - startTime) / 1000.0f);
       TableDesc desc = new TableDesc(response.getTableDesc());
-      outputFormatter.printResult(sout, sin, desc, responseTime, res);
+
+      // non-forwarded INSERT INTO query does not have any query id.
+      // In this case, it just returns succeeded query information without printing the query results.
+      if (response.getMaxRowNum() < 0 && queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+        outputFormatter.printResult(sout, sin, desc, responseTime, res);
+      } else {
+        res = TajoClient.createResultSet(client, response);
+        outputFormatter.printResult(sout, sin, desc, responseTime, res);
+      }
     } catch (Throwable t) {
       outputFormatter.printErrorMessage(sout, t);
     } finally {

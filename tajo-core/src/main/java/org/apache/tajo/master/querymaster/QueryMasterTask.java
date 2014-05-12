@@ -364,54 +364,19 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  /**
-   * It initializes the final output and staging directory and sets
-   * them to variables.
-   */
   private void initStagingDir() throws IOException {
-
-    String realUser;
-    String currentUser;
-    UserGroupInformation ugi;
-    ugi = UserGroupInformation.getLoginUser();
-    realUser = ugi.getShortUserName();
-    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
-
     Path stagingDir = null;
     Path outputDir = null;
+    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
+
     try {
-      ////////////////////////////////////////////
-      // Create Output Directory
-      ////////////////////////////////////////////
 
-      stagingDir = new Path(TajoConf.getStagingDir(systemConf), queryId.toString());
-
-      if (defaultFS.exists(stagingDir)) {
-        throw new IOException("The staging directory '" + stagingDir + "' already exists");
-      }
-      defaultFS.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-      FileStatus fsStatus = defaultFS.getFileStatus(stagingDir);
-      String owner = fsStatus.getOwner();
-
-      if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
-        throw new IOException("The ownership on the user's query " +
-            "directory " + stagingDir + " is not as expected. " +
-            "It is owned by " + owner + ". The directory must " +
-            "be owned by the submitter " + currentUser + " or " +
-            "by " + realUser);
-      }
-
-      if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
-        LOG.info("Permissions on staging directory " + stagingDir + " are " +
-            "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
-            "to correct value " + STAGING_DIR_PERMISSION);
-        defaultFS.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-      }
+      stagingDir = initStagingDir(systemConf, defaultFS, queryId.toString());
+      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
 
       // Create a subdirectories
-      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
       LOG.info("The staging dir '" + stagingDir + "' is created.");
+
       queryContext.setStagingDir(stagingDir);
 
       /////////////////////////////////////////////////
@@ -433,6 +398,52 @@ public class QueryMasterTask extends CompositeService {
 
       throw ioe;
     }
+  }
+
+  /**
+   * It initializes the final output and staging directory and sets
+   * them to variables.
+   */
+  public static Path initStagingDir(TajoConf conf, FileSystem fs, String queryId) throws IOException {
+
+    String realUser;
+    String currentUser;
+    UserGroupInformation ugi;
+    ugi = UserGroupInformation.getLoginUser();
+    realUser = ugi.getShortUserName();
+    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
+
+    Path stagingDir = null;
+
+    ////////////////////////////////////////////
+    // Create Output Directory
+    ////////////////////////////////////////////
+
+    stagingDir = new Path(TajoConf.getStagingDir(conf), queryId);
+
+    if (fs.exists(stagingDir)) {
+      throw new IOException("The staging directory '" + stagingDir + "' already exists");
+    }
+    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    FileStatus fsStatus = fs.getFileStatus(stagingDir);
+    String owner = fsStatus.getOwner();
+
+    if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
+      throw new IOException("The ownership on the user's query " +
+          "directory " + stagingDir + " is not as expected. " +
+          "It is owned by " + owner + ". The directory must " +
+          "be owned by the submitter " + currentUser + " or " +
+          "by " + realUser);
+    }
+
+    if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
+      LOG.info("Permissions on staging directory " + stagingDir + " are " +
+          "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
+          "to correct value " + STAGING_DIR_PERMISSION);
+      fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    }
+
+    return stagingDir;
   }
 
   public Query getQuery() {

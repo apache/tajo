@@ -576,12 +576,12 @@ public class Query implements EventHandler<QueryEvent> {
         query.setResultDesc(finalTable);
       }
     }
+  }
 
-    private long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
-      FileSystem fs = tablePath.getFileSystem(systemConf);
-      ContentSummary directorySummary = fs.getContentSummary(tablePath);
-      return directorySummary.getLength();
-    }
+  public static long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
+    FileSystem fs = tablePath.getFileSystem(systemConf);
+    ContentSummary directorySummary = fs.getContentSummary(tablePath);
+    return directorySummary.getLength();
   }
 
   public static class SubQueryCompletedTransition implements SingleArcTransition<Query, QueryEvent> {

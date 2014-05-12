@@ -1244,25 +1244,30 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Schema tableSchema = insertNode.getTableSchema();
     Schema targetColumns = insertNode.getTargetSchema();
 
-    ProjectionNode projectionNode = insertNode.getChild();
+    LogicalNode child = insertNode.getChild();
+    if (child instanceof Projectable) {
+      Projectable projectionNode = (Projectable) insertNode.getChild();
 
-    // Modifying projected columns by adding NULL constants
-    // It is because that table appender does not support target columns to be written.
-    List<Target> targets = TUtil.newList();
-    for (int i = 0, j = 0; i < tableSchema.size(); i++) {
-      Column column = tableSchema.getColumn(i);
+      // Modifying projected columns by adding NULL constants
+      // It is because that table appender does not support target columns to be written.
+      List<Target> targets = TUtil.newList();
+      for (int i = 0, j = 0; i < tableSchema.size(); i++) {
+        Column column = tableSchema.getColumn(i);
 
-      if(targetColumns.contains(column) && j < projectionNode.getTargets().length) {
-        targets.add(projectionNode.getTargets()[j++]);
-      } else {
-        targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
+        if(targetColumns.contains(column) && j < projectionNode.getTargets().length) {
+          targets.add(projectionNode.getTargets()[j++]);
+        } else {
+          targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
+        }
       }
-    }
-    projectionNode.setTargets(targets.toArray(new Target[targets.size()]));
+      projectionNode.setTargets(targets.toArray(new Target[targets.size()]));
 
-    insertNode.setInSchema(projectionNode.getOutSchema());
-    insertNode.setOutSchema(projectionNode.getOutSchema());
-    insertNode.setProjectedSchema(PlannerUtil.targetToSchema(targets));
+      insertNode.setInSchema(projectionNode.getOutSchema());
+      insertNode.setOutSchema(projectionNode.getOutSchema());
+      insertNode.setProjectedSchema(PlannerUtil.targetToSchema(targets));
+    } else {
+      throw new RuntimeException("Wrong child node type: " +  child.getType() + " for insert");
+    }
   }
 
   /**

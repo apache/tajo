@@ -37,6 +37,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-803: INSERT INTO without FROM throws ClassCastException.
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-813: CLI should support comment character with multi-line query.
     (Hyoungjun Kim via hyunsik)
 
