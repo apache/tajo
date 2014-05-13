@@ -707,7 +707,7 @@ public class CatalogUtil {
   static final String [] RESERVED_KEYWORDS = {
       "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
       "BOTH",
-      "CASE", "CAST", "CREATE", "CROSS",
+      "CASE", "CAST", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
       "DESC", "DISTINCT",
       "END", "ELSE", "EXCEPT",
       "FALSE", "FULL", "FROM",

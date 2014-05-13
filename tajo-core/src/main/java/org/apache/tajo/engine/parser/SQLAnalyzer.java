@@ -947,14 +947,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitExtract_expression(Extract_expressionContext ctx) {
     Expr extractTarget = new LiteralValue(ctx.extract_field_string.getText(), LiteralType.String);
-    Expr extractSource;
-    if (checkIfExist(ctx.extract_source().column_reference())) {
-      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
-    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
-      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
-    } else {
-      return null;
-    }
+    Expr extractSource = visitDatetime_value_expression(ctx.extract_source().datetime_value_expression());
+//    if (checkIfExist(ctx.extract_source().column_reference())) {
+//      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
+//    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
+//      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
+//    } else {
+//      return null;
+//    }
+
 
     String functionName = "date_part";
     Expr[] params = new Expr[]{extractTarget, extractSource};
@@ -1412,9 +1413,66 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return new TimestampLiteral(parseDate(datePart), parseTime(timePart));
   }
 
-  @Override public Expr visitInterval_literal(@NotNull SQLParser.Interval_literalContext ctx) {
+  @Override
+  public Expr visitInterval_literal(@NotNull SQLParser.Interval_literalContext ctx) {
     String intervalStr = stripQuote(ctx.interval_string.getText());
     return new IntervalLiteral(intervalStr);
+  }
+
+  @Override
+  public Expr visitDatetime_value_expression(@NotNull SQLParser.Datetime_value_expressionContext ctx) {
+    return visitDatetime_term(ctx.datetime_term());
+  }
+
+  @Override
+  public Expr visitDatetime_term(@NotNull SQLParser.Datetime_termContext ctx) {
+    return visitDatetime_factor(ctx.datetime_factor());
+  }
+
+  @Override
+  public Expr visitDatetime_factor(@NotNull SQLParser.Datetime_factorContext ctx) {
+    return visitDatetime_primary(ctx.datetime_primary());
+  }
+
+  @Override
+  public Expr visitDatetime_primary(@NotNull SQLParser.Datetime_primaryContext ctx) {
+    if (checkIfExist(ctx.value_expression_primary())) {
+      return visitValue_expression_primary(ctx.value_expression_primary());
+    } else {
+      return visitDatetime_value_function(ctx.datetime_value_function());
+    }
+  }
+
+  @Override
+  public Expr visitDatetime_value_function(@NotNull SQLParser.Datetime_value_functionContext ctx) {
+    if (checkIfExist(ctx.current_date_value_function())) {
+      return visitCurrent_date_value_function(ctx.current_date_value_function());
+    } else if (checkIfExist(ctx.current_time_value_function())) {
+      return visitCurrent_time_value_function(ctx.current_time_value_function());
+    } else {
+      return visitCurrent_timestamp_value_function(ctx.current_timestamp_value_function());
+    }
+  }
+
+  @Override
+  public Expr visitCurrent_date_value_function(@NotNull SQLParser.Current_date_value_functionContext ctx) {
+    String functionName = "current_date";
+    Expr[] params = new Expr[]{};
+    return new FunctionExpr(functionName, params);
+  }
+
+  @Override
+  public Expr visitCurrent_time_value_function(@NotNull SQLParser.Current_time_value_functionContext ctx) {
+    String functionName = "current_time";
+    Expr[] params = new Expr[]{};
+    return new FunctionExpr(functionName, params);
+  }
+
+  @Override
+  public Expr visitCurrent_timestamp_value_function(@NotNull SQLParser.Current_timestamp_value_functionContext ctx) {
+    String functionName = "now";
+    Expr[] params = new Expr[]{};
+    return new FunctionExpr(functionName, params);
   }
 
   private DateValue parseDate(String datePart) {

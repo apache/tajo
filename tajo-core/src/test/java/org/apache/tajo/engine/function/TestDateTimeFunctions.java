@@ -294,4 +294,26 @@ public class TestDateTimeFunctions extends ExprTestBase {
     testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT4);", new String[]{"2013-11-28 12:10:20"});
     testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT8);", new String[]{"2013-11-28 12:10:20"});
   }
+
+  @Test
+  public void testDateTimeNow() throws IOException {
+    long expectedTimestamp = System.currentTimeMillis();
+    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+
+    testSimpleEval("select to_char(now(), 'yyyy-MM-dd');", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
+    testSimpleEval("select cast(extract(year from now()) as INT4);", new String[]{expectedDateTime.toString("yyyy")});
+    testSimpleEval("select current_date();", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
+    testSimpleEval("select cast(extract(hour from current_time()) as INT4);", new String[]{expectedDateTime.toString("HH")});
+  }
+
+  @Test
+  public void testTimeValueKeywork() throws IOException {
+    long expectedTimestamp = System.currentTimeMillis();
+    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+
+    testSimpleEval("select to_char(current_timestamp, 'yyyy-MM-dd');", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
+    testSimpleEval("select cast(extract(year from current_timestamp) as INT4);", new String[]{expectedDateTime.toString("yyyy")});
+    testSimpleEval("select current_date;", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
+    testSimpleEval("select cast(extract(hour from current_time) as INT4);", new String[]{expectedDateTime.toString("HH")});
+  }
 }
