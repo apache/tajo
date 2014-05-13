@@ -19,11 +19,16 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class DataTypeExpr extends Expr {
+  @Expose @SerializedName("DataTypeName")
   String typeName;
+  @Expose @SerializedName("LengthOrPrecision")
   Integer lengthOrPrecision;
+  @Expose @SerializedName("Scale")
   Integer scale;
 
   public DataTypeExpr(String typeName) {

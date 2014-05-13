@@ -34,16 +34,16 @@ public class QueryStartEvent extends AbstractEvent {
   private final QueryId queryId;
   private final Session session;
   private final QueryContext queryContext;
-  private final String sql;
+  private final String jsonExpr;
   private final String logicalPlanJson;
 
-  public QueryStartEvent(QueryId queryId, Session session, QueryContext queryContext, String sql,
+  public QueryStartEvent(QueryId queryId, Session session, QueryContext queryContext, String jsonExpr,
                          String logicalPlanJson) {
     super(EventType.QUERY_START);
     this.queryId = queryId;
     this.session = session;
     this.queryContext = queryContext;
-    this.sql = sql;
+    this.jsonExpr = jsonExpr;
     this.logicalPlanJson = logicalPlanJson;
   }
 
@@ -59,8 +59,8 @@ public class QueryStartEvent extends AbstractEvent {
     return this.queryContext;
   }
 
-  public String getSql() {
-    return this.sql;
+  public String getJsonExpr() {
+    return this.jsonExpr;
   }
 
   public String getLogicalPlanJson() {

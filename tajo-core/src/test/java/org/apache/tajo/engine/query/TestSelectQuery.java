@@ -296,6 +296,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectWithJson() throws Exception {
+    // select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
   public final void testDatabaseRef() throws Exception {
     if (!testingCluster.isHCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();

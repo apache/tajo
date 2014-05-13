@@ -436,7 +436,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // If you want to modify table path, you have to modify on Hive cli.
       if (tableDesc.isExternal()) {
         table.setTableType(TableType.EXTERNAL_TABLE.name());
-        table.getParameters().put("EXTERNAL", "TRUE");
+        table.putToParameters("EXTERNAL", "TRUE");
 
         FileSystem fs = tableDesc.getPath().getFileSystem(conf);
         if (fs.isFile(tableDesc.getPath())) {
@@ -479,7 +479,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         if (tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL) != null) {
-          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+          table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
       } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)) {
@@ -495,14 +495,16 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         // And hive will un-espace this value again.
         // As a result, user can use right field delimiter.
         // So, we have to un-escape this value.
-        sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT,
+        sd.getSerdeInfo().putToParameters(serdeConstants.SERIALIZATION_FORMAT,
             StringEscapeUtils.unescapeJava(fieldDelimiter));
-        sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM,
+        sd.getSerdeInfo().putToParameters(serdeConstants.FIELD_DELIM,
             StringEscapeUtils.unescapeJava(fieldDelimiter));
+        table.getParameters().remove(StorageConstants.CSVFILE_DELIMITER);
 
         if (tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL) != null) {
-          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+          table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL)));
+          table.getParameters().remove(StorageConstants.CSVFILE_NULL);
         }
       } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.SEQUENCEFILE)) {
         String serde = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE);
@@ -520,17 +522,19 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           // And hive will un-espace this value again.
           // As a result, user can use right field delimiter.
           // So, we have to un-escape this value.
-          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_FORMAT,
+          sd.getSerdeInfo().putToParameters(serdeConstants.SERIALIZATION_FORMAT,
               StringEscapeUtils.unescapeJava(fieldDelimiter));
-          sd.getSerdeInfo().getParameters().put(serdeConstants.FIELD_DELIM,
+          sd.getSerdeInfo().putToParameters(serdeConstants.FIELD_DELIM,
               StringEscapeUtils.unescapeJava(fieldDelimiter));
+          table.getParameters().remove(StorageConstants.SEQUENCEFILE_DELIMITER);
         } else {
           sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe.class.getName());
         }
 
         if (tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL) != null) {
-          sd.getSerdeInfo().getParameters().put(serdeConstants.SERIALIZATION_NULL_FORMAT,
+          table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL)));
+          table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
         }
       } else {
         throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType().name()));

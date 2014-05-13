@@ -1,0 +1,59 @@
+// select sum(l_extendedprice * l_discount) as revenue from (select * from lineitem) as l;
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "AliasName": "revenue",
+            "Expr": {
+                "IsDistinct": false,
+                "Signature": "sum",
+                "FuncParams": [
+                    {
+                        "LeftExpr": {
+                            "ColumnName": "l_extendedprice",
+                            "OpType": "Column"
+                        },
+                        "RightExpr": {
+                            "ColumnName": "l_discount",
+                            "OpType": "Column"
+                        },
+                        "OpType": "Multiply"
+                    }
+                ],
+                "OpType": "GeneralSetFunction"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "Relations": [
+            {
+                "SubPlan": {
+                    "IsDistinct": false,
+                    "Projections": [
+                        {
+                            "Expr": {
+                                "OpType": "Asterisk"
+                            },
+                            "OpType": "Target"
+                        }
+                    ],
+                    "Expr": {
+                        "Relations": [
+                            {
+                                "TableName": "lineitem",
+                                "OpType": "Relation"
+                            }
+                        ],
+                        "OpType": "RelationList"
+                    },
+                    "OpType": "Projection"
+                },
+                "TableName": "l",
+                "OpType": "TablePrimaryTableSubQuery"
+            }
+        ],
+        "OpType": "RelationList"
+    },
+    "OpType": "Projection"
+}

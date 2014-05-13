@@ -19,17 +19,26 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Map;
 
 public class Insert extends Expr {
+  @Expose @SerializedName("IsOverwrite")
   private boolean overwrite = false;
+  @Expose @SerializedName("TableName")
   private String tableName;
+  @Expose @SerializedName("TargetColumns")
   private String [] targetColumns;
+  @Expose @SerializedName("StorageType")
   private String storageType;
+  @Expose @SerializedName("Location")
   private String location;
+  @Expose @SerializedName("SubPlan")
   private Expr subquery;
+  @Expose @SerializedName("InsertParams")
   private Map<String, String> params;
 
   public Insert() {

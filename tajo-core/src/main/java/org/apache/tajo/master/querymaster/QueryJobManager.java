@@ -95,10 +95,12 @@ public class QueryJobManager extends CompositeService {
     return Collections.unmodifiableCollection(finishedQueries.values());
   }
 
-  public QueryInfo createNewQueryJob(Session session, QueryContext queryContext, String sql, LogicalRootNode plan)
+  public QueryInfo createNewQueryJob(Session session, QueryContext queryContext, String sql,
+                                     String jsonExpr, LogicalRootNode plan)
       throws Exception {
     QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
-    QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql, plan);
+    QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
+        jsonExpr, plan);
 
     synchronized(runningQueries) {
       runningQueries.put(queryId, queryInProgress);

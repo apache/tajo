@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnReferenceExpr extends Expr {
+  @Expose @SerializedName("Qualifier")
   private String qualifier;
+  @Expose @SerializedName("ColumnName")
   private String name;
 
   public ColumnReferenceExpr(String referenceName) {

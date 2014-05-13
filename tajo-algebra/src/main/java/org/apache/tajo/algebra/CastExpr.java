@@ -19,8 +19,11 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class CastExpr extends UnaryOperator {
+  @Expose @SerializedName("CastType")
   private DataTypeExpr target;
 
   public CastExpr(Expr operand, DataTypeExpr target) {

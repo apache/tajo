@@ -358,6 +358,7 @@
             <exclude>**/*.tbl</exclude>
             <exclude>**/*.js</exclude>
             <exclude>**/*.result</exclude>
+            <exclude>**/*.json</exclude>
             <exclude>**/*.avsc</exclude>
             <!-- generated content -->
             <exclude>**/target/**</exclude>

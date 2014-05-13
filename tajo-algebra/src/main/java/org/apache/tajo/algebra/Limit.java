@@ -20,8 +20,11 @@ package org.apache.tajo.algebra;
 
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class Limit extends UnaryOperator {
+  @Expose @SerializedName("Num")
   private Expr fetchFirstNum;
 
   public Limit(Expr fetchFirstNum) {

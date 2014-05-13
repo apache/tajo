@@ -20,13 +20,18 @@ package org.apache.tajo.algebra;
 
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class AlterTablespace extends Expr {
 
+  @Expose @SerializedName("TablespaceName")
   private String tablespaceName;
+  @Expose @SerializedName("AlterTablespaceType")
   private AlterTablespaceSetType setType;
 
+  @Expose @SerializedName("URI")
   private String uri;
 
   public AlterTablespace(final String tablespaceName) {

@@ -1,0 +1,74 @@
+// select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "ColumnName": "l_orderkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "AliasName": "plus1",
+            "Expr": {
+                "LeftExpr": {
+                    "ColumnName": "l_partkey",
+                    "OpType": "Column"
+                },
+                "RightExpr": {
+                    "Value": "1",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "Plus"
+            },
+            "OpType": "Target"
+        },
+        {
+            "AliasName": "plus2",
+            "Expr": {
+                "LeftExpr": {
+                    "ColumnName": "l_partkey",
+                    "OpType": "Column"
+                },
+                "RightExpr": {
+                    "Value": "1",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "Plus"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "SelectCondition": {
+            "LeftExpr": {
+                "ColumnName": "l_orderkey",
+                "OpType": "Column"
+            },
+            "RightExpr": {
+                "IsNegative": true,
+                "Expr": {
+                    "Value": "1",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "Sign"
+            },
+            "OpType": "GreaterThan"
+        },
+        "Expr": {
+            "Relations": [
+                {
+                    "TableName": "lineitem",
+                    "OpType": "Relation"
+                }
+            ],
+            "OpType": "RelationList"
+        },
+        "OpType": "Filter"
+    },
+    "OpType": "Projection"
+}

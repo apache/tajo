@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class LiteralValue extends Expr {
-  protected LiteralType valueType;
+  @Expose @SerializedName("Value")
   protected String value;
+  @Expose @SerializedName("ValueType")
+  protected LiteralType valueType;
 
   public static enum LiteralType {
     Boolean,
@@ -62,5 +66,25 @@ public class LiteralValue extends Expr {
     StringBuilder sb = new StringBuilder(valueType == LiteralType.String ? "'" + value + "'" : value);
     sb.append("(").append(valueType).append(")");
     return sb.toString();
+  }
+
+  public static LiteralType getLiteralType(String value) {
+    if (value.equals("TRUE") || value.equals("FALSE")) {
+      return LiteralType.Boolean;
+    } else {
+      try {
+        Long.parseLong(value);
+        return LiteralType.Unsigned_Integer;
+      } catch (NumberFormatException e) {}
+
+      try {
+        Double.parseDouble(value);
+        return LiteralType.Unsigned_Float;
+      } catch (NumberFormatException e) {}
+
+      // TODO: handle unsigned_large_integer
+
+      return LiteralType.String;
+    }
   }
 }

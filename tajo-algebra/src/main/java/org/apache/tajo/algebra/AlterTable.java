@@ -20,15 +20,23 @@ package org.apache.tajo.algebra;
 
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class AlterTable extends Expr {
 
+  @Expose @SerializedName("OldTableName")
   private String tableName;
+  @Expose @SerializedName("NewTableName")
   private String newTableName;
+  @Expose @SerializedName("OldColumnName")
   private String columnName;
+  @Expose @SerializedName("NewColumnName")
   private String newColumnName;
+  @Expose @SerializedName("NewColumnDef")
   private ColumnDefinition addNewColumn;
+  @Expose @SerializedName("AlterTableType")
   private AlterTableOpType alterTableOpType;
 
   public AlterTable(final String tableName) {

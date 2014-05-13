@@ -1,0 +1,84 @@
+// select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "AliasName": "len",
+            "Expr": {
+                "Signature": "length",
+                "FuncParams": [
+                    {
+                        "ColumnName": "r_comment",
+                        "OpType": "Column"
+                    }
+                ],
+                "OpType": "Function"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "OpType": "Asterisk"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "LeftExpr": {
+                    "ColumnName": "c_custkey",
+                    "OpType": "Column"
+                },
+                "RightExpr": {
+                    "Value": "10",
+                    "ValueType": "Unsigned_Integer",
+                    "OpType": "Literal"
+                },
+                "OpType": "Multiply"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "SortSpecs": [
+            {
+                "SortKey": {
+                    "ColumnName": "len",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "r_regionkey",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "r_name",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            }
+        ],
+        "Expr": {
+            "Relations": [
+                {
+                    "TableName": "customer",
+                    "OpType": "Relation"
+                },
+                {
+                    "TableName": "region",
+                    "OpType": "Relation"
+                }
+            ],
+            "OpType": "RelationList"
+        },
+        "OpType": "Sort"
+    },
+    "OpType": "Projection"
+}

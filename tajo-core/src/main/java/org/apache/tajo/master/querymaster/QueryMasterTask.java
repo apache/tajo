@@ -32,11 +32,10 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.HiveQLAnalyzer;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -93,7 +92,7 @@ public class QueryMasterTask extends CompositeService {
 
   private MasterPlan masterPlan;
 
-  private String sql;
+  private String jsonExpr;
 
   private String logicalPlanJson;
 
@@ -119,7 +118,7 @@ public class QueryMasterTask extends CompositeService {
       new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, Session session, QueryContext queryContext, String sql,
+                         QueryId queryId, Session session, QueryContext queryContext, String jsonExpr,
                          String logicalPlanJson) {
 
     super(QueryMasterTask.class.getName());
@@ -127,7 +126,7 @@ public class QueryMasterTask extends CompositeService {
     this.queryId = queryId;
     this.session = session;
     this.queryContext = queryContext;
-    this.sql = sql;
+    this.jsonExpr = jsonExpr;
     this.logicalPlanJson = logicalPlanJson;
     this.querySubmitTime = System.currentTimeMillis();
   }
@@ -243,7 +242,6 @@ public class QueryMasterTask extends CompositeService {
       if(LOG.isDebugEnabled()) {
         LOG.debug("SubQueryEventDispatcher:" + id + "," + event.getType());
       }
-      //Query query = queryMasterTasks.get(id.getQueryId()).getQuery();
       query.getSubQuery(id).handle(event);
     }
   }
@@ -255,7 +253,6 @@ public class QueryMasterTask extends CompositeService {
       if(LOG.isDebugEnabled()) {
         LOG.debug("TaskEventDispatcher>" + taskId + "," + event.getType());
       }
-      //Query query = queryMasterTasks.get(taskId.getExecutionBlockId().getQueryId()).getQuery();
       QueryUnit task = query.getSubQuery(taskId.getExecutionBlockId()).
           getQueryUnit(taskId);
       task.handle(event);
@@ -266,7 +263,6 @@ public class QueryMasterTask extends CompositeService {
       implements EventHandler<TaskAttemptEvent> {
     public void handle(TaskAttemptEvent event) {
       QueryUnitAttemptId attemptId = event.getTaskAttemptId();
-      //Query query = queryMasterTasks.get(attemptId.getQueryUnitId().getExecutionBlockId().getQueryId()).getQuery();
       SubQuery subQuery = query.getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
       QueryUnit task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
       QueryUnitAttempt attempt = task.getAttempt(attemptId);
@@ -277,7 +273,6 @@ public class QueryMasterTask extends CompositeService {
   private class TaskSchedulerDispatcher
       implements EventHandler<TaskSchedulerEvent> {
     public void handle(TaskSchedulerEvent event) {
-      //Query query = queryMasterTasks.get(event.getExecutionBlockId().getQueryId()).getQuery();
       SubQuery subQuery = query.getSubQuery(event.getExecutionBlockId());
       subQuery.getTaskScheduler().handle(event);
     }
@@ -330,14 +325,7 @@ public class QueryMasterTask extends CompositeService {
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
-      Expr expr;
-      if (queryContext.isHiveQueryMode()) {
-        HiveQLAnalyzer HiveQLAnalyzer = new HiveQLAnalyzer();
-        expr = HiveQLAnalyzer.parse(sql);
-      } else {
-        SQLAnalyzer analyzer = new SQLAnalyzer();
-        expr = analyzer.parse(sql);
-      }
+      Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       LogicalPlan plan = planner.createPlan(session, expr);
       optimizer.optimize(plan);
 
@@ -376,54 +364,19 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  /**
-   * It initializes the final output and staging directory and sets
-   * them to variables.
-   */
   private void initStagingDir() throws IOException {
-
-    String realUser;
-    String currentUser;
-    UserGroupInformation ugi;
-    ugi = UserGroupInformation.getLoginUser();
-    realUser = ugi.getShortUserName();
-    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
-
     Path stagingDir = null;
     Path outputDir = null;
+    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
+
     try {
-      ////////////////////////////////////////////
-      // Create Output Directory
-      ////////////////////////////////////////////
 
-      stagingDir = new Path(TajoConf.getStagingDir(systemConf), queryId.toString());
-
-      if (defaultFS.exists(stagingDir)) {
-        throw new IOException("The staging directory '" + stagingDir + "' already exists");
-      }
-      defaultFS.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-      FileStatus fsStatus = defaultFS.getFileStatus(stagingDir);
-      String owner = fsStatus.getOwner();
-
-      if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
-        throw new IOException("The ownership on the user's query " +
-            "directory " + stagingDir + " is not as expected. " +
-            "It is owned by " + owner + ". The directory must " +
-            "be owned by the submitter " + currentUser + " or " +
-            "by " + realUser);
-      }
-
-      if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
-        LOG.info("Permissions on staging directory " + stagingDir + " are " +
-            "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
-            "to correct value " + STAGING_DIR_PERMISSION);
-        defaultFS.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-      }
+      stagingDir = initStagingDir(systemConf, defaultFS, queryId.toString());
+      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
 
       // Create a subdirectories
-      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
       LOG.info("The staging dir '" + stagingDir + "' is created.");
+
       queryContext.setStagingDir(stagingDir);
 
       /////////////////////////////////////////////////
@@ -445,6 +398,52 @@ public class QueryMasterTask extends CompositeService {
 
       throw ioe;
     }
+  }
+
+  /**
+   * It initializes the final output and staging directory and sets
+   * them to variables.
+   */
+  public static Path initStagingDir(TajoConf conf, FileSystem fs, String queryId) throws IOException {
+
+    String realUser;
+    String currentUser;
+    UserGroupInformation ugi;
+    ugi = UserGroupInformation.getLoginUser();
+    realUser = ugi.getShortUserName();
+    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
+
+    Path stagingDir = null;
+
+    ////////////////////////////////////////////
+    // Create Output Directory
+    ////////////////////////////////////////////
+
+    stagingDir = new Path(TajoConf.getStagingDir(conf), queryId);
+
+    if (fs.exists(stagingDir)) {
+      throw new IOException("The staging directory '" + stagingDir + "' already exists");
+    }
+    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    FileStatus fsStatus = fs.getFileStatus(stagingDir);
+    String owner = fsStatus.getOwner();
+
+    if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
+      throw new IOException("The ownership on the user's query " +
+          "directory " + stagingDir + " is not as expected. " +
+          "It is owned by " + owner + ". The directory must " +
+          "be owned by the submitter " + currentUser + " or " +
+          "by " + realUser);
+    }
+
+    if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
+      LOG.info("Permissions on staging directory " + stagingDir + " are " +
+          "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
+          "to correct value " + STAGING_DIR_PERMISSION);
+      fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    }
+
+    return stagingDir;
   }
 
   public Query getQuery() {

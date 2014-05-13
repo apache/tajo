@@ -237,6 +237,10 @@ public class QueryTestCaseBase {
     return executeFile(name.getMethodName() + ".sql");
   }
 
+  public ResultSet executeJsonQuery() throws Exception {
+    return executeJsonFile(name.getMethodName() + ".json");
+  }
+
   /**
    * Execute a query contained in the given named file. This methods tries to find the given file within the directory
    * src/test/resources/results/<i>ClassName</i>.
@@ -254,6 +258,16 @@ public class QueryTestCaseBase {
       assertNotNull("This script \"" + queryFileName + "\" includes two or more queries");
     }
     ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getHistoryStatement());
+    assertNotNull("Query succeeded test", result);
+    return result;
+  }
+
+  public ResultSet executeJsonFile(String jsonFileName) throws Exception {
+    Path queryFilePath = getQueryFilePath(jsonFileName);
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
+
+    ResultSet result = client.executeJsonQueryAndGetResult(FileUtil.readTextFile(new File(queryFilePath.toUri())));
     assertNotNull("Query succeeded test", result);
     return result;
   }

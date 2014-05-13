@@ -311,6 +311,23 @@ public class TajoClient implements Closeable {
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setSessionId(sessionId);
         builder.setQuery(sql);
+        builder.setIsJson(false);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.submitQuery(null, builder.build());
+      }
+    }.withRetries();
+  }
+
+  public SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
+    return new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(json);
+        builder.setIsJson(true);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         return tajoMasterService.submitQuery(null, builder.build());
       }
@@ -327,18 +344,31 @@ public class TajoClient implements Closeable {
    */
   public ResultSet executeQueryAndGetResult(final String sql)
       throws ServiceException, IOException {
-    SubmitQueryResponse response = new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false, true) {
-      public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
-        checkSessionAndGet(client);
+    SubmitQueryResponse response = executeQuery(sql);
 
-        final QueryRequest.Builder builder = QueryRequest.newBuilder();
-        builder.setSessionId(sessionId);
-        builder.setQuery(sql);
-        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.submitQuery(null, builder.build());
+    QueryId queryId = new QueryId(response.getQueryId());
+    if (response.getIsForwarded()) {
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+        return this.createNullResultSet(queryId);
+      } else {
+        return this.getQueryResultAndWait(queryId);
       }
-    }.withRetries();
+    } else {
+      // If a non-forwarded insert into query
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() < 0) {
+        return this.createNullResultSet(queryId);
+      } else {
+        if (response.hasResultSet() || response.hasTableDesc()) {
+          return createResultSet(this, response);
+        } else {
+          return this.createNullResultSet(queryId);
+        }
+      }
+    }
+  }
+
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
+    SubmitQueryResponse response = executeQueryWithJson(json);
 
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
@@ -536,6 +566,31 @@ public class TajoClient implements Closeable {
         QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setSessionId(sessionId);
         builder.setQuery(sql);
+        builder.setIsJson(false);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
+        if (response.getResultCode() == ResultCode.OK) {
+          return true;
+        } else {
+          if (response.hasErrorMessage()) {
+            System.err.println("ERROR: " + response.getErrorMessage());
+          }
+          return false;
+        }
+      }
+    }.withRetries();
+  }
+
+  public boolean updateQueryWithJson(final String json) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(json);
+        builder.setIsJson(true);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
         if (response.getResultCode() == ResultCode.OK) {

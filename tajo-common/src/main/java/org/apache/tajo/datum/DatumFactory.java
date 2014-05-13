@@ -384,6 +384,8 @@ public class DatumFactory {
       return DatumFactory.createTimestamp(operandDatum);
     case BLOB:
       return DatumFactory.createBlob(operandDatum.asByteArray());
+    case INET4:
+      return DatumFactory.createInet4(operandDatum.asByteArray());
     default:
       throw new InvalidCastException(operandDatum.type(), target.getType());
     }

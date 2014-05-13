@@ -34,6 +34,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResourceManager;
@@ -79,7 +80,7 @@ public class QueryInProgress extends CompositeService {
       TajoMaster.MasterContext masterContext,
       Session session,
       QueryContext queryContext,
-      QueryId queryId, String sql, LogicalRootNode plan) {
+      QueryId queryId, String sql, String jsonExpr, LogicalRootNode plan) {
     super(QueryInProgress.class.getName());
     this.masterContext = masterContext;
     this.session = session;
@@ -87,7 +88,7 @@ public class QueryInProgress extends CompositeService {
     this.queryId = queryId;
     this.plan = plan;
 
-    queryInfo = new QueryInfo(queryId, sql);
+    queryInfo = new QueryInfo(queryId, sql, jsonExpr);
     queryInfo.setStartTime(System.currentTimeMillis());
   }
 
@@ -230,15 +231,15 @@ public class QueryInProgress extends CompositeService {
       }
       LOG.info("Call executeQuery to :" +
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort() + "," + queryId);
-      queryMasterRpcClient.executeQuery(
-          null,
-          TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder()
-              .setQueryId(queryId.getProto())
-              .setSession(session.getProto())
-              .setQueryContext(queryContext.getProto())
-              .setSql(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getSql()))
-              .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
-              .build(), NullCallback.get());
+
+      QueryExecutionRequestProto.Builder builder = TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder();
+      builder.setQueryId(queryId.getProto())
+          .setSession(session.getProto())
+          .setQueryContext(queryContext.getProto())
+          .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
+          .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
+
+      queryMasterRpcClient.executeQuery(null, builder.build(), NullCallback.get());
       querySubmitted.set(true);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

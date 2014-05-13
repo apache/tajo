@@ -16,11 +16,14 @@ package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Set;
 
 public class RelationList extends Expr {
+  @Expose @SerializedName("Relations")
   private Expr[] relations;
 
   public RelationList(Expr[] relations) {

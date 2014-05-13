@@ -25,6 +25,7 @@ import org.apache.tajo.TajoProtos;
 public class QueryInfo {
   private QueryId queryId;
   private String sql;
+  private String jsonExpr;
   private TajoProtos.QueryState queryState;
   private float progress;
   private long startTime;
@@ -35,12 +36,13 @@ public class QueryInfo {
   private int queryMasterClientPort;
 
   public QueryInfo(QueryId queryId) {
-    this(queryId, null);
+    this(queryId, null, null);
   }
 
-  public QueryInfo(QueryId queryId, String sql) {
+  public QueryInfo(QueryId queryId, String sql, String jsonExpr) {
     this.queryId = queryId;
     this.sql = sql;
+    this.jsonExpr = jsonExpr;
     this.queryState = TajoProtos.QueryState.QUERY_MASTER_INIT;
   }
 
@@ -121,5 +123,9 @@ public class QueryInfo {
   public String toString() {
     return queryId.toString() + ",state=" + queryState +",progress=" + progress + ", queryMaster="
         + getQueryMasterHost();
+  }
+
+  public String getJsonExpr() {
+    return jsonExpr;
   }
 }

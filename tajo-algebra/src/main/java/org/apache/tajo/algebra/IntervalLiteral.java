@@ -18,7 +18,11 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class IntervalLiteral extends Expr {
+  @Expose @SerializedName("LiteralExpr")
   private String exprStr;
 
   public IntervalLiteral(String str) {

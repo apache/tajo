@@ -19,12 +19,18 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.StringUtils;
 
 public class TimeValue {
+  @Expose @SerializedName("Hour")
   private String hours;
+  @Expose @SerializedName("Minute")
   private String minutes;
+  @Expose @SerializedName("Second")
   private String seconds;
+  @Expose @SerializedName("SecondFrac")
   private String secondsFraction; // optional
 
   public TimeValue(String hours, String minutes, String seconds) {
