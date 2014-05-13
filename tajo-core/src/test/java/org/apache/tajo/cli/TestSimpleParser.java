@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli;
 
+import org.apache.tajo.cli.ParsedResult.StatementType;
 import org.junit.Test;
 
 import java.util.List;
@@ -76,46 +77,46 @@ public class TestSimpleParser {
   public final void testParseScript() throws InvalidStatementException {
     List<ParsedResult> res1 = SimpleParser.parseScript("select * from test;");
     assertEquals(1, res1.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res1.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res1.get(0).getType());
     assertEquals("select * from test", res1.get(0).getStatement());
     assertEquals("select * from test", res1.get(0).getHistoryStatement());
 
     List<ParsedResult> res2 = SimpleParser.parseScript("select * from test;");
     assertEquals(1, res2.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res2.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res2.get(0).getType());
     assertEquals("select * from test", res2.get(0).getStatement());
     assertEquals("select * from test", res2.get(0).getHistoryStatement());
 
     List<ParsedResult> res3 = SimpleParser.parseScript("select * from test1;select * from test2;");
     assertEquals(2, res3.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res3.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res3.get(0).getType());
     assertEquals("select * from test1", res3.get(0).getStatement());
     assertEquals("select * from test1", res3.get(0).getHistoryStatement());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res3.get(1).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res3.get(1).getType());
     assertEquals("select * from test2", res3.get(1).getStatement());
     assertEquals("select * from test2", res3.get(1).getHistoryStatement());
 
     List<ParsedResult> res4 = SimpleParser.parseScript("\t\t\n\rselect * from \ntest1;select * from test2\n;");
     assertEquals(2, res4.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res4.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res4.get(0).getType());
     assertEquals("select * from \ntest1", res4.get(0).getStatement());
     assertEquals("select * from test1", res4.get(0).getHistoryStatement());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res4.get(1).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res4.get(1).getType());
     assertEquals("select * from test2", res4.get(1).getStatement());
     assertEquals("select * from test2", res4.get(1).getHistoryStatement());
 
     List<ParsedResult> res5 =
         SimpleParser.parseScript("\t\t\n\rselect * from \ntest1;\\d test;select * from test2;\n\nselect 1;");
     assertEquals(4, res5.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res5.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res5.get(0).getType());
     assertEquals("select * from \ntest1", res5.get(0).getStatement());
     assertEquals("select * from test1", res5.get(0).getHistoryStatement());
     assertEquals(ParsedResult.StatementType.META, res5.get(1).getType());
     assertEquals("\\d test", res5.get(1).getStatement());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res5.get(2).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res5.get(2).getType());
     assertEquals("select * from test2", res5.get(2).getStatement());
     assertEquals("select * from test2", res5.get(2).getHistoryStatement());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res5.get(3).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res5.get(3).getType());
     assertEquals("select 1", res5.get(3).getStatement());
     assertEquals("select 1", res5.get(3).getHistoryStatement());
 
@@ -136,12 +137,74 @@ public class TestSimpleParser {
     assertEquals(ParsedResult.StatementType.META, res8.get(0).getType());
     assertEquals("\\d test", res8.get(0).getStatement());
     assertEquals("\\d test", res8.get(0).getHistoryStatement());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res8.get(1).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res8.get(1).getType());
     assertEquals("select * \n--from test1;\nfrom test2", res8.get(1).getStatement());
     assertEquals("select * from test2", res8.get(1).getHistoryStatement());
     assertEquals(ParsedResult.StatementType.META, res8.get(2).getType());
     assertEquals("\\d test2", res8.get(2).getStatement());
     assertEquals("\\d test2", res8.get(2).getHistoryStatement());
+
+    String jsonStmt = "{\n" +
+        "  \"IsDistinct\": false,\n" +
+        "  \"Projections\": [\n" +
+        "    {\n" +
+        "      \"Expr\": {\n" +
+        "        \"OpType\": \"Asterisk\"\n" +
+        "      },\n" +
+        "      \"OpType\": \"Target\"\n" +
+        "    }\n" +
+        "  ],\n" +
+        "  \"Expr\": {\n" +
+        "    \"Relations\": [\n" +
+        "      {\n" +
+        "        \"TableName\": \"test\",\n" +
+        "        \"OpType\": \"Relation\"\n" +
+        "      }\n" +
+        "    ],\n" +
+        "    \"OpType\": \"RelationList\"\n" +
+        "  },\n" +
+        "  \"OpType\": \"Projection\"\n" +
+        "}";
+    String historyStatement = "{   \"IsDistinct\": false,   \"Projections\": [     {       \"Expr\": {         " +
+        "\"OpType\": \"Asterisk\"       },       \"OpType\": \"Target\"     }   ],   \"Expr\": {     \"Relations\": [" +
+        "       {         \"TableName\": \"test\",         \"OpType\": \"Relation\"       }     ],     \"OpType\": " +
+        "\"RelationList\"   },   \"OpType\": \"Projection\" }";
+    List<ParsedResult> res9 = SimpleParser.parseScript(jsonStmt + ";");
+    assertEquals(1, res9.size());
+    assertEquals(StatementType.JSON_STATEMENT, res9.get(0).getType());
+    assertEquals(jsonStmt, res9.get(0).getStatement());
+    assertEquals(historyStatement, res9.get(0).getHistoryStatement());
+
+    String metaStmt = "\\d test\n";
+    String jsonStmt2 = "{\n" +
+        "  \"IsDistinct\": false,\n" +
+        "  \"Projections\": [\n" +
+        "    {\n" +
+        "      \"Expr\": {\n" +
+        "        \"OpType\": \"Asterisk\"\n" +
+        "      },\n" +
+        "      \"OpType\": \"Target\"\n" +
+        "    }\n" +
+        "  ],\n" +
+        "  \"Expr\": {\n" +
+        "--this is the comment test;\n" +
+        "    \"Relations\": [\n" +
+        "      {\n" +
+        "        \"TableName\": \"test\",\n" +
+        "        \"OpType\": \"Relation\"\n" +
+        "      }\n" +
+        "    ],\n" +
+        "    \"OpType\": \"RelationList\"\n" +
+        "  },\n" +
+        "  \"OpType\": \"Projection\"\n" +
+        "}";
+    List<ParsedResult> res10 = SimpleParser.parseScript(metaStmt + jsonStmt2 + ";");
+    assertEquals(2, res10.size());
+    assertEquals(StatementType.META, res10.get(0).getType());
+    assertEquals("\\d test", res10.get(0).getStatement());
+    assertEquals(StatementType.JSON_STATEMENT, res10.get(1).getType());
+    assertEquals(jsonStmt2, res10.get(1).getStatement());
+    assertEquals(historyStatement, res10.get(1).getHistoryStatement());
   }
 
   @Test
@@ -192,25 +255,55 @@ public class TestSimpleParser {
     assertEquals(1, res1.size());
     assertEquals("select * from test1 where col1 = '123'", res1.get(0).getHistoryStatement());
     assertEquals("select * from \ntest1 --select * from test2;\nwhere col1 = '123'", res1.get(0).getStatement());
+
+    String jsonStmt = "{\n" +
+        "  \"IsDistinct\": false,\n" +
+        "  \"Projections\": [\n" +
+        "    {\n" +
+        "      \"Expr\": {\n" +
+        "        \"OpType\": \"Asterisk\"\n" +
+        "      },\n" +
+        "      \"OpType\": \"Target\"\n" +
+        "    }\n" +
+        "  ],\n" +
+        "  \"Expr\": {\n" +
+        "    \"Relations\": [\n" +
+        "      {\n" +
+        "        \"TableName\": \"test\",\n" +
+        "        \"OpType\": \"Relation\"\n" +
+        "      }\n" +
+        "    ],\n" +
+        "    \"OpType\": \"RelationList\"\n" +
+        "  },\n" +
+        "  \"OpType\": \"Projection\"\n" +
+        "}";
+    String historyStatement = "{   \"IsDistinct\": false,   \"Projections\": [     {       \"Expr\": {         " +
+        "\"OpType\": \"Asterisk\"       },       \"OpType\": \"Target\"     }   ],   \"Expr\": {     \"Relations\": [" +
+        "       {         \"TableName\": \"test\",         \"OpType\": \"Relation\"       }     ],     \"OpType\": " +
+        "\"RelationList\"   },   \"OpType\": \"Projection\" }";
+    res1 = simpleParser.parseLines(jsonStmt + ";");
+    assertEquals(1, res1.size());
+    assertEquals(jsonStmt, res1.get(0).getStatement());
+    assertEquals(historyStatement, res1.get(0).getHistoryStatement());
   }
 
   @Test
   public final void testQuoted() throws InvalidStatementException {
     List<ParsedResult> res1 = SimpleParser.parseScript("select '\n;' from test;");
     assertEquals(1, res1.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res1.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res1.get(0).getType());
     assertEquals("select '\n;' from test", res1.get(0).getHistoryStatement());
     assertEquals("select '\n;' from test", res1.get(0).getStatement());
 
     List<ParsedResult> res2 = SimpleParser.parseScript("select 'abc\nbbc\nddf' from test;");
     assertEquals(1, res2.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res2.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res2.get(0).getType());
     assertEquals("select 'abc\nbbc\nddf' from test", res2.get(0).getHistoryStatement());
     assertEquals("select 'abc\nbbc\nddf' from test", res2.get(0).getStatement());
 
     List<ParsedResult> res3 = SimpleParser.parseScript("select '--test', \n'--test2' from test");
     assertEquals(1, res3.size());
-    assertEquals(ParsedResult.StatementType.STATEMENT, res3.get(0).getType());
+    assertEquals(ParsedResult.StatementType.SQL_STATEMENT, res3.get(0).getType());
     assertEquals("select '--test', '--test2' from test", res3.get(0).getHistoryStatement());
     assertEquals("select '--test', \n'--test2' from test", res3.get(0).getStatement());
 
@@ -220,6 +313,38 @@ public class TestSimpleParser {
     } catch (InvalidStatementException is) {
       assertTrue(true);
     }
+
+    String jsonStmt = "{\n" +
+        "  \"IsDistinct\": false,\n" +
+        "  \"Projections\": [\n" +
+        "    {\n" +
+        "      \"Expr\": {\n" +
+        "        \"Value\": '\\n;',\n" +
+        "        \"ValueType\": \"String\",\n" +
+        "        \"OpType\": \"Literal\"\n" +
+        "      },\n" +
+        "      \"OpType\": \"Target\"\n" +
+        "    }\n" +
+        "  ],\n" +
+        "  \"Expr\": {\n" +
+        "    \"Relations\": [\n" +
+        "      {\n" +
+        "        \"TableName\": \"test\",\n" +
+        "        \"OpType\": \"Relation\"\n" +
+        "      }\n" +
+        "    ],\n" +
+        "    \"OpType\": \"RelationList\"\n" +
+        "  },\n" +
+        "  \"OpType\": \"Projection\"\n" +
+        "}";
+    String historyStmt = "{   \"IsDistinct\": false,   \"Projections\": [     {       \"Expr\": {         \"Value\": " +
+        "'\\n;',         \"ValueType\": \"String\",         \"OpType\": \"Literal\"       },       \"OpType\": " +
+        "\"Target\"     }   ],   \"Expr\": {     \"Relations\": [       {         \"TableName\": \"test\",         " +
+        "\"OpType\": \"Relation\"       }     ],     \"OpType\": \"RelationList\"   },   \"OpType\": \"Projection\" }";
+    List<ParsedResult> res4 = SimpleParser.parseScript(jsonStmt);
+    assertEquals(1, res4.size());
+    assertEquals(ParsedResult.StatementType.JSON_STATEMENT, res4.get(0).getType());
+    assertEquals(historyStmt, res4.get(0).getHistoryStatement());
   }
 
   @Test
