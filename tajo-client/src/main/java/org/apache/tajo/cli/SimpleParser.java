@@ -22,7 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.tajo.cli.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
+import static org.apache.tajo.cli.ParsedResult.StatementType.SQL_STATEMENT;
+import static org.apache.tajo.cli.ParsedResult.StatementType.JSON_STATEMENT;
 
 /**
  * This is a parser used in tsql to parse multiple SQL lines into SQL statements.
@@ -55,6 +56,8 @@ public class SimpleParser {
   private StringBuilder rawAppender = new StringBuilder();
 
   public static final ParsingState START_STATE = ParsingState.TOK_START;
+
+  private boolean isJsonStatement = false;
 
   /**
    * <h2>State Machine</h2>
@@ -314,11 +317,23 @@ public class SimpleParser {
   }
 
   private boolean isStatementStart(char character) {
-    return state == ParsingState.TOK_START && (Character.isLetterOrDigit(character));
+    if (state == ParsingState.TOK_START) {
+      isJsonStatement = isJsonStatementStart(character);
+      return isJsonStatement ? true : isSqlStatementStart(character);
+    }
+    return false;
   }
 
   private boolean isStatementContinue() {
     return state == ParsingState.WITHIN_QUOTE || state == ParsingState.STATEMENT;
+  }
+
+  private boolean isSqlStatementStart(char character) {
+    return Character.isLetterOrDigit(character);
+  }
+
+  private boolean isJsonStatementStart(char character) {
+    return character == '{';
   }
 
   /**
@@ -349,7 +364,11 @@ public class SimpleParser {
         parsedResults.add(new ParsedResult(META, rawStatement, historyStatement));
         state = ParsingState.TOK_START;
       } else if (state == ParsingState.STATEMENT_EOS) {
-        parsedResults.add(new ParsedResult(STATEMENT, rawStatement, historyStatement));
+        if (isJsonStatement) {
+          parsedResults.add(new ParsedResult(JSON_STATEMENT, rawStatement, historyStatement));
+        } else {
+          parsedResults.add(new ParsedResult(SQL_STATEMENT, rawStatement, historyStatement));
+        }
       } else {
         throw new InvalidStatementException("ERROR: " + errorMessage);
       }

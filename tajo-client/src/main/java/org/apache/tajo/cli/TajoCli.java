@@ -42,7 +42,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.apache.tajo.cli.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
+import static org.apache.tajo.cli.ParsedResult.StatementType.SQL_STATEMENT;
+import static org.apache.tajo.cli.ParsedResult.StatementType.JSON_STATEMENT;
 import static org.apache.tajo.cli.SimpleParser.ParsingState;
 
 public class TajoCli {
@@ -301,18 +302,15 @@ public class TajoCli {
         continue;
       }
 
-      if (line.startsWith("{")) {
-        executeJsonQuery(line);
-      } else {
-        List<ParsedResult> parsedResults = parser.parseLines(line);
+      List<ParsedResult> parsedResults = parser.parseLines(line);
 
-        if (parsedResults.size() > 0) {
-          for (ParsedResult parsed : parsedResults) {
-            history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
-          }
-          executeParsedResults(parsedResults);
-          currentPrompt = updatePrompt(parser.getState());
+      if (parsedResults.size() > 0) {
+        for (ParsedResult parsed : parsedResults) {
+          history.addStatement(parsed.getHistoryStatement() +
+              ((parsed.getType() == SQL_STATEMENT || parsed.getType() == JSON_STATEMENT) ? ";" : ""));
         }
+        executeParsedResults(parsedResults);
+        currentPrompt = updatePrompt(parser.getState());
       }
     }
     return code;
@@ -322,6 +320,8 @@ public class TajoCli {
     for (ParsedResult parsedResult : parsedResults) {
       if (parsedResult.getType() == META) {
         executeMetaCommand(parsedResult.getStatement());
+      } else if (parsedResult.getType() == JSON_STATEMENT) {
+        executeJsonQuery(parsedResult.getStatement());
       } else {
         executeQuery(parsedResult.getStatement());
       }

@@ -22,7 +22,8 @@ package org.apache.tajo.cli;
 public class ParsedResult {
   public static enum StatementType {
     META,
-    STATEMENT
+    SQL_STATEMENT,
+    JSON_STATEMENT,
   }
 
   private final StatementType type;
