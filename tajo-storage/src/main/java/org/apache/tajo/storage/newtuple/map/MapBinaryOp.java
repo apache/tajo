@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.newtuple.map;
 
-import org.apache.tajo.catalog.Schema;
-import org.junit.Test;
+import org.apache.tajo.storage.newtuple.UnsafeUtil;
+import sun.misc.Unsafe;
 
-public class TestVectorizedRowBlock {
+public abstract class MapBinaryOp {
+  protected static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-  @Test
-  public void testAllocation() {
-    Schema schema = new Schema();
-
-    VectorizedRowBlock rowBlock = new VectorizedRowBlock(Integer.MAX_VALUE);
-    rowBlock.destroy();
-  }
+  public abstract void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId);
 }

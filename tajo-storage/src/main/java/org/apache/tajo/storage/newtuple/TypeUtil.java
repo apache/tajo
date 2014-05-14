@@ -45,4 +45,16 @@ public class TypeUtil {
 
     return fixed;
   }
+
+  public static byte sizeOf(TajoDataTypes.DataType dataType) {
+    switch (dataType.getType()) {
+    case INT1:
+    case INT2: return SizeOf.SIZE_OF_SHORT;
+    case INT4: return SizeOf.SIZE_OF_INT;
+    case INT8: return SizeOf.SIZE_OF_LONG;
+    case FLOAT4: return SizeOf.SIZE_OF_FLOAT;
+    case FLOAT8: return SizeOf.SIZE_OF_DOUBLE;
+    default: throw new RuntimeException("does not support this type: " + dataType.getType().name());
+    }
+  }
 }
