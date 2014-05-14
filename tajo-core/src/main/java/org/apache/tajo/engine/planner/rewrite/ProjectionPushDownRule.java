@@ -199,6 +199,14 @@ public class ProjectionPushDownRule extends
     public String add(EvalNode evalNode) throws PlanningException {
       String name;
 
+      if (evalNode.getType() == EvalType.FIELD) {
+        FieldEval fieldEval = (FieldEval) evalNode;
+        if (nameToIdBiMap.containsKey(fieldEval.getName())) {
+          int refId = nameToIdBiMap.get(fieldEval.getName());
+          return getPrimaryName(refId);
+        }
+      }
+
       if (idToEvalBiMap.inverse().containsKey(evalNode)) {
         int refId = idToEvalBiMap.inverse().get(evalNode);
         return getPrimaryName(refId);
@@ -542,12 +550,12 @@ public class ProjectionPushDownRule extends
 
     // Getting grouping key names
     final int groupingKeyNum = node.getGroupingColumns().length;
-    String [] groupingKeyNames = null;
+    LinkedHashSet<String> groupingKeyNames = null;
     if (groupingKeyNum > 0) {
-      groupingKeyNames = new String[groupingKeyNum];
+      groupingKeyNames = Sets.newLinkedHashSet();
       for (int i = 0; i < groupingKeyNum; i++) {
         FieldEval fieldEval = new FieldEval(node.getGroupingColumns()[i]);
-        groupingKeyNames[i] = newContext.addExpr(fieldEval);
+        groupingKeyNames.add(newContext.addExpr(fieldEval));
       }
     }
 
@@ -575,9 +583,7 @@ public class ProjectionPushDownRule extends
     if (groupingKeyNum > 0 && groupingKeyNames != null) {
       // Restoring grouping key columns
       final List<Column> groupingColumns = new ArrayList<Column>();
-      for (int i = 0; i < groupingKeyNum; i++) {
-        String groupingKey = groupingKeyNames[i];
-
+      for (String groupingKey : groupingKeyNames) {
         Target target = context.targetListMgr.getTarget(groupingKey);
 
         // it rewrite grouping keys.
