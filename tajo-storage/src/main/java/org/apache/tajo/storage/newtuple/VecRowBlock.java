@@ -120,21 +120,23 @@ public class VecRowBlock {
     return vectorsAddrs[columnIdx];
   }
 
-  private static final int WORD_SIZE = 8;
+  private static final int WORD_SIZE = SizeOf.SIZE_OF_LONG * 8;
 
   public void setNull(int columnIdx, int index) {
-    int offset = index % WORD_SIZE;
-    long address = nullVectorsAddrs[columnIdx] + offset;
+    int chunkId = index / WORD_SIZE;
+    long offset = index % WORD_SIZE;
+    long address = nullVectorsAddrs[columnIdx] + chunkId;
     long nullFlagChunk = unsafe.getLong(address);
-    nullFlagChunk = (nullFlagChunk | (1 << offset));
+    nullFlagChunk = (nullFlagChunk | (1L << offset));
     unsafe.putLong(address, nullFlagChunk);
   }
 
   public int isNull(int columnIdx, int index) {
-    int offset = index % WORD_SIZE;
-    long address = nullVectorsAddrs[columnIdx] + offset;
+    int chunkId = index / WORD_SIZE;
+    long offset = index % WORD_SIZE;
+    long address = nullVectorsAddrs[columnIdx] + chunkId;
     long nullFlagChunk = unsafe.getLong(address);
-    return (int) ((nullFlagChunk >> offset) & 1);
+    return (int) ((nullFlagChunk >> offset) & 1L);
   }
 
   public short getInt2(int columnIdx, int index) {

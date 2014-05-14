@@ -41,20 +41,30 @@ public class VectorUtil {
     }
   }
 
-  private static final int WORD_SIZE = 8;
+  private static final int WORD_SIZE = SizeOf.SIZE_OF_LONG * 8;
 
   public static void setNull(long nullVector, int index) {
+    int chunkId = index / WORD_SIZE;
     int offset = index % WORD_SIZE;
-    long address = nullVector + offset;
+    long address = nullVector + chunkId;
     long nullFlagChunk = unsafe.getLong(address);
     nullFlagChunk = (nullFlagChunk | (1 << offset));
     unsafe.putLong(address, nullFlagChunk);
   }
 
   public static int isNull(long nullVector, int index) {
+    int chunkId = index / WORD_SIZE;
     int offset = index % WORD_SIZE;
-    long address = nullVector + offset;
+    long address = nullVector + chunkId;
     long nullFlagChunk = unsafe.getLong(address);
     return (int) ((nullFlagChunk >> offset) & 1);
+  }
+
+  public static void bzero(final long addr, final long length) {
+    long offset = addr;
+    while (offset < addr + length) {
+      unsafe.putLong(offset, 0);
+      offset += offset + SizeOf.SIZE_OF_LONG;
+    }
   }
 }

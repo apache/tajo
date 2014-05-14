@@ -198,7 +198,7 @@ public class TestVecRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
 
-    int vecSize = 10000;
+    int vecSize = 10000000;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -223,6 +223,7 @@ public class TestVecRowBlock {
 
     for (int i = 0; i < 100; i++) {
       int idx = rnd.nextInt(vecSize);
+      System.out.println(idx);
       nullIdx.add(idx);
       vecRowBlock.setNull(0, idx);
       assertTrue(vecRowBlock.isNull(0, idx) == 1);
