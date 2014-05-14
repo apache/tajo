@@ -567,8 +567,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // trying the implicit type conversion between actual parameter types and the definition types.
     if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
-      DataType lastDataType = null;
-      for (int i = 0; i < givenArgs.length; i++) {
+      DataType lastDataType = givenArgs[0].getValueType();
+      for (int i = 1; i < givenArgs.length; i++) {
         if (i < (funcDesc.getParamTypes().length - 1)) { // variable length
           lastDataType = funcDesc.getParamTypes()[i];
         } else {

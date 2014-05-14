@@ -27,10 +27,13 @@ import static org.junit.Assert.fail;
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCoalesceText() throws Exception {
+    testSimpleEval("select coalesce('value1', 'value2');", new String[]{"value1"});
     testSimpleEval("select coalesce(null, 'value2');", new String[]{"value2"});
     testSimpleEval("select coalesce(null, null, 'value3');", new String[]{"value3"});
     testSimpleEval("select coalesce('value1', null, 'value3');", new String[]{"value1"});
     testSimpleEval("select coalesce(null, 'value2', 'value3');", new String[]{"value2"});
+    testSimpleEval("select coalesce('value1');", new String[]{"value1"});
+    testSimpleEval("select coalesce(null);", new String[]{""});
 
     //no matched function
     try {
@@ -43,10 +46,13 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCoalesceLong() throws Exception {
+    testSimpleEval("select coalesce(1, 2);", new String[]{"1"});
     testSimpleEval("select coalesce(null, 2);", new String[]{"2"});
     testSimpleEval("select coalesce(null, null, 3);", new String[]{"3"});
     testSimpleEval("select coalesce(1, null, 3);", new String[]{"1"});
     testSimpleEval("select coalesce(null, 2, 3);", new String[]{"2"});
+    testSimpleEval("select coalesce(1);", new String[]{"1"});
+    testSimpleEval("select coalesce(null);", new String[]{""});
 
     //no matched function
     try {
@@ -59,17 +65,20 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCoalesceDouble() throws Exception {
+    testSimpleEval("select coalesce(1.0, 2.0);", new String[]{"1.0"});
     testSimpleEval("select coalesce(null, 2.0);", new String[]{"2.0"});
     testSimpleEval("select coalesce(null, null, 3.0);", new String[]{"3.0"});
     testSimpleEval("select coalesce(1.0, null, 3.0);", new String[]{"1.0"});
     testSimpleEval("select coalesce(null, 2.0, 3.0);", new String[]{"2.0"});
+    testSimpleEval("select coalesce(1.0);", new String[]{"1.0"});
+    testSimpleEval("select coalesce(null);", new String[]{""});
 
     //no matched function
     try {
       testSimpleEval("select coalesce('value1', null, 3.0);", new String[]{"1.0"});
       fail("coalesce(TEXT, NULL, FLOAT8) not defined. So should throw exception.");
     } catch (NoSuchFunctionException e) {
-      //success
+      // success
     }
 
     try {

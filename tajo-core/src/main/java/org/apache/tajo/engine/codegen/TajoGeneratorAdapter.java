@@ -601,6 +601,8 @@ public class TajoGeneratorAdapter {
     Class [] paramTypes;
     switch (type.getType()) {
     case NULL_TYPE:
+      pop();      // pop null flag
+      pop(type);  // pop null datum
       invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
       if (castToDatum) {
         methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(Datum.class));
@@ -655,7 +657,8 @@ public class TajoGeneratorAdapter {
     Label ifNull = new Label();
     Label afterAll = new Label();
 
-    methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);
+    emitNullityCheck(ifNull);
+
     invokeStatic(DatumFactory.class, methodName, returnType, paramTypes);
     methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 

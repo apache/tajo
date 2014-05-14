@@ -16,13 +16,18 @@
  * limitations under the License.
  */
 
-package example;
+package org.apache.tajo.storage.newtuple;
 
-import org.apache.tajo.engine.eval.FunctionEval;
+import org.apache.tajo.catalog.Schema;
+import org.junit.Test;
 
-public class Example {
-  public boolean run(int x, int y) {
-    boolean comp = x > y;
-    return comp;
+public class TestVectorizedRowBlock {
+
+  @Test
+  public void testAllocation() {
+    Schema schema = new Schema();
+
+    VectorizedRowBlock rowBlock = new VectorizedRowBlock(Integer.MAX_VALUE);
+    rowBlock.destroy();
   }
 }
