@@ -20,6 +20,7 @@ package org.apache.tajo.storage.newtuple;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -37,20 +38,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestVecRowBlock {
-
-  @Test
-  public void testAllocation() {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.INT4);
-
-    VecRowBlock rowBlock = new VecRowBlock(schema, 1024);
-
-    assertEquals(4 * 2 * 1024, rowBlock.size());
-
-    rowBlock.destroy();
-  }
-
   @Test
   public void testPutInt() {
     Schema schema = new Schema();
@@ -243,6 +230,7 @@ public class TestVecRowBlock {
       }
     }
 
+
 //    Set<Integer> col1Nulls = Sets.newHashSet();
 //    Set<Integer> col2Nulls = Sets.newHashSet();
 //    Set<Integer> finalNulls = Sets.newHashSet();
@@ -269,7 +257,7 @@ public class TestVecRowBlock {
     vecRowBlock.destroy();
   }
 
-  @Test
+  //@Test
   public void testPutIntInTuple() {
     Schema schema = new Schema();
     schema.addColumn("col1", Type.INT4);

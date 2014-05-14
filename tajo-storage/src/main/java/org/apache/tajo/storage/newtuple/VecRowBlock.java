@@ -95,12 +95,15 @@ public class VecRowBlock {
     allocate();
 
     nullVectorsAddrs = new long[schema.size()];
+    long chunkSize = (vectorSize / 8 + 1);
     for (int i = 0; i < schema.size(); i++) {
       if (i == 0) {
         nullVectorsAddrs[i] = address;
       } else {
-        nullVectorsAddrs[i] = nullVectorsAddrs[i - 1] + (vectorSize / 8 + 1);
+        nullVectorsAddrs[i] = nullVectorsAddrs[i - 1] + chunkSize;
       }
+
+      VectorUtil.bzero(nullVectorsAddrs[i], chunkSize);
     }
 
     vectorsAddrs = new long[fixedLenColumns.size()];
@@ -119,6 +122,7 @@ public class VecRowBlock {
   public long getVecAddress(int columnIdx) {
     return vectorsAddrs[columnIdx];
   }
+
 
   private static final int WORD_SIZE = 8;
 

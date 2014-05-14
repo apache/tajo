@@ -41,7 +41,7 @@ public class VectorUtil {
     }
   }
 
-  private static final int WORD_SIZE = 8;
+  private static final int WORD_SIZE = SizeOf.SIZE_OF_LONG;
 
   public static void setNull(long nullVector, int index) {
     int offset = index % WORD_SIZE;
@@ -56,5 +56,13 @@ public class VectorUtil {
     long address = nullVector + offset;
     long nullFlagChunk = unsafe.getLong(address);
     return (int) ((nullFlagChunk >> offset) & 1);
+  }
+
+  public static void bzero(final long addr, final long length) {
+    long offset = addr;
+    while (offset < addr + length) {
+      unsafe.putLong(offset, 0);
+      offset += offset + SizeOf.SIZE_OF_LONG;
+    }
   }
 }
