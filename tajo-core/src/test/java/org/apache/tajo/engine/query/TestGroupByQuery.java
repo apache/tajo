@@ -124,9 +124,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testGroupByWithConstantKeys1() throws Exception {
+  public final void testGroupByWithSameConstantKeys1() throws Exception {
+    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c;
     ResultSet res = executeQuery();
-    System.out.println(resultSetToString(res));
+    assertResultSet(res);
     cleanupQuery(res);
   }
 

@@ -1,0 +1,1 @@
+select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c;
