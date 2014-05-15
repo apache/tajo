@@ -236,6 +236,17 @@ public class TUtil {
     return collection.toArray((T[]) array);
   }
 
+  public static int[] toArray(Collection<Integer> collection) {
+    int[] array = new int[collection.size()];
+
+    int index = 0;
+    for (Integer eachInt: collection) {
+      array[index++] = eachInt;
+    }
+
+    return array;
+  }
+
   /**
    * It returns the exact code point at which this running thread is executed.
    *

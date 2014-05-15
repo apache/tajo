@@ -140,6 +140,17 @@ public class EvalTreeUtil {
     
     return schema;
   }
+
+  public static String columnsToStr(Collection<Column> columns) {
+    StringBuilder sb = new StringBuilder();
+    String prefix = "";
+    for (Column column: columns) {
+      sb.append(prefix).append(column.getQualifiedName());
+      prefix = ",";
+    }
+
+    return sb.toString();
+  }
   
   public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr)
       throws InternalException {

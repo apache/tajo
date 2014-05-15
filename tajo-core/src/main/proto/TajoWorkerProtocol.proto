@@ -195,6 +195,7 @@ message EnforceProperty {
     SORT = 4;
     BROADCAST = 5;
     COLUMN_PARTITION = 6;
+    DISTINCT_GROUP_BY = 7;
   }
 
   // Identifies which field is filled in.
@@ -208,6 +209,7 @@ message EnforceProperty {
   optional SortEnforce sort = 6;
   optional BroadcastEnforce broadcast = 7;
   optional ColumnPartitionEnforcer columnPartition = 8;
+  optional DistinctGroupbyEnforcer distinct = 9;
 }
 
 message SortedInputEnforce {
@@ -264,6 +266,21 @@ message ColumnPartitionEnforcer {
 
   required int32 pid = 1;
   required ColumnPartitionAlgorithm algorithm = 2;
+}
+
+message DistinctGroupbyEnforcer {
+  enum DistinctAggregationAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  message SortSpecArray {
+    required int32 pid = 1;
+    repeated SortSpecProto sortSpecs = 2;
+  }
+  required int32 pid = 1;
+  required DistinctAggregationAlgorithm algorithm = 2;
+  repeated SortSpecArray sortSpecArrays = 3;
 }
 
 message EnforcerProto {

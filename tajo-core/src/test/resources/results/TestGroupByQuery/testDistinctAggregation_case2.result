@@ -1,0 +1,4 @@
+quantity,partkey,suppkey,l_returnflag
+-------------------------------
+91.0,2,3,N
+94.0,2,2,R

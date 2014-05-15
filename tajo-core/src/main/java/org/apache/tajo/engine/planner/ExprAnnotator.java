@@ -580,22 +580,22 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
 
     try {
-    CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
-    if (functionType == CatalogProtos.FunctionType.GENERAL
-        || functionType == CatalogProtos.FunctionType.UDF) {
-      return new GeneralFunctionEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
-    } else if (functionType == CatalogProtos.FunctionType.AGGREGATION
-        || functionType == CatalogProtos.FunctionType.UDA) {
-      if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
-        ctx.currentBlock.setAggregationRequire();
+      CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
+      if (functionType == CatalogProtos.FunctionType.GENERAL
+          || functionType == CatalogProtos.FunctionType.UDF) {
+        return new GeneralFunctionEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+      } else if (functionType == CatalogProtos.FunctionType.AGGREGATION
+          || functionType == CatalogProtos.FunctionType.UDA) {
+        if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
+          ctx.currentBlock.setAggregationRequire();
+        }
+        return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+      } else if (functionType == CatalogProtos.FunctionType.DISTINCT_AGGREGATION
+          || functionType == CatalogProtos.FunctionType.DISTINCT_UDA) {
+        throw new PlanningException("Unsupported function: " + funcDesc.toString());
+      } else {
+        throw new PlanningException("Unsupported Function Type: " + functionType.name());
       }
-      return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
-    } else if (functionType == CatalogProtos.FunctionType.DISTINCT_AGGREGATION
-        || functionType == CatalogProtos.FunctionType.DISTINCT_UDA) {
-      throw new PlanningException("Unsupported function: " + funcDesc.toString());
-    } else {
-      throw new PlanningException("Unsupported Function Type: " + functionType.name());
-    }
     } catch (InternalException e) {
       throw new PlanningException(e);
     }
