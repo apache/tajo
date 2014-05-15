@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -38,6 +39,9 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -173,6 +177,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, grpNode.getChild(), stack);
         stack.pop();
         return createGroupByPlan(ctx, grpNode, leftExec);
+
+      case DISTINCT_GROUP_BY:
+        DistinctGroupbyNode distinctNode = (DistinctGroupbyNode) logicalNode;
+        stack.push(distinctNode);
+        leftExec = createPlanRecursive(ctx, distinctNode.getChild(), stack);
+        stack.pop();
+        return createDistinctGroupByPlan(ctx, distinctNode, leftExec);
 
       case HAVING:
         HavingNode havingNode = (HavingNode) logicalNode;
@@ -962,6 +973,57 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
+  public PhysicalExec createDistinctGroupByPlan(TaskAttemptContext context,
+                                                DistinctGroupbyNode distinctNode, PhysicalExec subOp)
+      throws IOException {
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, distinctNode);
+    if (property != null) {
+      DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
+      if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
+        return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+      } else {
+        return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
+      }
+    } else {
+      return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+    }
+  }
+
+  private PhysicalExec createInMemoryDistinctGroupbyExec(TaskAttemptContext ctx,
+      DistinctGroupbyNode distinctGroupbyNode, PhysicalExec subOp) throws IOException {
+    return new DistinctGroupbyHashAggregationExec(ctx, distinctGroupbyNode, subOp);
+  }
+
+  private PhysicalExec createSortAggregationDistinctGroupbyExec(TaskAttemptContext ctx,
+      DistinctGroupbyNode distinctGroupbyNode, PhysicalExec subOp,
+      DistinctGroupbyEnforcer enforcer) throws IOException {
+    List<GroupbyNode> groupbyNodes = distinctGroupbyNode.getGroupByNodes();
+
+    SortAggregateExec[] sortAggregateExec = new SortAggregateExec[groupbyNodes.size()];
+
+    List<SortSpecArray> sortSpecArrays = enforcer.getSortSpecArraysList();
+
+    int index = 0;
+    for (GroupbyNode eachGroupbyNode: groupbyNodes) {
+      SortSpecArray sortSpecArray = sortSpecArrays.get(index);
+      SortSpec[] sortSpecs = new SortSpec[sortSpecArray.getSortSpecsList().size()];
+      int sortIndex = 0;
+      for (SortSpecProto eachProto: sortSpecArray.getSortSpecsList()) {
+        sortSpecs[sortIndex++] = new SortSpec(eachProto);
+      }
+      SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+      sortNode.setSortSpecs(sortSpecs);
+      sortNode.setInSchema(subOp.getSchema());
+      sortNode.setOutSchema(eachGroupbyNode.getInSchema());
+      ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+
+      sortAggregateExec[index++] = new SortAggregateExec(ctx, eachGroupbyNode, sortExec);
+    }
+
+    return new DistinctGroupbySortAggregationExec(ctx, distinctGroupbyNode, sortAggregateExec);
+  }
+
   public PhysicalExec createSortPlan(TaskAttemptContext context, SortNode sortNode,
                                      PhysicalExec child) throws IOException {
 
@@ -1025,6 +1087,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       type = EnforceType.JOIN;
     } else if (node.getType() == NodeType.GROUP_BY) {
       type = EnforceType.GROUP_BY;
+    } else if (node.getType() == NodeType.DISTINCT_GROUP_BY) {
+      type = EnforceType.DISTINCT_GROUP_BY;
     } else if (node.getType() == NodeType.SORT) {
       type = EnforceType.SORT;
     } else if (node instanceof StoreTableNode
@@ -1042,6 +1106,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (type == EnforceType.JOIN && property.getJoin().getPid() == node.getPID()) {
           found = property;
         } else if (type == EnforceType.GROUP_BY && property.getGroupby().getPid() == node.getPID()) {
+          found = property;
+        } else if (type == EnforceType.DISTINCT_GROUP_BY && property.getDistinct().getPid() == node.getPID()) {
           found = property;
         } else if (type == EnforceType.SORT && property.getSort().getPid() == node.getPID()) {
           found = property;

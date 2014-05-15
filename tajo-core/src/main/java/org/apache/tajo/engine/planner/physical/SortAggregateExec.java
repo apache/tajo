@@ -47,13 +47,13 @@ public class SortAggregateExec extends AggregationExec {
 
   public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan, PhysicalExec child) throws IOException {
     super(context, plan, child);
-    contexts = new FunctionContext[plan.getAggFunctions().length];
+    contexts = new FunctionContext[plan.getAggFunctions() == null ? 0 : plan.getAggFunctions().length];
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple currentKey;
-    Tuple tuple;
+    Tuple tuple = null;
     Tuple outputTuple = null;
 
     while(!context.isStopped() && (tuple = child.next()) != null) {
@@ -101,6 +101,10 @@ public class SortAggregateExec extends AggregationExec {
       }
     } // while loop
 
+    if (tuple == null && lastKey == null) {
+      finished = true;
+      return null;
+    }
     if (!finished) {
       outputTuple = new VTuple(outSchema.size());
       int tupleIdx = 0;

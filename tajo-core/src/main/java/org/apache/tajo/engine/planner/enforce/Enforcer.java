@@ -23,6 +23,8 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
@@ -130,6 +132,22 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
+  public void enforceDistinctAggregation(int pid,
+                                         DistinctAggregationAlgorithm algorithm,
+                                         List<SortSpecArray> sortSpecArrays) {
+    EnforceProperty.Builder builder = newProperty();
+    DistinctGroupbyEnforcer.Builder enforce = DistinctGroupbyEnforcer.newBuilder();
+    enforce.setPid(pid);
+    enforce.setAlgorithm(algorithm);
+    if (sortSpecArrays != null) {
+      enforce.addAllSortSpecArrays(sortSpecArrays);
+    }
+
+    builder.setType(EnforceType.DISTINCT_GROUP_BY);
+    builder.setDistinct(enforce.build());
+    TUtil.putToNestedList(properties, builder.getType(), builder.build());
+  }
+
   public void enforceSortAlgorithm(int pid, SortEnforce.SortAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     SortEnforce.Builder enforce = SortEnforce.newBuilder();
@@ -215,6 +233,26 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
           }
           sb.append(sortSpec.getColumn().getName());
           sb.append(" (").append(sortSpec.getAscending() ? "asc":"desc").append(")");
+        }
+      }
+      break;
+    case DISTINCT_GROUP_BY:
+      DistinctGroupbyEnforcer distinct = property.getDistinct();
+      sb.append("type=Distinct,alg=");
+      if (distinct.getAlgorithm() == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
+        sb.append("hash");
+      } else {
+        sb.append("sort");
+        sb.append(",keys=");
+        String recordDelim = "";
+        for (SortSpecArray sortSpecArray : distinct.getSortSpecArraysList()) {
+          sb.append(recordDelim);
+          String delim = "";
+          for (CatalogProtos.SortSpecProto sortSpec: sortSpecArray.getSortSpecsList()) {
+            sb.append(delim).append(sortSpec.getColumn().getName());
+            delim = ",";
+          }
+          recordDelim = " | ";
         }
       }
       break;

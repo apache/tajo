@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.google.common.collect.ObjectArrays;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -26,7 +25,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.Stack;
 
@@ -70,28 +68,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
         }
       }
 
-      // no two aggregations can have different DISTINCT columns.
-      //
-      // For example, the following query will work
-      // SELECT count(DISTINCT col1) and sum(DISTINCT col1) ..
-      //
-      // But, the following query will not work in this time
-      //
-      // SELECT count(DISTINCT col1) and SUM(DISTINCT col2) ..
       Set<GeneralSetFunctionExpr> exprs = ExprFinder.finds(namedExpr.getExpr(), OpType.GeneralSetFunction);
-      if (exprs.size() > 0) {
-        for (GeneralSetFunctionExpr setFunction : exprs) {
-          if (distinctValues == null && setFunction.isDistinct()) {
-            distinctValues = setFunction.getParams();
-          } else if (distinctValues != null && setFunction.isDistinct()) {
-            if (!Arrays.equals(distinctValues, setFunction.getParams())) {
-              Expr [] differences = ObjectArrays.concat(distinctValues, setFunction.getParams(), Expr.class);
-              throw new PlanningException("different DISTINCT columns are not supported yet: "
-                  + TUtil.arrayToString(differences));
-            }
-          }
-        }
-      }
 
       // Currently, avg functions with distinct aggregation are not supported.
       // This code does not allow users to use avg functions with distinct aggregation.

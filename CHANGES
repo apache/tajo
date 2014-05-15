@@ -8,6 +8,8 @@ Release 0.8.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-801: Multiple distinct should be supported. (Hyoungjun Kim via hyunsik)
+
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
 
     TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
