@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.newtuple;
 
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
 import sun.misc.Unsafe;
 
 public class VectorUtil {

@@ -25,36 +25,60 @@ import org.apache.tajo.catalog.Schema;
 import sun.misc.Unsafe;
 
 import java.util.List;
-import java.util.Vector;
 
 public class VecRowBlock {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-  long address;
-  long size;
-  Schema schema;
-  int vectorSize;
+  private long fixedAreaPtr;
+  private long fixedAreaSize = 0;
+  private final int vectorSize;
 
-  long [] nullVectorsAddrs;
-  long [] vectorsAddrs;
+  private final long [] nullVectorsAddrs;
+  private final long [] vectorsAddrs;
+
+  private long variableAreaSize = 0;
+  private long [] currentPageAddrs;
+  private long [] nextPtr;
+  private List<Long> pageReferences;
 
   public VecRowBlock(Schema schema, int vectorSize) {
-    this.schema = schema;
     this.vectorSize = vectorSize;
 
-    init();
+    nullVectorsAddrs = new long[schema.size()];
+    vectorsAddrs = new long[schema.size()];
+
+    boolean variableAreaNeededd = false;
+    for (Column column : schema.getColumns()) {
+      variableAreaNeededd |= !TypeUtil.isFixedSize(column.getDataType());
+    }
+
+    if (variableAreaNeededd) {
+      currentPageAddrs = new long[schema.size()];
+      nextPtr = new long[schema.size()];
+      pageReferences = Lists.newArrayList();
+    }
+
+    init(schema, variableAreaNeededd);
   }
 
-  public void allocate() {
-    address = unsafe.allocateMemory(size);
-    UnsafeUtil.unsafe.setMemory(address, size, (byte) 0);
+  public void allocateFixedArea() {
+    fixedAreaPtr = unsafe.allocateMemory(fixedAreaSize);
+    UnsafeUtil.unsafe.setMemory(fixedAreaPtr, fixedAreaSize, (byte) 0);
   }
 
   public long size() {
-    return size;
+    return fixedAreaSize + variableAreaSize;
   }
 
-  public void init() {
+  public long getFixedAreaSize() {
+    return fixedAreaSize;
+  }
+
+  public long getVariableAreaSize() {
+    return variableAreaSize;
+  }
+
+  public void init(Schema schema, boolean variableAreaInitNeeded) {
     long totalSize = 0;
     long eachNullHeaderBytes = computeNullHeaderSizePerColumn(vectorSize);
     long totalNullHeaderBytes = computeNullHeaderSize(vectorSize, schema.size());
@@ -64,20 +88,19 @@ public class VecRowBlock {
       Column column = schema.getColumn(i);
       totalSize += TypeUtil.sizeOf(column.getDataType()) * vectorSize;
     }
-    size = totalSize;
-    allocate();
+    fixedAreaSize = totalSize;
+    allocateFixedArea();
 
-    nullVectorsAddrs = new long[schema.size()];
     for (int i = 0; i < schema.size(); i++) {
       if (i == 0) {
-        nullVectorsAddrs[i] = address;
+        nullVectorsAddrs[i] = fixedAreaPtr;
       } else {
         nullVectorsAddrs[i] = nullVectorsAddrs[i - 1] + eachNullHeaderBytes;
       }
     }
     UnsafeUtil.bzero(nullVectorsAddrs[0], totalNullHeaderBytes);
 
-    vectorsAddrs = new long[schema.size()];
+
     long perVecSize;
     for (int i = 0; i < schema.size(); i++) {
       if (i == 0) {
@@ -86,6 +109,16 @@ public class VecRowBlock {
         Column prevColumn = schema.getColumn(i - 1);
         perVecSize = (TypeUtil.sizeOf(prevColumn.getDataType()) * vectorSize);
         vectorsAddrs[i] = vectorsAddrs[i - 1] + perVecSize;
+      }
+    }
+
+    if (variableAreaInitNeeded) {
+      for (int i = 0; i < schema.size(); i++) {
+        Column column = schema.getColumn(i);
+        if (!TypeUtil.isFixedSize(column.getDataType())) {
+          currentPageAddrs[i] = createPage();
+          nextPtr[i] = currentPageAddrs[i];
+        }
       }
     }
   }
@@ -160,25 +193,56 @@ public class VecRowBlock {
   }
 
   public void putText(int columnIdx, int index, byte [] val) {
-    long currentPage = 0L;
-
-    long ptr = currentPage;
-    long nextPtr = 0L;
-    long usedMemory = nextPtr - ptr;
-
-    if (PAGE_SIZE - usedMemory < val.length) {
-      ptr = createPage();
-      currentPage = ptr;
-    }
-
-    unsafe.putShort(currentPage, (short) val.length);
-    unsafe.putByte();
+    putText(columnIdx, index, val, 0, val.length);
   }
 
-  public byte [] getText(int columnIdx, int index) {
+  public void putText(int columnIdx, int index, byte [] val, int offset, int length) {
+    long currentPage = currentPageAddrs[columnIdx];
+
+    long ptr = currentPage;
+    long nextPtr = this.nextPtr[columnIdx];
+    long usedMemory = nextPtr - ptr;
+
+    if (PAGE_SIZE - usedMemory < val.length) { // create newly page
+      ptr = createPage();
+      currentPage = ptr;
+      currentPageAddrs[columnIdx] = currentPage;
+      nextPtr = currentPage;
+    }
+
+    unsafe.putShort(nextPtr, (short) val.length);
+    nextPtr += SizeOf.SIZE_OF_SHORT;
+    UnsafeUtil.bzero(nextPtr, length);
+    unsafe.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset, null, nextPtr, length);
+    unsafe.putAddress(vectorsAddrs[columnIdx] + (Unsafe.ADDRESS_SIZE * index), nextPtr - SizeOf.SIZE_OF_SHORT);
+    this.nextPtr[columnIdx] = nextPtr + length;
+  }
+
+  public int getText(int columnIdx, int index, int offset, int length, byte [] val) {
     long ptr = vectorsAddrs[columnIdx];
-    short length = unsafe.getShort(ptr);
-    return null;
+    long dataPtr = unsafe.getAddress(ptr + ((index) * Unsafe.ADDRESS_SIZE));
+
+    int strLen = unsafe.getShort(dataPtr);
+    dataPtr += SizeOf.SIZE_OF_SHORT;
+    int actualLen = strLen < length ? strLen : length;
+    unsafe.copyMemory(null, dataPtr, val, unsafe.ARRAY_BYTE_BASE_OFFSET + offset, actualLen);
+    return actualLen;
+  }
+
+  public int getText(int columnIdx, int index, byte [] buf) {
+    return getText(columnIdx, index, 0, buf.length, buf);
+  }
+
+  public String getString(int columnIdx, int index) {
+    long ptr = vectorsAddrs[columnIdx];
+    long dataPtr = unsafe.getAddress(ptr + ((index) * Unsafe.ADDRESS_SIZE));
+
+    int strLen = unsafe.getShort(dataPtr);
+    dataPtr += SizeOf.SIZE_OF_SHORT;
+
+    byte [] bytes = new byte[strLen];
+    unsafe.copyMemory(null, dataPtr, bytes, unsafe.ARRAY_BYTE_BASE_OFFSET, strLen);
+    return new String(bytes);
   }
 
   public static final int PAGE_SIZE = 4096;
@@ -189,13 +253,19 @@ public class VecRowBlock {
    * @return
    */
   private long createPage() {
-    long pagePtr = unsafe.allocateMemory(PAGE_SIZE + 8);
-    unsafe.putLong(pagePtr, 0); // set
+    long pagePtr = unsafe.allocateMemory(PAGE_SIZE);
+    pageReferences.add(pagePtr);
+    variableAreaSize += PAGE_SIZE;
     return pagePtr;
   }
 
-  public void destroy() {
-    unsafe.freeMemory(address);
+  public void free() {
+    if (pageReferences != null) {
+      for (long ref : pageReferences) {
+        unsafe.freeMemory(ref);
+      }
+    }
+    unsafe.freeMemory(fixedAreaPtr);
   }
 
   public static long allocateNullVector(int vectorSize) {

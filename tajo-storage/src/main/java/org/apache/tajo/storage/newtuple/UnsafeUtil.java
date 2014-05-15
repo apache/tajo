@@ -46,11 +46,11 @@ public class UnsafeUtil {
     return unsafe.allocateMemory(size);
   }
 
-  public static long alloc(TajoDataTypes.Type type, long size) {
-    return alloc(CatalogUtil.newSimpleDataType(type), size);
+  public static long allocVector(TajoDataTypes.Type type, long size) {
+    return allocVector(CatalogUtil.newSimpleDataType(type), size);
   }
 
-  public static long alloc(TajoDataTypes.DataType dataType, long size) {
+  public static long allocVector(TajoDataTypes.DataType dataType, long size) {
     return unsafe.allocateMemory(TypeUtil.sizeOf(dataType) * size);
   }
 
@@ -71,6 +71,14 @@ public class UnsafeUtil {
       addr++;
       n--;
     }
+  }
+
+  public static int getInt(long addr, int index) {
+    return unsafe.getInt(addr + (index * SizeOf.SIZE_OF_INT));
+  }
+
+  public static void putInt(long addr, int index, int val) {
+    unsafe.putInt(addr + (index * SizeOf.SIZE_OF_INT), val);
   }
 
   public static long getLong(long addr, int index) {
