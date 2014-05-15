@@ -58,6 +58,21 @@ public class UnsafeUtil {
     unsafe.freeMemory(addr);
   }
 
+  public static void bzero(long addr, long nBytes) {
+    long n = nBytes;
+    while (n >= SizeOf.SIZE_OF_LONG) {
+      unsafe.putLong(addr, 0);
+      addr += SizeOf.SIZE_OF_LONG;
+      n -= SizeOf.SIZE_OF_LONG;
+    }
+
+    while (n > 0) {
+      unsafe.putByte(addr, (byte) 0);
+      addr++;
+      n--;
+    }
+  }
+
   public static long getLong(long addr, int index) {
     return unsafe.getLong(addr + (index * SizeOf.SIZE_OF_LONG));
   }

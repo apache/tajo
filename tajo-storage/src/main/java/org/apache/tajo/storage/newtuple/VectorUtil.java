@@ -23,12 +23,27 @@ import sun.misc.Unsafe;
 public class VectorUtil {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-  public static void nullify(int vecNum, final long result, final long addr1, final long addr2) {
+  public static void nullify(int vecNum, long result, long addr1, long addr2) {
     long nullFlagChunk;
-    for (int i = 0; i < vecNum; i++) {
-      int offset = (i % WORD_SIZE);
-      nullFlagChunk = unsafe.getLong(addr1 + offset) & unsafe.getLong(addr2 + offset);
-      unsafe.putLong(result + offset, nullFlagChunk);
+    while (vecNum >= SizeOf.SIZE_OF_LONG) {
+      nullFlagChunk =  (unsafe.getLong(addr1) | unsafe.getLong(addr2));
+      unsafe.putLong(result, nullFlagChunk);
+
+      result += SizeOf.SIZE_OF_LONG;
+      addr1 += SizeOf.SIZE_OF_LONG;
+      addr2 += SizeOf.SIZE_OF_LONG;
+      vecNum -= SizeOf.SIZE_OF_LONG * SizeOf.SIZE_OF_BYTE;
+    }
+
+    byte nullFlagByte;
+    while (vecNum > 0) {
+      nullFlagByte = (byte) (unsafe.getByte(addr1) & unsafe.getByte(addr2));
+      unsafe.putByte(result, nullFlagByte);
+
+      result++;
+      addr1++;
+      addr2++;
+      vecNum-= SizeOf.SIZE_OF_BYTE;
     }
   }
 
@@ -54,17 +69,9 @@ public class VectorUtil {
 
   public static int isNull(long nullVector, int index) {
     int chunkId = index / WORD_SIZE;
-    int offset = index % WORD_SIZE;
-    long address = nullVector + chunkId;
+    long offset = index % WORD_SIZE;
+    long address = nullVector + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
-    return (int) ((nullFlagChunk >> offset) & 1);
-  }
-
-  public static void bzero(final long addr, final long length) {
-    long offset = addr;
-    while (offset < addr + length) {
-      unsafe.putLong(offset, 0);
-      offset += offset + SizeOf.SIZE_OF_LONG;
-    }
+    return (int) ((nullFlagChunk >> offset) & 1L);
   }
 }

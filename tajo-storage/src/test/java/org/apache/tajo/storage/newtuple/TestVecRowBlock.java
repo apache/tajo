@@ -19,8 +19,6 @@
 package org.apache.tajo.storage.newtuple;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -31,11 +29,11 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestVecRowBlock {
   @Test
@@ -122,10 +120,10 @@ public class TestVecRowBlock {
     MapAddInt8ColInt8ColOp op = new MapAddInt8ColInt8ColOp();
 
     long result = UnsafeUtil.alloc(Type.INT8, vecSize);
-    op.map(vecSize, result, vecRowBlock.getVecAddress(2), vecRowBlock.getVecAddress(2), 0, 0);
+    op.map(vecSize, result, vecRowBlock.getValueVecPtr(2), vecRowBlock.getValueVecPtr(2), 0, 0);
 
     for (int i = 0; i < vecSize; i++) {
-      System.out.println(UnsafeUtil.getLong(result, i));
+      assertEquals(UnsafeUtil.getLong(result, i), vecRowBlock.getInt8(2, i) * 2);
     }
     vecRowBlock.destroy();
     UnsafeUtil.free(result);
@@ -185,7 +183,7 @@ public class TestVecRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
 
-    int vecSize = 10000000;
+    int vecSize = 1024;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -210,7 +208,6 @@ public class TestVecRowBlock {
 
     for (int i = 0; i < 100; i++) {
       int idx = rnd.nextInt(vecSize);
-      System.out.println(idx);
       nullIdx.add(idx);
       vecRowBlock.setNull(0, idx);
       assertTrue(vecRowBlock.isNull(0, idx) == 1);
@@ -225,35 +222,35 @@ public class TestVecRowBlock {
 
     for (int i = 0; i < vecSize; i++) {
       if (nullIdx.contains(i)) {
-        assertTrue(vecRowBlock.isNull(0, i) == 1 || vecRowBlock.isNull(0, i) == 1);
+        assertTrue(vecRowBlock.isNull(0, i) == 1 || vecRowBlock.isNull(1, i) == 1);
       } else {
-        assertTrue(vecRowBlock.isNull(0, i) == 0 && vecRowBlock.isNull(1, i) == 0);
+        if (!(vecRowBlock.isNull(0, i) == 0 && vecRowBlock.isNull(1, i) == 0)) {
+          System.out.println("idx: " + i);
+          System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
+          System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));
+          System.out.println("2st null vec: " + vecRowBlock.isNull(1, i));
+          fail();
+        }
       }
     }
 
 
-//    Set<Integer> col1Nulls = Sets.newHashSet();
-//    Set<Integer> col2Nulls = Sets.newHashSet();
-//    Set<Integer> finalNulls = Sets.newHashSet();
-//    for (int i = 0; i < vecSize; i++) {
-//      if (vecRowBlock.isNull(0, i) == 1) {
-//        col1Nulls.add(i);
-//        finalNulls.add(i);
-//      }
-//
-//      if (vecRowBlock.isNull(1, i) == 1) {
-//        col2Nulls.add(i);
-//        finalNulls.add(i);
-//      }
-//    }
-//
-//    long nullVector = UnsafeUtil.alloc(vecSize / 8 + 1);
-//    VectorUtil.nullify(vecSize, nullVector, vecRowBlock.getVecAddress(0), vecRowBlock.getVecAddress(1));
-//
-//    for (int idx : finalNulls) {
-//      System.out.println(">>>>>>>>" + idx);
-//      assertTrue(VectorUtil.isNull(nullVector, idx) == 1);
-//    }
+    long nullVector = VecRowBlock.allocateNullVector(vecSize);
+    VectorUtil.nullify(vecSize, nullVector, vecRowBlock.getNullVecPtr(0), vecRowBlock.getNullVecPtr(1));
+
+    for (int i = 0; i < vecSize; i++) {
+      if (nullIdx.contains(i)) {
+        assertTrue(VectorUtil.isNull(nullVector, i) == 1);
+      } else {
+        if (VectorUtil.isNull(nullVector, i) == 1) {
+          System.out.println("idx: " + i);
+          System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
+          System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));
+          System.out.println("2st null vec: " + vecRowBlock.isNull(1, i));
+          fail();
+        }
+      }
+    }
 
     vecRowBlock.destroy();
   }
@@ -291,5 +288,48 @@ public class TestVecRowBlock {
     System.out.println(sum);
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
+  }
+
+  @Test
+  public void testBzero() {
+    int bytes = 100000000;
+    long ptr = UnsafeUtil.alloc(bytes);
+    UnsafeUtil.bzero(ptr, bytes);
+    for (int i = 0; i < bytes; i++) {
+      assertEquals(0, UnsafeUtil.unsafe.getByte(ptr + i));
+    }
+    UnsafeUtil.free(ptr);
+  }
+
+  @Test
+  public void testVariableLength() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.INT2);
+    schema.addColumn("col2", Type.INT4);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.FLOAT4);
+    schema.addColumn("col5", Type.FLOAT8);
+    schema.addColumn("col6", Type.TEXT);
+
+    int vecSize = 1024;
+
+    long allocateStart = System.currentTimeMillis();
+    VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
+
+    long allocateend = System.currentTimeMillis();
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+        + (allocateend - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      vecRowBlock.putInt2(0, i, (short) 1);
+      vecRowBlock.putInt4(1, i, i);
+      vecRowBlock.putInt8(2, i, i);
+      vecRowBlock.putFloat4(3, i, i);
+      vecRowBlock.putFloat8(4, i, i);
+      vecRowBlock.putFloat8(4, i, i);
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
   }
 }

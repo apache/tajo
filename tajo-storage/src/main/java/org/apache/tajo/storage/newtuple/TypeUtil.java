@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.newtuple;
 
 import org.apache.tajo.common.TajoDataTypes;
+import sun.misc.Unsafe;
 
 public class TypeUtil {
 
@@ -46,7 +47,7 @@ public class TypeUtil {
     return fixed;
   }
 
-  public static byte sizeOf(TajoDataTypes.DataType dataType) {
+  public static int sizeOf(TajoDataTypes.DataType dataType) {
     switch (dataType.getType()) {
     case INT1:
     case INT2: return SizeOf.SIZE_OF_SHORT;
@@ -54,6 +55,7 @@ public class TypeUtil {
     case INT8: return SizeOf.SIZE_OF_LONG;
     case FLOAT4: return SizeOf.SIZE_OF_FLOAT;
     case FLOAT8: return SizeOf.SIZE_OF_DOUBLE;
+    case TEXT: return Unsafe.ADDRESS_SIZE; // address size
     default: throw new RuntimeException("does not support this type: " + dataType.getType().name());
     }
   }
