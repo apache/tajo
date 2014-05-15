@@ -19,12 +19,14 @@
 package org.apache.tajo.storage.newtuple.map;
 
 import com.google.common.primitives.Longs;
-import com.google.common.primitives.UnsignedBytes;
 import org.apache.tajo.storage.newtuple.SizeOf;
+import org.apache.tajo.storage.newtuple.UnsafeUtil;
 import sun.misc.Unsafe;
 
-public class SelStrCmpStrColStrColOp extends MapBinaryOp {
-  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+public class SelStrEqStrColStrColOp {
+  static Unsafe unsafe = UnsafeUtil.unsafe;
+  public int sel(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+    int selNum = 0;
 
     outest:
     for (int rowIdx = 0; rowIdx < vecnum; rowIdx++) {
@@ -58,30 +60,6 @@ public class SelStrCmpStrColStrColOp extends MapBinaryOp {
         long diff = lw ^ rw;
 
         if (diff != 0) {
-          // Use binary search
-          int n = 0;
-          int y;
-          int x = (int) diff;
-          if (x == 0) {
-            x = (int) (diff >>> 32);
-            n = 32;
-          }
-
-          y = x << 16;
-          if (y == 0) {
-            n += 16;
-          } else {
-            x = y;
-          }
-
-          y = x << 8;
-          if (y == 0) {
-            n += 8;
-          }
-
-          unsafe.putInt(result, (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL)));
-          result += SizeOf.SIZE_OF_INT;
-          found = true;
           continue outest;
         }
       }
@@ -92,17 +70,21 @@ public class SelStrCmpStrColStrColOp extends MapBinaryOp {
       for (int i = minWords * Longs.BYTES; i < minLength; i++) {
         byte r = (byte) (unsafe.getByte(lstrAddr++) - unsafe.getByte(rstrAddr++));
         if (r != 0) {
-          unsafe.putInt(result, r);
+          unsafe.putInt(result, rowIdx);
           result += SizeOf.SIZE_OF_INT;
           found = true;
+          selNum++;
           continue outer;
         }
       }
 
       if (!found) {
-        unsafe.putInt(result, lstrLen - rstrLen);
+        unsafe.putInt(result, rowIdx);
+        selNum++;
         result += SizeOf.SIZE_OF_INT;
       }
     }
+
+    return selNum;
   }
 }

@@ -18,17 +18,14 @@
 
 package org.apache.tajo.storage.newtuple.map;
 
-import com.google.common.primitives.Longs;
 import org.apache.tajo.storage.newtuple.SizeOf;
 
-public class MapAddInt8ColInt8ColOp extends MapBinaryOp {
-  private static final int LOOP_UNROLLOING_NUM = 4;
-
+public class MapMulInt8ColInt8ColOp extends MapBinaryOp {
   public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
     for (int i = 0; i < vecnum; i++) {
       long lval1 = unsafe.getLong(lhs);
       long rval1 = unsafe.getLong(rhs);
-      unsafe.putLong(result, lval1 + rval1);
+      unsafe.putLong(result, lval1 * rval1);
 
       result += SizeOf.SIZE_OF_LONG;
       rhs += SizeOf.SIZE_OF_LONG;

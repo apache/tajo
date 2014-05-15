@@ -24,7 +24,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.newtuple.map.MapAddInt8ColInt8ColOp;
-import org.apache.tajo.storage.newtuple.map.SelStrCmpStrColStrColOp;
+import org.apache.tajo.storage.newtuple.map.VecFuncStrcmpStrStrColx2;
+import org.apache.tajo.storage.newtuple.map.SelStrEqStrColStrColOp;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
@@ -89,7 +90,7 @@ public class TestVecRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
 
-    int vecSize = 4096;
+    int vecSize = 1024 * 100000;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -142,7 +143,7 @@ public class TestVecRowBlock {
     schema.addColumn("col6", Type.TEXT);
     schema.addColumn("col7", Type.TEXT);
 
-    int vecSize = 1024 * 10000;
+    int vecSize = 1024;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -176,13 +177,78 @@ public class TestVecRowBlock {
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
 
-    SelStrCmpStrColStrColOp op = new SelStrCmpStrColStrColOp();
+    VecFuncStrcmpStrStrColx2 op = new VecFuncStrcmpStrStrColx2();
 
     long resPtr = UnsafeUtil.allocVector(Type.INT4, vecSize);
     op.map(vecSize, resPtr, vecRowBlock.getValueVecPtr(5), vecRowBlock.getValueVecPtr(6), 0, 0);
 
     for (int i = 0; i < vecSize; i++) {
       assertTrue(UnsafeUtil.getInt(resPtr, i) < 0);
+    }
+    vecRowBlock.free();
+    UnsafeUtil.free(resPtr);
+  }
+
+  @Test
+  public void testStrCmpEqTest() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.INT2);
+    schema.addColumn("col2", Type.INT4);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.FLOAT4);
+    schema.addColumn("col5", Type.FLOAT8);
+    schema.addColumn("col6", Type.TEXT);
+    schema.addColumn("col7", Type.TEXT);
+
+    int vecSize = 1024;
+
+    long allocateStart = System.currentTimeMillis();
+    VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
+    long allocateend = System.currentTimeMillis();
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+        + (allocateend - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      vecRowBlock.putInt2(0, i, (short) 1);
+      vecRowBlock.putInt4(1, i, i);
+      vecRowBlock.putInt8(2, i, i);
+      vecRowBlock.putFloat4(3, i, i);
+      vecRowBlock.putFloat8(4, i, i);
+      if (i % 8 == 0) {
+        vecRowBlock.putText(5, i, "1998-09-01".getBytes());
+      } else {
+        vecRowBlock.putText(5, i, "1111-11-01".getBytes());
+      }
+      vecRowBlock.putText(6, i, "1998-09-01".getBytes());
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
+
+    long readStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      assertTrue(1 == vecRowBlock.getInt2(0, i));
+      assertEquals(i, vecRowBlock.getInt4(1, i));
+      assertEquals(i, vecRowBlock.getInt8(2, i));
+      assertTrue(i == vecRowBlock.getFloat4(3, i));
+      assertTrue(i == vecRowBlock.getFloat8(4, i));
+      if (i % 8 == 0) {
+        assertEquals("1998-09-01", (vecRowBlock.getString(5, i)));
+      } else {
+        assertEquals("1111-11-01", (vecRowBlock.getString(5, i)));
+      }
+      assertEquals("1998-09-01", (vecRowBlock.getString(6, i)));
+    }
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+
+    SelStrEqStrColStrColOp op = new SelStrEqStrColStrColOp();
+
+    long resPtr = UnsafeUtil.allocVector(Type.INT4, vecSize);
+    int selNum = op.sel(vecSize, resPtr, vecRowBlock.getValueVecPtr(5), vecRowBlock.getValueVecPtr(6), 0, 0);
+
+    for (int i = 0; i < selNum; i++) {
+      System.out.println(UnsafeUtil.getInt(resPtr, i));
     }
     vecRowBlock.free();
     UnsafeUtil.free(resPtr);
