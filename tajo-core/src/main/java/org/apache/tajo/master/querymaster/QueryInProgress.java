@@ -101,8 +101,10 @@ public class QueryInProgress extends CompositeService {
     super.init(conf);
   }
 
-  public void kill() {
-    queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+  public synchronized void kill() {
+    if(queryMasterRpcClient != null){
+      queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+    }
   }
 
   @Override
@@ -202,10 +204,6 @@ public class QueryInProgress extends CompositeService {
     }
   }
 
-  public QueryMasterProtocolService getQueryMasterRpcClient() {
-    return queryMasterRpcClient;
-  }
-
   private void connectQueryMaster() throws Exception {
     InetSocketAddress addr = NetUtils.createSocketAddrForHost(
         queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
@@ -258,6 +256,10 @@ public class QueryInProgress extends CompositeService {
 
   public QueryInfo getQueryInfo() {
     return this.queryInfo;
+  }
+
+  public boolean isStarted() {
+    return this.querySubmitted.get();
   }
 
   private void heartbeat(QueryInfo queryInfo) {

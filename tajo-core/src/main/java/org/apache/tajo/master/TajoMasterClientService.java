@@ -354,9 +354,8 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetQueryListResponse.Builder builder= GetQueryListResponse.newBuilder();
 
-        Collection<QueryInProgress> queries
-          = context.getQueryJobManager().getRunningQueries();
-
+        Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
+        queries.addAll(context.getQueryJobManager().getRunningQueries());
         BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
 
         for (QueryInProgress queryInProgress : queries) {
