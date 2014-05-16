@@ -47,6 +47,22 @@ public class TypeUtil {
     return fixed;
   }
 
+  public static int sizeOf(TajoDataTypes.DataType dataType, int vecSize) {
+    switch (dataType.getType()) {
+    case BOOLEAN:
+      return (int) Math.ceil(vecSize / Byte.SIZE);
+    case INT1:
+    case INT2: return SizeOf.SIZE_OF_SHORT * vecSize;
+    case INT4: return SizeOf.SIZE_OF_INT * vecSize;
+    case INT8: return SizeOf.SIZE_OF_LONG * vecSize;
+    case FLOAT4: return SizeOf.SIZE_OF_FLOAT * vecSize;
+    case FLOAT8: return SizeOf.SIZE_OF_DOUBLE * vecSize;
+    case TEXT: return Unsafe.ADDRESS_SIZE * vecSize;
+    case BLOB: return Unsafe.ADDRESS_SIZE * vecSize;
+    default: throw new RuntimeException("does not support this type: " + dataType.getType().name());
+    }
+  }
+
   public static int sizeOf(TajoDataTypes.DataType dataType) {
     switch (dataType.getType()) {
     case INT1:

@@ -19,26 +19,18 @@
 package org.apache.tajo.storage.newtuple.parquet;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.newtuple.VecRowBlock;
 import org.apache.tajo.storage.parquet.TajoSchemaConverter;
-import org.apache.tajo.storage.parquet.TajoWriteSupport;
 import parquet.hadoop.api.WriteSupport;
-import parquet.hadoop.metadata.CompressionCodecName;
 import parquet.io.api.Binary;
 import parquet.io.api.RecordConsumer;
-import parquet.schema.GroupType;
 import parquet.schema.MessageType;
 import parquet.schema.Type;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class VecRowBlockWriteSupport extends WriteSupport<VecRowBlock> {
@@ -47,6 +39,8 @@ public class VecRowBlockWriteSupport extends WriteSupport<VecRowBlock> {
   private Schema rootTajoSchema;
 
   private int columnNum;
+  private Type [] fieldTypes;
+  private TajoDataTypes.Type [] tajoDataTypes;
 
   /**
    * Creates a new TajoWriteSupport.
@@ -58,6 +52,14 @@ public class VecRowBlockWriteSupport extends WriteSupport<VecRowBlock> {
     this.rootTajoSchema = tajoSchema;
 
     this.columnNum = this.rootTajoSchema.size();
+    fieldTypes = new Type[rootSchema.getFieldCount()];
+    for (int i = 0; i < rootSchema.getFieldCount(); i++) {
+      fieldTypes[i] = rootSchema.getType(i);
+    }
+    tajoDataTypes = new TajoDataTypes.Type[this.rootTajoSchema.size()];
+    for (int i = 0; i < rootTajoSchema.size(); i++) {
+      tajoDataTypes[i] = rootTajoSchema.getColumn(i).getDataType().getType();
+    }
   }
 
   /**
@@ -85,74 +87,55 @@ public class VecRowBlockWriteSupport extends WriteSupport<VecRowBlock> {
   /**
    * Writes a Tuple to the file.
    *
-   * @param tuple The Tuple to write to the file.
+   * @param vecRowBlock Vectorized Row Block to write to the file.
    */
   @Override
-  public void write(VecRowBlock tuple) {
-    recordConsumer.startMessage();
-    writeRecordFields(rootSchema, rootTajoSchema, tuple);
+  public void write(VecRowBlock vecRowBlock) {
+    ByteBuffer varLenBuf = ByteBuffer.allocateDirect(Short.MAX_VALUE);
+    for (int rowIdx = 0; rowIdx < vecRowBlock.getVectorSize(); rowIdx++) {
+      recordConsumer.startMessage();
+      for (int columnIdx = 0; columnIdx < columnNum; ++columnNum) {
+        recordConsumer.startField(fieldTypes[columnIdx].getName(), columnIdx);
+        switch (tajoDataTypes[columnIdx]) {
+        case BOOLEAN:
+          recordConsumer.addBoolean(vecRowBlock.getBool(columnIdx, rowIdx) == 1);
+          break;
+        case BIT:
+        case INT2:
+        case INT4:
+          recordConsumer.addInteger(vecRowBlock.getInt4(columnIdx, rowIdx));
+          break;
+        case INT8:
+          recordConsumer.addLong(vecRowBlock.getInt8(columnIdx, rowIdx));
+          break;
+        case FLOAT4:
+          recordConsumer.addFloat(vecRowBlock.getFloat4(columnIdx, rowIdx));
+          break;
+        case FLOAT8:
+          recordConsumer.addDouble(vecRowBlock.getInt8(columnIdx, rowIdx));
+          break;
+        case CHAR:
+        case TEXT:
+          vecRowBlock.getText(columnIdx, rowIdx, varLenBuf);
+          varLenBuf.flip();
+          recordConsumer.addBinary(Binary.fromByteBuffer(varLenBuf));
+          break;
+        case PROTOBUF:
+        case BLOB:
+        case INET4:
+        case INET6:
+          vecRowBlock.getText(columnIdx, rowIdx, varLenBuf);
+          varLenBuf.flip();
+          recordConsumer.addBinary(Binary.fromByteBuffer(varLenBuf));
+          break;
+        default:
+          break;
+        }
+
+        recordConsumer.endField(fieldTypes[columnIdx].getName(), columnIdx);
+      }
+    }
+
     recordConsumer.endMessage();
-  }
-
-  private void writeRecordFields(GroupType schema, Schema tajoSchema, VecRowBlock tuple) {
-    List<Type> fields = schema.getFields();
-    // Parquet ignores Tajo NULL_TYPE columns, so the index may differ.
-
-    for (int columnIdx = 0; columnIdx < columnNum; ++columnNum) {
-
-    }
-
-//      int index = 0;
-//      for (int tajoIndex = 0; tajoIndex < tajoSchema.size(); ++tajoIndex) {
-//        Column column = tajoSchema.getColumn(tajoIndex);
-//        if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE) {
-//          continue;
-//        }
-//        Datum datum = tuple.get(tajoIndex);
-//        Type fieldType = fields.get(index);
-//        if (!tuple.isNull(tajoIndex)) {
-//          recordConsumer.startField(fieldType.getName(), index);
-//          writeValue(fieldType, column, datum);
-//          recordConsumer.endField(fieldType.getName(), index);
-//        } else if (fieldType.isRepetition(Type.Repetition.REQUIRED)) {
-//          throw new RuntimeException("Null-value for required field: " +
-//              column.getSimpleName());
-//        }
-//        ++index;
-//      }
-  }
-
-  private void writeValue(Type fieldType, Column column, Datum datum) {
-    switch (column.getDataType().getType()) {
-    case BOOLEAN:
-      recordConsumer.addBoolean((Boolean) datum.asBool());
-      break;
-    case BIT:
-    case INT2:
-    case INT4:
-      recordConsumer.addInteger(datum.asInt4());
-      break;
-    case INT8:
-      recordConsumer.addLong(datum.asInt8());
-      break;
-    case FLOAT4:
-      recordConsumer.addFloat(datum.asFloat4());
-      break;
-    case FLOAT8:
-      recordConsumer.addDouble(datum.asFloat8());
-      break;
-    case CHAR:
-    case TEXT:
-      recordConsumer.addBinary(Binary.fromString(datum.asChars()));
-      break;
-    case PROTOBUF:
-    case BLOB:
-    case INET4:
-    case INET6:
-      recordConsumer.addBinary(Binary.fromByteArray(datum.asByteArray()));
-      break;
-    default:
-      break;
-    }
   }
 }

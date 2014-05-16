@@ -22,8 +22,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public class VecRowBlock {
@@ -70,6 +73,10 @@ public class VecRowBlock {
     return fixedAreaSize + variableAreaSize;
   }
 
+  public int getVectorSize() {
+    return vectorSize;
+  }
+
   public long getFixedAreaSize() {
     return fixedAreaSize;
   }
@@ -86,7 +93,7 @@ public class VecRowBlock {
 
     for (int i = 0; i < schema.size(); i++) {
       Column column = schema.getColumn(i);
-      totalSize += TypeUtil.sizeOf(column.getDataType()) * vectorSize;
+      totalSize += TypeUtil.sizeOf(column.getDataType(), vectorSize);
     }
     fixedAreaSize = totalSize;
     allocateFixedArea();
@@ -107,8 +114,15 @@ public class VecRowBlock {
         vectorsAddrs[i] = nullVectorsAddrs[schema.size() - 1];
       } else {
         Column prevColumn = schema.getColumn(i - 1);
-        perVecSize = (TypeUtil.sizeOf(prevColumn.getDataType()) * vectorSize);
+        perVecSize = (TypeUtil.sizeOf(prevColumn.getDataType(), vectorSize));
         vectorsAddrs[i] = vectorsAddrs[i - 1] + perVecSize;
+      }
+    }
+
+    for (int i = 0; i < schema.size(); i++) {
+      if (schema.getColumn(i).getDataType().getType() == TajoDataTypes.Type.BOOLEAN) {
+        long vecSize = TypeUtil.sizeOf(schema.getColumn(i).getDataType(), vectorSize);
+        unsafe.setMemory(vectorsAddrs[i], vecSize, (byte) 0x00);
       }
     }
 
@@ -152,51 +166,72 @@ public class VecRowBlock {
     return (int) ((nullFlagChunk >> offset) & 1L);
   }
 
-  public short getInt2(int columnIdx, int index) {
-    return unsafe.getShort(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_SHORT));
+  public void putBool(int columnIdx, int index, int bool) {
+    int chunkId = index / WORD_SIZE;
+    long offset = index % WORD_SIZE;
+    long address = vectorsAddrs[columnIdx] + (chunkId * 8);
+    long nullFlagChunk = unsafe.getLong(address);
+    if (bool != 0) {
+      nullFlagChunk = (nullFlagChunk | (1L << offset));
+    } else {
+      nullFlagChunk = (nullFlagChunk & ~(1L << offset));
+    }
+    unsafe.putLong(address, nullFlagChunk);
   }
 
-  public void putInt2(int columnIdx, int index, short val) {
-    unsafe.putShort(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_SHORT), val);
+  public int getBool(int columnIdx, int index) {
+    int chunkId = index / WORD_SIZE;
+    long offset = index % WORD_SIZE;
+    long address = vectorsAddrs[columnIdx] + (chunkId * 8);
+    long nullFlagChunk = unsafe.getLong(address);
+    return (int) ((nullFlagChunk >> offset) & 1L);
   }
 
-  public void putInt4(int columnIdx, int index, int val) {
-    unsafe.putInt(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_INT), val);
+  public short getInt2(int columnIdx, int rowIdx) {
+    return unsafe.getShort(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_SHORT));
   }
 
-  public int getInt4(int columnIdx, int index) {
-    return unsafe.getInt(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_INT));
+  public void putInt2(int columnIdx, int rowIdx, short val) {
+    unsafe.putShort(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_SHORT), val);
   }
 
-  public void putInt8(int columnIdx, int index, int val) {
-    unsafe.putInt(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_LONG), val);
+  public void putInt4(int columnIdx, int rowIdx, int val) {
+    unsafe.putInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_INT), val);
   }
 
-  public int getInt8(int columnIdx, int index) {
-    return unsafe.getInt(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_LONG));
+  public int getInt4(int columnIdx, int rowIdx) {
+    return unsafe.getInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_INT));
   }
 
-  public void putFloat4(int columnIdx, int index, float val) {
-    unsafe.putFloat(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_FLOAT), val);
+  public void putInt8(int columnIdx, int rowIdx, int val) {
+    unsafe.putInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG), val);
   }
 
-  public float getFloat4(int columnIdx, int index) {
-    return unsafe.getFloat(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_FLOAT));
+  public int getInt8(int columnIdx, int rowIdx) {
+    return unsafe.getInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG));
   }
 
-  public void putFloat8(int columnIdx, int index, double val) {
-    unsafe.putDouble(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_DOUBLE), val);
+  public void putFloat4(int columnIdx, int rowIdx, float val) {
+    unsafe.putFloat(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_FLOAT), val);
   }
 
-  public double getFloat8(int columnIdx, int index) {
-    return unsafe.getDouble(vectorsAddrs[columnIdx] + (index * SizeOf.SIZE_OF_DOUBLE));
+  public float getFloat4(int columnIdx, int rowIdx) {
+    return unsafe.getFloat(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_FLOAT));
   }
 
-  public void putText(int columnIdx, int index, byte [] val) {
-    putText(columnIdx, index, val, 0, val.length);
+  public void putFloat8(int columnIdx, int rowIdx, double val) {
+    unsafe.putDouble(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_DOUBLE), val);
   }
 
-  public void putText(int columnIdx, int index, byte [] val, int offset, int length) {
+  public double getFloat8(int columnIdx, int rowIdx) {
+    return unsafe.getDouble(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_DOUBLE));
+  }
+
+  public void putText(int columnIdx, int rowIdx, byte [] val) {
+    putText(columnIdx, rowIdx, val, 0, val.length);
+  }
+
+  public void putText(int columnIdx, int rowIdx, byte [] val, int srcPos, int length) {
     long currentPage = currentPageAddrs[columnIdx];
 
     long ptr = currentPage;
@@ -213,29 +248,41 @@ public class VecRowBlock {
     unsafe.putShort(nextPtr, (short) val.length);
     nextPtr += SizeOf.SIZE_OF_SHORT;
     UnsafeUtil.bzero(nextPtr, length);
-    unsafe.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset, null, nextPtr, length);
-    unsafe.putAddress(vectorsAddrs[columnIdx] + (Unsafe.ADDRESS_SIZE * index), nextPtr - SizeOf.SIZE_OF_SHORT);
+    unsafe.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcPos, null, nextPtr, length);
+    unsafe.putAddress(vectorsAddrs[columnIdx] + (Unsafe.ADDRESS_SIZE * rowIdx), nextPtr - SizeOf.SIZE_OF_SHORT);
     this.nextPtr[columnIdx] = nextPtr + length;
   }
 
-  public int getText(int columnIdx, int index, int offset, int length, byte [] val) {
+  public int getText(int columnIdx, int rowIdx, byte[] val, int srcPos, int length) {
     long ptr = vectorsAddrs[columnIdx];
-    long dataPtr = unsafe.getAddress(ptr + ((index) * Unsafe.ADDRESS_SIZE));
+    long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
 
     int strLen = unsafe.getShort(dataPtr);
     dataPtr += SizeOf.SIZE_OF_SHORT;
     int actualLen = strLen < length ? strLen : length;
-    unsafe.copyMemory(null, dataPtr, val, unsafe.ARRAY_BYTE_BASE_OFFSET + offset, actualLen);
+    unsafe.copyMemory(null, dataPtr, val, unsafe.ARRAY_BYTE_BASE_OFFSET + srcPos, actualLen);
     return actualLen;
   }
 
-  public int getText(int columnIdx, int index, byte [] buf) {
-    return getText(columnIdx, index, 0, buf.length, buf);
+  public int getText(int columnIdx, int rowIdx, byte [] buf) {
+    return getText(columnIdx, rowIdx, buf, 0, buf.length);
   }
 
-  public String getString(int columnIdx, int index) {
+  public int getText(int columnIdx, int rowIdx, ByteBuffer buf) {
     long ptr = vectorsAddrs[columnIdx];
-    long dataPtr = unsafe.getAddress(ptr + ((index) * Unsafe.ADDRESS_SIZE));
+    long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
+
+    int strLen = unsafe.getShort(dataPtr);
+    dataPtr += SizeOf.SIZE_OF_SHORT;
+
+    DirectBuffer directBuffer = (DirectBuffer) buf;
+    unsafe.copyMemory(null, dataPtr, null, directBuffer.address(), strLen);
+    return strLen;
+  }
+
+  public String getString(int columnIdx, int rowIdx) {
+    long ptr = vectorsAddrs[columnIdx];
+    long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
 
     int strLen = unsafe.getShort(dataPtr);
     dataPtr += SizeOf.SIZE_OF_SHORT;
