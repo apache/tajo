@@ -46,12 +46,12 @@ public class UnsafeUtil {
     return unsafe.allocateMemory(size);
   }
 
-  public static long allocVector(TajoDataTypes.Type type, long size) {
-    return allocVector(CatalogUtil.newSimpleDataType(type), size);
+  public static long allocVector(TajoDataTypes.Type type, long num) {
+    return allocVector(CatalogUtil.newSimpleDataType(type), num);
   }
 
-  public static long allocVector(TajoDataTypes.DataType dataType, long size) {
-    return unsafe.allocateMemory(TypeUtil.sizeOf(dataType) * size);
+  public static long allocVector(TajoDataTypes.DataType dataType, long num) {
+    return unsafe.allocateMemory(TypeUtil.sizeOf(dataType) * num);
   }
 
   public static void free(long addr) {

@@ -90,7 +90,7 @@ public class TestVecRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
 
-    int vecSize = 1024 * 100000;
+    int vecSize = 1024;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -128,8 +128,23 @@ public class TestVecRowBlock {
     for (int i = 0; i < vecSize; i++) {
       assertEquals(UnsafeUtil.getLong(result, i), vecRowBlock.getInt8(2, i) * 2);
     }
+
+
+    long selVec = UnsafeUtil.allocVector(Type.INT8, 3);
+    int idx = 0;
+    UnsafeUtil.putInt(selVec, idx++, 3);
+    UnsafeUtil.putInt(selVec, idx++, 7);
+    UnsafeUtil.putInt(selVec, idx++, 9);
+
+    op.map(3, result, vecRowBlock.getValueVecPtr(2), vecRowBlock.getValueVecPtr(2), 0, selVec);
+
+    for (int i = 0; i < 3; i++) {
+      System.out.println(UnsafeUtil.getLong(result, i));
+    }
+
     vecRowBlock.free();
     UnsafeUtil.free(result);
+    UnsafeUtil.free(selVec);
   }
 
   @Test
@@ -263,7 +278,7 @@ public class TestVecRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
 
-    int vecSize = 4096;
+    int vecSize = 1024;
 
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
@@ -290,11 +305,11 @@ public class TestVecRowBlock {
       nullIndices.add(idx);
       vecRowBlock.setNull(idx % 5, idx);
 
-      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 1);
+      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 0);
     }
 
     for (int idx : nullIndices) {
-      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 1);
+      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 0);
     }
     vecRowBlock.free();
   }
@@ -335,21 +350,21 @@ public class TestVecRowBlock {
       int idx = rnd.nextInt(vecSize);
       nullIdx.add(idx);
       vecRowBlock.setNull(0, idx);
-      assertTrue(vecRowBlock.isNull(0, idx) == 1);
+      assertTrue(vecRowBlock.isNull(0, idx) == 0);
     }
 
     for (int i = 0; i < 100; i++) {
       int idx = rnd.nextInt(vecSize);
       nullIdx.add(idx);
       vecRowBlock.setNull(1, idx);
-      assertTrue(vecRowBlock.isNull(1, idx) == 1);
+      assertTrue(vecRowBlock.isNull(1, idx) == 0);
     }
 
     for (int i = 0; i < vecSize; i++) {
       if (nullIdx.contains(i)) {
-        assertTrue(vecRowBlock.isNull(0, i) == 1 || vecRowBlock.isNull(1, i) == 1);
+        assertTrue(vecRowBlock.isNull(0, i) == 0 || vecRowBlock.isNull(1, i) == 0);
       } else {
-        if (!(vecRowBlock.isNull(0, i) == 0 && vecRowBlock.isNull(1, i) == 0)) {
+        if (!(vecRowBlock.isNull(0, i) == 1 && vecRowBlock.isNull(1, i) == 1)) {
           System.out.println("idx: " + i);
           System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
           System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));
@@ -365,9 +380,9 @@ public class TestVecRowBlock {
 
     for (int i = 0; i < vecSize; i++) {
       if (nullIdx.contains(i)) {
-        assertTrue(VectorUtil.isNull(nullVector, i) == 1);
+        assertTrue(VectorUtil.isNull(nullVector, i) == 0);
       } else {
-        if (VectorUtil.isNull(nullVector, i) == 1) {
+        if (VectorUtil.isNull(nullVector, i) == 0) {
           System.out.println("idx: " + i);
           System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
           System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));

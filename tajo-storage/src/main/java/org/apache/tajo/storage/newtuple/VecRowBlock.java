@@ -98,7 +98,7 @@ public class VecRowBlock {
         nullVectorsAddrs[i] = nullVectorsAddrs[i - 1] + eachNullHeaderBytes;
       }
     }
-    UnsafeUtil.bzero(nullVectorsAddrs[0], totalNullHeaderBytes);
+    unsafe.setMemory(nullVectorsAddrs[0], totalNullHeaderBytes, (byte) 0xFF);
 
 
     long perVecSize;
@@ -139,7 +139,7 @@ public class VecRowBlock {
     long offset = index % WORD_SIZE;
     long address = nullVectorsAddrs[columnIdx] + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
-    nullFlagChunk = (nullFlagChunk | (1L << offset));
+    nullFlagChunk = (nullFlagChunk & ~(1L << offset));
     unsafe.putLong(address, nullFlagChunk);
   }
 
@@ -271,7 +271,7 @@ public class VecRowBlock {
   public static long allocateNullVector(int vectorSize) {
     long nBytes = computeNullHeaderSizePerColumn(vectorSize);
     long ptr = UnsafeUtil.alloc(nBytes);
-    UnsafeUtil.bzero(ptr, nBytes);
+    unsafe.setMemory(ptr, nBytes, (byte) 0xFF);
     return ptr;
   }
 

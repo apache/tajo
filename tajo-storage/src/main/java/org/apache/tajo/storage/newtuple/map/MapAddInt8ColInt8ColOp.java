@@ -24,15 +24,31 @@ import org.apache.tajo.storage.newtuple.SizeOf;
 public class MapAddInt8ColInt8ColOp extends MapBinaryOp {
   private static final int LOOP_UNROLLOING_NUM = 4;
 
-  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
-    for (int i = 0; i < vecnum; i++) {
-      long lval1 = unsafe.getLong(lhs);
-      long rval1 = unsafe.getLong(rhs);
-      unsafe.putLong(result, lval1 + rval1);
+  public void map(int vecNum, long resVec, long lhsVec, long rhsVec, long nullVec, long selVec) {
 
-      result += SizeOf.SIZE_OF_LONG;
-      rhs += SizeOf.SIZE_OF_LONG;
-      lhs += SizeOf.SIZE_OF_LONG;
+    if (selVec == 0) {
+      for (int i = 0; i < vecNum; i++) {
+        long lval1 = unsafe.getLong(lhsVec);
+        long rval1 = unsafe.getLong(rhsVec);
+        unsafe.putLong(resVec, lval1 + rval1);
+
+        resVec += SizeOf.SIZE_OF_LONG;
+        rhsVec += SizeOf.SIZE_OF_LONG;
+        lhsVec += SizeOf.SIZE_OF_LONG;
+      }
+    } else {
+      for (int rid = 0; rid < vecNum; rid++) {
+        int selId = unsafe.getInt(selVec);
+
+        int offset = SizeOf.SIZE_OF_LONG * selId;
+        long lval1 = unsafe.getLong(lhsVec + offset);
+        long rval1 = unsafe.getLong(rhsVec + offset);
+
+        unsafe.putLong(resVec, lval1 + rval1);
+
+        selVec += SizeOf.SIZE_OF_INT;
+        resVec += SizeOf.SIZE_OF_LONG;
+      }
     }
   }
 }

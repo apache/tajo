@@ -28,7 +28,7 @@ public class VectorUtil {
   public static void nullify(int vecNum, long result, long addr1, long addr2) {
     long nullFlagChunk;
     while (vecNum >= SizeOf.SIZE_OF_LONG) {
-      nullFlagChunk =  (unsafe.getLong(addr1) | unsafe.getLong(addr2));
+      nullFlagChunk =  (unsafe.getLong(addr1) & unsafe.getLong(addr2));
       unsafe.putLong(result, nullFlagChunk);
 
       result += SizeOf.SIZE_OF_LONG;
@@ -65,7 +65,7 @@ public class VectorUtil {
     int offset = index % WORD_SIZE;
     long address = nullVector + chunkId;
     long nullFlagChunk = unsafe.getLong(address);
-    nullFlagChunk = (nullFlagChunk | (1 << offset));
+    nullFlagChunk = (nullFlagChunk & ~(1L << offset));
     unsafe.putLong(address, nullFlagChunk);
   }
 
