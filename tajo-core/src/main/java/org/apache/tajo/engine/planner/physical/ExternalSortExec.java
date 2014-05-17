@@ -758,8 +758,9 @@ public class ExternalSortExec extends SortExec {
   public void rescan() throws IOException {
     if (result != null) {
       result.reset();
-      progress = 0.5f;
     }
+    super.rescan();
+    progress = 0.5f;
   }
 
   @Override

@@ -46,6 +46,7 @@ public enum NodeType {
   BST_INDEX_SCAN(IndexScanNode.class),
   STORE(StoreTableNode.class),
   INSERT(InsertNode.class),
+  DISTINCT_GROUP_BY(DistinctGroupbyNode.class),
 
   CREATE_DATABASE(CreateDatabaseNode.class),
   DROP_DATABASE(DropDatabaseNode.class),

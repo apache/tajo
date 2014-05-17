@@ -26,16 +26,16 @@
 <%@ page import="org.apache.tajo.util.StringUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.Collection" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
+<%@ page import="java.util.*" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
   List<QueryInProgress> runningQueries =
-          JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getRunningQueries(), true);
+          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
+
+  runningQueries.addAll(master.getContext().getQueryJobManager().getRunningQueries());
+          JSPUtil.sortQueryInProgress(runningQueries, true);
 
   List<QueryInProgress> finishedQueries =
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
