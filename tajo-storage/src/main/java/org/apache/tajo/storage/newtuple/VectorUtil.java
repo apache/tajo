@@ -25,7 +25,7 @@ import sun.misc.Unsafe;
 public class VectorUtil {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-  public static void nullify(int vecNum, long result, long addr1, long addr2) {
+  public static void mapAndBitmapVector(int vecNum, long result, long addr1, long addr2) {
     long nullFlagChunk;
     while (vecNum >= SizeOf.SIZE_OF_LONG) {
       nullFlagChunk =  (unsafe.getLong(addr1) & unsafe.getLong(addr2));
@@ -50,12 +50,53 @@ public class VectorUtil {
     }
   }
 
-  public static void nullify(int vecNum, final long result, final long addr1, final long addr2, final long addr3) {
+  public static void mapOrBitmapVector(int vecNum, long result, long addr1, long addr2) {
     long nullFlagChunk;
-    for (int i = 0; i < vecNum; i++) {
-      int offset = (i % WORD_SIZE);
-      nullFlagChunk = unsafe.getLong(addr1 + offset) & unsafe.getLong(addr2 + offset) & unsafe.getLong(addr3 + offset);
-      unsafe.putLong(result + offset, nullFlagChunk);
+    while (vecNum >= SizeOf.SIZE_OF_LONG) {
+      nullFlagChunk =  (unsafe.getLong(addr1) | unsafe.getLong(addr2));
+      unsafe.putLong(result, nullFlagChunk);
+
+      result += SizeOf.SIZE_OF_LONG;
+      addr1 += SizeOf.SIZE_OF_LONG;
+      addr2 += SizeOf.SIZE_OF_LONG;
+
+      vecNum -= SizeOf.BITS_PER_WORD;
+    }
+
+    byte nullFlagByte;
+    while (vecNum > 0) {
+      nullFlagByte = (byte) (unsafe.getByte(addr1) | unsafe.getByte(addr2));
+      unsafe.putByte(result, nullFlagByte);
+
+      result++;
+      addr1++;
+      addr2++;
+      vecNum-= SizeOf.SIZE_OF_BYTE;
+    }
+  }
+
+  public static void mapXORBitmapVector(int vecNum, long result, long addr1, long addr2) {
+    long nullFlagChunk;
+    while (vecNum >= SizeOf.SIZE_OF_LONG) {
+      nullFlagChunk =  (unsafe.getLong(addr1) | unsafe.getLong(addr2));
+      unsafe.putLong(result, nullFlagChunk);
+
+      result += SizeOf.SIZE_OF_LONG;
+      addr1 += SizeOf.SIZE_OF_LONG;
+      addr2 += SizeOf.SIZE_OF_LONG;
+
+      vecNum -= SizeOf.BITS_PER_WORD;
+    }
+
+    byte nullFlagByte;
+    while (vecNum > 0) {
+      nullFlagByte = (byte) (unsafe.getByte(addr1) ^ unsafe.getByte(addr2));
+      unsafe.putByte(result, nullFlagByte);
+
+      result++;
+      addr1++;
+      addr2++;
+      vecNum-= SizeOf.SIZE_OF_BYTE;
     }
   }
 

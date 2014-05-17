@@ -18,9 +18,7 @@
 
 package org.apache.tajo.storage.newtuple;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.commons.codec.StringEncoder;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -141,7 +139,7 @@ public class VecRowBlock {
     long assertMem = nullVectorsAddrs[0];
     long remainMemory = totalNullHeaderBytes;
     while(remainMemory > 0) {
-      assert unsafe.getLong(assertMem) == (0xFFFFFFFF << 32 | 0xFFFFFFFF);
+      assert unsafe.getLong(assertMem) == (0x00000000 << 32 | 0x00000000);
       assertMem += SizeOf.SIZE_OF_LONG;
       remainMemory -= SizeOf.SIZE_OF_LONG;
     }
@@ -149,7 +147,7 @@ public class VecRowBlock {
 
   private void initializeMemory() {
     // initialize null headers
-    unsafe.setMemory(nullVectorsAddrs[0], computeNullHeaderBytes(maxVectorSize, schema.size()), (byte) 0xFF);
+    unsafe.setMemory(nullVectorsAddrs[0], computeNullHeaderBytes(maxVectorSize, schema.size()), (byte) 0x00);
 
     // initializes boolean type vector(s)
     for (int i = 0; i < schema.size(); i++) {
@@ -179,12 +177,12 @@ public class VecRowBlock {
     return nullVectorsAddrs[columnIdx];
   }
 
-  public void setNull(int columnIdx, int rowIdx) {
-    unsetBitToBitMap(nullVectorsAddrs[columnIdx], rowIdx);
+  public void setNullBit(int columnIdx, int rowIdx) {
+    setBitToBitMap(nullVectorsAddrs[columnIdx], rowIdx);
   }
 
-  public void unsetNull(int columnIdx, int rowIdx) {
-    setBitToBitMap(nullVectorsAddrs[columnIdx], rowIdx);
+  public void unsetNullBit(int columnIdx, int rowIdx) {
+    unsetBitToBitMap(nullVectorsAddrs[columnIdx], rowIdx);
   }
 
   public void setNull(int columnIdx, int rowIdx, int nullValue) {
@@ -195,7 +193,7 @@ public class VecRowBlock {
     }
   }
 
-  public int getNullFlag(int columnIdx, int rowIdx) {
+  public int getNullBit(int columnIdx, int rowIdx) {
     return getBitFromBitMap(nullVectorsAddrs[columnIdx], rowIdx);
   }
 
@@ -204,6 +202,7 @@ public class VecRowBlock {
   }
 
   public void putBool(int columnIdx, int rowIdx, int bool) {
+    setNullBit(columnIdx, rowIdx);
     if (bool != 0) {
       setBitToBitMap(vectorsAddrs[columnIdx], rowIdx);
     } else {
@@ -246,10 +245,12 @@ public class VecRowBlock {
   }
 
   public void putInt2(int columnIdx, int rowIdx, short val) {
+    setNullBit(columnIdx, rowIdx);
     unsafe.putShort(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_SHORT), val);
   }
 
   public void putInt4(int columnIdx, int rowIdx, int val) {
+    setNullBit(columnIdx, rowIdx);
     unsafe.putInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_INT), val);
   }
 
@@ -258,6 +259,7 @@ public class VecRowBlock {
   }
 
   public void putInt8(int columnIdx, int rowIdx, long val) {
+    setNullBit(columnIdx, rowIdx);
     unsafe.putLong(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG), val);
   }
 
@@ -266,6 +268,7 @@ public class VecRowBlock {
   }
 
   public void putFloat4(int columnIdx, int rowIdx, float val) {
+    setNullBit(columnIdx, rowIdx);
     unsafe.putFloat(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_FLOAT), val);
   }
 
@@ -274,6 +277,7 @@ public class VecRowBlock {
   }
 
   public void putFloat8(int columnIdx, int rowIdx, double val) {
+    setNullBit(columnIdx, rowIdx);
     unsafe.putDouble(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_DOUBLE), val);
   }
 
@@ -290,6 +294,8 @@ public class VecRowBlock {
   }
 
   public void putText(int columnIdx, int rowIdx, byte [] val, int srcPos, int length) {
+    setNullBit(columnIdx, rowIdx);
+
     long currentPage = currentPageAddrs[columnIdx];
 
     long ptr = currentPage;
@@ -312,6 +318,8 @@ public class VecRowBlock {
   }
 
   public void putText(int columnIdx, int rowIdx, ByteBuffer byteBuf) {
+    setNullBit(columnIdx, rowIdx);
+
     long currentPage = currentPageAddrs[columnIdx];
 
     long ptr = currentPage;
@@ -336,6 +344,8 @@ public class VecRowBlock {
   }
 
   public int getText(int columnIdx, int rowIdx, byte[] val, int srcPos, int length) {
+    setNullBit(columnIdx, rowIdx);
+
     long ptr = vectorsAddrs[columnIdx];
     long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
 
@@ -431,7 +441,7 @@ public class VecRowBlock {
   public static long allocateNullVector(int vectorSize) {
     long nBytes = computeNullHeaderBytesPerColumn(vectorSize);
     long ptr = UnsafeUtil.alloc(nBytes);
-    unsafe.setMemory(ptr, nBytes, (byte) 0xFF);
+    unsafe.setMemory(ptr, nBytes, (byte) 0x00);
     return ptr;
   }
 
