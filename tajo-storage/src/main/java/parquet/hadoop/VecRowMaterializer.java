@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple.parquet;
+package parquet.hadoop;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.newtuple.VecRowBlock;
+import org.apache.tajo.storage.parquet.TajoRecordConverter;
 import parquet.io.api.GroupConverter;
 import parquet.io.api.RecordMaterializer;
 import parquet.schema.MessageType;
@@ -37,8 +40,7 @@ class VecRowMaterializer extends RecordMaterializer<Object []> {
    * @param tajoSchema The Tajo schema of the projection.
    * @param tajoReadSchema The Tajo schema of the table.
    */
-  public VecRowMaterializer(MessageType parquetSchema, Schema tajoSchema,
-                            Schema tajoReadSchema) {
+  public VecRowMaterializer(MessageType parquetSchema, Schema tajoSchema, Schema tajoReadSchema) {
     int[] projectionMap = getProjectionMap(tajoReadSchema, tajoSchema);
     this.root = new VecRowBlockConverter(parquetSchema, tajoReadSchema, projectionMap);
   }

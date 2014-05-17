@@ -28,19 +28,21 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.newtuple.map.MapAddInt8ColInt8ColOp;
 import org.apache.tajo.storage.newtuple.map.VecFuncStrcmpStrStrColx2;
 import org.apache.tajo.storage.newtuple.map.SelStrEqStrColStrColOp;
 import org.apache.tajo.storage.parquet.ParquetAppender;
+import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.ParquetWriter;
+import parquet.hadoop.VecRowParquetReader;
 import parquet.hadoop.VecRowParquetWriter;
 import parquet.hadoop.metadata.CompressionCodecName;
 
@@ -70,7 +72,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock rowBlock = new VecRowBlock(schema, vecSize);
     long allocatedEnd = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMemory(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -112,7 +114,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -181,7 +183,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -240,7 +242,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -303,7 +305,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -349,7 +351,7 @@ public class TestVecRowBlock {
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
 
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -477,7 +479,7 @@ public class TestVecRowBlock {
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
 
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -497,9 +499,9 @@ public class TestVecRowBlock {
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
 
-    System.out.println("Total Size: " + FileUtil.humanReadableByteCount(vecRowBlock.size(), true));
-    System.out.println("Fixed Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.getFixedAreaSize(), true));
-    System.out.println("Variable Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.getVariableAreaSize(), true));
+    System.out.println("Total Size: " + FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true));
+    System.out.println("Fixed Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.fixedAreaMemory(), true));
+    System.out.println("Variable Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.variableAreaMemory(), true));
     vecRowBlock.free();
   }
 
@@ -515,21 +517,21 @@ public class TestVecRowBlock {
     schema.addColumn("col6", Type.TEXT);
     schema.addColumn("col7", Type.TEXT);
 
-    int vecSize = 1024 * 10000;
+    int totalTupleNum = 1024 * 10000;
 
     Configuration conf = new Configuration();
     Path path = new Path("file:///tmp/parquet-" + System.currentTimeMillis());
     KeyValueSet KeyValueSet = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.PARQUET, KeyValueSet);
-    meta.putOption(ParquetOutputFormat.COMPRESSION, CompressionCodecName.SNAPPY.name());
+    meta.putOption(ParquetOutputFormat.COMPRESSION, CompressionCodecName.UNCOMPRESSED.name());
     ParquetAppender appender = new ParquetAppender(conf, schema, meta, path);
     appender.init();
 
     Tuple tuple = new VTuple(schema.size());
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < vecSize; i++) {
-      tuple.put(0, DatumFactory.createBool(i % 2));
-      tuple.put(1, DatumFactory.createInt2((short) i));
+    for (int i = 0; i < totalTupleNum; i++) {
+      tuple.put(0, DatumFactory.createBool(i % 2 == 1 ? true : false));
+      tuple.put(1, DatumFactory.createInt2((short) 1));
       tuple.put(2, DatumFactory.createInt4(i));
       tuple.put(3, DatumFactory.createInt8(i));
       tuple.put(4, DatumFactory.createFloat4(i));
@@ -545,6 +547,26 @@ public class TestVecRowBlock {
     long fileSize = fs.getFileStatus(path).getLen();
     System.out.println((writeEnd - writeStart) +
         " msec, total file size: " + FileUtil.humanReadableByteCount(fileSize, true));
+
+    FileFragment fileFragment = new FileFragment("tb1", path, 0, fileSize);
+    ParquetScanner scanner = new ParquetScanner(conf, schema, meta, fileFragment);
+    scanner.init();
+
+    long readStart = System.currentTimeMillis();
+    for (int i = 0; i < totalTupleNum; i++) {
+      tuple = scanner.next();
+      //assertTrue(i % 2 == 1 == tuple.getBool(0));
+      //assertTrue(1 == tuple.getInt2(1));
+      //assertEquals(i, tuple.getInt4(2));
+      assertEquals(i, tuple.getInt8(3));
+      //assertTrue(i == tuple.getFloat4(4));
+      //assertTrue(((double) i) == tuple.getFloat8(5));
+      //assertEquals("colabcdefghijklmnopqrstu1", tuple.getText(6));
+      //assertEquals("colabcdefghijklmnopqrstu2", tuple.getText(7));
+    }
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+    scanner.close();
   }
 
   @Test
@@ -559,28 +581,14 @@ public class TestVecRowBlock {
     schema.addColumn("col6", Type.TEXT);
     schema.addColumn("col7", Type.TEXT);
 
-    int vecSize = 1024 * 10000;
+    int totalTupleNum = 1024 * 10000;
+    int vectorSize = 1024;
 
     long allocateStart = System.currentTimeMillis();
-    VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
+    VecRowBlock vecRowBlock = new VecRowBlock(schema, vectorSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.size(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
-
-    long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < vecSize; i++) {
-      vecRowBlock.putBool(0, i, i % 2);
-      vecRowBlock.putInt2(1, i, (short) 1);
-      vecRowBlock.putInt4(2, i, i);
-      vecRowBlock.putInt8(3, i, i);
-      vecRowBlock.putFloat4(4, i, i);
-      vecRowBlock.putFloat8(5, i, i);
-      vecRowBlock.putText(6, i, "colabcdefghijklmnopqrstu1".getBytes());
-      vecRowBlock.putText(7, i, "colabcdefghijklmnopqrstu2".getBytes());
-    }
-    long writeEnd = System.currentTimeMillis();
-    System.out.println(writeEnd - writeStart + " write msec");
-
 
     Path path = new Path("file:///tmp/parquet-" + System.currentTimeMillis());
 
@@ -588,10 +596,41 @@ public class TestVecRowBlock {
         path,
         schema,
         new HashMap<String, String>(),
-        CompressionCodecName.SNAPPY, ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE);
+        CompressionCodecName.UNCOMPRESSED, ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE);
+
+    long writeStart = System.currentTimeMillis();
+    int vectorIdx = 0;
+    for (int i = 0; i < totalTupleNum; i++) {
+      vecRowBlock.putBool(0, vectorIdx, i % 2);
+      vecRowBlock.putInt2(1, vectorIdx, (short) 1);
+      vecRowBlock.putInt4(2, vectorIdx, i);
+      vecRowBlock.putInt8(3, vectorIdx, i);
+      vecRowBlock.putFloat4(4, vectorIdx, i);
+      vecRowBlock.putFloat8(5, vectorIdx, i);
+      vecRowBlock.putText(6, vectorIdx, "colabcdefghijklmnopqrstu1".getBytes());
+      byte [] result = new byte[50];
+      int len = vecRowBlock.getText(6, vectorIdx, result);
+      assertEquals("colabcdefghijklmnopqrstu1", new String(result, 0, len));
+      vecRowBlock.putText(7, vectorIdx, "colabcdefghijklmnopqrstu2".getBytes());
+
+      vectorIdx++;
+
+      if (vectorIdx == vecRowBlock.maxVecSize()) {
+        vecRowBlock.setLimitedVecSize(vectorIdx);
+        writer.write(vecRowBlock);
+        vecRowBlock.clear();
+        vectorIdx = 0;
+      }
+    }
+    if (vectorIdx > 0) {
+      vecRowBlock.setLimitedVecSize(vectorIdx);
+      writer.write(vecRowBlock);
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
 
     long startParquetWrite = System.currentTimeMillis();
-    writer.write(vecRowBlock);
+
     writer.close();
     long endParquetWrite = System.currentTimeMillis();
 
@@ -599,5 +638,30 @@ public class TestVecRowBlock {
     long fileSize = fs.getFileStatus(path).getLen();
     System.out.println((endParquetWrite - startParquetWrite) +
         " msec, total file size: " + FileUtil.humanReadableByteCount(fileSize, true));
+    vecRowBlock.clear();
+
+    VecRowParquetReader reader = new VecRowParquetReader(path, schema, schema);
+
+    long readStart = System.currentTimeMillis();
+
+    int rowId = 0;
+    while(reader.nextFetch(vecRowBlock)) {
+      for (int vectorId = 0; vectorId < vecRowBlock.maxVecSize(); vectorId++) {
+        //assertEquals(rowId % 2, vecRowBlock.getBool(0, vectorId));
+        //assertTrue(1 == vecRowBlock.getInt2(1, vectorId));
+        //assertEquals(rowId, vecRowBlock.getInt4(2, vectorId));
+        assertEquals(rowId, vecRowBlock.getInt8(3, vectorId));
+        //assertTrue(rowId == vecRowBlock.getFloat4(4, vectorId));
+        //assertTrue(((double)rowId) == vecRowBlock.getFloat8(5, vectorId));
+        //assertEquals("colabcdefghijklmnopqrstu1", (vecRowBlock.getString(6, vectorId)));
+        //assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getString(7, vectorId)));
+
+        rowId++;
+      }
+      vecRowBlock.clear();
+    }
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+    vecRowBlock.free();
   }
 }

@@ -2,7 +2,6 @@ package parquet.hadoop;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.storage.newtuple.VecRowBlock;
 import parquet.Log;
 import parquet.column.ColumnDescriptor;
 import parquet.column.page.PageReadStore;
@@ -33,11 +32,11 @@ public class VecRowDirectReader {
   private MessageType requestedSchema;
   private MessageType fileSchema;
   private int columnCount;
-  private final ReadSupport<T> readSupport;
+  private final ReadSupport<Object []> readSupport;
 
-  private RecordMaterializer<T> recordConverter;
+  private RecordMaterializer<Object []> recordConverter;
 
-  private VecRowBlock currentValue;
+  private Object [] currentValue;
   private long total;
   private int current = 0;
   private int currentBlock = -1;
@@ -56,7 +55,7 @@ public class VecRowDirectReader {
   /**
    * @param readSupport Object which helps reads files of the given type, e.g. Thrift, Avro.
    */
-  public VecRowDirectReader(ReadSupport<T> readSupport) {
+  public VecRowDirectReader(ReadSupport<Object []> readSupport) {
     this(readSupport, null);
   }
 
@@ -64,8 +63,7 @@ public class VecRowDirectReader {
    * @param readSupport Object which helps reads files of the given type, e.g. Thrift, Avro.
    * @param filter Optional filter for only returning matching records.
    */
-  public VecRowDirectReader(ReadSupport<T> readSupport, UnboundRecordFilter
-      filter) {
+  public VecRowDirectReader(ReadSupport<Object []> readSupport, UnboundRecordFilter filter) {
     this.readSupport = readSupport;
     this.recordFilter = filter;
   }
@@ -75,11 +73,14 @@ public class VecRowDirectReader {
       if (current != 0) {
         long timeAssembling = System.currentTimeMillis() - startedAssemblingCurrentBlockAt;
         totalTimeSpentProcessingRecords += timeAssembling;
-        LOG.info("Assembled and processed " + totalCountLoadedSoFar + " records from " + columnCount + " columns in " + totalTimeSpentProcessingRecords + " ms: "+((float)totalCountLoadedSoFar / totalTimeSpentProcessingRecords) + " rec/ms, " + ((float)totalCountLoadedSoFar * columnCount / totalTimeSpentProcessingRecords) + " cell/ms");
+        LOG.info("Assembled and processed " + totalCountLoadedSoFar + " records from " + columnCount + " columns in "
+            + totalTimeSpentProcessingRecords + " ms: "+((float)totalCountLoadedSoFar / totalTimeSpentProcessingRecords)
+            + " rec/ms, " + ((float)totalCountLoadedSoFar * columnCount / totalTimeSpentProcessingRecords) + " cell/ms");
         long totalTime = totalTimeSpentProcessingRecords + totalTimeSpentReadingBytes;
         long percentReading = 100 * totalTimeSpentReadingBytes / totalTime;
         long percentProcessing = 100 * totalTimeSpentProcessingRecords / totalTime;
-        LOG.info("time spent so far " + percentReading + "% reading ("+totalTimeSpentReadingBytes+" ms) and " + percentProcessing + "% processing ("+totalTimeSpentProcessingRecords+" ms)");
+        LOG.info("time spent so far " + percentReading + "% reading ("+totalTimeSpentReadingBytes+" ms) and " +
+            percentProcessing + "% processing ("+totalTimeSpentProcessingRecords+" ms)");
       }
 
       LOG.info("at row " + current + ". reading next block");
@@ -105,11 +106,7 @@ public class VecRowDirectReader {
     reader.close();
   }
 
-  public Void getCurrentKey() throws IOException, InterruptedException {
-    return null;
-  }
-
-  public VecRowBlock getCurrentValue() throws IOException, InterruptedException {
+  public Object [] getCurrentValue() throws IOException, InterruptedException {
     return currentValue;
   }
 
@@ -160,7 +157,8 @@ public class VecRowDirectReader {
         if (DEBUG) LOG.debug("read value: " + currentValue);
         current ++;
       } catch (RuntimeException e) {
-        throw new ParquetDecodingException(format("Can not read value at %d in block %d in file %s", current, currentBlock, file), e);
+        throw new ParquetDecodingException(format("Can not read value at %d in block %d in file %s", current,
+            currentBlock, file), e);
       }
       return true;
     }

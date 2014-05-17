@@ -4,34 +4,41 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.newtuple.VecRowBlock;
 import parquet.filter.UnboundRecordFilter;
 import parquet.hadoop.api.InitContext;
 import parquet.hadoop.api.ReadSupport;
 import parquet.hadoop.metadata.BlockMetaData;
 import parquet.hadoop.metadata.GlobalMetaData;
+import parquet.io.api.Binary;
 import parquet.schema.MessageType;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
-public abstract class VecRowParquetReader implements Closeable {
+public class VecRowParquetReader implements Closeable {
 
-  private ReadSupport<T> readSupport;
+  private ReadSupport<Object []> readSupport;
   private UnboundRecordFilter filter;
   private Configuration conf;
   private ReadSupport.ReadContext readContext;
   private Iterator<Footer> footersIterator;
-  private VecRowParquetReader reader;
+  private VecRowDirectReader reader;
   private GlobalMetaData globalMetaData;
+
+  public VecRowParquetReader(Path file, Schema schema, Schema target) throws IOException {
+    this(file, new VecRowReadSupport(schema, target));
+  }
 
   /**
    * @param file the file to read
    * @param readSupport to materialize records
    * @throws java.io.IOException
    */
-  public VecRowParquetReader(Path file, ReadSupport<T> readSupport) throws IOException {
+  public VecRowParquetReader(Path file, VecRowReadSupport readSupport) throws IOException {
     this(file, readSupport, null);
   }
 
@@ -41,7 +48,7 @@ public abstract class VecRowParquetReader implements Closeable {
    * @param readSupport to materialize records
    * @throws IOException
    */
-  public VecRowParquetReader(Configuration conf, Path file, ReadSupport<T> readSupport) throws IOException {
+  public VecRowParquetReader(Configuration conf, Path file, VecRowReadSupport readSupport) throws IOException {
     this(conf, file, readSupport, null);
   }
 
@@ -51,7 +58,8 @@ public abstract class VecRowParquetReader implements Closeable {
    * @param filter the filter to use to filter records
    * @throws IOException
    */
-  public VecRowParquetReader(Path file, ReadSupport<T> readSupport, UnboundRecordFilter filter) throws IOException {
+  private VecRowParquetReader(Path file, VecRowReadSupport readSupport, UnboundRecordFilter filter)
+      throws IOException {
     this(new Configuration(), file, readSupport, filter);
   }
 
@@ -62,7 +70,8 @@ public abstract class VecRowParquetReader implements Closeable {
    * @param filter the filter to use to filter records
    * @throws IOException
    */
-  public VecRowParquetReader(Configuration conf, Path file, ReadSupport<T> readSupport, UnboundRecordFilter filter) throws IOException {
+  public VecRowParquetReader(Configuration conf, Path file, VecRowReadSupport readSupport,
+                             UnboundRecordFilter filter) throws IOException {
     this.readSupport = readSupport;
     this.filter = filter;
     this.conf = conf;
@@ -81,19 +90,54 @@ public abstract class VecRowParquetReader implements Closeable {
     MessageType schema = globalMetaData.getSchema();
     Map<String, Set<String>> extraMetadata = globalMetaData.getKeyValueMetaData();
     readContext = readSupport.init(new InitContext(conf, extraMetadata, schema));
+
+    this.tajoSchema = readSupport.getSchema();
+    this.columnNum = tajoSchema.size();
+    tajoTypes = new TajoDataTypes.Type[columnNum];
+    for (int i = 0; i < columnNum; i++) {
+      tajoTypes[i] = tajoSchema.getColumn(i).getDataType().getType();
+    }
   }
+
+  Schema tajoSchema;
+  int columnNum;
+  TajoDataTypes.Type [] tajoTypes;
 
   /**
    * @return the next record or null if finished
    * @throws IOException
    */
-  public VecRowBlock read() throws IOException {
+  public boolean nextFetch(VecRowBlock vecRowBlock) throws IOException {
     try {
-      if (reader != null && reader.nextKeyValue()) {
-        return reader.getCurrentValue();
+      if (reader != null) {
+        int rowIdx = 0;
+        while(rowIdx < vecRowBlock.maxVecSize() && reader.nextKeyValue()) {
+          Object [] values = reader.getCurrentValue();
+          for (int columnIdx = 0; columnIdx < columnNum; columnIdx++) {
+            if (values[columnIdx] != null) {
+              switch (tajoTypes[columnIdx]) {
+              case BOOLEAN: vecRowBlock.putBool(columnIdx, rowIdx, (Boolean) values[columnIdx]); break;
+              case INT1:
+              case INT2: vecRowBlock.putInt2(columnIdx, rowIdx, (Short) values[columnIdx]); break;
+              case INT4: vecRowBlock.putInt4(columnIdx, rowIdx, (Integer) values[columnIdx]); break;
+              case INT8: vecRowBlock.putInt8(columnIdx, rowIdx, (Long) values[columnIdx]); break;
+              case FLOAT4: vecRowBlock.putFloat4(columnIdx, rowIdx, (Float) values[columnIdx]); break;
+              case FLOAT8: vecRowBlock.putFloat8(columnIdx, rowIdx, (Double) values[columnIdx]); break;
+              case TEXT: vecRowBlock.putText(columnIdx, rowIdx, ((Binary) values[columnIdx]).getBytes()); break;
+              case BLOB: vecRowBlock.putText(columnIdx, rowIdx, ((Binary) values[columnIdx]).getBytes()); break;
+              default:
+                throw new IOException("Not supported type: " + tajoTypes[columnIdx].name());
+              }
+            }
+          }
+          rowIdx++;
+        }
+        vecRowBlock.setLimitedVecSize(rowIdx);
+
+        return rowIdx > 0;
       } else {
         initReader();
-        return reader == null ? null : read();
+        return reader == null ? null : nextFetch(vecRowBlock);
       }
     } catch (InterruptedException e) {
       throw new IOException(e);
@@ -107,9 +151,10 @@ public abstract class VecRowParquetReader implements Closeable {
     }
     if (footersIterator.hasNext()) {
       Footer footer = footersIterator.next();
-      reader = new InternalParquetRecordReader<T>(readSupport, filter);
+      reader = new VecRowDirectReader(readSupport, filter);
       reader.initialize(
-          readContext.getRequestedSchema(), globalMetaData.getSchema(), footer.getParquetMetadata().getFileMetaData().getKeyValueMetaData(),
+          readContext.getRequestedSchema(), globalMetaData.getSchema(), footer.getParquetMetadata().getFileMetaData()
+              .getKeyValueMetaData(),
           readContext.getReadSupportMetadata(), footer.getFile(), footer.getParquetMetadata().getBlocks(), conf);
     }
   }

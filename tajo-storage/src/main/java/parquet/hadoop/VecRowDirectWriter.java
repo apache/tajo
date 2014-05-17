@@ -14,7 +14,6 @@ import parquet.schema.MessageType;
 import parquet.schema.Type;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static java.lang.Math.max;
@@ -23,7 +22,7 @@ import static java.lang.String.format;
 import static parquet.Log.DEBUG;
 
 class VecRowDirectWriter {
-  private static final Log LOG = Log.getLog(InternalParquetRecordWriter.class);
+  private static final Log LOG = Log.getLog(VecRowDirectWriter.class);
 
   private static final int MINIMUM_BUFFER_SIZE = 64 * 1024;
   private static final int MINIMUM_RECORD_COUNT_FOR_CHECK = 100;
@@ -108,9 +107,7 @@ class VecRowDirectWriter {
   }
 
   public void write(VecRowBlock vecRowBlock) throws IOException, InterruptedException {
-
-    ByteBuffer varLenBuf = ByteBuffer.allocateDirect(Short.MAX_VALUE);
-    for (int rowIdx = 0; rowIdx < vecRowBlock.getVectorSize(); rowIdx++) {
+    for (int rowIdx = 0; rowIdx < vecRowBlock.limitedVecSize(); rowIdx++) {
       recordConsumer.startMessage();
 
       for (int columnIdx = 0; columnIdx < columnNum; ++columnIdx) {
@@ -121,6 +118,8 @@ class VecRowDirectWriter {
           break;
         case BIT:
         case INT2:
+          recordConsumer.addInteger(vecRowBlock.getInt2(columnIdx, rowIdx));
+          break;
         case INT4:
           recordConsumer.addInteger(vecRowBlock.getInt4(columnIdx, rowIdx));
           break;
@@ -131,23 +130,17 @@ class VecRowDirectWriter {
           recordConsumer.addFloat(vecRowBlock.getFloat4(columnIdx, rowIdx));
           break;
         case FLOAT8:
-          recordConsumer.addDouble(vecRowBlock.getInt8(columnIdx, rowIdx));
+          recordConsumer.addDouble(vecRowBlock.getFloat8(columnIdx, rowIdx));
           break;
         case CHAR:
         case TEXT:
-          varLenBuf.clear();
-          vecRowBlock.getText(columnIdx, rowIdx, varLenBuf);
-          varLenBuf.flip();
-          recordConsumer.addBinary(Binary.fromByteBuffer(varLenBuf));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getTextBytes(columnIdx, rowIdx)));
           break;
         case PROTOBUF:
         case BLOB:
         case INET4:
         case INET6:
-          varLenBuf.clear();
-          vecRowBlock.getText(columnIdx, rowIdx, varLenBuf);
-          varLenBuf.flip();
-          recordConsumer.addBinary(Binary.fromByteBuffer(varLenBuf));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getTextBytes(columnIdx, rowIdx)));
           break;
         default:
           break;

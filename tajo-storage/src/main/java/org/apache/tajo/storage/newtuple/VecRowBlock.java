@@ -32,20 +32,23 @@ import java.util.List;
 public class VecRowBlock {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
+  private final Schema schema;
   private long fixedAreaPtr;
-  private long fixedAreaSize = 0;
-  private final int vectorSize;
+  private long fixedAreaMemorySize = 0;
+  private int limitedVecSize;
+  private final int maxVectorSize;
 
   private final long [] nullVectorsAddrs;
   private final long [] vectorsAddrs;
 
-  private long variableAreaSize = 0;
+  private long variableAreaMemorySize = 0;
   private long [] currentPageAddrs;
   private long [] nextPtr;
   private List<Long> pageReferences;
 
-  public VecRowBlock(Schema schema, int vectorSize) {
-    this.vectorSize = vectorSize;
+  public VecRowBlock(Schema schema, int maxVectorSize) {
+    this.schema = schema;
+    this.maxVectorSize = maxVectorSize;
 
     nullVectorsAddrs = new long[schema.size()];
     vectorsAddrs = new long[schema.size()];
@@ -65,39 +68,48 @@ public class VecRowBlock {
   }
 
   public void allocateFixedArea() {
-    fixedAreaPtr = unsafe.allocateMemory(fixedAreaSize);
-    UnsafeUtil.unsafe.setMemory(fixedAreaPtr, fixedAreaSize, (byte) 0);
+    fixedAreaPtr = unsafe.allocateMemory(fixedAreaMemorySize);
+    UnsafeUtil.unsafe.setMemory(fixedAreaPtr, fixedAreaMemorySize, (byte) 0);
   }
 
-  public long size() {
-    return fixedAreaSize + variableAreaSize;
+  public long totalMemory() {
+    return fixedAreaMemorySize + variableAreaMemorySize;
   }
 
-  public int getVectorSize() {
-    return vectorSize;
+  public void setLimitedVecSize(int num) {
+    this.limitedVecSize = num;
   }
 
-  public long getFixedAreaSize() {
-    return fixedAreaSize;
+  public int limitedVecSize() {
+    return limitedVecSize;
   }
 
-  public long getVariableAreaSize() {
-    return variableAreaSize;
+  public int maxVecSize() {
+    return maxVectorSize;
+  }
+
+  public long fixedAreaMemory() {
+    return fixedAreaMemorySize;
+  }
+
+  public long variableAreaMemory() {
+    return variableAreaMemorySize;
   }
 
   public void init(Schema schema, boolean variableAreaInitNeeded) {
     long totalSize = 0;
-    long eachNullHeaderBytes = computeNullHeaderSizePerColumn(vectorSize);
-    long totalNullHeaderBytes = computeNullHeaderSize(vectorSize, schema.size());
+    long eachNullHeaderBytes = computeNullHeaderSizePerColumn(maxVectorSize);
+    long totalNullHeaderBytes = computeNullHeaderSize(maxVectorSize, schema.size());
     totalSize += totalNullHeaderBytes;
 
     for (int i = 0; i < schema.size(); i++) {
       Column column = schema.getColumn(i);
-      totalSize += TypeUtil.sizeOf(column.getDataType(), vectorSize);
+      totalSize += TypeUtil.sizeOf(column.getDataType(), maxVectorSize);
     }
-    fixedAreaSize = totalSize;
+    fixedAreaMemorySize = totalSize;
     allocateFixedArea();
 
+    // set addresses to null vectors
     for (int i = 0; i < schema.size(); i++) {
       if (i == 0) {
         nullVectorsAddrs[i] = fixedAreaPtr;
@@ -105,36 +117,46 @@ public class VecRowBlock {
         nullVectorsAddrs[i] = nullVectorsAddrs[i - 1] + eachNullHeaderBytes;
       }
     }
-    unsafe.setMemory(nullVectorsAddrs[0], totalNullHeaderBytes, (byte) 0xFF);
-
 
     long perVecSize;
     for (int i = 0; i < schema.size(); i++) {
       if (i == 0) {
-        vectorsAddrs[i] = nullVectorsAddrs[schema.size() - 1];
+        vectorsAddrs[i] = fixedAreaPtr + totalNullHeaderBytes;
       } else {
         Column prevColumn = schema.getColumn(i - 1);
-        perVecSize = (TypeUtil.sizeOf(prevColumn.getDataType(), vectorSize));
+        perVecSize = (TypeUtil.sizeOf(prevColumn.getDataType(), maxVectorSize));
         vectorsAddrs[i] = vectorsAddrs[i - 1] + perVecSize;
       }
     }
 
+    initializeMemory();
+    if (variableAreaInitNeeded) {
+      initVariableArea();
+    }
+  }
+
+  private void initializeMemory() {
+    // initialize null headers
+    unsafe.setMemory(nullVectorsAddrs[0], computeNullHeaderSize(maxVectorSize, schema.size()), (byte) 0xFF);
+
+    // initializes boolean type vector(s)
     for (int i = 0; i < schema.size(); i++) {
       if (schema.getColumn(i).getDataType().getType() == TajoDataTypes.Type.BOOLEAN) {
-        long vecSize = TypeUtil.sizeOf(schema.getColumn(i).getDataType(), vectorSize);
+        long vecSize = TypeUtil.sizeOf(schema.getColumn(i).getDataType(), maxVectorSize);
         unsafe.setMemory(vectorsAddrs[i], vecSize, (byte) 0x00);
       }
     }
+  }
 
-    if (variableAreaInitNeeded) {
-      for (int i = 0; i < schema.size(); i++) {
-        Column column = schema.getColumn(i);
-        if (!TypeUtil.isFixedSize(column.getDataType())) {
-          currentPageAddrs[i] = createPage();
-          nextPtr[i] = currentPageAddrs[i];
-        }
+  private void initVariableArea() {
+    for (int i = 0; i < schema.size(); i++) {
+      Column column = schema.getColumn(i);
+      if (!TypeUtil.isFixedSize(column.getDataType())) {
+        currentPageAddrs[i] = createPage();
+        nextPtr[i] = currentPageAddrs[i];
       }
     }
+    variableAreaMemorySize = 0;
   }
 
   public long getValueVecPtr(int columnIdx) {
@@ -147,28 +169,32 @@ public class VecRowBlock {
 
   private static final int WORD_SIZE = SizeOf.SIZE_OF_LONG * 8;
 
-  public void setNull(int columnIdx, int index) {
-    Preconditions.checkArgument(index < vectorSize, "Index Out of Vectors");
-    int chunkId = index / WORD_SIZE;
-    long offset = index % WORD_SIZE;
+  public void setNull(int columnIdx, int rowIdx) {
+    Preconditions.checkArgument(rowIdx < maxVectorSize, "Index Out of Vectors");
+    int chunkId = rowIdx / WORD_SIZE;
+    long offset = rowIdx % WORD_SIZE;
     long address = nullVectorsAddrs[columnIdx] + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
     nullFlagChunk = (nullFlagChunk & ~(1L << offset));
     unsafe.putLong(address, nullFlagChunk);
   }
 
-  public int isNull(int columnIdx, int index) {
-    Preconditions.checkArgument(index < vectorSize, "Index Out of Vectors");
-    int chunkId = index / WORD_SIZE;
-    long offset = index % WORD_SIZE;
+  public int isNull(int columnIdx, int rowIdx) {
+    Preconditions.checkArgument(rowIdx < maxVectorSize, "Index Out of Vectors");
+    int chunkId = rowIdx / WORD_SIZE;
+    long offset = rowIdx % WORD_SIZE;
     long address = nullVectorsAddrs[columnIdx] + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
     return (int) ((nullFlagChunk >> offset) & 1L);
   }
 
-  public void putBool(int columnIdx, int index, int bool) {
-    int chunkId = index / WORD_SIZE;
-    long offset = index % WORD_SIZE;
+  public void putBool(int columnIdx, int rowIdx, boolean bool) {
+    putBool(columnIdx, rowIdx, bool ? 1 : 0);
+  }
+
+  public void putBool(int columnIdx, int rowIdx, int bool) {
+    int chunkId = rowIdx / WORD_SIZE;
+    long offset = rowIdx % WORD_SIZE;
     long address = vectorsAddrs[columnIdx] + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
     if (bool != 0) {
@@ -179,9 +205,9 @@ public class VecRowBlock {
     unsafe.putLong(address, nullFlagChunk);
   }
 
-  public int getBool(int columnIdx, int index) {
-    int chunkId = index / WORD_SIZE;
-    long offset = index % WORD_SIZE;
+  public int getBool(int columnIdx, int rowIdx) {
+    int chunkId = rowIdx / WORD_SIZE;
+    long offset = rowIdx % WORD_SIZE;
     long address = vectorsAddrs[columnIdx] + (chunkId * 8);
     long nullFlagChunk = unsafe.getLong(address);
     return (int) ((nullFlagChunk >> offset) & 1L);
@@ -203,12 +229,12 @@ public class VecRowBlock {
     return unsafe.getInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_INT));
   }
 
-  public void putInt8(int columnIdx, int rowIdx, int val) {
-    unsafe.putInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG), val);
+  public void putInt8(int columnIdx, int rowIdx, long val) {
+    unsafe.putLong(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG), val);
   }
 
-  public int getInt8(int columnIdx, int rowIdx) {
-    return unsafe.getInt(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG));
+  public long getInt8(int columnIdx, int rowIdx) {
+    return unsafe.getLong(vectorsAddrs[columnIdx] + (rowIdx * SizeOf.SIZE_OF_LONG));
   }
 
   public void putFloat4(int columnIdx, int rowIdx, float val) {
@@ -253,6 +279,30 @@ public class VecRowBlock {
     this.nextPtr[columnIdx] = nextPtr + length;
   }
 
+  public void putText(int columnIdx, int rowIdx, ByteBuffer byteBuf) {
+    long currentPage = currentPageAddrs[columnIdx];
+
+    long ptr = currentPage;
+    long nextPtr = this.nextPtr[columnIdx];
+    long usedMemory = nextPtr - ptr;
+
+    short length = (short) byteBuf.limit();
+
+    if (PAGE_SIZE - usedMemory < length) { // create newly page
+      ptr = createPage();
+      currentPage = ptr;
+      currentPageAddrs[columnIdx] = currentPage;
+      nextPtr = currentPage;
+    }
+
+    unsafe.putShort(nextPtr, length);
+    nextPtr += SizeOf.SIZE_OF_SHORT;
+    unsafe.setMemory(nextPtr, length, (byte) 0x00);
+    unsafe.copyMemory(null, ((DirectBuffer)byteBuf).address(), null, nextPtr, length);
+    unsafe.putAddress(vectorsAddrs[columnIdx] + (Unsafe.ADDRESS_SIZE * rowIdx), nextPtr - SizeOf.SIZE_OF_SHORT);
+    this.nextPtr[columnIdx] = nextPtr + length;
+  }
+
   public int getText(int columnIdx, int rowIdx, byte[] val, int srcPos, int length) {
     long ptr = vectorsAddrs[columnIdx];
     long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
@@ -272,12 +322,28 @@ public class VecRowBlock {
     long ptr = vectorsAddrs[columnIdx];
     long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
 
+    System.out.println("get length >>>>>> ");
     int strLen = unsafe.getShort(dataPtr);
     dataPtr += SizeOf.SIZE_OF_SHORT;
+    System.out.println("get length finish >>>>>>");
 
     DirectBuffer directBuffer = (DirectBuffer) buf;
     unsafe.copyMemory(null, dataPtr, null, directBuffer.address(), strLen);
+    buf.position(strLen);
+    buf.limit(strLen);
     return strLen;
+  }
+
+  public byte [] getTextBytes(int columnIdx, int rowIdx) {
+    long ptr = vectorsAddrs[columnIdx];
+    long dataPtr = unsafe.getAddress(ptr + ((rowIdx) * Unsafe.ADDRESS_SIZE));
+
+    int strLen = unsafe.getShort(dataPtr);
+    dataPtr += SizeOf.SIZE_OF_SHORT;
+
+    byte [] bytes = new byte[strLen];
+    unsafe.copyMemory(null, dataPtr, bytes, unsafe.ARRAY_BYTE_BASE_OFFSET, strLen);
+    return bytes;
   }
 
   public String getString(int columnIdx, int rowIdx) {
@@ -302,16 +368,31 @@ public class VecRowBlock {
   private long createPage() {
     long pagePtr = unsafe.allocateMemory(PAGE_SIZE);
     pageReferences.add(pagePtr);
-    variableAreaSize += PAGE_SIZE;
+    variableAreaMemorySize += PAGE_SIZE;
     return pagePtr;
   }
 
-  public void free() {
-    if (pageReferences != null) {
+  public void clear() {
+    if (pageReferences != null && pageReferences.size() > 0) {
+      freeVariableAreas();
+      initVariableArea();
+    }
+
+    initializeMemory();
+    setLimitedVecSize(0);
+  }
+
+  private void freeVariableAreas() {
+    if (pageReferences != null && pageReferences.size() > 0) {
       for (long ref : pageReferences) {
         unsafe.freeMemory(ref);
       }
+      pageReferences.clear();
     }
+  }
+
+  public void free() {
+    freeVariableAreas();
     unsafe.freeMemory(fixedAreaPtr);
   }
 
@@ -322,12 +403,12 @@ public class VecRowBlock {
     return ptr;
   }
 
-  public static long computeNullHeaderSizePerColumn(int vectorSize) {
-    return (long) Math.ceil(vectorSize / SizeOf.SIZE_OF_BYTE);
+  private static long computeNullHeaderSize(int vectorSize, int columnNum) {
+    long eachNullHeaderBytes = (long) Math.ceil(vectorSize / WORD_SIZE);
+    return eachNullHeaderBytes * columnNum;
   }
 
-  public static long computeNullHeaderSize(int vectorSize, int columnNum) {
-    long eachNullHeaderBytes = (long) Math.ceil(vectorSize / SizeOf.SIZE_OF_BYTE);
-    return eachNullHeaderBytes * columnNum;
+  public static long computeNullHeaderSizePerColumn(int vectorSize) {
+    return (long) Math.ceil(vectorSize / WORD_SIZE);
   }
 }
