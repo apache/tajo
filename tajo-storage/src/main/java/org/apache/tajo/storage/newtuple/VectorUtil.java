@@ -34,7 +34,8 @@ public class VectorUtil {
       result += SizeOf.SIZE_OF_LONG;
       addr1 += SizeOf.SIZE_OF_LONG;
       addr2 += SizeOf.SIZE_OF_LONG;
-      vecNum -= SizeOf.SIZE_OF_LONG * SizeOf.SIZE_OF_BYTE;
+
+      vecNum -= SizeOf.BITS_PER_WORD;
     }
 
     byte nullFlagByte;

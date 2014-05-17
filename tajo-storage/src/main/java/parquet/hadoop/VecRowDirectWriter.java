@@ -106,7 +106,11 @@ class VecRowDirectWriter {
     w.end(extraMetaData);
   }
 
+  public byte [] buffers = new byte[Short.MAX_VALUE];
+
   public void write(VecRowBlock vecRowBlock) throws IOException, InterruptedException {
+
+
     for (int rowIdx = 0; rowIdx < vecRowBlock.limitedVecSize(); rowIdx++) {
       recordConsumer.startMessage();
 
@@ -134,13 +138,13 @@ class VecRowDirectWriter {
           break;
         case CHAR:
         case TEXT:
-          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getTextBytes(columnIdx, rowIdx)));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getBytes(columnIdx, rowIdx)));
           break;
         case PROTOBUF:
         case BLOB:
         case INET4:
         case INET6:
-          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getTextBytes(columnIdx, rowIdx)));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getBytes(columnIdx, rowIdx)));
           break;
         default:
           break;

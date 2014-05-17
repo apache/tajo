@@ -42,6 +42,15 @@ public class UnsafeUtil {
     }
   }
 
+  public static long computeAlignedSize(long size) {
+    long remain = size % SizeOf.BYTES_PER_WORD;
+    if (remain > 0) {
+      return size + (SizeOf.BYTES_PER_WORD - remain);
+    } else {
+      return size;
+    }
+  }
+
   public static long alloc(long size) {
     return unsafe.allocateMemory(size);
   }

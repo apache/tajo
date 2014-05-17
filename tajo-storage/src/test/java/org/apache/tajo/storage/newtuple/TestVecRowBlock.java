@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.newtuple;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -51,6 +52,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.assertEquals;
@@ -325,13 +327,13 @@ public class TestVecRowBlock {
     for (int i = 0; i < 500; i++) {
       int idx = rnd.nextInt(vecSize);
       nullIndices.add(idx);
-      vecRowBlock.setNull(idx % 5, idx);
+      vecRowBlock.setNull(idx % 5, idx, idx % 2);
 
-      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 0);
+      assertTrue(vecRowBlock.getNullFlag(idx % 5, idx) == (idx % 2 == 0 ? 0 : 1));
     }
 
     for (int idx : nullIndices) {
-      assertTrue(vecRowBlock.isNull(idx % 5, idx) == 0);
+      assertTrue(vecRowBlock.getNullFlag(idx % 5, idx) == (idx % 2 == 0 ? 0 : 1));
     }
     vecRowBlock.free();
   }
@@ -365,32 +367,32 @@ public class TestVecRowBlock {
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
 
-    List<Integer> nullIdx = Lists.newArrayList();
+    Set<Integer> nullIdx = Sets.newHashSet();
     Random rnd = new Random(System.currentTimeMillis());
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
       int idx = rnd.nextInt(vecSize);
       nullIdx.add(idx);
       vecRowBlock.setNull(0, idx);
-      assertTrue(vecRowBlock.isNull(0, idx) == 0);
+      assertTrue(vecRowBlock.getNullFlag(0, idx) == 0);
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
       int idx = rnd.nextInt(vecSize);
       nullIdx.add(idx);
       vecRowBlock.setNull(1, idx);
-      assertTrue(vecRowBlock.isNull(1, idx) == 0);
+      assertTrue(vecRowBlock.getNullFlag(1, idx) == 0);
     }
 
     for (int i = 0; i < vecSize; i++) {
       if (nullIdx.contains(i)) {
-        assertTrue(vecRowBlock.isNull(0, i) == 0 || vecRowBlock.isNull(1, i) == 0);
+        assertTrue(vecRowBlock.getNullFlag(0, i) == 0 || vecRowBlock.getNullFlag(1, i) == 0);
       } else {
-        if (!(vecRowBlock.isNull(0, i) == 1 && vecRowBlock.isNull(1, i) == 1)) {
+        if (!(vecRowBlock.getNullFlag(0, i) == 1 && vecRowBlock.getNullFlag(1, i) == 1)) {
           System.out.println("idx: " + i);
           System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
-          System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));
-          System.out.println("2st null vec: " + vecRowBlock.isNull(1, i));
+          System.out.println("1st null vec: " + vecRowBlock.getNullFlag(0, i));
+          System.out.println("2st null vec: " + vecRowBlock.getNullFlag(1, i));
           fail();
         }
       }
@@ -407,8 +409,8 @@ public class TestVecRowBlock {
         if (VectorUtil.isNull(nullVector, i) == 0) {
           System.out.println("idx: " + i);
           System.out.println("nullIdx: " + nullIdx.contains(new Integer(i)));
-          System.out.println("1st null vec: " + vecRowBlock.isNull(0, i));
-          System.out.println("2st null vec: " + vecRowBlock.isNull(1, i));
+          System.out.println("1st null vec: " + vecRowBlock.getNullFlag(0, i));
+          System.out.println("2st null vec: " + vecRowBlock.getNullFlag(1, i));
           fail();
         }
       }
@@ -555,14 +557,14 @@ public class TestVecRowBlock {
     long readStart = System.currentTimeMillis();
     for (int i = 0; i < totalTupleNum; i++) {
       tuple = scanner.next();
-      //assertTrue(i % 2 == 1 == tuple.getBool(0));
+//      assertTrue(i % 2 == 1 == tuple.getBool(0));
       //assertTrue(1 == tuple.getInt2(1));
       //assertEquals(i, tuple.getInt4(2));
       assertEquals(i, tuple.getInt8(3));
       //assertTrue(i == tuple.getFloat4(4));
-      //assertTrue(((double) i) == tuple.getFloat8(5));
+      assertTrue(((double) i) == tuple.getFloat8(5));
       //assertEquals("colabcdefghijklmnopqrstu1", tuple.getText(6));
-      //assertEquals("colabcdefghijklmnopqrstu2", tuple.getText(7));
+      assertEquals("colabcdefghijklmnopqrstu2", tuple.getText(7));
     }
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
@@ -652,9 +654,9 @@ public class TestVecRowBlock {
         //assertEquals(rowId, vecRowBlock.getInt4(2, vectorId));
         assertEquals(rowId, vecRowBlock.getInt8(3, vectorId));
         //assertTrue(rowId == vecRowBlock.getFloat4(4, vectorId));
-        //assertTrue(((double)rowId) == vecRowBlock.getFloat8(5, vectorId));
+        assertTrue(((double)rowId) == vecRowBlock.getFloat8(5, vectorId));
         //assertEquals("colabcdefghijklmnopqrstu1", (vecRowBlock.getString(6, vectorId)));
-        //assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getString(7, vectorId)));
+        assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getString(7, vectorId)));
 
         rowId++;
       }
