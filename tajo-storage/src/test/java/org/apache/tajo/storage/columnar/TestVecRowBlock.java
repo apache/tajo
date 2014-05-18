@@ -41,6 +41,7 @@ import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.ParquetWriter;
@@ -852,7 +853,7 @@ public class TestVecRowBlock {
 
   public class CukcooHash {
     private int INIT_SIZE = (int) Math.pow(2, 4);
-    long buckets[] = new long[INIT_SIZE];
+    int buckets[] = new int[INIT_SIZE];
     long hashes[] = new long[INIT_SIZE];
     int mask = (int) (Math.pow(2, 4) - 1);
     int NBITS = 32;
@@ -870,37 +871,84 @@ public class TestVecRowBlock {
         return;
       }
 
-      int curBucketId = (int) (hash & mask); // use different parts of the hash number
-
       int loopCount = 0;
-      while(loopCount < MAX_LOOP) {
-        long temp = buckets[curBucketId];
-
-        if (temp == 0) {
-          hashes[hashId] = hash;
-          buckets[curBucketId] = hashId;
-          entries[hashId] = value;
-          hashId++;
+      int tmpHashId = -1;
+      int bucketId = (int) (hash & mask) % 8;
+      long koHash = 0;
+      String koValue = null;
+      while(loopCount < MAX_LOOP && tmpHashId != 0) {
+        if (buckets[bucketId] == 0) {
+          buckets[bucketId] = tmpHashId > 0 ? tmpHashId : hashId;
+          hashes[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koHash : hash;
+          entries[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koValue : value;
+          if (tmpHashId <= 0) {
+            hashId++;
+          }
           return;
         }
 
-        int buckId2 = (int) (hash >> NBITS & mask);
-        hashes[hashId] = hash;
-        buckets[buckId2] = hashId;
-        entries[buckId2] = value;
-        hashId++;
+
+        int buckId2 = (int) (hash >> NBITS & mask) % 8 + 8;
+        if (buckets[buckId2] == 0) {
+          buckets[buckId2] = hashId;
+          hashes[hashId] = hash;
+          entries[hashId] = value;
+          hashId++;
+          tmpHashId = 0;
+        } else {
+          if (hashId >= hashes.length) {
+            break;
+          }
+
+          tmpHashId = buckets[buckId2];
+          koHash = hashes[tmpHashId];
+          koValue = entries[tmpHashId];
+          bucketId = (int) (koHash & mask) % 8;
+
+          buckets[buckId2] = hashId;
+          hashes[hashId] = hash;
+          entries[hashId] = value;
+
+          hashId++;
+        }
 
         loopCount++;
+      }
+
+      if (loopCount >= MAX_LOOP) {
+        rehash();
+        insert(hash, value);
+      }
+    }
+
+    public void rehash() {
+      int [] oldBuckets = buckets;
+      long [] oldHashes = hashes;
+      String [] oldEntries = entries;
+
+      int newCapacity = (int) Math.pow(buckets.length, 2);
+      buckets = new int[newCapacity];
+      hashes = new long[newCapacity];
+      entries = new String[newCapacity];
+      mask = (int) (newCapacity - 1);
+      hashId = 1;
+
+      for (int i = 0; i < oldBuckets.length; i++) {
+        if (oldBuckets[i] != 0) {
+          long hash = oldHashes[oldBuckets[i]];
+          String value = oldEntries[oldBuckets[i]];
+          insert(hash, value);
+        }
       }
     }
 
     public String lookup(long hashKey) {
       // find the possible locations
-      int buckId1 = (int) (hashKey & mask); // use different parts of the hash number
-      int buckId2 = (int) (hashKey >> NBITS & mask);
+      int buckId1 = (int) (hashKey & mask) % 8; // use different parts of the hash number
+      int buckId2 = (int) (hashKey >> NBITS & mask) % 8 + 8;
 
-      int idx1 = (int) buckets[buckId1]; // 0 for empty buckets,
-      int idx2 = (int) buckets[buckId2]; // 1+ for non empty
+      int idx1 = buckets[buckId1]; // 0 for empty buckets,
+      int idx2 = buckets[buckId2]; // 1+ for non empty
 
       // check which one matches
       int mask1 = -(hashKey == hashes[idx1] ? 1 : 0); // 0xFF..FF for a match,
@@ -915,16 +963,33 @@ public class TestVecRowBlock {
   public void testCuckoo() {
     String [] strs = {
         "hyunsik",
-        "tajo"
+        "tajo",
+        "abc",
+        "def",
+        "gef",
+        "abd",
+        "nml",
+        "apache",
+        "daum",
+        "www",
+        "eclipse"
     };
 
     CukcooHash hashTable = new CukcooHash();
 
-    long hash = VecFuncMulMul3LongCol.hash64(strs[0].hashCode());
+    for (int i = 0; i < strs.length; i++) {
+      long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
+      assertNull(hashTable.lookup(hash));
+      hashTable.insert(hash, strs[i]);
+      assertEquals(strs[i], hashTable.lookup(hash));
+    }
 
-    assertNull(hashTable.lookup(hash));
-    hashTable.insert(hash, strs[0]);
-    assertEquals(strs[0], hashTable.lookup(hash));
+    for (int i = 0; i < strs.length; i++) {
+      long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
+      assertEquals(strs[i], hashTable.lookup(hash));
+    }
+
+    System.out.println(hashTable.buckets);
   }
 
   @Test
