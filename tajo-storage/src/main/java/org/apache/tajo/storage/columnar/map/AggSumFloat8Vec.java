@@ -16,16 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple.map;
+package org.apache.tajo.storage.columnar.map;
 
-import org.apache.tajo.storage.newtuple.SizeOf;
+import org.apache.tajo.storage.columnar.SizeOf;
+import org.apache.tajo.storage.columnar.UnsafeUtil;
 
-public class MapMulInt8ColInt8ColOp extends MapBinaryOp {
-  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+public class AggSumFloat8Vec {
+  public void process(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
     for (int i = 0; i < vecnum; i++) {
-      long lval1 = unsafe.getLong(lhs);
-      long rval1 = unsafe.getLong(rhs);
-      unsafe.putLong(result, lval1 * rval1);
+      long lval1 = UnsafeUtil.unsafe.getLong(lhs);
+      long rval1 = UnsafeUtil.unsafe.getLong(rhs);
+      UnsafeUtil.unsafe.putLong(result, lval1 * rval1);
 
       result += SizeOf.SIZE_OF_LONG;
       rhs += SizeOf.SIZE_OF_LONG;

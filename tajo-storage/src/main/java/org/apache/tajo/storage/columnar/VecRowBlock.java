@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.columnar;
 
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
@@ -139,7 +139,7 @@ public class VecRowBlock {
     long assertMem = nullVectorsAddrs[0];
     long remainMemory = totalNullHeaderBytes;
     while(remainMemory > 0) {
-      assert unsafe.getLong(assertMem) == (0x00000000 << 32 | 0x00000000);
+      assert unsafe.getLong(assertMem) == 0x0000000000000000L;
       assertMem += SizeOf.SIZE_OF_LONG;
       remainMemory -= SizeOf.SIZE_OF_LONG;
     }

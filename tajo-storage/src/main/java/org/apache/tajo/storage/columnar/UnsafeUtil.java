@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.columnar;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
@@ -60,7 +60,7 @@ public class UnsafeUtil {
   }
 
   public static long allocVector(TajoDataTypes.DataType dataType, int num) {
-    return unsafe.allocateMemory(TypeUtil.sizeOf(dataType, num));
+    return unsafe.allocateMemory(computeAlignedSize(TypeUtil.sizeOf(dataType, num)));
   }
 
   public static void free(long addr) {
@@ -80,6 +80,10 @@ public class UnsafeUtil {
       addr++;
       n--;
     }
+  }
+
+  public static short getUnsignedByte(long index) {
+    return (short) (unsafe.getByte(index) & 0xFF);
   }
 
   public static int getInt(long addr, int index) {

@@ -16,13 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple.map;
+package org.apache.tajo.storage.columnar.map;
 
-import org.apache.tajo.storage.newtuple.UnsafeUtil;
-import sun.misc.Unsafe;
+import org.apache.tajo.storage.columnar.SizeOf;
 
-public abstract class MapBinaryOp {
-  protected static final Unsafe unsafe = UnsafeUtil.unsafe;
+public class MapMinusInt4ValFloat8ColOp extends MapBinaryOp {
 
-  public abstract void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId);
+  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+    for (int i = 0; i < vecnum; i++) {
+      int lval1 = unsafe.getInt(lhs);
+      double rval1 = unsafe.getFloat(rhs);
+      unsafe.putDouble(result, lval1 - rval1);
+
+      result += SizeOf.SIZE_OF_LONG;
+      rhs += SizeOf.SIZE_OF_LONG;
+      lhs += SizeOf.SIZE_OF_LONG;
+    }
+  }
 }

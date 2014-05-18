@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.columnar;
 
 import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Unsafe;

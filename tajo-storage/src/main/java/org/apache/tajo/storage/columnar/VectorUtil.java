@@ -16,10 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.columnar;
 
-import com.google.common.primitives.Longs;
-import com.google.common.primitives.UnsignedBytes;
 import sun.misc.Unsafe;
 
 public class VectorUtil {

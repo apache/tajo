@@ -16,18 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
-
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.Tuple;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Stack;
+package org.apache.tajo.storage.columnar;
 
 public class VecJitCodeGen {
 

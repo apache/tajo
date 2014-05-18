@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple.map;
+package org.apache.tajo.storage.columnar.map;
 
-import com.google.common.primitives.Longs;
-import org.apache.tajo.storage.newtuple.SizeOf;
+import org.apache.tajo.storage.columnar.SizeOf;
 
 public class MapAddInt8ColInt8ColOp extends MapBinaryOp {
   private static final int LOOP_UNROLLOING_NUM = 4;

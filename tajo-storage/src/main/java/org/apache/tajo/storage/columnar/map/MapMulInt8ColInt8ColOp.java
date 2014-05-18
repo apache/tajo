@@ -16,8 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.newtuple;
+package org.apache.tajo.storage.columnar.map;
 
-public class MemoryPool {
+import org.apache.tajo.storage.columnar.SizeOf;
 
+public class MapMulInt8ColInt8ColOp extends MapBinaryOp {
+  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+    for (int i = 0; i < vecnum; i++) {
+      long lval1 = unsafe.getLong(lhs);
+      long rval1 = unsafe.getLong(rhs);
+      unsafe.putLong(result, lval1 * rval1);
+
+      result += SizeOf.SIZE_OF_LONG;
+      rhs += SizeOf.SIZE_OF_LONG;
+      lhs += SizeOf.SIZE_OF_LONG;
+    }
+  }
 }

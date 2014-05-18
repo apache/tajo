@@ -20,9 +20,6 @@ package parquet.hadoop;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.newtuple.VecRowBlock;
-import org.apache.tajo.storage.parquet.TajoRecordConverter;
 import parquet.io.api.GroupConverter;
 import parquet.io.api.RecordMaterializer;
 import parquet.schema.MessageType;
