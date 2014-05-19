@@ -263,7 +263,11 @@ public class DistinctGroupbyBuilder {
     int[] secondStageColumnIds = new int[secondStageDistinctNode.getOutSchema().size()];
     int columnIdIndex = 0;
     for (Column column: secondStageDistinctNode.getGroupingColumns()) {
-      secondStageColumnIds[originOutputSchema.getColumnId(column.getQualifiedName())] = columnIdIndex;
+      if (column.hasQualifier()) {
+        secondStageColumnIds[originOutputSchema.getColumnId(column.getQualifiedName())] = columnIdIndex;
+      } else {
+        secondStageColumnIds[originOutputSchema.getColumnIdByName(column.getSimpleName())] = columnIdIndex;
+      }
       columnIdIndex++;
     }
 
@@ -312,8 +316,12 @@ public class DistinctGroupbyBuilder {
           int targetIdx = originGroupColumns.size() + uniqueDistinctColumn.size() + aggFuncIdx;
           Target aggFuncTarget = oldTargets[targetIdx];
           secondGroupbyTargets.add(aggFuncTarget);
-          int outputColumnId = originOutputSchema.getColumnId(aggFuncTarget.getNamedColumn().getQualifiedName());
-          secondStageColumnIds[outputColumnId] = columnIdIndex;
+          Column column = aggFuncTarget.getNamedColumn();
+          if (column.hasQualifier()) {
+            secondStageColumnIds[originOutputSchema.getColumnId(column.getQualifiedName())] = columnIdIndex;
+          } else {
+            secondStageColumnIds[originOutputSchema.getColumnIdByName(column.getSimpleName())] = columnIdIndex;
+          }
           columnIdIndex++;
         }
         secondStageGroupbyNode.setTargets(secondGroupbyTargets.toArray(new Target[]{}));
@@ -336,8 +344,12 @@ public class DistinctGroupbyBuilder {
           secondStageAggFunction.setArgs(new EvalNode[] {firstEval});
 
           Target secondTarget = secondStageGroupbyNode.getTargets()[secondStageGroupbyNode.getGroupingColumns().length + aggFuncIdx];
-          int outputColumnId = originOutputSchema.getColumnId(secondTarget.getNamedColumn().getQualifiedName());
-          secondStageColumnIds[outputColumnId] = columnIdIndex;
+          Column column = secondTarget.getNamedColumn();
+          if (column.hasQualifier()) {
+            secondStageColumnIds[originOutputSchema.getColumnId(column.getQualifiedName())] = columnIdIndex;
+          } else {
+            secondStageColumnIds[originOutputSchema.getColumnIdByName(column.getSimpleName())] = columnIdIndex;
+          }
           columnIdIndex++;
           aggFuncIdx++;
         }
