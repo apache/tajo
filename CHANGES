@@ -18,6 +18,9 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-821: IllegalStateException occurs when a NettyClientBase object is created 
+    within single thread. (hyoungjunkim via jinho)
+
     TAJO-816: NULL delimiter doesn't apply with HCatalogStore. (jaehwa)
 
     TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
