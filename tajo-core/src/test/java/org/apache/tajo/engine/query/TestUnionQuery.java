@@ -133,6 +133,59 @@ public class TestUnionQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testUnion11() throws Exception {
+    // test filter pushdown
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnion12() throws Exception {
+    // test filter pushdown
+    // with subquery in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnion13() throws Exception {
+    // test filter pushdown
+    // with subquery in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnion14() throws Exception {
+    // test filter pushdown
+    // with group by subquery in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnion15() throws Exception {
+    // test filter pushdown
+    // with group by out of union query and join in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnion16() throws Exception {
+    // test filter pushdown
+    // with count distinct out of union query and join in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testUnionWithSameAliasNames() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

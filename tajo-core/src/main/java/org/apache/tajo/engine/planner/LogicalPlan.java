@@ -420,6 +420,11 @@ public class LogicalPlan {
       return ensureUniqueColumn(candidates);
     }
 
+    LogicalNode blockRootNode = block.getRoot();
+    if (blockRootNode != null && blockRootNode.getOutSchema().getColumn(columnRef.getCanonicalName()) != null) {
+      throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+    }
+
     // Trying to find columns from other relations in other blocks
     for (QueryBlock eachBlock : queryBlocks.values()) {
       for (RelationNode rel : eachBlock.getRelations()) {
