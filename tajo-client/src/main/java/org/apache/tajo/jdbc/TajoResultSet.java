@@ -87,6 +87,9 @@ public class TajoResultSet extends TajoResultSetBase {
         this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : INFINITE_ROW_NUM;
       }
 
+      if (totalRow == 0) {
+        totalRow = INFINITE_ROW_NUM;
+      }
 
       List<FileFragment> frags = getFragments(desc.getPath());
       scanner = new MergeScanner(conf, desc.getSchema(), desc.getMeta(), frags);

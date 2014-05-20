@@ -20,18 +20,52 @@ package org.apache.tajo.engine.planner.rewrite;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule.FilterPushDownContext;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
-public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, LogicalNode> implements RewriteRule {
+public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownContext, LogicalNode>
+    implements RewriteRule {
+  private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
+
+  static class FilterPushDownContext {
+    Set<EvalNode> workingEvals = new HashSet<EvalNode>();
+
+    public void clear() {
+      workingEvals.clear();
+    }
+    public void setWorkingEvals(Collection<EvalNode> workingEvals) {
+      this.workingEvals.clear();
+      this.workingEvals.addAll(workingEvals);
+    }
+    public void addWorkingEvals(Collection<EvalNode> workingEvals) {
+      this.workingEvals.addAll(workingEvals);
+    }
+
+    public void setToOrigin(Map<EvalNode, EvalNode> evalMap) {
+      //evalMap: copy -> origin
+      List<EvalNode> origins = new ArrayList<EvalNode>();
+      for (EvalNode eval : workingEvals) {
+        EvalNode origin = evalMap.get(eval);
+        if (origin != null) {
+          origins.add(origin);
+        }
+      }
+      setWorkingEvals(origins);
+    }
+  }
 
   @Override
   public String getName() {
@@ -50,23 +84,40 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+    /*
+    FilterPushDown rule: processing when visits each node
+      - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.
+      - Replace filter EvalNode's column with child node's output column.
+        If there is no child node's output column, do not PushDown.
+      - When visit ScanNode, add filter eval to ScanNode's qual
+      - When visit GroupByNode, Find aggregation column in a filter EvalNode and
+        . If a parent is HavingNode, add filter eval to parent HavingNode.
+        . It not, create new HavingNode and set parent's child.
+     */
+    FilterPushDownContext context = new FilterPushDownContext();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      this.visit(new HashSet<EvalNode>(), plan, block, block.getRoot(), new Stack<LogicalNode>());
+      context.clear();
+      this.visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());
     }
 
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("=============================================");
+      LOG.debug("FilterPushDown Optimized Query: \n" + plan.toString());
+      LOG.debug("=============================================");
+    }
     return plan;
   }
 
   @Override
-  public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block,
+  public LogicalNode visitFilter(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  SelectionNode selNode, Stack<LogicalNode> stack) throws PlanningException {
-    cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
+    context.workingEvals.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
-    visit(cnf, plan, block, selNode.getChild(), stack);
+    visit(context, plan, block, selNode.getChild(), stack);
     stack.pop();
 
-    if(cnf.size() == 0) { // remove the selection operator if there is no search condition after selection push.
+    if(context.workingEvals.size() == 0) { // remove the selection operator if there is no search condition after selection push.
       LogicalNode node = stack.peek();
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
@@ -78,16 +129,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
       // check if it can be evaluated here
       Set<EvalNode> matched = TUtil.newHashSet();
-      for (EvalNode eachEval : cnf) {
+      for (EvalNode eachEval : context.workingEvals) {
         if (LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)) {
           matched.add(eachEval);
         }
       }
 
-      // if there are search conditions which can be evaluated here, push down them and remove them from cnf.
+      // if there are search conditions which can be evaluated here, push down them and remove them from context.workingEvals.
       if (matched.size() > 0) {
         selNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(matched.toArray(new EvalNode[matched.size()])));
-        cnf.removeAll(matched);
+        context.workingEvals.removeAll(matched);
       }
     }
 
@@ -99,7 +150,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
   }
 
   @Override
-  public LogicalNode visitJoin(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
+  public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
                                Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode left = joinNode.getRightChild();
     LogicalNode right = joinNode.getLeftChild();
@@ -157,7 +208,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
         // retain in this outer join node's JoinQual those selection predicates
         // related to the outer join's null supplier(s)
         List<EvalNode> matched2 = Lists.newArrayList();
-        for (EvalNode eval : cnf) {
+        for (EvalNode eval : context.workingEvals) {
 
           Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(eval);
           Set<String> tableNames = Sets.newHashSet();
@@ -183,7 +234,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
 
         }
 
-        //merge the retained predicates and establish them in the current outer join node. Then remove them from the cnf
+        //merge the retained predicates and establish them in the current outer join node. Then remove them from the workingEvals
         EvalNode qual2 = null;
         if (matched2.size() > 1) {
           // merged into one eval tree
@@ -197,20 +248,35 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
         if (qual2 != null) {
           EvalNode conjQual2 = AlgebraicUtil.createSingletonExprFromCNF(joinNode.getJoinQual(), qual2);
           joinNode.setJoinQual(conjQual2);
-          cnf.removeAll(matched2);
-        } // for the remaining cnf, push it as usual
+          context.workingEvals.removeAll(matched2);
+        } // for the remaining context.workingEvals, push it as usual
       }
     }
 
     if (joinNode.hasJoinQual()) {
-      cnf.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
+      context.addWorkingEvals(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
 
-    visit(cnf, plan, block, left, stack);
-    visit(cnf, plan, block, right, stack);
+    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    // Join's input schema = right child output columns + left child output columns
+    Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, joinNode, left, notMatched, true,
+        right.getOutSchema().size());
+    context.setWorkingEvals(transformedMap.keySet());
+    visit(context, plan, block, left, stack);
+
+    context.setToOrigin(transformedMap);
+    context.addWorkingEvals(notMatched);
+
+    transformedMap = findCanPushdownAndTransform(context, joinNode, right, notMatched, true, 0);
+    context.setWorkingEvals(new HashSet<EvalNode>(transformedMap.keySet()));
+
+    visit(context, plan, block, right, stack);
+
+    context.setToOrigin(transformedMap);
+    context.addWorkingEvals(notMatched);
 
     List<EvalNode> matched = Lists.newArrayList();
-    for (EvalNode eval : cnf) {
+    for (EvalNode eval : context.workingEvals) {
       if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, stack.peek().getType() != NodeType.JOIN)) {
         matched.add(eval);
       }
@@ -232,50 +298,84 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
       if (joinNode.getJoinType() == JoinType.CROSS) {
         joinNode.setJoinType(JoinType.INNER);
       }
-      cnf.removeAll(matched);
+      context.workingEvals.removeAll(matched);
     }
 
     return joinNode;
   }
 
-  @Override
-  public LogicalNode visitTableSubQuery(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
-    List<EvalNode> matched = Lists.newArrayList();
-    for (EvalNode eval : cnf) {
-      if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
-        matched.add(eval);
-      }
+  private Map<EvalNode, EvalNode> transformEvalsWidthByPassNode(Collection<EvalNode> originEvals, LogicalPlan plan,
+                                                                LogicalPlan.QueryBlock block,
+                                                                LogicalNode node, LogicalNode childNode) throws PlanningException {
+    // transformed -> workingEvals
+    Map<EvalNode, EvalNode> transformedMap = new HashMap<EvalNode, EvalNode>();
+
+    if (originEvals.isEmpty()) {
+      return transformedMap;
     }
 
-    Map<String, String> columnMap = new HashMap<String, String>();
-    for (int i = 0; i < node.getInSchema().size(); i++) {
-      LogicalNode childNode = node.getSubQuery();
-      if (childNode.getOutSchema().getColumn(i).hasQualifier()) {
-      columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(),
-          childNode.getOutSchema().getColumn(i).getQualifiedName());
-      } else {
-        NamedExprsManager namedExprsMgr = plan.getBlock(node.getSubQuery()).getNamedExprsManager();
-        String originalName = namedExprsMgr.getOriginalName(childNode.getOutSchema().getColumn(i)
-            .getQualifiedName());
-
-        // We need to consider aliased columns of sub-query.
-        // Because we can't get original column name for a special occasion.
-        // For example, if we use an aliased name inside a sub-query and then we use it to where
-        // condition outside the sub-query, we can't find its original name.
-        if (originalName != null) {
-          columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(), originalName);
-        } else {
-          columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(),
-            node.getInSchema().getColumn(i).getQualifiedName());
+    if (node.getType() == NodeType.UNION) {
+      // Node가 Union이면 Eval 컬럼은 모두 Simple Name이고 Child의 OutSchema의 Simple Name과 모두 매칭
+      Schema childOutSchema = childNode.getOutSchema();
+      for (EvalNode eval : originEvals) {
+        EvalNode copy;
+        try {
+          copy = (EvalNode) eval.clone();
+        } catch (CloneNotSupportedException e) {
+          throw new PlanningException(e);
         }
+
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
+        for (Column c : columns) {
+          Column column = childOutSchema.getColumn(c.getSimpleName());
+          if (column == null) {
+            throw new PlanningException(
+                "Invalid Filter PushDown on SubQuery: No such a corresponding column '"
+                    + c.getQualifiedName() + " for FilterPushDown(" + eval + "), " +
+                    "(PID=" + node.getPID() + ", Child=" + childNode.getPID() + ")");
+          }
+          EvalTreeUtil.changeColumnRef(copy, c.getSimpleName(), column.getQualifiedName());
+        }
+
+        transformedMap.put(copy, eval);
       }
+      return transformedMap;
     }
 
-    Set<EvalNode> transformed = new HashSet<EvalNode>();
+    if (childNode.getType() == NodeType.UNION) {
+      // Child가 Union이면 Eval의 컬럼의 Qualifier를 제거하고 반환
+      for (EvalNode eval : originEvals) {
+        EvalNode copy;
+        try {
+          copy = (EvalNode) eval.clone();
+        } catch (CloneNotSupportedException e) {
+          throw new PlanningException(e);
+        }
+
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
+        for (Column c : columns) {
+          if (c.hasQualifier()) {
+            EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), c.getSimpleName());
+          }
+        }
+
+        transformedMap.put(copy, eval);
+      }
+
+      return transformedMap;
+    }
+
+    // node in column -> child out column(가능한 QualifierName)
+    Map<String, String> columnMap = new HashMap<String, String>();
+
+    for (int i = 0; i < node.getInSchema().size(); i++) {
+      String inColumnName = node.getInSchema().getColumn(i).getQualifiedName();
+      Column childOutColumn = childNode.getOutSchema().getColumn(i);
+      columnMap.put(inColumnName, childOutColumn.getQualifiedName());
+    }
 
     // Rename from upper block's one to lower block's one
-    for (EvalNode matchedEval : matched) {
+    for (EvalNode matchedEval : originEvals) {
       EvalNode copy;
       try {
         copy = (EvalNode) matchedEval.clone();
@@ -284,31 +384,395 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
       }
 
       Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
+      boolean allMatched = true;
       for (Column c : columns) {
         if (columnMap.containsKey(c.getQualifiedName())) {
           EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), columnMap.get(c.getQualifiedName()));
         } else {
-          throw new PlanningException(
-              "Invalid Filter PushDown on SubQuery: No such a corresponding column '"
-                  + c.getQualifiedName());
+          if (childNode.getType() == NodeType.GROUP_BY) {
+            if (((GroupbyNode) childNode).isAggregationColumn(c.getSimpleName())) {
+              allMatched = false;
+              break;
+            }
+          } else {
+            throw new PlanningException(
+                "Invalid Filter PushDown on SubQuery: No such a corresponding column '"
+                    + c.getQualifiedName() + " for FilterPushDown(" + matchedEval + "), " +
+                    "(PID=" + node.getPID() + ", Child=" + childNode.getPID() + ")"
+            );
+          }
         }
       }
-
-      transformed.add(copy);
+      if (allMatched) {
+        transformedMap.put(copy, matchedEval);
+      }
     }
 
-    visit(transformed, plan, plan.getBlock(node.getSubQuery()));
+    return transformedMap;
+  }
 
-    cnf.removeAll(matched);
+  @Override
+  public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+    List<EvalNode> matched = Lists.newArrayList();
+    for (EvalNode eval : context.workingEvals) {
+      if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
+        matched.add(eval);
+      }
+    }
+
+    // transformed -> workingEvals
+    Map<EvalNode, EvalNode> transformedMap =
+        transformEvalsWidthByPassNode(matched, plan, block, node, node.getSubQuery());
+
+    context.setWorkingEvals(new HashSet<EvalNode>(transformedMap.keySet()));
+    visit(context, plan, plan.getBlock(node.getSubQuery()));
+
+    context.setToOrigin(transformedMap);
 
     return node;
   }
 
   @Override
-  public LogicalNode visitScan(Set<EvalNode> cnf, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
+  public LogicalNode visitUnion(FilterPushDownContext context, LogicalPlan plan,
+                                LogicalPlan.QueryBlock block, UnionNode unionNode,
+                                Stack<LogicalNode> stack) throws PlanningException {
+    LogicalNode leftNode = unionNode.getLeftChild();
+
+    List<EvalNode> origins = new ArrayList<EvalNode>(context.workingEvals);
+
+    // transformed -> workingEvals
+    Map<EvalNode, EvalNode> transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, leftNode);
+    context.setWorkingEvals(new HashSet<EvalNode>(transformedMap.keySet()));
+    visit(context, plan, plan.getBlock(leftNode));
+
+    if (!context.workingEvals.isEmpty()) {
+      errorFilterPushDown(plan, leftNode, context);
+    }
+
+    LogicalNode rightNode = unionNode.getRightChild();
+    transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, rightNode);
+    context.setWorkingEvals(new HashSet<EvalNode>(transformedMap.keySet()));
+    visit(context, plan, plan.getBlock(rightNode), rightNode, stack);
+
+    if (!context.workingEvals.isEmpty()) {
+      errorFilterPushDown(plan, rightNode, context);
+    }
+
+    // notify all filter matched to upper
+    context.workingEvals.clear();
+    return unionNode;
+  }
+
+  @Override
+  public LogicalNode visitProjection(FilterPushDownContext context,
+                                     LogicalPlan plan,
+                                     LogicalPlan.QueryBlock block,
+                                     ProjectionNode projectionNode,
+                                     Stack<LogicalNode> stack) throws PlanningException {
+    LogicalNode childNode = projectionNode.getChild();
+
+    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+
+    //copy -> origin
+    Map<EvalNode, EvalNode> matched = findCanPushdownAndTransform(context, projectionNode, childNode, notMatched, false, 0);
+
+    context.setWorkingEvals(matched.keySet());
+
+    stack.push(projectionNode);
+    LogicalNode current = visit(context, plan, plan.getBlock(childNode), childNode, stack);
+    stack.pop();
+
+    // find not matched after visiting child
+    for (EvalNode eval: context.workingEvals) {
+      notMatched.add(matched.get(eval));
+    }
+
+    EvalNode qual = null;
+    if (notMatched.size() > 1) {
+      // merged into one eval tree
+      qual = AlgebraicUtil.createSingletonExprFromCNF(notMatched.toArray(new EvalNode[notMatched.size()]));
+    } else if (notMatched.size() == 1) {
+      // if the number of matched expr is one
+      qual = notMatched.get(0);
+    }
+
+    // If there is not matched node add SelectionNode and clear context.workingEvals
+    if (qual != null) {
+      SelectionNode selectionNode = plan.createNode(SelectionNode.class);
+      selectionNode.setInSchema(current.getOutSchema());
+      selectionNode.setOutSchema(current.getOutSchema());
+      selectionNode.setQual(qual);
+      block.registerNode(selectionNode);
+
+      projectionNode.setChild(selectionNode);
+      selectionNode.setChild(current);
+    }
+
+    //notify all eval matched to upper
+    context.workingEvals.clear();
+
+    return current;
+  }
+
+  private Map<EvalNode, EvalNode> findCanPushdownAndTransform(FilterPushDownContext context, Projectable node,
+                                                              LogicalNode childNode, List<EvalNode> notMatched,
+                                                              boolean ignoreJoin, int columnOffset) throws PlanningException {
+    // canonical name -> target
+    Map<String, Target> nodeTargetMap = new HashMap<String, Target>();
+    for (Target target : node.getTargets()) {
+      nodeTargetMap.put(target.getCanonicalName(), target);
+    }
+
+    // copy -> origin
+    Map<EvalNode, EvalNode> matched = new HashMap<EvalNode, EvalNode>();
+
+    for (EvalNode eval : context.workingEvals) {
+      if (ignoreJoin && EvalTreeUtil.isJoinQual(eval, true)) {
+        notMatched.add(eval);
+        continue;
+      }
+      // If all column is field eval, can push down.
+      Set<Column> evalColumns = EvalTreeUtil.findUniqueColumns(eval);
+      boolean columnMatched = true;
+      for (Column c : evalColumns) {
+        Target target = nodeTargetMap.get(c.getQualifiedName());
+        if (target == null) {
+          columnMatched = false;
+          break;
+        }
+        if (target.getEvalTree().getType() != EvalType.FIELD) {
+          columnMatched = false;
+          break;
+        }
+      }
+
+      if (columnMatched) {
+        // transform eval column to child's output column
+        EvalNode copyEvalNode = transformEval(node, childNode, eval, nodeTargetMap, columnOffset);
+        if (copyEvalNode != null) {
+          matched.put(copyEvalNode, eval);
+        } else {
+          notMatched.add(eval);
+        }
+      } else {
+        notMatched.add(eval);
+      }
+    }
+
+    return matched;
+  }
+
+  private EvalNode transformEval(Projectable node, LogicalNode childNode, EvalNode origin,
+                                 Map<String, Target> targetMap, int columnOffset) throws PlanningException {
+    Schema outputSchema = childNode != null ? childNode.getOutSchema() : node.getInSchema();
+    EvalNode copy;
+    try {
+      copy = (EvalNode) origin.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new PlanningException(e);
+    }
+    Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
+    for (Column c: columns) {
+      Target target = targetMap.get(c.getQualifiedName());
+      if (target == null) {
+        throw new PlanningException(
+            "Invalid Filter PushDown: No such a corresponding target '"
+                + c.getQualifiedName() + " for FilterPushDown(" + origin + "), " +
+                "(PID=" + node.getPID() + ")"
+        );
+      }
+      EvalNode targetEvalNode = target.getEvalTree();
+      if (targetEvalNode.getType() != EvalType.FIELD) {
+        throw new PlanningException(
+            "Invalid Filter PushDown: '" + c.getQualifiedName() + "' target is not FieldEval " +
+                "(PID=" + node.getPID() + ")"
+        );
+      }
+
+      FieldEval fieldEval = (FieldEval)targetEvalNode;
+      Column targetInputColumn = fieldEval.getColumnRef();
+
+      int index;
+      if (targetInputColumn.hasQualifier()) {
+        index = node.getInSchema().getColumnId(targetInputColumn.getQualifiedName());
+      } else {
+        index = node.getInSchema().getColumnIdByName(targetInputColumn.getQualifiedName());
+      }
+      if (columnOffset > 0) {
+        index = index - columnOffset;
+      }
+      if (index < 0 || index >= outputSchema.size()) {
+        return null;
+      }
+      Column outputColumn = outputSchema.getColumn(index);
+
+      EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), outputColumn.getQualifiedName());
+    }
+
+    return copy;
+  }
+
+  /**
+   * Find aggregation columns in filter eval and add having clause or add HavingNode.
+   * @param context
+   * @param plan
+   * @param block
+   * @param parentNode  If null, having is parent
+   * @param havingNode      If null, projection is parent
+   * @param groupByNode
+   * @return matched origin eval
+   * @throws PlanningException
+   */
+  private List<EvalNode> addHavingNode(FilterPushDownContext context, LogicalPlan plan,
+                                       LogicalPlan.QueryBlock block,
+                                       UnaryNode parentNode,
+                                       HavingNode havingNode,
+                                       GroupbyNode groupByNode) throws PlanningException {
+    // find aggregation column
+    Set<Column> groupingColumns = new HashSet<Column>(Arrays.asList(groupByNode.getGroupingColumns()));
+    Set<String> aggrFunctionOutColumns = new HashSet<String>();
+    for (Column column : groupByNode.getOutSchema().getColumns()) {
+      if (!groupingColumns.contains(column)) {
+        aggrFunctionOutColumns.add(column.getQualifiedName());
+      }
+    }
+
+    List<EvalNode> aggrEvalOrigins = new ArrayList<EvalNode>();
+    List<EvalNode> aggrEvals = new ArrayList<EvalNode>();
+
+    for (EvalNode eval : context.workingEvals) {
+      EvalNode copy = null;
+      try {
+        copy = (EvalNode)eval.clone();
+      } catch (CloneNotSupportedException e) {
+      }
+      boolean isEvalAggrFunction = false;
+      for (Column evalColumn : EvalTreeUtil.findUniqueColumns(copy)) {
+        if (aggrFunctionOutColumns.contains(evalColumn.getSimpleName())) {
+          EvalTreeUtil.changeColumnRef(copy, evalColumn.getQualifiedName(), evalColumn.getSimpleName());
+          isEvalAggrFunction = true;
+          break;
+        }
+      }
+      if (isEvalAggrFunction) {
+        aggrEvals.add(copy);
+        aggrEvalOrigins.add(eval);
+      }
+    }
+
+    if (aggrEvals.isEmpty()) {
+      return aggrEvalOrigins;
+    }
+
+    // transform
+
+    HavingNode workingHavingNode;
+    if (havingNode != null) {
+      workingHavingNode = havingNode;
+      aggrEvals.add(havingNode.getQual());
+    } else {
+      workingHavingNode = plan.createNode(HavingNode.class);
+      block.registerNode(workingHavingNode);
+      parentNode.setChild(workingHavingNode);
+      workingHavingNode.setChild(groupByNode);
+    }
+
+    EvalNode qual = null;
+    if (aggrEvals.size() > 1) {
+      // merged into one eval tree
+      qual = AlgebraicUtil.createSingletonExprFromCNF(aggrEvals.toArray(new EvalNode[aggrEvals.size()]));
+    } else if (aggrEvals.size() == 1) {
+      // if the number of matched expr is one
+      qual = aggrEvals.get(0);
+    }
+
+    // If there is not matched node add SelectionNode and clear context.workingEvals
+    if (qual != null) {
+      workingHavingNode.setQual(qual);
+    }
+
+    return aggrEvalOrigins;
+  }
+
+  @Override
+  public LogicalNode visitGroupBy(FilterPushDownContext context, LogicalPlan plan,
+                                  LogicalPlan.QueryBlock block, GroupbyNode groupbyNode,
+                                  Stack<LogicalNode> stack) throws PlanningException {
+    LogicalNode parentNode = stack.peek();
+    List<EvalNode> aggrEvals;
+    if (parentNode.getType() == NodeType.HAVING) {
+      aggrEvals = addHavingNode(context, plan, block, null, (HavingNode)parentNode, groupbyNode);
+    } else {
+      aggrEvals = addHavingNode(context, plan, block, (UnaryNode)parentNode, null, groupbyNode);
+    }
+
+    if (aggrEvals != null) {
+      // remove aggregation eval from conext
+      context.workingEvals.removeAll(aggrEvals);
+    }
+
+    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    // transform
+    Map<EvalNode, EvalNode> tranformed =
+        findCanPushdownAndTransform(context, groupbyNode,groupbyNode.getChild(), notMatched, false, 0);
+
+    context.setWorkingEvals(tranformed.keySet());
+    LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
+
+    context.setToOrigin(tranformed);
+    context.addWorkingEvals(notMatched);
+
+    return current;
+  }
+
+  @Override
+  public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
+                               LogicalPlan.QueryBlock block, ScanNode scanNode,
                                Stack<LogicalNode> stack) throws PlanningException {
     List<EvalNode> matched = Lists.newArrayList();
-    for (EvalNode eval : cnf) {
+
+    // find partition column and check matching
+    Set<String> partitionColumns = new HashSet<String>();
+    TableDesc table = scanNode.getTableDesc();
+    if (table.hasPartition()) {
+      for (Column c: table.getPartitionMethod().getExpressionSchema().getColumns()) {
+        partitionColumns.add(c.getQualifiedName());
+      }
+    }
+    Set<EvalNode> partitionEvals = new HashSet<EvalNode>();
+    for (EvalNode eval : context.workingEvals) {
+      if (table.hasPartition()) {
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(eval);
+        if (columns.size() != 1) {
+          continue;
+        }
+        Column column = columns.iterator().next();
+
+        if (partitionColumns.contains(column.getSimpleName())) {
+          EvalNode copy;
+          try {
+            copy = (EvalNode) eval.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new PlanningException(e);
+          }
+          EvalTreeUtil.changeColumnRef(copy, column.getQualifiedName(),
+              scanNode.getCanonicalName() + "." + column.getSimpleName());
+          matched.add(copy);
+          partitionEvals.add(eval);
+        }
+      }
+    }
+
+    context.workingEvals.removeAll(partitionEvals);
+
+    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+
+    // transform
+    Map<EvalNode, EvalNode> transformed =
+        findCanPushdownAndTransform(context, scanNode, null, notMatched, true, 0);
+
+    for (EvalNode eval : transformed.keySet()) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {
         matched.add(eval);
       }
@@ -321,15 +785,32 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
           matched.toArray(new EvalNode[matched.size()]));
     } else if (matched.size() == 1) {
       // if the number of matched expr is one
-      qual = matched.get(0);
+      qual = matched.iterator().next();
     }
 
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
     }
 
-    cnf.removeAll(matched);
+    for (EvalNode matchedEval: matched) {
+      transformed.remove(matchedEval);
+    }
+
+    context.setToOrigin(transformed);
+    context.addWorkingEvals(notMatched);
 
     return scanNode;
+  }
+
+  private void errorFilterPushDown(LogicalPlan plan, LogicalNode node, FilterPushDownContext context) throws PlanningException {
+    String notMatchedNodeStr = "";
+    String prefix = "";
+    for (EvalNode notMatchedNode: context.workingEvals) {
+      notMatchedNodeStr += prefix + notMatchedNode;
+      prefix = ", ";
+    }
+    throw new PlanningException("FilterPushDown failed cause some filters not matched: " + notMatchedNodeStr + "\n" +
+        "Error node: " + node.getPlanString() + "\n" +
+        plan.toString());
   }
 }
