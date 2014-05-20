@@ -52,4 +52,11 @@ public class SetOperation extends BinaryOperator {
     SetOperation another = (SetOperation) expr;
     return distinct == another.distinct;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    SetOperation setOperation = (SetOperation) super.clone();
+    setOperation.distinct = distinct;
+    return setOperation;
+  }
 }

@@ -85,6 +85,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 		return funcDesc.getSignature();
 	}
 
+  public FunctionDesc getFuncDesc() {
+    return this.funcDesc;
+  }
+
   @Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

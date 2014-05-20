@@ -33,10 +33,6 @@ Release 0.9.0 - unreleased
     TAJO-789: Improve shuffle URI. (jinho)
 
     TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
-    
-  SUB TASKS:
-
-    TAJO-757: Add parser rule and algebraic expression for window function. (hyunsik)
 
     TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
 

@@ -83,4 +83,13 @@ public class CreateDatabase extends Expr {
         ifNotExists == another.ifNotExists;
 
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    CreateDatabase createDb = (CreateDatabase) super.clone();
+    createDb.databaseName = databaseName;
+    createDb.tablespaceName = tablespaceName;
+    createDb.ifNotExists = ifNotExists;
+    return createDb;
+  }
 }

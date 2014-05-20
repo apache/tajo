@@ -19,19 +19,17 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.util.TUtil;
 
-public class WindowFunctionExpr extends Expr {
-  // set function
-  GeneralSetFunctionExpr function;
+public class WindowFunctionExpr extends GeneralSetFunctionExpr {
 
   // over clause - only one of both is used.
-  private String windowName;
-  private WindowSpecExpr windowSpec;
+  @Expose private String windowName;
+  @Expose private WindowSpecExpr windowSpec;
 
   public WindowFunctionExpr(GeneralSetFunctionExpr function) {
-    super(OpType.WindowFunction);
-    this.function = function;
+    super(OpType.WindowFunction, function.getSignature(), function.isDistinct(), function.getParams());
   }
 
   public boolean hasWindowName() {
@@ -64,7 +62,7 @@ public class WindowFunctionExpr extends Expr {
   }
 
   @Override
-  boolean equalsTo(Expr expr) {
+  public boolean equalsTo(Expr expr) {
     return TUtil.checkEquals(windowName, windowSpec);
   }
 }

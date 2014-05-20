@@ -24,6 +24,8 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +170,23 @@ public class CreateTable extends Expr {
         ifNotExists == another.ifNotExists;
   }
 
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    CreateTable createTable = (CreateTable) super.clone();
+    createTable.external = external;
+    createTable.tableName = tableName;
+    if (tableElements != null) {
+      createTable.tableElements = new ColumnDefinition[tableElements.length];
+    }
+    createTable.storageType = storageType;
+    createTable.location = location;
+    createTable.subquery = subquery;
+    createTable.params = new HashMap<String, String>(params);
+    createTable.partition = (PartitionMethodDescExpr) partition.clone();
+    createTable.ifNotExists = ifNotExists;
+    return createTable;
+  }
+
   public static enum PartitionType {
     RANGE,
     HASH,
@@ -175,7 +194,7 @@ public class CreateTable extends Expr {
     COLUMN
   }
 
-  public static abstract class PartitionMethodDescExpr {
+  public static abstract class PartitionMethodDescExpr implements Cloneable {
     @Expose @SerializedName("PartitionType")
     PartitionType type;
 
@@ -185,6 +204,13 @@ public class CreateTable extends Expr {
 
     public PartitionType getPartitionType() {
       return type;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      PartitionMethodDescExpr partition = (PartitionMethodDescExpr) super.clone();
+      partition.type = type;
+      return partition;
     }
 
     static class JsonSerDer implements JsonSerializer<PartitionMethodDescExpr>,
@@ -226,7 +252,7 @@ public class CreateTable extends Expr {
     }
   }
 
-  public static class RangePartition extends PartitionMethodDescExpr {
+  public static class RangePartition extends PartitionMethodDescExpr implements Cloneable {
     @Expose @SerializedName("Columns")
     ColumnReferenceExpr [] columns;
     @Expose @SerializedName("Specifiers")
@@ -259,9 +285,25 @@ public class CreateTable extends Expr {
         return false;
       }
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      RangePartition range = (RangePartition) super.clone();
+      range.columns = new ColumnReferenceExpr[columns.length];
+      for (int i = 0; i < columns.length; i++) {
+        range.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      }
+      if (range.specifiers != null) {
+        range.specifiers = new ArrayList<RangePartitionSpecifier>();
+        for (int i = 0; i < specifiers.size(); i++) {
+          range.specifiers.add(specifiers.get(i));
+        }
+      }
+      return range;
+    }
   }
 
-  public static class HashPartition extends PartitionMethodDescExpr {
+  public static class HashPartition extends PartitionMethodDescExpr implements Cloneable {
     @Expose @SerializedName("Columns")
     ColumnReferenceExpr [] columns;
     @Expose @SerializedName("Quantity")
@@ -314,6 +356,23 @@ public class CreateTable extends Expr {
         return false;
       }
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      HashPartition hash = (HashPartition) super.clone();
+      hash.columns = new ColumnReferenceExpr[columns.length];
+      for (int i = 0; i < columns.length; i++) {
+        hash.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      }
+      hash.quantity = quantity;
+      if (specifiers != null) {
+        hash.specifiers = new ArrayList<PartitionSpecifier>();
+        for (PartitionSpecifier specifier : specifiers) {
+          hash.specifiers.add(specifier);
+        }
+      }
+      return hash;
+    }
   }
 
   public static class ListPartition extends PartitionMethodDescExpr {
@@ -349,43 +408,63 @@ public class CreateTable extends Expr {
         return false;
       }
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      ListPartition listPartition = (ListPartition) super.clone();
+      listPartition.columns = new ColumnReferenceExpr[columns.length];
+      for (int i = 0; i < columns.length; i++) {
+        listPartition.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      }
+      if (specifiers != null) {
+        listPartition.specifiers = new ArrayList<ListPartitionSpecifier>();
+        for (ListPartitionSpecifier specifier : specifiers) {
+          listPartition.specifiers.add(specifier);
+        }
+      }
+      return listPartition;
+    }
   }
 
-  public static class ColumnPartition extends PartitionMethodDescExpr {
+  public static class ColumnPartition extends PartitionMethodDescExpr implements Cloneable {
     @Expose @SerializedName("Columns")
     private ColumnDefinition [] columns;
     @Expose @SerializedName("IsOmitValues")
     private boolean isOmitValues;
 
-    public ColumnPartition(ColumnDefinition [] columns, boolean isOmitValues) {
+    public ColumnPartition(ColumnDefinition [] columns) {
       super(PartitionType.COLUMN);
       this.columns = columns;
-      this.isOmitValues = isOmitValues;
     }
 
     public ColumnDefinition [] getColumns() {
       return columns;
     }
 
-    public boolean isOmitValues() {
-      return isOmitValues;
-    }
-
     public int hashCode() {
-      return Objects.hashCode(Objects.hashCode(columns), isOmitValues);
+      return Objects.hashCode(columns);
     }
 
     public boolean equals(Object object) {
       if (object instanceof ColumnPartition) {
         ColumnPartition another = (ColumnPartition) object;
-        return type == another.type && TUtil.checkEquals(columns, another.columns) &&
-            TUtil.checkEquals(isOmitValues, another.isOmitValues);
+        return type == another.type && TUtil.checkEquals(columns, another.columns);
       }
       return false;
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      ColumnPartition columnPartition = (ColumnPartition) super.clone();
+      columnPartition.columns = new ColumnDefinition[columns.length];
+      for (int i = 0; i < columns.length; i++) {
+        columnPartition.columns[i] = (ColumnDefinition) columns[i].clone();
+      }
+      return columnPartition;
+    }
   }
 
-  public static class RangePartitionSpecifier extends PartitionSpecifier {
+  public static class RangePartitionSpecifier extends PartitionSpecifier implements Cloneable {
     @Expose @SerializedName("End")
     Expr end;
     @Expose @SerializedName("IsMaxValue")
@@ -425,9 +504,17 @@ public class CreateTable extends Expr {
 
       return true;
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      RangePartitionSpecifier specifier = (RangePartitionSpecifier) super.clone();
+      specifier.end = (Expr) end.clone();
+      specifier.maxValue = maxValue;
+      return specifier;
+    }
   }
 
-  public static class ListPartitionSpecifier extends PartitionSpecifier {
+  public static class ListPartitionSpecifier extends PartitionSpecifier implements Cloneable {
     @Expose @SerializedName("ValueList")
     ValueListExpr valueList;
 
@@ -454,9 +541,16 @@ public class CreateTable extends Expr {
 
       return valueList.equals(that.valueList);
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      ListPartitionSpecifier specifier = (ListPartitionSpecifier) super.clone();
+      specifier.valueList = (ValueListExpr) valueList.clone();
+      return specifier;
+    }
   }
 
-  public static class PartitionSpecifier {
+  public static class PartitionSpecifier implements Cloneable {
     @Expose @SerializedName("PartitionSpecName")
     private String name;
 
@@ -478,6 +572,13 @@ public class CreateTable extends Expr {
       } else {
         return false;
       }
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      PartitionSpecifier specifier = (PartitionSpecifier) super.clone();
+      specifier.name = name;
+      return specifier;
     }
   }
 }

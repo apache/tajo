@@ -44,6 +44,8 @@ public enum EvalType {
   BIT_XOR(BinaryEval.class, "|"),
 
   // Function
+  WINDOW_FUNCTION(WindowFunctionEval.class),
+  WINDOW_OVER(WindowOverEval.class),
   AGG_FUNCTION(AggregationFunctionCallEval.class),
   FUNCTION(GeneralFunctionEval.class),
 

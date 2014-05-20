@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
@@ -47,6 +48,8 @@ public class LogicalPlan {
   /** the prefix character for virtual tables */
   public static final char VIRTUAL_TABLE_PREFIX='#';
   public static final char NONAMED_COLUMN_PREFIX='?';
+  public static final char NONAMED_WINDOW_PREFIX='^';
+
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "QB_";
@@ -54,6 +57,7 @@ public class LogicalPlan {
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
+  private Integer noNameWindowId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -575,6 +579,7 @@ public class LogicalPlan {
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
     private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
+    private boolean hasWindowFunction = false;
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */
@@ -750,6 +755,58 @@ public class LogicalPlan {
     public <T extends LogicalNode> T getNodeFromExpr(Expr expr) {
       return (T) exprToNodeMap.get(ObjectUtils.identityToString(expr));
     }
+
+    public void setHasWindowFunction() {
+      hasWindowFunction = true;
+    }
+
+    public boolean hasWindowSpecs() {
+      return hasWindowFunction;
+    }
+//
+//    public String addWindowSpecs(WindowSpecExpr windowSpecExpr) {
+//      if (windowSpecExpr.hasWindowName()) {
+//        if (!windowSpecs.containsKey(windowSpecExpr.getWindowName())) {
+//          windowSpecs.put(windowSpecExpr.getWindowName(), windowSpecExpr);
+//        }
+//        return windowSpecExpr.getWindowName();
+//      } else {
+//        WindowSpecExpr newWindowSpec = null;
+//
+//        try {
+//          newWindowSpec = (WindowSpecExpr) windowSpecExpr.clone();
+//        } catch (CloneNotSupportedException e) {
+//          throw new RuntimeException(e);
+//        }
+//        newWindowSpec.setWindowName(null); // remove name
+//
+//        String windowName = null;
+//        for (WindowSpecExpr existing : windowSpecs.values()) {
+//          WindowSpecExpr noNameExistingWindow = null;
+//          try {
+//            noNameExistingWindow = (WindowSpecExpr) windowSpecExpr.clone();
+//          } catch (CloneNotSupportedException e) {
+//            throw new RuntimeException(e);
+//          }
+//          if (newWindowSpec.equals(noNameExistingWindow)) {
+//            windowName = existing.getWindowName();
+//            break;
+//          }
+//        }
+//
+//        if (windowName == null) {
+//          windowName = NONAMED_WINDOW_PREFIX + "window" + noNameWindowId++;
+//        }
+//
+//        newWindowSpec.setWindowName(windowName);
+//        windowSpecs.put(newWindowSpec.getWindowName(), newWindowSpec);
+//        return windowName;
+//      }
+//    }
+//
+//    public Map<String, WindowSpecExpr> getWindowSpecs() {
+//      return windowSpecs;
+//    }
 
     /**
      * This flag can be changed as a plan is generated.

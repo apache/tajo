@@ -1134,4 +1134,16 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.INSERT, root.getChild().getType());
     return root.getChild();
   }
+
+  public static String readQuery(String fileName) throws IOException {
+    return FileUtil.readTextFileFromResource("queries/TestLogicalPlanner/" + fileName);
+  }
+
+  @Test
+  public final void testWindow1() throws PlanningException, IOException {
+    Expr expr = sqlAnalyzer.parse(readQuery("window1.sql"));
+    LogicalPlan plan = planner.createPlan(session, expr);
+    assertNotNull(plan);
+    System.out.println(plan.toString());
+  }
 }

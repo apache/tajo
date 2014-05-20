@@ -37,7 +37,7 @@ public class AlgebraicUtil {
    * @return Transposed expression
    */
   public static EvalNode transpose(EvalNode evalNode, Column target) {
-    BinaryEval commutated = null;
+    BinaryEval commutated;
 
     if (evalNode instanceof BinaryEval) { // if it is binary
       BinaryEval binaryEval = (BinaryEval) evalNode;
