@@ -57,7 +57,6 @@ public class SortAggregateExec extends AggregationExec {
     Tuple outputTuple = null;
 
     while(!context.isStopped() && (tuple = child.next()) != null) {
-
       // get a key tuple
       currentKey = new VTuple(groupingKeyIds.length);
       for(int i = 0; i < groupingKeyIds.length; i++) {
