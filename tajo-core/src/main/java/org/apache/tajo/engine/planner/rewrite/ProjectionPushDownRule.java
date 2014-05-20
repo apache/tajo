@@ -395,9 +395,6 @@ public class ProjectionPushDownRule extends
   @Override
   public LogicalNode visitProjection(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
-    if (node.getPID() == 3) {
-      int a = 1;
-    }
     Context newContext = new Context(context);
     Target [] targets = node.getTargets();
     int targetNum = targets.length;

@@ -251,9 +251,6 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitTableSubQuery(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    if (node.getPID() == 4) {
-      int a = 1;
-    }
     LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
     RESULT result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
     stack.pop();

@@ -470,9 +470,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                      LogicalPlan.QueryBlock block,
                                      ProjectionNode projectionNode,
                                      Stack<LogicalNode> stack) throws PlanningException {
-    if (projectionNode.getPID() == 7) {
-      int a = 1;
-    }
     LogicalNode childNode = projectionNode.getChild();
 
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
