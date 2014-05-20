@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.IOException;
@@ -100,8 +101,8 @@ public class StorageUtil extends StorageConstants{
     return new Path(parent, sb.toString());
   }
 
-  public static Options newPhysicalProperties(CatalogProtos.StoreType type) {
-    Options options = new Options();
+  public static KeyValueSet newPhysicalProperties(CatalogProtos.StoreType type) {
+    KeyValueSet options = new KeyValueSet();
     if (CatalogProtos.StoreType.CSV == type) {
       options.put(CSVFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
     } else if (CatalogProtos.StoreType.RCFILE == type) {

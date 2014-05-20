@@ -24,15 +24,19 @@ import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public abstract class NettyClientBase implements Closeable {
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
+  private static final int CLIENT_CONNECTION_TIMEOUT_SEC = 60;
 
   protected ClientBootstrap bootstrap;
   private ChannelFuture channelFuture;
@@ -57,20 +61,35 @@ public abstract class NettyClientBase implements Closeable {
       this.bootstrap.setOption("keepAlive", true);
 
       connect(addr);
-    } catch (Throwable t) {
+    } catch (IOException e) {
       close();
+      throw e;
+    } catch (Throwable t) {
       throw new IOException("Connect error to " + addr + " cause " + t.getMessage(), t.getCause());
     }
   }
 
-  public void connect(InetSocketAddress addr) {
+  public void connect(InetSocketAddress addr) throws Exception {
     if(addr.isUnresolved()){
        addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
     }
     this.channelFuture = bootstrap.connect(addr);
-    this.channelFuture.awaitUninterruptibly();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    this.channelFuture.addListener(new ChannelFutureListener() {
+      @Override
+      public void operationComplete(ChannelFuture future) throws Exception {
+        latch.countDown();
+      }
+    });
+
+    try {
+      latch.await(CLIENT_CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+    }
+
+
     if (!channelFuture.isSuccess()) {
-      channelFuture.getCause().printStackTrace();
       throw new RuntimeException(channelFuture.getCause());
     }
   }
@@ -80,6 +99,9 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public InetSocketAddress getRemoteAddress() {
+    if (channelFuture == null || channelFuture.getChannel() == null) {
+      return null;
+    }
     return (InetSocketAddress) channelFuture.getChannel().getRemoteAddress();
   }
 
@@ -100,9 +122,9 @@ public abstract class NettyClientBase implements Closeable {
     if(this.bootstrap != null) {
       // This line will shutdown the factory
       // this.bootstrap.releaseExternalResources();
-      if(LOG.isDebugEnabled()) {
-        LOG.debug("Proxy is disconnected from " +
-            getRemoteAddress().getHostName() + ":" + getRemoteAddress().getPort());
+      InetSocketAddress address = getRemoteAddress();
+      if (address != null) {
+        LOG.debug("Proxy is disconnected from " + address.getHostName() + ":" + address.getPort());
       }
     }
   }

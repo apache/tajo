@@ -19,9 +19,13 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public class PatternMatchPredicate extends BinaryOperator {
+  @Expose @SerializedName("IsNot")
   private boolean not;
+  @Expose @SerializedName("IsCaseInsensitive")
   private boolean caseInsensitive;
 
   public PatternMatchPredicate(OpType opType, boolean not, Expr predicand, Expr pattern,

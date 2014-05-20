@@ -19,18 +19,16 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
 
   <artifactId>tajo-common</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
   <name>Tajo Common</name>
   <description>Tajo Common Package</description>
   <packaging>jar</packaging>
 
   <properties>
-    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -235,30 +233,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                 <configuration>
                   <destDir>${project.build.directory}</destDir>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>src</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <!-- builds source jars and attaches them to the project for publishing -->
-                <id>tajo-java-sources</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
               </execution>
             </executions>
           </plugin>

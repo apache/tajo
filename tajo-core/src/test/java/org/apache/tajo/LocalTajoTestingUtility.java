@@ -32,6 +32,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -79,7 +80,7 @@ public class LocalTajoTestingUtility {
   public void setup(String[] names,
                     String[] tablepaths,
                     Schema[] schemas,
-                    Options option) throws Exception {
+                    KeyValueSet option) throws Exception {
     LOG.info("===================================================");
     LOG.info("Starting Test Cluster.");
     LOG.info("===================================================");

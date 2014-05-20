@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -32,6 +33,7 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.querymaster.QueryUnit.PullHost;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -97,6 +99,9 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_KILL_WAIT,
           TaskAttemptEventType.TA_KILL,
           new KillTaskTransition())
+      .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_KILL,
+          new KillTaskTransition())
       .addTransition(TaskAttemptState.TA_ASSIGNED,
           EnumSet.of(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_KILLED),
           TaskAttemptEventType.TA_UPDATE, new StatusUpdateTransition())
@@ -155,6 +160,9 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
           EnumSet.of(
               TaskAttemptEventType.TA_UPDATE))
+      .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_LOCAL_KILLED,
+          new TaskKilledCompleteTransition())
 
       .installTopology();
 
@@ -266,9 +274,10 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     if (report.getShuffleFileOutputsCount() > 0) {
       this.getQueryUnit().setShuffleFileOutputs(report.getShuffleFileOutputsList());
 
+      PullHost host = new PullHost(getHost(), getPullServerPort());
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
-            getId().getId(), p.getPartId(), getHost(), getPullServerPort());
+            getId().getId(), p.getPartId(), host);
         partitions.add(entry);
       }
     }
@@ -383,6 +392,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
         taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
       } catch (Throwable t) {
         taskAttempt.eventHandler.handle(new TaskFatalErrorEvent(taskAttempt.getId(), t.getMessage()));
+        taskAttempt.addDiagnosticInfo(ExceptionUtils.getStackTrace(t));
       }
     }
   }
@@ -402,7 +412,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
       taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
-      LOG.error("FROM " + taskAttempt.getHost() + " >> " + errorEvent.errorMessage());
+      LOG.error(taskAttempt.getId() + " FROM " + taskAttempt.getHost() + " >> " + errorEvent.errorMessage());
     }
   }
 

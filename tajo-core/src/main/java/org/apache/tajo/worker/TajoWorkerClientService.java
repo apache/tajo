@@ -33,6 +33,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
@@ -41,6 +42,7 @@ import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 
 public class TajoWorkerClientService extends AbstractService {
   private static final Log LOG = LogFactory.getLog(TajoWorkerClientService.class);
@@ -201,9 +203,12 @@ public class TajoWorkerClientService extends AbstractService {
           } else {
             builder.setFinishTime(System.currentTimeMillis());
           }
-        } else {
-          builder.setState(queryMasterTask.getState());
-          builder.setErrorMessage(queryMasterTask.getErrorMessage());
+        } 
+        Collection<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics = queryMasterTask.getDiagnostics();
+        if(!diagnostics.isEmpty()) {
+          TajoWorkerProtocol.TaskFatalErrorReport firstError = diagnostics.iterator().next();
+          builder.setErrorMessage(firstError.getErrorMessage());
+          builder.setErrorTrace(firstError.getErrorTrace());
         }
       }
       return builder.build();

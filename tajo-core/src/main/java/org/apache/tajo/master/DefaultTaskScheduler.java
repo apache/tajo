@@ -43,8 +43,8 @@ import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.worker.FetchImpl;
 
-import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -202,11 +202,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
       } else if (event instanceof FetchScheduleEvent) {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
-        Map<String, List<URI>> fetches = castEvent.getFetches();
+        Map<String, List<FetchImpl>> fetches = castEvent.getFetches();
         QueryUnitAttemptScheduleContext queryUnitContext = new QueryUnitAttemptScheduleContext();
         QueryUnit task = SubQuery.newEmptyQueryUnit(context, queryUnitContext, subQuery, nextTaskId++);
         scheduledObjectNum++;
-        for (Entry<String, List<URI>> eachFetch : fetches.entrySet()) {
+        for (Entry<String, List<FetchImpl>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
           task.addFragment(fragmentsForNonLeafTask[0], true);
           if (fragmentsForNonLeafTask[1] != null) {
@@ -269,12 +269,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
       int qSize = taskRequestQueue.size();
       if (qSize != 0 && qSize % 1000 == 0) {
-        LOG.info("Size of event-queue in YarnRMContainerAllocator is " + qSize);
+        LOG.info("Size of event-queue in DefaultTaskScheduler is " + qSize);
       }
       int remCapacity = taskRequestQueue.remainingCapacity();
       if (remCapacity < 1000) {
         LOG.warn("Very low remaining capacity in the event-queue "
-            + "of YarnRMContainerAllocator: " + remCapacity);
+            + "of DefaultTaskScheduler: " + remCapacity);
       }
 
       taskRequestQueue.add(event);
@@ -874,9 +874,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             taskAssign.setInterQuery();
           }
           for (ScanNode scan : task.getScanNodes()) {
-            Collection<URI> fetches = task.getFetch(scan);
+            Collection<FetchImpl> fetches = task.getFetch(scan);
             if (fetches != null) {
-              for (URI fetch : fetches) {
+              for (FetchImpl fetch : fetches) {
                 taskAssign.addFetch(scan.getTableName(), fetch);
               }
             }

@@ -33,14 +33,13 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
-import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
@@ -93,12 +92,7 @@ public class TajoTestingCluster {
   void initPropertiesAndConfigs() {
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
-      Preconditions.checkState(
-          testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()) ||
-              testResourceManager.equals(YarnTajoResourceManager.class.getCanonicalName()),
-          ConfVars.RESOURCE_MANAGER_CLASS.varname + " must be either " + TajoWorkerResourceManager.class.getCanonicalName() + " or " +
-              YarnTajoResourceManager.class.getCanonicalName() +"."
-      );
+      Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));
       conf.set(ConfVars.RESOURCE_MANAGER_CLASS.varname, System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname));
     }
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 1024);
@@ -566,7 +560,7 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              Options option,
+                              KeyValueSet option,
                               String[][] tables,
                               String query) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();

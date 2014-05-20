@@ -328,6 +328,7 @@ nonreserved_keywords
   | INT4
   | INT8
   | INTEGER
+  | INTERVAL
   | NCHAR
   | NUMERIC
   | NVARCHAR
@@ -365,6 +366,7 @@ datetime_literal
   : timestamp_literal
   | time_literal
   | date_literal
+  | interval_literal
   ;
 
 time_literal
@@ -377,6 +379,10 @@ timestamp_literal
 
 date_literal
   : DATE date_string=Character_String_Literal
+  ;
+
+interval_literal
+  : INTERVAL interval_string=Character_String_Literal
   ;
 
 boolean_literal
@@ -477,6 +483,7 @@ boolean_type
 
 datetime_type
   : DATE
+  | INTERVAL
   | TIME
   | TIME WITH TIME ZONE
   | TIMETZ

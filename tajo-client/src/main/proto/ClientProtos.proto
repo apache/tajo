@@ -67,6 +67,7 @@ message QueryRequest {
   optional SessionIdProto sessionId = 1;
   required string query = 2;
   repeated KeyValueProto setVariables = 3;
+  required bool isJson = 4;
 }
 
 message UpdateQueryResponse {
@@ -134,6 +135,7 @@ message SubmitQueryResponse {
   optional int32 maxRowNum = 9;
 
   optional string errorMessage = 10;
+  optional string errorTrace = 11;
 }
 
 message GetQueryStatusResponse {
@@ -145,8 +147,9 @@ message GetQueryStatusResponse {
   optional int64 finishTime = 7;
   optional bool hasResult = 8;
   optional string errorMessage = 9;
-  optional string queryMasterHost = 10;
-  optional int32 queryMasterPort = 11;
+  optional string errorTrace = 10;
+  optional string queryMasterHost = 11;
+  optional int32 queryMasterPort = 12;
 }
 
 message GetClusterInfoRequest {

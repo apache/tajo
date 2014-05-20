@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
@@ -67,13 +68,13 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 		this(tableName, schema, meta, path, true);
 	}
 	
-	public TableDesc(String tableName, Schema schema, StoreType type, Options options, Path path) {
+	public TableDesc(String tableName, Schema schema, StoreType type, KeyValueSet options, Path path) {
 	  this(tableName, schema, new TableMeta(type, options), path);
 	}
 	
 	public TableDesc(TableDescProto proto) {
 	  this(proto.getTableName(), new Schema(proto.getSchema()),
-        new TableMeta(proto.getMeta()), new Path(proto.getPath()), proto.getIsExternal());
+        new TableMeta(proto.getMeta()), proto.hasPath() ? new Path(proto.getPath()) : null, proto.getIsExternal());
     if(proto.hasStats()) {
       this.stats = new TableStats(proto.getStats());
     }

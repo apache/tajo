@@ -286,7 +286,7 @@ public class TestMathFunctions extends ExprTestBase {
     schema.addColumn("col3", FLOAT4);
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select sqrt(col1 + col2 + col3) from table1",
-        new String[]{"1.1401754466632896"});
+        new String[]{"1.1401754564651765"});
 
 
     Schema schema2 = new Schema();
@@ -352,7 +352,7 @@ public class TestMathFunctions extends ExprTestBase {
     schema.addColumn("col2", FLOAT4);
     schema.addColumn("col3", FLOAT4);
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
-        new String[]{"1.0913928968221236"});
+        new String[]{"1.0913929030771317"});
 
     Schema schema2 = new Schema();
     schema2.addColumn("col1", FLOAT8);
@@ -424,5 +424,28 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void testPi() throws IOException {
     testSimpleEval("select pi() as col1 ", new String[]{String.valueOf(Math.PI)});
+  }
+
+  @Test
+  public void testRoundWithSpecifiedPrecision() throws IOException {
+    testSimpleEval("select round(42.4382,2) ", new String[]{"42.44"});
+    testSimpleEval("select round(-42.4382,2) ", new String[]{"-42.44"});
+    testSimpleEval("select round(-425,2) ", new String[]{"-425"});
+    testSimpleEval("select round(425,2) ", new String[]{"425"});
+
+    testSimpleEval("select round(1234567890,0) ", new String[]{"1234567890"});
+    testSimpleEval("select round(1234567890,1) ", new String[]{"1234567890"});
+    testSimpleEval("select round(1234567890,2) ", new String[]{"1234567890"});
+
+    testSimpleEval("select round(1.2345678901234567,13) ", new String[]{"1.2345678901235"});
+    testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1234567890.123"});
+    testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1234567890.12346"});
+    //testSimpleEval("select round(1234567890.1234567890,7) ", new String[]{"1234567890.1234568"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", FLOAT8);
+    schema.addColumn("col2", INT4);
+
+    testEval(schema, "table1", ",", "select round(col1, col2) from table1", new String[]{""});
   }
 }

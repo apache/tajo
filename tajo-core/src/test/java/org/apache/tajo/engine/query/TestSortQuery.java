@@ -143,4 +143,20 @@ public class TestSortQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testSortWithJson() throws Exception {
+    // select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity;
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTopkWithJson() throws Exception {
+    // select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

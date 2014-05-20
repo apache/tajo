@@ -19,7 +19,7 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -91,6 +91,9 @@ public class TestTimestampDatum {
   @Test
   public final void testAsTextBytes() {
     Datum d = DatumFactory.createTimeStamp("1980-04-01 01:50:01");
+    assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
+
+    d = DatumFactory.createTimeStamp("1980-04-01 01:50:01.578");
     assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
   }
 

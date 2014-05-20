@@ -57,7 +57,8 @@ message TaskCompletionReport {
 
 message TaskFatalErrorReport {
   required QueryUnitAttemptIdProto id = 1;
-  optional string error_message = 2;
+  optional string errorMessage = 2;
+  optional string errorTrace = 3;
 }
 
 message QueryUnitRequestProto {
@@ -67,17 +68,29 @@ message QueryUnitRequestProto {
     required bool clusteredOutput = 4;
     required string serializedData = 5;
     optional bool interQuery = 6 [default = false];
-    repeated Fetch fetches = 7;
+    repeated FetchProto fetches = 7;
     optional bool shouldDie = 8;
     optional KeyValueSetProto queryContext = 9;
     optional DataChannelProto dataChannel = 10;
     optional EnforcerProto enforcer = 11;
 }
 
-message Fetch {
-    required string name = 1;
-    required string urls = 2;
+message FetchProto {
+    required string host = 1;
+    required int32 port = 2;
+    required ShuffleType type = 3;
+    required ExecutionBlockIdProto executionBlockId = 4;
+    required int32 partitionId = 5;
+    required string name = 6;
+    optional string rangeParams = 7;
+    optional bool hasNext = 8 [default = false];
+
+    //repeated part
+    repeated int32 taskId = 9 [packed=true];
+    repeated int32 attemptId = 10 [packed=true];
 }
+
+
 
 message QueryUnitResponseProto {
     required string id = 1;
@@ -119,8 +132,8 @@ message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
     required SessionProto session = 2;
     required KeyValueSetProto queryContext = 3;
-    required StringProto sql = 4;
-    optional StringProto logicalPlanJson = 5;
+    required StringProto exprInJson = 5;
+    optional StringProto logicalPlanJson = 6;
 }
 
 message GetTaskRequestProto {
@@ -182,6 +195,7 @@ message EnforceProperty {
     SORT = 4;
     BROADCAST = 5;
     COLUMN_PARTITION = 6;
+    DISTINCT_GROUP_BY = 7;
   }
 
   // Identifies which field is filled in.
@@ -195,6 +209,7 @@ message EnforceProperty {
   optional SortEnforce sort = 6;
   optional BroadcastEnforce broadcast = 7;
   optional ColumnPartitionEnforcer columnPartition = 8;
+  optional DistinctGroupbyEnforcer distinct = 9;
 }
 
 message SortedInputEnforce {
@@ -251,6 +266,21 @@ message ColumnPartitionEnforcer {
 
   required int32 pid = 1;
   required ColumnPartitionAlgorithm algorithm = 2;
+}
+
+message DistinctGroupbyEnforcer {
+  enum DistinctAggregationAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  message SortSpecArray {
+    required int32 pid = 1;
+    repeated SortSpecProto sortSpecs = 2;
+  }
+  required int32 pid = 1;
+  required DistinctAggregationAlgorithm algorithm = 2;
+  repeated SortSpecArray sortSpecArrays = 3;
 }
 
 message EnforcerProto {

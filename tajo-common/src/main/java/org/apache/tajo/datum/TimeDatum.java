@@ -19,9 +19,10 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
+import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -125,6 +126,32 @@ public class TimeDatum extends Datum {
     return Bytes.toBytes(asInt8());
   }
 
+  public Datum plus(Datum datum) {
+    switch(datum.type()) {
+      case INTERVAL:
+        IntervalDatum interval = ((IntervalDatum)datum);
+        return new TimeDatum(time.plusMillis((int)interval.getMilliSeconds()));
+      case DATE:
+        DateTime dateTime = DateDatum.createDateTime(((DateDatum)datum).getDate(), time, true);
+        return new TimestampDatum(dateTime);
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  public Datum minus(Datum datum) {
+    switch(datum.type()) {
+      case INTERVAL:
+        IntervalDatum interval = ((IntervalDatum)datum);
+        return new TimeDatum(time.minusMillis((int)interval.getMilliSeconds()));
+      case TIME:
+        return new IntervalDatum(
+            time.toDateTimeToday().getMillis() - ((TimeDatum)datum).getTime().toDateTimeToday().getMillis() );
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
   @Override
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
@@ -159,5 +186,9 @@ public class TimeDatum extends Datum {
   @Override
   public int hashCode() {
     return time.hashCode();
+  }
+
+  public LocalTime getTime() {
+    return time;
   }
 }

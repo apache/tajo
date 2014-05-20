@@ -109,12 +109,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
     JoinType joinType = joinNode.getJoinType();
     EvalNode joinQual = joinNode.getJoinQual();
     if (joinQual != null && isOuterJoin(joinType)) {
-
+      BinaryEval binaryEval = (BinaryEval) joinQual;
       // if both are fields
-      if (joinQual.getLeftExpr().getType() == EvalType.FIELD && joinQual.getRightExpr().getType() == EvalType.FIELD) {
+      if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+          binaryEval.getRightExpr().getType() == EvalType.FIELD) {
 
-        String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getQualifier();
-        String rightTableName = ((FieldEval) joinQual.getRightExpr()).getQualifier();
+        String leftTableName = ((FieldEval) binaryEval.getLeftExpr()).getQualifier();
+        String rightTableName = ((FieldEval) binaryEval.getRightExpr()).getQualifier();
         List<String> nullSuppliers = Lists.newArrayList();
         Set<String> leftTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
             joinNode.getLeftChild()));
@@ -255,8 +256,19 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, L
           childNode.getOutSchema().getColumn(i).getQualifiedName());
       } else {
         NamedExprsManager namedExprsMgr = plan.getBlock(node.getSubQuery()).getNamedExprsManager();
-        columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(),
-          namedExprsMgr.getOriginalName(childNode.getOutSchema().getColumn(i).getQualifiedName()));
+        String originalName = namedExprsMgr.getOriginalName(childNode.getOutSchema().getColumn(i)
+            .getQualifiedName());
+
+        // We need to consider aliased columns of sub-query.
+        // Because we can't get original column name for a special occasion.
+        // For example, if we use an aliased name inside a sub-query and then we use it to where
+        // condition outside the sub-query, we can't find its original name.
+        if (originalName != null) {
+          columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(), originalName);
+        } else {
+          columnMap.put(node.getInSchema().getColumn(i).getQualifiedName(),
+            node.getInSchema().getColumn(i).getQualifiedName());
+        }
       }
     }
 

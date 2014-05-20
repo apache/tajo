@@ -29,6 +29,7 @@ import java.io.IOException;
 public class EvalExprExec extends PhysicalExec {
   private final EvalExprNode plan;
   private float progress;
+  private boolean executedOnce = false;
 
   public EvalExprExec(final TaskAttemptContext context, final EvalExprNode plan) {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -41,17 +42,24 @@ public class EvalExprExec extends PhysicalExec {
   }
 
   @Override
-  public Tuple next() throws IOException {    
-    Target [] targets = plan.getTargets();
-    Tuple t = new VTuple(targets.length);
-    for (int i = 0; i < targets.length; i++) {
-      t.put(i, targets[i].getEvalTree().eval(inSchema, null));
+  public Tuple next() throws IOException {
+    if (!executedOnce) {
+      Target [] targets = plan.getTargets();
+      Tuple t = new VTuple(targets.length);
+      for (int i = 0; i < targets.length; i++) {
+        t.put(i, targets[i].getEvalTree().eval(inSchema, null));
+      }
+
+      executedOnce = true;
+      return t;
+    } else {
+      return null;
     }
-    return t;
   }
 
   @Override
-  public void rescan() throws IOException {    
+  public void rescan() throws IOException {
+    executedOnce = false;
   }
 
   @Override

@@ -113,6 +113,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectSameConstantsWithDifferentAliases2() throws Exception {
+    // select l_orderkey, '20130819' as date1, '20130819' as date2, '20130819' as date3, '20130819' as date4
+    // from lineitem where l_orderkey > -1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSelectSameExprsWithDifferentAliases() throws Exception {
     // select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
     ResultSet res = executeQuery();
@@ -122,6 +131,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testWhereCond1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWhereCond2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -280,6 +296,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectWithJson() throws Exception {
+    // select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
+    ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
   public final void testDatabaseRef() throws Exception {
     if (!testingCluster.isHCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();

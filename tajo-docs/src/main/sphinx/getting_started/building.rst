@@ -11,7 +11,7 @@ You can compile source code and get a binary archive as follows:
 .. code-block:: bash
 
   $ cd tajo-x.y.z
-  $ mvn clean package -DskipTests -Pdist -Dtar
+  $ mvn clean install -DskipTests -Pdist -Dtar
   $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
 
 Then, after you move some proper directory, discompress the tar.gz file as follows:

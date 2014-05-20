@@ -556,8 +556,9 @@ public class PlannerUtil {
   /**
    * @return the first array contains left table's columns, and the second array contains right table's columns.
    */
-  public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema, true);
+  public static Column[][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema,
+                                                   Schema rightSchema, boolean includeThetaJoin) {
+    List<Column[]> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema, includeThetaJoin);
     Column[] leftColumns = new Column[joinKeys.size()];
     Column[] rightColumns = new Column[joinKeys.size()];
     for (int i = 0; i < joinKeys.size(); i++) {
@@ -589,10 +590,11 @@ public class PlannerUtil {
     @Override
     public void visit(EvalNode node) {
       if (EvalTreeUtil.isJoinQual(node, includeThetaJoin)) {
+        BinaryEval binaryEval = (BinaryEval) node;
         Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression
-          Column column = EvalTreeUtil.findAllColumnRefs(node.getExpr(i)).get(0);
+          Column column = EvalTreeUtil.findAllColumnRefs(binaryEval.getExpr(i)).get(0);
           for (int j = 0; j < schemas.length; j++) {
             // check whether the column is for either outer or inner
             // 0 is outer, and 1 is inner
@@ -668,6 +670,12 @@ public class PlannerUtil {
         copy.setPID(-1);
       } else {
         copy.setPID(plan.newPID());
+        if (node instanceof DistinctGroupbyNode) {
+          DistinctGroupbyNode dNode = (DistinctGroupbyNode)copy;
+          for (GroupbyNode eachNode: dNode.getGroupByNodes()) {
+            eachNode.setPID(plan.newPID());
+          }
+        }
       }
       return copy;
     } catch (CloneNotSupportedException e) {

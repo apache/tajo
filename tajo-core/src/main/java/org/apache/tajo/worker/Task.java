@@ -28,7 +28,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -54,7 +53,6 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.ApplicationIdUtils;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.File;
@@ -192,8 +190,8 @@ public class Task {
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
-    for (Fetch f : request.getFetches()) {
-      LOG.info("Table Id: " + f.getName() + ", url: " + f.getUrls());
+    for (FetchImpl f : request.getFetches()) {
+      LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {
@@ -365,7 +363,7 @@ public class Task {
 
   public void run() {
     startTime = System.currentTimeMillis();
-    String errorMessage = null;
+    Exception error = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
 
@@ -381,6 +379,7 @@ public class Task {
         this.executor = taskRunnerContext.getTQueryEngine().
             createPlan(context, plan);
         this.executor.init();
+
         while(!killed && executor.next() != null) {
         }
         this.executor.close();
@@ -388,9 +387,8 @@ public class Task {
         this.executor = null;
       }
     } catch (Exception e) {
-      // errorMessage will be sent to master.
-      errorMessage = ExceptionUtils.getStackTrace(e);
-      LOG.error(errorMessage);
+      error = e ;
+      LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
       context.setProgress(1.0f);
@@ -409,8 +407,9 @@ public class Task {
           TaskFatalErrorReport.Builder errorBuilder =
               TaskFatalErrorReport.newBuilder()
                   .setId(getId().getProto());
-          if (errorMessage != null) {
-            errorBuilder.setErrorMessage(errorMessage);
+          if (error != null) {
+            errorBuilder.setErrorMessage(error.getMessage());
+            errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
           masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
@@ -444,7 +443,7 @@ public class Task {
       finishTime = System.currentTimeMillis();
 
       cleanupTask();
-      LOG.info("Task Counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
+      LOG.info("Worker's task counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
           + ", killed: " + killedTasksNum + ", failed: " + failedTasksNum);
     }
   }
@@ -621,7 +620,7 @@ public class Task {
   }
 
   private List<Fetcher> getFetchRunners(TaskAttemptContext ctx,
-                                        List<Fetch> fetches) throws IOException {
+                                        List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
 
@@ -638,15 +637,17 @@ public class Task {
       int i = 0;
       File storeFile;
       List<Fetcher> runnerList = Lists.newArrayList();
-      for (Fetch f : fetches) {
-        storeDir = new File(inputDir.toString(), f.getName());
-        if (!storeDir.exists()) {
-          storeDir.mkdirs();
+      for (FetchImpl f : fetches) {
+        for (URI uri : f.getURIs()) {
+          storeDir = new File(inputDir.toString(), f.getName());
+          if (!storeDir.exists()) {
+            storeDir.mkdirs();
+          }
+          storeFile = new File(storeDir, "in_" + i);
+          Fetcher fetcher = new Fetcher(uri, storeFile, channelFactory);
+          runnerList.add(fetcher);
+          i++;
         }
-        storeFile = new File(storeDir, "in_" + i);
-        Fetcher fetcher = new Fetcher(URI.create(f.getUrls()), storeFile, channelFactory);
-        runnerList.add(fetcher);
-        i++;
       }
       ctx.addFetchPhase(runnerList.size(), new File(inputDir.toString()));
       return runnerList;
@@ -736,19 +737,6 @@ public class Task {
       }
     }
   }
-
-  public static final String FILECACHE = "filecache";
-  public static final String APPCACHE = "appcache";
-  public static final String USERCACHE = "usercache";
-
-  String fileCache;
-  public String getFileCacheDir() {
-    fileCache = USERCACHE + "/" + "hyunsik" + "/" + APPCACHE + "/" +
-        ConverterUtils.toString(ApplicationIdUtils.queryIdToAppId(taskId.getQueryUnitId().getExecutionBlockId().getQueryId())) +
-        "/" + "output";
-    return fileCache;
-  }
-
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
         StorageUtil.concatPath(

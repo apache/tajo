@@ -23,11 +23,10 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
   <description>Tajo Project POM</description>
   <name>Tajo Project POM</name>
   <packaging>pom</packaging>
@@ -37,7 +36,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.3.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.8.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.9.0-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -145,9 +144,9 @@
       <timezone>+9</timezone>
     </developer>
     <developer>
-      <id></id>
+      <id>mzhou</id>
       <name>Min Zhou</name>
-      <email></email>
+      <email>mzhou@apache.org</email>
       <organization>LinkedIn</organization>
       <roles>
         <role>Committer</role>
@@ -314,13 +313,6 @@
   </mailingLists>
 
   <repositories>
-    <repository>
-      <id>apache.snapshots</id>
-      <url>http://repository.apache.org/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
     <repository>
       <id>eclipse-jetty</id>
       <url>http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
@@ -553,6 +545,12 @@
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.tajo</groupId>
+          <artifactId>tajo-maven-plugins</artifactId>
+          <version>${tajo.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -999,10 +997,23 @@
             <executions>
               <execution>
                 <!-- builds source jars and attaches them to the project for publishing -->
-                <id>hadoop-java-sources</id>
+                <id>tajo-java-sources</id>
                 <phase>package</phase>
                 <goals>
-                  <goal>jar-no-fork</goal>
+                  <goal>test-jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>dist-enforce</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>enforce</goal>
                 </goals>
               </execution>
             </executions>
@@ -1038,7 +1049,7 @@
         </file>
       </activation>
       <properties>
-        <!-- default source path of tajo-0.8.0 -->
+        <!-- default source path for hadoop -->
         <extra.source.path>src/main/hadoop-2.3.0</extra.source.path>
       </properties>
     </profile>

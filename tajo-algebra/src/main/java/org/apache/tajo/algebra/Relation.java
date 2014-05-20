@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Relation extends Expr {
+  @Expose @SerializedName("TableName")
   private String tableName;
+  @Expose @SerializedName("TableAlias")
   private String alias;
 
   protected Relation(OpType type, String relationName) {

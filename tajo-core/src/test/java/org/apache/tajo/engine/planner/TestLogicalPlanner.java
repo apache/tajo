@@ -41,6 +41,7 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -95,12 +96,12 @@ public class TestLogicalPlanner {
     catalog.createTable(people);
 
     TableDesc student = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV, new Options(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV, new KeyValueSet(),
         CommonTestingUtil.getTestDir());
     catalog.createTable(student);
 
     TableDesc score = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV, new Options(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV, new KeyValueSet(),
         CommonTestingUtil.getTestDir());
     catalog.createTable(score);
 

@@ -164,8 +164,9 @@ public class Query implements EventHandler<QueryEvent> {
               QueryEventType.INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
-          .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
-              EnumSet.of(QueryEventType.KILL))
+          .addTransition(QueryState.QUERY_KILL_WAIT, EnumSet.of(QueryState.QUERY_KILLED),
+              QueryEventType.KILL,
+              QUERY_COMPLETED_TRANSITION)
 
           // Transitions from FAILED state
           .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
@@ -575,12 +576,12 @@ public class Query implements EventHandler<QueryEvent> {
         query.setResultDesc(finalTable);
       }
     }
+  }
 
-    private long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
-      FileSystem fs = tablePath.getFileSystem(systemConf);
-      ContentSummary directorySummary = fs.getContentSummary(tablePath);
-      return directorySummary.getLength();
-    }
+  public static long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
+    FileSystem fs = tablePath.getFileSystem(systemConf);
+    ContentSummary directorySummary = fs.getContentSummary(tablePath);
+    return directorySummary.getLength();
   }
 
   public static class SubQueryCompletedTransition implements SingleArcTransition<Query, QueryEvent> {

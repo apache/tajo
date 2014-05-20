@@ -21,19 +21,18 @@ License
 
 Documents
 =========
-* Tajo Wiki (http://wiki.apache.org/tajo)
-* Getting Started (https://wiki.apache.org/tajo/GettingStarted)
-* Build Instruction (https://wiki.apache.org/tajo/BuildInstruction)
-* Query Language (https://wiki.apache.org/tajo/QueryLanguage)
-* Configuration Guide (https://wiki.apache.org/tajo/Configuration)
-* Backup and Restore Guide (https://wiki.apache.org/tajo/BackupAndRestore)
-* Functions (https://wiki.apache.org/tajo/Functions)
-* Tajo Interactive Shell (https://wiki.apache.org/tajo/tsql)
+* Tajo Wiki (https://cwiki.apache.org/confluence/display/TAJO)
+* Getting Started (http://tajo.apache.org/docs/current/getting_started.html)
+* Query Language (http://tajo.apache.org/docs/current/sql_language.html)
+* Configuration Guide (http://tajo.apache.org/docs/current/configuration.html)
+* Backup and Restore Guide (http://tajo.apache.org/docs/current/backup_and_restore.html)
+* Functions (http://tajo.apache.org/docs/current/functions.html)
+* Tajo Interactive Shell (http://tajo.apache.org/docs/current/cli.html)
 
 Requirements
 ============
 * Java 1.6 or higher
-* Hadoop 2.0.3-alpha or higher
+* Hadoop 2.2.0, 2.3.0, and 2.4.0
 
 Mailing lists
 =============

@@ -28,7 +28,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -209,7 +209,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertEquals(CatalogProtos.StoreType.CSV, desc.getMeta().getStoreType());
 
 
-    Options options = desc.getMeta().getOptions();
+    KeyValueSet options = desc.getMeta().getOptions();
     assertNotNull(options);
     assertEquals(StringEscapeUtils.escapeJava("\u0001"), options.get(StorageConstants.CSVFILE_DELIMITER));
   }

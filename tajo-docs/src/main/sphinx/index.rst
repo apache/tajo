@@ -15,8 +15,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Apache Tajo™ 0.8.0 (dev) - User documentation
+Apache Tajo™ (dev) - User documentation
 ===========================================================================
+
+.. warning::
+   
+  This documentation is based on the development branch (master).
+  As a result, some contents can be mismatched to the actual implementation.
 
 Table of Contents:
 

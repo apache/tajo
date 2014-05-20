@@ -250,4 +250,48 @@ public class TestDateTimeFunctions extends ExprTestBase {
      testSimpleEval("select utc_usec_to('year' ,1274259481071200);", new String[]{1262304000000000L+""});
      testSimpleEval("select utc_usec_to('week' ,1207929480000000, 2);", new String[]{1207612800000000L+""});
   }
+
+  @Test
+  public void testToDate() throws IOException {
+    testSimpleEval("select to_date('2014-01-04', 'yyyy-MM-dd')", new String[]{"2014-01-04"});
+    testSimpleEval("select to_date('2014-01-04', 'yyyy-MM-dd') + interval '1 day'", new String[]{"2014-01-05 00:00:00"});
+  }
+
+  @Test
+  public void testAddMonths() throws Exception {
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT2);", new String[]{"2014-02-17 00:00:00"});
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT4);", new String[]{"2014-02-17 00:00:00"});
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT8);", new String[]{"2014-02-17 00:00:00"});
+
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT2);", new String[]{"2014-02-17 12:10:20"});
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT4);", new String[]{"2014-02-17 12:10:20"});
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT8);", new String[]{"2014-02-17 12:10:20"});
+
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT2);", new String[]{"2013-11-05 00:00:00"});
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT4);", new String[]{"2013-11-05 00:00:00"});
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT8);", new String[]{"2013-11-05 00:00:00"});
+
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT2);", new String[]{"2013-11-05 12:10:20"});
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT4);", new String[]{"2013-11-05 12:10:20"});
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT8);", new String[]{"2013-11-05 12:10:20"});
+  }
+
+  @Test
+  public void testAddDays() throws IOException {
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT2);", new String[]{"2014-01-04 00:00:00"});
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT4);", new String[]{"2014-01-04 00:00:00"});
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT8);", new String[]{"2014-01-04 00:00:00"});
+
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT2);", new String[]{"2014-01-04 12:10:20"});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT4);", new String[]{"2014-01-04 12:10:20"});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT8);", new String[]{"2014-01-04 12:10:20"});
+
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT2);", new String[]{"2013-11-28 00:00:00"});
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT4);", new String[]{"2013-11-28 00:00:00"});
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT8);", new String[]{"2013-11-28 00:00:00"});
+
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT2);", new String[]{"2013-11-28 12:10:20"});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT4);", new String[]{"2013-11-28 12:10:20"});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT8);", new String[]{"2013-11-28 12:10:20"});
+  }
 }

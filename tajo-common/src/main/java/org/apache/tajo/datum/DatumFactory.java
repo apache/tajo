@@ -21,7 +21,7 @@ package org.apache.tajo.datum;
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -51,6 +51,8 @@ public class DatumFactory {
         return TextDatum.class;
       case TIMESTAMP:
         return TimestampDatum.class;
+      case INTERVAL:
+        return IntervalDatum.class;
       case DATE:
         return DateDatum.class;
       case TIME:
@@ -95,6 +97,8 @@ public class DatumFactory {
       return createTime(value);
     case TIMESTAMP:
       return createTimeStamp(value);
+    case INTERVAL:
+      return createInterval(value);
     case BLOB:
       return createBlob(value);
     case INET4:
@@ -180,6 +184,10 @@ public class DatumFactory {
 
   public static Datum createBool(byte val) {
     return BooleanDatum.THREE_VALUES[(int)val];
+  }
+
+  public static Datum createBool(int val) {
+    return BooleanDatum.THREE_VALUES[val];
   }
 
   public static BooleanDatum createBool(boolean val) {
@@ -282,6 +290,10 @@ public class DatumFactory {
     return new TimestampDatum(timeStamp);
   }
 
+  public static IntervalDatum createInterval(String intervalStr) {
+    return new IntervalDatum(intervalStr);
+  }
+
   public static DateDatum createDate(Datum datum) {
     switch (datum.type()) {
     case INT4:
@@ -293,7 +305,7 @@ public class DatumFactory {
     case DATE:
       return (DateDatum) datum;
     default:
-      throw new InvalidCastException(datum.type() + " cannot be casted to DATE type");
+      throw new InvalidCastException(datum.type(), Type.DATE);
     }
   }
 
@@ -306,7 +318,7 @@ public class DatumFactory {
     case TIME:
       return (TimeDatum) datum;
     default:
-      throw new InvalidCastException(datum.type() + " cannot be casted to TIME type");
+      throw new InvalidCastException(datum.type(), Type.TIME);
     }
   }
 
@@ -317,7 +329,7 @@ public class DatumFactory {
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
-        throw new InvalidCastException(datum.type() + " cannot be casted to TIMESTAMP type");
+        throw new InvalidCastException(datum.type(), Type.TIMESTAMP);
     }
   }
 
@@ -372,8 +384,10 @@ public class DatumFactory {
       return DatumFactory.createTimestamp(operandDatum);
     case BLOB:
       return DatumFactory.createBlob(operandDatum.asByteArray());
+    case INET4:
+      return DatumFactory.createInet4(operandDatum.asByteArray());
     default:
-      throw new InvalidCastException("Cannot cast " + operandDatum.type() + " to " + target.getType());
+      throw new InvalidCastException(operandDatum.type(), target.getType());
     }
   }
 }

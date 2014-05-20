@@ -37,12 +37,13 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
       context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
           client.getCurrentDatabase(), client.getUserInfo().getUserName()));
     } else if (cmd.length == 2) {
-
-      if (!client.existDatabase(cmd[1])) {
-        context.getOutput().write("No Database Found\n");
+      String databaseName = cmd[1];
+      databaseName = databaseName.replace("\"", "");
+      if (!client.existDatabase(databaseName)) {
+        context.getOutput().write("Database '" + databaseName + "'  not found\n");
       } else {
         try {
-          if (client.selectDatabase(cmd[1])) {
+          if (client.selectDatabase(databaseName)) {
             context.setCurrentDatabase(client.getCurrentDatabase());
             context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
                 context.getCurrentDatabase(), client.getUserInfo().getUserName()));
@@ -51,7 +52,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
           if (se.getMessage() != null) {
             context.getOutput().write(se.getMessage());
           } else {
-            context.getOutput().write(String.format("cannot connect the database \"%s\"", cmd[1]));
+            context.getOutput().write(String.format("cannot connect the database \"%s\"", databaseName));
           }
         }
       }

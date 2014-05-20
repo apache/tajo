@@ -117,11 +117,12 @@ public class BlockingRpcClient extends NettyClientBase {
       }
     }
 
+    @Override
     public Message callBlockingMethod(final MethodDescriptor method,
                                       final RpcController controller,
                                       final Message param,
                                       final Message responsePrototype)
-        throws ServiceException {
+        throws TajoServiceException {
 
       int nextSeqId = sequence.getAndIncrement();
 
@@ -135,12 +136,13 @@ public class BlockingRpcClient extends NettyClientBase {
       try {
         return callFuture.get();
       } catch (Throwable t) {
-        if(t instanceof ExecutionException) {
-          ExecutionException ee = (ExecutionException)t;
-          throw new ServiceException(ee.getCause());
-        } else {
-          throw new RemoteException(t);
+        if (t instanceof ExecutionException) {
+          Throwable cause = t.getCause();
+          if (cause != null && cause instanceof TajoServiceException) {
+            throw (TajoServiceException)cause;
+          }
         }
+        throw new TajoServiceException(t.getMessage());
       }
     }
 
@@ -161,11 +163,20 @@ public class BlockingRpcClient extends NettyClientBase {
 
   private String getErrorMessage(String message) {
     if(protocol != null && getChannel() != null) {
-      return "Exception [" + protocol.getCanonicalName() +
+      return protocol.getName() +
           "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
-          getChannel().getRemoteAddress()) + ")]: " + message;
+          getChannel().getRemoteAddress()) + "): " + message;
     } else {
       return "Exception " + message;
+    }
+  }
+
+  private TajoServiceException makeTajoServiceException(RpcResponse response, Throwable cause) {
+    if(protocol != null && getChannel() != null) {
+      return new TajoServiceException(response.getErrorMessage(), cause, protocol.getName(),
+          NetUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().getRemoteAddress()));
+    } else {
+      return new TajoServiceException(response.getErrorMessage());
     }
   }
 
@@ -183,9 +194,8 @@ public class BlockingRpcClient extends NettyClientBase {
       } else {
         if (rpcResponse.hasErrorMessage()) {
           callback.setFailed(rpcResponse.getErrorMessage(),
-              new ServiceException(getErrorMessage(rpcResponse.getErrorMessage())));
-          throw new RemoteException(
-              getErrorMessage(rpcResponse.getErrorMessage()));
+              makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
+          throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
         } else {
           Message responseMessage;
 

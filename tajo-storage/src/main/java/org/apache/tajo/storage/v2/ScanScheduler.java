@@ -53,6 +53,9 @@ public final class ScanScheduler extends Thread {
 
     try {
       List<DiskDeviceInfo> deviceInfos = DiskUtil.getDiskDeviceInfos();
+      if (deviceInfos.size() == 0) {
+        deviceInfos = DiskUtil.getDefaultDiskDeviceInfos();
+      }
       for(DiskDeviceInfo eachInfo: deviceInfos) {
         LOG.info("Create DiskScanQueue:" + eachInfo.getName());
         diskDeviceInfoMap.put(eachInfo.getId(), eachInfo);

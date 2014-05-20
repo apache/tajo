@@ -52,6 +52,7 @@ import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -60,6 +61,8 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public class TajoMasterClientService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
@@ -165,7 +168,7 @@ public class TajoMasterClientService extends AbstractService {
         throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
-        for (CatalogProtos.KeyValueProto kv : request.getSetVariables().getKeyvalList()) {
+        for (KeyValueProto kv : request.getSetVariables().getKeyvalList()) {
           context.getSessionManager().setVariable(sessionId, kv.getKey(), kv.getValue());
         }
         for (String unsetVariable : request.getUnsetVariablesList()) {
@@ -206,14 +209,14 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public CatalogProtos.KeyValueSetProto getAllSessionVariables(RpcController controller,
+    public KeyValueSetProto getAllSessionVariables(RpcController controller,
                                                                  TajoIdProtos.SessionIdProto request)
         throws ServiceException {
       try {
         String sessionId = request.getId();
-        Options options = new Options();
-        options.putAll(context.getSessionManager().getAllVariables(sessionId));
-        return options.getProto();
+        KeyValueSet keyValueSet = new KeyValueSet();
+        keyValueSet.putAll(context.getSessionManager().getAllVariables(sessionId));
+        return keyValueSet.getProto();
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
@@ -249,15 +252,13 @@ public class TajoMasterClientService extends AbstractService {
 
     @Override
     public SubmitQueryResponse submitQuery(RpcController controller, QueryRequest request) throws ServiceException {
-
-
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         if(LOG.isDebugEnabled()) {
           LOG.debug("Query [" + request.getQuery() + "] is submitted");
         }
-        return context.getGlobalEngine().executeQuery(session, request.getQuery());
+        return context.getGlobalEngine().executeQuery(session, request.getQuery(), request.getIsJson());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
@@ -279,7 +280,7 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
         try {
-          context.getGlobalEngine().updateQuery(session, request.getQuery());
+          context.getGlobalEngine().updateQuery(session, request.getQuery(), request.getIsJson());
           builder.setResultCode(ResultCode.OK);
           return builder.build();
         } catch (Exception e) {
@@ -353,9 +354,8 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetQueryListResponse.Builder builder= GetQueryListResponse.newBuilder();
 
-        Collection<QueryInProgress> queries
-          = context.getQueryJobManager().getRunningQueries();
-
+        Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
+        queries.addAll(context.getQueryJobManager().getRunningQueries());
         BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
 
         for (QueryInProgress queryInProgress : queries) {
@@ -481,6 +481,7 @@ public class TajoMasterClientService extends AbstractService {
             new QueryInfo(queryId)));
         return BOOL_TRUE;
       } catch (Throwable t) {
+        t.printStackTrace();
         throw new ServiceException(t);
       }
     }

@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.util.BitArray;
 
 import java.nio.ByteBuffer;
@@ -116,6 +117,12 @@ public class RowStoreUtil {
             tuple.put(i, DatumFactory.createFromInt8(type, l));
             break;
 
+        case INTERVAL:
+            int month  = bb.getInt();
+            long milliseconds  = bb.getLong();
+            tuple.put(i, new IntervalDatum(month, milliseconds));
+            break;
+
           case FLOAT4:
             float f = bb.getFloat();
             tuple.put(i, DatumFactory.createFloat4(f));
@@ -196,6 +203,11 @@ public class RowStoreUtil {
           case TIME:
           case TIMESTAMP:
             bb.putLong(tuple.get(i).asInt8());
+            break;
+          case INTERVAL:
+            IntervalDatum interval = (IntervalDatum) tuple.get(i);
+            bb.putInt(interval.getMonths());
+            bb.putLong(interval.getMilliSeconds());
             break;
           case BLOB:
             byte [] bytes = tuple.get(i).asByteArray();

@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class TablePrimarySubQuery extends Relation {
+  @Expose @SerializedName("SubPlan")
   private Expr subquery;
+  @Expose @SerializedName("ColumnNames")
   private String [] columnNames;
 
   public TablePrimarySubQuery(String relName, Expr subquery) {

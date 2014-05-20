@@ -64,7 +64,7 @@ public class IndexUtil {
     
     FieldAndValueFinder nodeFinder = new FieldAndValueFinder();
     qual.preOrder(nodeFinder);
-    LinkedList<EvalNode> nodeList = nodeFinder.getNodeList();
+    LinkedList<BinaryEval> nodeList = nodeFinder.getNodeList();
     
     int maxSize = Integer.MIN_VALUE;
     SortSpec[] maxIndex = null;
@@ -120,27 +120,28 @@ public class IndexUtil {
   
   
   private static class FieldAndValueFinder implements EvalNodeVisitor {
-    private LinkedList<EvalNode> nodeList = new LinkedList<EvalNode>();
+    private LinkedList<BinaryEval> nodeList = new LinkedList<BinaryEval>();
     
-    public LinkedList<EvalNode> getNodeList () {
+    public LinkedList<BinaryEval> getNodeList () {
       return this.nodeList;
     }
     
     @Override
     public void visit(EvalNode node) {
+      BinaryEval binaryEval = (BinaryEval) node;
       switch(node.getType()) {
       case AND:
         break;
       case EQUAL:
-        if( node.getLeftExpr().getType() == EvalType.FIELD
-          && node.getRightExpr().getType() == EvalType.CONST ) {
-          nodeList.add(node);
+        if( binaryEval.getLeftExpr().getType() == EvalType.FIELD
+          && binaryEval.getRightExpr().getType() == EvalType.CONST ) {
+          nodeList.add(binaryEval);
         }
         break;
       case IS_NULL:
-        if( node.getLeftExpr().getType() == EvalType.FIELD
-          && node.getRightExpr().getType() == EvalType.CONST) {
-          nodeList.add(node);
+        if( binaryEval.getLeftExpr().getType() == EvalType.FIELD
+          && binaryEval.getRightExpr().getType() == EvalType.CONST) {
+          nodeList.add(binaryEval);
         }
       }
     }

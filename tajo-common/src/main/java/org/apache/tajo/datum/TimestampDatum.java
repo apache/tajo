@@ -21,7 +21,7 @@ package org.apache.tajo.datum;
 import com.google.common.base.Objects;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -41,6 +41,11 @@ public class TimestampDatum extends Datum {
     dateTime = new DateTime((long)timestamp * 1000);
   }
 
+  public TimestampDatum(long timestamp) {
+    super(TajoDataTypes.Type.TIMESTAMP);
+    dateTime = new DateTime(timestamp);
+  }
+
   public TimestampDatum(DateTime dateTime) {
     super(TajoDataTypes.Type.TIMESTAMP);
     this.dateTime = dateTime;
@@ -53,7 +58,14 @@ public class TimestampDatum extends Datum {
 
   public TimestampDatum(String datetime) {
     super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
+
+    DateTime tmpDateTime = null;
+    try {
+      tmpDateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
+    } catch (IllegalArgumentException e) {
+      tmpDateTime = DateTime.parse(datetime, FRACTION_FORMATTER);
+    }
+    this.dateTime = tmpDateTime;
   }
 
   public int getUnixTime() {
@@ -122,6 +134,50 @@ public class TimestampDatum extends Datum {
 
   public int getWeekOfWeekyear() {
     return dateTime.getWeekOfWeekyear();
+  }
+
+  @Override
+  public Datum plus(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
+      IntervalDatum interval = (IntervalDatum)datum;
+
+      DateTime plusDateTime = null;
+      if (interval.getMonths() > 0) {
+        plusDateTime = dateTime.plusMonths(interval.getMonths());
+      } else {
+        plusDateTime = dateTime;
+      }
+      if (interval.getMilliSeconds() > 0) {
+        plusDateTime = plusDateTime.plusMillis((int) interval.getMilliSeconds());
+      }
+      return new TimestampDatum(plusDateTime);
+
+    } else {
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  @Override
+  public Datum minus(Datum datum) {
+    switch(datum.type()) {
+      case INTERVAL:
+        IntervalDatum interval = (IntervalDatum)datum;
+
+        DateTime minusDateTime = null;
+        if (interval.getMonths() > 0) {
+          minusDateTime = dateTime.minusMonths(interval.getMonths());
+        } else {
+          minusDateTime = dateTime;
+        }
+        if (interval.getMilliSeconds() > 0) {
+          minusDateTime = minusDateTime.minusMillis((int)interval.getMilliSeconds());
+        }
+        return new TimestampDatum(minusDateTime);
+      case TIMESTAMP:
+        return new IntervalDatum(dateTime.getMillis() - ((TimestampDatum)datum).dateTime.getMillis());
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
   }
 
   @Override

@@ -24,13 +24,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,7 +84,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableUsingTextFile() throws Exception {
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new Options());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
@@ -112,7 +116,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableUsingRCFileWithBinarySerde() throws Exception {
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.RCFILE, options);
 
@@ -141,7 +145,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableUsingRCFileWithTextSerde() throws Exception {
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.RCFILE, options);
 
@@ -169,11 +173,10 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableWithNullValue() throws Exception {
-    Options options = new Options();
-    options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0001"));
-    options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\\N"));
+    KeyValueSet options = new KeyValueSet();
+    options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
+    options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\u0003"));
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
-
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
@@ -186,7 +189,6 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, SUPPLIER)));
-
 
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
@@ -204,12 +206,20 @@ public class TestHCatalogStore {
 
     assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_NULL),
         table1.getMeta().getOption(StorageConstants.CSVFILE_NULL));
+
+    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
+        StringEscapeUtils.escapeJava("\u0002"));
+
+    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_NULL),
+        StringEscapeUtils.escapeJava("\u0003"));
+
     store.dropTable(DB_NAME, SUPPLIER);
+
   }
 
   @Test
   public void testAddTableByPartition() throws Exception {
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new Options());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
@@ -254,7 +264,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testGetAllTableNames() throws Exception{
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new Options());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -282,7 +292,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testDeleteTable() throws Exception {
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new Options());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -304,7 +314,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableUsingSequenceFileWithBinarySerde() throws Exception {
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.SEQUENCEFILE, options);
 
@@ -333,7 +343,7 @@ public class TestHCatalogStore {
 
   @Test
   public void testTableUsingSequenceFileWithTextSerde() throws Exception {
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.SEQUENCEFILE, options);
 

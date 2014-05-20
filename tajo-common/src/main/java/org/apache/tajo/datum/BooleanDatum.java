@@ -20,7 +20,7 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidOperationException;
 
 public class BooleanDatum extends Datum {
   @Expose private final boolean val;
@@ -29,9 +29,10 @@ public class BooleanDatum extends Datum {
   public static final BooleanDatum TRUE = new BooleanDatum(true);
   public static final BooleanDatum FALSE = new BooleanDatum(false);
 
-  public static final int UNKNOWN_INT = 0;
-  public static final int TRUE_INT = 1;
-  public static final int FALSE_INT = 2;
+  // Three-valued Login Constants
+  public static final byte UNKNOWN_INT = 0;
+  public static final byte TRUE_INT = 1;
+  public static final byte FALSE_INT = 2;
   public static final byte [] TRUE_BYTES = new byte[] {TRUE_INT};
   public static final byte [] FALSE_BYTES = new byte[] {FALSE_INT};
 
@@ -54,7 +55,7 @@ public class BooleanDatum extends Datum {
       new Datum [] {NullDatum.get(), TRUE, FALSE          }  // false
   };
 
-  protected BooleanDatum(boolean val) {
+  private BooleanDatum(boolean val) {
     super(TajoDataTypes.Type.BOOLEAN);
     this.val = val;
   }

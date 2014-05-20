@@ -19,12 +19,16 @@
 package org.apache.tajo.algebra;
 
 import com.google.gson.*;
+import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.apache.tajo.algebra.LiteralValue.LiteralType;
 
 import java.lang.reflect.Type;
 
 public abstract class Expr implements JsonSerializable {
-  @SerializedName("type")
+  @Expose @SerializedName("type")
+  private static final String SERIALIZED_NAME_OF_OP_TYPE = "OpType";
+  @Expose @SerializedName(SERIALIZED_NAME_OF_OP_TYPE)
   protected OpType opType;
 
 	public Expr(OpType opType) {
@@ -113,8 +117,18 @@ public abstract class Expr implements JsonSerializable {
                                     JsonDeserializationContext context)
         throws JsonParseException {
       JsonObject jsonObject = json.getAsJsonObject();
-      String operator = jsonObject.get("type").getAsString();
-      return context.deserialize(json, OpType.valueOf(operator).getBaseClass());
+      String opType = jsonObject.get(SERIALIZED_NAME_OF_OP_TYPE).getAsString();
+      if (OpType.valueOf(opType).equals(OpType.Literal)) {
+        String value = jsonObject.get("Value").getAsString();
+        JsonElement valueTypeElem = jsonObject.get("ValueType");
+        if (valueTypeElem != null) {
+          return new LiteralValue(value, LiteralType.valueOf(valueTypeElem.getAsString()));
+        } else {
+          return new LiteralValue(value, LiteralValue.getLiteralType(value));
+        }
+      } else {
+        return context.deserialize(json, OpType.valueOf(opType).getBaseClass());
+      }
     }
 
 

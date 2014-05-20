@@ -27,7 +27,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 
-public class IsNullEval extends BinaryEval {
+public class IsNullEval extends UnaryEval {
   // it's just a hack to emulate a binary expression
   private final static ConstEval DUMMY_EVAL = new ConstEval(DatumFactory.createBool(true));
   private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
@@ -36,7 +36,7 @@ public class IsNullEval extends BinaryEval {
   @Expose private boolean isNot;
 
   public IsNullEval(boolean not, EvalNode predicand) {
-    super(EvalType.IS_NULL, predicand, DUMMY_EVAL);
+    super(EvalType.IS_NULL, predicand);
     this.isNot = not;
   }
 
@@ -52,12 +52,12 @@ public class IsNullEval extends BinaryEval {
 
   @Override
   public String toString() {
-    return leftExpr + " IS " + (isNot ? "NOT NULL" : "NULL");
+    return child + " IS " + (isNot ? "NOT NULL" : "NULL");
   }
 
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
-    boolean isNull = leftExpr.eval(schema, tuple).isNull();
+    boolean isNull = child.eval(schema, tuple).isNull();
     return DatumFactory.createBool(isNot ^ isNull);
   }
 

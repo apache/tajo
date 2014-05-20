@@ -16,12 +16,22 @@
   limitations under the License.
 -->
 
+## Most Recent Releases
 
-## Latest Releases of Apache Tajo
+### Release 0.8.0 (May 1, 2014)
 
-### 0.2-incubating Release (Nov 20, 2013)
- * [RELEASE NOTES](http://s.apache.org/tajo-0.2-release-notes)
- * [Source Tarball](http://apache.org/dyn/closer.cgi/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/incubator/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/incubator/tajo/KEYS)) ([How to verify?](#Verification))
+
+ * [Announcement] (releases/0.8.0/announcement.html)
+ * [Release Notes] (releases/0.8.0/relnotes.html)
+ * [User Documentation] (http://tajo.apache.org/docs/0.8.0/index.html)
+ * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * [Binary Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+
+### Release 0.2-incubating (Nov 20, 2013)
+ * [Announcement] (https://blogs.apache.org/tajo/entry/apache_tajo_0_2_0)
+ * [Release Notes](http://s.apache.org/tajo-0.2-release-notes)
+ * [User Documentation] (tajo-0.2.0-doc.html)
+ * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ## Getting the source code via Git
 
@@ -33,18 +43,18 @@ git clone https://git-wip-us.apache.org/repos/asf/tajo.git
 
 A read-only git repository is also mirrored on [Github](https://github.com/apache/tajo).
 
-Once you have downloaded Tajo, follow the [getting started instructions](http://tajo.apache.org/tajo-0.8.0-doc.html#GettingStarted), and take a look at the rest of the Tajo documentation.
+Once you have downloaded Tajo, follow the [getting started instructions](http://tajo.apache.org/docs/current/getting_started.html), and take a look at the rest of the Tajo documentation.
 
 ## <a name="Verification"></a>How to Verify the integrity of the files
 
 It is essential that you verify the integrity of the downloaded files using the PGP or MD5 signatures. Please read Verifying Apache HTTP Server Releases for more information on why you should verify our releases.
 
-The PGP signatures can be verified using PGP or GPG. First download the [KEYS](http://www.apache.org/dist/incubator/tajo/KEYS) as well as the asc signature file for the relevant distribution. Make sure you get these files from [the main distribution directory](http://www.apache.org/dist/incubator/tajo/) , rather than from a mirror. Then verify the signatures using
+The PGP signatures can be verified using PGP or GPG. First download the [KEYS](http://www.apache.org/dist/tajo/KEYS) as well as the asc signature file for the relevant distribution. Make sure you get these files from [the main distribution directory](http://www.apache.org/dist/tajo/) , rather than from a mirror. Then verify the signatures using
 
 ```
 % pgpk -a KEYS
 
-% pgpv tajo-0.X.0-incubating-src.tar.gz.asc
+% pgpv tajo-0.X.0.tar.gz.asc
 ```
 
 or
@@ -53,7 +63,7 @@ or
 ``` 
 % pgp -ka KEYS
 
-% pgp tajo-0.X.0-incubating-src.tar.gz.asc
+% pgp tajo-0.X.0.tar.gz.asc
 ```
 
 or 
@@ -61,7 +71,7 @@ or
 ```
 % gpg --import KEYS
 
-% gpg --verify tajo-0.X.0-incubating-src.tar.gz.asc
+% gpg --verify tajo-0.X.0.tar.gz.asc
 ```
 
 ### How to verify SHA1/MD5 hash values
@@ -69,11 +79,11 @@ or
 Alternatively, you can verify the MD5 signature on the files. A unix program called md5 or md5sum is included in many unix distributions. It is also available as part of [GNU Textutils](http://www.gnu.org/software/textutils/textutils.html). An MD5 signature consists of 32 hex characters, and a SHA1 signature consists of 40 hex characters. You can verify the signatures as follows:
 
 ```
-md5sum -c tajo-0.x.0-incubating-src.tar.gz.md5
+md5sum -c tajo-0.x.0.tar.gz.md5
 ```
 
 or
 
 ```
-sha1sum -c tajo-0.x.0-incubating-src.tar.gz.sha1
+sha1sum -c tajo-0.x.0.tar.gz.sha1
 ```

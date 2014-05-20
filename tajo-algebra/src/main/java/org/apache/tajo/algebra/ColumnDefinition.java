@@ -17,7 +17,11 @@
  */
 package org.apache.tajo.algebra;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public  class ColumnDefinition extends DataTypeExpr {
+  @Expose @SerializedName("ColumnDefName")
   String col_name;
 
   public ColumnDefinition(String columnName, String dataType) {

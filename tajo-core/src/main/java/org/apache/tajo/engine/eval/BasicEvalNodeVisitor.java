@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.exception.UnsupportedException;
+
 import java.util.Stack;
 
 public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<CONTEXT, RESULT> {
@@ -132,13 +134,20 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         break;
 
       default:
-        throw new InvalidEvalException("Unknown EvalNode: " + evalNode);
+        throw new UnsupportedException("Unknown EvalType: " + evalNode);
     }
 
     return result;
   }
 
-  private RESULT visitDefaultBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+  private RESULT visitDefaultUnaryEval(CONTEXT context, UnaryEval unaryEval, Stack<EvalNode> stack) {
+    stack.push(unaryEval);
+    RESULT result = visitChild(context, unaryEval.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
+  private RESULT visitDefaultBinaryEval(CONTEXT context, BinaryEval binaryEval, Stack<EvalNode> stack) {
     stack.push(binaryEval);
     RESULT result = visitChild(context, binaryEval.getLeftExpr(), stack);
     visitChild(context, binaryEval.getRightExpr(), stack);
@@ -146,7 +155,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
     return result;
   }
 
-  private RESULT visitDefaultFunctionEval(CONTEXT context, Stack<EvalNode> stack, FunctionEval functionEval) {
+  private RESULT visitDefaultFunctionEval(CONTEXT context, FunctionEval functionEval, Stack<EvalNode> stack) {
     RESULT result = null;
     stack.push(functionEval);
     if (functionEval.getArgs() != null) {
@@ -175,82 +184,77 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   @Override
   public RESULT visitPlus(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitMinus(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitMultiply(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitDivide(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitModular(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitAnd(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitOr(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitNot(CONTEXT context, NotEval evalNode, Stack<EvalNode> stack) {
-    RESULT result;
-    stack.push(evalNode);
-    result = visitChild(context, evalNode.getChild(), stack);
-    stack.pop();
-
-    return result;
+    return visitDefaultUnaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitNotEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitLessThan(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitLessThanOrEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitGreaterThan(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitGreaterThanOrEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitIsNull(CONTEXT context, IsNullEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultUnaryEval(context, evalNode, stack);
   }
 
   @Override
@@ -288,54 +292,46 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   @Override
   public RESULT visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitLike(CONTEXT context, LikePredicateEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitSimilarTo(CONTEXT context, SimilarToPredicateEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitRegex(CONTEXT context, RegexPredicateEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitConcatenate(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultBinaryEval(context, stack, evalNode);
+    return visitDefaultBinaryEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultFunctionEval(context, stack, evalNode);
+    return visitDefaultFunctionEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultFunctionEval(context, stack, evalNode);
+    return visitDefaultFunctionEval(context, evalNode, stack);
   }
 
   @Override
   public RESULT visitSigned(CONTEXT context, SignedEval signedEval, Stack<EvalNode> stack) {
-    RESULT result;
-    stack.push(signedEval);
-    result = visitChild(context, signedEval.getChild(), stack);
-    stack.pop();
-    return result;
+    return visitDefaultUnaryEval(context, signedEval, stack);
   }
 
   @Override
-  public RESULT visitCast(CONTEXT context, CastEval signedEval, Stack<EvalNode> stack) {
-    RESULT result;
-    stack.push(signedEval);
-    result = visitChild(context, signedEval.getOperand(), stack);
-    stack.pop();
-    return result;
+  public RESULT visitCast(CONTEXT context, CastEval castEval, Stack<EvalNode> stack) {
+    return visitDefaultUnaryEval(context, castEval, stack);
   }
 }

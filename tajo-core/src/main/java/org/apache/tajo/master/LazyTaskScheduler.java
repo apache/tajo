@@ -40,9 +40,9 @@ import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -186,12 +186,12 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
   public void handle(TaskSchedulerEvent event) {
     int qSize = eventQueue.size();
     if (qSize != 0 && qSize % 1000 == 0) {
-      LOG.info("Size of event-queue in YarnRMContainerAllocator is " + qSize);
+      LOG.info("Size of event-queue in DefaultTaskScheduler is " + qSize);
     }
     int remCapacity = eventQueue.remainingCapacity();
     if (remCapacity < 1000) {
       LOG.warn("Very low remaining capacity in the event-queue "
-          + "of YarnRMContainerAllocator: " + remCapacity);
+          + "of DefaultTaskScheduler: " + remCapacity);
     }
 
     if (event.getType() == EventType.T_SCHEDULE) {
@@ -305,12 +305,12 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       }
       int qSize = taskRequestQueue.size();
       if (qSize != 0 && qSize % 1000 == 0) {
-        LOG.info("Size of event-queue in YarnRMContainerAllocator is " + qSize);
+        LOG.info("Size of event-queue in DefaultTaskScheduler is " + qSize);
       }
       int remCapacity = taskRequestQueue.remainingCapacity();
       if (remCapacity < 1000) {
         LOG.warn("Very low remaining capacity in the event-queue "
-            + "of YarnRMContainerAllocator: " + remCapacity);
+            + "of DefaultTaskScheduler: " + remCapacity);
       }
 
       taskRequestQueue.add(event);
@@ -484,11 +484,11 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
     }
 
     if (!context.isLeafQuery()) {
-      Map<String, List<URI>> fetch = scheduledFetches.getNextFetch();
+      Map<String, List<FetchImpl>> fetch = scheduledFetches.getNextFetch();
       scheduledFetches.popNextFetch();
 
-      for (Entry<String, List<URI>> fetchEntry : fetch.entrySet()) {
-        for (URI eachValue : fetchEntry.getValue()) {
+      for (Entry<String, List<FetchImpl>> fetchEntry : fetch.entrySet()) {
+        for (FetchImpl eachValue : fetchEntry.getValue()) {
           taskAssign.addFetch(fetchEntry.getKey(), eachValue);
         }
       }

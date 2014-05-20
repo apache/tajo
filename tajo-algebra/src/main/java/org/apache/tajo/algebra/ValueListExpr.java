@@ -19,9 +19,12 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class ValueListExpr extends Expr {
+  @Expose @SerializedName("Values")
   private Expr[] values;
 
   public ValueListExpr(Expr[] values) {

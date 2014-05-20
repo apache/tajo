@@ -1,0 +1,788 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Apache Tajo 0.8.0 Release Notes</title>
+</head>
+
+<body>
+
+<h1>Apache Tajo 0.8.0 Release Notes</h1>
+    
+<h2>Changes since Tajo 0.2.0-incubating</h2>
+
+<h2>        Sub-task
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-60">TAJO-60</a>] -         Implement Date Datum Type
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-61">TAJO-61</a>] -         Implement Time Datum Type
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-62">TAJO-62</a>] -         Implement Timestamp Datum type
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-207">TAJO-207</a>] -         Implement bit_length(string) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-215">TAJO-215</a>] -         Catalog should allow compatible types when finding functions
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-218">TAJO-218</a>] -         HiveQLAnalyzer has to support cast expression.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-284">TAJO-284</a>] -         Add table partitioning entry to Catalog.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-285">TAJO-285</a>] -         Add CREATE TABLE... BY PARTITION statement to parser
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-289">TAJO-289</a>] -         HCatalogStore supports SELECT statement
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-297">TAJO-297</a>] -         Rename JDBC variables in CatalogConstants to be more generic.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-300">TAJO-300</a>] -         HCatalogStore supports DROP TABLE statement
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-301">TAJO-301</a>] -         HCatalogStore supports CREATE TABLE statement
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-311">TAJO-311</a>] -         Improve Hive dependency
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-312">TAJO-312</a>] -         Implement distributed execution part of outer join
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-313">TAJO-313</a>] -         Support deprecated variables in CatalogConstants.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-318">TAJO-318</a>] -         Remove unnecessary Hive dependencies
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-327">TAJO-327</a>] -         Add testcase to verify TAJO-16
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-329">TAJO-329</a>] -         Implement physical operator to store in column-partitioned table.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-338">TAJO-338</a>] -         Add Query Optimization Part for Column-Partitioned Tables
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-346">TAJO-346</a>] -         Implement hex function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-348">TAJO-348</a>] -         Implement octet_length(text)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-349">TAJO-349</a>] -         Implement md5(text)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-351">TAJO-351</a>] -         Implement reverse(text)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-352">TAJO-352</a>] -         Implement right/left(text, size) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-355">TAJO-355</a>] -         Implement repeat(text,int) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-364">TAJO-364</a>] -         Implement mod/div function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-365">TAJO-365</a>] -         Implement degrees/radians function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-369">TAJO-369</a>] -         Add CREATE EXTERNAL TABLE... BY PARTITION statement to parser
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-392">TAJO-392</a>] -         Implement cbrt function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-394">TAJO-394</a>] -         Implement abs function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-395">TAJO-395</a>] -         Implement exp function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-396">TAJO-396</a>] -         Implement sqrt function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-397">TAJO-397</a>] -         Implement sign function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-400">TAJO-400</a>] -         Implement pow(float8, float8) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-405">TAJO-405</a>] -         Improve HCatalogStore to support partitioned table. 
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-409">TAJO-409</a>] -         Add explored and explained annotations to Tajo function system
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-432">TAJO-432</a>] -         Add shuffle phase for column-partitioned table store
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-436">TAJO-436</a>] -         Implement ceiling(FLOAT8) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-437">TAJO-437</a>] -         Timestamp literal support
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-438">TAJO-438</a>] -         Date literal support
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-439">TAJO-439</a>] -         Time literal support
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-460">TAJO-460</a>] -         CTAS statement should support partitioned table 
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-475">TAJO-475</a>] -         Table partition catalog recap
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-482">TAJO-482</a>] -         Implements listing functions and describing a specified function.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-495">TAJO-495</a>] -         Implement sha1(text)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-498">TAJO-498</a>] -         Implement digest(text, text) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-500">TAJO-500</a>] -         Add description annotation to functions
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-513">TAJO-513</a>] -         IP clearance document
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-515">TAJO-515</a>] -         Configurable Text (De)serializer Documentation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-517">TAJO-517</a>] -         Publish Tajo jar to a public maven repository
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-526">TAJO-526</a>] -         HCatalogStore Documentation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-529">TAJO-529</a>] -         Fix warnings in tajo-algebra
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-530">TAJO-530</a>] -         Fix warnings in tajo-catalog
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-531">TAJO-531</a>] -         Fix warnings in tajo-client
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-532">TAJO-532</a>] -         Fix warnings in tajo-common
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-535">TAJO-535</a>] -         Fix warnings in tajo-rpc
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-536">TAJO-536</a>] -         Fix warnings in tajo-core-storage
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-545">TAJO-545</a>] -         MySQLStore Documentation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-578">TAJO-578</a>] -         Update configuration for tajo-site.xml
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-615">TAJO-615</a>] -         Implement ADD TABLE RENAME TABLE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-659">TAJO-659</a>] -         Add Tajo JDBC documentation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-669">TAJO-669</a>] -         Add cluster setup documentation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-696">TAJO-696</a>] -         Implement ALTER TABLE ADD COLUMN
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-697">TAJO-697</a>] -         Implement ALTER TABLE RENAME COLUMN
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-736">TAJO-736</a>] -         Add table management documentation
+</li>
+</ul>
+            
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-160">TAJO-160</a>] -         StorageManager throws InvalidInputException while running simple join query
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-182">TAJO-182</a>] -         Correct NULL value handling of primitive operators
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-192">TAJO-192</a>] -         SELECT statement with Limit clause should result in rows without a distributed query execution
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-268">TAJO-268</a>] -         Temporal files should be removed after query is finished
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-272">TAJO-272</a>] -         boolean test does not work correctly
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-273">TAJO-273</a>] -         NotEval incurs NPE with boolean column
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-277">TAJO-277</a>] -         Infinite loop occurs when a table is empty
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-281">TAJO-281</a>] -         'mvn package -Pdist' generates duplicate Tajo jar files
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-290">TAJO-290</a>] -         TajoDataType.Type.NULL should be NULL_TYPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-292">TAJO-292</a>] -         Too many intermediate partition files
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-293">TAJO-293</a>] -         querymasters directory not found in single node setup
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-294">TAJO-294</a>] -         Removing dead workers from the live worker list
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-295">TAJO-295</a>] -         ConcurrentModificationException in TaskScheduler
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-296">TAJO-296</a>] -         Late registration of Tajo workers
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-320">TAJO-320</a>] -         Visualize Tajo statemachine
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-321">TAJO-321</a>] -         Invalid split file of compressed text file
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-332">TAJO-332</a>] -         Invalid row count of CSVScanner
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-334">TAJO-334</a>] -         select count error?
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-335">TAJO-335</a>] -         Unknown logical node type error occurs when a query includes some expressions
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-340">TAJO-340</a>] -         Some joins with inline view causes 'Not all join conditions are pushed down to joins'
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-344">TAJO-344</a>] -         Tajo cannot recognize negative numeric expressions
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-345">TAJO-345</a>] -         MergeScanner should support projectable storages
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-347">TAJO-347</a>] -         Fix bug when to call function with insensitive function name.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-354">TAJO-354</a>] -         Fix invalid type to valid type for udfs(bit_length/char_length)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-357">TAJO-357</a>] -         Fix invalid filename TestMethFunction to TestMathFUnction
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-360">TAJO-360</a>] -         If there is no matched function, catalog causes NPE.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-372">TAJO-372</a>] -         When an exception except for network issues occurs, the operation should not be repeated.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-375">TAJO-375</a>] -         TajoClient can't get result data when different os user
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-387">TAJO-387</a>] -         Query is hanging when errors occurs in Query or SubQuery class
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-388">TAJO-388</a>] -         limit clause does not work properly
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-389">TAJO-389</a>] -         The LazyTuple does not work when number format exception occurs in text deserializer
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-390">TAJO-390</a>] -         Queries on history are expired ealier than a given expiry time.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-393">TAJO-393</a>] -         Unit tests must use test-data directory.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-403">TAJO-403</a>] -         HiveQLAnalyzer should supports standard function in the GROUP BY Clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-404">TAJO-404</a>] -         Tajo does not recognize boolean literal
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-406">TAJO-406</a>] -         PullServer occasionally causes could not find xxx in any of the configured local directories
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-407">TAJO-407</a>] -         PostgreSQL-style cast should have higher operator priority
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-410">TAJO-410</a>] -         A query with a combination of general and distinct aggregation functions fails
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-415">TAJO-415</a>] -         Some complex queries causes NPE and unlimited recursions.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-417">TAJO-417</a>] -         TestSQLExpression.testCastFromTable causes unit test failure
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-418">TAJO-418</a>] -         sort operator after Inline views consisting of unions can cause an incorrect distributed plan
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-422">TAJO-422</a>] -         Support single row functions at GROUP BY clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-423">TAJO-423</a>] -         Using aggregation query on local file system.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-426">TAJO-426</a>] -         HCatalogStore created partitions automatically.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-427">TAJO-427</a>] -         Empty table makes IndexOutOfBoundsException at LEFT OUTER JOIN clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-428">TAJO-428</a>] -         CASE WHEN IS NULL condition is a problem using LEFT OUTER JOIN
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-431">TAJO-431</a>] -         HCatalogStore can't write any data using INSERT OVERWRITE clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-442">TAJO-442</a>] -         Cast operator with nested functions causes NPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-443">TAJO-443</a>] -         Order by query gives NullPointerException at at org.apache.tajo.catalog.Schema.getColumnId(Schema.java:142)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-444">TAJO-444</a>] -         Tajo fails to parse order by query with "is null" predicate in sort key
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-445">TAJO-445</a>] -         testCastWithNestedFunctions causes unit test failure
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-448">TAJO-448</a>] -         Timestamp should be based on unixtime
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-450">TAJO-450</a>] -         Incorrect inet4datum comparison
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-451">TAJO-451</a>] -         Update documentation and version constant for Tajo 0.8
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-452">TAJO-452</a>] -         Timstamp literal with fractional seconds results in java.lang.ArrayIndexOutOfBoundsException 
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-453">TAJO-453</a>] -         PartitionedStoreExec can cause NPE due to column schema mismatch
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-454">TAJO-454</a>] -         pass invalid argument to DateTime constructor in LogicalPlanner
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-467">TAJO-467</a>] -         Too many open FD when master failed.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-469">TAJO-469</a>] -         CTAS with no column definition will get  a NPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-470">TAJO-470</a>] -         Fetcher's finished time and file length is changed in WEB UI.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-479">TAJO-479</a>] -         Rename obsolete name 'partition' to 'shuffle and fix the broken taskdetail.jsp.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-485">TAJO-485</a>] -         'CREATE TABLE AS' does not work properly with partition
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-488">TAJO-488</a>] -         Data fetcher doesn't close small file in shuffle
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-490">TAJO-490</a>] -         Tajo can't use 'dfs.nameservices' based on namenode ha mode.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-492">TAJO-492</a>] -         Cannot create a table named `time`
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-493">TAJO-493</a>] -         maven pom.xml should enforce protobuf 2.5
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-496">TAJO-496</a>] -         java.lang.NoSuchFieldError: IS_SECURITY_ENABLED when debugging tajo
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-502">TAJO-502</a>] -         Jenkins build is failing
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-503">TAJO-503</a>] -         HCatalogStore can't scan several hive databases.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-504">TAJO-504</a>] -         when inserting to a column partitioned table, if a queryunit attempt fails, an AlreadyExistsStorageException will throw
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-506">TAJO-506</a>] -         RawFile cannot support DATE type
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-507">TAJO-507</a>] -         Column partitioned table is not dropped
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-511">TAJO-511</a>] -         Sometimes, a query progress becomes higher than 100%.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-518">TAJO-518</a>] -         tajo-algebra and ProjectionPushDownRule code cleanup
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-519">TAJO-519</a>] -         HCatalogStore can't support OrderBy clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-522">TAJO-522</a>] -         OutOfMemoryError: unable to create new native thread
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-525">TAJO-525</a>] -         Concurrent queries hang
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-537">TAJO-537</a>] -         After TAJO-522,  still OutOfMemoryError: unable to create new native thread
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-538">TAJO-538</a>] -         Groupby queries with constant target lists doesn't work
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-541">TAJO-541</a>] -         Parsing Group by clause differently from Hive 
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-544">TAJO-544</a>] -         Thread pool abusing
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-549">TAJO-549</a>] -         Worker fails to find some columns when it processes order by queries
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-556">TAJO-556</a>] -         java.lang.NoSuchFieldError: IS_SECURITY_ENABLED
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-557">TAJO-557</a>] -         HCatalogStore can't scan partitioned tables.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-558">TAJO-558</a>] -         HCatalogStore can't scan columns.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-559">TAJO-559</a>] -         CTAS with partition causes OOM
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-560">TAJO-560</a>] -         CTAS PARTITION BY with UNION  can cause invalid global plan
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-561">TAJO-561</a>] -         PhysicalPlanner::createBestSortPlan should consider input size of leaf tasks
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-563">TAJO-563</a>] -         INSERT OVERWRITE should not remove data before query success
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-565">TAJO-565</a>] -         FilterPushDown rewrite rule does not push filters on partitioned scans
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-566">TAJO-566</a>] -         BIN/TAJO_DUMP makes wrong ddl script.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-567">TAJO-567</a>] -         Expression projection bugs
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-568">TAJO-568</a>] -         Union query with the same alias names cause NPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-569">TAJO-569</a>] -         Add max(TEXT) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-570">TAJO-570</a>] -         InvalidOperationException in outer join with constant values
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-575">TAJO-575</a>] -         Worker's env.jsp has wrong URL which go to worker's index.jsp.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-576">TAJO-576</a>] -         Add omitted explain feature
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-577">TAJO-577</a>] -         Support S3FileSystem split
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-580">TAJO-580</a>] -         Union query with partitioned tables cause NPE.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-581">TAJO-581</a>] -         Inline view on column partitioned table causes NPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-582">TAJO-582</a>] -         Invalid split calculation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-583">TAJO-583</a>] -         Broadcast join does not work on partitioned tables
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-586">TAJO-586</a>] -         containFunction shouldn't throw NoSuchFunctionException
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-588">TAJO-588</a>] -          In some case, leaf task of DefaultTaskScheduler are not distributed execution
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-590">TAJO-590</a>] -         Rename HiveConverter to HiveQLAnalyzer
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-593">TAJO-593</a>] -         outer groupby and groupby in derived table causes only one shuffle output number
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-594">TAJO-594</a>] -         MySQL store doesn't work
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-595">TAJO-595</a>] -         The same expressions without different alias are not allowed.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-606">TAJO-606</a>] -         Statemachine visualization fails
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-607">TAJO-607</a>] -         Statemachine visualization fails
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-608">TAJO-608</a>] -         Statemachine visualization fails
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-609">TAJO-609</a>] -         PlannerUtil::getRelationLineage ignores PartitionedTableScanNode
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-610">TAJO-610</a>] -         Refactor Column class
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-619">TAJO-619</a>] -         SELECT count(1) after joins on text keys causes wrong plans
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-620">TAJO-620</a>] -         A join query can cause IndexOutOfBoundsException if one of tables is empty.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-628">TAJO-628</a>] -         The second stage of distinct aggregation can be scheduled to only one node.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-630">TAJO-630</a>] -         QueryMasterTask never finished when Internal error occurs.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-635">TAJO-635</a>] -         Improve tests of query semantic verification
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-638">TAJO-638</a>] -         QueryUnitAttempt causes Invalid event error: TA_UPDATE at TA_ASSIGNED
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-640">TAJO-640</a>] -         In inner join clause, empty table can cause a error by order-by clause.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-641">TAJO-641</a>] -         NPE in HCatalogStore.addTable()
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-645">TAJO-645</a>] -         Task.Reporter can cause NPE during reporting.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-646">TAJO-646</a>] -         TajoClient is blocked while main thread finished.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-647">TAJO-647</a>] -         Work unbalance on disk scheduling of DefaultScheduler 
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-650">TAJO-650</a>] -         Repartitioner::scheduleHashShuffledFetches should adjust the number of tasks
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-651">TAJO-651</a>] -         HcatalogStore should support (de)serialization of RCFile
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-652">TAJO-652</a>] -         logical planner cannot handle alias on partition columns
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-653">TAJO-653</a>] -         RCFileAppender throws IOException
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-655">TAJO-655</a>] -         QueryMaster sent "Select query" command to  TajoWorker,but the TajoWorker don't working
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-663">TAJO-663</a>] -         CREATE TABLE USING RAW doesn't throw ERROR
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-671">TAJO-671</a>] -         RangeParitionAlgorithm.computeCardinality() should return a positive value
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-672">TAJO-672</a>] -         Wrong progress status when overwrites to partition table
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-674">TAJO-674</a>] -         ExplainLogicalPlan can cause NPE when a query includes derived tables
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-679">TAJO-679</a>] -         TimestampDatum, TimeDatum, DateDatum should be able to be compared with NullDatum
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-682">TAJO-682</a>] -         RangePartitionAlgorithm should be improved to handle empty texts
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-687">TAJO-687</a>] -         TajoMaster should pass tajoConf to create catalogServer
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-689">TAJO-689</a>] -         NoSuchElementException occurs during assigning the leaf tasks
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-690">TAJO-690</a>] -         infinite loop occurs when rack task is assigning
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-692">TAJO-692</a>] -         Missing Null handling for INET4 in RowStoreUtil
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-693">TAJO-693</a>] -         StatusUpdateTransition in QueryUnitAttempt handles TA_UPDATE incorrectly
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-698">TAJO-698</a>] -         Error occurs when FUNCTION and IN statement are used together.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-701">TAJO-701</a>] -         Invalid bytes when creating BlobDatum with offset
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-705">TAJO-705</a>] -         CTAS always stores tables with CSV storage type into catalog
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-706">TAJO-706</a>] -         In the case of very quick query, client can't get query status.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-707">TAJO-707</a>] -         Jenkins build failure in TestNetTypes
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-712">TAJO-712</a>] -         Fix some bugs after database is supported
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-713">TAJO-713</a>] -         Missing INET4 in UniformRangePartition
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-716">TAJO-716</a>] -         Using column names actually aliased in aggregation functions can cause planning error.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-718">TAJO-718</a>] -         A group-by clause with the same columns but aliased causes planning error.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-719">TAJO-719</a>] -         JUnit test failures
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-729">TAJO-729</a>] -         PreLogicalPlanVerifier verifies distinct aggregation functions incorrectly.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-738">TAJO-738</a>] -         NPE occur when failed in QueryMaster's GlobalPlanner.build().  
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-739">TAJO-739</a>] -         A subquery with the same column alias caused planning error.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-741">TAJO-741</a>] -         GreedyHeuristicJoinOrderAlgorithm removes some join pairs.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-747">TAJO-747</a>] -         BroadCastJoin omits some data.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-748">TAJO-748</a>] -         Shuffle output numbers of join may be inconsistent.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-750">TAJO-750</a>] -         Join orders affects abnormal to the result data.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-754">TAJO-754</a>] -         failure of INSERT INTO may remove the target table.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-759">TAJO-759</a>] -         Fix findbug errors added recently.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-763">TAJO-763</a>] -         Out of range problem in utc_usec_to()
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-765">TAJO-765</a>] -         Incorrect Configuration Classpaths
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-777">TAJO-777</a>] -         Partition column in function parameter occurs NPE
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-786">TAJO-786</a>] -         TajoDataMetaDatabase::getSchemas creates invalid MetaDataTuple
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-787">TAJO-787</a>] -         FilterPushDownRule::visitSubQuery does not consider aliased columns.
+</li>
+</ul>
+                
+<h2>        Improvement
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-9">TAJO-9</a>] -         Change the default intermediate data file format for hash repartitioning
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-16">TAJO-16</a>] -         Enable Tajo catalog to access Hive metastore.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-36">TAJO-36</a>] -         Improve ExternalSortExec with N-merge sort and final pass omission
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-135">TAJO-135</a>] -         Bump up hadoop to 2.2.0
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-138">TAJO-138</a>] -         Too many RPC connections in TajoWorker
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-146">TAJO-146</a>] -         Complex expressions in group-by clause should be supported
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-225">TAJO-225</a>] -         Separate TajoClient from tajo-core to an independent module
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-261">TAJO-261</a>] -         Rearrange default port numbers and config names.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-270">TAJO-270</a>] -         Boolean datum compatible to apache hive
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-274">TAJO-274</a>] -         Maintaining connectivity to Tajo master regardless of the restart of the Tajo master
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-275">TAJO-275</a>] -         Separating QueryMaster and TaskRunner roles in worker
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-279">TAJO-279</a>] -         Improving the query_executor page of web UI
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-286">TAJO-286</a>] -         Refactor TableDesc, TableMeta, and Fragment
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-287">TAJO-287</a>] -         Improve Fragment to be more generic
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-304">TAJO-304</a>] -         drop table command should not remove data files in default
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-305">TAJO-305</a>] -         Implement killQuery feature
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-307">TAJO-307</a>] -         Implement chr(int) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-308">TAJO-308</a>] -         Implement length(string) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-310">TAJO-310</a>] -         Make the DataLocation class as a separate class and move it to the tajo-core-storage package.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-314">TAJO-314</a>] -         Make TaskScheduler be pluggable
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-316">TAJO-316</a>] -         Improve GreedyHeuristicJoinOrderAlgorithm to deal with non-commutative joins
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-317">TAJO-317</a>] -         Improve TajoResourceManager to support more elaborate resource management
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-325">TAJO-325</a>] -         QueryState.NEW and QueryState.INIT should be combined into one state
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-336">TAJO-336</a>] -         Separate catalog stores into separate modules
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-339">TAJO-339</a>] -         Implement sin( x ) - returns the sine of x (x is in radians)
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-356">TAJO-356</a>] -         Improve TajoClient to directly get query results in the first request
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-381">TAJO-381</a>] -         Implement find_in_set function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-384">TAJO-384</a>] -         to_bin()
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-391">TAJO-391</a>] -         Change the default type of real values from FLOAT4 to FLOAT8 when parsing the user queries
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-399">TAJO-399</a>] -         Simple cast expression in function parameter does not work properly
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-402">TAJO-402</a>] -         Implement from_unixtime() function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-419">TAJO-419</a>] -         Add missing visitor methods of AlgebraVisitor and BaseAlgebraVisitor
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-421">TAJO-421</a>] -         Improve split for compression file
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-424">TAJO-424</a>] -         Make serializer/deserializer configurable in CSVFile
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-433">TAJO-433</a>] -         Improve integration with Hive
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-435">TAJO-435</a>] -         Improve intermediate file
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-455">TAJO-455</a>] -         Throw PlanningException when Creating table with Partition exception COLUMN
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-456">TAJO-456</a>] -         Separate tajo-jdbc and tajo-client from tajo-core-backend
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-458">TAJO-458</a>] -         Visit methods of LogicalPlanVisitor should take a query block as parameter
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-464">TAJO-464</a>] -         Rename the name 'partition', actually meaning shuffle to 'shuffle'.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-468">TAJO-468</a>] -         Implements task's detail info page in WEB UI
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-471">TAJO-471</a>] -         Extract ColumnPartitonUtils class for ColumnPartition rewrite
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-476">TAJO-476</a>] -         Add a test development kit for unit tests based on executions of queries
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-477">TAJO-477</a>] -         Rename killQuery of QMClientProtocol to closeQuery
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-478">TAJO-478</a>] -         Add request-patch-review.py that helps submitting patches to jira and reviewboard.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-497">TAJO-497</a>] -         Rearrange reserved and non-reserved keywords
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-499">TAJO-499</a>] -         Shorten the length of classpath in shell command
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-501">TAJO-501</a>] -         Rewrite the projection part of logical planning
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-516">TAJO-516</a>] -         Add default database name 'default' to Tajo
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-539">TAJO-539</a>] -         Change some EvalNode::eval to directly return a Datum value
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-543">TAJO-543</a>] -         InsertNode and CreateTableNode should play their roles
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-548">TAJO-548</a>] -         Investigate frequent  young gc
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-553">TAJO-553</a>] -         Add a method to the TajoClient to get finished query lists
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-562">TAJO-562</a>] -         ExternalSortExec should aware of available memory of container
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-564">TAJO-564</a>] -         Show execution block's progress in querydetail.jsp
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-573">TAJO-573</a>] -         Allow the same column in a schema
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-584">TAJO-584</a>] -         Improve distributed merge sort
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-589">TAJO-589</a>] -         Add fine grained progress indicator for each task
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-592">TAJO-592</a>] -         HCatalogStore should supports RCFile and default hive field delimiter.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-598">TAJO-598</a>] -         Refactoring Tajo RPC
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-601">TAJO-601</a>] -         Improve distinct aggregation query processing
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-614">TAJO-614</a>] -         Explaning a logical node should use ExplainLogicalPlanVisitor.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-616">TAJO-616</a>] -         SequenceFile support
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-634">TAJO-634</a>] -         ExecutionBlock must be sorted by start time in querydetail.jsp
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-644">TAJO-644</a>] -         Support quoted identifiers
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-665">TAJO-665</a>] -         sort buffer size must be dealt as long type values.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-670">TAJO-670</a>] -         Change daemon's hostname to canonical hostname
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-675">TAJO-675</a>] -         maximum frame size of frameDecoder should be increased
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-685">TAJO-685</a>] -         Add prerequisite to the document of network functions and operators
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-691">TAJO-691</a>] -         HashJoin or HashAggregation is too slow if there is many unique keys
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-714">TAJO-714</a>] -         Enable setting Parquet tuning parameters
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-717">TAJO-717</a>] -         Improve file splitting for large number of splits
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-725">TAJO-725</a>] -         Broadcast JOIN should supports multiple tables
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-728">TAJO-728</a>] -         Supports expressions in 'IN predicate'
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-732">TAJO-732</a>] -         Support executing LINUX shell command and HDFS command.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-735">TAJO-735</a>] -         Remove multiple SLF4J bindings message.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-737">TAJO-737</a>] -         Change version message when daemon starts up.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-743">TAJO-743</a>] -         Change the default resource allocation policy of leaf tasks
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-745">TAJO-745</a>] -         APIs in TajoClient and JDBC should be case sensitive.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-755">TAJO-755</a>] -         ALTER TABLESPACE LOCATION support
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-768">TAJO-768</a>] -         Improve the log4j configuration 
+</li>
+</ul>
+    
+<h2>        New Feature
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-30">TAJO-30</a>] -         Parquet Integration
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-34">TAJO-34</a>] -         Outer Join
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-122">TAJO-122</a>] -         Add EXPLAIN clause to show a logical plan
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-176">TAJO-176</a>] -         Implement Tajo JDBC Driver
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-200">TAJO-200</a>] -         RCFile compatible to apache hive
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-206">TAJO-206</a>] -         Implement SQL Standard String Functions
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-217">TAJO-217</a>] -         Implement to_timestamp function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-306">TAJO-306</a>] -         Implement ascii(string) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-333">TAJO-333</a>] -         Add metric system to Tajo
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-341">TAJO-341</a>] -         Implement substr function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-342">TAJO-342</a>] -         Implement strpos(string, substring) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-343">TAJO-343</a>] -         Implement locate function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-350">TAJO-350</a>] -         Implement round, floor, ceil
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-353">TAJO-353</a>] -         Add Database support to Tajo
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-358">TAJO-358</a>] -         Implement initcap(string) function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-359">TAJO-359</a>] -         Implement lpad function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-361">TAJO-361</a>] -         Implement rpad function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-368">TAJO-368</a>] -         Implement quote_ident function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-377">TAJO-377</a>] -         Implement concat function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-378">TAJO-378</a>] -         Implement concat_ws function.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-449">TAJO-449</a>] -         Implement extract() function
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-474">TAJO-474</a>] -         Add query admin utility
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-480">TAJO-480</a>] -         Umbrella Jira for adding ALTER TABLE statement
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-574">TAJO-574</a>] -         Add a sort-based physical executor for column partition store
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-711">TAJO-711</a>] -         Add Avro storage support
+</li>
+</ul>
+                            
+<h2>        Task
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-23">TAJO-23</a>] -         Remove the deprecated classes in tajo-rpc module and cleanup related things.
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-132">TAJO-132</a>] -         Add CDH profile to pom.xml
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-166">TAJO-166</a>] -         Automatic precommit test using Jenkins
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-265">TAJO-265</a>] -         Update installation guide and other documentation for 0.2 release
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-267">TAJO-267</a>] -         Implement equals() and deepEquals() functions at LogicalNode
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-271">TAJO-271</a>] -         Add MIT license to NOTICE.txt and LICENSE.txt for jquery and jsPlumb
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-276">TAJO-276</a>] -         Update LICENSE.txt and NOTICE.txt files
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-278">TAJO-278</a>] -         Add ASF License 2.0 header to *.jsp and web.xml files
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-280">TAJO-280</a>] -         Add a configuration to specify a location of worker logs
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-288">TAJO-288</a>] -         Correct NOTICE file and LICENSE.txt
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-315">TAJO-315</a>] -         Change the version of pom.xml to 0.8-incubating
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-319">TAJO-319</a>] -         Update homepage and bump up tajo version to 0.8
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-322">TAJO-322</a>] -         Documentation by version
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-457">TAJO-457</a>] -         Update committer list and contributor list
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-508">TAJO-508</a>] -         Apply findbugs-excludeFilterFile to TajoQA
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-512">TAJO-512</a>] -         (Umbrella) 0.8 Release Preparation
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-520">TAJO-520</a>] -         Move tajo-core-storage to tajo-storage
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-621">TAJO-621</a>] -         Add DOAP file for Tajo
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-622">TAJO-622</a>] -         Add TM mark and navigation links required for TLP project
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-632">TAJO-632</a>] -         add intellij idea projects files into git ignore
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-642">TAJO-642</a>] -         Change tajo documentation tool to sphinx
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-657">TAJO-657</a>] -         Missing table stat in RCFile
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-681">TAJO-681</a>] -         Embed sphinx rtd theme into tajo-docs
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-694">TAJO-694</a>] -         Bump up hadoop to 2.3.0
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-700">TAJO-700</a>] -         Update site, wikis, pom.xml and other resources to point to the new repository location
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-752">TAJO-752</a>] -         Escalate sub modules in tajo-core into the top-level modules
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-753">TAJO-753</a>] -         Clean up of maven dependencies
+</li>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-788">TAJO-788</a>] -         Update Tajo documentation and README, and BUILDING
+</li>
+</ul>
+        
+<h2>        Test
+</h2>
+<ul>
+<li>[<a href="https://issues.apache.org/jira/browse/TAJO-686">TAJO-686</a>] -         Integration test aborted
+</li>
+</ul>
+
+
+<iframe id="rdbIndicator" width="100%" height="270" border="0" src="./Apache Tajo 0.8.0 Release Notes_files/indicator.html" style="display: none; border: 0; position: fixed; left: 0; top: 0; z-index: 2147483647"></iframe></body></html>

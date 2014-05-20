@@ -45,6 +45,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.Closeable;
@@ -102,6 +103,10 @@ public class TajoClient implements Closeable {
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
     userInfo = UserGroupInformation.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
+  }
+
+  public void setSessionId(TajoIdProtos.SessionIdProto sessionId) {
+      this.sessionId = sessionId;
   }
 
   public boolean isConnected() {
@@ -180,7 +185,9 @@ public class TajoClient implements Closeable {
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
       if (response.getState() == CreateSessionResponse.ResultState.SUCCESS) {
         sessionId = response.getSessionId();
-        LOG.info(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+        }
       } else {
         throw new InvalidClientSessionException(response.getMessage());
       }
@@ -225,11 +232,11 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        Options options = new Options();
-        options.putAll(variables);
+        KeyValueSet keyValueSet = new KeyValueSet();
+        keyValueSet.putAll(variables);
         UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
-            .setSetVariables(options.getProto()).build();
+            .setSetVariables(keyValueSet.getProto()).build();
 
         return tajoMasterService.updateSessionVariables(null, request).getValue();
       }
@@ -283,8 +290,8 @@ public class TajoClient implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        Options options = new Options(tajoMasterService.getAllSessionVariables(null, sessionId));
-        return options.getAllKeyValus();
+        KeyValueSet keyValueSet = new KeyValueSet(tajoMasterService.getAllSessionVariables(null, sessionId));
+        return keyValueSet.getAllKeyValus();
       }
     }.withRetries();
   }
@@ -304,6 +311,23 @@ public class TajoClient implements Closeable {
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setSessionId(sessionId);
         builder.setQuery(sql);
+        builder.setIsJson(false);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.submitQuery(null, builder.build());
+      }
+    }.withRetries();
+  }
+
+  public SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
+    return new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        final QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(json);
+        builder.setIsJson(true);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         return tajoMasterService.submitQuery(null, builder.build());
       }
@@ -320,18 +344,31 @@ public class TajoClient implements Closeable {
    */
   public ResultSet executeQueryAndGetResult(final String sql)
       throws ServiceException, IOException {
-    SubmitQueryResponse response = new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false, true) {
-      public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
-        checkSessionAndGet(client);
+    SubmitQueryResponse response = executeQuery(sql);
 
-        final QueryRequest.Builder builder = QueryRequest.newBuilder();
-        builder.setSessionId(sessionId);
-        builder.setQuery(sql);
-        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.submitQuery(null, builder.build());
+    QueryId queryId = new QueryId(response.getQueryId());
+    if (response.getIsForwarded()) {
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+        return this.createNullResultSet(queryId);
+      } else {
+        return this.getQueryResultAndWait(queryId);
       }
-    }.withRetries();
+    } else {
+      // If a non-forwarded insert into query
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() < 0) {
+        return this.createNullResultSet(queryId);
+      } else {
+        if (response.hasResultSet() || response.hasTableDesc()) {
+          return createResultSet(this, response);
+        } else {
+          return this.createNullResultSet(queryId);
+        }
+      }
+    }
+  }
+
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
+    SubmitQueryResponse response = executeQueryWithJson(json);
 
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
@@ -529,6 +566,31 @@ public class TajoClient implements Closeable {
         QueryRequest.Builder builder = QueryRequest.newBuilder();
         builder.setSessionId(sessionId);
         builder.setQuery(sql);
+        builder.setIsJson(false);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
+        if (response.getResultCode() == ResultCode.OK) {
+          return true;
+        } else {
+          if (response.hasErrorMessage()) {
+            System.err.println("ERROR: " + response.getErrorMessage());
+          }
+          return false;
+        }
+      }
+    }.withRetries();
+  }
+
+  public boolean updateQueryWithJson(final String json) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        QueryRequest.Builder builder = QueryRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQuery(json);
+        builder.setIsJson(true);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
         if (response.getResultCode() == ResultCode.OK) {

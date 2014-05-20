@@ -186,7 +186,11 @@ public class QueryMasterManagerService extends CompositeService
     try {
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
           new QueryId(report.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
-      queryMasterTask.getEventHandler().handle(new TaskFatalErrorEvent(report));
+      if (queryMasterTask != null) {
+        queryMasterTask.handleTaskFailed(report);
+      } else {
+        LOG.warn("No QueryMasterTask: " + new QueryUnitAttemptId(report.getId()));
+      }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -227,7 +231,7 @@ public class QueryMasterManagerService extends CompositeService
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
           new Session(request.getSession()),
-          new QueryContext(request.getQueryContext()), request.getSql().getValue(),
+          new QueryContext(request.getQueryContext()), request.getExprInJson().getValue(),
           request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {

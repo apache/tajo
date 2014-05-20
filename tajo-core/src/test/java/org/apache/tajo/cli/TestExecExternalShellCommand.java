@@ -39,8 +39,6 @@ public class TestExecExternalShellCommand {
     String consoleResult = new String(out.toByteArray());
     assertEquals("this is test\n", consoleResult);
 
-    cli.executeMetaCommand("\\! error_command");
-    consoleResult = new String(out.toByteArray());
-    assertEquals("this is test\nERROR: /bin/bash: error_command: command not found\n", consoleResult);
+    assertEquals(-1, cli.executeMetaCommand("\\! error_command"));
   }
 }

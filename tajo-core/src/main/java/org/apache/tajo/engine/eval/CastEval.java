@@ -26,22 +26,16 @@ import org.apache.tajo.storage.Tuple;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class CastEval extends EvalNode {
-  @Expose private EvalNode operand;
+public class CastEval extends UnaryEval {
   @Expose private DataType target;
 
   public CastEval(EvalNode operand, DataType target) {
-    super(EvalType.CAST);
-    this.operand = operand;
+    super(EvalType.CAST, operand);
     this.target = target;
   }
 
-  public void setOperand(EvalNode operand) {
-    this.operand = operand;
-  }
-
   public EvalNode getOperand() {
-    return operand;
+    return child;
   }
 
   @Override
@@ -55,7 +49,7 @@ public class CastEval extends EvalNode {
   }
 
   public Datum eval(Schema schema, Tuple tuple) {
-    Datum operandDatum = operand.eval(schema, tuple);
+    Datum operandDatum = child.eval(schema, tuple);
     if (operandDatum.isNull()) {
       return operandDatum;
     }
@@ -64,7 +58,7 @@ public class CastEval extends EvalNode {
   }
 
   public String toString() {
-    return "CAST (" + operand + " AS " + target.getType() + ")";
+    return "CAST (" + child + " AS " + target.getType() + ")";
   }
 
   @Override
@@ -72,20 +66,9 @@ public class CastEval extends EvalNode {
     boolean valid = obj != null && obj instanceof CastEval;
     if (valid) {
       CastEval another = (CastEval) obj;
-      return operand.equals(another.operand) && target.equals(another.target);
+      return child.equals(another.child) && target.equals(another.target);
     } else {
       return false;
     }
-  }
-
-  @Override
-  public void preOrder(EvalNodeVisitor visitor) {
-    visitor.visit(this);
-    operand.preOrder(visitor);
-  }
-
-  public void postOrder(EvalNodeVisitor visitor) {
-    operand.postOrder(visitor);
-    visitor.visit(this);
   }
 }

@@ -124,9 +124,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testGroupByWithConstantKeys1() throws Exception {
+  public final void testGroupByWithSameConstantKeys1() throws Exception {
+    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c;
     ResultSet res = executeQuery();
-    System.out.println(resultSetToString(res));
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
@@ -178,8 +179,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testDistinctAggregation6() throws Exception {
-    // select count(distinct l_orderkey), sum(l_orderkey), sum(l_linenumber), count(*) as v4 from lineitem
+    // select count(distinct l_orderkey) v0, sum(l_orderkey) v1, sum(l_linenumber) v2, count(*) as v4 from lineitem
     // group by l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregation7() throws Exception {
+    // select count(*), count(distinct c_nationkey), count(distinct c_mktsegment) from customer
+    // tpch scale 1000: 15000000	25	5
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -201,6 +211,44 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctAggregationCasebyCase() throws Exception {
+    ResultSet res;
+
+    // one groupby, distinct, aggregation
+    res = executeFile("testDistinctAggregation_case1.sql");
+    assertResultSet(res, "testDistinctAggregation_case1.result");
+    res.close();
+
+    // one groupby, two distinct, one aggregation
+    res = executeFile("testDistinctAggregation_case2.sql");
+    assertResultSet(res, "testDistinctAggregation_case2.result");
+    res.close();
+
+    // one groupby, two distinct, two aggregation(no alias)
+    res = executeFile("testDistinctAggregation_case3.sql");
+    assertResultSet(res, "testDistinctAggregation_case3.result");
+    res.close();
+
+    // two groupby, two distinct, two aggregation
+    res = executeFile("testDistinctAggregation_case4.sql");
+    assertResultSet(res, "testDistinctAggregation_case4.result");
+    res.close();
+
+    // two groupby, two distinct, two aggregation with subquery
+    res = executeFile("testDistinctAggregation_case5.sql");
+    assertResultSet(res, "testDistinctAggregation_case5.result");
+    res.close();
+
+    res = executeFile("testDistinctAggregation_case6.sql");
+    assertResultSet(res, "testDistinctAggregation_case6.result");
+    res.close();
+
+    res = executeFile("testDistinctAggregation_case7.sql");
+    assertResultSet(res, "testDistinctAggregation_case7.result");
+    res.close();
   }
 
   @Test
@@ -240,6 +288,15 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
     // having avg(l_partkey) = 2.5 or num = 1;
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithJson() throws Exception {
+    // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
+    // having total >= 2 or num = 3;
+    ResultSet res = executeJsonQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }

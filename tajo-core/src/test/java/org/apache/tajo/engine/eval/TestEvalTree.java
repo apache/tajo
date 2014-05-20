@@ -65,6 +65,16 @@ public class TestEvalTree extends ExprTestBase{
     }
 
     @Override
+    public void preOrder(EvalNodeVisitor visitor) {
+      visitor.visit(this);
+    }
+
+    @Override
+    public void postOrder(EvalNodeVisitor visitor) {
+      visitor.visit(this);
+    }
+
+    @Override
     public Datum eval(Schema schema, Tuple tuple) {
       return DatumFactory.createBool(true);
     }
@@ -100,6 +110,16 @@ public class TestEvalTree extends ExprTestBase{
     @Override
     public String getName() {
       return this.getClass().getName();
+    }
+
+    @Override
+    public void preOrder(EvalNodeVisitor visitor) {
+      visitor.visit(this);
+    }
+
+    @Override
+    public void postOrder(EvalNodeVisitor visitor) {
+      visitor.visit(this);
     }
 
     @Override
@@ -301,18 +321,18 @@ public class TestEvalTree extends ExprTestBase{
     assertCloneEqual(gth);
     
     String json = gth.toJson();
-    EvalNode eval = CoreGsonHelper.fromJson(json, EvalNode.class);
+    BinaryEval eval = (BinaryEval) CoreGsonHelper.fromJson(json, EvalNode.class);
     assertCloneEqual(eval);
     
     assertEquals(gth.getType(), eval.getType());
     assertEquals(e3.getType(), eval.getLeftExpr().getType());
     assertEquals(plus3.getType(), eval.getRightExpr().getType());
-    assertEquals(plus3.getLeftExpr(), eval.getRightExpr().getLeftExpr());
-    assertEquals(plus3.getRightExpr(), eval.getRightExpr().getRightExpr());
-    assertEquals(plus2.getLeftExpr(), eval.getRightExpr().getLeftExpr().getLeftExpr());
-    assertEquals(plus2.getRightExpr(), eval.getRightExpr().getLeftExpr().getRightExpr());
-    assertEquals(plus1.getLeftExpr(), eval.getRightExpr().getRightExpr().getLeftExpr());
-    assertEquals(plus1.getRightExpr(), eval.getRightExpr().getRightExpr().getRightExpr());
+    assertEquals(plus3.getLeftExpr(), ((BinaryEval)eval.getRightExpr()).getLeftExpr());
+    assertEquals(plus3.getRightExpr(), ((BinaryEval)eval.getRightExpr()).getRightExpr());
+    assertEquals(plus2.getLeftExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getLeftExpr());
+    assertEquals(plus2.getRightExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getRightExpr());
+    assertEquals(plus1.getLeftExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getRightExpr()).getLeftExpr());
+    assertEquals(plus1.getRightExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getRightExpr()).getRightExpr());
   }
   
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {

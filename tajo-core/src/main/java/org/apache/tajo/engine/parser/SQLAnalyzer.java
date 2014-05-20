@@ -1529,6 +1529,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return visitTime_literal(ctx.time_literal());
     } else if (checkIfExist(ctx.date_literal())) {
       return visitDate_literal(ctx.date_literal());
+    } else if (checkIfExist(ctx.interval_literal())) {
+      return visitInterval_literal(ctx.interval_literal());
     } else {
       return visitTimestamp_literal(ctx.timestamp_literal());
     }
@@ -1555,6 +1557,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return new TimestampLiteral(parseDate(datePart), parseTime(timePart));
   }
 
+  @Override public Expr visitInterval_literal(@NotNull SQLParser.Interval_literalContext ctx) {
+    String intervalStr = stripQuote(ctx.interval_string.getText());
+    return new IntervalLiteral(intervalStr);
+  }
+
   private DateValue parseDate(String datePart) {
     // e.g., 1980-04-01
     String[] parts = datePart.split("-");
@@ -1566,7 +1573,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     String[] parts = timePart.split(":");
 
     TimeValue time;
-    boolean hasFractionOfSeconds = parts[2].indexOf('.') > 0;
+    boolean hasFractionOfSeconds = (parts.length > 2 && parts[2].indexOf('.') > 0);
     if (hasFractionOfSeconds) {
       String[] secondsParts = parts[2].split("\\.");
       time = new TimeValue(parts[0], parts[1], secondsParts[0]);
@@ -1574,7 +1581,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         time.setSecondsFraction(secondsParts[1]);
       }
     } else {
-      time = new TimeValue(parts[0], parts[1], parts[2]);
+      time = new TimeValue(parts[0],
+          (parts.length > 1 ? parts[1] : "0"),
+          (parts.length > 2 ? parts[2] : "0"));
     }
     return time;
   }

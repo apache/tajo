@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Column;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 public class AlgebraicUtil {
   
@@ -31,61 +32,69 @@ public class AlgebraicUtil {
    * where the variable corresponding to the target is placed 
    * on the left-hand side.
    * 
-   * @param expr
+   * @param evalNode
    * @param target
    * @return Transposed expression
    */
-  public static EvalNode transpose(EvalNode expr, Column target) {
-    EvalNode commutated = null;
-    // If the variable is in the right term, inverse the expr.
-    if (!EvalTreeUtil.containColumnRef(expr.getLeftExpr(), target)) {
-      // the commutate method works with a copy of the expr
-      commutated = commutate(expr);
-    } else {
-      try {
-        commutated = (EvalNode) expr.clone();
-      } catch (CloneNotSupportedException e) {
-        throw new AlgebraicException(e);
-      }
-    }
+  public static EvalNode transpose(EvalNode evalNode, Column target) {
+    BinaryEval commutated = null;
 
-    return _transpose(commutated, target);
+    if (evalNode instanceof BinaryEval) { // if it is binary
+      BinaryEval binaryEval = (BinaryEval) evalNode;
+      // If the variable is in the right term, inverse the expr.
+      if (!EvalTreeUtil.containColumnRef(binaryEval.getLeftExpr(), target)) {
+        // the commutate method works with a copy of the expr
+        commutated = commutate(binaryEval);
+      } else {
+        try {
+          commutated = (BinaryEval) evalNode.clone();
+        } catch (CloneNotSupportedException e) {
+          throw new AlgebraicException(e);
+        }
+      }
+
+      return _transpose(commutated, target);
+    } else {
+      return evalNode;
+    }
   }
   
-  private static EvalNode _transpose(EvalNode _expr, Column target) {
+  private static EvalNode _transpose(BinaryEval _expr, Column target) {
      EvalNode expr = eliminateConstantExprs(_expr);
-     
-     if (isSingleVar(expr.getLeftExpr())) {
-       return expr;
-     }
-     
-     EvalNode left = expr.getLeftExpr();     
-     EvalNode lTerm = null;
-     EvalNode rTerm = null;
-     
-    if (left.getType() == EvalType.PLUS
-        || left.getType() == EvalType.MINUS
-        || left.getType() == EvalType.MULTIPLY
-        || left.getType() == EvalType.DIVIDE) {
-      
-      // If the left-left term is a variable, the left-right term is transposed.
-      if(EvalTreeUtil.containColumnRef(left.getLeftExpr(), target)) {
-        PartialBinaryExpr tmpTerm = splitRightTerm(left);
-        tmpTerm.type = inverseOperator(tmpTerm.type);
-        tmpTerm.setLeftExpr(expr.getRightExpr());
-        lTerm = left.getLeftExpr();
-        rTerm = new BinaryEval(tmpTerm);
-      } else { 
-        // Otherwise, the left-right term is transposed into the left-left term.
-        PartialBinaryExpr tmpTerm = splitLeftTerm(left);
-        tmpTerm.type = inverseOperator(tmpTerm.type);
-        tmpTerm.setLeftExpr(expr.getRightExpr());        
-        lTerm = left.getRightExpr();
-        rTerm = new BinaryEval(tmpTerm);    
+
+    if (expr instanceof BinaryEval) { // only if expr is a binary operator
+      BinaryEval binaryEval = (BinaryEval) expr;
+      if (isSingleVar(binaryEval.getLeftExpr())) {
+        return expr;
       }
+
+      EvalNode left = binaryEval.getLeftExpr();
+      EvalNode lTerm = null;
+      EvalNode rTerm = null;
+
+      if (EvalType.isArithmeticOperator(left)) { // we can ensure that left is binary.
+
+        // If the left-left term is a variable, the left-right term is transposed.
+        if (EvalTreeUtil.containColumnRef(((BinaryEval)left).getLeftExpr(), target)) {
+          PartialBinaryExpr tmpTerm = splitRightTerm((BinaryEval) left);
+          tmpTerm.type = inverseOperator(tmpTerm.type);
+          tmpTerm.setLeftExpr(((BinaryEval)expr).getRightExpr());
+          lTerm = ((BinaryEval)left).getLeftExpr();
+          rTerm = new BinaryEval(tmpTerm);
+        } else {
+          // Otherwise, the left-right term is transposed into the left-left term.
+          PartialBinaryExpr tmpTerm = splitLeftTerm((BinaryEval) left);
+          tmpTerm.type = inverseOperator(tmpTerm.type);
+          tmpTerm.setLeftExpr(((BinaryEval)expr).getRightExpr());
+          lTerm = ((BinaryEval)left).getRightExpr();
+          rTerm = new BinaryEval(tmpTerm);
+        }
+      }
+
+      return _transpose(new BinaryEval(expr.getType(), lTerm, rTerm), target);
+    } else {
+      return _expr;
     }
-    
-    return _transpose(new BinaryEval(expr.getType(), lTerm, rTerm), target);
   }
   
   /**
@@ -122,6 +131,59 @@ public class AlgebraicUtil {
       return false;
     }
   }
+
+  private static class AlgebraicOptimizer extends SimpleEvalNodeVisitor<Object> {
+
+    @Override
+    public EvalNode visitBinaryEval(Object context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+      stack.push(binaryEval);
+      EvalNode lhs = visit(context, binaryEval.getLeftExpr(), stack);
+      EvalNode rhs = visit(context, binaryEval.getRightExpr(), stack);
+      stack.pop();
+
+      if (!binaryEval.getLeftExpr().equals(lhs)) {
+        binaryEval.setLeftExpr(lhs);
+      }
+      if (!binaryEval.getRightExpr().equals(rhs)) {
+        binaryEval.setRightExpr(rhs);
+      }
+
+      if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
+        return new ConstEval(binaryEval.eval(null, null));
+      }
+
+      return binaryEval;
+    }
+
+    @Override
+    public EvalNode visitUnaryEval(Object context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+      stack.push(unaryEval);
+      EvalNode child = visit(context, unaryEval.getChild(), stack);
+      stack.pop();
+
+      if (child.getType() == EvalType.CONST) {
+        return new ConstEval(unaryEval.eval(null, null));
+      }
+
+      return unaryEval;
+    }
+
+    public EvalNode visitFuncCall(Object context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+      boolean constant = true;
+
+      for (EvalNode arg : evalNode.getArgs()) {
+        constant &= (arg.getType() == EvalType.CONST);
+      }
+
+      if (constant) {
+        return new ConstEval(evalNode.eval(null, null));
+      } else {
+        return evalNode;
+      }
+    }
+  }
+
+  private final static AlgebraicOptimizer algebraicOptimizer = new AlgebraicOptimizer();
   
   /**
    * Simplify the given expr. That is, all subexprs consisting of only constants
@@ -131,43 +193,7 @@ public class AlgebraicUtil {
    * @return the simplified expr
    */
   public static EvalNode eliminateConstantExprs(EvalNode expr) {
-
-    if (expr.getType() == EvalType.FIELD) {
-      return expr;
-    }
-
-    EvalNode left = expr.getLeftExpr();
-    EvalNode right = expr.getRightExpr();
-    
-    switch (expr.getType()) {
-    case AND:
-    case OR:
-    case EQUAL:
-    case NOT_EQUAL:
-    case LTH:
-    case LEQ:
-    case GTH:
-    case GEQ:
-    case PLUS:
-    case MINUS:
-    case MULTIPLY:
-    case DIVIDE:
-    case MODULAR:
-      left = eliminateConstantExprs(left);
-      right = eliminateConstantExprs(right);
-
-      if (left.getType() == EvalType.CONST && right.getType() == EvalType.CONST) {
-        return new ConstEval(expr.eval(null, null));
-      } else {
-        return new BinaryEval(expr.getType(), left, right);
-      }
-
-    case CONST:
-      return expr;
-      
-    default: new AlgebraicException("Wrong expression: " + expr);
-    }
-    return expr;
+    return algebraicOptimizer.visit(null, expr, new Stack<EvalNode>());
   }
   
   /** 
@@ -192,56 +218,50 @@ public class AlgebraicUtil {
   /**
    * Split the left term and transform it into the right deep expression.
    * 
-   * @param expr - notice the left term of this expr will be eliminated 
+   * @param binary - notice the left term of this expr will be eliminated
    * after done.
    * @return the separated expression changed into the right deep expression.  
    * For example, the expr 'x * y' is transformed into '* x'.  
    *
    */
-  public static PartialBinaryExpr splitLeftTerm(EvalNode expr) {
+  public static PartialBinaryExpr splitLeftTerm(BinaryEval binary) {
     
-    if (!(expr.getType() == EvalType.PLUS
-        || expr.getType() == EvalType.MINUS
-        || expr.getType() == EvalType.MULTIPLY
-        || expr.getType() == EvalType.DIVIDE)) {
-      throw new AlgebraicException("Invalid algebraic operation: " + expr);
+    if (!(EvalType.isArithmeticOperator(binary))) {
+      throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     
-    if (expr.getLeftExpr().getType() != EvalType.CONST) {
-      return splitLeftTerm(expr.getLeftExpr());
+    if (binary.getLeftExpr() instanceof BinaryEval) {
+      return splitLeftTerm((BinaryEval) binary.getLeftExpr());
     }
     
     PartialBinaryExpr splitted = 
-        new PartialBinaryExpr(expr.getType(), null, expr.getLeftExpr());
-    expr.setLeftExpr(null);
+        new PartialBinaryExpr(binary.getType(), null, binary.getLeftExpr());
+    binary.setLeftExpr(null);
     return splitted;
   }
   
   /**
    * Split the left term and transform it into the right deep expression.
    * 
-   * @param expr - to be splited
+   * @param binary - to be splited
    * @return the separated expression changed into the right deep expression.
    * For example, the expr 'x * y' is transformed into '* y'. 
    *
    * @throws CloneNotSupportedException
    */
-  public static PartialBinaryExpr splitRightTerm(EvalNode expr) {
+  public static PartialBinaryExpr splitRightTerm(BinaryEval binary) {
     
-    if (!(expr.getType() == EvalType.PLUS
-        || expr.getType() == EvalType.MINUS
-        || expr.getType() == EvalType.MULTIPLY
-        || expr.getType() == EvalType.DIVIDE)) {
-      throw new AlgebraicException("Invalid algebraic operation: " + expr);
+    if (!(EvalType.isArithmeticOperator(binary))) {
+      throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     
-    if (expr.getRightExpr().getType() != EvalType.CONST) {
-      return splitRightTerm(expr.getRightExpr());
+    if (binary.getRightExpr() instanceof BinaryEval) {
+      return splitRightTerm((BinaryEval) binary.getRightExpr());
     }
     
     PartialBinaryExpr splitted = 
-        new PartialBinaryExpr(expr.getType(), null, expr.getRightExpr());
-    expr.setRightExpr(null);
+        new PartialBinaryExpr(binary.getType(), null, binary.getRightExpr());
+    binary.setRightExpr(null);
     return splitted;
   }
   
@@ -251,8 +271,8 @@ public class AlgebraicUtil {
    * @param inputExpr
    * @return
    */
-  public static EvalNode commutate(EvalNode inputExpr) {
-    EvalNode expr;
+  public static BinaryEval commutate(BinaryEval inputExpr) {
+    BinaryEval rewritten;
     switch (inputExpr.getType()) {
     case AND:
     case OR:
@@ -260,24 +280,24 @@ public class AlgebraicUtil {
     case PLUS:
     case MINUS:
     case MULTIPLY: // these types can be commutated w/o any change
-      expr = EvalTreeFactory.create(inputExpr.getType(),
+      rewritten = EvalTreeFactory.create(inputExpr.getType(),
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
       
     case GTH:
-      expr = EvalTreeFactory.create(EvalType.LTH,
+      rewritten = EvalTreeFactory.create(EvalType.LTH,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case GEQ:
-      expr = EvalTreeFactory.create(EvalType.LEQ,
+      rewritten = EvalTreeFactory.create(EvalType.LEQ,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case LTH:
-      expr = EvalTreeFactory.create(EvalType.GTH,
+      rewritten = EvalTreeFactory.create(EvalType.GTH,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case LEQ:
-      expr = EvalTreeFactory.create(EvalType.GEQ,
+      rewritten = EvalTreeFactory.create(EvalType.GEQ,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
       
@@ -285,16 +305,7 @@ public class AlgebraicUtil {
       throw new AlgebraicException("Cannot commutate the expr: " + inputExpr);
     }
     
-    return expr;
-  }
-
-  public static boolean isComparisonOperator(EvalNode expr) {
-    return expr.getType() == EvalType.EQUAL ||
-        expr.getType() == EvalType.LEQ ||
-        expr.getType() == EvalType.LTH ||
-        expr.getType() == EvalType.GEQ ||
-        expr.getType() == EvalType.GTH ||
-        expr.getType() == EvalType.BETWEEN;
+    return rewritten;
   }
 
   public static boolean isIndexableOperator(EvalNode expr) {
@@ -344,8 +355,8 @@ public class AlgebraicUtil {
 
   private static void toConjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
     if (node.getType() == EvalType.AND) {
-      toConjunctiveNormalFormArrayRecursive(node.getLeftExpr(), found);
-      toConjunctiveNormalFormArrayRecursive(node.getRightExpr(), found);
+      toConjunctiveNormalFormArrayRecursive(((BinaryEval)node).getLeftExpr(), found);
+      toConjunctiveNormalFormArrayRecursive(((BinaryEval)node).getRightExpr(), found);
     } else {
       found.add(node);
     }
@@ -389,8 +400,8 @@ public class AlgebraicUtil {
 
   private static void toDisjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
     if (node.getType() == EvalType.OR) {
-      toDisjunctiveNormalFormArrayRecursive(node.getLeftExpr(), found);
-      toDisjunctiveNormalFormArrayRecursive(node.getRightExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getLeftExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getRightExpr(), found);
     } else {
       found.add(node);
     }

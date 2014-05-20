@@ -19,8 +19,11 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 public abstract class UnaryOperator extends Expr {
+  @Expose @SerializedName("Expr")
   private Expr child;
 
   public UnaryOperator(OpType type) {

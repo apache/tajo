@@ -74,14 +74,16 @@ public class TaskAttemptContext {
                             final Path workDir) {
     this.conf = conf;
     this.queryId = queryId;
-    
-    for(FragmentProto t : fragments) {
-      if (fragmentMap.containsKey(t.getId())) {
-        fragmentMap.get(t.getId()).add(t);
-      } else {
-        List<FragmentProto> frags = new ArrayList<FragmentProto>();
-        frags.add(t);
-        fragmentMap.put(t.getId(), frags);
+
+    if (fragments != null) {
+      for (FragmentProto t : fragments) {
+        if (fragmentMap.containsKey(t.getId())) {
+          fragmentMap.get(t.getId()).add(t);
+        } else {
+          List<FragmentProto> frags = new ArrayList<FragmentProto>();
+          frags.add(t);
+          fragmentMap.put(t.getId(), frags);
+        }
       }
     }
 

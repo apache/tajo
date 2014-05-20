@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.datum.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidCastException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -45,7 +45,7 @@ public class NullDatum extends Datum {
 
   @Override
   public boolean asBool() {
-    throw new InvalidCastException("NULL cannot be casted as a bool type value.");
+    throw new InvalidCastException(Type.NULL_TYPE, Type.BOOLEAN);
   }
 
   @Override

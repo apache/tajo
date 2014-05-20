@@ -19,12 +19,18 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Join extends BinaryOperator {
+  @Expose @SerializedName("JoinType")
   private JoinType joinType;
+  @Expose @SerializedName("JoinCondition")
   private Expr joinQual;
+  @Expose @SerializedName("JoinColumns")
   private ColumnReferenceExpr[] joinColumns;
+  @Expose @SerializedName("IsNatural")
   private boolean natural = false;
 
   public Join(JoinType joinType) {

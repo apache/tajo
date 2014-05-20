@@ -31,6 +31,7 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CaseWhenEval extends EvalNode implements GsonObject {
@@ -117,6 +118,17 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       elseResult.postOrder(visitor);
     }
     visitor.visit(this);
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    CaseWhenEval caseWhenEval = (CaseWhenEval) super.clone();
+    caseWhenEval.whens = new ArrayList<IfThenEval>();
+    for (IfThenEval ifThenEval : whens) {
+      caseWhenEval.whens.add((IfThenEval) ifThenEval.clone());
+    }
+    caseWhenEval.elseResult = elseResult;
+    return caseWhenEval;
   }
 
   @Override
@@ -211,6 +223,14 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       condition.postOrder(visitor);
       result.postOrder(visitor);
       visitor.visit(this);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      IfThenEval ifThenEval = (IfThenEval) super.clone();
+      ifThenEval.condition = condition;
+      ifThenEval.result = result;
+      return ifThenEval;
     }
   }
 }

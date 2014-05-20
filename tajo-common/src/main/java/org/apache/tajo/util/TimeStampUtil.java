@@ -63,5 +63,4 @@ public class TimeStampUtil {
     public static long convertToMicroSeconds(DateTime dateTime) {
         return  dateTime.getMillis() * 1000;
     }
-
 }

@@ -1,0 +1,51 @@
+// select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;
+{
+    "IsDistinct": false,
+    "Projections": [
+        {
+            "Expr": {
+                "ColumnName": "l_orderkey",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        },
+        {
+            "Expr": {
+                "ColumnName": "l_linenumber",
+                "OpType": "Column"
+            },
+            "OpType": "Target"
+        }
+    ],
+    "Expr": {
+        "Num": {
+            "Value": "3",
+            "ValueType": "Unsigned_Integer",
+            "OpType": "Literal"
+        },
+        "Expr": {
+            "SortSpecs": [
+                {
+                    "SortKey": {
+                        "ColumnName": "l_orderkey",
+                        "OpType": "Column"
+                    },
+                    "IsAsc": false,
+                    "IsNullFirst": false
+                }
+            ],
+            "Expr": {
+                "Relations": [
+                    {
+                        "TableName": "lineitem",
+                        "OpType": "Relation"
+                    }
+                ],
+                "OpType": "RelationList"
+            },
+            "OpType": "Sort"
+        },
+        "OpType": "Limit"
+    },
+    "OpType": "Projection"
+}

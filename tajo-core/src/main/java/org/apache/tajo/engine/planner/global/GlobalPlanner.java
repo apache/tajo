@@ -37,9 +37,11 @@ import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -87,9 +89,21 @@ public class GlobalPlanner {
     }
   }
 
+  public CatalogProtos.StoreType getStoreType() {
+    return storeType;
+  }
+
   public class GlobalPlanContext {
     MasterPlan plan;
     Map<Integer, ExecutionBlock> execBlockMap = Maps.newHashMap();
+
+    public MasterPlan getPlan() {
+      return plan;
+    }
+
+    public Map<Integer, ExecutionBlock> getExecBlockMap() {
+      return execBlockMap;
+    }
   }
 
   /**
@@ -139,7 +153,7 @@ public class GlobalPlanner {
     }
 
     masterPlan.setTerminal(terminalBlock);
-    LOG.info(masterPlan.toString());
+    LOG.info("\n" + masterPlan.toString());
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
@@ -153,7 +167,7 @@ public class GlobalPlanner {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
-    TableMeta meta = new TableMeta(channel.getStoreType(), new Options());
+    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
     TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);
@@ -167,8 +181,9 @@ public class GlobalPlanner {
     DataChannel channel = new DataChannel(childBlock, parent, HASH_SHUFFLE, 32);
     channel.setStoreType(storeType);
     if (join.getJoinType() != JoinType.CROSS) {
+      // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
-          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema());
+          leftBlock.getPlan().getOutSchema(), rightBlock.getPlan().getOutSchema(), false);
       if (leftTable) {
         channel.setShuffleKeys(joinColumns[0]);
       } else {
@@ -454,6 +469,47 @@ public class GlobalPlanner {
     return rewritten;
   }
 
+  public ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
+                                                  DistinctGroupbyNode firstPhaseGroupBy,
+                                                  DistinctGroupbyNode secondPhaseGroupBy) {
+    DataChannel lastDataChannel = null;
+
+    // It pushes down the first phase group-by operator into all child blocks.
+    //
+    // (second phase)    G (currentBlock)
+    //                  /|\
+    //                / / | \
+    // (first phase) G G  G  G (child block)
+
+    // They are already connected one another.
+    // So, we don't need to connect them again.
+    for (DataChannel dataChannel : masterPlan.getIncomingChannels(lastBlock.getId())) {
+      if (firstPhaseGroupBy.isEmptyGrouping()) {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
+      } else {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
+      }
+      dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
+      ExecutionBlock childBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
+
+      // Why must firstPhaseGroupby be copied?
+      //
+      // A groupby in each execution block can have different child.
+      // It affects groupby's input schema.
+      DistinctGroupbyNode firstPhaseGroupbyCopy = PlannerUtil.clone(masterPlan.getLogicalPlan(), firstPhaseGroupBy);
+      firstPhaseGroupbyCopy.setChild(childBlock.getPlan());
+      childBlock.setPlan(firstPhaseGroupbyCopy);
+
+      // just keep the last data channel.
+      lastDataChannel = dataChannel;
+    }
+
+    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), lastDataChannel);
+    secondPhaseGroupBy.setChild(scanNode);
+    lastBlock.setPlan(secondPhaseGroupBy);
+    return lastBlock;
+  }
+
   /**
    * If there are at least one distinct aggregation function, a query works as if the query is rewritten as follows:
    *
@@ -491,7 +547,7 @@ public class GlobalPlanner {
    * As a result, although a no-distinct aggregation requires two stages, a distinct aggregation requires three
    * execution blocks.
    */
-  private ExecutionBlock buildGroupByIncludingDistinctFunctions(GlobalPlanContext context,
+  private ExecutionBlock buildGroupByIncludingDistinctFunctionsMultiStage(GlobalPlanContext context,
                                                                 ExecutionBlock latestExecBlock,
                                                                 GroupbyNode groupbyNode) throws PlanningException {
 
@@ -503,7 +559,6 @@ public class GlobalPlanner {
     List<Target> firstPhaseEvalNodeTargets = Lists.newArrayList();
 
     for (AggregationFunctionCallEval aggFunction : groupbyNode.getAggFunctions()) {
-
       if (aggFunction.isDistinct()) {
         // add distinct columns to first stage's grouping columns
         firstStageGroupingColumns.addAll(EvalTreeUtil.findUniqueColumns(aggFunction));
@@ -533,6 +588,7 @@ public class GlobalPlanner {
     for (Target target : firstPhaseEvalNodeTargets) {
       firstStageTargets[i++] = target;
     }
+
     // Create the groupby node for the first stage and set all necessary descriptions
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     firstStageGroupby.setGroupingColumns(TUtil.toArray(firstStageGroupingColumns, Column.class));
@@ -575,12 +631,12 @@ public class GlobalPlanner {
 
   private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock lastBlock,
                                       GroupbyNode groupbyNode) throws PlanningException {
-
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      return buildGroupByIncludingDistinctFunctions(context, lastBlock, groupbyNode);
+      DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+      return builder.buildPlan(context, lastBlock, groupbyNode);
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 
@@ -595,7 +651,7 @@ public class GlobalPlanner {
     return currentBlock;
   }
 
-  public boolean hasUnionChild(UnaryNode node) {
+  public static boolean hasUnionChild(UnaryNode node) {
 
     // there are two cases:
     //
@@ -674,6 +730,7 @@ public class GlobalPlanner {
 
   private ExecutionBlock buildTwoPhaseGroupby(MasterPlan masterPlan, ExecutionBlock latestBlock,
                                                      GroupbyNode firstPhaseGroupby, GroupbyNode secondPhaseGroupby) {
+
     ExecutionBlock childBlock = latestBlock;
     childBlock.setPlan(firstPhaseGroupby);
     ExecutionBlock currentBlock = masterPlan.newExecutionBlock();

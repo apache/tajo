@@ -18,7 +18,11 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class InPredicate extends BinaryOperator {
+  @Expose @SerializedName("IsNot")
   private boolean not;
 
   public InPredicate(Expr predicand, Expr in_values, boolean not) {

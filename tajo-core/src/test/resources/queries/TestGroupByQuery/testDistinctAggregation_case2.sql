@@ -1,0 +1,8 @@
+select
+    sum(l_quantity) as quantity,
+    count(distinct l_partkey) as partkey,
+    count(distinct l_suppkey) as suppkey,
+    l_returnflag
+from
+    lineitem
+group by l_returnflag

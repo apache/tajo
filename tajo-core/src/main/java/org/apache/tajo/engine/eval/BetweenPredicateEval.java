@@ -27,7 +27,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
-public class BetweenPredicateEval extends EvalNode {
+public class BetweenPredicateEval extends EvalNode implements Cloneable {
   private static final TajoDataTypes.DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
   @Expose private boolean not;
   @Expose private boolean symmetric;
@@ -227,5 +227,16 @@ public class BetweenPredicateEval extends EvalNode {
     begin.postOrder(visitor);
     end.postOrder(visitor);
     visitor.visit(this);
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    BetweenPredicateEval newBetween = (BetweenPredicateEval) super.clone();
+    newBetween.not = not;
+    newBetween.symmetric = symmetric;
+    newBetween.predicand = predicand;
+    newBetween.begin = begin;
+    newBetween.end = end;
+    return newBetween;
   }
 }

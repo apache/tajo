@@ -19,10 +19,10 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.exception.InvalidCastException;
-import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.LocalDate;
+import org.joda.time.*;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -51,6 +51,11 @@ public class DateDatum extends Datum {
   public DateDatum(LocalDate date) {
     super(TajoDataTypes.Type.DATE);
     this.date = date;
+  }
+
+  public LocalDate getDate() {
+    //LocalDate is immutable
+    return date;
   }
 
   public DateDatum(byte [] bytes) {
@@ -91,6 +96,74 @@ public class DateDatum extends Datum {
 
   public String toString() {
     return asChars();
+  }
+
+  public Datum plus(Datum datum) {
+    switch(datum.type()) {
+      case INT2:
+      case INT4:
+      case INT8:
+      case FLOAT4:
+      case FLOAT8:
+        return new DateDatum(date.plusDays(datum.asInt2()));
+      case INTERVAL:
+        IntervalDatum interval = (IntervalDatum)datum;
+        LocalDate localDate;
+        if (interval.getMonths() > 0) {
+          localDate = date.plusMonths(interval.getMonths());
+        } else {
+          localDate = date;
+        }
+        return new TimestampDatum(localDate.toDateTimeAtStartOfDay().getMillis() + interval.getMilliSeconds());
+      case TIME:
+        return new TimestampDatum(createDateTime(date, ((TimeDatum)datum).getTime(), true));
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  public Datum minus(Datum datum) {
+    switch(datum.type()) {
+      case INT2:
+      case INT4:
+      case INT8:
+      case FLOAT4:
+      case FLOAT8:
+        return new DateDatum(date.minusDays(datum.asInt2()));
+      case INTERVAL:
+        IntervalDatum interval = (IntervalDatum)datum;
+        LocalDate localDate;
+        if (interval.getMonths() > 0) {
+          localDate = date.minusMonths(interval.getMonths());
+        } else {
+          localDate = date;
+        }
+        return new TimestampDatum(localDate.toDateTimeAtStartOfDay().getMillis() - interval.getMilliSeconds());
+      case TIME:
+        return new TimestampDatum(createDateTime(date, ((TimeDatum)datum).getTime(), false));
+      case DATE:
+        return new Int4Datum(Days.daysBetween(((DateDatum)datum).date, date).getDays());
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  public static DateTime createDateTime(LocalDate date, LocalTime time, boolean plus) {
+    //TODO create too many temporary instance. This must be improved.
+    DateTime dateTime = new DateTime(date.toDate().getTime());
+    if (plus) {
+      return dateTime
+                .plusHours(time.getHourOfDay())
+                .plusMinutes(time.getMinuteOfHour())
+                .plusSeconds(time.getSecondOfMinute())
+                .plusMillis(time.getMillisOfSecond());
+    } else {
+      return dateTime
+                .minusHours(time.getHourOfDay())
+                .minusMinutes(time.getMinuteOfHour())
+                .minusSeconds(time.getSecondOfMinute())
+                .minusMillis(time.getMillisOfSecond());
+    }
   }
 
   @Override

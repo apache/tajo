@@ -21,7 +21,7 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
@@ -46,13 +46,9 @@ public class TajoAdmin {
   }
 
   final static String line5   = "-----";
-  final static String line7   = "-------";
   final static String line10  = "----------";
   final static String line12  = "------------";
-  final static String line15  = "---------------";
-  final static String line20  = "--------------------";
   final static String line25  = "-------------------------";
-  final static String line30  = "------------------------------";
   final static String DATE_FORMAT  = "yyyy-MM-dd HH:mm:ss";
 
   static {
@@ -82,18 +78,6 @@ public class TajoAdmin {
   private void printUsage() {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp( "admin [options]", options );
-  }
-
-  private String getQueryState(QueryState state) {
-    String stateStr = "FAILED";
-
-    if (TajoClient.isQueryRunnning(state)) {
-      stateStr = "RUNNING";
-    } else if (state == QueryState.QUERY_SUCCEEDED) {
-      stateStr = "SUCCEED";
-    }
-
-    return stateStr;
   }
 
   public void runCommand(String[] args) throws Exception {
@@ -195,13 +179,13 @@ public class TajoAdmin {
         writer.write("\n");
         writer.write("Started Time: " + df.format(queryInfo.getStartTime()));
         writer.write("\n");
-        String state = getQueryState(queryInfo.getState());
-        writer.write("Query State: " + state);
+
+        writer.write("Query State: " + queryInfo.getState().name());
         writer.write("\n");
         long end = queryInfo.getFinishTime();
         long start = queryInfo.getStartTime();
         String executionTime = decimalF.format((end-start) / 1000) + " sec";
-        if (state.equals("RUNNING") == false) {
+        if (!TajoClient.isQueryRunnning(queryInfo.getState())) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
         }
@@ -385,24 +369,28 @@ public class TajoAdmin {
       ServiceException, SQLException {
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
-    String fmt = "%1$-20s %2$-7s %3$-20s %4$-30s%n";
-    String line = String.format(fmt, "QueryId", "State", 
-                  "StartTime", "Query");
-    writer.write(line);
-    line = String.format(fmt, line20, line7, line20, line30);
-    writer.write(line);
+    StringBuilder builder = new StringBuilder();
 
+    /* print title */
+    builder.append(StringUtils.rightPad("QueryId", 21));
+    builder.append(StringUtils.rightPad("State", 20));
+    builder.append(StringUtils.rightPad("StartTime", 20));
+    builder.append(StringUtils.rightPad("Query", 30)).append("\n");
+
+    builder.append(StringUtils.rightPad(StringUtils.repeat("-", 20), 21));
+    builder.append(StringUtils.rightPad(StringUtils.repeat("-", 19), 20));
+    builder.append(StringUtils.rightPad(StringUtils.repeat("-", 19), 20));
+    builder.append(StringUtils.rightPad(StringUtils.repeat("-", 29), 30)).append("\n");
+    writer.write(builder.toString());
+
+    builder = new StringBuilder();
     for (BriefQueryInfo queryInfo : queryList) {
-        String queryId = String.format("q_%s_%04d",
-                                       queryInfo.getQueryId().getId(),
-                                       queryInfo.getQueryId().getSeq());
-        String state = getQueryState(queryInfo.getState());
-        String startTime = df.format(queryInfo.getStartTime());
-
-        String sql = StringUtils.abbreviate(queryInfo.getQuery(), 30);
-        line = String.format(fmt, queryId, state, startTime, sql);
-        writer.write(line);
+      builder.append(StringUtils.rightPad(new QueryId(queryInfo.getQueryId()).toString(), 21));
+      builder.append(StringUtils.rightPad(queryInfo.getState().name(), 20));
+      builder.append(StringUtils.rightPad(df.format(queryInfo.getStartTime()), 20));
+      builder.append(StringUtils.abbreviate(queryInfo.getQuery(), 30)).append("\n");
     }
+    writer.write(builder.toString());
   }
 
   public void processKill(Writer writer, String queryIdStr)

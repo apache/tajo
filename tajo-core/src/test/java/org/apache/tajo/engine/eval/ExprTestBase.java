@@ -39,6 +39,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -104,7 +105,7 @@ public class ExprTestBase {
     if (parsedResults.size() > 1) {
       throw new RuntimeException("this query includes two or more statements.");
     }
-    Expr expr = analyzer.parse(parsedResults.get(0).getStatement());
+    Expr expr = analyzer.parse(parsedResults.get(0).getHistoryStatement());
     VerificationState state = new VerificationState();
     preLogicalPlanVerifier.verify(session, state, expr);
     if (state.getErrorMessages().size() > 0) {
@@ -123,7 +124,7 @@ public class ExprTestBase {
 
     Target [] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getStatement());
+      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
     }
     for (Target t : targets) {
       assertJsonSerDer(t.getEvalTree());
@@ -174,7 +175,7 @@ public class ExprTestBase {
         }
       }
       cat.createTable(new TableDesc(qualifiedTableName, inputSchema,
-          CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
+          CatalogProtos.StoreType.CSV, new KeyValueSet(), CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets;

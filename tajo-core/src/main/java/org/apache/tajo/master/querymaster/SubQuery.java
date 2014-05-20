@@ -56,9 +56,10 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -576,7 +577,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       storeType = storeTableNode.getStorageType();
     }
     schema = channel.getSchema();
-    meta = CatalogUtil.newTableMeta(storeType, new Options());
+    meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
   }
@@ -945,7 +946,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.getId(), leftFragment, rightFragments));
   }
 
-  public static void scheduleFetches(SubQuery subQuery, Map<String, List<URI>> fetches) {
+  public static void scheduleFetches(SubQuery subQuery, Map<String, List<FetchImpl>> fetches) {
     subQuery.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), fetches));
   }
@@ -1057,7 +1058,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
         }
 
-        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d",
+        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d)",
             subQuery.getId(),
             subQuery.getTotalScheduledObjectsCount(),
             subQuery.succeededObjectCount,

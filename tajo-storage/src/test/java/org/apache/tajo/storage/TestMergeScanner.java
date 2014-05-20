@@ -22,7 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Options;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -106,7 +106,7 @@ public class TestMergeScanner {
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("age", Type.INT8);
 
-    Options options = new Options();
+    KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {

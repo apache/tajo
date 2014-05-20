@@ -40,9 +40,11 @@ public class DescTableCommand extends TajoShellCommand {
   @Override
   public void invoke(String[] cmd) throws Exception {
     if (cmd.length == 2) {
-      TableDesc desc = client.getTableDesc(cmd[1]);
+      String tableName = cmd[1];
+      tableName = tableName.replace("\"", "");
+      TableDesc desc = client.getTableDesc(tableName);
       if (desc == null) {
-        context.getOutput().println("Did not find any relation named \"" + cmd[1] + "\"");
+        context.getOutput().println("Did not find any relation named \"" + tableName + "\"");
       } else {
         context.getOutput().println(toFormattedString(desc));
       }
