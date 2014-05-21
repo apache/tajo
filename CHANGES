@@ -10,20 +10,25 @@ Release 0.8.1 - unreleased
 
     TAJO-801: Multiple distinct should be supported. (Hyoungjun Kim via hyunsik)
 
-    TAJO-769: A minor improvements for HCatalogStore (Fengdong Yu via hyunsik)
-
-    TAJO-734: Arrange TajoCli output message. (hyoungjunkim via jihoon)
-
     TAJO-804: Bump up Parquet version to 1.4.2. (hyunsik)
 
   BUGS
 
     TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
 
+    TAJO-833: NPE occurs when using the column as a alias name in the multiple 
+    DISTINCT. (Hyoungjun Kim via hyunsik)
+
     TAJO-821: IllegalStateException occurs when a NettyClientBase object is created
     within single thread. (hyoungjunkim via jinho)
 
+    TAJO-829: Same constants in groupby clause may cause planning error. 
+    (hyunsik)
+
     TAJO-816: NULL delimiter doesn't apply with HCatalogStore. (jaehwa)
+
+    TAJO-812: Some methods of TajoDatabaseMetaData should result in an empty tuple 
+    list instead of SQLFeatureNotSupportedException. (hyunsik)
 
     TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
 
@@ -38,11 +43,6 @@ Release 0.8.1 - unreleased
 
     TAJO-802: No partition columns in WEB catalog page.
     (Hyoungjun Kim via hyunsik)
-
-  SUB TASKS
-
-    TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
-
 
 Release 0.8.0
 
