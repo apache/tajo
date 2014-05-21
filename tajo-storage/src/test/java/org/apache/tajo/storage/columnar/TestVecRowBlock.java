@@ -850,13 +850,25 @@ public class TestVecRowBlock {
     }
   }
 
+  private class Bucket {
+    long hash;
+    String value;
+
+    public Bucket(long hash, String value) {
+      this.hash = hash;
+      this.value = value;
+    }
+  }
+
   public class CukcooHash {
     private int INIT_SIZE = (int) Math.pow(2, 4);
-    int buckets[] = new int[INIT_SIZE];
-    long hashes[] = new long[INIT_SIZE];
+
+    int buckets [] = new int [INIT_SIZE];
+    long hashes [] = new long [INIT_SIZE + 1];
+    String values [] = new String[INIT_SIZE + 1];
+
     int mask = (int) (Math.pow(2, 4) - 1);
     int NBITS = 32;
-    String [] entries = new String[INIT_SIZE];
     int hashId = 1;
     int MAX_LOOP = INIT_SIZE;
 
@@ -882,48 +894,39 @@ public class TestVecRowBlock {
 
     public boolean insertEntry(long hash, String value) {
       int loopCount = 0;
-      int tmpHashId = -1;
-      int index = (int) (hash & mask) % 8;
-      long koHash = 0;
-      String koValue = null;
 
-      while(loopCount < MAX_LOOP && tmpHashId != 0) {
+      long tmpHash;
+      String tmpValue;
+
+      long currentHash = hash;
+      String currentValue = value;
+
+      int index = (int) (hash & mask) % 8;
+      while(loopCount < MAX_LOOP && loopCount < buckets.length) {
+        tmpHash = hashes[index + 1];
+        tmpValue = values[index + 1];
+
         if (buckets[index] == 0) {
-          buckets[index] = tmpHashId > 0 ? tmpHashId : hashId;
-          hashes[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koHash : hash;
-          entries[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koValue : value;
-          if (tmpHashId <= 0) {
-            hashId++;
-          }
+          buckets[index] = index + 1;
+          hashes[index + 1] = currentHash;
+          values[index + 1] = currentValue;
           return true;
         }
 
+        buckets[index] = index + 1;
+        hashes[index + 1] = currentHash;
+        values[index + 1] = value;
 
-        int buckId2 = (int) (hash >> NBITS & mask) % 8 + 8;
-        if (buckets[buckId2] == 0) {
-          buckets[buckId2] = hashId;
-          hashes[hashId] = hash;
-          entries[hashId] = value;
-          hashId++;
-          tmpHashId = 0;
+        currentHash = tmpHash;
+        currentValue = tmpValue;
+
+        if (index == (int) (currentHash & mask) % 8) {
+          index = (int) (currentHash >> NBITS & mask) % 8 + 8;
         } else {
-          if (hashId >= hashes.length) {
-            break;
-          }
-
-          tmpHashId = buckets[buckId2];
-          koHash = hashes[tmpHashId];
-          koValue = entries[tmpHashId];
-          index = (int) (koHash & mask) % 8;
-
-          buckets[buckId2] = hashId;
-          hashes[hashId] = hash;
-          entries[hashId] = value;
-
-          hashId++;
+          index = (int) (currentHash & mask) % 8;
         }
 
-        loopCount++;
+        ++loopCount;
       }
 
       return false;
@@ -932,19 +935,20 @@ public class TestVecRowBlock {
     public void rehash() {
       int [] oldBuckets = buckets;
       long [] oldHashes = hashes;
-      String [] oldEntries = entries;
+      String [] oldValues = values;
 
       int newCapacity = (int) Math.pow(buckets.length, 2);
-      buckets = new int[newCapacity];
-      hashes = new long[newCapacity];
-      entries = new String[newCapacity];
-      mask = (int) (newCapacity - 1);
+      buckets = new int[newCapacity + 1];
+      hashes = new long[newCapacity + 1];
+      values = new String[newCapacity + 1];
+
+      mask = (newCapacity - 1);
       hashId = 1;
 
       for (int i = 0; i < oldBuckets.length; i++) {
         if (oldBuckets[i] != 0) {
-          long hash = oldHashes[oldBuckets[i]];
-          String value = oldEntries[oldBuckets[i]];
+          long hash = oldHashes[i];
+          String value = oldValues[i];
           insert(hash, value);
         }
       }
@@ -963,7 +967,7 @@ public class TestVecRowBlock {
       int mask2 = -(hashKey == hashes[idx2] ? 1 : 0); // 0 otherwise
       int group_id = mask1 & idx1 | mask2 & idx2; // at most 1 matches
 
-      return entries[group_id];
+      return values[group_id];
     }
   }
 
@@ -987,7 +991,8 @@ public class TestVecRowBlock {
 
     for (int i = 0; i < strs.length; i++) {
       long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
-      assertNull(hashTable.lookup(hash));
+      String value = (hashTable.lookup(hash));
+      assertNull(String.format("Null expected, Input key is %s", strs[i]), value);
       hashTable.insert(hash, strs[i]);
       assertEquals(strs[i], hashTable.lookup(hash));
     }
