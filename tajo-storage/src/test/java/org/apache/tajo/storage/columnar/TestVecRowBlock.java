@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.columnar;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -45,7 +44,6 @@ import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.Pair;
 import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.ParquetWriter;
@@ -581,7 +579,7 @@ public class TestVecRowBlock {
   }
 
   private static final Schema schema;
-  private static final long totalTupleNum = 1024 * 1000 * 10;
+  private static final long totalTupleNum = 1024;
   private static final int vectorSize = 1024;
 
   static {
@@ -782,7 +780,7 @@ public class TestVecRowBlock {
   public void testHashTupleAtATime() throws IOException, InterruptedException {
     List<Tuple> tuples = generateTuples();
 
-    long [] hashed = new long[(int) totalTupleNum];
+    long[] hashed = new long[(int) totalTupleNum];
 
     Iterator<Tuple> it = tuples.iterator();
     long readStart = System.currentTimeMillis();
@@ -790,7 +788,7 @@ public class TestVecRowBlock {
     Thread.sleep(5000);
 
     int i = 0;
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       Tuple tuple = it.next();
       hashed[i++] = VecFuncMulMul3LongCol.hash64(tuple.getInt8(3));
     }
@@ -798,198 +796,6 @@ public class TestVecRowBlock {
     System.out.println(readEnd - readStart + " read msec");
 
     System.out.println(hashed[hashed.length - 1]);
-  }
-
-  public class CukcooHashTable<V> {
-    static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
-    static final int MAXIMUM_CAPACITY = 1 << 30;
-    static final int DEFAULT_MAX_LOOP = 1 << 4;
-    static final int NBITS = 32;
-
-    private int bucketSize;
-    private int regionSize;
-    private int modMask;
-    private int maxLoopNum;
-
-    // table data structure
-    private int buckets [];
-    private long keys [];
-    private String values [];
-
-    private int count = 0;
-
-    public CukcooHashTable() {
-      initBuckets(DEFAULT_INITIAL_CAPACITY);
-    }
-
-    public CukcooHashTable(int size) {
-      Preconditions.checkArgument(size > 0, "Initial size cannot be more than one.");
-      int findSize = findNearestPowerOfTwo(size);
-      initBuckets(findSize);
-    }
-
-    public int size() {
-      return count;
-    }
-
-    private int findNearestPowerOfTwo(int size) {
-      return size == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(size - 1);
-    }
-
-    private void initBuckets(int bucketSize) {
-      this.bucketSize = bucketSize;
-      this.regionSize = bucketSize / 2;
-      this.modMask = (bucketSize - 1);
-      this.maxLoopNum = 1 << 4;
-
-      buckets = new int[bucketSize];
-      keys = new long[bucketSize + 1];
-      values = new String[bucketSize + 1];
-
-      count = 0;
-    }
-
-    public boolean insert(long hash, String value) {
-
-      if (lookup(hash) != null) {
-        return false;
-      }
-
-      Pair<Long, String> kickedOrInserted = insertEntry(hash, value);
-      if (kickedOrInserted != null) {
-        rehash();
-        insert(kickedOrInserted.getFirst(), kickedOrInserted.getSecond());
-      }
-      return true;
-    }
-
-    public Pair<Long, String> insertEntry(long hash, String value) {
-      int loopCount = 0;
-
-      long kickedHash = -1;
-      String kickedValue;
-
-      long currentHash = hash;
-      String currentValue = value;
-
-      int index = (int) (hash & modMask) % regionSize;
-      while(loopCount < maxLoopNum && kickedHash != hash) {
-
-        kickedHash = keys[index + 1];
-        kickedValue = values[index + 1];
-
-        if (buckets[index] == 0) {
-          buckets[index] = index + 1;
-          keys[index + 1] = currentHash;
-          values[index + 1] = currentValue;
-          count++;
-          return null;
-        }
-
-        buckets[index] = index + 1;
-        keys[index + 1] = currentHash;
-        values[index + 1] = currentValue;
-
-        currentHash = kickedHash;
-        currentValue = kickedValue;
-
-        if (index == (int) (currentHash & modMask) % regionSize) {
-          index = (int) (currentHash >> NBITS & modMask) % regionSize + regionSize;
-        } else {
-          index = (int) (currentHash & modMask) % regionSize;
-        }
-
-        ++loopCount;
-      }
-
-      return new Pair<Long, String>(currentHash, currentValue);
-    }
-
-    public void rehash() {
-      int [] oldBuckets = buckets;
-      long [] oldHashes = keys;
-      String [] oldValues = values;
-
-      int newBucketSize = this.bucketSize *  2;
-      initBuckets(newBucketSize);
-
-      for (int i = 0; i < oldBuckets.length; i++) {
-        if (oldBuckets[i] != 0) {
-          int idx = oldBuckets[i];
-          long hash = oldHashes[idx];
-          String value = oldValues[idx];
-          insert(hash, value);
-        }
-      }
-    }
-
-    public String lookup(long hashKey) {
-      // find the possible locations
-      int buckId1 = (int) (hashKey & modMask) % regionSize; // use different parts of the hash number
-      int buckId2 = (int) (hashKey >> NBITS & modMask) % regionSize + regionSize;
-
-      int idx1 = buckets[buckId1]; // 0 for empty buckets,
-      int idx2 = buckets[buckId2]; // 1+ for non empty
-
-      // check which one matches
-      int mask1 = -(hashKey == keys[idx1] ? 1 : 0); // 0xFF..FF for a match,
-      int mask2 = -(hashKey == keys[idx2] ? 1 : 0); // 0 otherwise
-      int group_id = mask1 & idx1 | mask2 & idx2; // at most 1 matches
-
-      return values[group_id];
-    }
-  }
-
-  @Test
-  public void testCuckoo() {
-    String [] strs = {
-        "hyunsik",
-        "tajo",
-        "abc",
-        "def",
-        "gef",
-        "abd",
-        "nml",
-        "apache",
-        "daum",
-        "www",
-        "eclipse",
-        "qwejklqwe",
-        "asjdlqkwe",
-        "anm,23"
-    };
-
-    //long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
-
-    CukcooHashTable hashTable = new CukcooHashTable();
-
-    HashFunction hf = Hashing.md5();
-    Map<Long, String> map = Maps.newHashMap();
-
-    for (int i = 0; i < (1 << 22); i++) {
-      String value = "str_" + i;
-      long key = hf.hashString(value).asLong();
-      String found = hashTable.lookup(key);
-      assertTrue(found == null);
-      hashTable.insert(key, value);
-      assertTrue(value.equals((hashTable.lookup(key))));
-
-      if (map.containsKey(key)) {
-        fail("duplicated");
-      } else {
-        map.put(key, value);
-      }
-
-      if (hashTable.size() != i + 1) {
-        System.out.println("Error point!");
-      }
-    }
-
-    System.out.println(">> Size: " + hashTable.size());
-
-    for (Map.Entry<Long, String> e : map.entrySet()) {
-      assertEquals("key: " + e.getKey(), e.getValue(), hashTable.lookup(e.getKey()));
-    }
   }
 
   @Test
