@@ -408,7 +408,11 @@ public class Task {
               TaskFatalErrorReport.newBuilder()
                   .setId(getId().getProto());
           if (error != null) {
-            errorBuilder.setErrorMessage(error.getMessage());
+            if (error.getMessage() == null) {
+              errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
+            } else {
+              errorBuilder.setErrorMessage(error.getMessage());
+            }
             errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 

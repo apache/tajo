@@ -41,6 +41,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
  
+    TAJO-832: NPE occurs when Exception's message is null in Task. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-833: NPE occurs when using the column as a alias name in the multiple 
     DISTINCT. (Hyoungjun Kim via hyunsik)
 
