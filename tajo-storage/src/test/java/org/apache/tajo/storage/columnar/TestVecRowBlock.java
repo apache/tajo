@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.columnar;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
@@ -795,116 +796,75 @@ public class TestVecRowBlock {
     System.out.println(hashed[hashed.length - 1]);
   }
 
-  @Test
-  public void testLookup() {
-    int N = 4;
-    int NBITS = 4, NKEYS = 4;
-    int buckets[] = new int[] {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-    int next[] = new int [] {0,3,2,1};
-    int hash[] = new int [] {1,2,3,4};
-    int input[] = new int[] {1,2,3,4};
-    int output[] = new int[N];
+  public class CukcooHashTable {
+    static final int DEFAULT_INITIAL_CAPACITY = 1 << 6; // aka 16
+    static final int MAXIMUM_CAPACITY = 1 << 30;
+    static final int DEFAULT_MAX_LOOP = 1 << 6;
+    static final int NBITS = 32;
 
-    int buck, group_id;
-    int mask = (1 << NBITS) - 1;
-    for (int i = 0; i < N; i++) {
-      buck = input[i] & mask;
-      group_id = buckets[buck];
-      while (group_id != 0 && hash[group_id] != input[i]) {
-        group_id = next[group_id]; /* follow linked list */
-      }
-      output[i] = group_id;
+    private int bucketSize;
+    private int regionSize;
+    private int modMask;
+    private int maxLoopNum;
+
+    // table data structure
+    private int buckets [] = new int [bucketSize];
+    private long hashes [] = new long [bucketSize + 1];
+    private String values [] = new String[bucketSize + 1];
+
+    public CukcooHashTable() {
+      initBuckets(DEFAULT_INITIAL_CAPACITY);
     }
-  }
 
-  void cuckoo_lookup() {
-    int N = 4;
-    int NBITS = 4, NKEYS = 4;
-    int buckets[] = new int[] {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-    int next[] = new int [] {0,3,2,1};
-    int hash[] = new int [] {1,2,3,4};
-    int input[] = new int[] {1,2,3,4};
-    int output[] = new int[N];
-
-    int buck1, buck2;
-    int idx1, idx2;
-    int mask = 0;
-    int group_id;
-
-    for(int i=0; i<N; i++) {
-// find the possible locations
-      buck1 = input[i] & mask ; // use different parts
-      buck2 = (input[i] >> NBITS) & mask ; // of the hash number
-      idx1 = buckets[buck1]; // 0 for empty buckets,
-      idx2 = buckets[buck2]; // 1+ for non empty
-// check which one matches
-      if (idx1 != 0 && hash[idx1] == input[i]) {
-        group_id = idx1; // first position matches
-      } else if (idx2 != 0 && hash[idx2] == input[i]) {
-        group_id = idx2; // second position matches
-      } else {
-        group_id = 0; // nothing matches, mark as a miss
-      }
-
-      output[i] = group_id;
+    public CukcooHashTable(int size) {
+      Preconditions.checkArgument(size > 0, "Initial size cannot be more than one.");
+      int findSize = findNearestPowerOfTwo(size);
+      initBuckets(findSize);
     }
-  }
 
-  private class Bucket {
-    long hash;
-    String value;
-
-    public Bucket(long hash, String value) {
-      this.hash = hash;
-      this.value = value;
+    private int findNearestPowerOfTwo(int size) {
+      return size == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(size - 1);
     }
-  }
 
-  public class CukcooHash {
-    private int INIT_SIZE = (int) Math.pow(2, 4);
+    private void initBuckets(int bucketSize) {
+      this.bucketSize = bucketSize;
+      this.regionSize = bucketSize / 2;
+      this.modMask = (bucketSize - 1);
+      this.maxLoopNum = 1 << 6;
 
-    int buckets [] = new int [INIT_SIZE];
-    long hashes [] = new long [INIT_SIZE + 1];
-    String values [] = new String[INIT_SIZE + 1];
+      buckets = new int[bucketSize];
+      hashes = new long[bucketSize + 1];
+      values = new String[bucketSize + 1];
 
-    int mask = (int) (Math.pow(2, 4) - 1);
-    int NBITS = 32;
-    int hashId = 1;
-    int MAX_LOOP = INIT_SIZE;
+    }
 
-    /**
-     * @param hash
-     * @param value
-     */
     public boolean insert(long hash, String value) {
 
       if (lookup(hash) != null) {
         return false;
       }
 
-      if (insertEntry(hash, value)) {
-        System.out.println("success!");
-      } else {
+      if (!insertEntry(hash, value)) {
         rehash();
         insert(hash, value);
       }
-
       return true;
     }
 
     public boolean insertEntry(long hash, String value) {
       int loopCount = 0;
 
-      long tmpHash;
-      String tmpValue;
+      long kickedHash;
+      String kickedValue;
 
       long currentHash = hash;
       String currentValue = value;
 
-      int index = (int) (hash & mask) % 8;
-      while(loopCount < MAX_LOOP && loopCount < buckets.length) {
-        tmpHash = hashes[index + 1];
-        tmpValue = values[index + 1];
+      int index = (int) (hash & modMask) % regionSize;
+      while(loopCount < maxLoopNum) {
+
+        kickedHash = hashes[index + 1];
+        kickedValue = values[index + 1];
 
         if (buckets[index] == 0) {
           buckets[index] = index + 1;
@@ -915,15 +875,15 @@ public class TestVecRowBlock {
 
         buckets[index] = index + 1;
         hashes[index + 1] = currentHash;
-        values[index + 1] = value;
+        values[index + 1] = currentValue;
 
-        currentHash = tmpHash;
-        currentValue = tmpValue;
+        currentHash = kickedHash;
+        currentValue = kickedValue;
 
-        if (index == (int) (currentHash & mask) % 8) {
-          index = (int) (currentHash >> NBITS & mask) % 8 + 8;
+        if (index == (int) (currentHash & modMask) % regionSize) {
+          index = (int) (currentHash >> NBITS & modMask) % regionSize + regionSize;
         } else {
-          index = (int) (currentHash & mask) % 8;
+          index = (int) (currentHash & modMask) % regionSize;
         }
 
         ++loopCount;
@@ -937,27 +897,29 @@ public class TestVecRowBlock {
       long [] oldHashes = hashes;
       String [] oldValues = values;
 
-      int newCapacity = (int) Math.pow(buckets.length, 2);
-      buckets = new int[newCapacity + 1];
-      hashes = new long[newCapacity + 1];
-      values = new String[newCapacity + 1];
+      bucketSize = (int) Math.pow(bucketSize, 2);
+      regionSize = bucketSize / 2;
+      buckets = new int[bucketSize];
+      hashes = new long[bucketSize + 1];
+      values = new String[bucketSize + 1];
 
-      mask = (newCapacity - 1);
-      hashId = 1;
+      modMask = (bucketSize - 1);
 
       for (int i = 0; i < oldBuckets.length; i++) {
         if (oldBuckets[i] != 0) {
-          long hash = oldHashes[i];
-          String value = oldValues[i];
+          int idx = oldBuckets[i];
+          long hash = oldHashes[idx];
+          String value = oldValues[idx];
           insert(hash, value);
         }
       }
+      System.out.println("rehash");
     }
 
     public String lookup(long hashKey) {
       // find the possible locations
-      int buckId1 = (int) (hashKey & mask) % 8; // use different parts of the hash number
-      int buckId2 = (int) (hashKey >> NBITS & mask) % 8 + 8;
+      int buckId1 = (int) (hashKey & modMask) % regionSize; // use different parts of the hash number
+      int buckId2 = (int) (hashKey >> NBITS & modMask) % regionSize + regionSize;
 
       int idx1 = buckets[buckId1]; // 0 for empty buckets,
       int idx2 = buckets[buckId2]; // 1+ for non empty
@@ -984,10 +946,13 @@ public class TestVecRowBlock {
         "apache",
         "daum",
         "www",
-        "eclipse"
+        "eclipse",
+        "qwejklqwe",
+        "asjdlqkwe",
+        "anm,23"
     };
 
-    CukcooHash hashTable = new CukcooHash();
+    CukcooHashTable hashTable = new CukcooHashTable();
 
     for (int i = 0; i < strs.length; i++) {
       long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
