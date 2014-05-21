@@ -164,8 +164,9 @@ public class Query implements EventHandler<QueryEvent> {
               QueryEventType.INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
-          .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
-              EnumSet.of(QueryEventType.KILL))
+          .addTransition(QueryState.QUERY_KILL_WAIT, EnumSet.of(QueryState.QUERY_KILLED),
+              QueryEventType.KILL,
+              QUERY_COMPLETED_TRANSITION)
 
           // Transitions from FAILED state
           .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
@@ -685,7 +686,11 @@ public class Query implements EventHandler<QueryEvent> {
       try {
         getStateMachine().doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", type:" + event
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(new QueryEvent(this.id, QueryEventType.INTERNAL_ERROR));
       }
 

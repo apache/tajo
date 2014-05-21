@@ -560,7 +560,7 @@ public class Task {
       int retryWaitTime = 1000;
 
       try { // for releasing fetch latch
-        while(retryNum < maxRetryNum) {
+        while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);

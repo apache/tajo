@@ -187,7 +187,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-              // Transitions from SUCCEEDED state
+          // Transitions from SUCCEEDED state
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -197,7 +197,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-              // Ignore-able events
+          // Ignore-able events
           .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
               EnumSet.of(
                   SubQueryEventType.SQ_START,
@@ -235,7 +235,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   SubQueryEventType.SQ_START,
                   SubQueryEventType.SQ_KILL,
                   SubQueryEventType.SQ_FAILED,
-                  SubQueryEventType.SQ_INTERNAL_ERROR))
+                  SubQueryEventType.SQ_INTERNAL_ERROR,
+                  SubQueryEventType.SQ_SUBQUERY_COMPLETED))
 
           .installTopology();
 
@@ -593,7 +594,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       try {
         getStateMachine().doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(new SubQueryEvent(getId(),
             SubQueryEventType.SQ_INTERNAL_ERROR));
       }

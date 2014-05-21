@@ -37,6 +37,7 @@ import org.apache.tajo.util.ApplicationIdUtils;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,6 +85,9 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
   private Map<YarnProtos.ContainerIdProto, AllocatedWorkerResource> allocatedResourceMap =
       new HashMap<YarnProtos.ContainerIdProto, AllocatedWorkerResource>();
+
+  private final Set<QueryId> stoppedQueryIds =
+      Collections.newSetFromMap(new ConcurrentHashMap<QueryId, Boolean>());
 
   public TajoWorkerResourceManager(TajoMaster.MasterContext masterContext) {
     this.masterContext = masterContext;
@@ -365,59 +369,64 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
                 ", liveWorkers=" + liveWorkerResources.size());
           }
 
-          List<AllocatedWorkerResource> allocatedWorkerResources = chooseWorkers(resourceRequest);
+          // TajoWorkerResourceManager can't return allocated disk slots occasionally.
+          // Because the rest resource request can remains after QueryMaster stops.
+          // Thus we need to find whether QueryId stopped or not.
+          if (!stoppedQueryIds.contains(resourceRequest.queryId)) {
+            List<AllocatedWorkerResource> allocatedWorkerResources = chooseWorkers(resourceRequest);
 
-          if(allocatedWorkerResources.size() > 0) {
-            if(resourceRequest.queryMasterRequest) {
-              startQueryMaster(resourceRequest.queryId, allocatedWorkerResources.get(0));
-            } else {
-              List<TajoMasterProtocol.WorkerAllocatedResource> allocatedResources =
-                  new ArrayList<TajoMasterProtocol.WorkerAllocatedResource>();
+            if(allocatedWorkerResources.size() > 0) {
+              if(resourceRequest.queryMasterRequest) {
+                startQueryMaster(resourceRequest.queryId, allocatedWorkerResources.get(0));
+              } else {
+                List<TajoMasterProtocol.WorkerAllocatedResource> allocatedResources =
+                    new ArrayList<TajoMasterProtocol.WorkerAllocatedResource>();
 
-              for(AllocatedWorkerResource eachWorker: allocatedWorkerResources) {
-                NodeId nodeId = NodeId.newInstance(eachWorker.workerResource.getAllocatedHost(),
-                    eachWorker.workerResource.getPeerRpcPort());
+                for(AllocatedWorkerResource eachWorker: allocatedWorkerResources) {
+                  NodeId nodeId = NodeId.newInstance(eachWorker.workerResource.getAllocatedHost(),
+                      eachWorker.workerResource.getPeerRpcPort());
 
-                TajoWorkerContainerId containerId = new TajoWorkerContainerId();
+                  TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 
-                containerId.setApplicationAttemptId(
-                    ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
-                containerId.setId(containerIdSeq.incrementAndGet());
+                  containerId.setApplicationAttemptId(
+                      ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
+                  containerId.setId(containerIdSeq.incrementAndGet());
 
-                YarnProtos.ContainerIdProto containerIdProto = containerId.getProto();
-                allocatedResources.add(TajoMasterProtocol.WorkerAllocatedResource.newBuilder()
-                    .setContainerId(containerIdProto)
-                    .setNodeId(nodeId.toString())
-                    .setWorkerHost(eachWorker.workerResource.getAllocatedHost())
-                    .setQueryMasterPort(eachWorker.workerResource.getQueryMasterPort())
-                    .setPeerRpcPort(eachWorker.workerResource.getPeerRpcPort())
-                    .setWorkerPullServerPort(eachWorker.workerResource.getPullServerPort())
-                    .setAllocatedMemoryMB(eachWorker.allocatedMemoryMB)
-                    .setAllocatedDiskSlots(eachWorker.allocatedDiskSlots)
-                    .build());
+                  YarnProtos.ContainerIdProto containerIdProto = containerId.getProto();
+                  allocatedResources.add(TajoMasterProtocol.WorkerAllocatedResource.newBuilder()
+                      .setContainerId(containerIdProto)
+                      .setNodeId(nodeId.toString())
+                      .setWorkerHost(eachWorker.workerResource.getAllocatedHost())
+                      .setQueryMasterPort(eachWorker.workerResource.getQueryMasterPort())
+                      .setPeerRpcPort(eachWorker.workerResource.getPeerRpcPort())
+                      .setWorkerPullServerPort(eachWorker.workerResource.getPullServerPort())
+                      .setAllocatedMemoryMB(eachWorker.allocatedMemoryMB)
+                      .setAllocatedDiskSlots(eachWorker.allocatedDiskSlots)
+                      .build());
 
-                synchronized(workerResourceLock) {
-                  allocatedResourceMap.put(containerIdProto, eachWorker);
+                  synchronized(workerResourceLock) {
+                    allocatedResourceMap.put(containerIdProto, eachWorker);
+                  }
                 }
-              }
 
-              resourceRequest.callBack.run(TajoMasterProtocol.WorkerResourceAllocationResponse.newBuilder()
-                  .setExecutionBlockId(resourceRequest.request.getExecutionBlockId())
-                  .addAllWorkerAllocatedResource(allocatedResources)
-                  .build()
-              );
-            }
-          } else {
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("=========================================");
-              LOG.debug("Available Workers");
-              for(String liveWorker: liveWorkerResources) {
-                LOG.debug(allWorkerResourceMap.get(liveWorker).toString());
+                resourceRequest.callBack.run(TajoMasterProtocol.WorkerResourceAllocationResponse.newBuilder()
+                    .setExecutionBlockId(resourceRequest.request.getExecutionBlockId())
+                    .addAllWorkerAllocatedResource(allocatedResources)
+                    .build()
+                );
               }
-              LOG.debug("=========================================");
+            } else {
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("=========================================");
+                LOG.debug("Available Workers");
+                for(String liveWorker: liveWorkerResources) {
+                  LOG.debug(allWorkerResourceMap.get(liveWorker).toString());
+                }
+                LOG.debug("=========================================");
+              }
+              requestQueue.put(resourceRequest);
+              Thread.sleep(100);
             }
-            requestQueue.put(resourceRequest);
-            Thread.sleep(100);
           }
         } catch(InterruptedException ie) {
           LOG.error(ie);
@@ -628,6 +637,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
       } else {
         queryMasterWorkerResource = queryMasterMap.remove(queryId);
         queryMasterWorkerResource.releaseQueryMasterTask(queryMasterDefaultDiskSlot, queryMasterDefaultMemoryMB);
+        stoppedQueryIds.add(queryId);
       }
     }
 

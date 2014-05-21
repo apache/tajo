@@ -14,6 +14,8 @@ Release 0.8.1 - unreleased
 
   BUGS
 
+    TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
+
     TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
 
     TAJO-833: NPE occurs when using the column as a alias name in the multiple 

@@ -97,6 +97,9 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_KILL_WAIT,
           TaskAttemptEventType.TA_KILL,
           new KillTaskTransition())
+      .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_KILLED,
+          TaskAttemptEventType.TA_KILL,
+          new KillTaskTransition())
       .addTransition(TaskAttemptState.TA_ASSIGNED,
           EnumSet.of(TaskAttemptState.TA_RUNNING, TaskAttemptState.TA_KILLED),
           TaskAttemptEventType.TA_UPDATE, new StatusUpdateTransition())
@@ -144,7 +147,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
           TaskAttemptEventType.TA_DONE, new AlreadyDoneTransition())
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
-       // Ignore-able transitions
+      // Ignore-able transitions
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_KILL)
 
@@ -155,7 +158,13 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
           EnumSet.of(
               TaskAttemptEventType.TA_UPDATE))
-
+      .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
+          EnumSet.of(
+              TaskAttemptEventType.TA_LOCAL_KILLED,
+              TaskAttemptEventType.TA_KILL,
+              TaskAttemptEventType.TA_ASSIGNED,
+              TaskAttemptEventType.TA_DONE),
+          new TaskKilledCompleteTransition())
       .installTopology();
 
   private final StateMachine<TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -417,7 +426,11 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       try {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state of " + event.getTaskAttemptId() + ")", e);
+        LOG.error("Can't handle this event at current state of " + event.getTaskAttemptId() + ")"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(
             new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
                 "Can't handle this event at current state of " + event.getTaskAttemptId() + ")"));
