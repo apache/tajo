@@ -20,7 +20,10 @@ package org.apache.tajo.storage.columnar;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -42,6 +45,7 @@ import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.ParquetWriter;
@@ -796,10 +800,10 @@ public class TestVecRowBlock {
     System.out.println(hashed[hashed.length - 1]);
   }
 
-  public class CukcooHashTable {
-    static final int DEFAULT_INITIAL_CAPACITY = 1 << 6; // aka 16
+  public class CukcooHashTable<V> {
+    static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
     static final int MAXIMUM_CAPACITY = 1 << 30;
-    static final int DEFAULT_MAX_LOOP = 1 << 6;
+    static final int DEFAULT_MAX_LOOP = 1 << 4;
     static final int NBITS = 32;
 
     private int bucketSize;
@@ -808,9 +812,11 @@ public class TestVecRowBlock {
     private int maxLoopNum;
 
     // table data structure
-    private int buckets [] = new int [bucketSize];
-    private long hashes [] = new long [bucketSize + 1];
-    private String values [] = new String[bucketSize + 1];
+    private int buckets [];
+    private long keys [];
+    private String values [];
+
+    private int count = 0;
 
     public CukcooHashTable() {
       initBuckets(DEFAULT_INITIAL_CAPACITY);
@@ -822,6 +828,10 @@ public class TestVecRowBlock {
       initBuckets(findSize);
     }
 
+    public int size() {
+      return count;
+    }
+
     private int findNearestPowerOfTwo(int size) {
       return size == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(size - 1);
     }
@@ -830,12 +840,13 @@ public class TestVecRowBlock {
       this.bucketSize = bucketSize;
       this.regionSize = bucketSize / 2;
       this.modMask = (bucketSize - 1);
-      this.maxLoopNum = 1 << 6;
+      this.maxLoopNum = 1 << 4;
 
       buckets = new int[bucketSize];
-      hashes = new long[bucketSize + 1];
+      keys = new long[bucketSize + 1];
       values = new String[bucketSize + 1];
 
+      count = 0;
     }
 
     public boolean insert(long hash, String value) {
@@ -844,37 +855,39 @@ public class TestVecRowBlock {
         return false;
       }
 
-      if (!insertEntry(hash, value)) {
+      Pair<Long, String> kickedOrInserted = insertEntry(hash, value);
+      if (kickedOrInserted != null) {
         rehash();
-        insert(hash, value);
+        insert(kickedOrInserted.getFirst(), kickedOrInserted.getSecond());
       }
       return true;
     }
 
-    public boolean insertEntry(long hash, String value) {
+    public Pair<Long, String> insertEntry(long hash, String value) {
       int loopCount = 0;
 
-      long kickedHash;
+      long kickedHash = -1;
       String kickedValue;
 
       long currentHash = hash;
       String currentValue = value;
 
       int index = (int) (hash & modMask) % regionSize;
-      while(loopCount < maxLoopNum) {
+      while(loopCount < maxLoopNum && kickedHash != hash) {
 
-        kickedHash = hashes[index + 1];
+        kickedHash = keys[index + 1];
         kickedValue = values[index + 1];
 
         if (buckets[index] == 0) {
           buckets[index] = index + 1;
-          hashes[index + 1] = currentHash;
+          keys[index + 1] = currentHash;
           values[index + 1] = currentValue;
-          return true;
+          count++;
+          return null;
         }
 
         buckets[index] = index + 1;
-        hashes[index + 1] = currentHash;
+        keys[index + 1] = currentHash;
         values[index + 1] = currentValue;
 
         currentHash = kickedHash;
@@ -889,21 +902,16 @@ public class TestVecRowBlock {
         ++loopCount;
       }
 
-      return false;
+      return new Pair<Long, String>(currentHash, currentValue);
     }
 
     public void rehash() {
       int [] oldBuckets = buckets;
-      long [] oldHashes = hashes;
+      long [] oldHashes = keys;
       String [] oldValues = values;
 
-      bucketSize = (int) Math.pow(bucketSize, 2);
-      regionSize = bucketSize / 2;
-      buckets = new int[bucketSize];
-      hashes = new long[bucketSize + 1];
-      values = new String[bucketSize + 1];
-
-      modMask = (bucketSize - 1);
+      int newBucketSize = this.bucketSize *  2;
+      initBuckets(newBucketSize);
 
       for (int i = 0; i < oldBuckets.length; i++) {
         if (oldBuckets[i] != 0) {
@@ -913,7 +921,6 @@ public class TestVecRowBlock {
           insert(hash, value);
         }
       }
-      System.out.println("rehash");
     }
 
     public String lookup(long hashKey) {
@@ -925,8 +932,8 @@ public class TestVecRowBlock {
       int idx2 = buckets[buckId2]; // 1+ for non empty
 
       // check which one matches
-      int mask1 = -(hashKey == hashes[idx1] ? 1 : 0); // 0xFF..FF for a match,
-      int mask2 = -(hashKey == hashes[idx2] ? 1 : 0); // 0 otherwise
+      int mask1 = -(hashKey == keys[idx1] ? 1 : 0); // 0xFF..FF for a match,
+      int mask2 = -(hashKey == keys[idx2] ? 1 : 0); // 0 otherwise
       int group_id = mask1 & idx1 | mask2 & idx2; // at most 1 matches
 
       return values[group_id];
@@ -952,22 +959,37 @@ public class TestVecRowBlock {
         "anm,23"
     };
 
+    //long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
+
     CukcooHashTable hashTable = new CukcooHashTable();
 
-    for (int i = 0; i < strs.length; i++) {
-      long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
-      String value = (hashTable.lookup(hash));
-      assertNull(String.format("Null expected, Input key is %s", strs[i]), value);
-      hashTable.insert(hash, strs[i]);
-      assertEquals(strs[i], hashTable.lookup(hash));
+    HashFunction hf = Hashing.md5();
+    Map<Long, String> map = Maps.newHashMap();
+
+    for (int i = 0; i < (1 << 22); i++) {
+      String value = "str_" + i;
+      long key = hf.hashString(value).asLong();
+      String found = hashTable.lookup(key);
+      assertTrue(found == null);
+      hashTable.insert(key, value);
+      assertTrue(value.equals((hashTable.lookup(key))));
+
+      if (map.containsKey(key)) {
+        fail("duplicated");
+      } else {
+        map.put(key, value);
+      }
+
+      if (hashTable.size() != i + 1) {
+        System.out.println("Error point!");
+      }
     }
 
-    for (int i = 0; i < strs.length; i++) {
-      long hash = VecFuncMulMul3LongCol.hash64(strs[i].hashCode());
-      assertEquals(strs[i], hashTable.lookup(hash));
-    }
+    System.out.println(">> Size: " + hashTable.size());
 
-    System.out.println(hashTable.buckets);
+    for (Map.Entry<Long, String> e : map.entrySet()) {
+      assertEquals("key: " + e.getKey(), e.getValue(), hashTable.lookup(e.getKey()));
+    }
   }
 
   @Test
