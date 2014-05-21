@@ -249,6 +249,14 @@ public class VecFuncMulMul3LongCol {
     return mix64(h1) + mix64(h1 + h2);
   }
 
+  public static long hash64(long seed, long value)
+  {
+    long h2 = seed ^ SizeOf.SIZE_OF_LONG;
+    long h1 = h2 + (h2 ^ (Long.rotateLeft(value * C1, 31) * C2));
+
+    return mix64(h1) + mix64(h1 + h2);
+  }
+
   private static long mix64(long k)
   {
     k ^= k >>> 33;
