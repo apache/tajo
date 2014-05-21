@@ -39,7 +39,7 @@ import org.apache.tajo.storage.Tuple;
   functionName = "sum",
   description = "the sum of a set of numbers",
   example = "> SELECT sum(expr);",
-  returnType = Type.INT4,
+  returnType = Type.INT8,
   paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
 public class SumInt extends AggFunction<Datum> {
@@ -63,20 +63,20 @@ public class SumInt extends AggFunction<Datum> {
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt4(((SumIntContext) ctx).sum);
+    return DatumFactory.createInt8(((SumIntContext) ctx).sum);
   }
 
   @Override
   public DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(Type.INT4);
+    return CatalogUtil.newSimpleDataType(Type.INT8);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt4(((SumIntContext) ctx).sum);
+    return DatumFactory.createInt8(((SumIntContext) ctx).sum);
   }
 
   private class SumIntContext implements FunctionContext {
-    int sum;
+    long sum;
   }
 }

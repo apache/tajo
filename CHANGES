@@ -18,7 +18,9 @@ Release 0.8.1 - unreleased
 
   BUGS
 
-    TAJO-821: IllegalStateException occurs when a NettyClientBase object is created 
+    TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
+
+    TAJO-821: IllegalStateException occurs when a NettyClientBase object is created
     within single thread. (hyoungjunkim via jinho)
 
     TAJO-816: NULL delimiter doesn't apply with HCatalogStore. (jaehwa)
