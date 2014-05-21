@@ -32,16 +32,15 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.columnar.map.MapAddInt8ColInt8ColOp;
-import org.apache.tajo.storage.columnar.map.VecFuncStrcmpStrStrColx2;
 import org.apache.tajo.storage.columnar.map.SelStrEqStrColStrColOp;
+import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
+import org.apache.tajo.storage.columnar.map.VecFuncStrcmpStrStrColx2;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.ParquetWriter;
@@ -865,26 +864,38 @@ public class TestVecRowBlock {
      * @param hash
      * @param value
      */
-    public void insert(long hash, String value) {
+    public boolean insert(long hash, String value) {
 
       if (lookup(hash) != null) {
-        return;
+        return false;
       }
 
+      if (insertEntry(hash, value)) {
+        System.out.println("success!");
+      } else {
+        rehash();
+        insert(hash, value);
+      }
+
+      return true;
+    }
+
+    public boolean insertEntry(long hash, String value) {
       int loopCount = 0;
       int tmpHashId = -1;
-      int bucketId = (int) (hash & mask) % 8;
+      int index = (int) (hash & mask) % 8;
       long koHash = 0;
       String koValue = null;
+
       while(loopCount < MAX_LOOP && tmpHashId != 0) {
-        if (buckets[bucketId] == 0) {
-          buckets[bucketId] = tmpHashId > 0 ? tmpHashId : hashId;
+        if (buckets[index] == 0) {
+          buckets[index] = tmpHashId > 0 ? tmpHashId : hashId;
           hashes[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koHash : hash;
           entries[tmpHashId > 0 ? tmpHashId : hashId] = tmpHashId > 0 ? koValue : value;
           if (tmpHashId <= 0) {
             hashId++;
           }
-          return;
+          return true;
         }
 
 
@@ -903,7 +914,7 @@ public class TestVecRowBlock {
           tmpHashId = buckets[buckId2];
           koHash = hashes[tmpHashId];
           koValue = entries[tmpHashId];
-          bucketId = (int) (koHash & mask) % 8;
+          index = (int) (koHash & mask) % 8;
 
           buckets[buckId2] = hashId;
           hashes[hashId] = hash;
@@ -915,10 +926,7 @@ public class TestVecRowBlock {
         loopCount++;
       }
 
-      if (loopCount >= MAX_LOOP) {
-        rehash();
-        insert(hash, value);
-      }
+      return false;
     }
 
     public void rehash() {
