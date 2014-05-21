@@ -368,6 +368,9 @@ Release 0.8.0
     (Keuntae Park via jihoon)
 
   BUG FIXES
+ 
+    TAJO-833: NPE occurs when using the column as a alias name in the multiple 
+    DISTINCT. (Hyoungjun Kim via hyunsik)
 
     TAJO-787: FilterPushDownRule::visitSubQuery does not consider aliased columns. (jaehwa)
 

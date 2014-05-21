@@ -58,7 +58,11 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
     this.asc = new boolean[sortKeys.length];
     this.nullFirsts = new boolean[sortKeys.length];
     for (int i = 0; i < sortKeys.length; i++) {
-      this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getQualifiedName());
+      if (sortKeys[i].getSortKey().hasQualifier()) {
+        this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getQualifiedName());
+      } else {
+        this.sortKeyIds[i] = schema.getColumnIdByName(sortKeys[i].getSortKey().getSimpleName());
+      }
           
       this.asc[i] = sortKeys[i].isAscending();
       this.nullFirsts[i]= sortKeys[i].isNullFirst();
@@ -159,5 +163,19 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
     }
 
     return builder.build();
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+
+    String prefix = "";
+    for (int i = 0; i < sortKeyIds.length; i++) {
+      sb.append(prefix).append("SortKeyId=").append(sortKeyIds[i])
+        .append(",Asc=").append(asc[i])
+        .append(",NullFirst=").append(nullFirsts[i]);
+      prefix = " ,";
+    }
+    return sb.toString();
   }
 }
