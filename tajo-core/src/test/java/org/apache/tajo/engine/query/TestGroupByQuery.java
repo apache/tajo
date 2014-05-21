@@ -249,6 +249,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     res = executeFile("testDistinctAggregation_case7.sql");
     assertResultSet(res, "testDistinctAggregation_case7.result");
     res.close();
+
+    res = executeFile("testDistinctAggregation_case8.sql");
+    assertResultSet(res, "testDistinctAggregation_case8.result");
+    res.close();
   }
 
   @Test
