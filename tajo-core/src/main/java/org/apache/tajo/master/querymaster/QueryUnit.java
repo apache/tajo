@@ -155,6 +155,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
           .addTransition(TaskState.FAILED, TaskState.FAILED,
               EnumSet.of(TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED))
 
+          // Transitions from KILLED state
+          .addTransition(TaskState.KILLED, TaskState.KILLED,
+              TaskEventType.T_ATTEMPT_KILLED,
+              new KillTaskTransition())
+
           .installTopology();
 
   private final StateMachine<TaskState, TaskEventType, TaskEvent> stateMachine;
@@ -589,7 +594,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       try {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(new QueryEvent(TajoIdUtils.parseQueryId(getId().toString()),
             QueryEventType.INTERNAL_ERROR));
       }

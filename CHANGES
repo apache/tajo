@@ -41,6 +41,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
+
     TAJO-808: Fix pre-commit build failure. (jinho)
  
     TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
