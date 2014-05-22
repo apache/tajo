@@ -44,7 +44,7 @@ public class NowTimestamp extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     if (datum == null) {
-      datum = DatumFactory.createTimeStampFromMillis(System.currentTimeMillis());
+      datum = DatumFactory.createTimestmpDatumWithJavaMillis(System.currentTimeMillis());
     }
     return datum;
   }

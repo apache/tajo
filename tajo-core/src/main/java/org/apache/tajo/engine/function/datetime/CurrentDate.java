@@ -21,11 +21,13 @@ package org.apache.tajo.engine.function.datetime;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.joda.time.LocalDate;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 @Description(
     functionName = "current_date",
@@ -44,7 +46,10 @@ public class CurrentDate extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     if (datum == null) {
-      datum = new DateDatum(new LocalDate());
+      long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
+      TimeMeta tm = new TimeMeta();
+      DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+      datum = DatumFactory.createDate(tm.years, tm.monthOfYear, tm.dayOfMonth);
     }
     return datum;
   }

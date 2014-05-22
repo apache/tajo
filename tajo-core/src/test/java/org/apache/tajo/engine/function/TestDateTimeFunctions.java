@@ -385,7 +385,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testTimeValueKeywork() throws IOException {
+  public void testTimeValueKeyword() throws IOException {
     long expectedTimestamp = System.currentTimeMillis();
     DateTime expectedDateTime = new DateTime(expectedTimestamp);
 

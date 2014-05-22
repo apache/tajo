@@ -154,17 +154,19 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testDropTableIfExists() throws Exception {
-    executeString("CREATE DATABASE D4;").close();
+    executeString("CREATE DATABASE D7;").close();
 
-    assertTableNotExists("d4.table1");
-    executeString("CREATE TABLE d4.table1 (age int);").close();
-    assertTableExists("d4.table1");
+    assertTableNotExists("d7.table1");
+    executeString("CREATE TABLE d7.table1 (age int);").close();
+    assertTableExists("d7.table1");
 
-    executeString("DROP TABLE d4.table1;").close();
-    assertTableNotExists("d4.table1");
+    executeString("DROP TABLE d7.table1;").close();
+    assertTableNotExists("d7.table1");
 
-    executeString("DROP TABLE IF EXISTS d4.table1");
-    assertTableNotExists("d4.table1");
+    executeString("DROP TABLE IF EXISTS d7.table1");
+    assertTableNotExists("d7.table1");
+
+    executeString("DROP DATABASE D7;").close();
   }
 
   @Test

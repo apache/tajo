@@ -149,6 +149,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
+    executeString("DROP TABLE full_table_csv PURGE");
   }
 
   @Test
@@ -176,6 +177,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, orderKeys.getStats().getNumRows().intValue());
     }
+    executeString("DROP TABLE " + tableName + " PURGE");
   }
 
   @Test
@@ -193,6 +195,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
+    executeString("DROP TABLE " + tableName + " PURGE");
   }
 
   @Test
@@ -228,6 +231,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
       CompressionCodec codec = factory.getCodec(file.getPath());
       assertTrue(codec instanceof DeflateCodec);
     }
+    executeString("DROP TABLE " + tableName + " PURGE");
   }
 
   @Test
@@ -271,7 +275,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
       res = executeString("select l_orderkey, l_partkey from full_table_parquet;");
       assertResultSet(res, "testInsertOverwriteWithAsteriskUsingParquet2.result");
 
-      executeString("DROP TABLE full_table_parquet_ddl PURGE");
+      executeString("DROP TABLE full_table_parquet PURGE");
     }
   }
 
@@ -290,6 +294,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+    executeString("DROP TABLE table1 PURGE");
   }
 
   @Test
@@ -319,6 +324,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     assertEquals("test", res.getString(3));
 
     res.close();
+    executeString("DROP TABLE " + tableName + " PURGE");
   }
 
   @Test
@@ -346,6 +352,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     assertEquals("test", res.getString(3));
 
     res.close();
+    executeString("DROP TABLE " + tableName + " PURGE");
   }
 
   @Test
