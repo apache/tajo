@@ -24,6 +24,7 @@ import com.google.common.hash.Hashing;
 import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -31,8 +32,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TestCukcooHashTable {
-  @Test
-  public void testCuckoo() {
+
+  public static void main(String [] args) {
     String [] strs = {
         "hyunsik",
         "tajo",
@@ -53,20 +54,19 @@ public class TestCukcooHashTable {
     CukcooHashTable hashTable = new CukcooHashTable();
     System.out.println(hashTable.bucketSize());
 
-    HashFunction hf = Hashing.md5();
+    HashFunction hf = Hashing.murmur3_128(64);
 
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < (1 << 22); i++) {
-      String value = "str_" + i;
-      long key = hf.hashString(value).asLong();
+      long key = hf.hashLong(i).asLong();
 
-      String found = hashTable.lookup(key);
+      Long found = hashTable.lookup(key);
 
       assertTrue(found == null);
 
-      hashTable.insert(key, value);
+      hashTable.insert(key, i);
 
-      assertTrue(value.equals((hashTable.lookup(key))));
+      assertTrue(i == (hashTable.lookup(key)));
 
       if (hashTable.size() != i + 1) {
         System.out.println("Error point!");
@@ -79,9 +79,9 @@ public class TestCukcooHashTable {
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < (1 << 22); i++) {
-      String value1 = "str_" + i;
-      long key1 = hf.hashString(value1).asLong();
-      assertEquals("str_" + i, hashTable.lookup(key1));
+      long value1 = i;
+      long key1 = hf.hashLong(value1).asLong();
+      assertTrue(value1 == hashTable.lookup(key1));
     }
     long end = System.currentTimeMillis();
     System.out.println((end - start) + " msc read time");
@@ -89,21 +89,19 @@ public class TestCukcooHashTable {
 
   @Test
   public void testHashMap() {
-    HashFunction hf = Hashing.md5();
-    Map<Long, String> map = Maps.newHashMap();
+    HashFunction hf = Hashing.murmur3_128(37);
+    Map<Long, Long> map = Maps.newHashMap();
 
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < (1 << 22); i++) {
-
-      String value = "str_" + i;
-      long key = hf.hashString(value).asLong();
-      String found = map.get(key);
+      long key = hf.hashLong(i).asLong();
+      Long found = map.get(key);
 
       assertTrue(found == null);
 
-      map.put(key, value);
+      map.put(key, new Long(i));
 
-      assertTrue(value.equals((map.get(key))));
+      assertTrue(i == (map.get(key)));
 
        if (map.size() != i + 1) {
         System.out.println("Error point!");
@@ -117,9 +115,8 @@ public class TestCukcooHashTable {
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < (1 << 22); i++) {
-      String value = "str_" + i;
-      long key = hf.hashString(value).asLong();
-      assertEquals("str_" + i, map.get(key));
+      long key = hf.hashLong(i).asLong();
+      assertTrue(i == map.get(key));
     }
     long end = System.currentTimeMillis();
     System.out.println((end - start) + " msc read time");

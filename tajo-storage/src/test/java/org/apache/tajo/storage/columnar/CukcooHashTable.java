@@ -41,7 +41,7 @@ public class CukcooHashTable<V> {
   //private int buckets [];
   long bucketPtr;
   private long keyPtr;
-  private String values [];
+  private Long values [];
 
   private int size = 0;
 
@@ -77,14 +77,10 @@ public class CukcooHashTable<V> {
     this.modMask = (bucketSize - 1);
     this.maxLoopNum = 1 << 6;
 
-    //buckets = new int[bucketSize];
-    bucketPtr = UnsafeUtil.allocVector(TajoDataTypes.Type.INT4, bucketSize);
-    UnsafeUtil.unsafe.setMemory(bucketPtr, SizeOf.SIZE_OF_INT * bucketSize, (byte) 0);
-
     keyPtr = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, bucketSize + 1);
     UnsafeUtil.unsafe.setMemory(keyPtr, SizeOf.SIZE_OF_LONG * (bucketSize + 1), (byte) 0);
 
-    values = new String[bucketSize + 1];
+    values = new Long[bucketSize + 1];
 
     size = 0;
   }
@@ -93,13 +89,13 @@ public class CukcooHashTable<V> {
     return SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
   }
 
-  public boolean insert(long hash, String value) {
+  public boolean insert(long hash, long value) {
 
     if (lookup(hash) != null) {
       return false;
     }
 
-    Pair<Long, String> kickedOrInserted = insertEntry(hash, value);
+    Pair<Long, Long> kickedOrInserted = insertEntry(hash, value);
     if (kickedOrInserted != null) {
       rehash();
       insert(kickedOrInserted.getFirst(), kickedOrInserted.getSecond());
@@ -107,14 +103,14 @@ public class CukcooHashTable<V> {
     return true;
   }
 
-  public Pair<Long, String> insertEntry(long hash, String value) {
+  public Pair<Long, Long> insertEntry(long hash, long value) {
     int loopCount = 0;
 
     long kickedHash = -1;
-    String kickedValue;
+    Long kickedValue;
 
     long currentHash = hash;
-    String currentValue = value;
+    long currentValue = value;
 
     int index = (int) (hash & modMask);
     //&& kickedHash != hash
@@ -123,15 +119,13 @@ public class CukcooHashTable<V> {
       kickedHash = UnsafeUtil.getLong(keyPtr, index + 1);
       kickedValue = values[index + 1];
 
-      if (UnsafeUtil.getInt(bucketPtr, index) == 0) {
-        UnsafeUtil.putInt(bucketPtr, index, index + 1);
+      if (UnsafeUtil.getLong(keyPtr, index + 1) == 0) {
         UnsafeUtil.putLong(keyPtr, index + 1, currentHash);
         values[index + 1] = currentValue;
         size++;
         return null;
       }
 
-      UnsafeUtil.putInt(bucketPtr, index, index + 1);
       UnsafeUtil.putLong(keyPtr, index + 1, currentHash);
       values[index + 1] = currentValue;
 
@@ -147,47 +141,53 @@ public class CukcooHashTable<V> {
       ++loopCount;
     }
 
-    return new Pair<Long, String>(currentHash, currentValue);
+    return new Pair<Long, Long>(currentHash, currentValue);
   }
-
-  private static Log LOG = LogFactory.getLog(CukcooHashTable.class);
 
   public void rehash() {
     System.out.println("rehash load factor: " + load());
     int oldBucketSize = bucketSize;
-    long oldBucketPtr = bucketPtr;
     long oldKeysPtr = keyPtr;
-    String [] oldValues = values;
+    Long oldValues[] = values;
 
     int newBucketSize = this.bucketSize *  2;
     initBuckets(newBucketSize);
 
     for (int i = 0; i < oldBucketSize; i++) {
-      int oldBucketIdx = UnsafeUtil.getInt(oldBucketPtr, i);
-      if (oldBucketIdx != 0) {
-        int idx = oldBucketIdx;
-        long hash = UnsafeUtil.getLong(oldKeysPtr, idx);
-        String value = oldValues[idx];
+      int actualIdx = i + 1;
+
+      long key = UnsafeUtil.getLong(oldKeysPtr, actualIdx);
+      if (key != 0) {
+        long hash = UnsafeUtil.getLong(oldKeysPtr, actualIdx);
+        long value = oldValues[actualIdx];
         insert(hash, value);
       }
     }
 
-    UnsafeUtil.free(oldBucketPtr);
     UnsafeUtil.free(oldKeysPtr);
   }
 
-  public String lookup(long hashKey) {
+  public boolean contains(long hashKey) {
     // find the possible locations
-    int buckId1 = (int) (hashKey & modMask); // use different parts of the hash number
-    int buckId2 = (int) (hashKey >> NBITS & modMask);
-
-    int idx1 = UnsafeUtil.getInt(bucketPtr, buckId1); // 0 for empty buckets,
-    int idx2 = UnsafeUtil.getInt(bucketPtr, buckId2); // 1+ for non empty
+    int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
+    int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(hashKey == UnsafeUtil.getLong(keyPtr, idx1) ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(hashKey == UnsafeUtil.getLong(keyPtr, idx2) ? 1 : 0); // 0 otherwise
-    int group_id = mask1 & idx1 | mask2 & idx2; // at most 1 matches
+    int mask1 = -(hashKey == UnsafeUtil.getLong(keyPtr, buckId1) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(hashKey == UnsafeUtil.getLong(keyPtr, buckId2) ? 1 : 0); // 0 otherwise
+
+    return (mask1 | mask2) != 0;
+  }
+
+  public Long lookup(long hashKey) {
+    // find the possible locations
+    int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
+    int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
+
+    // check which one matches
+    int mask1 = -(hashKey == UnsafeUtil.getLong(keyPtr, buckId1) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(hashKey == UnsafeUtil.getLong(keyPtr, buckId2) ? 1 : 0); // 0 otherwise
+    int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
 
     return values[group_id];
   }
