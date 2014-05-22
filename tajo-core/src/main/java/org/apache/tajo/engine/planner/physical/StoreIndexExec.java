@@ -33,6 +33,7 @@ import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FragmentUtils;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -68,7 +69,9 @@ public class StoreIndexExec extends UnaryPhysicalExec {
     }
 
     TajoConf conf = new TajoConf();
-    Path indexPath = new Path(conf.getVar(ConfVars.INDEX_DIR), logicalPlan.getIndexName() + "/index");
+
+    Path indexPath = new Path(conf.getVar(ConfVars.INDEX_DIR), logicalPlan.getIndexName() + "/" +
+        context.getUniqueKeyFromFragments());
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
     this.comparator = new TupleComparator(keySchema, sortSpecs);

@@ -256,7 +256,15 @@ public class TaskAttemptContext {
     }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
-  
+
+  public long getUniqueKeyFromFragments() {
+    List<FragmentProto> totalFragments = new ArrayList<FragmentProto>();
+    for (List<FragmentProto> eachFragments : fragmentMap.values()) {
+      totalFragments.addAll(eachFragments);
+    }
+    return Objects.hashCode(totalFragments.toArray(new FragmentProto[totalFragments.size()]));
+  }
+
   public int hashCode() {
     return Objects.hashCode(queryId);
   }

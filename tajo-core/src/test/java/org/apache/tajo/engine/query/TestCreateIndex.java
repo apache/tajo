@@ -43,6 +43,7 @@ public class TestCreateIndex extends QueryTestCaseBase {
     System.out.println(indexPath);
     FileSystem fs = indexPath.getFileSystem(conf);
     assertTrue(fs.exists(indexPath));
+    assertEquals(2, fs.listStatus(indexPath).length);
     fs.deleteOnExit(indexPath);
   }
 
