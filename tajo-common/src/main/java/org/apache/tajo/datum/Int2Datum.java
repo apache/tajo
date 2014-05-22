@@ -22,6 +22,8 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteBuffer;
 
@@ -202,7 +204,10 @@ public class Int2Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
     case DATE:
-      return new DateDatum(((DateDatum)datum).getDate().plusDays(asInt2()));
+      DateDatum dateDatum = (DateDatum)datum;
+      TimeMeta tm = dateDatum.toTimeMeta();
+      tm.plusDays(asInt2());
+      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
     case NULL_TYPE:
       return datum;
     default:
@@ -224,7 +229,10 @@ public class Int2Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
     case DATE:
-      return new DateDatum(((DateDatum)datum).getDate().minusDays(asInt2()));
+      DateDatum dateDatum = (DateDatum)datum;
+      TimeMeta tm = dateDatum.toTimeMeta();
+      tm.plusDays(0 - asInt2());
+      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
     case NULL_TYPE:
       return datum;
     default:

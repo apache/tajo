@@ -422,10 +422,10 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           break;
         case TIMESTAMP:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createTimeStampFromMillis(
+            end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(
                 range.getStart().get(i).asInt8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createTimeStampFromMillis(last.get(i).asInt8() + incs[i].longValue()));
+            end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() + incs[i].longValue()));
           }
           break;
         case INET4:

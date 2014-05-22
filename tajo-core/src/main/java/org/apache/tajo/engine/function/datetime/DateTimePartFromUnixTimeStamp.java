@@ -25,117 +25,117 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TimeStampUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTime;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 
 @Description(
-        functionName = "utc_usec_to",
-        description = "Extract field from time",
-        example = "> SELECT utc_usec_to('day', 1274259481071200);\n"
-                + "1274227200000000",
-        returnType = TajoDataTypes.Type.INT8,
-        paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT8}),
-                @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4})}
+    functionName = "utc_usec_to",
+    description = "Extract field from time",
+    example = "> SELECT utc_usec_to('day', 1274259481071200);\n"
+        + "1274227200000000",
+    returnType = TajoDataTypes.Type.INT8,
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT8}),
+        @ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4})}
 )
-public class DateTimePartFromUnixTimeStamp extends GeneralFunction {
+public class DateTimePartFromUnixTimestamp extends GeneralFunction {
 
-    private DateTimePartExtractorFromUnixTime extractor = null;
-    private WeekPartExtractorFromUnixTime weekExtractor = null;
+  private DateTimePartExtractorFromUnixTime extractor = null;
+  private WeekPartExtractorFromUnixTime weekExtractor = null;
 
-    public DateTimePartFromUnixTimeStamp() {
-        super(new Column[]{
-                new Column("target", TEXT),
-                new Column("source", INT8),
-                new Column("dayOfWeek", INT4),
+  public DateTimePartFromUnixTimestamp() {
+    super(new Column[]{
+        new Column("target", TEXT),
+        new Column("source", INT8),
+        new Column("dayOfWeek", INT4),
 
-        });
+    });
+  }
+
+  @Override
+  public Datum eval(Tuple params) {
+
+    Datum target = params.get(0);
+    DateTime dateTime;
+    Int4Datum dayOfWeek = null;
+
+    if (target instanceof NullDatum || params.get(1) instanceof NullDatum) {
+      return NullDatum.get();
     }
 
+    if (params.get(1) instanceof Int8Datum) {
+      dateTime = DateTimeUtil.getUTCDateTime((Int8Datum) (params.get(1)));
+    } else {
+      return NullDatum.get();
+    }
+
+
+    if ( null == extractor || null == weekExtractor) {
+
+      String extractType = target.asChars().toLowerCase();
+
+      if (extractType.equals("day")) {
+        extractor = new DayExtractorFromTime();
+      } else if (extractType.equals("hour")) {
+        extractor = new HourExtractorFromTime();
+      } else if (extractType.equals("month")) {
+        extractor = new MonthExtractorFromTime();
+      } else if (extractType.equals("year")) {
+        extractor = new YearExtractorFromTime();
+      } else if (extractType.equals("week")) {
+        if (params.get(2) instanceof NullDatum) {
+          return NullDatum.get();
+        }
+        dayOfWeek = (Int4Datum) params.get(2);
+        weekExtractor = new WeekExtractorFromTime();
+      }
+    }
+
+    return null != weekExtractor ? weekExtractor.extract(dateTime, dayOfWeek.asInt4()) : extractor.extract(dateTime);
+  }
+
+  private interface DateTimePartExtractorFromUnixTime {
+    public Datum extract(DateTime dateTime);
+  }
+
+  private interface WeekPartExtractorFromUnixTime {
+    public Datum extract(DateTime dateTime, int week);
+  }
+
+  private class DayExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
-    public Datum eval(Tuple params) {
-
-        Datum target = params.get(0);
-        DateTime dateTime;
-        Int4Datum dayOfWeek = null;
-
-        if (target instanceof NullDatum || params.get(1) instanceof NullDatum) {
-            return NullDatum.get();
-        }
-
-        if (params.get(1) instanceof Int8Datum) {
-            dateTime = TimeStampUtil.getUTCDateTime((Int8Datum) (params.get(1)));
-        } else {
-            return NullDatum.get();
-        }
-
-
-        if ( null == extractor || null == weekExtractor) {
-
-            String extractType = target.asChars().toLowerCase();
-
-            if (extractType.equals("day")) {
-                extractor = new DayExtractorFromTime();
-            } else if (extractType.equals("hour")) {
-                extractor = new HourExtractorFromTime();
-            } else if (extractType.equals("month")) {
-                extractor = new MonthExtractorFromTime();
-            } else if (extractType.equals("year")) {
-                extractor = new YearExtractorFromTime();
-            } else if (extractType.equals("week")) {
-                if (params.get(2) instanceof NullDatum) {
-                    return NullDatum.get();
-                }
-                dayOfWeek = (Int4Datum) params.get(2);
-                weekExtractor = new WeekExtractorFromTime();
-            }
-        }
-
-        return null != weekExtractor ? weekExtractor.extract(dateTime, dayOfWeek.asInt4()) : extractor.extract(dateTime);
+    public Datum extract(DateTime dateTime) {
+      return DatumFactory.createInt8(DateTimeUtil.getDay(dateTime));
     }
+  }
 
-    private interface DateTimePartExtractorFromUnixTime {
-        public Datum extract(DateTime dateTime);
+  private class HourExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+    @Override
+    public Datum extract(DateTime dateTime) {
+      return DatumFactory.createInt8(DateTimeUtil.getHour(dateTime));
     }
+  }
 
-    private interface WeekPartExtractorFromUnixTime {
-        public Datum extract(DateTime dateTime, int week);
+  private class MonthExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+    @Override
+    public Datum extract(DateTime dateTime) {
+      return DatumFactory.createInt8(DateTimeUtil.getMonth(dateTime));
     }
+  }
 
-    private class DayExtractorFromTime implements DateTimePartExtractorFromUnixTime {
-        @Override
-        public Datum extract(DateTime dateTime) {
-            return DatumFactory.createInt8(TimeStampUtil.getDay(dateTime));
-        }
+  private class YearExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+    @Override
+    public Datum extract(DateTime dateTime) {
+      return DatumFactory.createInt8(DateTimeUtil.getYear(dateTime));
     }
+  }
 
-    private class HourExtractorFromTime implements DateTimePartExtractorFromUnixTime {
-        @Override
-        public Datum extract(DateTime dateTime) {
-            return DatumFactory.createInt8(TimeStampUtil.getHour(dateTime));
-        }
+  private class WeekExtractorFromTime implements WeekPartExtractorFromUnixTime {
+    @Override
+    public Datum extract(DateTime dateTime , int week) {
+      return DatumFactory.createInt8(DateTimeUtil.getDayOfWeek(dateTime,week));
     }
-
-    private class MonthExtractorFromTime implements DateTimePartExtractorFromUnixTime {
-        @Override
-        public Datum extract(DateTime dateTime) {
-            return DatumFactory.createInt8(TimeStampUtil.getMonth(dateTime));
-        }
-    }
-
-    private class YearExtractorFromTime implements DateTimePartExtractorFromUnixTime {
-        @Override
-        public Datum extract(DateTime dateTime) {
-            return DatumFactory.createInt8(TimeStampUtil.getYear(dateTime));
-        }
-    }
-
-    private class WeekExtractorFromTime implements WeekPartExtractorFromUnixTime {
-        @Override
-        public Datum extract(DateTime dateTime , int week) {
-            return DatumFactory.createInt8(TimeStampUtil.getDayOfWeek(dateTime,week));
-        }
-    }
+  }
 }

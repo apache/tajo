@@ -20,9 +20,7 @@ package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.DateDatum;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -31,19 +29,20 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+
 @Description(
-    functionName = "to_date",
-    description = "Convert string to date. Format should be a SQL standard format string.",
-    example = "> SELECT to_date('2014-01-01', 'YYYY-MM-DD');\n"
-        + "2014-01-01",
-    returnType = TajoDataTypes.Type.DATE,
+    functionName = "to_timestamp",
+    description = "Convert string to time stamp",
+    detail = "Patterns for Date/Time Formatting: http://www.postgresql.org/docs/8.4/static/functions-formatting.html",
+    example = "> select to_timestamp('05 Dec 2000 15:12:02.020', 'DD Mon YYYY HH24:MI:SS.MS');\n"
+        + "2000-12-05 15:12:02.02",
+    returnType = TajoDataTypes.Type.TIMESTAMP,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
-public class ToDate extends GeneralFunction {
-  public ToDate() {
-    super(new Column[]{
-        new Column("string", TajoDataTypes.Type.TEXT),
-        new Column("format", TajoDataTypes.Type.TEXT)});
+public class ToTimestampText extends GeneralFunction {
+  public ToTimestampText() {
+    super(new Column[]{new Column("DateTimeText", TEXT), new Column("Pattern", TEXT)});
   }
 
   @Override
@@ -52,11 +51,12 @@ public class ToDate extends GeneralFunction {
       return NullDatum.get();
     }
 
-    String value = params.get(0).asChars();
-    String pattern = params.get(1).asChars();
+    TextDatum dateTimeTextDatum = (TextDatum) params.get(0);
+    TextDatum patternDatum = (TextDatum) params.get(1);
 
-    TimeMeta tm = DateTimeFormat.parseDateTime(value, pattern);
+    TimeMeta tm = DateTimeFormat.parseDateTime(dateTimeTextDatum.asChars(), patternDatum.asChars());
+    DateTimeUtil.toUTCTimezone(tm);
 
-    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
   }
 }

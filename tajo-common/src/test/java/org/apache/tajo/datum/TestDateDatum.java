@@ -68,13 +68,6 @@ public class TestDateDatum {
     assertEquals(d, copy);
 	}
 
-  @Test
-  public final void testAsByteArray() {
-    DateDatum d = DatumFactory.createDate(DATE);
-    DateDatum copy = new DateDatum(d.asByteArray());
-    assertEquals(d.asInt8(), copy.asInt8());
-  }
-
 	@Test
   public final void testSize() {
     Datum d = DatumFactory.createDate(DATE);

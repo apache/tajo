@@ -29,38 +29,32 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
 
 @Description(
   functionName = "to_char",
-  description = "Convert time stamp to string",
-  example = "> SELECT to_char(1389071652, 'yyyy-MM');\n"
+  description = "Convert time stamp to string. Format should be a SQL standard format string.",
+  example = "> SELECT to_char(TIMESTAMP '2014-01-17 10:09:37', 'YYYY-MM');\n"
           + "2014-01",
   returnType = TajoDataTypes.Type.TEXT,
   paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIMESTAMP, TajoDataTypes.Type.TEXT})}
 )
 public class ToCharTimestamp extends GeneralFunction {
-  private boolean constantFormat;
-  private DateTimeFormatter formatter;
-
   public ToCharTimestamp() {
     super(new Column[] {
-        new Column("timestamp", INT8),
+        new Column("timestamp", TIMESTAMP),
         new Column("format", TEXT)
     });
   }
 
   @Override
   public void init(FunctionEval.ParamType[] paramTypes) {
-    if (paramTypes[1] == FunctionEval.ParamType.CONSTANT) {
-      constantFormat = true;
-    }
   }
-
 
   @Override
   public Datum eval(Tuple params) {
@@ -69,11 +63,11 @@ public class ToCharTimestamp extends GeneralFunction {
     }
 
     TimestampDatum valueDatum = (TimestampDatum) params.get(0);
+    TimeMeta tm = valueDatum.toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm);
+
     Datum pattern = params.get(1);
 
-    if (formatter == null || !constantFormat) {
-      formatter = DateTimeFormat.forPattern(pattern.asChars());
-    }
-    return DatumFactory.createText(valueDatum.toChars(formatter));
+    return DatumFactory.createText(DateTimeFormat.to_char(tm, pattern.asChars()));
   }
 }
