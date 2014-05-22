@@ -33,6 +33,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
@@ -548,19 +549,23 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
 
     // Building sort keys
+    sortNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
+    return sortNode;
+  }
+
+  private static SortSpec[] annotateSortSpecs(QueryBlock block, String [] referNames, Sort.SortSpec[] rawSortSpecs) {
+    int sortKeyNum = rawSortSpecs.length;
     Column column;
     SortSpec [] annotatedSortSpecs = new SortSpec[sortKeyNum];
     for (int i = 0; i < sortKeyNum; i++) {
       if (block.namedExprsMgr.isEvaluated(referNames[i])) {
         column = block.namedExprsMgr.getTarget(referNames[i]).getNamedColumn();
       } else {
-        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(rawSortSpecs));
       }
-      annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
+      annotatedSortSpecs[i] = new SortSpec(column, rawSortSpecs[i].isAscending(), rawSortSpecs[i].isNullFirst());
     }
-
-    sortNode.setSortSpecs(annotatedSortSpecs);
-    return sortNode;
+    return annotatedSortSpecs;
   }
 
   /*===============================================================================================
@@ -1510,6 +1515,44 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
+  }
+
+  @Override
+  public LogicalNode visitCreateIndex(PlanContext context, Stack<Expr> stack, CreateIndex createIndex)
+      throws PlanningException {
+    stack.push(createIndex);
+    LogicalNode child = visit(context, stack, createIndex.getChild());
+    stack.pop();
+
+    QueryBlock block = context.queryBlock;
+    CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
+    createIndexNode.setIndexName(createIndex.getIndexName());
+    createIndexNode.setUnique(createIndex.isUnique());
+    Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();
+    int sortKeyNum = sortSpecs.length;
+    String [] referNames = new String[sortKeyNum];
+
+    ExprNormalizedResult [] normalizedExprList = new ExprNormalizedResult[sortKeyNum];
+    for (int i = 0; i < sortKeyNum; i++) {
+      normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
+    }
+    for (int i = 0; i < sortKeyNum; i++) {
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+    }
+
+    createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
+    createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
+
+    if (createIndex.getParams() != null) {
+      KeyValueSet keyValueSet = new KeyValueSet();
+      keyValueSet.putAll(createIndex.getParams());
+      createIndexNode.setOptions(keyValueSet);
+    }
+
+    createIndexNode.setChild(child);
+    return createIndexNode;
   }
 
   /*===============================================================================================

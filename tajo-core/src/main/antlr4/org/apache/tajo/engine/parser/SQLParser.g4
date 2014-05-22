@@ -67,8 +67,8 @@ schema_statement
   ;
 
 index_statement
-  : CREATE (u=UNIQUE)? INDEX n=identifier ON t=table_name (m=method_specifier)?
-    LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?
+  : CREATE (u=UNIQUE)? INDEX identifier ON table_name (method_specifier)?
+    LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)?
   ;
 
 database_definition

@@ -27,7 +27,9 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
+import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
@@ -315,26 +317,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
-    int size = ctx.sort_specifier_list().sort_specifier().size();
-    Sort.SortSpec specs[] = new Sort.SortSpec[size];
-    for (int i = 0; i < size; i++) {
-      SQLParser.Sort_specifierContext specContext = ctx.sort_specifier_list().sort_specifier(i);
-      Expr column = visitRow_value_predicand(specContext.key);
-      specs[i] = new Sort.SortSpec(column);
-      if (specContext.order_specification() != null) {
-        if (specContext.order.DESC() != null) {
-          specs[i].setDescending();
-        }
-      }
-
-      if (specContext.null_ordering() != null) {
-        if (specContext.null_ordering().FIRST() != null) {
-          specs[i].setNullFirst();
-        }
-      }
-    }
-
-    return new Sort(specs);
+    return new Sort(buildSortSpecs(ctx.sort_specifier_list()));
   }
 
   @Override
@@ -992,6 +975,64 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     return new FunctionExpr(functionName, params);
+  }
+
+  private Sort.SortSpec[] buildSortSpecs(Sort_specifier_listContext ctx) {
+    int size = ctx.sort_specifier().size();
+    Sort.SortSpec specs[] = new Sort.SortSpec[size];
+    for (int i = 0; i < size; i++) {
+      SQLParser.Sort_specifierContext specContext = ctx.sort_specifier(i);
+      Expr column = visitRow_value_predicand(specContext.key);
+      specs[i] = new Sort.SortSpec(column);
+      if (specContext.order_specification() != null) {
+        if (specContext.order.DESC() != null) {
+          specs[i].setDescending();
+        }
+      }
+
+      if (specContext.null_ordering() != null) {
+        if (specContext.null_ordering().FIRST() != null) {
+          specs[i].setNullFirst();
+        }
+      }
+    }
+    return specs;
+  }
+
+  @Override
+  public Expr visitIndex_statement(SQLParser.Index_statementContext ctx) {
+    String indexName = ctx.identifier().getText();
+    String tableName = ctx.table_name().getText();
+    Relation relation = new Relation(tableName);
+    SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
+    NamedExpr[] targets = new NamedExpr[sortSpecs.length];
+    Projection projection = new Projection();
+    int i = 0;
+    for (SortSpec sortSpec : sortSpecs) {
+      targets[i++] = new NamedExpr(sortSpec.getKey());
+    }
+    projection.setNamedExprs(targets);
+    projection.setChild(relation);
+
+    CreateIndex createIndex = new CreateIndex(indexName, sortSpecs);
+    if (checkIfExist(ctx.UNIQUE())) {
+      createIndex.setUnique(true);
+    }
+    if (checkIfExist(ctx.method_specifier())) {
+      String methodName = ctx.method_specifier().identifier().getText();
+      createIndex.setMethodSpec(new IndexMethodSpec(methodName));
+    }
+    if (checkIfExist(ctx.param_clause())) {
+      Map<String, String> params = getParams(ctx.param_clause());
+      createIndex.setParams(params);
+    }
+    if (checkIfExist(ctx.where_clause())) {
+      Selection selection = visitWhere_clause(ctx.where_clause());
+      selection.setChild(relation);
+      projection.setChild(selection);
+    }
+    createIndex.setChild(projection);
+    return createIndex;
   }
 
   @Override
