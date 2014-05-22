@@ -22,14 +22,13 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
+import org.apache.tajo.util.Pair;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestCukcooHashTable {
 
@@ -54,19 +53,20 @@ public class TestCukcooHashTable {
     CukcooHashTable hashTable = new CukcooHashTable();
     System.out.println(hashTable.bucketSize());
 
-    HashFunction hf = Hashing.murmur3_128(64);
-
     long writeStart = System.currentTimeMillis();
     for (int i = 1; i < (1 << 24); i++) {
-      long key = hf.hashLong(i).asLong();
 
-      Long found = hashTable.lookup(key);
+      Long v = new Long(i);
+      Pair<Long, Long> p = new Pair<Long, Long>(v, v);
+
+      Long found = hashTable.lookup(p);
 
       assertTrue(found == null);
 
-      hashTable.insert(key, i);
+      hashTable.insert(p);
 
-      assertTrue(i == (hashTable.lookup(key)));
+      found = hashTable.lookup(p);
+      assertEquals(v, found);
 
       if (hashTable.size() != i) {
         System.out.println("Error point!");
@@ -79,9 +79,9 @@ public class TestCukcooHashTable {
 
     long start = System.currentTimeMillis();
     for (int i = 1; i < (1 << 24); i++) {
-      long value1 = i;
-      long key1 = hf.hashLong(value1).asLong();
-      assertTrue(value1 == hashTable.lookup(key1));
+      Long val = new Long(i);
+      Pair<Long, Long> p = new Pair<Long, Long>(val, val);
+      assertEquals(val, hashTable.lookup(p));
     }
     long end = System.currentTimeMillis();
     System.out.println((end - start) + " msc read time");
@@ -93,7 +93,7 @@ public class TestCukcooHashTable {
     Map<Long, Long> map = Maps.newHashMap();
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 23); i++) {
+    for (int i = 0; i < (1 << 24); i++) {
       long key = hf.hashLong(i).asLong();
       Long found = map.get(key);
 
@@ -114,7 +114,7 @@ public class TestCukcooHashTable {
 
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 23); i++) {
+    for (int i = 0; i < (1 << 24); i++) {
       long key = hf.hashLong(i).asLong();
       assertTrue(i == map.get(key));
     }

@@ -34,4 +34,8 @@ public class Pair<T1, T2> {
   public T2 getSecond() {
     return value2;
   }
+
+  public String toString() {
+    return value1.toString() + "=" + value2.toString();
+  }
 }

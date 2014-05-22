@@ -19,9 +19,15 @@
 package org.apache.tajo.storage.columnar;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
 
 public class CukcooHashTable {
   static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
@@ -38,19 +44,88 @@ public class CukcooHashTable {
 
   private int size = 0;
 
+  LongKeyValueReaderWriter readerWriter;
+
   public CukcooHashTable() {
-    initBuckets(DEFAULT_INITIAL_CAPACITY);
+    this(DEFAULT_INITIAL_CAPACITY);
   }
 
   public CukcooHashTable(int size) {
     Preconditions.checkArgument(size > 0, "Initial size cannot be more than one.");
+    readerWriter = new LongKeyValueReaderWriter();
     int findSize = findNearestPowerOfTwo(size);
     initBuckets(findSize);
   }
-//
-//  public static class BucketReader {
-//    public void write(long bucketPtr);
-//  }
+
+  public static class Slice {
+    long startPtr;
+    int length;
+
+    public Slice(ByteBuffer bb) {
+      DirectBuffer df = (DirectBuffer) bb;
+      startPtr = df.address();
+    }
+
+    public Slice(long startPos, int length) {
+      this.startPtr = startPos;
+      this.length = length;
+    }
+
+    public long getLong(int offset) {
+      return UnsafeUtil.unsafe.getLong(startPtr + offset);
+    }
+  }
+
+  public static interface BucketReaderWriter<P> {
+    public void write(long bucketPtr, P payload);
+    public Slice getKey(long bucketPtr);
+    public boolean equalKeys(Slice key1, Slice key2);
+    public long hashKey(Slice key);
+    public long hashKey(P payload);
+  }
+
+  public static class LongKeyValueReaderWriter implements BucketReaderWriter<Pair<Long, Long>> {
+    public HashFunction h = Hashing.murmur3_128(37);
+
+    @Override
+    public void write(long bucketPtr, Pair<Long, Long> payload) {
+      UnsafeUtil.unsafe.putLong(bucketPtr, payload.getFirst());
+      bucketPtr += SizeOf.SIZE_OF_LONG;
+      UnsafeUtil.unsafe.putLong(bucketPtr, payload.getSecond());
+    }
+
+    public void write(long bucketPtr, Slice payload) {
+      UnsafeUtil.unsafe.copyMemory(null, payload.startPtr, null, bucketPtr, SizeOf.SIZE_OF_LONG * 2);
+    }
+
+    @Override
+    public Slice getKey(long bucketPtr) {
+      return new Slice(bucketPtr, SizeOf.SIZE_OF_LONG);
+    }
+
+    public Slice getBucket(long bucketPtr) {
+      return new Slice(bucketPtr, SizeOf.SIZE_OF_LONG);
+    }
+
+    @Override
+    public boolean equalKeys(Slice key1, Slice key2) {
+      return key1.getLong(0) == key2.getLong(0);
+    }
+
+    @Override
+    public long hashKey(Slice key) {
+      return h.hashLong(key.getLong(0)).asLong();
+    }
+
+    @Override
+    public long hashKey(Pair<Long, Long> payload) {
+      return h.hashLong(payload.getFirst()).asLong();
+    }
+
+    public long hashKey(long val) {
+      return h.hashLong(val).asLong();
+    }
+  }
 
   public int bucketSize() {
     return bucketNum;
@@ -101,60 +176,59 @@ public class CukcooHashTable {
     return SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
   }
 
-  public boolean insert(long hash, long value) {
+  public boolean insert(Pair<Long, Long> row) {
 
-    if (contains(hash)) {
+    if (contains(row.getFirst())) {
       return false;
     }
 
-    Pair<Long, Long> kickedOrInserted = insertEntry(hash, value);
+    Pair<Long, Long> kickedOrInserted = insertEntry(row);
     if (kickedOrInserted != null) {
       rehash();
-      insert(kickedOrInserted.getFirst(), kickedOrInserted.getSecond());
+      insert(kickedOrInserted);
     }
     return true;
   }
 
-  public Pair<Long, Long> insertEntry(long hash, long value) {
+  public Pair<Long, Long> insertEntry(Pair<Long, Long> row) {
     int loopCount = 0;
 
-    long kickedHash = -1;
-    Long kickedValue;
+    Pair<Long, Long> current = row;
+    ByteBuffer bb = ByteBuffer.allocateDirect(16);
+    bb.putLong(row.getFirst());
+    bb.putLong(row.getSecond());
+    Slice currentSlice = new Slice(bb);
 
-    long currentHash = hash;
-    long currentValue = value;
-
-    int index = (int) (hash & modMask);
+    int bucketId = (int) (readerWriter.hashKey(current) & modMask);
     //&& kickedHash != hash
     while(loopCount < maxLoopNum) {
 
-      kickedHash = UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, index + 1));
-      kickedValue = UnsafeUtil.unsafe.getLong(getValuePtr(bucketPtr, index + 1));
+      long kickedKey = UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, bucketId + 1));
+      long kickedValue = UnsafeUtil.unsafe.getLong(getValuePtr(bucketPtr, bucketId + 1));
+      Slice kickedPayload = readerWriter.getBucket(getKeyPtr(bucketPtr, bucketId + 1));
+      Pair<Long, Long> kicked = new Pair<Long, Long>(kickedKey, kickedValue);
 
-      long keyPtr = getKeyPtr(bucketPtr, index + 1);
-      if (UnsafeUtil.unsafe.getLong(keyPtr) == 0) {
-        UnsafeUtil.unsafe.putLong(keyPtr, currentHash);
-        UnsafeUtil.unsafe.putLong(getValuePtr(bucketPtr, index + 1), currentValue);
+      long keyPtr = getKeyPtr(bucketPtr, bucketId + 1);
+      if (kickedPayload.getLong(0) == 0) {
+        readerWriter.write(keyPtr, current);
         size++;
         return null;
       }
 
-      UnsafeUtil.unsafe.putLong(keyPtr, currentHash);
-      UnsafeUtil.unsafe.putLong(getValuePtr(bucketPtr, index + 1), currentValue);
+      readerWriter.write(keyPtr, current);
+      current = kicked;
 
-      currentHash = kickedHash;
-      currentValue = kickedValue;
-
-      if (index == (int) (currentHash & modMask)) {
-        index = (int) (currentHash >> NBITS & modMask);
+      int bucketIdFromHash1 = (int) (readerWriter.hashKey(current) & modMask);
+      if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
+        bucketId = (int) (readerWriter.hashKey(current) >> NBITS & modMask);
       } else {
-        index = (int) (currentHash & modMask);
+        bucketId = bucketIdFromHash1;
       }
 
       ++loopCount;
     }
 
-    return new Pair<Long, Long>(currentHash, currentValue);
+    return current;
   }
 
   public void rehash() {
@@ -171,33 +245,35 @@ public class CukcooHashTable {
       long key = UnsafeUtil.unsafe.getLong(getKeyPtr(oldKeysPtr, actualIdx));
       if (key != 0) {
         long value = UnsafeUtil.unsafe.getLong(getValuePtr(oldKeysPtr, actualIdx));
-        insert(key, value);
+        insert(new Pair<Long, Long>(key, value));
       }
     }
 
     UnsafeUtil.free(oldKeysPtr);
   }
 
-  public boolean contains(long hashKey) {
+  public boolean contains(long key) {
     // find the possible locations
-    int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
-    int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
+    int buckId1 = (int) (key & modMask) + 1; // use different parts of the hash number
+    int buckId2 = (int) (key >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(hashKey == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0);
-    int mask2 = -(hashKey == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0);
+    int mask1 = -(key == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0);
+    int mask2 = -(key == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0);
 
     return (mask1 | mask2) != 0;
   }
 
-  public Long lookup(long hashKey) {
+  public Long lookup(Pair<Long, Long> data) {
+    long hashKey = readerWriter.hashKey(data);
+
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(hashKey == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(hashKey == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
+    int mask1 = -(data.getSecond() == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(data.getSecond() == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
     int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
 
     return group_id == 0 ? null : UnsafeUtil.unsafe.getLong(getValuePtr(bucketPtr, group_id));
