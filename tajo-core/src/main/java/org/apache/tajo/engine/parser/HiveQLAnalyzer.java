@@ -1141,7 +1141,8 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
 
     boolean isDistinct = false;
     if (ctx.getChild(2) != null) {
-      if (ctx.getChild(2) instanceof TerminalNodeImpl && ctx.getChild(2).getText().equalsIgnoreCase("DISTINCT")) {
+      if (ctx.getChild(2) instanceof TerminalNodeImpl
+          && ctx.getChild(2).getText().equalsIgnoreCase("DISTINCT_GROUP_BY")) {
         isDistinct = true;
       }
     }

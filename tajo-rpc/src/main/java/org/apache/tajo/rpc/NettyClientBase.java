@@ -74,7 +74,6 @@ public abstract class NettyClientBase implements Closeable {
        addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
     }
     this.channelFuture = bootstrap.connect(addr);
-    this.channelFuture.awaitUninterruptibly();
 
     final CountDownLatch latch = new CountDownLatch(1);
     this.channelFuture.addListener(new ChannelFutureListener() {

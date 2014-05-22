@@ -35,7 +35,10 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -236,7 +239,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   SubQueryEventType.SQ_START,
                   SubQueryEventType.SQ_KILL,
                   SubQueryEventType.SQ_FAILED,
-                  SubQueryEventType.SQ_INTERNAL_ERROR))
+                  SubQueryEventType.SQ_INTERNAL_ERROR,
+                  SubQueryEventType.SQ_SUBQUERY_COMPLETED))
 
           .installTopology();
 
@@ -594,7 +598,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       try {
         getStateMachine().doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(new SubQueryEvent(getId(),
             SubQueryEventType.SQ_INTERNAL_ERROR));
       }

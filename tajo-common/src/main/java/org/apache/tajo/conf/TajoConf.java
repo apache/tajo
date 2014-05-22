@@ -25,13 +25,23 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
+
+  private static TimeZone CURRENT_TIMEZONE;
+  private static int DATE_ORDER = -1;
+  private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
+  private static final Lock writeLock = confLock.writeLock();
+  private static final Lock readLock = confLock.readLock();
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");
@@ -40,6 +50,8 @@ public class TajoConf extends Configuration {
     Configuration.addDefaultResource("storage-site.xml");
     Configuration.addDefaultResource("tajo-default.xml");
     Configuration.addDefaultResource("tajo-site.xml");
+
+    confStaticInit();
   }
 
   private static final String EMPTY_VALUE = "";
@@ -57,6 +69,68 @@ public class TajoConf extends Configuration {
   public TajoConf(Path path) {
     super();
     addResource(path);
+  }
+
+  private static void confStaticInit() {
+    TimeZone.setDefault(getCurrentTimeZone());
+    getDateOrder();
+  }
+
+  public static TimeZone getCurrentTimeZone() {
+    writeLock.lock();
+    try {
+      if (CURRENT_TIMEZONE == null) {
+        TajoConf tajoConf = new TajoConf();
+        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.TAJO_TIMEZONE));
+      }
+      return CURRENT_TIMEZONE;
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
+  public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
+    readLock.lock();
+    try {
+      TimeZone oldTimeZone = CURRENT_TIMEZONE;
+      CURRENT_TIMEZONE = timeZone;
+      return oldTimeZone;
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  public static int getDateOrder() {
+    writeLock.lock();
+    try {
+      if (DATE_ORDER < 0) {
+        TajoConf tajoConf = new TajoConf();
+        String dateOrder = tajoConf.getVar(ConfVars.TAJO_DATE_ORDER);
+        if ("YMD".equals(dateOrder)) {
+          DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
+        } else if ("DMY".equals(dateOrder)) {
+          DATE_ORDER = DateTimeConstants.DATEORDER_DMY;
+        } else if ("MDY".equals(dateOrder)) {
+          DATE_ORDER = DateTimeConstants.DATEORDER_MDY;
+        } else {
+          DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
+        }
+      }
+      return DATE_ORDER;
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
+  public static int setDateOrder(int dateOrder) {
+    readLock.lock();
+    try {
+      int oldDateOrder = DATE_ORDER;
+      DATE_ORDER = dateOrder;
+      return oldDateOrder;
+    } finally {
+      readLock.unlock();
+    }
   }
 
   public static enum ConfVars {
@@ -249,7 +323,11 @@ public class TajoConf extends Configuration {
     CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
     CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
     CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
-    CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter");
+    CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
+
+    //TIME & DATE
+    TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
+    TAJO_DATE_ORDER("tajo.date.order", "YMD")
     ;
 
     public final String varname;

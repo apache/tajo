@@ -26,16 +26,16 @@
 <%@ page import="org.apache.tajo.util.StringUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.Collection" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
+<%@ page import="java.util.*" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
   List<QueryInProgress> runningQueries =
-          JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getRunningQueries(), true);
+          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
+
+  runningQueries.addAll(master.getContext().getQueryJobManager().getRunningQueries());
+          JSPUtil.sortQueryInProgress(runningQueries, true);
 
   List<QueryInProgress> finishedQueries =
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
@@ -60,9 +60,31 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-  <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Tajo</title>
+    <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Tajo</title>
+    <script src="/static/js/jquery.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+    function killQuery(queryId) {
+        $.ajax({
+            type: "POST",
+            url: "query_exec",
+            data: { action: "killQuery", queryId: queryId }
+        })
+        .done(function(msg) {
+            var resultJson = $.parseJSON(msg);
+            if(resultJson.success == "false") {
+                alert(resultJson.errorMessage);
+            } else {
+                alert(resultJson.successMessage);
+                location.reload();
+            }
+        })
+    }
+
+
+  </script>
 </head>
 <body>
 <%@ include file="header.jsp"%>
@@ -76,7 +98,7 @@
   } else {
 %>
   <table width="100%" border="1" class='border_table'>
-    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>Status</th></th><th>sql</th></tr>
+    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>Status</th></th><th>sql</th><th>Kill Query</th></tr>
     <%
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
@@ -91,6 +113,7 @@
       <td><%=StringUtils.formatTime(time)%></td>
       <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
+      <td><input id="btnSubmit" type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
     </tr>
     <%
       }

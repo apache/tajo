@@ -1,0 +1,1 @@
+select sum(cast(L_EXTENDEDPRICE * 3.21506374375027E33 as FLOAT8)) from lineitem where l_quantity > 0

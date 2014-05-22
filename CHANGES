@@ -4,8 +4,8 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-494: Extend TajoClient to run a query with a plan context serialized as the 
-    JSON form. (jihoon)
+    TAJO-494: Extend TajoClient to run a query with a plan context serialized 
+    as the JSON form. (jihoon)
 
     TAJO-761: Implements INTERVAL type. (Hyoungjun Kim via hyunsik)
 
@@ -14,6 +14,12 @@ Release 0.9.0 - unreleased
     TAJO-791: Implements ADD_DAYS() function. (Hyoungjun Kim via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-825: Datetime type refactoring. (Hyoungjun Kim via jihoon)
+
+    TAJO-811: add simple fifo scheduler support. (jinho)
+
+    TAJO-801: Multiple distinct should be supported. (Hyoungjun Kim via hyunsik)
 
     TAJO-807: Implement Round(numeric, int) function.
     (Seungun Choe via hyunsik)
@@ -36,6 +42,21 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
+
+    TAJO-808: Fix pre-commit build failure. (jinho)
+ 
+    TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
+
+    TAJO-832: NPE occurs when Exception's message is null in Task. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-833: NPE occurs when using the column as a alias name in the multiple 
+    DISTINCT. (Hyoungjun Kim via hyunsik)
+
+    TAJO-821: IllegalStateException occurs when a NettyClientBase object is created 
+    within single thread. (hyoungjunkim via jinho)
 
     TAJO-816: NULL delimiter doesn't apply with HCatalogStore. (jaehwa)
 

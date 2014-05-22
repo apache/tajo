@@ -670,6 +670,12 @@ public class PlannerUtil {
         copy.setPID(-1);
       } else {
         copy.setPID(plan.newPID());
+        if (node instanceof DistinctGroupbyNode) {
+          DistinctGroupbyNode dNode = (DistinctGroupbyNode)copy;
+          for (GroupbyNode eachNode: dNode.getGroupByNodes()) {
+            eachNode.setPID(plan.newPID());
+          }
+        }
       }
       return copy;
     } catch (CloneNotSupportedException e) {

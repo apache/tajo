@@ -683,7 +683,7 @@ public class TestStorages {
       tuple.put(new Datum[]{
           DatumFactory.createDate("1980-04-01"),
           DatumFactory.createTime("12:34:56"),
-          DatumFactory.createTimeStamp((int) System.currentTimeMillis() / 1000)
+          DatumFactory.createTimestmpDatumWithUnixTime((int)(System.currentTimeMillis() / 1000))
       });
       appender.addTuple(tuple);
       appender.flush();

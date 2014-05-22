@@ -292,57 +292,63 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
                 ", liveWorkers=" + rmContext.getWorkers().size());
           }
 
-          List<AllocatedWorkerResource> allocatedWorkerResources = chooseWorkers(resourceRequest);
+          // TajoWorkerResourceManager can't return allocated disk slots occasionally.
+          // Because the rest resource request can remains after QueryMaster stops.
+          // Thus we need to find whether QueryId stopped or not.
+          if (!rmContext.getStoppedQueryIds().contains(resourceRequest.queryId)) {
+            List<AllocatedWorkerResource> allocatedWorkerResources = chooseWorkers(resourceRequest);
 
-          if(allocatedWorkerResources.size() > 0) {
-            List<WorkerAllocatedResource> allocatedResources =
-                new ArrayList<WorkerAllocatedResource>();
+            if(allocatedWorkerResources.size() > 0) {
+              List<WorkerAllocatedResource> allocatedResources =
+                  new ArrayList<WorkerAllocatedResource>();
 
-            for(AllocatedWorkerResource allocatedResource: allocatedWorkerResources) {
-              NodeId nodeId = NodeId.newInstance(allocatedResource.worker.getHostName(),
-                  allocatedResource.worker.getPeerRpcPort());
+              for(AllocatedWorkerResource allocatedResource: allocatedWorkerResources) {
+                NodeId nodeId = NodeId.newInstance(allocatedResource.worker.getHostName(),
+                    allocatedResource.worker.getPeerRpcPort());
 
-              TajoWorkerContainerId containerId = new TajoWorkerContainerId();
+                TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 
-              containerId.setApplicationAttemptId(
-                  ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
-              containerId.setId(containerIdSeq.incrementAndGet());
+                containerId.setApplicationAttemptId(
+                    ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
+                containerId.setId(containerIdSeq.incrementAndGet());
 
-              ContainerIdProto containerIdProto = containerId.getProto();
-              allocatedResources.add(WorkerAllocatedResource.newBuilder()
-                  .setContainerId(containerIdProto)
-                  .setNodeId(nodeId.toString())
-                  .setWorkerHost(allocatedResource.worker.getHostName())
-                  .setQueryMasterPort(allocatedResource.worker.getQueryMasterPort())
-                  .setClientPort(allocatedResource.worker.getClientPort())
-                  .setPeerRpcPort(allocatedResource.worker.getPeerRpcPort())
-                  .setWorkerPullServerPort(allocatedResource.worker.getPullServerPort())
-                  .setAllocatedMemoryMB(allocatedResource.allocatedMemoryMB)
-                  .setAllocatedDiskSlots(allocatedResource.allocatedDiskSlots)
-                  .build());
+                ContainerIdProto containerIdProto = containerId.getProto();
+                allocatedResources.add(WorkerAllocatedResource.newBuilder()
+                    .setContainerId(containerIdProto)
+                    .setNodeId(nodeId.toString())
+                    .setWorkerHost(allocatedResource.worker.getHostName())
+                    .setQueryMasterPort(allocatedResource.worker.getQueryMasterPort())
+                    .setClientPort(allocatedResource.worker.getClientPort())
+                    .setPeerRpcPort(allocatedResource.worker.getPeerRpcPort())
+                    .setWorkerPullServerPort(allocatedResource.worker.getPullServerPort())
+                    .setAllocatedMemoryMB(allocatedResource.allocatedMemoryMB)
+                    .setAllocatedDiskSlots(allocatedResource.allocatedDiskSlots)
+                    .build());
 
 
-              allocatedResourceMap.putIfAbsent(containerIdProto, allocatedResource);
-            }
-
-            resourceRequest.callBack.run(WorkerResourceAllocationResponse.newBuilder()
-                .setQueryId(resourceRequest.request.getQueryId())
-                .addAllWorkerAllocatedResource(allocatedResources)
-                .build()
-            );
-
-          } else {
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("=========================================");
-              LOG.debug("Available Workers");
-              for(String liveWorker: rmContext.getWorkers().keySet()) {
-                LOG.debug(rmContext.getWorkers().get(liveWorker).toString());
+                allocatedResourceMap.putIfAbsent(containerIdProto, allocatedResource);
               }
-              LOG.debug("=========================================");
+
+              resourceRequest.callBack.run(WorkerResourceAllocationResponse.newBuilder()
+                  .setQueryId(resourceRequest.request.getQueryId())
+                  .addAllWorkerAllocatedResource(allocatedResources)
+                  .build()
+              );
+
+            } else {
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("=========================================");
+                LOG.debug("Available Workers");
+                for(String liveWorker: rmContext.getWorkers().keySet()) {
+                  LOG.debug(rmContext.getWorkers().get(liveWorker).toString());
+                }
+                LOG.debug("=========================================");
+              }
+              requestQueue.put(resourceRequest);
+              Thread.sleep(100);
             }
-            requestQueue.put(resourceRequest);
-            Thread.sleep(100);
           }
+
         } catch(InterruptedException ie) {
           LOG.error(ie);
         }
@@ -531,7 +537,12 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     } else {
       ContainerIdProto containerId = rmContext.getQueryMasterContainer().remove(queryId);
       releaseWorkerResource(containerId);
+      rmContext.getStoppedQueryIds().add(queryId);
       LOG.info(String.format("Released QueryMaster (%s) resource:" + resource, queryId.toString()));
     }
+  }
+
+  public TajoRMContext getRMContext() {
+    return rmContext;
   }
 }

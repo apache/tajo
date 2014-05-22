@@ -42,7 +42,12 @@ public class FieldEval extends EvalNode implements Cloneable {
 	@Override
 	public Datum eval(Schema schema, Tuple tuple) {
 	  if (fieldId == -1) {
-	    fieldId = schema.getColumnId(column.getQualifiedName());
+      // TODO - column namespace should be improved to simplify name handling and resolving.
+      if (column.hasQualifier()) {
+        fieldId = schema.getColumnId(column.getQualifiedName());
+      } else {
+        fieldId = schema.getColumnIdByName(column.getSimpleName());
+      }
       if (fieldId == -1) {
         throw new IllegalStateException("No Such Column Reference: " + column + ", schema: " + schema);
       }

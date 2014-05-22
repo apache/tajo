@@ -20,8 +20,11 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimeDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -178,6 +181,12 @@ public abstract class TajoResultSetBase implements ResultSet {
       case FLOAT4:  return d.asFloat4();
       case FLOAT8:  return d.asFloat8();
       case NUMERIC:  return d.asFloat8();
+      case TIME: {
+        return ((TimeDatum)d).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
+      case TIMESTAMP: {
+        return ((TimestampDatum)d).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
       default: return d.asChars();
     }
   }
@@ -212,7 +221,19 @@ public abstract class TajoResultSetBase implements ResultSet {
   public String getString(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asChars();
+
+    TajoDataTypes.Type dataType = datum.type();
+
+    switch(dataType) {
+      case TIME: {
+        return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
+      case TIMESTAMP: {
+        return ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
+      default :
+        return datum.asChars();
+    }
   }
 
   @Override
