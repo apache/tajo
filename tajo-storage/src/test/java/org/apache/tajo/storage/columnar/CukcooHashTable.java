@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
 import org.apache.tajo.util.Pair;
 
 /**
@@ -41,7 +40,7 @@ public class CukcooHashTable<V> {
   // table data structure
   //private int buckets [];
   long bucketPtr;
-  private long keys [];
+  private long keyPtr;
   private String values [];
 
   private int size = 0;
@@ -81,10 +80,17 @@ public class CukcooHashTable<V> {
     //buckets = new int[bucketSize];
     bucketPtr = UnsafeUtil.allocVector(TajoDataTypes.Type.INT4, bucketSize);
     UnsafeUtil.unsafe.setMemory(bucketPtr, SizeOf.SIZE_OF_INT * bucketSize, (byte) 0);
-    keys = new long[bucketSize + 1];
+
+    keyPtr = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, bucketSize + 1);
+    UnsafeUtil.unsafe.setMemory(keyPtr, SizeOf.SIZE_OF_LONG * (bucketSize + 1), (byte) 0);
+
     values = new String[bucketSize + 1];
 
     size = 0;
+  }
+
+  private int computeOneBucketSize() {
+    return SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
   }
 
   public boolean insert(long hash, String value) {
@@ -114,19 +120,19 @@ public class CukcooHashTable<V> {
     //&& kickedHash != hash
     while(loopCount < maxLoopNum) {
 
-      kickedHash = keys[index + 1];
+      kickedHash = UnsafeUtil.getLong(keyPtr, index + 1);
       kickedValue = values[index + 1];
 
       if (UnsafeUtil.getInt(bucketPtr, index) == 0) {
         UnsafeUtil.putInt(bucketPtr, index, index + 1);
-        keys[index + 1] = currentHash;
+        UnsafeUtil.putLong(keyPtr, index + 1, currentHash);
         values[index + 1] = currentValue;
         size++;
         return null;
       }
 
       UnsafeUtil.putInt(bucketPtr, index, index + 1);
-      keys[index + 1] = currentHash;
+      UnsafeUtil.putLong(keyPtr, index + 1, currentHash);
       values[index + 1] = currentValue;
 
       currentHash = kickedHash;
@@ -150,7 +156,7 @@ public class CukcooHashTable<V> {
     System.out.println("rehash load factor: " + load());
     int oldBucketSize = bucketSize;
     long oldBucketPtr = bucketPtr;
-    long [] oldHashes = keys;
+    long oldKeysPtr = keyPtr;
     String [] oldValues = values;
 
     int newBucketSize = this.bucketSize *  2;
@@ -160,13 +166,14 @@ public class CukcooHashTable<V> {
       int oldBucketIdx = UnsafeUtil.getInt(oldBucketPtr, i);
       if (oldBucketIdx != 0) {
         int idx = oldBucketIdx;
-        long hash = oldHashes[idx];
+        long hash = UnsafeUtil.getLong(oldKeysPtr, idx);
         String value = oldValues[idx];
         insert(hash, value);
       }
     }
 
     UnsafeUtil.free(oldBucketPtr);
+    UnsafeUtil.free(oldKeysPtr);
   }
 
   public String lookup(long hashKey) {
@@ -178,8 +185,8 @@ public class CukcooHashTable<V> {
     int idx2 = UnsafeUtil.getInt(bucketPtr, buckId2); // 1+ for non empty
 
     // check which one matches
-    int mask1 = -(hashKey == keys[idx1] ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(hashKey == keys[idx2] ? 1 : 0); // 0 otherwise
+    int mask1 = -(hashKey == UnsafeUtil.getLong(keyPtr, idx1) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(hashKey == UnsafeUtil.getLong(keyPtr, idx2) ? 1 : 0); // 0 otherwise
     int group_id = mask1 & idx1 | mask2 & idx2; // at most 1 matches
 
     return values[group_id];
