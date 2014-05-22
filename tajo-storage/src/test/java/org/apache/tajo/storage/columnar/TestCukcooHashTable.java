@@ -54,7 +54,7 @@ public class TestCukcooHashTable {
     System.out.println(hashTable.bucketSize());
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 1; i < (1 << 24); i++) {
+    for (int i = 1; i < (1 << 22); i++) {
 
       Long v = new Long(i);
       Pair<Long, Long> p = new Pair<Long, Long>(v, v);
@@ -78,7 +78,7 @@ public class TestCukcooHashTable {
     System.out.println(">> Size: " + hashTable.size());
 
     long start = System.currentTimeMillis();
-    for (int i = 1; i < (1 << 24); i++) {
+    for (int i = 1; i < (1 << 22); i++) {
       Long val = new Long(i);
       Pair<Long, Long> p = new Pair<Long, Long>(val, val);
       assertEquals(val, hashTable.lookup(p));
@@ -93,7 +93,7 @@ public class TestCukcooHashTable {
     Map<Long, Long> map = Maps.newHashMap();
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 24); i++) {
+    for (int i = 0; i < (1 << 22); i++) {
       long key = hf.hashLong(i).asLong();
       Long found = map.get(key);
 
@@ -114,7 +114,7 @@ public class TestCukcooHashTable {
 
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 24); i++) {
+    for (int i = 0; i < (1 << 22); i++) {
       long key = hf.hashLong(i).asLong();
       assertTrue(i == map.get(key));
     }

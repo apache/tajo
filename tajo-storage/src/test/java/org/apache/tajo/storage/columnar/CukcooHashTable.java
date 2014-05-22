@@ -20,14 +20,13 @@ package org.apache.tajo.storage.columnar;
 
 import com.google.common.base.Preconditions;
 import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class CukcooHashTable {
   static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
@@ -46,6 +45,11 @@ public class CukcooHashTable {
 
   LongKeyValueReaderWriter readerWriter;
 
+  ByteBuffer tmp[] = new ByteBuffer[2];
+  ByteBuffer tmp1 = ByteBuffer.allocateDirect(16);
+  ByteBuffer tmp2 = ByteBuffer.allocateDirect(16);
+  Slice kickedBucket[] = new Slice[2];
+
   public CukcooHashTable() {
     this(DEFAULT_INITIAL_CAPACITY);
   }
@@ -55,24 +59,42 @@ public class CukcooHashTable {
     readerWriter = new LongKeyValueReaderWriter();
     int findSize = findNearestPowerOfTwo(size);
     initBuckets(findSize);
+
+    kickedBucket[0] = new Slice(tmp1);
+    kickedBucket[1] = new Slice(tmp2);
   }
 
   public static class Slice {
-    long startPtr;
+    long ptr;
     int length;
+    boolean freed = false;
 
     public Slice(ByteBuffer bb) {
       DirectBuffer df = (DirectBuffer) bb;
-      startPtr = df.address();
+      ptr = df.address();
+      length = bb.limit();
+      freed = true;
     }
 
     public Slice(long startPos, int length) {
-      this.startPtr = startPos;
+      this.ptr = startPos;
       this.length = length;
     }
 
     public long getLong(int offset) {
-      return UnsafeUtil.unsafe.getLong(startPtr + offset);
+      return UnsafeUtil.unsafe.getLong(ptr + offset);
+    }
+
+    public Slice copyOf() {
+      long destPtr = UnsafeUtil.unsafe.allocateMemory(length);
+      UnsafeUtil.unsafe.copyMemory(null, this.ptr, null, destPtr, length);
+      return new Slice(destPtr, length);
+    }
+
+    public void free() {
+      if (!freed) {
+        UnsafeUtil.free(ptr);
+      }
     }
   }
 
@@ -95,7 +117,7 @@ public class CukcooHashTable {
     }
 
     public void write(long bucketPtr, Slice payload) {
-      UnsafeUtil.unsafe.copyMemory(null, payload.startPtr, null, bucketPtr, SizeOf.SIZE_OF_LONG * 2);
+      UnsafeUtil.unsafe.copyMemory(null, payload.ptr, null, bucketPtr, SizeOf.SIZE_OF_LONG * 2);
     }
 
     @Override
@@ -103,8 +125,8 @@ public class CukcooHashTable {
       return new Slice(bucketPtr, SizeOf.SIZE_OF_LONG);
     }
 
-    public Slice getBucket(long bucketPtr) {
-      return new Slice(bucketPtr, SizeOf.SIZE_OF_LONG);
+    public void getBucket(long bucketPtr, Slice target) {
+      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, target.ptr, 16);
     }
 
     @Override
@@ -190,45 +212,43 @@ public class CukcooHashTable {
     return true;
   }
 
+  int switchIdx = 0;
+
+
   public Pair<Long, Long> insertEntry(Pair<Long, Long> row) {
     int loopCount = 0;
 
-    Pair<Long, Long> current = row;
     ByteBuffer bb = ByteBuffer.allocateDirect(16);
+    bb.order(ByteOrder.nativeOrder());
     bb.putLong(row.getFirst());
     bb.putLong(row.getSecond());
     Slice currentSlice = new Slice(bb);
 
-    int bucketId = (int) (readerWriter.hashKey(current) & modMask);
-    //&& kickedHash != hash
+    int bucketId = (int) (readerWriter.hashKey(currentSlice) & modMask);
     while(loopCount < maxLoopNum) {
-
-      long kickedKey = UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, bucketId + 1));
-      long kickedValue = UnsafeUtil.unsafe.getLong(getValuePtr(bucketPtr, bucketId + 1));
-      Slice kickedPayload = readerWriter.getBucket(getKeyPtr(bucketPtr, bucketId + 1));
-      Pair<Long, Long> kicked = new Pair<Long, Long>(kickedKey, kickedValue);
-
+      readerWriter.getBucket(getKeyPtr(bucketPtr, bucketId + 1), kickedBucket[switchIdx]);
       long keyPtr = getKeyPtr(bucketPtr, bucketId + 1);
-      if (kickedPayload.getLong(0) == 0) {
-        readerWriter.write(keyPtr, current);
+      if (UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, bucketId + 1)) == 0) {
+        readerWriter.write(keyPtr, currentSlice);
         size++;
         return null;
       }
 
-      readerWriter.write(keyPtr, current);
-      current = kicked;
+      readerWriter.write(keyPtr, currentSlice);
+      currentSlice = kickedBucket[switchIdx];
 
-      int bucketIdFromHash1 = (int) (readerWriter.hashKey(current) & modMask);
+      int bucketIdFromHash1 = (int) (readerWriter.hashKey(currentSlice) & modMask);
       if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
-        bucketId = (int) (readerWriter.hashKey(current) >> NBITS & modMask);
+        bucketId = (int) (readerWriter.hashKey(currentSlice) >> NBITS & modMask);
       } else {
         bucketId = bucketIdFromHash1;
       }
 
+      switchIdx ^= 1;
       ++loopCount;
     }
 
-    return current;
+    return new Pair<Long, Long>(currentSlice.getLong(0), currentSlice.getLong(8));
   }
 
   public void rehash() {

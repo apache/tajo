@@ -300,6 +300,12 @@
       <artifactId>parquet-format</artifactId>
       <version>${parquet.format.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.airlift</groupId>
+      <artifactId>slice</artifactId>
+      <version>0.5</version>
+    </dependency>
+
   </dependencies>
 
   <profiles>
