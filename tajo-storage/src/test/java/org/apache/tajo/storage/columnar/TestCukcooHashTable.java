@@ -57,7 +57,7 @@ public class TestCukcooHashTable {
     HashFunction hf = Hashing.murmur3_128(64);
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 22); i++) {
+    for (int i = 1; i < (1 << 24); i++) {
       long key = hf.hashLong(i).asLong();
 
       Long found = hashTable.lookup(key);
@@ -68,7 +68,7 @@ public class TestCukcooHashTable {
 
       assertTrue(i == (hashTable.lookup(key)));
 
-      if (hashTable.size() != i + 1) {
+      if (hashTable.size() != i) {
         System.out.println("Error point!");
       }
     }
@@ -78,7 +78,7 @@ public class TestCukcooHashTable {
     System.out.println(">> Size: " + hashTable.size());
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 22); i++) {
+    for (int i = 1; i < (1 << 24); i++) {
       long value1 = i;
       long key1 = hf.hashLong(value1).asLong();
       assertTrue(value1 == hashTable.lookup(key1));
@@ -93,7 +93,7 @@ public class TestCukcooHashTable {
     Map<Long, Long> map = Maps.newHashMap();
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 22); i++) {
+    for (int i = 0; i < (1 << 23); i++) {
       long key = hf.hashLong(i).asLong();
       Long found = map.get(key);
 
@@ -114,7 +114,7 @@ public class TestCukcooHashTable {
 
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 22); i++) {
+    for (int i = 0; i < (1 << 23); i++) {
       long key = hf.hashLong(i).asLong();
       assertTrue(i == map.get(key));
     }
