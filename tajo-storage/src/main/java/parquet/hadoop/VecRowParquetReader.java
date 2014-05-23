@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.columnar.VecRowBlock;
@@ -46,6 +47,7 @@ public class VecRowParquetReader implements Closeable {
   private Iterator<Footer> footersIterator;
   private VecRowDirectReader reader;
   private GlobalMetaData globalMetaData;
+  private final int [] projectedMap;
 
   public VecRowParquetReader(Path file, Schema schema, Schema target) throws IOException {
     this(file, new VecRowReadSupport(schema, target));
@@ -115,6 +117,11 @@ public class VecRowParquetReader implements Closeable {
     for (int i = 0; i < columnNum; i++) {
       tajoTypes[i] = tajoSchema.getColumn(i).getDataType().getType();
     }
+
+    projectedMap = new int[readSupport.getTargetSchema().size()];
+    for (int i = 0; i < readSupport.getTargetSchema().size(); i++) {
+      projectedMap[i] = tajoSchema.getColumnId(readSupport.getTargetSchema().getColumn(i).getQualifiedName());
+    }
   }
 
   Schema tajoSchema;
@@ -131,20 +138,23 @@ public class VecRowParquetReader implements Closeable {
         int rowIdx = 0;
         while(rowIdx < vecRowBlock.maxVecSize() && reader.nextKeyValue()) {
           Object [] values = reader.getCurrentValue();
-          for (int columnIdx = 0; columnIdx < columnNum; columnIdx++) {
-            if (values[columnIdx] != null) {
-              switch (tajoTypes[columnIdx]) {
-              case BOOLEAN: vecRowBlock.putBool(columnIdx, rowIdx, (Boolean) values[columnIdx]); break;
+          for (int columnIdx = 0; columnIdx < projectedMap.length; columnIdx++) {
+            int actualId = projectedMap[columnIdx];
+
+            if (values[actualId] != null) {
+              switch (tajoTypes[actualId]) {
+              case BOOLEAN: vecRowBlock.putBool(columnIdx, rowIdx, (Boolean) values[actualId]); break;
+              case CHAR: vecRowBlock.putFixedBytes(columnIdx, rowIdx, ((Binary) values[actualId]).getBytes()); break;
               case INT1:
-              case INT2: vecRowBlock.putInt2(columnIdx, rowIdx, (Short) values[columnIdx]); break;
-              case INT4: vecRowBlock.putInt4(columnIdx, rowIdx, (Integer) values[columnIdx]); break;
-              case INT8: vecRowBlock.putInt8(columnIdx, rowIdx, (Long) values[columnIdx]); break;
-              case FLOAT4: vecRowBlock.putFloat4(columnIdx, rowIdx, (Float) values[columnIdx]); break;
-              case FLOAT8: vecRowBlock.putFloat8(columnIdx, rowIdx, (Double) values[columnIdx]); break;
-              case TEXT: vecRowBlock.putText(columnIdx, rowIdx, ((Binary) values[columnIdx]).getBytes()); break;
-              case BLOB: vecRowBlock.putText(columnIdx, rowIdx, ((Binary) values[columnIdx]).getBytes()); break;
+              case INT2: vecRowBlock.putInt2(columnIdx, rowIdx, (Short) values[actualId]); break;
+              case INT4: vecRowBlock.putInt4(columnIdx, rowIdx, (Integer) values[actualId]); break;
+              case INT8: vecRowBlock.putInt8(columnIdx, rowIdx, (Long) values[actualId]); break;
+              case FLOAT4: vecRowBlock.putFloat4(columnIdx, rowIdx, (Float) values[actualId]); break;
+              case FLOAT8: vecRowBlock.putFloat8(columnIdx, rowIdx, (Double) values[actualId]); break;
+              case TEXT: vecRowBlock.putVarText(columnIdx, rowIdx, ((Binary) values[actualId]).getBytes()); break;
+              case BLOB: vecRowBlock.putVarText(columnIdx, rowIdx, ((Binary) values[actualId]).getBytes()); break;
               default:
-                throw new IOException("Not supported type: " + tajoTypes[columnIdx].name());
+                throw new IOException("Not supported type: " + tajoTypes[actualId].name());
               }
             }
           }

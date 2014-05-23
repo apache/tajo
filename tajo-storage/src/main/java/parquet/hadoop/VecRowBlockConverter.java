@@ -53,8 +53,7 @@ public class VecRowBlockConverter extends GroupConverter {
    * @param projectionMap An array mapping the projection column to the column
    *                      index in the table.
    */
-  public VecRowBlockConverter(GroupType parquetSchema, Schema tajoReadSchema,
-                              int[] projectionMap) {
+  public VecRowBlockConverter(GroupType parquetSchema, Schema tajoReadSchema, int[] projectionMap) {
     this.parquetSchema = parquetSchema;
     this.tajoReadSchema = tajoReadSchema;
     this.projectionMap = projectionMap;
@@ -93,6 +92,8 @@ public class VecRowBlockConverter extends GroupConverter {
     switch (dataType.getType()) {
       case BOOLEAN:
         return new FieldBooleanConverter(parent);
+      case CHAR:
+        return new FieldCharConverter(parent);
       case INT2:
         return new FieldInt2Converter(parent);
       case INT4:
@@ -174,6 +175,18 @@ public class VecRowBlockConverter extends GroupConverter {
 
     @Override
     final public void addBoolean(boolean value) {
+      parent.add(value);
+    }
+  }
+
+  static final class FieldCharConverter extends PrimitiveConverter {
+    private final ParentValueContainer parent;
+
+    public FieldCharConverter(ParentValueContainer parent) {
+      this.parent = parent;
+    }
+
+    public void addBinary(parquet.io.api.Binary value) {
       parent.add(value);
     }
   }

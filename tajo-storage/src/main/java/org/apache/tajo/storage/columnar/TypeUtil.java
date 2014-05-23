@@ -23,11 +23,10 @@ import sun.misc.Unsafe;
 
 public class TypeUtil {
 
-  public static boolean isFixedSize(TajoDataTypes.DataType dataType) {
+  public static boolean isFixedSize(TajoDataTypes.Type type) {
     boolean fixed = false;
 
-    TajoDataTypes.Type type = dataType.getType();
-
+    fixed |= type == TajoDataTypes.Type.CHAR;
     fixed |= type == TajoDataTypes.Type.BOOLEAN;
     fixed |= type == TajoDataTypes.Type.INT1;
     fixed |= type == TajoDataTypes.Type.INT2;
@@ -40,17 +39,18 @@ public class TypeUtil {
     fixed |= type == TajoDataTypes.Type.DATE;
     fixed |= type == TajoDataTypes.Type.TIME;
 
-    if (type == TajoDataTypes.Type.CHAR) {
-      throw new RuntimeException("does not support: " + TajoDataTypes.Type.CHAR.name());
-    }
-
     return fixed;
   }
 
   public static int sizeOf(TajoDataTypes.DataType dataType, int vecSize) {
-    switch (dataType.getType()) {
+    return sizeOf(dataType.getType(), dataType.getLength(), vecSize);
+  }
+
+  public static int sizeOf(TajoDataTypes.Type type, int maxLen, int vecSize) {
+    switch (type) {
     case BOOLEAN:
       return (int) Math.ceil(vecSize / Byte.SIZE);
+    case CHAR: return (int) (UnsafeUtil.computeAlignedSize(SizeOf.SIZE_OF_BYTE * maxLen) * vecSize);
     case INT1:
     case INT2: return SizeOf.SIZE_OF_SHORT * vecSize;
     case INT4: return SizeOf.SIZE_OF_INT * vecSize;
@@ -59,7 +59,7 @@ public class TypeUtil {
     case FLOAT8: return SizeOf.SIZE_OF_DOUBLE * vecSize;
     case TEXT: return Unsafe.ADDRESS_SIZE * vecSize;
     case BLOB: return Unsafe.ADDRESS_SIZE * vecSize;
-    default: throw new RuntimeException("does not support this type: " + dataType.getType().name());
+    default: throw new RuntimeException("does not support this type: " + type.name());
     }
   }
 

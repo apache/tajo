@@ -53,6 +53,10 @@ public class UnsafeBuf {
     UnsafeUtil.unsafe.putLong(address + offset, value);
   }
 
+  public void putBytes(int offset, byte [] bytes) {
+    UnsafeUtil.putBytes(address + offset, bytes, 0, bytes.length);
+  }
+
   public UnsafeBuf copyOf() {
     ByteBuffer bytebuf = ByteBuffer.allocateDirect(16);
     UnsafeUtil.unsafe.copyMemory(null, this.address, null, ((DirectBuffer)bytebuf).address(), length);
@@ -70,46 +74,13 @@ public class UnsafeBuf {
   public boolean equals(Object obj) {
     if (obj instanceof UnsafeBuf) {
       UnsafeBuf another = (UnsafeBuf) obj;
-
-      if (length != another.length) {
-        return false;
-      }
-
-      long thisAddr = address;
-      long anotherAddr = another.address;
-
-      int minLength = Math.min(length, another.length);
-      int minWords = minLength / Longs.BYTES;
-
-    /*
-       * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
-       * time is no slower than comparing 4 bytes at a time even on 32-bit.
-       * On the other hand, it is substantially faster on 64-bit.
-       */
-      for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
-        long lw = UnsafeUtil.unsafe.getLong(thisAddr);
-        long rw = UnsafeUtil.unsafe.getLong(anotherAddr);
-        thisAddr += SizeOf.SIZE_OF_LONG;
-        anotherAddr += SizeOf.SIZE_OF_LONG;
-
-        long diff = lw ^ rw;
-
-        if (diff != 0) {
-          return false;
-        }
-      }
-
-      // The epilogue to cover the last (minLength % 8) elements.
-      for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-        byte r = (byte) (UnsafeUtil.unsafe.getByte(thisAddr++) ^ UnsafeUtil.unsafe.getByte(anotherAddr++));
-        if (r != 0) {
-          return false;
-        }
-      }
-
-      return true;
+      return UnsafeUtil.equalStrings(this.address, length, another.address, another.length);
     } else {
       return false;
     }
+  }
+
+  public String toString() {
+    return "addr=" + address + ",len=" + length;
   }
 }

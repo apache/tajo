@@ -22,9 +22,8 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.util.FileUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
-public class CukcooHashTable {
+public class CukcooHashTable<K, V, P> {
   static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
   static final int MAXIMUM_CAPACITY = 1 << 30;
   static final int DEFAULT_MAX_LOOP = 1 << 4;
@@ -34,17 +33,17 @@ public class CukcooHashTable {
   private int modMask;
   private int maxLoopNum;
 
+  private final long perBucketSize;
+
   // table data structure
   private long bucketPtr;
 
   private int size = 0;
 
-  BucketReaderWriter readerWriter;
+  BucketReaderWriter<K,V,P> readerWriter;
 
-  ByteBuffer tmp1 = ByteBuffer.allocateDirect(16);
-  ByteBuffer tmp2 = ByteBuffer.allocateDirect(16);
   UnsafeBuf kickedBucket[] = new UnsafeBuf[2];
-  ByteBuffer currentBuffer = ByteBuffer.allocateDirect(16);
+  UnsafeBuf currentBuf;
   UnsafeBuf rehash;
 
   public CukcooHashTable(BucketReaderWriter bucketHandler) {
@@ -54,13 +53,15 @@ public class CukcooHashTable {
   public CukcooHashTable(int size, BucketReaderWriter bucketHandler) {
     Preconditions.checkArgument(size > 0, "Initial size cannot be more than one.");
     readerWriter = bucketHandler;
+    perBucketSize = readerWriter.getPayloadSize();
     int findSize = findNearestPowerOfTwo(size);
     initBuckets(findSize);
 
-    kickedBucket[0] = new UnsafeBuf(tmp1);
-    kickedBucket[1] = new UnsafeBuf(tmp2);
+    currentBuf = readerWriter.newBucketBuffer();
 
-    currentBuffer.order(ByteOrder.nativeOrder());
+    kickedBucket[0] = readerWriter.newBucketBuffer();
+    kickedBucket[1] = readerWriter.newBucketBuffer();
+
     rehash = readerWriter.newBucketBuffer();
   }
 
@@ -81,26 +82,15 @@ public class CukcooHashTable {
     return (int)Math.pow(2, y + 1);
   }
 
-  private long computeBucketSize() {
-    return SizeOf.SIZE_OF_LONG + SizeOf.SIZE_OF_LONG;
-  }
-
-  private long getKeyPtr(long basePtr, long bucketId) {
+  private long getBucketAddr(long basePtr, long bucketId) {
     return basePtr + (perBucketSize * bucketId);
   }
-
-  private long getValuePtr(long basePtr, long bucketId) {
-    return basePtr + (perBucketSize * bucketId) + SizeOf.SIZE_OF_LONG;
-  }
-
-  private final long perBucketSize = computeBucketSize();
 
   private void initBuckets(int bucketNum) {
     this.bucketNum = bucketNum;
     this.modMask = (bucketNum - 1);
     this.maxLoopNum = 1 << 6;
 
-    long perBucketSize = computeBucketSize();
     long totalMemory = (perBucketSize * (bucketNum + 1));
     bucketPtr = UnsafeUtil.alloc(totalMemory);
     UnsafeUtil.unsafe.setMemory(bucketPtr, totalMemory, (byte) 0);
@@ -132,12 +122,11 @@ public class CukcooHashTable {
   public UnsafeBuf insertEntry(UnsafeBuf row) {
     int loopCount = 0;
 
-    UnsafeBuf currentBuf = new UnsafeBuf(currentBuffer);
     row.copyTo(currentBuf);
 
     int bucketId = (int) (readerWriter.hashFunc(currentBuf) & modMask);
     while(loopCount < maxLoopNum) {
-      long keyPtr = getKeyPtr(bucketPtr, bucketId + 1);
+      long keyPtr = getBucketAddr(bucketPtr, bucketId + 1);
       readerWriter.getBucket(keyPtr, kickedBucket[switchIdx]);
       if (kickedBucket[switchIdx].getLong(0) == 0) {
         readerWriter.write(keyPtr, currentBuf);
@@ -173,7 +162,7 @@ public class CukcooHashTable {
     for (int i = 0; i < oldBucketSize; i++) {
       int actualIdx = i + 1;
 
-      readerWriter.getBucket(getKeyPtr(oldKeysPtr, actualIdx), rehash);
+      readerWriter.getBucket(getBucketAddr(oldKeysPtr, actualIdx), rehash);
       if (rehash.getLong(0) != 0) {
         insert(rehash);
       }
@@ -190,13 +179,13 @@ public class CukcooHashTable {
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0);
-    int mask2 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0);
+    int mask1 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId1)) ? 1 : 0);
+    int mask2 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId2)) ? 1 : 0);
 
     return (mask1 | mask2) != 0;
   }
 
-  public Long lookup(UnsafeBuf key) {
+  public V lookup(K key) {
     long hashKey = readerWriter.hashFunc(key);
 
     // find the possible locations
@@ -204,10 +193,25 @@ public class CukcooHashTable {
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getKeyPtr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
+    int mask1 = -(key.equals(readerWriter.getKey(getBucketAddr(bucketPtr, buckId1))) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(key.equals(readerWriter.getKey(getBucketAddr(bucketPtr, buckId2))) ? 1 : 0); // 0 otherwise
     int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
 
-    return group_id == 0 ? null : UnsafeUtil.unsafe.getLong(getValuePtr(bucketPtr, group_id));
+    return group_id == 0 ? null : readerWriter.getValue(getBucketAddr(bucketPtr, group_id));
+  }
+
+  public V lookup(UnsafeBuf key) {
+    long hashKey = readerWriter.hashFunc(key);
+
+    // find the possible locations
+    int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
+    int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
+
+    // check which one matches
+    int mask1 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
+    int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
+
+    return group_id == 0 ? null : readerWriter.getValue(getBucketAddr(bucketPtr, group_id));
   }
 }

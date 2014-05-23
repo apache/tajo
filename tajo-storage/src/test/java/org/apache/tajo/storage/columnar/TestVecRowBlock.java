@@ -19,10 +19,7 @@
 package org.apache.tajo.storage.columnar;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -178,6 +175,7 @@ public class TestVecRowBlock {
     schema.addColumn("col5", Type.FLOAT8);
     schema.addColumn("col6", Type.TEXT);
     schema.addColumn("col7", Type.TEXT);
+    schema.addColumn("col8", Type.CHAR, 4);
 
     int vecSize = 1024;
 
@@ -195,13 +193,15 @@ public class TestVecRowBlock {
       vecRowBlock.putInt8(3, i, i);
       vecRowBlock.putFloat4(4, i, i);
       vecRowBlock.putFloat8(5, i, i);
-      vecRowBlock.putText(6, i, "colabcdefghijklmnopqrstu1".getBytes());
-      vecRowBlock.putText(7, i, "colabcdefghijklmnopqrstu2".getBytes());
+      vecRowBlock.putVarText(6, i, "colabcdefghijklmnopqrstu1".getBytes());
+      vecRowBlock.putVarText(7, i, "colabcdefghijklmnopqrstu2".getBytes());
+      vecRowBlock.putFixedBytes(8, i, "abcd".getBytes());
     }
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
 
     long readStart = System.currentTimeMillis();
+    byte [] bytes = new byte[4];
     for (int i = 0; i < vecSize; i++) {
       assertEquals(i % 2, vecRowBlock.getBool(0, i));
       assertTrue(1 == vecRowBlock.getInt2(1, i));
@@ -209,8 +209,10 @@ public class TestVecRowBlock {
       assertEquals(i, vecRowBlock.getInt8(3, i));
       assertTrue(i == vecRowBlock.getFloat4(4, i));
       assertTrue(i == vecRowBlock.getFloat8(5, i));
-      assertEquals("colabcdefghijklmnopqrstu1", (vecRowBlock.getString(6, i)));
-      assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getString(7, i)));
+      assertEquals("colabcdefghijklmnopqrstu1", (vecRowBlock.getVarcharAsString(6, i)));
+      assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getVarcharAsString(7, i)));
+      vecRowBlock.getFixedText(8, i, bytes);
+      assertTrue(Arrays.equals("abcd".getBytes(), bytes));
     }
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
@@ -254,11 +256,11 @@ public class TestVecRowBlock {
       vecRowBlock.putFloat4(3, i, i);
       vecRowBlock.putFloat8(4, i, i);
       if (i % 8 == 0) {
-        vecRowBlock.putText(5, i, "1998-09-01".getBytes());
+        vecRowBlock.putVarText(5, i, "1998-09-01".getBytes());
       } else {
-        vecRowBlock.putText(5, i, "1111-11-01".getBytes());
+        vecRowBlock.putVarText(5, i, "1111-11-01".getBytes());
       }
-      vecRowBlock.putText(6, i, "1998-09-01".getBytes());
+      vecRowBlock.putVarText(6, i, "1998-09-01".getBytes());
     }
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
@@ -271,11 +273,11 @@ public class TestVecRowBlock {
       assertTrue(i == vecRowBlock.getFloat4(3, i));
       assertTrue(i == vecRowBlock.getFloat8(4, i));
       if (i % 8 == 0) {
-        assertEquals("1998-09-01", (vecRowBlock.getString(5, i)));
+        assertEquals("1998-09-01", (vecRowBlock.getVarcharAsString(5, i)));
       } else {
-        assertEquals("1111-11-01", (vecRowBlock.getString(5, i)));
+        assertEquals("1111-11-01", (vecRowBlock.getVarcharAsString(5, i)));
       }
-      assertEquals("1998-09-01", (vecRowBlock.getString(6, i)));
+      assertEquals("1998-09-01", (vecRowBlock.getVarcharAsString(6, i)));
     }
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
@@ -500,7 +502,7 @@ public class TestVecRowBlock {
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < vecSize; i++) {
       byte [] bytes = ("abcdef_" + i).getBytes(Charset.defaultCharset());
-      vecRowBlock.putText(5, i, bytes, 0, bytes.length);
+      vecRowBlock.putVarText(5, i, bytes, 0, bytes.length);
     }
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
@@ -508,7 +510,7 @@ public class TestVecRowBlock {
     byte [] str = new byte[50];
     long readStart = System.currentTimeMillis();
     for (int i = 0; i < vecSize; i++) {
-      int len = vecRowBlock.getText(5, i, str);
+      int len = vecRowBlock.getVarText(5, i, str);
       assertEquals(("abcdef_" + i), new String(str, 0, len));
     }
     long readEnd = System.currentTimeMillis();
@@ -666,11 +668,11 @@ public class TestVecRowBlock {
       vecRowBlock.putInt8(3, rowIdx, i);
       vecRowBlock.putFloat4(4, rowIdx, i);
       vecRowBlock.putFloat8(5, rowIdx, i);
-      vecRowBlock.putText(6, rowIdx, "colabcdefghijklmnopqrstu1".getBytes());
+      vecRowBlock.putVarText(6, rowIdx, "colabcdefghijklmnopqrstu1".getBytes());
       byte [] result = new byte[50];
-      int len = vecRowBlock.getText(6, rowIdx, result);
+      int len = vecRowBlock.getVarText(6, rowIdx, result);
       assertEquals("colabcdefghijklmnopqrstu1", new String(result, 0, len));
-      vecRowBlock.putText(7, rowIdx, "colabcdefghijklmnopqrstu2".getBytes());
+      vecRowBlock.putVarText(7, rowIdx, "colabcdefghijklmnopqrstu2".getBytes());
 
       rowIdx++;
 
@@ -726,11 +728,11 @@ public class TestVecRowBlock {
       vecRowBlock.putInt8(3, vectorIdx, i);
       vecRowBlock.putFloat4(4, vectorIdx, i);
       vecRowBlock.putFloat8(5, vectorIdx, i);
-      vecRowBlock.putText(6, vectorIdx, "colabcdefghijklmnopqrstu1".getBytes());
+      vecRowBlock.putVarText(6, vectorIdx, "colabcdefghijklmnopqrstu1".getBytes());
       byte[] result = new byte[50];
-      int len = vecRowBlock.getText(6, vectorIdx, result);
+      int len = vecRowBlock.getVarText(6, vectorIdx, result);
       assertEquals("colabcdefghijklmnopqrstu1", new String(result, 0, len));
-      vecRowBlock.putText(7, vectorIdx, "colabcdefghijklmnopqrstu2".getBytes());
+      vecRowBlock.putVarText(7, vectorIdx, "colabcdefghijklmnopqrstu2".getBytes());
 
       vectorIdx++;
 

@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.storage.columnar;
 
+import com.google.common.primitives.Longs;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Unsafe;
@@ -27,8 +28,7 @@ public class UnsafeUtil {
   public static final Unsafe unsafe;
 
   static {
-    // fetch theUnsafe object
-    Field field = null;
+    Field field;
     try {
       field = Unsafe.class.getDeclaredField("theUnsafe");
 
@@ -100,5 +100,50 @@ public class UnsafeUtil {
 
   public static void putLong(long addr, int index, long val) {
     unsafe.putLong(addr + (index * SizeOf.SIZE_OF_LONG), val);
+  }
+
+  public static void putBytes(long addr, byte [] val, int srcPos, int length) {
+    unsafe.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcPos, null, addr, length);
+  }
+
+  public static void getBytes(long addr, byte [] val, int offset, int length) {
+    unsafe.copyMemory(addr, 0, val, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+  }
+
+  public static boolean equalStrings(long thisAddr, int len1, long anotherAddr, int len2) {
+    if (len1 != len2) {
+      return false;
+    }
+
+    int minLength = Math.min(len1, len2);
+    int minWords = minLength / Longs.BYTES;
+
+    /*
+       * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
+       * time is no slower than comparing 4 bytes at a time even on 32-bit.
+       * On the other hand, it is substantially faster on 64-bit.
+       */
+    for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
+      long lw = UnsafeUtil.unsafe.getLong(thisAddr);
+      long rw = UnsafeUtil.unsafe.getLong(anotherAddr);
+      thisAddr += SizeOf.SIZE_OF_LONG;
+      anotherAddr += SizeOf.SIZE_OF_LONG;
+
+      long diff = lw ^ rw;
+
+      if (diff != 0) {
+        return false;
+      }
+    }
+
+    // The epilogue to cover the last (minLength % 8) elements.
+    for (int i = minWords * Longs.BYTES; i < minLength; i++) {
+      byte r = (byte) (UnsafeUtil.unsafe.getByte(thisAddr++) ^ UnsafeUtil.unsafe.getByte(anotherAddr++));
+      if (r != 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

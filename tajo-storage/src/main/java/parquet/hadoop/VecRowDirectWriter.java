@@ -68,6 +68,7 @@ class VecRowDirectWriter {
   private int columnNum;
   private Type[] fieldTypes;
   private TajoDataTypes.Type [] tajoDataTypes;
+  private int [] maxLens;
 
   public VecRowDirectWriter(
       ParquetFileWriter w,
@@ -99,7 +100,9 @@ class VecRowDirectWriter {
     }
     tajoDataTypes = new TajoDataTypes.Type[tajoSchema.size()];
     for (int i = 0; i < tajoSchema.size(); i++) {
-      tajoDataTypes[i] = tajoSchema.getColumn(i).getDataType().getType();
+      TajoDataTypes.DataType dataType = tajoSchema.getColumn(i).getDataType();
+      tajoDataTypes[i] = dataType.getType();
+      maxLens[i] = dataType.getLength();
     }
 
     initStore();
@@ -138,6 +141,11 @@ class VecRowDirectWriter {
         case BOOLEAN:
           recordConsumer.addBoolean(vecRowBlock.getBool(columnIdx, rowIdx) == 1);
           break;
+        case CHAR:
+          byte [] bytes = new byte[maxLens[columnIdx]];
+          vecRowBlock.getFixedText(columnIdx, rowIdx, bytes);
+          recordConsumer.addBinary(Binary.fromByteArray(bytes));
+          break;
         case BIT:
         case INT2:
           recordConsumer.addInteger(vecRowBlock.getInt2(columnIdx, rowIdx));
@@ -154,15 +162,14 @@ class VecRowDirectWriter {
         case FLOAT8:
           recordConsumer.addDouble(vecRowBlock.getFloat8(columnIdx, rowIdx));
           break;
-        case CHAR:
         case TEXT:
-          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getBytes(columnIdx, rowIdx)));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getVarBytes(columnIdx, rowIdx)));
           break;
         case PROTOBUF:
         case BLOB:
         case INET4:
         case INET6:
-          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getBytes(columnIdx, rowIdx)));
+          recordConsumer.addBinary(Binary.fromByteArray(vecRowBlock.getVarBytes(columnIdx, rowIdx)));
           break;
         default:
           break;
