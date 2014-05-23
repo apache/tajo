@@ -19,121 +19,180 @@
 package org.apache.tajo.datum;
 
 import com.google.common.base.Objects;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
 
 public class TimestampDatum extends Datum {
   public static final int SIZE = 8;
-  /** ISO 8601/SQL standard format - ex) 1997-12-17 07:37:16-08 */
-  public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss";
-  public static final String FRACTION_FORMAT_STRING = "yyyy-MM-dd HH:mm:ss.SSS";
-  private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private static final DateTimeFormatter FRACTION_FORMATTER = DateTimeFormat.forPattern(FRACTION_FORMAT_STRING);
-  private final DateTime dateTime;
 
-  public TimestampDatum(int timestamp) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    dateTime = new DateTime((long)timestamp * 1000);
-  }
+  private long timestamp;
 
+  /**
+   *
+   * @param timestamp UTC based
+   */
   public TimestampDatum(long timestamp) {
     super(TajoDataTypes.Type.TIMESTAMP);
-    dateTime = new DateTime(timestamp);
+    this.timestamp = timestamp;
   }
 
-  public TimestampDatum(DateTime dateTime) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = dateTime;
+  /**
+   * It's the same value to asInt8().
+   * @return The Timestamp
+   */
+  public long getTimestamp() {
+    return timestamp;
   }
 
-  TimestampDatum(byte [] bytes) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-    this.dateTime = new DateTime(Bytes.toLong(bytes));
+  public int getEpoch() {
+    return DateTimeUtil.julianTimeToEpoch(timestamp);
   }
 
-  public TimestampDatum(String datetime) {
-    super(TajoDataTypes.Type.TIMESTAMP);
-
-    DateTime tmpDateTime = null;
-    try {
-      tmpDateTime = DateTime.parse(datetime, DEFAULT_FORMATTER);
-    } catch (IllegalArgumentException e) {
-      tmpDateTime = DateTime.parse(datetime, FRACTION_FORMATTER);
-    }
-    this.dateTime = tmpDateTime;
+  public long getJavaTimestamp() {
+    return DateTimeUtil.julianTimeToJavaTime(timestamp);
   }
 
-  public int getUnixTime() {
-    return (int) (dateTime.getMillis() / 1000);
-  }
-
-  public long getMillis() {
-    return dateTime.getMillis();
-  }
-
-  public DateTime getDateTime() {
-    return dateTime;
-  }
 
   public int getCenturyOfEra() {
-    return dateTime.getCenturyOfEra();
-  }
-
-  public int getEra() {
-    return dateTime.getEra();
+    TimeMeta tm = toTimeMeta();
+    return tm.getCenturyOfEra();
   }
 
   public int getYear() {
-    return dateTime.getYear();
+    TimeMeta tm = toTimeMeta();
+    return tm.years;
   }
 
   public int getMonthOfYear() {
-    return dateTime.getMonthOfYear();
-  }
-
-  public int getDayOfWeek() {
-    return dateTime.getDayOfWeek();
+    TimeMeta tm = toTimeMeta();
+    return tm.monthOfYear;
   }
 
   public int getDayOfYear() {
-    return dateTime.getDayOfYear();
+    TimeMeta tm = toTimeMeta();
+    return tm.getDayOfYear();
+  }
+
+  public int getDayOfWeek() {
+    TimeMeta tm = toTimeMeta();
+    return tm.getDayOfYear();
+  }
+
+  public int getWeekOfYear() {
+    TimeMeta tm = toTimeMeta();
+    return tm.getWeekOfYear();
   }
 
   public int getDayOfMonth() {
-    return dateTime.getDayOfMonth();
+    TimeMeta tm = toTimeMeta();
+    return tm.dayOfMonth;
   }
 
   public int getHourOfDay() {
-    return dateTime.getHourOfDay();
+    TimeMeta tm = toTimeMeta();
+    return tm.hours;
   }
 
   public int getMinuteOfHour() {
-    return dateTime.getMinuteOfHour();
-  }
-
-  public int getSecondOfDay() {
-    return dateTime.getSecondOfDay();
+    TimeMeta tm = toTimeMeta();
+    return tm.minutes;
   }
 
   public int getSecondOfMinute() {
-    return dateTime.getSecondOfMinute();
+    TimeMeta tm = toTimeMeta();
+    return tm.secs;
   }
 
   public int getMillisOfSecond() {
-    return dateTime.getMillisOfSecond();
+    TimeMeta tm = toTimeMeta();
+    return tm.fsecs / 1000;
   }
 
-  public int getWeekyear() {
-    return dateTime.getWeekyear();
+  public int getUnixTime() {
+    return (int)(DateTimeUtil.julianTimeToJavaTime(timestamp) / 1000);
   }
 
-  public int getWeekOfWeekyear() {
-    return dateTime.getWeekOfWeekyear();
+  public String toString() {
+    return asChars();
+  }
+
+  public String asChars(TimeZone timeZone, boolean includeTimeZone) {
+    TimeMeta tm = toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm, timeZone);
+    if (includeTimeZone) {
+      tm.timeZone = timeZone.getRawOffset() / 1000;
+    }
+    return  DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
+  }
+
+  public String toString(TimeZone timeZone, boolean includeTimeZone) {
+    return asChars(timeZone, includeTimeZone);
+  }
+
+  @Override
+  public long asInt8() {
+    return timestamp;
+  }
+
+  @Override
+  public String asChars() {
+    TimeMeta tm = toTimeMeta();
+    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
+  }
+
+  public String toChars(String format) {
+    TimeMeta tm = toTimeMeta();
+
+    return DateTimeFormat.to_char(tm, format);
+  }
+
+  @Override
+  public int size() {
+    return SIZE;
+  }
+
+  @Override
+  public byte [] asByteArray() {
+    return Bytes.toBytes(timestamp);
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.TIME) {
+      return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;
+    } else if (datum.isNull()) {
+      return datum;
+    } else {
+      throw new RuntimeException();
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+      TimestampDatum another = (TimestampDatum) datum;
+      return (timestamp < another.timestamp) ? -1 : ((timestamp > another.timestamp) ? 1 : 0);
+    } else if (datum.isNull()) {
+      return -1;
+    } else {
+      throw new RuntimeException();
+    }
+  }
+
+  public boolean equals(Object obj) {
+    if (obj instanceof TimestampDatum) {
+      TimestampDatum another = (TimestampDatum) obj;
+      return timestamp == another.timestamp;
+    } else {
+      return false;
+    }
   }
 
   @Override
@@ -141,16 +200,17 @@ public class TimestampDatum extends Datum {
     if (datum.type() == TajoDataTypes.Type.INTERVAL) {
       IntervalDatum interval = (IntervalDatum)datum;
 
-      DateTime plusDateTime = null;
+      TimeMeta tm = new TimeMeta();
+      DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+
       if (interval.getMonths() > 0) {
-        plusDateTime = dateTime.plusMonths(interval.getMonths());
-      } else {
-        plusDateTime = dateTime;
+        tm.plusMonths(interval.getMonths());
       }
       if (interval.getMilliSeconds() > 0) {
-        plusDateTime = plusDateTime.plusMillis((int) interval.getMilliSeconds());
+        tm.plusMillis(interval.getMilliSeconds());
       }
-      return new TimestampDatum(plusDateTime);
+
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
 
     } else {
       throw new InvalidOperationException(datum.type());
@@ -163,89 +223,32 @@ public class TimestampDatum extends Datum {
       case INTERVAL:
         IntervalDatum interval = (IntervalDatum)datum;
 
-        DateTime minusDateTime = null;
+        TimeMeta tm = new TimeMeta();
+        DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+
         if (interval.getMonths() > 0) {
-          minusDateTime = dateTime.minusMonths(interval.getMonths());
-        } else {
-          minusDateTime = dateTime;
+          tm.plusMonths(0 - interval.getMonths());
         }
         if (interval.getMilliSeconds() > 0) {
-          minusDateTime = minusDateTime.minusMillis((int)interval.getMilliSeconds());
+          tm.plusMillis(0 - interval.getMilliSeconds());
         }
-        return new TimestampDatum(minusDateTime);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       case TIMESTAMP:
-        return new IntervalDatum(dateTime.getMillis() - ((TimestampDatum)datum).dateTime.getMillis());
+        return new IntervalDatum((timestamp - ((TimestampDatum)datum).timestamp) / 1000);
       default:
         throw new InvalidOperationException(datum.type());
     }
   }
 
   @Override
-  public long asInt8() {
-    return dateTime.getMillis();
-  }
-
-  public String toString() {
-    return asChars();
-  }
-
-  @Override
-  public String asChars() {
-    if (getMillisOfSecond() > 0) {
-      return StringUtils.stripEnd(dateTime.toString(FRACTION_FORMATTER), "0");
-    } else {
-      return dateTime.toString(DEFAULT_FORMATTER);
-    }
-  }
-
-  public String toChars(DateTimeFormatter format) {
-    return dateTime.toString(format);
-  }
-
-  @Override
-  public int size() {
-    return SIZE;
-  }
-
-  @Override
-  public byte [] asByteArray() {
-    return Bytes.toBytes(dateTime.getMillis());
-  }
-
-  @Override
-  public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
-      return DatumFactory.createBool(dateTime.equals(((TimestampDatum) datum).dateTime));
-    } else if (datum.isNull()) {
-      return datum;
-    } else {
-      throw new InvalidOperationException();
-    }
-  }
-
-  @Override
-  public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-      return dateTime.compareTo(((TimestampDatum)datum).dateTime);
-    } else if (datum instanceof NullDatum || datum.isNull()) {
-      return -1;
-    } else {
-      throw new InvalidOperationException();
-    }
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof TimestampDatum) {
-      TimestampDatum another = (TimestampDatum) obj;
-      return dateTime.isEqual(another.dateTime);
-    } else {
-      return false;
-    }
-  }
-
-  @Override
   public int hashCode(){
-     return Objects.hashCode(dateTime);
+     return Objects.hashCode(timestamp);
+  }
+
+  public TimeMeta toTimeMeta() {
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+
+    return tm;
   }
 }

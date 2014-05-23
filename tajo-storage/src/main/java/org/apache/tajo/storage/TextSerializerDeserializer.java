@@ -22,6 +22,7 @@ import com.google.protobuf.Message;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.util.Bytes;
@@ -77,10 +78,18 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case FLOAT8:
       case INET4:
       case DATE:
-      case TIME:
-      case TIMESTAMP:
       case INTERVAL:
         bytes = datum.asTextBytes();
+        length = bytes.length;
+        out.write(bytes);
+        break;
+      case TIME:
+        bytes = ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), true).getBytes();
+        length = bytes.length;
+        out.write(bytes);
+        break;
+      case TIMESTAMP:
+        bytes = ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
@@ -158,7 +167,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case TIMESTAMP:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimeStamp(new String(bytes, offset, length));
+            : DatumFactory.createTimestamp(new String(bytes, offset, length));
         break;
       case INTERVAL:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()

@@ -21,9 +21,8 @@ package org.apache.tajo.datum;
 import com.google.common.base.Objects;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalTime;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -231,28 +230,32 @@ public class IntervalDatum extends Datum {
       case INTERVAL:
         IntervalDatum other = (IntervalDatum) datum;
         return new IntervalDatum(months + other.months, millieconds + other.millieconds);
-      case DATE:
-        LocalDate date = ((DateDatum)datum).getDate();
-        LocalDate localDate;
-        if (months > 0) {
-          localDate = date.plusMonths(months);
-        } else {
-          localDate = date;
+      case DATE: {
+        DateDatum dateDatum = (DateDatum) datum;
+        TimeMeta tm = dateDatum.toTimeMeta();
+        tm.plusMillis(getMilliSeconds());
+        if (getMonths() > 0) {
+          tm.plusMonths(getMonths());
         }
-        return new TimestampDatum(localDate.toDateTimeAtStartOfDay().getMillis() + millieconds);
-      case TIME:
-        LocalTime localTime = ((TimeDatum)datum).getTime();
-        localTime = localTime.plusMillis((int) millieconds);
-        return new TimeDatum(localTime);
-      case TIMESTAMP:
-        DateTime dateTime = ((TimestampDatum) datum).getDateTime();
+        DateTimeUtil.toUTCTimezone(tm);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
+      case TIME: {
+        TimeMeta tm = ((TimeDatum) datum).toTimeMeta();
+        tm.plusMillis(millieconds);
+        return new TimeDatum(DateTimeUtil.toTime(tm));
+      }
+      case TIMESTAMP: {
+        TimeMeta tm = new TimeMeta();
+        DateTimeUtil.toJulianTimeMeta(((TimestampDatum) datum).asInt8(), tm);
         if (months > 0) {
-          dateTime = dateTime.plusMonths(months);
+          tm.plusMonths(months);
         }
         if (millieconds > 0) {
-          dateTime = dateTime.plusMillis((int) millieconds);
+          tm.plusMillis(millieconds);
         }
-        return new TimestampDatum(dateTime);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
       default:
         throw new InvalidOperationException(datum.type());
     }

@@ -15,6 +15,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-825: Datetime type refactoring. (Hyoungjun Kim via jihoon)
+
     TAJO-811: add simple fifo scheduler support. (jinho)
 
     TAJO-801: Multiple distinct should be supported. (Hyoungjun Kim via hyunsik)
@@ -40,6 +42,8 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
 
     TAJO-808: Fix pre-commit build failure. (jinho)
  

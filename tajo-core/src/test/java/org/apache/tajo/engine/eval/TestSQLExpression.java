@@ -22,12 +22,15 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
 
@@ -43,9 +46,16 @@ public class TestSQLExpression extends ExprTestBase {
         new String[]{"3", "234.0"});
   }
 
-  @Test(expected = NoSuchFunctionException.class)
+  @Test
   public void testNoSuchFunction() throws IOException {
-    testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});
+    try {
+      testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});
+      fail("This test should throw NoSuchFunctionException");
+    } catch (NoSuchFunctionException e) {
+      //success
+    } catch (Exception e) {
+      fail("This test should throw NoSuchFunctionException: " + e);
+    }
   }
 
   @Test
@@ -841,10 +851,10 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testCastWithNestedFunction() throws IOException {
-    int timestamp = (int) (System.currentTimeMillis() / 1000);
-    TimestampDatum expected = new TimestampDatum(timestamp);
-    testSimpleEval(String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", timestamp),
-        new String[] {expected.asChars()});
+    int unixtime = 1389071574;//(int) (System.currentTimeMillis() / 1000);
+    TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    testSimpleEval(String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", unixtime),
+        new String[] {expected.asChars(TajoConf.getCurrentTimeZone(), true)});
   }
 
   @Test
@@ -856,11 +866,13 @@ public class TestSQLExpression extends ExprTestBase {
         new String[]{"123.0", "234.0"});
     testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
         new String[]{"123.0", "234.0"});
+
+    TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01+09");
     testEval(schema, "table1", "1980-04-01 01:50:01,234", "select col1::timestamp as t1, col2::float from table1 " +
         "where t1 = '1980-04-01 01:50:01'::timestamp",
-        new String[]{"1980-04-01 01:50:01", "234.0"});
+        new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true), "234.0"});
 
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {"1980-04-01 01:50:01"});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {timestamp.asChars(TajoConf.getCurrentTimeZone(), true)});
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String [] {"1980-04-01 01:50:01"});
 
     testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String [] {"100000"});

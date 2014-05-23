@@ -34,7 +34,8 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
-import org.joda.time.DateTime;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Map;
 import java.util.Stack;
@@ -611,7 +612,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc countRows = catalog.getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new DataType[] {});
     if (countRows == null) {
-      throw new NoSuchFunctionException(countRows.getSignature(), new DataType[]{});
+      throw new NoSuchFunctionException(expr.getSignature(), new DataType[]{});
     }
 
     try {
@@ -704,8 +705,16 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitDateLiteral(Context context, Stack<Expr> stack, DateLiteral expr) throws PlanningException {
     DateValue dateValue = expr.getDate();
-    int [] dates = dateToIntArray(dateValue.getYears(), dateValue.getMonths(), dateValue.getDays());
-    return new ConstEval(new DateDatum(dates[0], dates[1], dates[2]));
+    int[] dates = dateToIntArray(dateValue.getYears(), dateValue.getMonths(), dateValue.getDays());
+
+    TimeMeta tm = new TimeMeta();
+    tm.years = dates[0];
+    tm.monthOfYear = dates[1];
+    tm.dayOfMonth = dates[2];
+
+    DateTimeUtil.j2date(DateTimeUtil.date2j(dates[0], dates[1], dates[2]), tm);
+
+    return new ConstEval(new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth)));
   }
 
   @Override
@@ -721,14 +730,20 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         timeValue.getMinutes(),
         timeValue.getSeconds(),
         timeValue.getSecondsFraction());
-    DateTime dateTime;
+
+    long timestamp;
     if (timeValue.hasSecondsFraction()) {
-      dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2], times[3]);
+      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+          times[3] * 1000);
     } else {
-      dateTime = new DateTime(dates[0], dates[1], dates[2], times[0], times[1], times[2]);
+      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
     }
 
-    return new ConstEval(new TimestampDatum(dateTime));
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+    DateTimeUtil.toUTCTimezone(tm);
+
+    return new ConstEval(new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm)));
   }
 
   @Override
@@ -744,13 +759,17 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         timeValue.getSeconds(),
         timeValue.getSecondsFraction());
 
-    TimeDatum datum;
+    long time;
     if (timeValue.hasSecondsFraction()) {
-      datum = new TimeDatum(times[0], times[1], times[2], times[3]);
+      time = DateTimeUtil.toTime(times[0], times[1], times[2], times[3] * 1000);
     } else {
-      datum = new TimeDatum(times[0], times[1], times[2]);
+      time = DateTimeUtil.toTime(times[0], times[1], times[2], 0);
     }
-    return new ConstEval(datum);
+    TimeDatum timeDatum = new TimeDatum(time);
+    TimeMeta tm = timeDatum.toTimeMeta();
+    DateTimeUtil.toUTCTimezone(tm);
+
+    return new ConstEval(new TimeDatum(DateTimeUtil.toTime(tm)));
   }
 
   public static int [] dateToIntArray(String years, String months, String days)
