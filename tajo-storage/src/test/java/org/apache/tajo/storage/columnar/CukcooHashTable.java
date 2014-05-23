@@ -64,18 +64,6 @@ public class CukcooHashTable {
     rehash = readerWriter.newBucketBuffer();
   }
 
-  public static interface BucketReaderWriter<P> {
-    public void write(long bucketPtr, P payload);
-    public void write(long bucketPtr, UnsafeBuf buf);
-    public UnsafeBuf newBucketBuffer();
-    public void getBucket(long bucketPtr, UnsafeBuf buf);
-    public boolean checkFill(long bucketPtr);
-    public UnsafeBuf getKey(long bucketPtr);
-    public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2);
-    public long hashFunc(UnsafeBuf key);
-    public long hashKey(P payload);
-  }
-
   public int bucketSize() {
     return bucketNum;
   }

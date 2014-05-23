@@ -132,7 +132,7 @@ public class TestCukcooHashTable {
     System.out.println((endRandom - startRandom) + " msc random read time");
   }
 
-  public static class LongKeyValueReaderWriter implements CukcooHashTable.BucketReaderWriter<Pair<Long, Long>> {
+  public static class LongKeyValueReaderWriter implements BucketReaderWriter<Pair<Long, Long>> {
 
     @Override
     public void write(long bucketPtr, Pair<Long, Long> payload) {
@@ -164,7 +164,7 @@ public class TestCukcooHashTable {
 
     @Override
     public boolean checkFill(long bucketPtr) {
-      return false;
+      return UnsafeUtil.unsafe.getLong(bucketPtr, 0) == 0;
     }
 
     @Override
