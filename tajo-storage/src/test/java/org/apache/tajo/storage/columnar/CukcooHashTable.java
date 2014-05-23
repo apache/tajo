@@ -69,10 +69,10 @@ public class CukcooHashTable {
     public void write(long bucketPtr, UnsafeBuf buf);
     public UnsafeBuf newBucketBuffer();
     public void getBucket(long bucketPtr, UnsafeBuf buf);
+    public boolean checkFill(long bucketPtr);
     public UnsafeBuf getKey(long bucketPtr);
     public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2);
-    public long hashFunc1(UnsafeBuf key);
-    public long hashFunc2(UnsafeBuf key);
+    public long hashFunc(UnsafeBuf key);
     public long hashKey(P payload);
   }
 
@@ -147,7 +147,7 @@ public class CukcooHashTable {
     UnsafeBuf currentBuf = new UnsafeBuf(currentBuffer);
     row.copyTo(currentBuf);
 
-    int bucketId = (int) (readerWriter.hashFunc1(currentBuf) & modMask);
+    int bucketId = (int) (readerWriter.hashFunc(currentBuf) & modMask);
     while(loopCount < maxLoopNum) {
       long keyPtr = getKeyPtr(bucketPtr, bucketId + 1);
       readerWriter.getBucket(keyPtr, kickedBucket[switchIdx]);
@@ -160,9 +160,9 @@ public class CukcooHashTable {
       readerWriter.write(keyPtr, currentBuf);
       currentBuf = kickedBucket[switchIdx];
 
-      int bucketIdFromHash1 = (int) (readerWriter.hashFunc1(currentBuf) & modMask);
+      int bucketIdFromHash1 = (int) (readerWriter.hashFunc(currentBuf) & modMask);
       if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
-        bucketId = (int) (readerWriter.hashFunc1(currentBuf) >> NBITS & modMask);
+        bucketId = (int) (readerWriter.hashFunc(currentBuf) >> NBITS & modMask);
       } else {
         bucketId = bucketIdFromHash1;
       }
@@ -195,7 +195,7 @@ public class CukcooHashTable {
   }
 
   public boolean contains(UnsafeBuf unsafeBuf) {
-    long hashKey = readerWriter.hashFunc1(unsafeBuf);
+    long hashKey = readerWriter.hashFunc(unsafeBuf);
 
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
@@ -209,7 +209,7 @@ public class CukcooHashTable {
   }
 
   public Long lookup(UnsafeBuf key) {
-    long hashKey = readerWriter.hashFunc1(key);
+    long hashKey = readerWriter.hashFunc(key);
 
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number

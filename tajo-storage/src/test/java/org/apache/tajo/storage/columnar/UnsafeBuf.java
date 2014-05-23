@@ -29,11 +29,11 @@ public class UnsafeBuf {
   int length;
   Object reference;
 
-  public UnsafeBuf(ByteBuffer bb) {
-    DirectBuffer df = (DirectBuffer) bb;
+  public UnsafeBuf(ByteBuffer bytebuffer) {
+    DirectBuffer df = (DirectBuffer) bytebuffer;
     address = df.address();
-    length = bb.capacity();
-    reference = bb;
+    length = bytebuffer.capacity();
+    reference = bytebuffer;
   }
 
   public UnsafeBuf(long address, int length) {

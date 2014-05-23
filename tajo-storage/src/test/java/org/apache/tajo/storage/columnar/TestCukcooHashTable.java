@@ -43,7 +43,7 @@ public class TestCukcooHashTable {
     bb.order(ByteOrder.nativeOrder());
     UnsafeBuf unsafeBuf = new UnsafeBuf(bb);
     long writeStart = System.currentTimeMillis();
-    for (int i = 1; i < (1 << 25); i++) {
+    for (int i = (1 << 1) - 1; i < (1 << 27); i++) {
 
       Long v = new Long(i);
       unsafeBuf.putLong(0, v);
@@ -59,9 +59,9 @@ public class TestCukcooHashTable {
       found = hashTable.lookup(unsafeBuf);
       assertEquals(v, found);
 
-      if (hashTable.size() != i) {
-        System.out.println("Error point!");
-      }
+//      if (hashTable.size() != i) {
+//        System.out.println("Error point!");
+//      }
     }
     long writeEnd = System.currentTimeMillis();
 
@@ -69,7 +69,7 @@ public class TestCukcooHashTable {
     System.out.println(">> Size: " + hashTable.size());
 
     long start = System.currentTimeMillis();
-    for (int i = 1; i < (1 << 25); i++) {
+    for (int i = (1 << 1); i < (1 << 27); i++) {
       Long val = new Long(i);
       unsafeBuf.putLong(0, val);
       assertEquals(val, hashTable.lookup(unsafeBuf));
@@ -79,8 +79,8 @@ public class TestCukcooHashTable {
 
     long startRandom = System.currentTimeMillis();
     Random rnd = new Random(System.currentTimeMillis());
-    for (int i = 1; i < (1 << 25); i++) {
-      Long val = new Long(rnd.nextInt(1 << 23));
+    for (int i = (1 << 1); i < (1 << 27); i++) {
+      Long val = new Long(rnd.nextInt(1 << 27));
       unsafeBuf.putLong(0, val);
       assertEquals(val, hashTable.lookup(unsafeBuf));
     }
@@ -163,12 +163,17 @@ public class TestCukcooHashTable {
     }
 
     @Override
+    public boolean checkFill(long bucketPtr) {
+      return false;
+    }
+
+    @Override
     public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2) {
       return key1.getLong(0) == key2.getLong(0);
     }
 
     @Override
-    public long hashFunc1(UnsafeBuf key) {
+    public long hashFunc(UnsafeBuf key) {
       return key.getLong(0);
     }
 
