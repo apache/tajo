@@ -103,6 +103,7 @@ public class PartitionMergeScanExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
+    inputStats.reset();
     for (SeqScanExec scanner : scanners) {
       scanner.close();
       TableStats scannerTableStsts = scanner.getInputStats();
@@ -138,6 +139,15 @@ public class PartitionMergeScanExec extends PhysicalExec {
 
   @Override
   public TableStats getInputStats() {
+    if (iterator != null) {
+      inputStats.reset();
+      for (SeqScanExec scanner : scanners) {
+        TableStats scannerTableStsts = scanner.getInputStats();
+        if (scannerTableStsts != null) {
+          inputStats.merge(scannerTableStsts);
+        }
+      }
+    }
     return inputStats;
   }
 }

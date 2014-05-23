@@ -47,6 +47,10 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   @Expose private List<ColumnStats> columnStatses = null; // repeated
 
   public TableStats() {
+    reset();
+  }
+
+  public void reset() {
     numRows = 0l;
     numBytes = 0l;
     numBlocks = 0;

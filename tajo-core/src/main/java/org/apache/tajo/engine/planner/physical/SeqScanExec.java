@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.ConstEval;
@@ -32,15 +33,20 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.utils.*;
+import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.engine.utils.TupleCache;
+import org.apache.tajo.engine.utils.TupleCacheKey;
+import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 public class SeqScanExec extends PhysicalExec {
@@ -60,17 +66,29 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
+  private String planInfo;
+
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                      ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
+    this.planInfo = plan.toString();
     this.qual = plan.getQual();
     this.fragments = fragments;
 
     if (plan.isBroadcastTable()) {
+      String pathNameKey = "";
+      if (fragments != null) {
+        for (FragmentProto f : fragments) {
+          FileFragment fileFragement = (FileFragment) FragmentConvertor.convert(
+              context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
+          pathNameKey += fileFragement.getPath().getParent().getName();
+        }
+      }
+
       cacheKey = new TupleCacheKey(
-          context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName());
+          context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
     }
   }
 
@@ -182,7 +200,11 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-
+    System.out.println("=======================>" + plan.getTableDesc().getName());
+    for (FragmentProto f: fragments) {
+      FileFragment ff = (FileFragment)FragmentConvertor.convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
+      System.out.println(">>>>>>>>>>>>>>>>>>>" + ff.getPath());
+    }
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
@@ -308,9 +330,9 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   public String toString() {
     if (scanner != null) {
-      return "SeqScanExec:" + plan.getTableName() + "," + scanner.getClass().getName();
+      return "SeqScanExec:" + planInfo + "," + scanner.getClass().getName();
     } else {
-      return "SeqScanExec:" + plan.getTableName();
+      return "SeqScanExec:" + planInfo;
     }
   }
 }

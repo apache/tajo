@@ -21,10 +21,12 @@ package org.apache.tajo.engine.utils;
 public class TupleCacheKey {
   String ebId;
   String tableName;
+  String pathName;
 
-  public TupleCacheKey(String ebId, String tableName) {
+  public TupleCacheKey(String ebId, String tableName, String pathName) {
     this.ebId = ebId;
     this.tableName = tableName;
+    this.pathName = pathName;
   }
 
   public String getEbId() {
@@ -43,6 +45,14 @@ public class TupleCacheKey {
     this.tableName = tableName;
   }
 
+  public String getPathName() {
+    return pathName;
+  }
+
+  public void setPathName(String pathName) {
+    this.pathName = pathName;
+  }
+
   @Override
   public int hashCode() {
     return toString().hashCode();
@@ -55,6 +65,6 @@ public class TupleCacheKey {
 
   @Override
   public String toString() {
-    return ebId + "," + tableName;
+    return ebId + "," + tableName + "," + pathName;
   }
 }
