@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Unsafe;

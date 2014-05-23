@@ -16,13 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar.map;
+package org.apache.tajo.storage.vector;
 
-import org.apache.tajo.storage.columnar.UnsafeUtil;
-import sun.misc.Unsafe;
+public class VecJitCodeGen {
 
-public abstract class MapBinaryOp {
-  protected static final Unsafe unsafe = UnsafeUtil.unsafe;
-
-  public abstract void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId);
 }

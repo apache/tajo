@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;

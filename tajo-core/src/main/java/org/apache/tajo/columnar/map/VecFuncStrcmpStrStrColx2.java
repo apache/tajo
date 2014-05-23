@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar.map;
+package org.apache.tajo.columnar.map;
 
 import com.google.common.primitives.Longs;
-import org.apache.tajo.storage.columnar.SizeOf;
-import org.apache.tajo.storage.columnar.UnsafeUtil;
-import sun.misc.Unsafe;
+import org.apache.tajo.storage.vector.SizeOf;
 
-public class SelStrEqStrColStrColOp {
-  static Unsafe unsafe = UnsafeUtil.unsafe;
-  public int sel(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
-    int selNum = 0;
-
+public class VecFuncStrcmpStrStrColx2 extends MapBinaryOp {
+  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
     outest:
     for (int rowIdx = 0; rowIdx < vecnum; rowIdx++) {
       boolean found = false;
@@ -49,7 +44,7 @@ public class SelStrEqStrColStrColOp {
       /*
          * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
          * time is no slower than comparing 4 bytes at a time even on 32-bit.
-         * On the other hand, it is substantially faster on 64-bit.
+         * On the other hand, it is substantially faster on 4-bit.
          */
       for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
         long lw = unsafe.getLong(lstrAddr);
@@ -60,6 +55,29 @@ public class SelStrEqStrColStrColOp {
         long diff = lw ^ rw;
 
         if (diff != 0) {
+          // Use binary search
+          int n = 0;
+          int y;
+          int x = (int) diff;
+          if (x == 0) {
+            x = (int) (diff >>> 32);
+            n = 32;
+          }
+
+          y = x << 16;
+          if (y == 0) {
+            n += 16;
+          } else {
+            x = y;
+          }
+
+          y = x << 8;
+          if (y == 0) {
+            n += 8;
+          }
+
+          unsafe.putInt(result, (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL)));
+          result += SizeOf.SIZE_OF_INT;
           continue outest;
         }
       }
@@ -70,21 +88,17 @@ public class SelStrEqStrColStrColOp {
       for (int i = minWords * Longs.BYTES; i < minLength; i++) {
         byte r = (byte) (unsafe.getByte(lstrAddr++) - unsafe.getByte(rstrAddr++));
         if (r != 0) {
-          unsafe.putInt(result, rowIdx);
+          unsafe.putInt(result, r);
           result += SizeOf.SIZE_OF_INT;
           found = true;
-          selNum++;
           continue outer;
         }
       }
 
       if (!found) {
-        unsafe.putInt(result, rowIdx);
-        selNum++;
+        unsafe.putInt(result, lstrLen - rstrLen);
         result += SizeOf.SIZE_OF_INT;
       }
     }
-
-    return selNum;
   }
 }

@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.util.FileUtil;
-
-import java.nio.ByteBuffer;
 
 public class CukcooHashTable<K, V, P> {
   static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16

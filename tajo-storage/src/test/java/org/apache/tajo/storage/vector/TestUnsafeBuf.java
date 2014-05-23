@@ -16,8 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
-public class VecJitCodeGen {
+import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Created by hyunsik on 5/23/14.
+ */
+public class TestUnsafeBuf {
+  @Test
+  public void testUnsafeBuf() {
+    ByteBuffer bb = ByteBuffer.allocateDirect(16);
+    UnsafeBuf b1 = new UnsafeBuf(bb);
+    UnsafeBuf b2 = b1.copyOf();
+    assertTrue(b1.address != b2.address);
+  }
+
+  @Test
+  public void testEquals() {
+    ByteBuffer bb = ByteBuffer.allocateDirect(16);
+    UnsafeBuf b1 = new UnsafeBuf(bb);
+    UnsafeBuf b2 = b1.copyOf();
+    assertEquals(b1, b2);
+
+    b1.putLong(0, 0xFF);
+    assertFalse(b1.equals(b2));
+    b2.putLong(0, 0xFF);
+    assertTrue(b1.equals(b2));
+  }
 }

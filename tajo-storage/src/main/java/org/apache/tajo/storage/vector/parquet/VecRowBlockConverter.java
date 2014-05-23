@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar.parquet;
+package org.apache.tajo.storage.vector.parquet;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;

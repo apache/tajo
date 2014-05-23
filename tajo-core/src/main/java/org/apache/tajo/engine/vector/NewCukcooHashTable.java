@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.vector;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.columnar.VecRowBlock;
+import org.apache.tajo.storage.vector.VecRowBlock;
 
 public class NewCukcooHashTable {
 

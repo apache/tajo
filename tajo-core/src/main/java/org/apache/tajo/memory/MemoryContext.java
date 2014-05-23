@@ -18,7 +18,7 @@
 
 package org.apache.tajo.memory;
 
-import org.apache.tajo.storage.columnar.UnsafeUtil;
+import org.apache.tajo.storage.vector.UnsafeUtil;
 
 /**
  * It's very simple memory manager.

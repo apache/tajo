@@ -1,24 +1,17 @@
 package org.apache.tajo.experiment;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.client.ResultSetUtil;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
@@ -31,9 +24,8 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.columnar.VecRowBlock;
+import org.apache.tajo.storage.vector.VecRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -44,9 +36,7 @@ import parquet.hadoop.VecRowParquetReader;
 import parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -274,7 +264,7 @@ public class TpchQ1 {
   }
 
   @Test
-  public void testReadParquet() throws IOException {
+  public void testReadParquetMockup() throws IOException {
     Configuration conf = new Configuration();
 
     KeyValueSet KeyValueSet = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);

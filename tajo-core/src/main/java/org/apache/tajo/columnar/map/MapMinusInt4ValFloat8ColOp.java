@@ -16,23 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.columnar.map;
 
-/**
-* Created by hyunsik on 5/23/14.
-*/
-public interface BucketReaderWriter<K, V, P> {
-  public int getPayloadSize();
-  public void write(long bucketPtr, P payload);
-  public void write(long bucketPtr, UnsafeBuf buf);
-  public UnsafeBuf newBucketBuffer();
-  public void getBucket(long bucketPtr, UnsafeBuf buf);
-  public boolean checkFill(long bucketPtr);
-  public K getKey(long bucketPtr);
-  public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2);
-  public long hashFunc(UnsafeBuf key);
-  public long hashFunc(K key);
-  public long hashKey(P payload);
+import org.apache.tajo.storage.vector.SizeOf;
 
-  public V getValue(long bucketPtr);
+public class MapMinusInt4ValFloat8ColOp extends MapBinaryOp {
+
+  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+    for (int i = 0; i < vecnum; i++) {
+      int lval1 = unsafe.getInt(lhs);
+      double rval1 = unsafe.getFloat(rhs);
+      unsafe.putDouble(result, lval1 - rval1);
+
+      result += SizeOf.SIZE_OF_LONG;
+      rhs += SizeOf.SIZE_OF_LONG;
+      lhs += SizeOf.SIZE_OF_LONG;
+    }
+  }
 }

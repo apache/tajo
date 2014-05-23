@@ -21,7 +21,7 @@ package parquet.hadoop;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.columnar.VecRowBlock;
+import org.apache.tajo.storage.vector.VecRowBlock;
 import org.apache.tajo.storage.parquet.TajoSchemaConverter;
 import parquet.column.ParquetProperties;
 import parquet.hadoop.metadata.CompressionCodecName;

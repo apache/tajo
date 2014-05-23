@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Longs;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;

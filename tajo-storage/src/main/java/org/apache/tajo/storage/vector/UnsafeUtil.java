@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import com.google.common.primitives.Longs;
 import org.apache.tajo.catalog.CatalogUtil;

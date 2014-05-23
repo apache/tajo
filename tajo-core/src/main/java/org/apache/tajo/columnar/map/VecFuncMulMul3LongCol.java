@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar.map;
+package org.apache.tajo.columnar.map;
 
-import org.apache.tajo.storage.columnar.SizeOf;
-import org.apache.tajo.storage.columnar.UnsafeUtil;
+import org.apache.tajo.storage.vector.SizeOf;
+import org.apache.tajo.storage.vector.UnsafeUtil;
 
 /**
  * Created by hyunsik on 5/18/14.

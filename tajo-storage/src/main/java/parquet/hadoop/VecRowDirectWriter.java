@@ -20,7 +20,7 @@ package parquet.hadoop;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.columnar.VecRowBlock;
+import org.apache.tajo.storage.vector.VecRowBlock;
 import parquet.Log;
 import parquet.column.ParquetProperties;
 import parquet.column.impl.ColumnWriteStoreImpl;

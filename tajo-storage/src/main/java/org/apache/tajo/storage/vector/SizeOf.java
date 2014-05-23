@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import static sun.misc.Unsafe.ARRAY_BOOLEAN_BASE_OFFSET;
 import static sun.misc.Unsafe.ARRAY_BOOLEAN_INDEX_SCALE;

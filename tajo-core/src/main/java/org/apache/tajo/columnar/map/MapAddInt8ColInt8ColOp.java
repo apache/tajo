@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar.map;
+package org.apache.tajo.columnar.map;
 
-import org.apache.tajo.storage.columnar.SizeOf;
+import org.apache.tajo.storage.vector.SizeOf;
 
 public class MapAddInt8ColInt8ColOp extends MapBinaryOp {
   private static final int LOOP_UNROLLOING_NUM = 4;

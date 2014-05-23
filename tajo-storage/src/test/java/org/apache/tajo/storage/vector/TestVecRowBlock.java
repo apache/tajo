@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.columnar;
+package org.apache.tajo.storage.vector;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -32,10 +32,10 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.columnar.map.MapAddInt8ColInt8ColOp;
-import org.apache.tajo.storage.columnar.map.SelStrEqStrColStrColOp;
-import org.apache.tajo.storage.columnar.map.VecFuncMulMul3LongCol;
-import org.apache.tajo.storage.columnar.map.VecFuncStrcmpStrStrColx2;
+import org.apache.tajo.columnar.map.MapAddInt8ColInt8ColOp;
+import org.apache.tajo.columnar.map.SelStrEqStrColStrColOp;
+import org.apache.tajo.columnar.map.VecFuncMulMul3LongCol;
+import org.apache.tajo.columnar.map.VecFuncStrcmpStrStrColx2;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
