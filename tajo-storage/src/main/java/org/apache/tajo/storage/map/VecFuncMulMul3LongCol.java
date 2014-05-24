@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.columnar.map;
+package org.apache.tajo.storage.map;
 
 import org.apache.tajo.storage.vector.SizeOf;
 import org.apache.tajo.storage.vector.UnsafeUtil;
@@ -39,12 +39,35 @@ public class VecFuncMulMul3LongCol {
     }
   }
 
+  public static void mulmul64FixedCharVector(int vecNum, long resPtr, long valuePtr, int maxLen, long nullFlags,
+                                             int [] selVec) {
+    if (selVec != null) {
+      long actualPtr;
+      long actualResPtr;
+      for (int i = 0 ; i < vecNum; i++) {
+        actualPtr = valuePtr + (selVec[i] * maxLen);
+        actualResPtr = resPtr + (selVec[i] * SizeOf.SIZE_OF_LONG);
+        hash64(0, actualResPtr, actualPtr, 0, maxLen);
+      }
+    } else {
+      throw new RuntimeException("aa");
+    }
+  }
+
   private static final long C1 = 0x87c37b91114253d5L;
   private static final long C2 = 0x4cf5ad432745937fL;
 
   private final static long DEFAULT_SEED = 0;
 
-  public static void hash(long seed, long resultPtr, long ptr, int offset, int length)
+  /**
+   *
+   * @param seed
+   * @param resultPtr
+   * @param ptr
+   * @param offset
+   * @param length
+   */
+  public static void hash128(long seed, long resultPtr, long ptr, int offset, int length)
   {
     final int fastLimit = offset + length - (2 * SizeOf.SIZE_OF_LONG) + 1;
 
@@ -145,14 +168,14 @@ public class VecFuncMulMul3LongCol {
   /**
    * Returns the 64 most significant bits of the Murmur128 hash of the provided value
    */
-  public static long hash64(long seed, long dataPtr, int offset, int length)
+  public static void hash64(long seed, long resultPtr, long valuePtr, int offset, int length)
   {
     final int fastLimit = offset + length - (2 * SizeOf.SIZE_OF_LONG) + 1;
 
     long h1 = seed;
     long h2 = seed;
 
-    long current = dataPtr + offset;
+    long current = valuePtr + offset;
     while (current < fastLimit) {
       long k1 = UnsafeUtil.unsafe.getLong(current);
       current += SizeOf.SIZE_OF_LONG;
@@ -235,7 +258,7 @@ public class VecFuncMulMul3LongCol {
     h1 = mix64(h1);
     h2 = mix64(h2);
 
-    return h1 + h2;
+    UnsafeUtil.unsafe.putLong(resultPtr, h1 + h2);
   }
 
   /**

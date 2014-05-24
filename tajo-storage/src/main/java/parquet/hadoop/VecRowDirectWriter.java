@@ -99,6 +99,7 @@ class VecRowDirectWriter {
       fieldTypes[i] = schema.getType(i);
     }
     tajoDataTypes = new TajoDataTypes.Type[tajoSchema.size()];
+    maxLens = new int[tajoSchema.size()];
     for (int i = 0; i < tajoSchema.size(); i++) {
       TajoDataTypes.DataType dataType = tajoSchema.getColumn(i).getDataType();
       tajoDataTypes[i] = dataType.getType();

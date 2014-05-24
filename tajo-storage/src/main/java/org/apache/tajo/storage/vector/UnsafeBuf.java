@@ -44,6 +44,14 @@ public class UnsafeBuf {
     return address;
   }
 
+  public byte getByte(int offset) {
+    return UnsafeUtil.unsafe.getByte(address + offset);
+  }
+
+  public void putByte(int offset, byte value) {
+    UnsafeUtil.unsafe.putByte(address + offset, value);
+  }
+
   public long getLong(int offset) {
     return UnsafeUtil.unsafe.getLong(address + offset);
   }

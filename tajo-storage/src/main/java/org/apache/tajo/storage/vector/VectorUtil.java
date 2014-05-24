@@ -116,4 +116,21 @@ public class VectorUtil {
     long nullFlagChunk = unsafe.getLong(address);
     return (int) ((nullFlagChunk >> offset) & 1L);
   }
+
+  public static void pivotCharx2(int vecNum, VecRowBlock vecRowBlock, long resPtr, int[] columnIndices,
+                                 int[] selVec) {
+    if (selVec != null) {
+      int selIdx;
+      long writePtr;
+      for (int i = 0; i < vecNum; i++) {
+        selIdx = selVec[i];
+        writePtr = resPtr + (selVec[i] * 2);
+
+        vecRowBlock.getFixedText(columnIndices[0], selIdx, writePtr);
+        vecRowBlock.getFixedText(columnIndices[1], selIdx, writePtr + 1);
+      }
+    } else {
+      throw new RuntimeException("aaa");
+    }
+  }
 }

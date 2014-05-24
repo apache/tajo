@@ -16,31 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.columnar.map;
+package org.apache.tajo.storage.map;
 
 import com.google.common.primitives.Longs;
 import org.apache.tajo.storage.vector.SizeOf;
+import org.apache.tajo.storage.vector.UnsafeUtil;
+import org.apache.tajo.storage.vector.VecRowBlock;
+import sun.misc.Unsafe;
 
-public class VecFuncStrcmpStrStrColx2 extends MapBinaryOp {
-  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
+/**
+ * Example: WHERE l_shipdate <= '1980-04-01'
+ */
+public class SelStrLEFixedStrColVal {
+  static Unsafe unsafe = UnsafeUtil.unsafe;
+
+  public static int sel(int vecNum, int [] sel, VecRowBlock rowBlock, int lhsIdx, byte [] value, long nullFlags, long selId) {
+    int selected = 0;
+
+    long lstrAddr = rowBlock.getValueVecPtr(lhsIdx);
+
     outest:
-    for (int rowIdx = 0; rowIdx < vecnum; rowIdx++) {
-      boolean found = false;
+    for (int rowIdx = 0; rowIdx < vecNum; rowIdx++) {
+      boolean found = true;
 
-      long lstrAddr = unsafe.getAddress(lhs);
-      long rstrAddr = unsafe.getAddress(rhs);
-      lhs += unsafe.ADDRESS_SIZE;
-      rhs += unsafe.ADDRESS_SIZE;
-
-      int lstrLen = unsafe.getShort(lstrAddr);
-      int rstrLen = unsafe.getShort(rstrAddr);
-
-      lstrAddr += SizeOf.SIZE_OF_SHORT;
-      rstrAddr += SizeOf.SIZE_OF_SHORT;
-
-      int minLength = Math.min(lstrLen, rstrLen);
+      int minLength = Math.min(rowBlock.maxLengths[lhsIdx], value.length);
       int minWords = minLength / Longs.BYTES;
 
+      long rhsAddrOffset = Unsafe.ARRAY_BYTE_BASE_OFFSET;
       /*
          * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
          * time is no slower than comparing 4 bytes at a time even on 32-bit.
@@ -48,9 +50,9 @@ public class VecFuncStrcmpStrStrColx2 extends MapBinaryOp {
          */
       for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
         long lw = unsafe.getLong(lstrAddr);
-        long rw = unsafe.getLong(rstrAddr);
+        long rw = unsafe.getLong(value, rhsAddrOffset);
         lstrAddr += SizeOf.SIZE_OF_LONG;
-        rstrAddr += SizeOf.SIZE_OF_LONG;
+        rhsAddrOffset += SizeOf.SIZE_OF_LONG;
 
         long diff = lw ^ rw;
 
@@ -76,29 +78,28 @@ public class VecFuncStrcmpStrStrColx2 extends MapBinaryOp {
             n += 8;
           }
 
-          unsafe.putInt(result, (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL)));
-          result += SizeOf.SIZE_OF_INT;
+          sel[selected] = rowIdx;
+          selected += (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL)) <= 0 ? 1 : 0;
           continue outest;
         }
       }
 
-
-      outer:
       // The epilogue to cover the last (minLength % 8) elements.
       for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-        byte r = (byte) (unsafe.getByte(lstrAddr++) - unsafe.getByte(rstrAddr++));
-        if (r != 0) {
-          unsafe.putInt(result, r);
-          result += SizeOf.SIZE_OF_INT;
-          found = true;
-          continue outer;
+        byte l = unsafe.getByte(lstrAddr++);
+        byte w = unsafe.getByte(value, rhsAddrOffset++);
+        byte r = (byte) (l - w);
+//        byte r = (byte) (unsafe.getByte(lstrAddr++) - unsafe.getByte(value, rhsAddrOffset++));
+        if (r > 0) {
+          found = false;
+          break;
         }
       }
 
-      if (!found) {
-        unsafe.putInt(result, lstrLen - rstrLen);
-        result += SizeOf.SIZE_OF_INT;
-      }
+      sel[selected] = rowIdx;
+      selected += found ? 1 : 0;
     }
+
+    return selected;
   }
 }

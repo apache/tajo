@@ -31,8 +31,8 @@ import java.util.List;
 public class VecRowBlock {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-  private TajoDataTypes.Type [] types;
-  private int [] length;
+  public TajoDataTypes.Type [] types;
+  public int [] maxLengths;
 
   private long fixedAreaPtr;
   private long fixedAreaMemorySize = 0;
@@ -100,11 +100,11 @@ public class VecRowBlock {
   public void init(Schema schema, boolean variableAreaInitNeeded) {
 
     this.types = new TajoDataTypes.Type[schema.size()];
-    this.length = new int[schema.size()];
+    this.maxLengths = new int[schema.size()];
     for (int i = 0; i < schema.size(); i++) {
       Column c = schema.getColumn(i);
       types[i] = c.getDataType().getType();
-      length[i] = c.getDataType().getLength();
+      maxLengths[i] = c.getDataType().getLength();
     }
 
 
@@ -163,7 +163,7 @@ public class VecRowBlock {
     // initializes boolean type vector(s)
     for (int i = 0; i < types.length; i++) {
       if (types[i] == TajoDataTypes.Type.BOOLEAN) {
-        long vecSize = TypeUtil.sizeOf(types[i], length[i], maxVectorSize);
+        long vecSize = TypeUtil.sizeOf(types[i], maxLengths[i], maxVectorSize);
         unsafe.setMemory(vectorsAddrs[i], vecSize, (byte) 0x00);
       }
     }
@@ -298,18 +298,28 @@ public class VecRowBlock {
   public void putFixedBytes(int columnIdx, int rowIdx, byte[] bytes) {
     setNullBit(columnIdx, rowIdx);
     unsafe.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null,
-        vectorsAddrs[columnIdx] + (rowIdx * length[columnIdx]), length[columnIdx]);
+        vectorsAddrs[columnIdx] + (rowIdx * maxLengths[columnIdx]), maxLengths[columnIdx]);
+  }
+
+  public void getFixedText(int columnIdx, int rowIdx, long destPtr) {
+    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * maxLengths[columnIdx]),
+        null, destPtr, maxLengths[columnIdx]);
+  }
+
+  public void getFixedText(int columnIdx, int rowIdx, UnsafeBuf buf, int offset) {
+    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * maxLengths[columnIdx]),
+        null, buf.address + offset, maxLengths[columnIdx]);
   }
 
   public void getFixedText(int columnIdx, int rowIdx, byte [] bytes) {
-    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * length[columnIdx]),
-        bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length[columnIdx]);
+    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * maxLengths[columnIdx]),
+        bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, maxLengths[columnIdx]);
   }
 
   public byte [] getFixedText(int columnIdx, int rowIdx) {
-    byte [] bytes = new byte[length[columnIdx]];
-    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * length[columnIdx]),
-        bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length[columnIdx]);
+    byte [] bytes = new byte[maxLengths[columnIdx]];
+    unsafe.copyMemory(null, vectorsAddrs[columnIdx] + (rowIdx * maxLengths[columnIdx]),
+        bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, maxLengths[columnIdx]);
     return bytes;
   }
 

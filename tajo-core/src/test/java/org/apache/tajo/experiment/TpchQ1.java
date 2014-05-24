@@ -1,6 +1,9 @@
 package org.apache.tajo.experiment;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -24,7 +27,8 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.vector.VecRowBlock;
+import org.apache.tajo.storage.map.*;
+import org.apache.tajo.storage.vector.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -36,7 +40,10 @@ import parquet.hadoop.VecRowParquetReader;
 import parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -107,7 +114,7 @@ public class TpchQ1 {
 
   @Test
   public void generateTuples() throws IOException, SQLException, ServiceException, PlanningException {
-    Path rawLineitemPath = new Path("file:///home/hyunsik/Code/tpch_2_15_0/dbgen/lineitem.tbl");
+    Path rawLineitemPath = new Path("file:///Users/hyunsik/Code/tpch_2_15_0/dbgen/lineitem.tbl");
 
     KeyValueSet kv = new KeyValueSet();
     kv.put(StorageConstants.CSVFILE_DELIMITER, "\\|");
@@ -124,13 +131,14 @@ public class TpchQ1 {
     FileFragment[] frags = new FileFragment[1];
     frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
 
-    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
+    Path workDir = CommonTestingUtil.getTestDir("file:///Users/hyunsik/experiment/test-data");
 
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
-    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/data/lineitem.parquet"));
+    ctx.setOutputPath(new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet"));
     ctx.setEnforcer(new Enforcer());
-    Expr context = analyzer.parse("insert overwrite into location 'file:///home/hyunsik/lineitem.parquet' USING PARQUET WITH ('parquet.block.size' = '1073741824') SELECT * FROM default.lineitem");
+    int blockSize =  1024 * 1024 * 256;
+    Expr context = analyzer.parse("insert overwrite into location 'file:///home/hyunsik/lineitem.parquet' USING PARQUET WITH ('parquet.block.size' = '" + blockSize + "') SELECT * FROM default.lineitem");
 
     LogicalPlan plan = planner.createPlan(session, context);
     optimizer.optimize(plan);
@@ -145,7 +153,7 @@ public class TpchQ1 {
 
   @Test
   public void processQ1InTupleWay() throws IOException, SQLException, ServiceException, PlanningException {
-    Path rawLineitemPath = new Path("file:///home/hyunsik/experiment/data/lineitem.parquet");
+    Path rawLineitemPath = new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet");
 
     KeyValueSet kv = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.PARQUET, kv);
@@ -158,7 +166,7 @@ public class TpchQ1 {
 
     FileFragment[] frags = new FileFragment[1];
     frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
-    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
+    Path workDir = CommonTestingUtil.getTestDir("file:///Users/hyunsik/experiment/test-data");
 
     Expr expr = analyzer.parse(FileUtil.readTextFileFromResource("experiment/q1.sql"));
     LogicalPlan plan = planner.createPlan(session, expr);
@@ -173,7 +181,7 @@ public class TpchQ1 {
 
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
-    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
+    ctx.setOutputPath(new Path("file:///Users/hyunsik/experiment/test-data"));
     ctx.setEnforcer(enforcer);
 
     System.out.println(plan);
@@ -222,38 +230,98 @@ public class TpchQ1 {
 
     System.out.println(">>>>>>" + projected);
 
-    Path path = new Path("file:///home/hyunsik/experiment/data/lineitem.parquet");
+    Path path = new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet");
     VecRowBlock vecRowBlock = new VecRowBlock(projected, 1024);
     VecRowParquetReader reader = new VecRowParquetReader(path, LINEITEM, projected);
     long readStart = System.currentTimeMillis();
 
+    //{(7) l_quantity (FLOAT8),l_extendedprice (FLOAT8),l_discount (FLOAT8),l_tax (FLOAT8),l_returnflag (CHAR(1)),l_linestatus (CHAR(1)),l_shipdate (CHAR(10))}
+
     int rowIdx = 0;
+    int [] selVec = new int[vecRowBlock.maxVecSize()];
+    int count = 0;
+    long one_minus_l_discount = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
+    long l_extendedprice_mul_one_minus_l_discount_ptr = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
+    long one_plus_l_tax = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
+    long l_extendedprice_x_1_l_discount_x_1_plus_l_tax = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
+
+    long pivotVector = UnsafeUtil.alloc(2 * 1024);
+    long hashResult = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
+
     while(reader.nextFetch(vecRowBlock)) {
+      // -------------------------------------------------------------------------------------------------------------
+      // Selection
+      // -------------------------------------------------------------------------------------------------------------
+      int selected = SelStrLEFixedStrColVal.sel(vecRowBlock.limitedVecSize(), selVec, vecRowBlock, 6, "1998-09-01".getBytes(), 0, 0);
 
-      for (int vectorId = 0; vectorId < vecRowBlock.maxVecSize(); vectorId++) {
-//        System.out.println(vecRowBlock.getFloat8(0, vectorId));
-//        System.out.println(vecRowBlock.getFloat8(1, vectorId));
-//        System.out.println(vecRowBlock.getFloat8(2, vectorId));
-//        System.out.println(vecRowBlock.getFloat8(3, vectorId));
-//        System.out.println(new String(vecRowBlock.getFixedText(4, vectorId)));
-//        System.out.println(new String(vecRowBlock.getFixedText(5, vectorId)));
-//        System.out.println(new String(vecRowBlock.getFixedText(6, vectorId)));
+      // -------------------------------------------------------------------------------------------------------------
+      // Projection
+      // -------------------------------------------------------------------------------------------------------------
 
-        //assertEquals(rowId % 2, vecRowBlock.getBool(0, vectorId));
-        //assertTrue(1 == vecRowBlock.getInt2(1, vectorId));
-        //assertEquals(rowId, vecRowBlock.getInt4(2, vectorId));
-//        assertEquals(rowId, vecRowBlock.getInt8(3, vectorId));
-        //assertTrue(rowId == vecRowBlock.getFloat4(4, vectorId));
-        //assertTrue(((double)rowId) == vecRowBlock.getFloat8(5, vectorId));
-        //assertEquals("colabcdefghijklmnopqrstu1", (vecRowBlock.getString(6, vectorId)));
-        //assertEquals("colabcdefghijklmnopqrstu2", (vecRowBlock.getString(7, vectorId)));
-        rowIdx++;
-      }
+      // 1 - l_discount
+      MapMinusInt4ValFloat8ColOp.map(selected, one_minus_l_discount, vecRowBlock, 1, 2, selVec);
+      // l_extendedprice * (1 - l_discount)
+      MapMulFloat8ColFloat8ColOp.map(selected, l_extendedprice_mul_one_minus_l_discount_ptr, vecRowBlock.getValueVecPtr(1),
+          one_minus_l_discount, selVec);
+
+      // 1 + l_tax
+      MapPlusInt4ValFloat8ColOp.map(selected, one_plus_l_tax, vecRowBlock, 1, 3, selVec);
+
+      // l_extendedprice * (1 - l_discount) * (1 + l_tax)
+      MapMulFloat8ColFloat8ColOp.map(selected, l_extendedprice_x_1_l_discount_x_1_plus_l_tax, l_extendedprice_mul_one_minus_l_discount_ptr, one_plus_l_tax, selVec);
+
+      // -------------------------------------------------------------------------------------------------------------
+      // Aggregation
+      // -------------------------------------------------------------------------------------------------------------
+      VectorUtil.pivotCharx2(selected, vecRowBlock, pivotVector, new int[]{4,5}, selVec);
+//      testPivot(vecRowBlock, pivotVector, selected, selVec);
+
+
+      VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResult, pivotVector, 2, 0, selVec);
+//      testMapContents(vecRowBlock, hashResult, selected, selVec);
+
+
+      count += selected;
       vecRowBlock.clear();
     }
     long readEnd = System.currentTimeMillis();
-    System.out.println(rowIdx + " rows (" + (readEnd - readStart) + " read msec)");
+    System.out.println(count + " rows (" + (readEnd - readStart) + " read msec)");
     vecRowBlock.free();
+  }
+
+  public void testPivot(VecRowBlock vecRowBlock, long pivotVector, int selected, int [] selVec) {
+    long copied = pivotVector;
+    for (int i = 0; i < selected; i++) {
+      long offset = selVec[i] * 2;
+
+      char b1 = (char) UnsafeUtil.getByte(copied + offset);
+      char b2 = (char) UnsafeUtil.getByte(copied + offset +1);
+
+      char storedB1 = (char) vecRowBlock.getFixedText(4, selVec[i])[0];
+      char storedB2 = (char) vecRowBlock.getFixedText(5, selVec[i])[0];
+
+      assertTrue(b1+" is different to " + storedB1, b1 == storedB1);
+      assertTrue(b2+" is different to " + storedB2, b2 == storedB2);
+    }
+  }
+
+  Map<Long, String> map = Maps.newHashMap();
+  public void testMapContents(VecRowBlock vecRowBlock, long hashResultPtr, int selected, int [] selVec) {
+    for (int i = 0; i < selected; i++) {
+      int idx = selVec[i];
+      long hash = UnsafeUtil.getLong(hashResultPtr, idx);
+      if (map.containsKey(hash)) {
+        System.out.println(new String(vecRowBlock.getFixedText(4, idx)) + "," + new String(vecRowBlock.getFixedText(5, idx)));
+      } else {
+        map.put(hash, new String(vecRowBlock.getFixedText(4, idx)) + "," + new String(vecRowBlock.getFixedText(5, idx)));
+      }
+    }
+  }
+
+  @Test
+  public void testHash() {
+    HashFunction hashFunc = Hashing.murmur3_128(37);
+    System.out.println(hashFunc.hashString(new String("a")).asLong());
   }
 
   public static FileFragment createFileFragment(String name, Path path) throws IOException {

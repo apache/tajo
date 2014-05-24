@@ -16,20 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.columnar.map;
+package org.apache.tajo.storage.map;
 
-import org.apache.tajo.storage.vector.SizeOf;
+import org.apache.tajo.storage.vector.UnsafeUtil;
+import sun.misc.Unsafe;
 
-public class MapMulInt8ColInt8ColOp extends MapBinaryOp {
-  public void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId) {
-    for (int i = 0; i < vecnum; i++) {
-      long lval1 = unsafe.getLong(lhs);
-      long rval1 = unsafe.getLong(rhs);
-      unsafe.putLong(result, lval1 * rval1);
+public abstract class MapBinaryOp {
+  protected static final Unsafe unsafe = UnsafeUtil.unsafe;
 
-      result += SizeOf.SIZE_OF_LONG;
-      rhs += SizeOf.SIZE_OF_LONG;
-      lhs += SizeOf.SIZE_OF_LONG;
-    }
-  }
+  public abstract void map(int vecnum, long result, long lhs, long rhs, long nullFlags, long selId);
 }

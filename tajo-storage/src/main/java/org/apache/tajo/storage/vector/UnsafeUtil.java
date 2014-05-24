@@ -82,6 +82,10 @@ public class UnsafeUtil {
     }
   }
 
+  public static byte getByte(long index) {
+    return  unsafe.getByte(index);
+  }
+
   public static short getUnsignedByte(long index) {
     return (short) (unsafe.getByte(index) & 0xFF);
   }

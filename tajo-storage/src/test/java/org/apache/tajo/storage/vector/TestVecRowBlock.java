@@ -32,10 +32,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.columnar.map.MapAddInt8ColInt8ColOp;
-import org.apache.tajo.columnar.map.SelStrEqStrColStrColOp;
-import org.apache.tajo.columnar.map.VecFuncMulMul3LongCol;
-import org.apache.tajo.columnar.map.VecFuncStrcmpStrStrColx2;
+import org.apache.tajo.storage.map.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;
@@ -292,6 +289,73 @@ public class TestVecRowBlock {
     }
     vecRowBlock.free();
     UnsafeUtil.free(resPtr);
+  }
+
+  @Test
+  public void testStrLessThanFixedTextTest() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.INT2);
+    schema.addColumn("col2", Type.INT4);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.FLOAT4);
+    schema.addColumn("col5", Type.FLOAT8);
+    schema.addColumn("col6", Type.TEXT);
+    schema.addColumn("col7", Type.TEXT);
+    schema.addColumn("col8", Type.CHAR, 10);
+
+    int vecSize = 1024;
+
+    long allocateStart = System.currentTimeMillis();
+    VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
+    long allocateend = System.currentTimeMillis();
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
+        + (allocateend - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      vecRowBlock.putInt2(0, i, (short) 1);
+      vecRowBlock.putInt4(1, i, i);
+      vecRowBlock.putInt8(2, i, i);
+      vecRowBlock.putFloat4(3, i, i);
+      vecRowBlock.putFloat8(4, i, i);
+      if (i % 8 == 0) {
+        vecRowBlock.putVarText(5, i, "1998-09-01".getBytes());
+      } else {
+        vecRowBlock.putVarText(5, i, "1111-11-01".getBytes());
+      }
+      vecRowBlock.putVarText(6, i, "1998-09-01".getBytes());
+      vecRowBlock.putFixedBytes(7, i, ("1980-04-0" + (i % 9)).getBytes());
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
+
+    long readStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      assertTrue(1 == vecRowBlock.getInt2(0, i));
+      assertEquals(i, vecRowBlock.getInt4(1, i));
+      assertEquals(i, vecRowBlock.getInt8(2, i));
+      assertTrue(i == vecRowBlock.getFloat4(3, i));
+      assertTrue(i == vecRowBlock.getFloat8(4, i));
+      if (i % 8 == 0) {
+        assertEquals("1998-09-01", (vecRowBlock.getVarcharAsString(5, i)));
+      } else {
+        assertEquals("1111-11-01", (vecRowBlock.getVarcharAsString(5, i)));
+      }
+      assertEquals("1998-09-01", (vecRowBlock.getVarcharAsString(6, i)));
+      assertTrue(Arrays.equals(("1980-04-0" + (i % 9)).getBytes(), (vecRowBlock.getFixedText(7, i))));
+    }
+    vecRowBlock.setLimitedVecSize(vecSize);
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+
+    SelStrLEFixedStrColVal op = new SelStrLEFixedStrColVal();
+    int selVec [] = new int[vecRowBlock.maxVecSize()];
+    int selNum = op.sel(vecRowBlock.limitedVecSize(), selVec, vecRowBlock, 7, "1980-04-01".getBytes(), 0, 0);
+
+    for (int i = 0; i < selNum; i++) {
+      System.out.println(selVec[i]);
+    }
+    vecRowBlock.free();
   }
 
   @Test
