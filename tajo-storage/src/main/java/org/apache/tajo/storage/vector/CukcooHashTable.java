@@ -38,29 +38,29 @@ public class CukcooHashTable<K, V, P> {
 
   private int size = 0;
 
-  BucketReaderWriter<K,V,P> readerWriter;
+  BucketHandler<K,V> bucketHandler;
 
-  UnsafeBuf kickedBucket[] = new UnsafeBuf[2];
+  UnsafeBuf kickingBucket[] = new UnsafeBuf[2];
   UnsafeBuf currentBuf;
   UnsafeBuf rehash;
 
-  public CukcooHashTable(BucketReaderWriter bucketHandler) {
+  public CukcooHashTable(BucketHandler bucketHandler) {
     this(DEFAULT_INITIAL_CAPACITY, bucketHandler);
   }
 
-  public CukcooHashTable(int size, BucketReaderWriter bucketHandler) {
+  public CukcooHashTable(int size, BucketHandler bucketHandler) {
     Preconditions.checkArgument(size > 0, "Initial size cannot be more than one.");
-    readerWriter = bucketHandler;
-    perBucketSize = readerWriter.getPayloadSize();
+    this.bucketHandler = bucketHandler;
+    perBucketSize = this.bucketHandler.getBucketSize();
     int findSize = findNearestPowerOfTwo(size);
     initBuckets(findSize);
 
-    currentBuf = readerWriter.newBucketBuffer();
+    currentBuf = this.bucketHandler.newBucketBuffer();
 
-    kickedBucket[0] = readerWriter.newBucketBuffer();
-    kickedBucket[1] = readerWriter.newBucketBuffer();
+    kickingBucket[0] = this.bucketHandler.newBucketBuffer();
+    kickingBucket[1] = this.bucketHandler.newBucketBuffer();
 
-    rehash = readerWriter.newBucketBuffer();
+    rehash = this.bucketHandler.newBucketBuffer();
   }
 
   public int bucketSize() {
@@ -97,17 +97,13 @@ public class CukcooHashTable<K, V, P> {
     System.out.println("consumed memory:" + FileUtil.humanReadableByteCount(totalMemory, true));
   }
 
-  private int computeOneBucketSize() {
-    return SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
-  }
+  public boolean insert(UnsafeBuf payload) {
 
-  public boolean insert(UnsafeBuf row) {
-
-    if (contains(row)) {
+    if (contains(payload)) {
       return false;
     }
 
-    UnsafeBuf kickedOrInserted = insertEntry(row);
+    UnsafeBuf kickedOrInserted = insertEntry(payload);
     if (kickedOrInserted != null) {
       rehash();
       insert(kickedOrInserted);
@@ -122,22 +118,23 @@ public class CukcooHashTable<K, V, P> {
 
     row.copyTo(currentBuf);
 
-    int bucketId = (int) (readerWriter.hashFunc(currentBuf) & modMask);
+    int bucketId = (int) (bucketHandler.hashFunc(currentBuf) & modMask);
+
     while(loopCount < maxLoopNum) {
       long keyPtr = getBucketAddr(bucketPtr, bucketId + 1);
-      readerWriter.getBucket(keyPtr, kickedBucket[switchIdx]);
-      if (kickedBucket[switchIdx].getLong(0) == 0) {
-        readerWriter.write(keyPtr, currentBuf);
+      bucketHandler.getBucket(keyPtr, kickingBucket[switchIdx]);
+      if (bucketHandler.isEmptyBucket(kickingBucket[switchIdx].address)) {
+        bucketHandler.write(keyPtr, currentBuf);
         size++;
         return null;
       }
 
-      readerWriter.write(keyPtr, currentBuf);
-      currentBuf = kickedBucket[switchIdx];
+      bucketHandler.write(keyPtr, currentBuf);
+      currentBuf = kickingBucket[switchIdx];
 
-      int bucketIdFromHash1 = (int) (readerWriter.hashFunc(currentBuf) & modMask);
+      int bucketIdFromHash1 = (int) (bucketHandler.hashFunc(currentBuf) & modMask);
       if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
-        bucketId = (int) (readerWriter.hashFunc(currentBuf) >> NBITS & modMask);
+        bucketId = (int) (bucketHandler.hashFunc(currentBuf) >> NBITS & modMask);
       } else {
         bucketId = bucketIdFromHash1;
       }
@@ -160,8 +157,8 @@ public class CukcooHashTable<K, V, P> {
     for (int i = 0; i < oldBucketSize; i++) {
       int actualIdx = i + 1;
 
-      readerWriter.getBucket(getBucketAddr(oldKeysPtr, actualIdx), rehash);
-      if (rehash.getLong(0) != 0) {
+      bucketHandler.getBucket(getBucketAddr(oldKeysPtr, actualIdx), rehash);
+      if (!bucketHandler.isEmptyBucket(rehash.address)) {
         insert(rehash);
       }
     }
@@ -170,46 +167,54 @@ public class CukcooHashTable<K, V, P> {
   }
 
   public boolean contains(UnsafeBuf unsafeBuf) {
-    long hashKey = readerWriter.hashFunc(unsafeBuf);
+    long hashKey = bucketHandler.hashFunc(unsafeBuf);
 
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId1)) ? 1 : 0);
-    int mask2 = -(unsafeBuf.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId2)) ? 1 : 0);
+    int mask1 = -(bucketHandler.equalKeys(unsafeBuf, getBucketAddr(bucketPtr, buckId1)) ? 1 : 0);
+    int mask2 = -(bucketHandler.equalKeys(unsafeBuf, getBucketAddr(bucketPtr, buckId2)) ? 1 : 0);
 
     return (mask1 | mask2) != 0;
   }
 
   public V lookup(K key) {
-    long hashKey = readerWriter.hashFunc(key);
+    long hashKey = bucketHandler.hashFunc(key);
 
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(key.equals(readerWriter.getKey(getBucketAddr(bucketPtr, buckId1))) ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(key.equals(readerWriter.getKey(getBucketAddr(bucketPtr, buckId2))) ? 1 : 0); // 0 otherwise
+    int mask1 = -(key.equals(bucketHandler.getKey(getBucketAddr(bucketPtr, buckId1))) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(key.equals(bucketHandler.getKey(getBucketAddr(bucketPtr, buckId2))) ? 1 : 0); // 0 otherwise
     int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
 
-    return group_id == 0 ? null : readerWriter.getValue(getBucketAddr(bucketPtr, group_id));
+    return group_id == 0 ? null : bucketHandler.getValue(getBucketAddr(bucketPtr, group_id));
   }
 
-  public V lookup(UnsafeBuf key) {
-    long hashKey = readerWriter.hashFunc(key);
+  private int getGroupId(UnsafeBuf key) {
+    long hashKey = bucketHandler.hashFunc(key);
 
     // find the possible locations
     int buckId1 = (int) (hashKey & modMask) + 1; // use different parts of the hash number
     int buckId2 = (int) (hashKey >> NBITS & modMask) + 1;
 
     // check which one matches
-    int mask1 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
-    int mask2 = -(key.getLong(0) == UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
-    int group_id = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
+    int mask1 = -(bucketHandler.equalKeys(key, getBucketAddr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
+    int mask2 = -(bucketHandler.equalKeys(key, getBucketAddr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
+    return mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
+  }
 
-    return group_id == 0 ? null : readerWriter.getValue(getBucketAddr(bucketPtr, group_id));
+  public V getValue(UnsafeBuf key) {
+    int groupId = getGroupId(key);
+    return groupId == 0 ? null : bucketHandler.getValue(getBucketAddr(bucketPtr, groupId));
+  }
+
+  public UnsafeBuf getPayload(UnsafeBuf key, UnsafeBuf buffer) {
+    int groupId = getGroupId(key);
+    return groupId == 0 ? null : bucketHandler.getBucket(getBucketAddr(bucketPtr, groupId), buffer);
   }
 }

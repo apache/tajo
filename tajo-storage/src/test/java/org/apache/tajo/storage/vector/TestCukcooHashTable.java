@@ -48,7 +48,7 @@ public class TestCukcooHashTable {
       unsafeBuf.putLong(8, v);
 
       Pair p = new Pair<Long, Long>(v, v);
-      Long found = hashTable.lookup(unsafeBuf);
+      Long found = hashTable.getValue(unsafeBuf);
 
       assertTrue(found == null);
 
@@ -57,9 +57,9 @@ public class TestCukcooHashTable {
       found = hashTable.lookup(v);
       assertEquals(v, found);
 
-//      if (hashTable.size() != i) {
-//        System.out.println("Error point!");
-//      }
+      if (hashTable.size() != i) {
+        System.out.println("Error point!");
+      }
     }
     long writeEnd = System.currentTimeMillis();
 
@@ -70,7 +70,7 @@ public class TestCukcooHashTable {
     for (int i = (1 << 1); i < (1 << 27); i++) {
       Long val = new Long(i);
       unsafeBuf.putLong(0, val);
-      assertEquals(val, hashTable.lookup(unsafeBuf));
+      assertEquals(val, hashTable.getValue(unsafeBuf));
     }
     long end = System.currentTimeMillis();
     System.out.println((end - start) + " msc sequential read time");
@@ -80,7 +80,7 @@ public class TestCukcooHashTable {
     for (int i = (1 << 1); i < (1 << 27); i++) {
       Long val = new Long(rnd.nextInt(1 << 27));
       unsafeBuf.putLong(0, val);
-      assertEquals(val, hashTable.lookup(unsafeBuf));
+      assertEquals(val, hashTable.getValue(unsafeBuf));
     }
     long endRandom = System.currentTimeMillis();
     System.out.println((endRandom - startRandom) + " msc random read time");
@@ -99,13 +99,13 @@ public class TestCukcooHashTable {
       unsafeBuf.putLong(0, v);
       unsafeBuf.putBytes(16, "abcdefghijklmnop".getBytes());
 
-      String found = hashTable.lookup(unsafeBuf);
+      String found = hashTable.getValue(unsafeBuf);
 
       assertTrue(found == null);
 
       hashTable.insert(unsafeBuf);
 
-      found = hashTable.lookup(unsafeBuf);
+      found = hashTable.getValue(unsafeBuf);
       assertEquals("abcdefghijklmnop", found);
     }
     long writeEnd = System.currentTimeMillis();
@@ -175,17 +175,20 @@ public class TestCukcooHashTable {
     System.out.println((endRandom - startRandom) + " msc random read time");
   }
 
-  public static class LongKeyValueReaderWriter implements BucketReaderWriter<Long, Long, Pair<Long, Long>> {
+  public static class LongKeyValueReaderWriter implements BucketHandler<Long, Long> {
 
-    public int getPayloadSize() {
-      return SizeOf.SIZE_OF_LONG * 2;
+    @Override
+    public boolean isEmptyBucket(long bucketPtr) {
+      return UnsafeUtil.unsafe.getLong(bucketPtr) == 0;
     }
 
     @Override
-    public void write(long bucketPtr, Pair<Long, Long> payload) {
-      UnsafeUtil.unsafe.putLong(bucketPtr, payload.getFirst());
-      bucketPtr += SizeOf.SIZE_OF_LONG;
-      UnsafeUtil.unsafe.putLong(bucketPtr, payload.getSecond());
+    public int getKeyBufferSize() {
+      return SizeOf.SIZE_OF_LONG;
+    }
+
+    public int getBucketSize() {
+      return SizeOf.SIZE_OF_LONG * 2;
     }
 
     @Override
@@ -205,18 +208,14 @@ public class TestCukcooHashTable {
     }
 
     @Override
-    public void getBucket(long bucketPtr, UnsafeBuf target) {
+    public UnsafeBuf getBucket(long bucketPtr, UnsafeBuf target) {
       UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, target.address, 16);
+      return target;
     }
 
     @Override
-    public boolean checkFill(long bucketPtr) {
-      return UnsafeUtil.unsafe.getLong(bucketPtr, 0) == 0;
-    }
-
-    @Override
-    public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2) {
-      return key1.getLong(0) == key2.getLong(0);
+    public boolean equalKeys(UnsafeBuf keyBuffer, long bucketPtr) {
+      return keyBuffer.getLong(0) == UnsafeUtil.unsafe.getLong(bucketPtr);
     }
 
     @Override
@@ -227,11 +226,6 @@ public class TestCukcooHashTable {
     @Override
     public long hashFunc(Long key) {
       return key;
-    }
-
-    @Override
-    public long hashKey(Pair<Long, Long> payload) {
-      return payload.getFirst();
     }
 
     @Override
@@ -244,17 +238,20 @@ public class TestCukcooHashTable {
     }
   }
 
-  public static class LongStringReaderWriter implements BucketReaderWriter<Long, String, Pair<Long, String>> {
+  public static class LongStringReaderWriter implements BucketHandler<Long, String> {
 
-    public int getPayloadSize() {
-      return SizeOf.SIZE_OF_LONG + 16;
+    @Override
+    public boolean isEmptyBucket(long bucketPtr) {
+      return UnsafeUtil.unsafe.getLong(bucketPtr) == 0;
     }
 
     @Override
-    public void write(long bucketPtr, Pair<Long, String> payload) {
-      UnsafeUtil.unsafe.putLong(bucketPtr, payload.getFirst());
-      bucketPtr += SizeOf.SIZE_OF_LONG;
-      UnsafeUtil.putBytes(bucketPtr, payload.getSecond().getBytes(), 0, 16);
+    public int getKeyBufferSize() {
+      return SizeOf.SIZE_OF_LONG;
+    }
+
+    public int getBucketSize() {
+      return SizeOf.SIZE_OF_LONG + 16;
     }
 
     @Override
@@ -265,7 +262,7 @@ public class TestCukcooHashTable {
     }
 
     public void write(long bucketPtr, UnsafeBuf payload) {
-      UnsafeUtil.unsafe.copyMemory(null, payload.address, null, bucketPtr, getPayloadSize());
+      UnsafeUtil.unsafe.copyMemory(null, payload.address, null, bucketPtr, getBucketSize());
     }
 
     @Override
@@ -274,18 +271,14 @@ public class TestCukcooHashTable {
     }
 
     @Override
-    public void getBucket(long bucketPtr, UnsafeBuf target) {
-      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, target.address, getPayloadSize());
+    public UnsafeBuf getBucket(long bucketPtr, UnsafeBuf target) {
+      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, target.address, getBucketSize());
+      return target;
     }
 
     @Override
-    public boolean checkFill(long bucketPtr) {
-      return UnsafeUtil.unsafe.getLong(bucketPtr, 0) == 0;
-    }
-
-    @Override
-    public boolean equalKeys(UnsafeBuf key1, UnsafeBuf key2) {
-      return key1.getLong(0) == key2.getLong(0);
+    public boolean equalKeys(UnsafeBuf keyBuffer, long bucketPtr) {
+      return keyBuffer.getLong(0) == UnsafeUtil.unsafe.getLong(bucketPtr);
     }
 
     @Override
@@ -296,11 +289,6 @@ public class TestCukcooHashTable {
     @Override
     public long hashFunc(Long key) {
       return key;
-    }
-
-    @Override
-    public long hashKey(Pair<Long, String> payload) {
-      return payload.getFirst();
     }
 
     @Override
