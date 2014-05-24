@@ -97,7 +97,7 @@ public class TestCukcooHashTable {
 
       Long v = new Long(i);
       unsafeBuf.putLong(0, v);
-      unsafeBuf.putBytes(16, "abcdefghijklmnop".getBytes());
+      unsafeBuf.putBytes(8, "abcdefghijklmnop".getBytes());
 
       String found = hashTable.getValue(unsafeBuf);
 
@@ -125,7 +125,7 @@ public class TestCukcooHashTable {
     Random rnd = new Random(System.currentTimeMillis());
     for (int i = (1 << 1); i < (1 << 27); i++) {
       Long val = new Long(rnd.nextInt(1 << 27));
-      assertEquals("abcdefghijklmnop", hashTable.lookup(val));
+      assertEquals("failed when we try to find " + val, "abcdefghijklmnop", hashTable.lookup(val));
     }
     long endRandom = System.currentTimeMillis();
     System.out.println((endRandom - startRandom) + " msc random read time");
@@ -267,7 +267,7 @@ public class TestCukcooHashTable {
 
     @Override
     public Long getKey(long bucketPtr) {
-      return UnsafeUtil.unsafe.getLong(0);
+      return UnsafeUtil.unsafe.getLong(bucketPtr);
     }
 
     @Override

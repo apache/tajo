@@ -65,7 +65,7 @@ public class UnsafeBuf {
   }
 
   public UnsafeBuf copyOf() {
-    ByteBuffer bytebuf = ByteBuffer.allocateDirect(16);
+    ByteBuffer bytebuf = ByteBuffer.allocateDirect(length);
     UnsafeUtil.unsafe.copyMemory(null, this.address, null, ((DirectBuffer)bytebuf).address(), length);
     return new UnsafeBuf(bytebuf);
   }
