@@ -21,10 +21,7 @@ package org.apache.tajo.jdbc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TimeDatum;
-import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -67,6 +64,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public boolean getBoolean(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return false;
+    }
     return datum.asBool();
   }
 
@@ -74,6 +74,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public boolean getBoolean(String colName) throws SQLException {
     Datum datum = cur.get(findColumn(colName));
     handleNull(datum);
+    if (wasNull) {
+      return false;
+    }
     return datum.asBool();
   }
 
@@ -81,6 +84,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte getByte(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asByte();
   }
 
@@ -88,6 +94,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte getByte(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asByte();
   }
 
@@ -95,6 +104,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte[] getBytes(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
     return datum.asByteArray();
   }
 
@@ -102,6 +114,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte[] getBytes(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
     return datum.asByteArray();
   }
 
@@ -109,6 +124,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public double getDouble(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0.0;
+    }
     return datum.asFloat8();
   }
 
@@ -116,6 +134,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public double getDouble(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0.0;
+    }
     return datum.asFloat8();
   }
 
@@ -123,6 +144,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public float getFloat(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0.0f;
+    }
     return datum.asFloat4();
   }
 
@@ -130,6 +154,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public float getFloat(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0.0f;
+    }
     return datum.asFloat4();
   }
 
@@ -137,6 +164,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public int getInt(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt4();
   }
 
@@ -144,6 +174,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public int getInt(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt4();
   }
 
@@ -151,6 +184,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public long getLong(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt8();
   }
 
@@ -158,6 +194,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public long getLong(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt8();
   }
 
@@ -166,6 +205,9 @@ public abstract class TajoResultSetBase implements ResultSet {
     Datum d = cur.get(fieldId - 1);
     handleNull(d);
 
+    if (wasNull) {
+      return null;
+    }
     TajoDataTypes.Type dataType = schema.getColumn(fieldId - 1).getDataType().getType();
 
     switch(dataType) {
@@ -200,6 +242,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public short getShort(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt2();
   }
 
@@ -207,24 +252,37 @@ public abstract class TajoResultSetBase implements ResultSet {
   public short getShort(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt2();
   }
 
   @Override
   public String getString(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    return datum.asChars();
+    return getString(datum, fieldId);
   }
 
   @Override
   public String getString(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
+    int id = findColumn(name);
+    Datum datum = cur.get(id);
+    return getString(datum, id + 1);
+  }
+
+  private String getString(Datum datum, int fieldId) throws SQLException {
     handleNull(datum);
+
+    if (wasNull) {
+      return null;
+    }
 
     TajoDataTypes.Type dataType = datum.type();
 
     switch(dataType) {
+      case BOOLEAN:
+        return String.valueOf(((BooleanDatum)datum).asBool());
       case TIME: {
         return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
       }

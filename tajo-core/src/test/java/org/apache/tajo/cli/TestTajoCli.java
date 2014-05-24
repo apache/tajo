@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageUtil;
@@ -36,6 +37,7 @@ import org.junit.rules.TestName;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintWriter;
 import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
@@ -195,6 +197,59 @@ public class TestTajoCli {
     }
   }
 
+  @Test
+  public void testSelectResultWithNullFalse() throws Exception {
+    String sql =
+        "select\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey,\n" +
+            "  orders.o_orderstatus \n" +
+            "from\n" +
+            "  orders full outer join customer on c_custkey = o_orderkey\n" +
+            "order by\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey;\n";
+
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    tajoConf.setBoolVar(ConfVars.CLI_PRINT_NULL, false);
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeScript(sql);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testSelectResultWithNullTrue() throws Exception {
+    String sql =
+        "select\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey,\n" +
+        "  orders.o_orderstatus \n" +
+        "from\n" +
+        "  orders full outer join customer on c_custkey = o_orderkey\n" +
+        "order by\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey;\n";
+
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    tajoConf.setBoolVar(ConfVars.CLI_PRINT_NULL, true);
+    tajoConf.setVar(ConfVars.CLI_PRINT_NULL_WORD, "testnull");
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeScript(sql);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
   private void assertOutputResult(String actual) throws Exception {
     assertOutputResult(name.getMethodName() + ".result", actual);
   }
@@ -225,6 +280,10 @@ public class TestTajoCli {
     @Override
     protected String getResponseTimeReadable(float responseTime) {
       return "";
+    }
+    @Override
+    public void printProgress(PrintWriter sout, QueryStatus status) {
+      //nothing to do
     }
   }
 }

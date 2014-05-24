@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -36,6 +37,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
   private boolean printPause;
   private boolean printErrorTrace;
+  private boolean replaceNull;
+  private String nullKeyword;
 
   @Override
   public void init(TajoConf tajoConf) {
@@ -44,6 +47,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPause = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_PAUSE);
     this.printPauseRecords = tajoConf.getIntVar(TajoConf.ConfVars.CLI_PRINT_PAUSE_NUM_RECORDS);
     this.printErrorTrace = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_ERROR_TRACE);
+    this.replaceNull = tajoConf.getBoolVar(ConfVars.CLI_PRINT_NULL);
+    this.nullKeyword = tajoConf.getVar(ConfVars.CLI_PRINT_NULL_WORD);
   }
 
   @Override
@@ -90,9 +95,13 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     while (res.next()) {
       for (int i = 1; i <= numOfColumns; i++) {
         if (i > 1) sout.print(",  ");
-        String columnValue = res.getObject(i).toString();
+        String columnValue = res.getString(i);
         if(res.wasNull()){
-          sout.print("null");
+          if (replaceNull) {
+            sout.print(nullKeyword);
+          } else {
+            sout.print(columnValue);
+          }
         } else {
           sout.print(columnValue);
         }

@@ -410,7 +410,10 @@ public class QueryTestCaseBase {
     while (resultSet.next()) {
       for (int i = 1; i <= numOfColumns; i++) {
         if (i > 1) sb.append(",");
-        String columnValue = resultSet.getObject(i).toString();
+        String columnValue = resultSet.getString(i);
+        if (resultSet.wasNull()) {
+          columnValue = "null";
+        }
         sb.append(columnValue);
       }
       sb.append("\n");

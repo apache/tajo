@@ -20,9 +20,11 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
 import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -57,6 +59,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
+      meta.putOption(StorageConstants.CSVFILE_NULL, context.getConf().getVar(ConfVars.CSVFILE_NULL));
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
           context.getOutputPath());
     }
