@@ -38,11 +38,11 @@ public class CukcooHashTable<K, V, P> {
 
   private int size = 0;
 
-  BucketHandler<K,V> bucketHandler;
+  private final BucketHandler<K,V> bucketHandler;
 
-  UnsafeBuf kickingBucket[] = new UnsafeBuf[2];
-  UnsafeBuf currentBuf;
-  UnsafeBuf rehash;
+  private final UnsafeBuf kickingBucket[] = new UnsafeBuf[2];
+  private UnsafeBuf currentBuf;
+  private final UnsafeBuf rehash;
 
   public CukcooHashTable(BucketHandler bucketHandler) {
     this(DEFAULT_INITIAL_CAPACITY, bucketHandler);
@@ -111,7 +111,7 @@ public class CukcooHashTable<K, V, P> {
     return true;
   }
 
-  int switchIdx = 0;
+  int switchBetweenZeroAndOne = 0;
 
   public UnsafeBuf insertEntry(UnsafeBuf row) {
     int loopCount = 0;
@@ -122,15 +122,15 @@ public class CukcooHashTable<K, V, P> {
 
     while(loopCount < maxLoopNum) {
       long keyPtr = getBucketAddr(bucketPtr, bucketId + 1);
-      bucketHandler.getBucket(keyPtr, kickingBucket[switchIdx]);
-      if (bucketHandler.isEmptyBucket(kickingBucket[switchIdx].address)) {
+      bucketHandler.getBucket(keyPtr, kickingBucket[switchBetweenZeroAndOne]);
+      if (bucketHandler.isEmptyBucket(kickingBucket[switchBetweenZeroAndOne].address)) {
         bucketHandler.write(keyPtr, currentBuf);
         size++;
         return null;
       }
 
       bucketHandler.write(keyPtr, currentBuf);
-      currentBuf = kickingBucket[switchIdx];
+      currentBuf = kickingBucket[switchBetweenZeroAndOne];
 
       int bucketIdFromHash1 = (int) (bucketHandler.hashFunc(currentBuf) & modMask);
       if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
@@ -139,7 +139,7 @@ public class CukcooHashTable<K, V, P> {
         bucketId = bucketIdFromHash1;
       }
 
-      switchIdx ^= 1;
+      switchBetweenZeroAndOne ^= 1;
       ++loopCount;
     }
 
