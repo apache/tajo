@@ -117,7 +117,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     visit(context, plan, block, selNode.getChild(), stack);
     stack.pop();
 
-    if(context.workingEvals.size() == 0) { // remove the selection operator if there is no search condition after selection push.
+    if(context.workingEvals.size() == 0) {
+      // remove the selection operator if there is no search condition after selection push.
       LogicalNode node = stack.peek();
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
@@ -135,7 +136,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         }
       }
 
-      // if there are search conditions which can be evaluated here, push down them and remove them from context.workingEvals.
+      // if there are search conditions which can be evaluated here,
+      // push down them and remove them from context.workingEvals.
       if (matched.size() > 0) {
         selNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(matched.toArray(new EvalNode[matched.size()])));
         context.workingEvals.removeAll(matched);
@@ -234,7 +236,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
         }
 
-        //merge the retained predicates and establish them in the current outer join node. Then remove them from the workingEvals
+        // merge the retained predicates and establish them in the current outer join node.
+        // Then remove them from the workingEvals
         EvalNode qual2 = null;
         if (matched2.size() > 1) {
           // merged into one eval tree
@@ -304,9 +307,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     return joinNode;
   }
 
-  private Map<EvalNode, EvalNode> transformEvalsWidthByPassNode(Collection<EvalNode> originEvals, LogicalPlan plan,
-                                                                LogicalPlan.QueryBlock block,
-                                                                LogicalNode node, LogicalNode childNode) throws PlanningException {
+  private Map<EvalNode, EvalNode> transformEvalsWidthByPassNode(
+      Collection<EvalNode> originEvals, LogicalPlan plan,
+      LogicalPlan.QueryBlock block,
+      LogicalNode node, LogicalNode childNode) throws PlanningException {
     // transformed -> workingEvals
     Map<EvalNode, EvalNode> transformedMap = new HashMap<EvalNode, EvalNode>();
 
@@ -315,7 +319,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     if (node.getType() == NodeType.UNION) {
-      // Node가 Union이면 Eval 컬럼은 모두 Simple Name이고 Child의 OutSchema의 Simple Name과 모두 매칭
+      // If node is union, All eval's columns are simple name and matched with child's output schema.
       Schema childOutSchema = childNode.getOutSchema();
       for (EvalNode eval : originEvals) {
         EvalNode copy;
@@ -343,7 +347,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     if (childNode.getType() == NodeType.UNION) {
-      // Child가 Union이면 Eval의 컬럼의 Qualifier를 제거하고 반환
+      // If child is union, remove qualifier from eval's column
       for (EvalNode eval : originEvals) {
         EvalNode copy;
         try {
@@ -365,7 +369,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       return transformedMap;
     }
 
-    // node in column -> child out column(가능한 QualifierName)
+    // node in column -> child out column
     Map<String, String> columnMap = new HashMap<String, String>();
 
     for (int i = 0; i < node.getInSchema().size(); i++) {
@@ -475,7 +479,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
 
     //copy -> origin
-    Map<EvalNode, EvalNode> matched = findCanPushdownAndTransform(context, projectionNode, childNode, notMatched, false, 0);
+    Map<EvalNode, EvalNode> matched = findCanPushdownAndTransform(
+        context, projectionNode, childNode, notMatched, false, 0);
 
     context.setWorkingEvals(matched.keySet());
 
@@ -515,9 +520,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     return current;
   }
 
-  private Map<EvalNode, EvalNode> findCanPushdownAndTransform(FilterPushDownContext context, Projectable node,
-                                                              LogicalNode childNode, List<EvalNode> notMatched,
-                                                              boolean ignoreJoin, int columnOffset) throws PlanningException {
+  private Map<EvalNode, EvalNode> findCanPushdownAndTransform(
+      FilterPushDownContext context, Projectable node,
+      LogicalNode childNode, List<EvalNode> notMatched,
+      boolean ignoreJoin, int columnOffset) throws PlanningException {
     // canonical name -> target
     Map<String, Target> nodeTargetMap = new HashMap<String, Target>();
     for (Target target : node.getTargets()) {
@@ -802,7 +808,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     return scanNode;
   }
 
-  private void errorFilterPushDown(LogicalPlan plan, LogicalNode node, FilterPushDownContext context) throws PlanningException {
+  private void errorFilterPushDown(LogicalPlan plan, LogicalNode node,
+                                   FilterPushDownContext context) throws PlanningException {
     String notMatchedNodeStr = "";
     String prefix = "";
     for (EvalNode notMatchedNode: context.workingEvals) {
