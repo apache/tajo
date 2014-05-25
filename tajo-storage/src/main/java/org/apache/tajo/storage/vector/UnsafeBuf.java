@@ -24,9 +24,9 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 
 public class UnsafeBuf {
-  long address;
-  int length;
-  Object reference;
+  public long address;
+  public int length;
+  public Object reference;
 
   public UnsafeBuf(ByteBuffer bytebuffer) {
     DirectBuffer df = (DirectBuffer) bytebuffer;
@@ -52,6 +52,14 @@ public class UnsafeBuf {
     UnsafeUtil.unsafe.putByte(address + offset, value);
   }
 
+  public short getShort(int offset) {
+    return UnsafeUtil.unsafe.getShort(address + offset);
+  }
+
+  public void putShort(int offset, short value) {
+    UnsafeUtil.unsafe.putShort(address + offset, value);
+  }
+
   public long getLong(int offset) {
     return UnsafeUtil.unsafe.getLong(address + offset);
   }
@@ -60,8 +68,20 @@ public class UnsafeBuf {
     UnsafeUtil.unsafe.putLong(address + offset, value);
   }
 
-  public void putBytes(int offset, byte [] bytes) {
+  public double getDouble(int offset) {
+    return UnsafeUtil.unsafe.getDouble(address + offset);
+  }
+
+  public void putFloat8(int offset, double value) {
+    UnsafeUtil.unsafe.putDouble(address + offset, value);
+  }
+
+  public void putBytes(byte[] bytes, int offset) {
     UnsafeUtil.putBytes(address + offset, bytes, 0, bytes.length);
+  }
+
+  public void putBytes(int destPos, long srcAddr, int length) {
+    UnsafeUtil.unsafe.copyMemory(null, srcAddr, null, address + destPos, length);
   }
 
   public UnsafeBuf copyOf() {

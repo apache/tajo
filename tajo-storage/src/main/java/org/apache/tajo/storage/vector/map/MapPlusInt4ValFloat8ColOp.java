@@ -16,36 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.map;
+package org.apache.tajo.storage.vector.map;
 
 import org.apache.tajo.storage.vector.SizeOf;
 import org.apache.tajo.storage.vector.UnsafeUtil;
 import org.apache.tajo.storage.vector.VecRowBlock;
 import sun.misc.Unsafe;
 
-public class MapMulFloat8ColFloat8ColOp {
+public class MapPlusInt4ValFloat8ColOp {
   static Unsafe unsafe = UnsafeUtil.unsafe;
 
-  public static void map(int vecNum, long result, long lhsPtr, long rhsPtr, int [] selVec) {
+  public static void map(int vecNum, long result, VecRowBlock vecRowBlock, int lhsValue, int rhsIdx, int [] selVec) {
+
+    long rhsPtr = vecRowBlock.getValueVecPtr(rhsIdx);
 
     if (selVec == null) {
-      for (int i = 0; i < vecNum; i++) {
-        double lhsValue = unsafe.getDouble(lhsPtr);
+      for (int i = 0; i < vecRowBlock.limitedVecSize(); i++) {
         double rhsValue = unsafe.getDouble(rhsPtr);
-        unsafe.putDouble(result, lhsValue - rhsValue);
+        unsafe.putDouble(result, lhsValue + rhsValue);
 
         result += SizeOf.SIZE_OF_LONG;
-        lhsPtr += SizeOf.SIZE_OF_LONG;
         rhsPtr += SizeOf.SIZE_OF_LONG;
       }
     } else {
-      long offset;
+      long selectedPtr;
 
-      for (int i = 0; i < vecNum; i++) {
-        offset = (selVec[i] * SizeOf.SIZE_OF_LONG);
-        double lhsValue = unsafe.getDouble(lhsPtr + offset);
-        double rhsValue = unsafe.getDouble(rhsPtr + offset);
-        unsafe.putDouble(result, lhsValue * rhsValue);
+      for (int i = 0; i < vecRowBlock.limitedVecSize(); i++) {
+        selectedPtr = rhsPtr + (selVec[i] * SizeOf.SIZE_OF_LONG);
+        double rhsValue = unsafe.getDouble(selectedPtr);
+        unsafe.putDouble(result, lhsValue + rhsValue);
         result += SizeOf.SIZE_OF_LONG;
       }
     }

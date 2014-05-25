@@ -32,7 +32,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.map.*;
+import org.apache.tajo.storage.vector.map.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.parquet.ParquetAppender;
 import org.apache.tajo.storage.parquet.ParquetScanner;

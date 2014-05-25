@@ -122,9 +122,9 @@ public class VectorUtil {
     if (selVec != null) {
       int selIdx;
       long writePtr;
-      for (int i = 0; i < vecNum; i++) {
-        selIdx = selVec[i];
-        writePtr = resPtr + (selVec[i] * 2);
+      for (int rowIDx = 0; rowIDx < vecNum; rowIDx++) {
+        selIdx = selVec[rowIDx];
+        writePtr = resPtr + (selVec[rowIDx] * 2);
 
         vecRowBlock.getFixedText(columnIndices[0], selIdx, writePtr);
         vecRowBlock.getFixedText(columnIndices[1], selIdx, writePtr + 1);

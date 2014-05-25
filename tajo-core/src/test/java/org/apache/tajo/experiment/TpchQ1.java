@@ -27,7 +27,7 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.map.*;
+import org.apache.tajo.storage.vector.map.*;
 import org.apache.tajo.storage.vector.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -38,6 +38,8 @@ import org.junit.Test;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.VecRowParquetReader;
 import parquet.hadoop.metadata.CompressionCodecName;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -201,6 +203,86 @@ public class TpchQ1 {
     System.out.println((endProcess - beginProcess) + " msec (" + resultCount + " rows)");
   }
 
+  public static class Q1BucketHandler implements BucketHandler<byte [], UnsafeBuf> {
+
+    @Override
+    public boolean isEmptyBucket(long bucketPtr) {
+      return UnsafeUtil.unsafe.getShort(bucketPtr) == 0;
+    }
+
+    @Override
+    public int getKeyBufferSize() {
+      return 2; // 2 bytes
+    }
+
+    @Override
+    public int getBucketSize() { // fixed-length
+      return getKeyBufferSize() + (SizeOf.SIZE_OF_DOUBLE * 4) + ((SizeOf.SIZE_OF_DOUBLE + SizeOf.SIZE_OF_LONG) * 3) + SizeOf.SIZE_OF_LONG;
+    }
+
+    @Override
+    public void write(long bucketPtr, UnsafeBuf buf) {
+      UnsafeUtil.unsafe.copyMemory(null, buf.address, null, bucketPtr, getBucketSize());
+    }
+
+    @Override
+    public UnsafeBuf createKeyBuffer() {
+      ByteBuffer bb = ByteBuffer.allocateDirect(2);
+      bb.order(ByteOrder.nativeOrder());
+      return new UnsafeBuf(bb);
+    }
+
+    @Override
+    public UnsafeBuf createBucketBuffer() {
+      ByteBuffer bb = ByteBuffer.allocateDirect((int) UnsafeUtil.computeAlignedSize(getBucketSize()));
+      bb.order(ByteOrder.nativeOrder());
+      return new UnsafeBuf(bb);
+    }
+
+    @Override
+    public UnsafeBuf getBucket(long bucketPtr, UnsafeBuf buf) {
+      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, buf.address, getBucketSize());
+      return buf;
+    }
+
+    @Override
+    public byte[] getKey(long bucketPtr) {
+      byte [] bytes = new byte[2];
+      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, 2);
+      return bytes;
+    }
+
+    @Override
+    public boolean equalKeys(long keyPtr, long bucketPtr) {
+      return UnsafeUtil.unsafe.getShort(keyPtr) == UnsafeUtil.unsafe.getShort(bucketPtr);
+    }
+
+    @Override
+    public boolean equalKeys(UnsafeBuf keyBuffer, long bucketPtr) {
+      return keyBuffer.getShort(0) == UnsafeUtil.unsafe.getShort(bucketPtr);
+    }
+
+    @Override
+    public long hashFunc(UnsafeBuf key) {
+      return VecFuncMulMul3LongCol.hash64(0, key.address, 0, getKeyBufferSize());
+    }
+
+    @Override
+    public long hashFunc(byte[] key) {
+      UnsafeBuf buf = createKeyBuffer();
+      buf.putBytes(key, 0);
+      return VecFuncMulMul3LongCol.hash64(0, buf.address, 0, getKeyBufferSize());
+    }
+
+    @Override
+    public UnsafeBuf getValue(long bucketPtr) {
+      ByteBuffer bb = ByteBuffer.allocateDirect((int) UnsafeUtil.computeAlignedSize(getBucketSize() - getKeyBufferSize()));
+      bb.order(ByteOrder.nativeOrder());
+      UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, ((DirectBuffer)bb).address() + 2, getBucketSize());
+      return new UnsafeBuf(bb);
+    }
+  }
+
   @Test
   public void testQ1InVectorization() throws IOException {
     KeyValueSet KeyValueSet = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
@@ -240,13 +322,22 @@ public class TpchQ1 {
     int rowIdx = 0;
     int [] selVec = new int[vecRowBlock.maxVecSize()];
     int count = 0;
-    long one_minus_l_discount = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
+    long one_minus_l_discount_res_vec = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
     long l_extendedprice_mul_one_minus_l_discount_ptr = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
     long one_plus_l_tax = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
     long l_extendedprice_x_1_l_discount_x_1_plus_l_tax = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
 
     long pivotVector = UnsafeUtil.alloc(2 * 1024);
-    long hashResult = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
+    long hashResVector = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
+
+
+    Q1BucketHandler bucketHandler = new Q1BucketHandler();
+    CukcooHashTable hashTable = new CukcooHashTable(bucketHandler);
+    int [] groupIds = new int[vecRowBlock.maxVecSize()];
+    long [] valueVectors = new long[8];
+    boolean [] computed = new boolean[8];
+
+    long emptyVector8 = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
 
     while(reader.nextFetch(vecRowBlock)) {
       // -------------------------------------------------------------------------------------------------------------
@@ -259,10 +350,10 @@ public class TpchQ1 {
       // -------------------------------------------------------------------------------------------------------------
 
       // 1 - l_discount
-      MapMinusInt4ValFloat8ColOp.map(selected, one_minus_l_discount, vecRowBlock, 1, 2, selVec);
+      MapMinusInt4ValFloat8ColOp.map(selected, one_minus_l_discount_res_vec, vecRowBlock, 1, 2, selVec);
       // l_extendedprice * (1 - l_discount)
       MapMulFloat8ColFloat8ColOp.map(selected, l_extendedprice_mul_one_minus_l_discount_ptr, vecRowBlock.getValueVecPtr(1),
-          one_minus_l_discount, selVec);
+          one_minus_l_discount_res_vec, selVec);
 
       // 1 + l_tax
       MapPlusInt4ValFloat8ColOp.map(selected, one_plus_l_tax, vecRowBlock, 1, 3, selVec);
@@ -273,13 +364,27 @@ public class TpchQ1 {
       // -------------------------------------------------------------------------------------------------------------
       // Aggregation
       // -------------------------------------------------------------------------------------------------------------
-      VectorUtil.pivotCharx2(selected, vecRowBlock, pivotVector, new int[]{4,5}, selVec);
-//      testPivot(vecRowBlock, pivotVector, selected, selVec);
+      VectorUtil.pivotCharx2(selected, vecRowBlock, /* packed */ pivotVector, new int[]{4, 5}, selVec);
+      //testPivot(vecRowBlock, pivotVector, selected, selVec);
 
 
-      VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResult, pivotVector, 2, 0, selVec);
+      VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResVector, pivotVector, 2, 0, selVec);
 //      testMapContents(vecRowBlock, hashResult, selected, selVec);
 
+      hashTable.findGroupIds(selected, groupIds, hashResVector, pivotVector, selVec);
+
+      valueVectors[0] = vecRowBlock.getValueVecPtr(0);
+      valueVectors[1] = vecRowBlock.getValueVecPtr(1);
+      valueVectors[2] = l_extendedprice_mul_one_minus_l_discount_ptr;
+      valueVectors[3] = l_extendedprice_x_1_l_discount_x_1_plus_l_tax;
+      valueVectors[4] = vecRowBlock.getValueVecPtr(0);
+      valueVectors[5] = vecRowBlock.getValueVecPtr(1);
+      valueVectors[6] = vecRowBlock.getValueVecPtr(2);
+      valueVectors[7] = vecRowBlock.getValueVecPtr(2);
+      valueVectors[7] = emptyVector8;
+
+      hashTable.insertMissedGroups(selected, computed, groupIds, hashResVector, pivotVector, valueVectors, selVec);
+      hashTable.computeAggregate(selected, computed, groupIds, hashResVector, pivotVector, valueVectors, selVec);
 
       count += selected;
       vecRowBlock.clear();

@@ -34,7 +34,7 @@ public class CukcooHashTable<K, V, P> {
   private final long perBucketSize;
 
   // table data structure
-  private long bucketPtr;
+  public long bucketPtr;
 
   private int size = 0;
 
@@ -55,12 +55,12 @@ public class CukcooHashTable<K, V, P> {
     int findSize = findNearestPowerOfTwo(size);
     initBuckets(findSize);
 
-    currentBuf = this.bucketHandler.newBucketBuffer();
+    currentBuf = this.bucketHandler.createBucketBuffer();
 
-    kickingBucket[0] = this.bucketHandler.newBucketBuffer();
-    kickingBucket[1] = this.bucketHandler.newBucketBuffer();
+    kickingBucket[0] = this.bucketHandler.createBucketBuffer();
+    kickingBucket[1] = this.bucketHandler.createBucketBuffer();
 
-    rehash = this.bucketHandler.newBucketBuffer();
+    rehash = this.bucketHandler.createBucketBuffer();
   }
 
   public int bucketSize() {
@@ -111,30 +111,48 @@ public class CukcooHashTable<K, V, P> {
     return true;
   }
 
+  public boolean insert(long hash, UnsafeBuf payload) {
+    if (contains(payload)) {
+      return false;
+    }
+
+    UnsafeBuf kickedOrInserted = insertEntryInternal(hash, payload);
+    if (kickedOrInserted != null) {
+      rehash();
+      insert(kickedOrInserted);
+    }
+    return true;
+  }
+
   int switchBetweenZeroAndOne = 0;
 
-  public UnsafeBuf insertEntry(UnsafeBuf row) {
+  private UnsafeBuf insertEntry(UnsafeBuf payload) {
+    long hash = bucketHandler.hashFunc(payload);
+    return insertEntryInternal(hash, payload);
+  }
+
+  private UnsafeBuf insertEntryInternal(long hash, UnsafeBuf payload) {
     int loopCount = 0;
 
-    row.copyTo(currentBuf);
-
-    int bucketId = (int) (bucketHandler.hashFunc(currentBuf) & modMask);
+    int bucketId = (int) (hash & modMask);
+    payload.copyTo(this.currentBuf);
+    UnsafeBuf currentBucket = this.currentBuf;
 
     while(loopCount < maxLoopNum) {
       long keyPtr = getBucketAddr(bucketPtr, bucketId + 1);
       bucketHandler.getBucket(keyPtr, kickingBucket[switchBetweenZeroAndOne]);
       if (bucketHandler.isEmptyBucket(kickingBucket[switchBetweenZeroAndOne].address)) {
-        bucketHandler.write(keyPtr, currentBuf);
+        bucketHandler.write(keyPtr, currentBucket);
         size++;
         return null;
       }
 
-      bucketHandler.write(keyPtr, currentBuf);
-      currentBuf = kickingBucket[switchBetweenZeroAndOne];
+      bucketHandler.write(keyPtr, currentBucket);
+      currentBucket = kickingBucket[switchBetweenZeroAndOne];
 
-      int bucketIdFromHash1 = (int) (bucketHandler.hashFunc(currentBuf) & modMask);
+      int bucketIdFromHash1 = (int) (bucketHandler.hashFunc(currentBucket) & modMask);
       if (bucketId == bucketIdFromHash1) { // switch bucketId via different function
-        bucketId = (int) (bucketHandler.hashFunc(currentBuf) >> NBITS & modMask);
+        bucketId = (int) (bucketHandler.hashFunc(currentBucket) >> NBITS & modMask);
       } else {
         bucketId = bucketIdFromHash1;
       }
@@ -143,7 +161,7 @@ public class CukcooHashTable<K, V, P> {
       ++loopCount;
     }
 
-    return currentBuf.copyOf();
+    return currentBucket.copyOf();
   }
 
   public void rehash() {
@@ -180,7 +198,7 @@ public class CukcooHashTable<K, V, P> {
     return (mask1 | mask2) != 0;
   }
 
-  public V lookup(K key) {
+  public V getValue(K key) {
     long hashKey = bucketHandler.hashFunc(key);
 
     // find the possible locations
@@ -216,5 +234,166 @@ public class CukcooHashTable<K, V, P> {
   public UnsafeBuf getPayload(UnsafeBuf key, UnsafeBuf buffer) {
     int groupId = getGroupId(key);
     return groupId == 0 ? null : bucketHandler.getBucket(getBucketAddr(bucketPtr, groupId), buffer);
+  }
+
+  public void findGroupIds(int vecNum, /* compacted */ int[] groupIds, long hashVec, long valueVec, int[] selVec) {
+    long hashOffset = 0;
+    long valueOffset = 0;
+    for (int i = 0; i < vecNum; i++) {
+      hashOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
+      valueOffset = selVec[i] * 2;
+
+      long hash = UnsafeUtil.unsafe.getLong(hashVec + hashOffset);
+
+      // find the possible locations
+      int buckId1 = (int) (hash & modMask) + 1; // use different parts of the hash number
+      int buckId2 = (int) (hash >> NBITS & modMask) + 1;
+
+      // check which one matches
+      int mask1 = -(bucketHandler.equalKeys(valueVec + valueOffset, getBucketAddr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
+      int mask2 = -(bucketHandler.equalKeys(valueVec + valueOffset, getBucketAddr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
+      groupIds[i] = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
+    }
+  }
+
+  public void insertMissedGroups(int vecNum, /* compacted */ boolean [] inserted, int[] groupIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
+    int hashVecOffset;
+    int keyVecOffset;
+    int payloadOffset;
+    UnsafeBuf payload = bucketHandler.createBucketBuffer();
+    for (int i = 0; i < vecNum; i++) {
+      if (groupIds[i] == 0) {
+        hashVecOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
+        keyVecOffset = selVec[i] * 2;
+        payloadOffset = 0;
+
+        // reuse key pivot
+        payload.putBytes(0, keyVector + keyVecOffset, 2);
+
+        // DSM -> NSM
+        payloadOffset += 2;
+        payload.putBytes(payloadOffset, valueVecs[0], 8); // sum(l_quantity)
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putBytes(payloadOffset, valueVecs[1], 8); // sum(l_extendedprice)
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putBytes(payloadOffset, valueVecs[2], 8); // sum(l_extendedprice*(1-l_discount))
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putBytes(payloadOffset, valueVecs[3], 8); // sum(l_extendedprice*(1-l_discount)*(1+l_tax))
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+
+        payload.putBytes(payloadOffset, valueVecs[0], 8); // avg(l_quantity) : sum
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putLong(payloadOffset, 0);                // avg(l_quantity) : count
+        payloadOffset+= SizeOf.SIZE_OF_LONG;
+
+        payload.putBytes(payloadOffset, valueVecs[1], 8); // avg(l_extendedprice) : sum
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putLong(payloadOffset, 0);                // avg(l_extendedprice) : count
+        payloadOffset+= SizeOf.SIZE_OF_LONG;
+
+
+        payload.putBytes(payloadOffset, valueVecs[5], 8); // avg(l_discount) : sum
+        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+        payload.putLong(payloadOffset, 0);                // avg(l_discount) : count
+        payloadOffset+= SizeOf.SIZE_OF_LONG;
+
+        payload.putLong(payloadOffset, 0);                // count(*)
+
+        long hash = UnsafeUtil.unsafe.getLong(hashVec + hashVecOffset);
+        insert(hash, payload);
+      }
+    }
+  }
+
+  public void computeAggregate(int vecNum, /* compacted */ boolean [] inserted, int[] groupIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
+    int hashVecOffset;
+    int payloadOffset;
+    long valueOffset = 0;
+    UnsafeBuf bucket = bucketHandler.createBucketBuffer();
+    for (int i = 0; i < vecNum; i++) {
+      if (groupIds[i] != 0) {
+        hashVecOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
+        payloadOffset = 0;
+        valueOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
+
+        bucketHandler.getBucket(getBucketAddr(bucketPtr, groupIds[i]), bucket);
+
+        // skip keys
+        payloadOffset += 2;
+
+
+        // compute
+
+        // 0: sum (l_quantity) : double
+        double lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        double rhs = UnsafeUtil.unsafe.getDouble(valueVecs[0] + valueOffset);
+        double res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+
+        // 1: sum(l_extendedprice) : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[1] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+
+
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+
+        // 2: sum(l_extendedprice*(1-l_discount)) : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[2] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+
+        // 3: sum(l_extendedprice*(1-l_discount)*(1+l_tax) : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[3] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+
+        // 4-1: avg(l_quantity) - sum : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[0] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+        // 4-2: avg(l_quantity) - count : long
+        long cnt = UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        UnsafeUtil.unsafe.putLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, cnt + 1);
+        payloadOffset += SizeOf.SIZE_OF_LONG;
+
+        // 5-1: avg(l_extendedprice) - sum : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[1] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+        // 5-2: avg(l_extendedprice) - count : long
+        cnt = UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        UnsafeUtil.unsafe.putLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, cnt + 1);
+        payloadOffset += SizeOf.SIZE_OF_LONG;
+
+        // 6-1: avg(l_discount) - sum : double
+        lhs = UnsafeUtil.unsafe.getDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        rhs = UnsafeUtil.unsafe.getDouble(valueVecs[5] + valueOffset);
+        res = lhs + rhs;
+        UnsafeUtil.unsafe.putDouble(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, res);
+        payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+        // 6-2: avg(l_discount) - count : long
+        cnt = UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        UnsafeUtil.unsafe.putLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, cnt + 1);
+        payloadOffset += SizeOf.SIZE_OF_LONG;
+
+        // 7: count(*) : long
+        cnt = UnsafeUtil.unsafe.getLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset);
+        UnsafeUtil.unsafe.putLong(getBucketAddr(bucketPtr, groupIds[i]) + payloadOffset, cnt + 1);
+      }
+    }
   }
 }

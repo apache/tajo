@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.map;
+package org.apache.tajo.storage.vector.map;
 
 import org.apache.tajo.storage.vector.SizeOf;
 

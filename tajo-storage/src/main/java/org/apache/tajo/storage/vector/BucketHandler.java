@@ -27,11 +27,15 @@ public interface BucketHandler<K, V> {
 
   public void write(long bucketPtr, UnsafeBuf buf);
 
-  public UnsafeBuf newBucketBuffer();
+  public UnsafeBuf createKeyBuffer();
+
+  public UnsafeBuf createBucketBuffer();
 
   public UnsafeBuf getBucket(long bucketPtr, UnsafeBuf buf);
 
   public K getKey(long bucketPtr);
+
+  public boolean equalKeys(long keyPtr, long bucketPtr);
 
   public boolean equalKeys(UnsafeBuf keyBuffer, long bucketPtr);
 

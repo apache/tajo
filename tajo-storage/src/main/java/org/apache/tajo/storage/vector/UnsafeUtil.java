@@ -90,6 +90,14 @@ public class UnsafeUtil {
     return (short) (unsafe.getByte(index) & 0xFF);
   }
 
+  public static int getShort(long addr, int index) {
+    return unsafe.getShort(addr + (index * SizeOf.SIZE_OF_INT));
+  }
+
+  public static void putShort(long addr, int index, short val) {
+    unsafe.putShort(addr + (index * SizeOf.SIZE_OF_INT), val);
+  }
+
   public static int getInt(long addr, int index) {
     return unsafe.getInt(addr + (index * SizeOf.SIZE_OF_INT));
   }
