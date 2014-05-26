@@ -1552,8 +1552,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static boolean checkIfCaseWhenWithOuterJoinBeEvaluated(QueryBlock block, EvalNode evalNode,
                                                                  boolean isTopMostJoin) {
     if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> caseWhenEvals = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
-      if (caseWhenEvals.size() > 0 && !isTopMostJoin) {
+      Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+      if (found.size() > 0 && !isTopMostJoin) {
         return false;
       }
     }
@@ -1578,6 +1578,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
     if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
       Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+      if (found.size() > 0) {
+        return false;
+      }
+
+      found = EvalTreeUtil.findEvalsWithNull(evalNode);
       if (found.size() > 0) {
         return false;
       }
