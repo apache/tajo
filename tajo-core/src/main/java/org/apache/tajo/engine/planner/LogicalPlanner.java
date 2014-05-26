@@ -584,7 +584,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-    HavingNode having = new HavingNode(context.plan.newPID());
+    HavingNode having = context.queryBlock.getNodeFromExpr(expr);
     having.setChild(child);
     having.setInSchema(child.getOutSchema());
     having.setOutSchema(child.getOutSchema());
@@ -1310,7 +1310,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitDropDatabase(PlanContext context, Stack<Expr> stack, DropDatabase expr)
       throws PlanningException {
-    DropDatabaseNode dropDatabaseNode = context.plan.createNode(DropDatabaseNode.class);
+    DropDatabaseNode dropDatabaseNode = context.queryBlock.getNodeFromExpr(expr);
     dropDatabaseNode.init(expr.getDatabaseName(), expr.isIfExists());
     return dropDatabaseNode;
   }

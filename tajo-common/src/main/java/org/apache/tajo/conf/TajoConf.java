@@ -327,7 +327,10 @@ public class TajoConf extends Configuration {
 
     //TIME & DATE
     TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
-    TAJO_DATE_ORDER("tajo.date.order", "YMD")
+    TAJO_DATE_ORDER("tajo.date.order", "YMD"),
+
+    //PLANNER
+    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true)
     ;
 
     public final String varname;
