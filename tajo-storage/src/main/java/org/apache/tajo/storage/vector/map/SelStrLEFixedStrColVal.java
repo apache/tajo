@@ -33,15 +33,18 @@ public class SelStrLEFixedStrColVal {
   public static int sel(int vecNum, int [] sel, VecRowBlock rowBlock, int lhsIdx, byte [] value, long nullFlags, long selId) {
     int selected = 0;
 
-    long lstrAddr = rowBlock.getValueVecPtr(lhsIdx);
+    long strVec = rowBlock.getValueVecPtr(lhsIdx);
+    long strAddr;
 
     outest:
     for (int rowIdx = 0; rowIdx < vecNum; rowIdx++) {
+
       boolean found = true;
 
       int minLength = Math.min(rowBlock.maxLengths[lhsIdx], value.length);
       int minWords = minLength / Longs.BYTES;
 
+      strAddr = strVec + rowBlock.maxLengths[lhsIdx] * rowIdx;
       long rhsAddrOffset = Unsafe.ARRAY_BYTE_BASE_OFFSET;
       /*
          * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
@@ -49,9 +52,9 @@ public class SelStrLEFixedStrColVal {
          * On the other hand, it is substantially faster on 4-bit.
          */
       for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
-        long lw = unsafe.getLong(lstrAddr);
+        long lw = unsafe.getLong(strAddr);
         long rw = unsafe.getLong(value, rhsAddrOffset);
-        lstrAddr += SizeOf.SIZE_OF_LONG;
+        strAddr += SizeOf.SIZE_OF_LONG;
         rhsAddrOffset += SizeOf.SIZE_OF_LONG;
 
         long diff = lw ^ rw;
@@ -79,14 +82,14 @@ public class SelStrLEFixedStrColVal {
           }
 
           sel[selected] = rowIdx;
-          selected += (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL)) <= 0 ? 1 : 0;
+          selected += ((int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL))) <= 0 ? 1 : 0;
           continue outest;
         }
       }
 
       // The epilogue to cover the last (minLength % 8) elements.
       for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-        byte l = unsafe.getByte(lstrAddr++);
+        byte l = unsafe.getByte(strAddr++);
         byte w = unsafe.getByte(value, rhsAddrOffset++);
         byte r = (byte) (l - w);
 

@@ -1,9 +1,11 @@
 package org.apache.tajo.experiment;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.primitives.UnsignedBytes;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,8 +47,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -195,8 +196,10 @@ public class TpchQ1 {
 
     long beginProcess = System.currentTimeMillis();
     int resultCount = 0;
-    while(exec.next() != null) {
+    Tuple tuple;
+    while((tuple = exec.next()) != null) {
       resultCount++;
+      System.out.println(tuple);
     }
     long endProcess = System.currentTimeMillis();
     exec.close();
@@ -281,6 +284,24 @@ public class TpchQ1 {
       UnsafeUtil.unsafe.copyMemory(null, bucketPtr, null, ((DirectBuffer)bb).address() + 2, getBucketSize());
       return new UnsafeBuf(bb);
     }
+
+    public Comparator<UnsafeBuf> makeComparator() {
+      return new Comparator<UnsafeBuf>() {
+        @Override
+        public int compare(UnsafeBuf o1, UnsafeBuf o2) {
+          // changed two bytes to unsigned value and compare them.
+          for (int i = 0; i < 2; i++) {
+            byte l = o1.getByte(i);
+            byte r = o2.getByte(i);
+            byte d = (byte) (l - r);
+            if (d != 0) {
+              return d;
+            }
+          }
+          return 0;
+        }
+      };
+    }
   }
 
   @Test
@@ -321,6 +342,8 @@ public class TpchQ1 {
 
     int rowIdx = 0;
     int [] selVec = new int[vecRowBlock.maxVecSize()];
+
+    int totalRows = 0;
     int count = 0;
     long one_minus_l_discount_res_vec = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
     long l_extendedprice_mul_one_minus_l_discount_ptr = UnsafeUtil.allocVector(TajoDataTypes.Type.FLOAT8, 1024);
@@ -336,7 +359,6 @@ public class TpchQ1 {
     int [] groupIds = new int[vecRowBlock.maxVecSize()];
     int [] missedIndices = new int[vecRowBlock.maxVecSize()];
     long [] valueVectors = new long[8];
-    boolean [] computed = new boolean[8];
 
     long emptyVector8 = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
     hashTable.createEmptyBucket();
@@ -366,11 +388,11 @@ public class TpchQ1 {
       // Aggregation
       // -------------------------------------------------------------------------------------------------------------
       VectorUtil.pivotCharx2(selected, vecRowBlock, /* packed */ pivotVector, new int[]{4, 5}, selVec);
-      //testPivot(vecRowBlock, pivotVector, selected, selVec);
+      // testPivot(vecRowBlock, pivotVector, selected, selVec);
 
 
       VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResVector, pivotVector, 2, 0, selVec);
-//      testMapContents(vecRowBlock, hashResult, selected, selVec);
+      // testMapContents(vecRowBlock, hashResult, selected, selVec);
 
       int missed = hashTable.findGroupIds(selected, groupIds, missedIndices, hashResVector, pivotVector, selVec);
 
@@ -384,13 +406,26 @@ public class TpchQ1 {
       valueVectors[7] = vecRowBlock.getValueVecPtr(2);
       valueVectors[7] = emptyVector8;
 
-      hashTable.insertMissedGroups(selected, missed, missedIndices, groupIds, hashResVector, pivotVector, valueVectors, selVec);
-      hashTable.computeAggregate(selected, groupIds, hashResVector, pivotVector, valueVectors, selVec);
+      hashTable.insertMissedGroups(missed, missedIndices, groupIds, hashResVector, pivotVector, selVec);
+      hashTable.computeAggregate(selected, groupIds, valueVectors, selVec);
 
+      totalRows += vecRowBlock.limitedVecSize();
       count += selected;
       vecRowBlock.clear();
     }
+
+    List<UnsafeBuf> list = Lists.newArrayList(hashTable.getEntries());
+    Collections.sort(list, bucketHandler.makeComparator());
+    Iterator<UnsafeBuf> it = list.iterator();
+    while(it.hasNext()) {
+      UnsafeBuf buf = it.next();
+      System.out.println(new String(bucketHandler.getKey(buf.address)) + ", " + buf.getDouble(2) + ", " + buf.getDouble(10) + ", " + buf.getDouble(18) +", " + buf.getDouble(26));
+    }
+
+
+
     long readEnd = System.currentTimeMillis();
+    System.out.println("total rows:" + totalRows);
     System.out.println(count + " rows (" + (readEnd - readStart) + " read msec)");
     vecRowBlock.free();
   }
@@ -475,5 +510,17 @@ public class TpchQ1 {
     long readEnd = System.currentTimeMillis();
     System.out.println(rowIdx + " rows (" + (readEnd - readStart) + " read msec)");
     vecRowBlock.free();
+  }
+
+  @Test
+  public void testFastByteCompare() {
+    assertTrue(compareUnSafe("1980-04-01", "1980-04-13") < 0);
+    assertTrue(compareUnSafe("1994-04-01", "1999-04-13") < 0);
+    assertTrue(compareUnSafe("1994-04-01", "1999-04-13") < 0);
+    assertTrue(compareUnSafe("1994-04-01", "1999-04-13") < 0);
+  }
+
+  private static int compareUnSafe(String str1, String str2) {
+    return UnsignedBytes.lexicographicalComparator().compare(str1.getBytes(), str2.getBytes());
   }
 }

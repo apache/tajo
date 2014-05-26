@@ -350,10 +350,12 @@ public class TestVecRowBlock {
 
     SelStrLEFixedStrColVal op = new SelStrLEFixedStrColVal();
     int selVec [] = new int[vecRowBlock.maxVecSize()];
-    int selNum = op.sel(vecRowBlock.limitedVecSize(), selVec, vecRowBlock, 7, "1980-04-01".getBytes(), 0, 0);
+    int selNum = op.sel(vecRowBlock.limitedVecSize(), selVec, vecRowBlock, 7, "1980-04-05".getBytes(), 0, 0);
 
     for (int i = 0; i < selNum; i++) {
-      System.out.println(selVec[i]);
+      int id = selVec[i];
+      System.out.println(new String(vecRowBlock.getFixedText(7, id)));
+      assertTrue(new String(vecRowBlock.getFixedText(7, id)).compareTo("1980-04-05") <= 0);
     }
     vecRowBlock.free();
   }
