@@ -1315,6 +1315,33 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return dropDatabaseNode;
   }
 
+  public LogicalNode handleCreateTableLike(PlanContext context, CreateTable expr, CreateTableNode createTableNode)
+    throws PlanningException {
+    String parentTableName = expr.getLikeParentTableName();
+
+    if (CatalogUtil.isFQTableName(parentTableName) == false) {
+      parentTableName =
+	CatalogUtil.buildFQName(context.session.getCurrentDatabase(),
+				parentTableName);
+    }
+    TableDesc parentTableDesc = catalog.getTableDesc(parentTableName);
+    if(parentTableDesc == null)
+      throw new PlanningException("Table '"+parentTableName+"' does not exist");
+    PartitionMethodDesc partitionDesc = parentTableDesc.getPartitionMethod();
+    createTableNode.setTableSchema(parentTableDesc.getSchema());
+    createTableNode.setPartitionMethod(partitionDesc);
+
+    createTableNode.setStorageType(parentTableDesc.getMeta().getStoreType());
+    createTableNode.setOptions(parentTableDesc.getMeta().getOptions());
+
+    createTableNode.setExternal(parentTableDesc.isExternal());
+    if(parentTableDesc.isExternal()) {
+      createTableNode.setPath(parentTableDesc.getPath());
+    }
+    return createTableNode;
+  }
+
+
   @Override
   public LogicalNode visitCreateTable(PlanContext context, Stack<Expr> stack, CreateTable expr)
       throws PlanningException {
@@ -1329,7 +1356,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setTableName(
           CatalogUtil.buildFQName(context.session.getCurrentDatabase(), expr.getTableName()));
     }
-
+    // This is CREATE TABLE <tablename> LIKE <parentTable>
+    if(expr.getLikeParentTableName() != null)
+      return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));

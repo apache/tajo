@@ -23,9 +23,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -356,5 +361,169 @@ public class TestCreateTable extends QueryTestCaseBase {
     assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "varchar");
     assertTableExists(createdNames.get(0));
+  }
+
+  private boolean isClonedSchema(Schema origSchema, Schema newSchema)  {
+    // Check schema of tables
+    boolean schemaEqual =
+      (origSchema.size() == newSchema.size());
+    if(schemaEqual == false)  {
+      System.err.println("Number of columns in schema not equal");
+      return false;
+    }
+
+    for(int col = 0; col < origSchema.size(); col++)  {
+      Column colA = origSchema.getColumn(col);
+      Column colB = newSchema.getColumn(col);
+      if(colA.getSimpleName().equals(colB.getSimpleName()) == false)  {
+	System.err.println("Column names at index " + col + " do not match");
+	return false;
+      }
+      if(colA.getDataType().equals(colB.getDataType()) == false) {
+	System.err.println("Column datatypes at index " + col + " do not match");
+	return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isClonedTable(String orignalTable, String newTable) throws Exception  {
+    assertTableExists(newTable);
+    TableDesc origTableDesc = client.getTableDesc(orignalTable);
+    TableDesc newTableDesc = client.getTableDesc(newTable);
+    System.err.println(origTableDesc.toJson());
+
+    System.err.println("Checkin schema of input tables");
+    if(isClonedSchema(origTableDesc.getSchema(), newTableDesc.getSchema()) == false) {
+      return false;
+    }
+    System.err.println("Schema looks ok");
+
+    // Check partition information
+    PartitionMethodDesc origPartMethod = origTableDesc.getPartitionMethod();
+    PartitionMethodDesc newPartMethod = newTableDesc.getPartitionMethod();
+    if(origPartMethod != null) {
+      if(newPartMethod == null)  {
+	System.err.println("New table does not have partition info");
+	return false;
+      }
+      System.err.println("Checking partition schema of input tables");
+      if(isClonedSchema(origPartMethod.getExpressionSchema(),
+			newPartMethod.getExpressionSchema()) == false)  {
+	return false;
+      }
+      System.err.println("Partition schema looks ok");
+
+      if(origPartMethod.getPartitionType().equals(newPartMethod.getPartitionType()) == false)  {
+	System.err.println("Partition type of input tables do not match");
+	return false;
+      }
+    }
+
+    // Check external flag
+    if(origTableDesc.isExternal() != newTableDesc.isExternal()) {
+      System.err.println("External table flag on input tables not equal");
+      return false;
+    }
+
+    if(origTableDesc.getMeta() != null) {
+      TableMeta origMeta = origTableDesc.getMeta();
+      TableMeta newMeta = newTableDesc.getMeta();
+      if(origMeta.getStoreType().equals(newMeta.getStoreType()) == false) {
+	System.err.println("Store type of input tables not equal");
+	return false;
+      }
+
+      KeyValueSet origOptions = origMeta.getOptions();
+      KeyValueSet newOptions = newMeta.getOptions();
+      if(origOptions.equals(newOptions) == false)  {
+	System.err.println("Meta options of input tables not equal");
+	return false;
+      }
+    }
+    return true;
+  }
+
+  @Test
+  public final void testCreateTableLike1() throws Exception {
+    // Basic create table with default database
+    executeString("CREATE TABLE table1 (c1 int, c2 varchar);").close();
+    executeString("CREATE TABLE table2 LIKE table1");
+    assertEquals(isClonedTable("table1","table2"), true);
+    executeString("DROP TABLE table1");
+    executeString("DROP TABLE table2");
+
+    // Basic create table with database
+    executeString("CREATE DATABASE d1").close();
+    executeString("CREATE TABLE d1.table1 (c1 int, c2 varchar);").close();
+    executeString("CREATE TABLE d1.table2 LIKE d1.table1");
+    assertEquals(isClonedTable("d1.table1","d1.table2"), true);
+    executeString("DROP TABLE d1.table1");
+    executeString("DROP TABLE d1.table2");
+
+    // Table with non-default store type
+    executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING rcfile;").close();
+    executeString("CREATE TABLE table2 LIKE table1");
+    assertEquals(isClonedTable("table1","table2"), true);
+    executeString("DROP TABLE table1");
+    executeString("DROP TABLE table2");
+
+    // Table with non-default meta options
+    executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
+    executeString("CREATE TABLE table2 LIKE table1");
+    assertEquals(isClonedTable("table1","table2"), true);
+    executeString("DROP TABLE table1");
+    executeString("DROP TABLE table2");
+
+
+    // Table with partitions (default partition type)
+    executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int, c4 float, c5 text);").close();
+    executeString("CREATE TABLE table2 LIKE table1");
+    assertEquals(isClonedTable("table1","table2"), true);
+    executeString("DROP TABLE table1");
+    executeString("DROP TABLE table2");
+
+
+    // Table with external flag
+    // Use existing file as input for creating external table
+    String className = getClass().getSimpleName();
+    Path currentDatasetPath = new Path(datasetBasePath, className);
+    Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
+    executeString("CREATE EXTERNAL TABLE table3 (c1 int, c2 varchar) USING rcfile LOCATION '" + filePath.toUri() + "'").close();
+    executeString("CREATE TABLE table2 LIKE table3");
+    assertEquals(isClonedTable("table3","table2"), true);
+    executeString("DROP TABLE table3");
+    executeString("DROP TABLE table2");
+
+
+    // Table created using CTAS
+    executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
+    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2,c3 from table3;").close();
+    executeString("CREATE TABLE table2 LIKE table4");
+    assertEquals(isClonedTable("table4","table2"), true);
+    executeString("DROP TABLE table3");
+    executeString("DROP TABLE table4");
+    executeString("DROP TABLE table2");
+
+
+    /* Enable when view is supported
+    // View
+    executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
+    executeString("CREATE VIEW table4(c1,c2,c3) AS SELECT c1*c1, c2, c2,c3 from table3;").close();
+    executeString("CREATE TABLE table2 LIKE table4");
+    assertEquals(isClonedTable("table4","table2"), true);
+    executeString("DROP TABLE table3");
+    executeString("DROP TABLE table4");
+    executeString("DROP TABLE table2");
+    */
+
+    /*  Enable when partition type other than column is supported
+    // Table with partitions (range partition)
+    executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY RANGE (c1) (  PARTITION c1 VALUES LESS THAN (2),  PARTITION c1 VALUES LESS THAN (5),  PARTITION c1 VALUES LESS THAN (MAXVALUE) );").close();
+    executeString("CREATE TABLE table2 LIKE table1");
+    assertEquals(isClonedTable("table1","table2"), true);
+    executeString("DROP TABLE table1");
+    executeString("DROP TABLE table2");
+    */
   }
 }
