@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
-import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -287,14 +286,18 @@ public class CSVFile {
     private boolean eof = false;
     private final byte[] nullChars;
     private SplitLineReader reader;
-    private ArrayList<Long> fileOffsets = new ArrayList<Long>();
-    private ArrayList<Integer> rowLengthList = new ArrayList<Integer>();
-    private ArrayList<Integer> startOffsets = new ArrayList<Integer>();
-    private NonSyncByteArrayOutputStream buffer = new NonSyncByteArrayOutputStream(DEFAULT_PAGE_SIZE);
+    private ArrayList<Long> fileOffsets;
+    private ArrayList<Integer> rowLengthList;
+    private ArrayList<Integer> startOffsets;
+    private NonSyncByteArrayOutputStream buffer;
     private SerializerDeserializer serde;
 
     @Override
     public void init() throws IOException {
+      fileOffsets = new ArrayList<Long>();
+      rowLengthList = new ArrayList<Integer>();
+      startOffsets = new ArrayList<Integer>();
+      buffer = new NonSyncByteArrayOutputStream(DEFAULT_PAGE_SIZE);
 
       // FileFragment information
       if(fs == null) {

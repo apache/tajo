@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Objects;
+
 public class ExecutionBlockId implements Comparable<ExecutionBlockId> {
   public static final String EB_ID_PREFIX = "eb";
   private QueryId queryId;
@@ -63,7 +65,7 @@ public class ExecutionBlockId implements Comparable<ExecutionBlockId> {
 
   @Override
   public int hashCode() {
-    return toString().hashCode();
+    return Objects.hashCode(queryId, id);
   }
 
   public TajoIdProtos.ExecutionBlockIdProto getProto() {
