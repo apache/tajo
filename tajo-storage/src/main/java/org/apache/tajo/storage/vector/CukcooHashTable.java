@@ -236,9 +236,10 @@ public class CukcooHashTable<K, V, P> {
     return groupId == 0 ? null : bucketHandler.getBucket(getBucketAddr(bucketPtr, groupId), buffer);
   }
 
-  public void findGroupIds(int vecNum, /* compacted */ int[] groupIds, long hashVec, long valueVec, int[] selVec) {
+  public int findGroupIds(int vecNum, /* compacted */ int[] groupIds, int [] missed, long hashVec, long valueVec, int[] selVec) {
     long hashOffset = 0;
     long valueOffset = 0;
+    int missedNum = 0;
     for (int i = 0; i < vecNum; i++) {
       hashOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
       valueOffset = selVec[i] * 2;
@@ -253,59 +254,75 @@ public class CukcooHashTable<K, V, P> {
       int mask1 = -(bucketHandler.equalKeys(valueVec + valueOffset, getBucketAddr(bucketPtr, buckId1)) ? 1 : 0); // 0xFF..FF for a match,
       int mask2 = -(bucketHandler.equalKeys(valueVec + valueOffset, getBucketAddr(bucketPtr, buckId2)) ? 1 : 0); // 0 otherwise
       groupIds[i] = mask1 & buckId1 | mask2 & buckId2; // at most 1 matches
+
+      missed[missedNum] = i;
+      missedNum += (groupIds[i] == 0) ? 1 : 0;
     }
+    return missedNum;
   }
 
-  public void insertMissedGroups(int vecNum, /* compacted */ boolean [] inserted, int[] groupIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
+  UnsafeBuf payload;
+  public UnsafeBuf createEmptyBucket() {
+    int payloadOffset = 2;
+    payload = bucketHandler.createBucketBuffer();
+    payload.putFloat8(payloadOffset, 0); // sum(l_quantity)
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice)
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice*(1-l_discount))
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice*(1-l_discount)*(1+l_tax))
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+
+    payload.putFloat8(payloadOffset, 0); // avg(l_quantity) : sum
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putLong(payloadOffset, 0);                // avg(l_quantity) : count
+    payloadOffset += SizeOf.SIZE_OF_LONG;
+
+    payload.putFloat8(payloadOffset, 0); // avg(l_extendedprice) : sum
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putLong(payloadOffset, 0);                // avg(l_extendedprice) : count
+    payloadOffset += SizeOf.SIZE_OF_LONG;
+
+
+    payload.putFloat8(payloadOffset, 0); // avg(l_discount) : sum
+    payloadOffset += SizeOf.SIZE_OF_DOUBLE;
+    payload.putLong(payloadOffset, 0);                // avg(l_discount) : count
+    payloadOffset += SizeOf.SIZE_OF_LONG;
+
+    payload.putLong(payloadOffset, 0);                // count(*)
+    return payload;
+  }
+
+  public void insertMissedGroups(int vecNum, int missed, /* compacted */ int [] missedVector, int [] groupdIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
     int hashVecOffset;
     int keyVecOffset;
-    int payloadOffset;
-    UnsafeBuf payload = bucketHandler.createBucketBuffer();
-    for (int i = 0; i < vecNum; i++) {
-      if (groupIds[i] == 0) {
-        hashVecOffset = selVec[i] * SizeOf.SIZE_OF_LONG;
-        keyVecOffset = selVec[i] * 2;
-        payloadOffset = 0;
 
-        // reuse key pivot
-        payload.putBytes(0, keyVector + keyVecOffset, 2);
+    int missedId;
+    for (int i = 0; i < missed; i++) {
+      missedId = missedVector[i];
+      hashVecOffset = selVec[missedId] * SizeOf.SIZE_OF_LONG;
+      keyVecOffset = selVec[missedId] * 2;
 
-        // DSM -> NSM
-        payloadOffset += 2;
-        payload.putBytes(payloadOffset, valueVecs[0], 8); // sum(l_quantity)
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putBytes(payloadOffset, valueVecs[1], 8); // sum(l_extendedprice)
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putBytes(payloadOffset, valueVecs[2], 8); // sum(l_extendedprice*(1-l_discount))
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putBytes(payloadOffset, valueVecs[3], 8); // sum(l_extendedprice*(1-l_discount)*(1+l_tax))
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
+      // reuse key pivot
+      payload.putBytes(0, keyVector + keyVecOffset, 2);
 
-        payload.putBytes(payloadOffset, valueVecs[0], 8); // avg(l_quantity) : sum
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putLong(payloadOffset, 0);                // avg(l_quantity) : count
-        payloadOffset+= SizeOf.SIZE_OF_LONG;
-
-        payload.putBytes(payloadOffset, valueVecs[1], 8); // avg(l_extendedprice) : sum
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putLong(payloadOffset, 0);                // avg(l_extendedprice) : count
-        payloadOffset+= SizeOf.SIZE_OF_LONG;
-
-
-        payload.putBytes(payloadOffset, valueVecs[5], 8); // avg(l_discount) : sum
-        payloadOffset+= SizeOf.SIZE_OF_DOUBLE;
-        payload.putLong(payloadOffset, 0);                // avg(l_discount) : count
-        payloadOffset+= SizeOf.SIZE_OF_LONG;
-
-        payload.putLong(payloadOffset, 0);                // count(*)
-
-        long hash = UnsafeUtil.unsafe.getLong(hashVec + hashVecOffset);
-        insert(hash, payload);
-      }
+      long hash = UnsafeUtil.unsafe.getLong(hashVec + hashVecOffset);
+      insert(hash, payload);
     }
   }
 
-  public void computeAggregate(int vecNum, /* compacted */ boolean [] inserted, int[] groupIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
+  /**
+   * Assume that all group ids are already found.
+   *
+   * @param vecNum
+   * @param groupIds
+   * @param hashVec
+   * @param keyVector
+   * @param valueVecs
+   * @param selVec
+   */
+  public void computeAggregate(int vecNum, /* compacted */ int[] groupIds, long hashVec, long keyVector, long [] valueVecs, int[] selVec) {
     int hashVecOffset;
     int payloadOffset;
     long valueOffset = 0;

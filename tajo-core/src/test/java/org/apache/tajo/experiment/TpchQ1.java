@@ -334,11 +334,12 @@ public class TpchQ1 {
     Q1BucketHandler bucketHandler = new Q1BucketHandler();
     CukcooHashTable hashTable = new CukcooHashTable(bucketHandler);
     int [] groupIds = new int[vecRowBlock.maxVecSize()];
+    int [] missedIndices = new int[vecRowBlock.maxVecSize()];
     long [] valueVectors = new long[8];
     boolean [] computed = new boolean[8];
 
     long emptyVector8 = UnsafeUtil.allocVector(TajoDataTypes.Type.INT8, 1024);
-
+    hashTable.createEmptyBucket();
     while(reader.nextFetch(vecRowBlock)) {
       // -------------------------------------------------------------------------------------------------------------
       // Selection
@@ -371,7 +372,7 @@ public class TpchQ1 {
       VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResVector, pivotVector, 2, 0, selVec);
 //      testMapContents(vecRowBlock, hashResult, selected, selVec);
 
-      hashTable.findGroupIds(selected, groupIds, hashResVector, pivotVector, selVec);
+      int missed = hashTable.findGroupIds(selected, groupIds, missedIndices, hashResVector, pivotVector, selVec);
 
       valueVectors[0] = vecRowBlock.getValueVecPtr(0);
       valueVectors[1] = vecRowBlock.getValueVecPtr(1);
@@ -383,8 +384,8 @@ public class TpchQ1 {
       valueVectors[7] = vecRowBlock.getValueVecPtr(2);
       valueVectors[7] = emptyVector8;
 
-      hashTable.insertMissedGroups(selected, computed, groupIds, hashResVector, pivotVector, valueVectors, selVec);
-      hashTable.computeAggregate(selected, computed, groupIds, hashResVector, pivotVector, valueVectors, selVec);
+      hashTable.insertMissedGroups(selected, missed, missedIndices, groupIds, hashResVector, pivotVector, valueVectors, selVec);
+      hashTable.computeAggregate(selected, groupIds, hashResVector, pivotVector, valueVectors, selVec);
 
       count += selected;
       vecRowBlock.clear();
