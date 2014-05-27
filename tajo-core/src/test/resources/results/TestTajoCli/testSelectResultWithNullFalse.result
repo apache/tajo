@@ -3,6 +3,6 @@ c_custkey,  o_orderkey,  o_orderstatus
 1,  1,  O
 2,  2,  O
 3,  3,  F
-4,  null,  null
-5,  null,  null
+4,  ,  
+5,  ,  
 (5 rows, , 30 B selected)

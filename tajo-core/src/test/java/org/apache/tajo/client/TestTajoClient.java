@@ -165,6 +165,13 @@ public class TestTajoClient {
   public final void testSessionVariables() throws IOException, ServiceException, InterruptedException {
     String prefixName = "key_";
     String prefixValue = "val_";
+
+    List<String> unsetList = new ArrayList<String>();
+    for(Map.Entry<String, String> entry: client.getAllSessionVariables().entrySet()) {
+      unsetList.add(entry.getKey());
+    }
+    client.unsetSessionVariables(unsetList);
+
     for (int i = 0; i < 10; i++) {
       String key = prefixName + i;
       String val = prefixValue + i;
