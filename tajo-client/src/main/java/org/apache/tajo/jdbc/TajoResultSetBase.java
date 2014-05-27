@@ -125,7 +125,7 @@ public abstract class TajoResultSetBase implements ResultSet {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
     if (wasNull) {
-      return 0.0;
+      return 0.0d;
     }
     return datum.asFloat8();
   }
@@ -135,7 +135,7 @@ public abstract class TajoResultSetBase implements ResultSet {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
     if (wasNull) {
-      return 0.0;
+      return 0.0d;
     }
     return datum.asFloat8();
   }
@@ -282,7 +282,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
     switch(dataType) {
       case BOOLEAN:
-        return String.valueOf(((BooleanDatum)datum).asBool());
+        return String.valueOf(datum.asBool());
       case TIME: {
         return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
       }

@@ -59,7 +59,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
-      meta.putOption(StorageConstants.CSVFILE_NULL, context.getConf().getVar(ConfVars.CSVFILE_NULL));
+      String nullChar = context.getQueryContext().get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
           context.getOutputPath());
     }

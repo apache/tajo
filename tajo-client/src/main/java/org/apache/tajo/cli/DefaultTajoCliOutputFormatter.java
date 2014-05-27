@@ -37,8 +37,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
   private boolean printPause;
   private boolean printErrorTrace;
-  private boolean replaceNull;
-  private String nullKeyword;
+  private String nullChar;
 
   @Override
   public void init(TajoConf tajoConf) {
@@ -47,8 +46,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPause = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_PAUSE);
     this.printPauseRecords = tajoConf.getIntVar(TajoConf.ConfVars.CLI_PRINT_PAUSE_NUM_RECORDS);
     this.printErrorTrace = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_ERROR_TRACE);
-    this.replaceNull = tajoConf.getBoolVar(ConfVars.CLI_PRINT_NULL);
-    this.nullKeyword = tajoConf.getVar(ConfVars.CLI_PRINT_NULL_WORD);
+    this.nullChar = tajoConf.getVar(ConfVars.CLI_NULL_CHAR);
   }
 
   @Override
@@ -97,11 +95,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
         if (i > 1) sout.print(",  ");
         String columnValue = res.getString(i);
         if(res.wasNull()){
-          if (replaceNull) {
-            sout.print(nullKeyword);
-          } else {
-            sout.print(columnValue);
-          }
+          sout.print(nullChar);
         } else {
           sout.print(columnValue);
         }

@@ -481,9 +481,11 @@ public class Query implements EventHandler<QueryEvent> {
                           Path finalOutputDir) throws Exception {
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
-        TableStats stats = lastStage.getResultStats();
 
-        meta.putOption(StorageConstants.CSVFILE_NULL, context.getConf().getVar(ConfVars.CSVFILE_NULL));
+        String nullChar = queryContext.get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+        meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+
+        TableStats stats = lastStage.getResultStats();
 
         TableDesc resultTableDesc =
             new TableDesc(

@@ -102,9 +102,7 @@ public class QueryMasterTask extends CompositeService {
 
   private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
 
-  //private TajoConf systemConf;
-
-  private TajoConf queryConf;
+  private TajoConf systemConf;
 
   private AtomicLong lastClientHeartbeat = new AtomicLong(-1);
 
@@ -135,20 +133,11 @@ public class QueryMasterTask extends CompositeService {
 
   @Override
   public void init(Configuration conf) {
-    //systemConf = (TajoConf)conf;
+    systemConf = (TajoConf)conf;
 
     try {
-      queryConf = new TajoConf(conf);
-      if (session != null) {
-        Map<String, String> sessionValues = session.getAllVariables();
-        if (sessionValues != null) {
-          for (Map.Entry<String, String> entry: sessionValues.entrySet()) {
-            queryConf.set(entry.getKey(), entry.getValue());
-          }
-        }
-      }
       queryTaskContext = new QueryMasterTaskContext();
-      String resourceManagerClassName = queryConf.getVar(TajoConf.ConfVars.RESOURCE_MANAGER_CLASS);
+      String resourceManagerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_MANAGER_CLASS);
 
       if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
         resourceAllocator = new TajoResourceAllocator(queryTaskContext);
@@ -171,7 +160,7 @@ public class QueryMasterTask extends CompositeService {
 
       queryMetrics = new TajoMetrics(queryId.toString());
 
-      super.init(queryConf);
+      super.init(systemConf);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       initError = t;
@@ -335,7 +324,7 @@ public class QueryMasterTask extends CompositeService {
       }
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalPlanner planner = new LogicalPlanner(catalog);
-      LogicalOptimizer optimizer = new LogicalOptimizer(queryConf);
+      LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       LogicalPlan plan = planner.createPlan(session, expr);
       optimizer.optimize(plan);
@@ -378,11 +367,11 @@ public class QueryMasterTask extends CompositeService {
   private void initStagingDir() throws IOException {
     Path stagingDir = null;
     Path outputDir = null;
-    FileSystem defaultFS = TajoConf.getWarehouseDir(queryConf).getFileSystem(queryConf);
+    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
 
     try {
 
-      stagingDir = initStagingDir(queryConf, defaultFS, queryId.toString());
+      stagingDir = initStagingDir(systemConf, defaultFS, queryId.toString());
       defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
 
       // Create a subdirectories
@@ -528,7 +517,7 @@ public class QueryMasterTask extends CompositeService {
     }
 
     public TajoConf getConf() {
-      return queryConf;
+      return systemConf;
     }
 
     public Clock getClock() {

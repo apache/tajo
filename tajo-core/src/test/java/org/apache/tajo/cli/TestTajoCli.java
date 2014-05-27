@@ -213,7 +213,7 @@ public class TestTajoCli {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
     tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
-    tajoConf.setBoolVar(ConfVars.CLI_PRINT_NULL, false);
+    tajoConf.setVar(ConfVars.CLI_NULL_CHAR, "");
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
@@ -239,8 +239,7 @@ public class TestTajoCli {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
     tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
-    tajoConf.setBoolVar(ConfVars.CLI_PRINT_NULL, true);
-    tajoConf.setVar(ConfVars.CLI_PRINT_NULL_WORD, "testnull");
+    tajoConf.setVar(ConfVars.CLI_NULL_CHAR, "testnull");
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
