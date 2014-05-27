@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
@@ -34,8 +33,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
 
   private boolean finished = false;
 
-  private int distinctGroupingKeyNum;
-
   private Tuple[] currentTuples;
   private int outColumnNum;
   private int groupbyNodeNum;
@@ -48,9 +45,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     this.plan = plan;
     this.aggregateExecs = aggregateExecs;
     this.groupbyNodeNum = plan.getGroupByNodes().size();
-
-    final Column[] keyColumns = plan.getGroupingColumns();
-    distinctGroupingKeyNum = keyColumns.length;
 
     currentTuples = new Tuple[groupbyNodeNum];
     outColumnNum = outSchema.size();
@@ -116,7 +110,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
         mergeTupleIndex++;
       }
     }
-
     return mergedTuple;
   }
 

@@ -21,10 +21,12 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.TimeZone;
 
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
@@ -117,13 +119,18 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortWithDate() throws Exception {
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
-    if (!testingCluster.isHCatalogStoreRunning()) {
-      // create external table table1 (col1 timestamp, col2 date, col3 time) ...
-      executeDDL("create_table_with_date_ddl.sql", "table1");
+    TimeZone oldTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
+    try {
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        // create external table table1 (col1 timestamp, col2 date, col3 time) ...
+        executeDDL("create_table_with_date_ddl.sql", "table1");
 
-      ResultSet res = executeQuery();
-      assertResultSet(res);
-      cleanupQuery(res);
+        ResultSet res = executeQuery();
+        assertResultSet(res);
+        cleanupQuery(res);
+      }
+    } finally {
+      TajoConf.setCurrentTimeZone(oldTimeZone);
     }
   }
 

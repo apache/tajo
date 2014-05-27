@@ -39,8 +39,8 @@ import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
   paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4}),
       @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8})}
 )
-public class ToTimestamp extends GeneralFunction {
-  public ToTimestamp() {
+public class ToTimestampInt extends GeneralFunction {
+  public ToTimestampInt() {
     super(new Column[] {new Column("timestamp", INT4)});
   }
 
@@ -50,6 +50,6 @@ public class ToTimestamp extends GeneralFunction {
     if (value instanceof NullDatum) {
       return NullDatum.get();
     }
-    return DatumFactory.createTimeStamp(value.asInt4());
+    return DatumFactory.createTimestmpDatumWithUnixTime(value.asInt4());
   }
 }

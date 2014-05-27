@@ -15,6 +15,10 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-699: Create a table using LIKE. (Prafulla T via hyunsik)
+
+    TAJO-825: Datetime type refactoring. (Hyoungjun Kim via jihoon)
+
     TAJO-811: add simple fifo scheduler support. (jinho)
 
     TAJO-801: Multiple distinct should be supported. (Hyoungjun Kim via hyunsik)
@@ -40,6 +44,21 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-830: Some filter conditions with a SUBQUERY are removed by optimizer.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
+
+    TAJO-808: Fix pre-commit build failure. (jinho)
+ 
+    TAJO-827: SUM() overflow in the case of INT4. (Hyoungjun Kim via hyunsik)
+
+    TAJO-832: NPE occurs when Exception's message is null in Task. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-833: NPE occurs when using the column as a alias name in the multiple 
+    DISTINCT. (Hyoungjun Kim via hyunsik)
 
     TAJO-821: IllegalStateException occurs when a NettyClientBase object is created 
     within single thread. (hyoungjunkim via jinho)
@@ -88,6 +107,8 @@ Release 0.9.0 - unreleased
     TAJO-810: TAJO-810: Update Tajo site for 0.8.0 release. (hyunsik)
 
     TAJO-605: Rename Options to KeyValueList. (jinho)
+
+    TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
 

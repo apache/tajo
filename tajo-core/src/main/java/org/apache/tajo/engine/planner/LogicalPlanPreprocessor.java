@@ -289,11 +289,13 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     LogicalPlan.QueryBlock leftBlock = ctx.plan.newQueryBlock();
     PreprocessContext leftContext = new PreprocessContext(ctx, leftBlock);
     LogicalNode leftChild = visit(leftContext, new Stack<Expr>(), expr.getLeft());
+    leftBlock.setRoot(leftChild);
     ctx.currentBlock.registerExprWithNode(expr.getLeft(), leftChild);
 
     LogicalPlan.QueryBlock rightBlock = ctx.plan.newQueryBlock();
     PreprocessContext rightContext = new PreprocessContext(ctx, rightBlock);
     LogicalNode rightChild = visit(rightContext, new Stack<Expr>(), expr.getRight());
+    rightBlock.setRoot(rightChild);
     ctx.currentBlock.registerExprWithNode(expr.getRight(), rightChild);
 
     UnionNode unionNode = new UnionNode(ctx.plan.newPID());
@@ -363,8 +365,10 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     PreprocessContext newContext;
     // Note: TableSubQuery always has a table name.
     // SELECT .... FROM (SELECT ...) TB_NAME <-
-    newContext = new PreprocessContext(ctx, ctx.plan.newQueryBlock());
+    QueryBlock queryBlock = ctx.plan.newQueryBlock();
+    newContext = new PreprocessContext(ctx, queryBlock);
     LogicalNode child = super.visitTableSubQuery(newContext, stack, expr);
+    queryBlock.setRoot(child);
 
     // a table subquery should be dealt as a relation.
     TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);

@@ -23,6 +23,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteBuffer;
 
@@ -214,7 +216,10 @@ public class Int8Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
     case DATE:
-      return new DateDatum(((DateDatum)datum).getDate().plusDays(asInt4()));
+      DateDatum dateDatum = (DateDatum)datum;
+      TimeMeta tm = dateDatum.toTimeMeta();
+      tm.plusDays(asInt4());
+      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
     case NULL_TYPE:
       return datum;
     default:
@@ -236,7 +241,10 @@ public class Int8Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
     case DATE:
-      return new DateDatum(((DateDatum)datum).getDate().minusDays(asInt4()));
+      DateDatum dateDatum = (DateDatum)datum;
+      TimeMeta tm = dateDatum.toTimeMeta();
+      tm.plusDays(0 - asInt4());
+      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
     case NULL_TYPE:
       return datum;
     default:

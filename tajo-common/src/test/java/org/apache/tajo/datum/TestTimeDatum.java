@@ -70,13 +70,6 @@ public class TestTimeDatum {
   }
 
   @Test
-  public final void testAsByteArray() {
-    TimeDatum d = DatumFactory.createTime(TIME);
-    TimeDatum copy = new TimeDatum(d.asByteArray());
-    assertEquals(d.asInt8(), copy.asInt8());
-  }
-
-  @Test
   public final void testSize() {
     Datum d = DatumFactory.createTime(TIME);
     assertEquals(TimeDatum.SIZE, d.asByteArray().length);

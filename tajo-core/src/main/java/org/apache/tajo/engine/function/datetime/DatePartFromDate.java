@@ -49,12 +49,12 @@ public class DatePartFromDate extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum target = params.get(0);
-    DateDatum date = null;
 
     if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
       return NullDatum.get();
     }
 
+    DateDatum date;
     if(params.get(1) instanceof DateDatum) {
       date = (DateDatum)(params.get(1));
     } else {
@@ -124,8 +124,7 @@ public class DatePartFromDate extends GeneralFunction {
   private class DowExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
-      Integer tdow = date.getDayOfWeek();
-      return DatumFactory.createFloat8((double) ((tdow == 7) ? 0 : tdow));
+      return DatumFactory.createFloat8((double) date.getDayOfWeek());
     }
   }
 
@@ -139,7 +138,7 @@ public class DatePartFromDate extends GeneralFunction {
   private class ISODowExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
-      return DatumFactory.createFloat8((double) date.getDayOfWeek());
+      return DatumFactory.createFloat8((double) date.getISODayOfWeek());
     }
   }
 
@@ -174,7 +173,7 @@ public class DatePartFromDate extends GeneralFunction {
   private class WeekExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
-      return DatumFactory.createFloat8((double) date.getWeekOfWeekyear());
+      return DatumFactory.createFloat8((double) date.getWeekOfYear());
     }
   }
 

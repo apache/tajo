@@ -40,7 +40,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
   private HashAggregator[] hashAggregators;
   private PhysicalExec child;
-  private int distinctGroupingKeyNum;
   private int distinctGroupingKeyIds[];
   private boolean first = true;
   private int groupbyNodeNum;
@@ -58,14 +57,22 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     this.child = subOp;
     this.child.init();
 
-    distinctGroupingKeyNum = plan.getGroupingColumns().length;
-    distinctGroupingKeyIds = new int[distinctGroupingKeyNum];
-
-    Column[] keyColumns = plan.getGroupingColumns();
-    Column col;
-    for (int idx = 0; idx < plan.getGroupingColumns().length; idx++) {
-      col = keyColumns[idx];
-      distinctGroupingKeyIds[idx] = inSchema.getColumnId(col.getQualifiedName());
+    List<Integer> distinctGroupingKeyIdList = new ArrayList<Integer>();
+    for (Column col: plan.getGroupingColumns()) {
+      int keyIndex;
+      if (col.hasQualifier()) {
+        keyIndex = inSchema.getColumnId(col.getQualifiedName());
+      } else {
+        keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
+      }
+      if (!distinctGroupingKeyIdList.contains(keyIndex)) {
+        distinctGroupingKeyIdList.add(keyIndex);
+      }
+    }
+    int idx = 0;
+    distinctGroupingKeyIds = new int[distinctGroupingKeyIdList.size()];
+    for (Integer intVal: distinctGroupingKeyIdList) {
+      distinctGroupingKeyIds[idx++] = intVal.intValue();
     }
 
     List<GroupbyNode> groupbyNodes = plan.getGroupByNodes();
@@ -151,6 +158,34 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
       progress = 1.0f;
       return null;
     }
+
+
+    /*
+    Tuple materialization example
+    =============================
+
+    Output Tuple Index: 0(l_orderkey), 1(l_partkey), 2(default.lineitem.l_suppkey), 5(default.lineitem.
+    l_partkey), 8(sum)
+
+              select
+                  lineitem.l_orderkey as l_orderkey,
+                  lineitem.l_partkey as l_partkey,
+                  count(distinct lineitem.l_partkey) as cnt1,
+                  count(distinct lineitem.l_suppkey) as cnt2,
+                  sum(lineitem.l_quantity) as sum1
+              from
+                  lineitem
+              group by
+                  lineitem.l_orderkey, lineitem.l_partkey
+
+    The above case will result in the following materialization
+    ------------------------------------------------------------
+
+    l_orderkey  l_partkey  default.lineitem.l_suppkey  l_orderkey  l_partkey  default.lineitem.l_partkey  l_orderkey  l_partkey  sum
+        1            1              7311                   1            1                1                    1           1      53.0
+        1            1              7706
+
+    */
 
     currentAggregatedTuples = new ArrayList<Tuple>();
     int listIndex = 0;
@@ -296,9 +331,14 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
       List<Integer> groupingKeyIdList = new ArrayList<Integer>(distinctGroupingKeyIdSet);
       Column[] keyColumns = groupbyNode.getGroupingColumns();
       Column col;
-      for (int idx = 0; idx < groupbyNode.getGroupingColumns().length; idx++) {
+      for (int idx = 0; idx < keyColumns.length; idx++) {
         col = keyColumns[idx];
-        int keyIndex = inSchema.getColumnId(col.getQualifiedName());
+        int keyIndex;
+        if (col.hasQualifier()) {
+          keyIndex = inSchema.getColumnId(col.getQualifiedName());
+        } else {
+          keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
+        }
         if (!distinctGroupingKeyIdSet.contains(keyIndex)) {
           groupingKeyIdList.add(keyIndex);
         }

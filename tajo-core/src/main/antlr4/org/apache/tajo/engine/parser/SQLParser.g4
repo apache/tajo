@@ -94,6 +94,7 @@ create_table_statement
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
   | CREATE TABLE (if_not_exists)? table_name (USING file_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
+  | CREATE TABLE (if_not_exists)? table_name LIKE like_table_name=table_name
   ;
 
 table_elements
@@ -846,7 +847,7 @@ boolean_primary
   ;
 
 boolean_predicand
-  : parenthesized_boolean_value_expression 
+  : parenthesized_boolean_value_expression
   | nonparenthesized_value_expression_primary
   ;
 

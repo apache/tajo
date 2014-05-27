@@ -408,7 +408,11 @@ public class Task {
               TaskFatalErrorReport.newBuilder()
                   .setId(getId().getProto());
           if (error != null) {
-            errorBuilder.setErrorMessage(error.getMessage());
+            if (error.getMessage() == null) {
+              errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
+            } else {
+              errorBuilder.setErrorMessage(error.getMessage());
+            }
             errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
@@ -559,7 +563,7 @@ public class Task {
       int retryWaitTime = 1000;
 
       try { // for releasing fetch latch
-        while(retryNum < maxRetryNum) {
+        while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);

@@ -1151,8 +1151,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitCreate_table_statement(SQLParser.Create_table_statementContext ctx) {
-    String tableName = ctx.table_name().getText();
+    String tableName = ctx.table_name(0).getText();
     CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
+    if(checkIfExist(ctx.LIKE()))  {
+      createTable.setLikeParentTable(ctx.like_table_name.getText());
+      return createTable;
+    }
 
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();

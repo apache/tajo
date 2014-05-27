@@ -299,12 +299,37 @@ verifyPatch () {
 }
 
 ###############################################################################
-buildTrunk () {
+preBuildTrunk () {
   echo ""
   echo ""
   echo "======================================================================"
   echo "======================================================================"
   echo " Pre-build master to verify the stability and javac, javadoc warnings" 
+  echo "======================================================================"
+  echo "======================================================================"
+  echo ""
+  echo ""
+  echo "Compiling $(pwd)"
+  echo "$MVN clean test -DskipTests $TAJO_MVN_OPTS > $PATCH_DIR/trunkJavacWarnings.txt 2>&1"
+  $MVN clean test -DskipTests $TAJO_MVN_OPTS > $PATCH_DIR/trunkJavacWarnings.txt 2>&1
+  if [[ $? != 0 ]] ; then
+    echo "Trunk compilation is broken?"
+    cleanupAndExit 1
+  fi
+
+  echo ""
+  echo "Generating Javadocs"
+  echo "$MVN test javadoc:javadoc -DskipTests $TAJO_MVN_OPTS > $PATCH_DIR/trunkJavadocsWarnings.txt 2>&1"
+  $MVN test javadoc:javadoc -DskipTests $TAJO_MVN_OPTS > $PATCH_DIR/trunkJavadocWarnings.txt 2>&1
+}
+
+###############################################################################
+buildTrunk () {
+  echo ""
+  echo ""
+  echo "======================================================================"
+  echo "======================================================================"
+  echo " Build patch to verify the stability and javac, javadoc warnings"
   echo "======================================================================"
   echo "======================================================================"
   echo ""
@@ -853,10 +878,18 @@ if [[ $JENKINS == "true" ]] ; then
     exit 100
   fi
 fi
+preBuildTrunk
 downloadPatch
 verifyPatch
 PLEVEL=$?
 if [[ $PLEVEL == -1  ]] ; then
+  submitJiraComment 1
+  cleanupAndExit 1
+fi
+applyPatch $PLEVEL
+APPLY_PATCH_RET=$?
+(( RESULT = RESULT + $APPLY_PATCH_RET ))
+if [[ $APPLY_PATCH_RET != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
@@ -868,13 +901,6 @@ if [[ $JENKINS == "true" ]] ; then
 fi
 checkTests
 (( RESULT = RESULT + $? ))
-applyPatch $PLEVEL
-APPLY_PATCH_RET=$?
-(( RESULT = RESULT + $APPLY_PATCH_RET ))
-if [[ $APPLY_PATCH_RET != 0 ]] ; then
-  submitJiraComment 1
-  cleanupAndExit 1
-fi
 checkJavacWarnings
 JAVAC_RET=$?
 #2 is returned if the code could not compile

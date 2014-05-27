@@ -49,6 +49,8 @@ public class CreateTable extends Expr {
   private PartitionMethodDescExpr partition;
   @Expose @SerializedName("IfNotExists")
   private boolean ifNotExists;
+  @Expose @SerializedName("LikeParentTable")
+  private String likeParentTable;
 
   public CreateTable(final String tableName, boolean ifNotExists) {
     super(OpType.CreateTable);
@@ -148,6 +150,15 @@ public class CreateTable extends Expr {
   public boolean isIfNotExists() {
     return ifNotExists;
   }
+
+  public void setLikeParentTable(String parentTable)  {
+    this.likeParentTable = parentTable;
+  }
+
+  public String getLikeParentTableName()  {
+    return likeParentTable;
+  }
+
 
   @Override
   public int hashCode() {
