@@ -237,4 +237,14 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
     return planStr;
   }
+
+  public boolean isAggregationColumn(String simpleName) {
+    for (int i = groupingColumns.length; i < targets.length; i++) {
+      if (simpleName.equals(targets[i].getNamedColumn().getSimpleName()) ||
+          simpleName.equals(targets[i].getAlias())) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

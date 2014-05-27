@@ -478,6 +478,9 @@ public class GlobalEngine extends AbstractService {
       LOG.debug("Non Optimized Query: \n" + plan.toString());
       LOG.debug("=============================================");
     }
+    LOG.info("=============================================");
+    LOG.info("Non Optimized Query: \n" + plan.toString());
+    LOG.info("=============================================");
     optimizer.optimize(plan);
     LOG.info("=============================================");
     LOG.info("Optimized Query: \n" + plan.toString());
