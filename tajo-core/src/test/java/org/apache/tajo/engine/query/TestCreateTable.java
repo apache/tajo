@@ -39,6 +39,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
@@ -368,7 +369,7 @@ public class TestCreateTable extends QueryTestCaseBase {
     boolean schemaEqual =
       (origSchema.size() == newSchema.size());
     if(schemaEqual == false)  {
-      System.err.println("Number of columns in schema not equal");
+      fail("Number of columns in schema not equal");
       return false;
     }
 
@@ -376,12 +377,12 @@ public class TestCreateTable extends QueryTestCaseBase {
       Column colA = origSchema.getColumn(col);
       Column colB = newSchema.getColumn(col);
       if(colA.getSimpleName().equals(colB.getSimpleName()) == false)  {
-	System.err.println("Column names at index " + col + " do not match");
-	return false;
+        fail("Column names at index " + col + " do not match");
+        return false;
       }
       if(colA.getDataType().equals(colB.getDataType()) == false) {
-	System.err.println("Column datatypes at index " + col + " do not match");
-	return false;
+        fail("Column datatypes at index " + col + " do not match");
+        return false;
       }
     }
     return true;
@@ -391,38 +392,35 @@ public class TestCreateTable extends QueryTestCaseBase {
     assertTableExists(newTable);
     TableDesc origTableDesc = client.getTableDesc(orignalTable);
     TableDesc newTableDesc = client.getTableDesc(newTable);
-    System.err.println(origTableDesc.toJson());
 
-    System.err.println("Checkin schema of input tables");
     if(isClonedSchema(origTableDesc.getSchema(), newTableDesc.getSchema()) == false) {
+      fail("Schema of input tables do not match");
       return false;
     }
-    System.err.println("Schema looks ok");
 
     // Check partition information
     PartitionMethodDesc origPartMethod = origTableDesc.getPartitionMethod();
     PartitionMethodDesc newPartMethod = newTableDesc.getPartitionMethod();
     if(origPartMethod != null) {
       if(newPartMethod == null)  {
-	System.err.println("New table does not have partition info");
-	return false;
+        fail("New table does not have partition info");
+        return false;
       }
-      System.err.println("Checking partition schema of input tables");
       if(isClonedSchema(origPartMethod.getExpressionSchema(),
-			newPartMethod.getExpressionSchema()) == false)  {
-	return false;
+                        newPartMethod.getExpressionSchema()) == false) {
+	fail("Partition columns of input tables do not match");
+        return false;
       }
-      System.err.println("Partition schema looks ok");
 
       if(origPartMethod.getPartitionType().equals(newPartMethod.getPartitionType()) == false)  {
-	System.err.println("Partition type of input tables do not match");
-	return false;
+        fail("Partition type of input tables do not match");
+        return false;
       }
     }
 
     // Check external flag
     if(origTableDesc.isExternal() != newTableDesc.isExternal()) {
-      System.err.println("External table flag on input tables not equal");
+      fail("External table flag on input tables not equal");
       return false;
     }
 
@@ -430,15 +428,15 @@ public class TestCreateTable extends QueryTestCaseBase {
       TableMeta origMeta = origTableDesc.getMeta();
       TableMeta newMeta = newTableDesc.getMeta();
       if(origMeta.getStoreType().equals(newMeta.getStoreType()) == false) {
-	System.err.println("Store type of input tables not equal");
-	return false;
+        fail("Store type of input tables not equal");
+        return false;
       }
 
       KeyValueSet origOptions = origMeta.getOptions();
       KeyValueSet newOptions = newMeta.getOptions();
       if(origOptions.equals(newOptions) == false)  {
-	System.err.println("Meta options of input tables not equal");
-	return false;
+        fail("Meta options of input tables not equal");
+        return false;
       }
     }
     return true;
@@ -449,7 +447,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     // Basic create table with default database
     executeString("CREATE TABLE table1 (c1 int, c2 varchar);").close();
     executeString("CREATE TABLE table2 LIKE table1");
-    assertEquals(isClonedTable("table1","table2"), true);
+    String testMsg = "testCreateTableLike1: Basic create table with default db";
+    assertTrue(testMsg,isClonedTable("table1","table2"));
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
 
@@ -457,21 +456,24 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("CREATE DATABASE d1").close();
     executeString("CREATE TABLE d1.table1 (c1 int, c2 varchar);").close();
     executeString("CREATE TABLE d1.table2 LIKE d1.table1");
-    assertEquals(isClonedTable("d1.table1","d1.table2"), true);
+    testMsg = "testCreateTableLike1: Basic create table with db test failed";
+    assertTrue(testMsg, isClonedTable("d1.table1","d1.table2"));
     executeString("DROP TABLE d1.table1");
     executeString("DROP TABLE d1.table2");
 
     // Table with non-default store type
     executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING rcfile;").close();
     executeString("CREATE TABLE table2 LIKE table1");
-    assertEquals(isClonedTable("table1","table2"), true);
+    testMsg = "testCreateTableLike1: Table with non-default store type test failed";
+    assertTrue(testMsg, isClonedTable("table1","table2"));
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
 
     // Table with non-default meta options
     executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
     executeString("CREATE TABLE table2 LIKE table1");
-    assertEquals(isClonedTable("table1","table2"), true);
+    testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
+    assertTrue(testMsg, isClonedTable("table1","table2"));
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
 
@@ -479,7 +481,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     // Table with partitions (default partition type)
     executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int, c4 float, c5 text);").close();
     executeString("CREATE TABLE table2 LIKE table1");
-    assertEquals(isClonedTable("table1","table2"), true);
+    testMsg = "testCreateTableLike1: Table with partitions test failed";
+    assertTrue(testMsg, isClonedTable("table1","table2"));
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
 
@@ -491,7 +494,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
     executeString("CREATE EXTERNAL TABLE table3 (c1 int, c2 varchar) USING rcfile LOCATION '" + filePath.toUri() + "'").close();
     executeString("CREATE TABLE table2 LIKE table3");
-    assertEquals(isClonedTable("table3","table2"), true);
+    testMsg = "testCreateTableLike1: Table with external table flag test failed";
+    assertTrue(testMsg, isClonedTable("table3","table2"));
     executeString("DROP TABLE table3");
     executeString("DROP TABLE table2");
 
@@ -500,7 +504,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
     executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2,c3 from table3;").close();
     executeString("CREATE TABLE table2 LIKE table4");
-    assertEquals(isClonedTable("table4","table2"), true);
+    testMsg = "testCreateTableLike1: Table using CTAS test failed";
+    assertTrue(testMsg, isClonedTable("table4","table2"));
     executeString("DROP TABLE table3");
     executeString("DROP TABLE table4");
     executeString("DROP TABLE table2");
@@ -511,7 +516,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
     executeString("CREATE VIEW table4(c1,c2,c3) AS SELECT c1*c1, c2, c2,c3 from table3;").close();
     executeString("CREATE TABLE table2 LIKE table4");
-    assertEquals(isClonedTable("table4","table2"), true);
+    testMsg = "testCreateTableLike1: Table using VIEW test failed";
+    assertTrue(testMsg, isClonedTable("table4","table2"));
     executeString("DROP TABLE table3");
     executeString("DROP TABLE table4");
     executeString("DROP TABLE table2");
@@ -521,7 +527,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     // Table with partitions (range partition)
     executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY RANGE (c1) (  PARTITION c1 VALUES LESS THAN (2),  PARTITION c1 VALUES LESS THAN (5),  PARTITION c1 VALUES LESS THAN (MAXVALUE) );").close();
     executeString("CREATE TABLE table2 LIKE table1");
-    assertEquals(isClonedTable("table1","table2"), true);
+    testMsg = "testCreateTableLike1: Table using non-default partition type failed";
+    assertTrue(testMsg, isClonedTable("table1","table2"));
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
     */

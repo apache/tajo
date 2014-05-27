@@ -273,7 +273,7 @@ public class TestHiveQLAnalyzer {
   }
 
   @Test
-  public void testCreateTableLike1() throws IOException  {
+  public void testCreateTableLike1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_like_1.sql"));
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
