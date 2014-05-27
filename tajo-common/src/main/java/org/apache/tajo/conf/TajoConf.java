@@ -330,6 +330,9 @@ public class TajoConf extends Configuration {
     TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
     TAJO_DATE_ORDER("tajo.date.order", "YMD"),
 
+    //PLANNER
+    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
+
     // FILE FORMAT
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N")
     ;

@@ -700,6 +700,7 @@ public class TestTajoClient {
     InputStream in = fs.open(files[0].getPath());
     byte[] buf = new byte[1024];
 
+
     int readBytes = in.read(buf);
     assertTrue(readBytes > 0);
 
