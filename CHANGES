@@ -43,6 +43,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-830: Some filter conditions with a SUBQUERY are removed by optimizer.
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-819: KillQuery does not work for running query on TajoWorker. (jaehwa)
 
     TAJO-808: Fix pre-commit build failure. (jinho)

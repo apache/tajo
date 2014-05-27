@@ -238,6 +238,10 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     return planStr;
   }
 
+  /**
+   * It checks if an alias name included in the target of this node is for aggregation function.
+   * If so, it returns TRUE. Otherwise, it returns FALSE.
+   */
   public boolean isAggregationColumn(String simpleName) {
     for (int i = groupingColumns.length; i < targets.length; i++) {
       if (simpleName.equals(targets[i].getNamedColumn().getSimpleName()) ||
