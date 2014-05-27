@@ -31,9 +31,9 @@ public class MapMinusInt4ValFloat8ColOp {
     long rhsPtr = vecRowBlock.getValueVecPtr(rhsIdx);
 
     if (selVec == null) {
-      for (int i = 0; i < vecRowBlock.limitedVecSize(); i++) {
+      for (int i = 0; i < vecNum; i++) {
         double rhsValue = unsafe.getDouble(rhsPtr);
-        unsafe.putDouble(result, lhsValue - rhsValue);
+        unsafe.putDouble(result, ((double)lhsValue) - rhsValue);
 
         result += SizeOf.SIZE_OF_LONG;
         rhsPtr += SizeOf.SIZE_OF_LONG;
@@ -41,10 +41,10 @@ public class MapMinusInt4ValFloat8ColOp {
     } else {
       long selectedPtr;
 
-      for (int i = 0; i < vecRowBlock.limitedVecSize(); i++) {
+      for (int i = 0; i < vecNum; i++) {
         selectedPtr = rhsPtr + (selVec[i] * SizeOf.SIZE_OF_LONG);
         double rhsValue = unsafe.getDouble(selectedPtr);
-        unsafe.putDouble(result, lhsValue - rhsValue);
+        unsafe.putDouble(result, ((double)lhsValue) - rhsValue);
         result += SizeOf.SIZE_OF_LONG;
       }
     }

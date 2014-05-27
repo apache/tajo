@@ -422,8 +422,6 @@ public class TpchQ1 {
       System.out.println(new String(bucketHandler.getKey(buf.address)) + ", " + buf.getDouble(2) + ", " + buf.getDouble(10) + ", " + buf.getDouble(18) +", " + buf.getDouble(26));
     }
 
-
-
     long readEnd = System.currentTimeMillis();
     System.out.println("total rows:" + totalRows);
     System.out.println(count + " rows (" + (readEnd - readStart) + " read msec)");
