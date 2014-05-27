@@ -364,8 +364,8 @@ public class EvalTreeUtil {
     return (Collection<T>) finder.evalNodes;
   }
 
-  public static <T extends EvalNode> Collection<T> findOuterJoinRelatedEvals(EvalNode evalNode) {
-    EvalOuterJoinRelatedFinder finder = new EvalOuterJoinRelatedFinder();
+  public static <T extends EvalNode> Collection<T> findOuterJoinConditionEvals(EvalNode evalNode) {
+    EvalOuterJoinConditionFinder finder = new EvalOuterJoinConditionFinder();
     finder.visitChild(null, evalNode, new Stack<EvalNode>());
     return (Collection<T>) finder.evalNodes;
   }
@@ -390,10 +390,10 @@ public class EvalTreeUtil {
     }
   }
 
-  public static class EvalOuterJoinRelatedFinder extends BasicEvalNodeVisitor<Object, Object> {
+  public static class EvalOuterJoinConditionFinder extends BasicEvalNodeVisitor<Object, Object> {
     List<EvalNode> evalNodes = TUtil.newList();
 
-    public EvalOuterJoinRelatedFinder() {
+    public EvalOuterJoinConditionFinder() {
     }
 
     @Override
@@ -410,6 +410,7 @@ public class EvalTreeUtil {
       } else if (evalNode.type == EvalType.IS_NULL) {
         evalNodes.add(evalNode);
       }
+
       return evalNode;
     }
   }

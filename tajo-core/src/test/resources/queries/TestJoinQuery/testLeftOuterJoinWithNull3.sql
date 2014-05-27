@@ -5,6 +5,6 @@ select
   orders.o_orderdate
 from
   customer left outer join orders on c_custkey = o_orderkey
-where o_orderkey is null
+where orders.o_orderkey = 100
 order by
   c_custkey, o_orderkey;
