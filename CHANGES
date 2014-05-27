@@ -106,6 +106,8 @@ Release 0.9.0 - unreleased
 
     TAJO-605: Rename Options to KeyValueList. (jinho)
 
+    TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
+
   SUB TASKS
 
     TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)
