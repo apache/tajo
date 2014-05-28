@@ -383,4 +383,100 @@ public class TestInsertQuery extends QueryTestCaseBase {
       reader.close();
     }
   }
+
+  @Test
+  public final void testInsertOverwriteWithUnion() throws Exception {
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeFile("testInsertOverwriteWithUnion.sql");
+    res.close();
+
+    String tableDatas = getTableFileContents("table1");
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|3|173665.47\n" +
+        "2|4|46929.18\n" +
+        "3|2|193846.25\n";
+
+    assertNotNull(tableDatas);
+    assertEquals(expected, tableDatas);
+
+    executeString("DROP TABLE table1 PURGE");
+  }
+
+  @Test
+  public final void testInsertOverwriteWithUnionDifferentAlias() throws Exception {
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeFile("testInsertOverwriteWithUnionDifferentAlias.sql");
+    res.close();
+
+    String tableDatas = getTableFileContents("table1");
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|3|173665.47\n" +
+        "2|4|46929.18\n" +
+        "3|2|193846.25\n";
+
+    assertNotNull(tableDatas);
+    assertEquals(expected, tableDatas);
+
+    executeString("DROP TABLE table1 PURGE");
+  }
+
+  @Test
+  public final void testInsertOverwriteLocationWithUnion() throws Exception {
+    ResultSet res = executeFile("testInsertOverwriteLocationWithUnion.sql");
+    res.close();
+
+    String resultDatas= getTableFileContents(new Path("/tajo-data/testInsertOverwriteLocationWithUnion"));
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|3|173665.47\n" +
+        "2|4|46929.18\n" +
+        "3|2|193846.25\n";
+
+    assertNotNull(resultDatas);
+    assertEquals(expected, resultDatas);
+  }
+
+  @Test
+  public final void testInsertOverwriteLocationWithUnionDifferenceAlias() throws Exception {
+    ResultSet res = executeFile("testInsertOverwriteLocationWithUnionDifferenceAlias.sql");
+    res.close();
+
+    String resultDatas= getTableFileContents(new Path("/tajo-data/testInsertOverwriteLocationWithUnionDifferenceAlias"));
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|3|173665.47\n" +
+        "2|4|46929.18\n" +
+        "3|2|193846.25\n";
+
+    assertNotNull(resultDatas);
+    assertEquals(expected, resultDatas);
+  }
 }
