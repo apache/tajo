@@ -275,6 +275,23 @@ public class TestTajoCli {
     assertEquals(expectedResult, actual);
   }
 
+  @Test
+  public void testStopWhenError() throws Exception {
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeMetaCommand("\\set tajo.cli.stop.error true");
+
+    tajoCli.executeScript("select count(*) from lineitem; " +
+        "select count(*) from lineitem2; " +
+        "select count(*) from orders");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
     @Override
     protected String getResponseTimeReadable(float responseTime) {

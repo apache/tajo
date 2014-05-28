@@ -325,6 +325,7 @@ public class TajoConf extends Configuration {
     CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
     CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
     CLI_NULL_CHAR("tajo.cli.nullchar", ""),
+    CLI_STOP_ERROR("tajo.cli.stop.error", false),
 
     //TIME & DATE
     TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),

@@ -128,6 +128,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printNoResult(PrintWriter sout) {
     sout.println("(0 rows)");
+    sout.flush();
   }
 
   @Override
@@ -141,6 +142,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printMessage(PrintWriter sout, String message) {
     sout.println(message);
+    sout.flush();
   }
 
   @Override
@@ -149,16 +151,19 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     if (printErrorTrace) {
       sout.println(ExceptionUtils.getStackTrace(t));
     }
+    sout.flush();
   }
 
   @Override
   public void printErrorMessage(PrintWriter sout, String message) {
     sout.println(parseErrorMessage(message));
+    sout.flush();
   }
 
   @Override
   public void printKilledMessage(PrintWriter sout, QueryId queryId) {
     sout.println(TajoCli.KILL_PREFIX + queryId);
+    sout.flush();
   }
 
   @Override
@@ -171,6 +176,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     if (printErrorTrace && status.getErrorTrace() != null && !status.getErrorTrace().isEmpty()) {
       sout.println(status.getErrorTrace());
     }
+    sout.flush();
   }
 
   public static String parseErrorMessage(String message) {
