@@ -41,6 +41,7 @@ import org.apache.tajo.engine.planner.physical.ExternalSortExec;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.planner.physical.ProjectionExec;
 import org.apache.tajo.engine.planner.physical.RangeShuffleFileWriteExec;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -142,7 +143,8 @@ public class TestRangeRetrieverHandler {
 
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+        LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(SORT_QUERY[0]);
@@ -265,7 +267,8 @@ public class TestRangeRetrieverHandler {
     FileFragment[] frags = sm.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
 
     TaskAttemptContext
-        ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
+        ctx = new TaskAttemptContext(conf, new QueryContext(),
+        LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(SORT_QUERY[1]);

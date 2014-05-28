@@ -117,6 +117,15 @@ public class TajoCli {
     public TajoConf getConf() {
       return conf;
     }
+
+    public void setVariable(String key, String value) {
+      conf.set(key, value);
+      try {
+        initFormatter();
+      } catch (Exception e) {
+        System.err.println(ERROR_PREFIX + e.getMessage());
+      }
+    }
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
@@ -125,10 +134,7 @@ public class TajoCli {
     this.reader = new ConsoleReader(sin, out);
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
-    Class formatterClass = conf.getClass(ConfVars.CLI_OUTPUT_FORMATTER_CLASS.varname,
-        DefaultTajoCliOutputFormatter.class);
-    this.outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
-    this.outputFormatter.init(conf);
+    initFormatter();
 
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
@@ -215,6 +221,15 @@ public class TajoCli {
     }
 
     addShutdownHook();
+  }
+
+  private void initFormatter() throws Exception {
+    Class formatterClass = conf.getClass(ConfVars.CLI_OUTPUT_FORMATTER_CLASS.varname,
+        DefaultTajoCliOutputFormatter.class);
+    if (outputFormatter == null || !outputFormatter.getClass().equals(formatterClass)) {
+      outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
+    }
+    outputFormatter.init(conf);
   }
 
   public TajoCliContext getContext() {

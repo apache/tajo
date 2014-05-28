@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 
@@ -68,11 +69,13 @@ public class TaskAttemptContext {
   private Path outputPath;
   private DataChannel dataChannel;
   private Enforcer enforcer;
+  private QueryContext queryContext;
 
-  public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.conf = conf;
+    this.queryContext = queryContext;
     this.queryId = queryId;
 
     if (fragments != null) {
@@ -94,9 +97,9 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(conf, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
@@ -268,5 +271,9 @@ public class TaskAttemptContext {
     } else {
       return false;
     }
+  }
+
+  public QueryContext getQueryContext() {
+    return queryContext;
   }
 }
