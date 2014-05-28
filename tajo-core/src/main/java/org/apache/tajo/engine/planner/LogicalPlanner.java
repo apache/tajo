@@ -208,7 +208,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalNode child = visit(context, stack, projection.getChild());
 
     if (block.hasWindowSpecs()) {
-      child = insertWindowAggNode(context, child, stack, referenceNames, referencesPair.getSecond());
+      LogicalNode windowAggNode =
+          insertWindowAggNode(context, child, stack, referenceNames, referencesPair.getSecond());
+      if (windowAggNode != null) {
+        child = windowAggNode;
+      }
     }
 
     // check if it is implicit aggregation. If so, it inserts group-by node to its child.
@@ -454,8 +458,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
     WindowAggNode windowAggNode = context.plan.createNode(WindowAggNode.class);
-    windowAggNode.setChild(child);
-    windowAggNode.setInSchema(child.getOutSchema());
+    if (child.getType() == NodeType.LIMIT) {
+      LimitNode limitNode = (LimitNode) child;
+      windowAggNode.setChild(limitNode.getChild());
+      windowAggNode.setInSchema(limitNode.getChild().getOutSchema());
+      limitNode.setChild(windowAggNode);
+    } else {
+      windowAggNode.setChild(child);
+      windowAggNode.setInSchema(child.getOutSchema());
+    }
 
     List<String> winFuncRefs = new ArrayList<String>();
     List<WindowFunctionEval> winFuncs = new ArrayList<WindowFunctionEval>();
@@ -546,7 +557,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
-    return windowAggNode;
+
+
+    if (child.getType() == NodeType.LIMIT) {
+      LimitNode limitNode = (LimitNode) child;
+      limitNode.setInSchema(windowAggNode.getOutSchema());
+      limitNode.setOutSchema(windowAggNode.getOutSchema());
+      return null;
+    } else {
+      return windowAggNode;
+    }
   }
 
   /**

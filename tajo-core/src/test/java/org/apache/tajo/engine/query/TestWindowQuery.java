@@ -116,6 +116,35 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWindowBeforeLimit() throws Exception {
+    ResultSet res = executeString(
+        "select r_name, rank() over (order by r_regionkey) as ran from region limit 3;"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithSubQuery() throws Exception {
+    ResultSet res = executeString(
+        "select r_name, c, rank() over (order by r_regionkey) as ran from " +
+            "(select r_name, r_regionkey, count(*) as c from region group by r_name, r_regionkey) a;"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+//  @Test
+//  public final void testWindowWithSubQuery2() throws Exception {
+//    ResultSet res = executeString(
+//        "select r_name, c, rank() over (partition by r_regionkey order by r_regionkey) as ran from " +
+//            "(select r_name, r_regionkey, count(*) as c from region group by r_name, r_regionkey) a;"
+//    );
+//    assertResultSet(res);
+//    cleanupQuery(res);
+//  }
+
+  @Test
   public final void rowNumber1() throws Exception {
     ResultSet res = executeString(
         "SELECT l_orderkey, row_number() OVER () as row_num FROM LINEITEM");

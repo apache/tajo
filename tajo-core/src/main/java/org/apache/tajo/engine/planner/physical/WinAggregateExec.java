@@ -50,8 +50,10 @@ public class WinAggregateExec extends UnaryPhysicalExec {
   protected final int outputColumnNum;
   protected final int nonFunctionColumnNum;
   protected final int nonFunctionColumns[];
+
   protected final int functionNum;
   protected final WindowFunctionEval functions[];
+
   protected Schema schemaForOrderBy;
   protected int sortKeyColumns[];
   protected final boolean hasPartitionKeys;
@@ -118,7 +120,7 @@ public class WinAggregateExec extends UnaryPhysicalExec {
       endUnboundedFollowingFlags = new boolean[functions.length];
       endCurrentRowFlags = new boolean[functions.length];
 
-      List<Column> additionalSortColumns = Lists.newArrayList();
+      List<Column> additionalSortKeyColumns = Lists.newArrayList();
       Schema rewrittenSchema = new Schema(outSchema);
       for (int i = 0; i < functions.length; i++) {
         WindowSpec.WindowEndBound endBound = functions[i].getWindowFrame().getEndBound();
@@ -144,17 +146,17 @@ public class WinAggregateExec extends UnaryPhysicalExec {
 
           for (SortSpec sortSpec : functions[i].getSortSpecs()) {
             if (!rewrittenSchema.contains(sortSpec.getSortKey())) {
-              additionalSortColumns.add(sortSpec.getSortKey());
+              additionalSortKeyColumns.add(sortSpec.getSortKey());
             }
           }
         }
       }
 
-      sortKeyColumns = new int[additionalSortColumns.size()];
+      sortKeyColumns = new int[additionalSortKeyColumns.size()];
       schemaForOrderBy = new Schema(outSchema);
-      for (int i = 0; i < additionalSortColumns.size(); i++) {
-        sortKeyColumns[i] = inSchema.getColumnId(additionalSortColumns.get(i).getQualifiedName());
-        schemaForOrderBy.addColumn(additionalSortColumns.get(i));
+      for (int i = 0; i < additionalSortKeyColumns.size(); i++) {
+        sortKeyColumns[i] = i;
+        schemaForOrderBy.addColumn(additionalSortKeyColumns.get(i));
       }
     } else {
       functions = new WindowFunctionEval[0];
@@ -275,7 +277,7 @@ public class WinAggregateExec extends UnaryPhysicalExec {
         projectedTuple.put(c, inTuple.get(nonFunctionColumns[c]));
       }
       for (int c = 0; c < sortKeyColumns.length; c++) {
-        projectedTuple.put(c, inTuple.get(sortKeyColumns[i]));
+        projectedTuple.put(outputColumnNum + c, inTuple.get(sortKeyColumns[c]));
       }
 
       evaluatedTuples.add(projectedTuple);
@@ -283,8 +285,9 @@ public class WinAggregateExec extends UnaryPhysicalExec {
 
     for (int idx = 0; idx < functions.length; idx++) {
       if (orderedFuncFlags[idx]) {
-        comp = new TupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
+        comp = new TupleComparator(inSchema, functions[idx].getSortSpecs());
         Collections.sort(accumulatedInTuples, comp);
+        comp = new TupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
         Collections.sort(evaluatedTuples, comp);
       }
 
