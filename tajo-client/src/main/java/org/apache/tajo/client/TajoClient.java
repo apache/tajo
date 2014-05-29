@@ -345,7 +345,6 @@ public class TajoClient implements Closeable {
   public ResultSet executeQueryAndGetResult(final String sql)
       throws ServiceException, IOException {
     SubmitQueryResponse response = executeQuery(sql);
-
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
@@ -369,7 +368,6 @@ public class TajoClient implements Closeable {
 
   public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
     SubmitQueryResponse response = executeQueryWithJson(json);
-
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {

@@ -101,6 +101,8 @@ public class TajoTestingCluster {
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
     conf.set(CommonTestingUtil.TAJO_TEST, "TRUE");
+
+//    conf.setBoolean(ConfVars.PLANNER_USE_FILTER_PUSHDOWN.varname, false);
   }
 
 	public TajoConf getConfiguration() {

@@ -442,6 +442,8 @@ public class ProjectionPushDownRule extends
         case TABLE_SUBQUERY:
           TableSubQueryNode tableSubQueryNode = (TableSubQueryNode) parentNode;
           tableSubQueryNode.setSubQuery(child);
+          //KHJ
+          //block.registerNode(child);
           break;
         case STORE:
           StoreTableNode storeTableNode = (StoreTableNode) parentNode;
