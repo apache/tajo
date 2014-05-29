@@ -46,3 +46,9 @@ enum TaskAttemptState {
   TA_KILL_WAIT = 7;
   TA_KILLED = 8;
 }
+
+enum FetcherState {
+  FETCH_INIT = 0;
+  FETCH_FETCHING = 1;
+  FETCH_FINISHED = 2;
+}

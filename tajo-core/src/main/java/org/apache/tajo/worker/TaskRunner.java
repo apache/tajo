@@ -107,7 +107,7 @@ public class TaskRunner extends AbstractService {
 
   private InetSocketAddress qmMasterAddr;
 
-  private ExecutionBlockHistory history;
+  private TaskRunnerHistory history;
 
   public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
     super(TaskRunner.class.getName());
@@ -157,7 +157,7 @@ public class TaskRunner extends AbstractService {
       this.taskOwner = taskOwner;
 
       this.taskRunnerContext = new TaskRunnerContext();
-      this.history = new ExecutionBlockHistory(containerId, executionBlockId);
+      this.history = new TaskRunnerHistory(containerId, executionBlockId);
       this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -298,11 +298,11 @@ public class TaskRunner extends AbstractService {
       return executionBlockId;
     }
 
-    public void addTaskHistory(QueryUnitAttemptId quAttemptId, TaskHistoryProto taskHistory) {
+    public void addTaskHistory(QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
       history.addTaskHistory(quAttemptId, taskHistory);
     }
 
-    public ExecutionBlockHistory getExcutionBlockHistory(){
+    public TaskRunnerHistory getExcutionBlockHistory(){
       return history;
     }
   }

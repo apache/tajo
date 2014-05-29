@@ -26,16 +26,17 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
-<%@ page import="org.apache.tajo.worker.ExecutionBlockHistory" %>
+<%@ page import="org.apache.tajo.worker.TaskRunnerHistory" %>
+<%@ page import="org.apache.tajo.worker.TaskRunnerHistory" %>
 
 <%
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
   List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
-  List<ExecutionBlockHistory> histories = new ArrayList<ExecutionBlockHistory>(tajoWorker.getWorkerContext().getTaskRunnerManager().getExecutionBlockHistories());
+  List<TaskRunnerHistory> histories = new ArrayList<TaskRunnerHistory>(tajoWorker.getWorkerContext().getTaskRunnerManager().getExecutionBlockHistories());
 
   JSPUtil.sortTaskRunner(taskRunners);
-  JSPUtil.sortExecutionBlockHistory(histories);
+  JSPUtil.sortTaskRunnerHistory(histories);
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 %>
@@ -74,7 +75,7 @@
   <table width="100%" border="1" class="border_table">
     <tr><th>ContainerId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
 <%
-      for(ExecutionBlockHistory history: histories) {
+      for(TaskRunnerHistory history: histories) {
           String taskRunnerId = TaskRunner.getId(history.getExecutionBlockId(), history.getContainerId());
 %>
     <tr>

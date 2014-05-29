@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -114,10 +115,10 @@ public class TestFetcher {
     ClientSocketChannelFactory channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
 
     final Fetcher fetcher = new Fetcher(uri, new File(OUTPUT_DIR + "data"), channelFactory);
-    assertEquals(Fetcher.STATE.READY, fetcher.getState());
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
-    assertEquals(Fetcher.STATE.FINISH, fetcher.getState());
+    assertEquals(TajoProtos.FetcherState.FETCH_FINISHED, fetcher.getState());
     server.stop();
   }
 }

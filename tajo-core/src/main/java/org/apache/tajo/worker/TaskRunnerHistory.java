@@ -30,28 +30,28 @@ import org.apache.tajo.common.ProtoObject;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockHistoryProto;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRunnerHistoryProto;
 
 /**
- * The history class for ExecutionBlock processing.
+ * The history class for TaskRunner processing.
  */
-public class ExecutionBlockHistory implements ProtoObject<ExecutionBlockHistoryProto> {
+public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
 
   private Service.STATE state;
   private ContainerId containerId;
   private long startTime;
   private long finishTime;
   private ExecutionBlockId executionBlockId;
-  private Map<QueryUnitAttemptId, TaskHistoryProto> taskHistoryMap = null;
+  private Map<QueryUnitAttemptId, TaskHistory> taskHistoryMap = null;
 
-  public ExecutionBlockHistory(ContainerId containerId, ExecutionBlockId executionBlockId) {
+  public TaskRunnerHistory(ContainerId containerId, ExecutionBlockId executionBlockId) {
     init();
     this.containerId = containerId;
     this.executionBlockId = executionBlockId;
   }
 
-  public ExecutionBlockHistory(ExecutionBlockHistoryProto proto) {
+  public TaskRunnerHistory(TaskRunnerHistoryProto proto) {
     this.state = Service.STATE.valueOf(proto.getState());
     this.containerId = ConverterUtils.toContainerId(proto.getContainerId());
     this.startTime = proto.getStartTime();
@@ -59,7 +59,8 @@ public class ExecutionBlockHistory implements ProtoObject<ExecutionBlockHistoryP
     this.executionBlockId = new ExecutionBlockId(proto.getExecutionBlockId());
     this.taskHistoryMap = Maps.newHashMap();
     for (TaskHistoryProto taskHistoryProto : proto.getTaskHistoriesList()) {
-      taskHistoryMap.put(new QueryUnitAttemptId(taskHistoryProto.getQueryUnitAttemptId()), taskHistoryProto);
+      TaskHistory taskHistory = new TaskHistory(taskHistoryProto);
+      taskHistoryMap.put(taskHistory.getQueryUnitAttemptId(), taskHistory);
     }
   }
 
@@ -78,22 +79,24 @@ public class ExecutionBlockHistory implements ProtoObject<ExecutionBlockHistoryP
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof ExecutionBlockHistory) {
-      ExecutionBlockHistory other = (ExecutionBlockHistory) o;
+    if (o instanceof TaskRunnerHistory) {
+      TaskRunnerHistory other = (TaskRunnerHistory) o;
       return getProto().equals(other.getProto());
     }
     return false;
   }
 
   @Override
-  public ExecutionBlockHistoryProto getProto() {
-    ExecutionBlockHistoryProto.Builder builder = ExecutionBlockHistoryProto.newBuilder();
+  public TaskRunnerHistoryProto getProto() {
+    TaskRunnerHistoryProto.Builder builder = TaskRunnerHistoryProto.newBuilder();
     builder.setContainerId(containerId.toString());
     builder.setState(state.toString());
     builder.setExecutionBlockId(executionBlockId.getProto());
     builder.setStartTime(startTime);
     builder.setFinishTime(finishTime);
-    builder.addAllTaskHistories(taskHistoryMap.values());
+    for (TaskHistory taskHistory : taskHistoryMap.values()){
+      builder.addTaskHistories(taskHistory.getProto());
+    }
     return builder.build();
   }
 
@@ -133,15 +136,15 @@ public class ExecutionBlockHistory implements ProtoObject<ExecutionBlockHistoryP
     this.containerId = containerId;
   }
 
-  public TaskHistoryProto getTaskHistory(QueryUnitAttemptId queryUnitAttemptId) {
+  public TaskHistory getTaskHistory(QueryUnitAttemptId queryUnitAttemptId) {
     return taskHistoryMap.get(queryUnitAttemptId);
   }
 
-  public Map<QueryUnitAttemptId, TaskHistoryProto> getTaskHistoryMap() {
+  public Map<QueryUnitAttemptId, TaskHistory> getTaskHistoryMap() {
     return Collections.unmodifiableMap(taskHistoryMap);
   }
 
-  public void addTaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskHistoryProto taskHistoryProto) {
-    taskHistoryMap.put(queryUnitAttemptId, taskHistoryProto);
+  public void addTaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskHistory taskHistory) {
+    taskHistoryMap.put(queryUnitAttemptId, taskHistory);
   }
 }

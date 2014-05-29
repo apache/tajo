@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -471,41 +472,48 @@ public class Task {
     releaseChannelFactory();
   }
 
-  public TaskHistoryProto createTaskHistory() {
-    TaskHistoryProto.Builder builder = TaskHistoryProto.newBuilder();
-    builder.setQueryUnitAttemptId(getTaskId().getProto());
-    builder.setStartTime(startTime);
-    builder.setFinishTime(finishTime);
-    if (context.getOutputPath() != null) {
-      builder.setOutputPath(context.getOutputPath().toString());
-    }
-
-    if (context.getWorkDir() != null) {
-      builder.setWorkingPath(context.getWorkDir().toString());
-    }
-
+  public TaskHistory createTaskHistory() {
+    TaskHistory taskHistory = null;
     try {
-      builder.setStatus(getStatus());
-      builder.setProgress(context.getProgress());
+      taskHistory = new TaskHistory(getTaskId(), getStatus(), context.getProgress(),
+          startTime, finishTime, reloadInputStats());
 
-      builder.setInputStats(reloadInputStats());
+      if (context.getOutputPath() != null) {
+        taskHistory.setOutputPath(context.getOutputPath().toString());
+      }
+
+      if (context.getWorkDir() != null) {
+        taskHistory.setWorkingPath(context.getWorkDir().toString());
+      }
+
       if (context.getResultStats() != null) {
-        builder.setOutputStats(context.getResultStats().getProto());
+        taskHistory.setOutputStats(context.getResultStats().getProto());
       }
 
       if (hasFetchPhase()) {
-        builder.setTotalFetchCount(fetcherRunners.size());
+        taskHistory.setTotalFetchCount(fetcherRunners.size());
         int i = 0;
+        FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
-          if (fetcher.getState() == Fetcher.STATE.FINISH) i++;
+          // TODO store the fetcher histories
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+            builder.setStartTime(fetcher.getStartTime());
+            builder.setFinishTime(fetcher.getFinishTime());
+            builder.setFileLength(fetcher.getFileLen());
+            builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
+            builder.setState(fetcher.getState());
+
+            taskHistory.addFetcherHistory(builder.build());
+          }
+          if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED) i++;
         }
-        builder.setFinishedFetchCount(i);
+        taskHistory.setFinishedFetchCount(i);
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
 
-    return builder.build();
+    return taskHistory;
   }
 
   public int hashCode() {

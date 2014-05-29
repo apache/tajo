@@ -25,7 +25,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,7 +33,7 @@ public class TaskRunnerManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
 
   private final Map<String, TaskRunner> taskRunnerMap = new HashMap<String, TaskRunner>();
-  private final Map<String, ExecutionBlockHistory> executionBlockhistoryMap = Maps.newConcurrentMap();
+  private final Map<String, TaskRunnerHistory> taskRunnerHistoryMap = Maps.newConcurrentMap();
   private TajoWorker.WorkerContext workerContext;
   private TajoConf tajoConf;
   private AtomicBoolean stop = new AtomicBoolean(false);
@@ -102,15 +101,15 @@ public class TaskRunnerManager extends CompositeService {
     }
   }
 
-  public Collection<ExecutionBlockHistory> getExecutionBlockHistories() {
-    synchronized(executionBlockhistoryMap) {
-      return Collections.unmodifiableCollection(executionBlockhistoryMap.values());
+  public Collection<TaskRunnerHistory> getExecutionBlockHistories() {
+    synchronized(taskRunnerHistoryMap) {
+      return Collections.unmodifiableCollection(taskRunnerHistoryMap.values());
     }
   }
 
-  public ExecutionBlockHistory getExcutionBlockHistoryByTaskRunnerId(String taskRunnerId) {
-    synchronized(executionBlockhistoryMap) {
-      return executionBlockhistoryMap.get(taskRunnerId);
+  public TaskRunnerHistory getExcutionBlockHistoryByTaskRunnerId(String taskRunnerId) {
+    synchronized(taskRunnerHistoryMap) {
+      return taskRunnerHistoryMap.get(taskRunnerId);
     }
   }
 
@@ -130,10 +129,10 @@ public class TaskRunnerManager extends CompositeService {
     return null;
   }
 
-  public TajoWorkerProtocol.TaskHistoryProto getTaskHistoryByQueryUnitAttemptId(QueryUnitAttemptId quAttemptId) {
-    synchronized (executionBlockhistoryMap) {
-      for (ExecutionBlockHistory history : executionBlockhistoryMap.values()) {
-        TajoWorkerProtocol.TaskHistoryProto taskHistory = history.getTaskHistory(quAttemptId);
+  public TaskHistory getTaskHistoryByQueryUnitAttemptId(QueryUnitAttemptId quAttemptId) {
+    synchronized (taskRunnerHistoryMap) {
+      for (TaskRunnerHistory history : taskRunnerHistoryMap.values()) {
+        TaskHistory taskHistory = history.getTaskHistory(quAttemptId);
         if (taskHistory != null) return taskHistory;
       }
     }
@@ -159,8 +158,8 @@ public class TaskRunnerManager extends CompositeService {
             taskRunnerMap.put(taskRunner.getId(), taskRunner);
           }
 
-          synchronized (executionBlockhistoryMap){
-            executionBlockhistoryMap.put(taskRunner.getId(), taskRunner.getContext().getExcutionBlockHistory());
+          synchronized (taskRunnerHistoryMap){
+            taskRunnerHistoryMap.put(taskRunner.getId(), taskRunner.getContext().getExcutionBlockHistory());
           }
 
           taskRunner.init(systemConf);
@@ -196,16 +195,16 @@ public class TaskRunnerManager extends CompositeService {
     }
 
     private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
-      synchronized(executionBlockhistoryMap) {
+      synchronized(taskRunnerHistoryMap) {
         List<String> expiredIds = new ArrayList<String>();
-        for(Map.Entry<String, ExecutionBlockHistory> entry: executionBlockhistoryMap.entrySet()) {
+        for(Map.Entry<String, TaskRunnerHistory> entry: taskRunnerHistoryMap.entrySet()) {
           if(entry.getValue().getStartTime() > expireTime) {
             expiredIds.add(entry.getKey());
           }
         }
 
         for(String eachId: expiredIds) {
-          executionBlockhistoryMap.remove(eachId);
+          taskRunnerHistoryMap.remove(eachId);
         }
       }
     }

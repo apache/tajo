@@ -26,7 +26,6 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.junit.After;
@@ -38,7 +37,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestHistory {
   private TajoTestingCluster cluster;
@@ -61,7 +59,7 @@ public class TestHistory {
 
 
   @Test
-  public final void testExecutionBlockHistory() throws IOException, ServiceException, InterruptedException {
+  public final void testTaskRunnerHistory() throws IOException, ServiceException, InterruptedException {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select sleep(1) from lineitem");
 
@@ -73,13 +71,13 @@ public class TestHistory {
     assertNotNull(taskRunnerManager);
 
 
-    Collection<ExecutionBlockHistory> histories = taskRunnerManager.getExecutionBlockHistories();
+    Collection<TaskRunnerHistory> histories = taskRunnerManager.getExecutionBlockHistories();
     assertTrue(histories.size() > 0);
 
-    ExecutionBlockHistory history = histories.iterator().next();
+    TaskRunnerHistory history = histories.iterator().next();
     assertEquals(Service.STATE.STOPPED, history.getState());
 
-    assertEquals(history, new ExecutionBlockHistory(history.getProto()));
+    assertEquals(history, new TaskRunnerHistory(history.getProto()));
   }
 
   @Test
@@ -95,21 +93,21 @@ public class TestHistory {
     assertNotNull(taskRunnerManager);
 
 
-    Collection<ExecutionBlockHistory> histories = taskRunnerManager.getExecutionBlockHistories();
+    Collection<TaskRunnerHistory> histories = taskRunnerManager.getExecutionBlockHistories();
     assertTrue(histories.size() > 0);
 
-    ExecutionBlockHistory history = histories.iterator().next();
+    TaskRunnerHistory history = histories.iterator().next();
 
     assertTrue(history.size() > 0);
     assertEquals(Service.STATE.STOPPED, history.getState());
 
-    Map.Entry<QueryUnitAttemptId, TajoWorkerProtocol.TaskHistoryProto> entry =
+    Map.Entry<QueryUnitAttemptId, TaskHistory> entry =
         history.getTaskHistoryMap().entrySet().iterator().next();
 
     QueryUnitAttemptId queryUnitAttemptId = entry.getKey();
-    TajoWorkerProtocol.TaskHistoryProto taskHistoryProto = entry.getValue();
+    TaskHistory taskHistory = entry.getValue();
 
-    assertEquals(TajoProtos.TaskAttemptState.TA_SUCCEEDED, taskHistoryProto.getStatus());
-    assertEquals(queryUnitAttemptId.getProto(), taskHistoryProto.getQueryUnitAttemptId());
+    assertEquals(TajoProtos.TaskAttemptState.TA_SUCCEEDED, taskHistory.getState());
+    assertEquals(queryUnitAttemptId, taskHistory.getQueryUnitAttemptId());
   }
 }

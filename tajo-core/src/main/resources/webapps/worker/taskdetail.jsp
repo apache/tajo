@@ -19,14 +19,13 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.QueryUnitAttemptId" %>
-<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
-<%@ page import="org.apache.tajo.worker.*" %>
 <%@ page import="org.apache.commons.lang.StringUtils" %>
+<%@ page import="org.apache.tajo.QueryUnitAttemptId" %>
+<%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
+<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
+<%@ page import="org.apache.tajo.worker.*" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.List" %>
 
 <%
     TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -35,7 +34,7 @@
     String quAttemptId = request.getParameter("queryUnitAttemptId");
     QueryUnitAttemptId queryUnitAttemptId = TajoIdUtils.parseQueryUnitAttemptId(quAttemptId);
     Task task = null;
-    TajoWorkerProtocol.TaskHistoryProto taskHistory = null;
+    TaskHistory taskHistory = null;
     if(containerId == null || containerId.isEmpty() || "null".equals(containerId)) {
         task = tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskByQueryUnitAttemptId(queryUnitAttemptId);
         if (task != null) {
@@ -50,7 +49,7 @@
             if (task != null) {
                 taskHistory = task.createTaskHistory();
             } else {
-                ExecutionBlockHistory history = tajoWorker.getWorkerContext().getTaskRunnerManager().getExcutionBlockHistoryByTaskRunnerId(containerId);
+                TaskRunnerHistory history = tajoWorker.getWorkerContext().getTaskRunnerManager().getExcutionBlockHistoryByTaskRunnerId(containerId);
                 if(history != null) {
                     taskHistory = history.getTaskHistory(queryUnitAttemptId);
                 }
@@ -72,6 +71,10 @@
         alert("No Task Info for" + quAttemptId);
         document.history.back();
     </script>
+    </head>
+</div>
+</body>
+</html>
     <%
             return;
         }
@@ -85,7 +88,7 @@
     <h3>Task Detail: <%=quAttemptId%></h3>
     <table border="1" width="100%" class="border_table">
         <tr><td width="200" align="right">ID</td><td><%=quAttemptId%></td></tr>
-        <tr><td align="right">State</td><td><%=taskHistory.getStatus()%></td></tr>
+        <tr><td align="right">State</td><td><%=taskHistory.getState()%></td></tr>
         <tr><td align="right">Start Time</td><td><%=taskHistory.getStartTime() == 0 ? "-" : df.format(taskHistory.getStartTime())%></td></tr>
         <tr><td align="right">Finish Time</td><td><%=taskHistory.getFinishTime() == 0 ? "-" : df.format(taskHistory.getFinishTime())%></td></tr>
         <tr><td align="right">Running Time</td><td><%=JSPUtil.getElapsedTime(taskHistory.getStartTime(), taskHistory.getFinishTime())%></td></tr>
@@ -97,10 +100,21 @@
     </table>
     <hr/>
     <%
-        if (taskHistory.hasTotalFetchCount()) {
-            if (task != null) {
+        if (taskHistory.hasFetcherHistories()) {
     %>
-    <h3>Fetch Status</h3>
+    <h3>Fetch Status &nbsp;
+        <span><%= taskHistory.getFinishedFetchCount() + "/" + taskHistory.getTotalFetchCount() %> (Finished/Total)</span>
+    </h3>
+
+    <%
+        int index = 1;
+        int pageSize = 1000; //TODO pagination
+
+        List<TajoWorkerProtocol.FetcherHistoryProto> fetcherHistories = taskHistory.getFetcherHistories();
+        if (fetcherHistories.size() > 0) {
+
+    %>
+
     <table border="1" width="100%" class="border_table">
         <tr>
             <th>No</th>
@@ -110,23 +124,25 @@
             <th>Status</th>
             <th>File Length</th>
             <th># Messages</th>
-            <th>URI</th>
         </tr>
         <%
-            int index = 1;
-            int pageSize = 1000; //TODO pagination
-
-            for (Fetcher eachFetcher : task.getFetchers()) {
+            for (TajoWorkerProtocol.FetcherHistoryProto eachFetcher : fetcherHistories) {
         %>
         <tr>
-            <td><%=index%></td>
-            <td><%=df.format(eachFetcher.getStartTime())%></td>
-            <td><%=eachFetcher.getFinishTime() == 0 ? "-" : df.format(eachFetcher.getFinishTime())%></td>
-            <td><%=JSPUtil.getElapsedTime(eachFetcher.getStartTime(), eachFetcher.getFinishTime())%></td>
-            <td><%=eachFetcher.getState()%></td>
-            <td align="right"><%=eachFetcher.getFileLen()%></td>
-            <td align="right"><%=eachFetcher.getMessageReceiveCount()%></td>
-            <td><a href="<%=eachFetcher.getURI()%>"><%=StringUtils.abbreviate(eachFetcher.getURI().toString(), 50)%></a></td>
+            <td><%=index%>
+            </td>
+            <td><%=df.format(eachFetcher.getStartTime())%>
+            </td>
+            <td><%=eachFetcher.getFinishTime() == 0 ? "-" : df.format(eachFetcher.getFinishTime())%>
+            </td>
+            <td><%=JSPUtil.getElapsedTime(eachFetcher.getStartTime(), eachFetcher.getFinishTime())%>
+            </td>
+            <td><%=eachFetcher.getState()%>
+            </td>
+            <td align="right"><%=eachFetcher.getFileLength()%>
+            </td>
+            <td align="right"><%=eachFetcher.getMessageReceivedCount()%>
+            </td>
         </tr>
         <%
             index++;
@@ -142,10 +158,53 @@
         %>
     </table>
     <%
-    } else {
+    } else if (task != null) {
     %>
-    <h3>Fetch Status</h3>
-    <span>Fetches : <%= taskHistory.getFinishedFetchCount() + "/" + taskHistory.getTotalFetchCount() %> (Finished/Total)</span>
+    <table border="1" width="100%" class="border_table">
+        <tr>
+            <th>No</th>
+            <th>StartTime</th>
+            <th>FinishTime</th>
+            <th>RunTime</th>
+            <th>Status</th>
+            <th>File Length</th>
+            <th># Messages</th>
+            <th>URI</th>
+        </tr>
+        <%
+            for (Fetcher eachFetcher : task.getFetchers()) {
+        %>
+        <tr>
+            <td><%=index%>
+            </td>
+            <td><%=df.format(eachFetcher.getStartTime())%>
+            </td>
+            <td><%=eachFetcher.getFinishTime() == 0 ? "-" : df.format(eachFetcher.getFinishTime())%>
+            </td>
+            <td><%=JSPUtil.getElapsedTime(eachFetcher.getStartTime(), eachFetcher.getFinishTime())%>
+            </td>
+            <td><%=eachFetcher.getState()%>
+            </td>
+            <td align="right"><%=eachFetcher.getFileLen()%>
+            </td>
+            <td align="right"><%=eachFetcher.getMessageReceiveCount()%>
+            </td>
+            <td><a href="<%=eachFetcher.getURI()%>"><%=StringUtils.abbreviate(eachFetcher.getURI().toString(), 50)%>
+            </a></td>
+        </tr>
+        <%
+            index++;
+            if (pageSize < index) {
+        %>
+        <tr>
+            <td colspan="8">has more ...</td>
+        </tr>
+        <%
+                    break;
+                }
+            }
+        %>
+    </table>
     <%
             }
         }
