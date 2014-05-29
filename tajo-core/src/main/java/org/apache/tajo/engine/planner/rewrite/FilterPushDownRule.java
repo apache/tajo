@@ -235,7 +235,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
       for (EvalNode eachOnEval: onConditions) {
         if (EvalTreeUtil.isJoinQual(eachOnEval, true)) {
-          // join condition이면 자기가 처리
+          // If join condition, processing in the JoinNode.
           outerJoinConditionEvals.add(eachOnEval);
         } else {
           // TODO pushdown(Null Supplying table) or add join condition(Preserved Row table)
