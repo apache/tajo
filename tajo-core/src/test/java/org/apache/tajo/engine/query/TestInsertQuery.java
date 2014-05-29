@@ -348,7 +348,8 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     assertEquals(3, res.getMetaData().getColumnCount());
     assertEquals(1, res.getInt(1));
-    assertEquals("", res.getString(2));
+    assertNull(res.getString(2));
+    assertEquals(0.0, res.getDouble(2), 10);
     assertEquals("test", res.getString(3));
 
     res.close();

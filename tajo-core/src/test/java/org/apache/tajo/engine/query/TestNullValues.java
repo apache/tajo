@@ -20,14 +20,15 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import static org.junit.Assert.*;
 
@@ -56,6 +57,7 @@ public class TestNullValues {
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable1 where col3 is null");
+
     try {
       assertTrue(res.next());
       assertEquals(2, res.getInt(1));
@@ -157,6 +159,140 @@ public class TestNullValues {
       assertFalse(res.next());
     } finally {
       res.close();
+    }
+  }
+
+  @Test
+  public final void testResultSetNullSimpleQuery() throws Exception {
+    String tableName = "nulltable5";
+    ResultSet res = runNullTableQuery(tableName, "select col1, col2, col3, col4 from " + tableName);
+
+    try {
+      int numRows = 0;
+
+      String expected =
+              "null|a|1.0|true\n" +
+              "2|null|2.0|false\n" +
+              "3|c|null|true\n" +
+              "4|d|4.0|null";
+
+      String result = "";
+
+      String prefix = "";
+      while(res.next()) {
+        for (int i = 0; i < 4; i++) {
+          result += prefix + res.getObject(i + 1);
+          prefix = "|";
+        }
+        prefix = "\n";
+
+        assertResultSetNull(res, numRows, false, new int[]{1,2,3,4});
+        assertResultSetNull(res, numRows, true, new int[]{1,2,3,4});
+        numRows++;
+      }
+      assertEquals(4, numRows);
+      assertEquals(expected, result);
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testResultSetNull() throws Exception {
+    String tableName = "nulltable6";
+    String query = "select " +
+        "col1, coalesce(col1, 99999), " +
+        "col2, coalesce(col2, 'null_value'), " +
+        "col3, coalesce(col3, 99999.0)," +
+        "col4 " +
+        "from " + tableName;
+
+    ResultSet res = runNullTableQuery(tableName, query);
+
+    try {
+      int numRows = 0;
+      String expected =
+          "null|99999|a|a|1.0|1.0|true\n" +
+          "2|2|null|null_value|2.0|2.0|false\n" +
+          "3|3|c|c|null|99999.0|true\n" +
+          "4|4|d|d|4.0|4.0|null";
+
+      String result = "";
+
+      String prefix = "";
+      while(res.next()) {
+        for (int i = 0; i < 7; i++) {
+          result += prefix + res.getObject(i + 1);
+          prefix = "|";
+        }
+        prefix = "\n";
+
+        assertResultSetNull(res, numRows, false, new int[]{1,3,5,7});
+        assertResultSetNull(res, numRows, true, new int[]{1,3,5,7});
+        numRows++;
+      }
+      assertEquals(4, numRows);
+      assertEquals(expected, result);
+    } finally {
+      res.close();
+    }
+  }
+
+  private ResultSet runNullTableQuery(String tableName, String query) throws Exception {
+    String [] table = new String[] {tableName};
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.INT4);
+    schema.addColumn("col2", Type.TEXT);
+    schema.addColumn("col3", Type.FLOAT4);
+    schema.addColumn("col4", Type.BOOLEAN);
+    Schema [] schemas = new Schema[] {schema};
+    String [] data = {
+        "\\N|a|1.0|t",
+        "2|\\N|2.0|f",
+        "3|c|\\N|t",
+        "4|d|4.0|\\N"
+    };
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    ResultSet res = TajoTestingCluster
+        .run(table, schemas, tableOptions, new String[][]{data}, query);
+
+    return res;
+  }
+
+  private void assertResultSetNull(ResultSet res, int numRows, boolean useName, int[] nullIndex) throws SQLException {
+    if (numRows == 0) {
+      if (useName) {
+        assertEquals(0, res.getInt(res.getMetaData().getColumnName(nullIndex[numRows])));
+      } else {
+        assertEquals(0, res.getInt(nullIndex[numRows]));
+      }
+    }
+
+    if (numRows == 1) {
+      if (useName) {
+        assertNull(res.getString(res.getMetaData().getColumnName(nullIndex[numRows])));
+      } else {
+        assertNull(res.getString(nullIndex[numRows]));
+      };
+    }
+
+    if (numRows == 2) {
+      if (useName) {
+        assertEquals(0.0, res.getDouble(res.getMetaData().getColumnName(nullIndex[numRows])), 10);
+      } else {
+        assertEquals(0.0, res.getDouble(nullIndex[numRows]), 10);
+      }
+    }
+
+    if (numRows == 3) {
+      if (useName) {
+        assertEquals(false, res.getBoolean(res.getMetaData().getColumnName(nullIndex[numRows])));
+      } else {
+        assertEquals(false, res.getBoolean(nullIndex[numRows]));
+      }
     }
   }
 }
