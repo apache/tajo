@@ -25,9 +25,11 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.junit.Assert.fail;
@@ -859,23 +861,31 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testCastFromTable() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    testEval(schema, "table1", "123,234", "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
-        new String[]{"123.0", "234.0"});
-    testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
-        new String[]{"123.0", "234.0"});
+    TimeZone originTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("GMT-6"));
+    try {
+      Schema schema = new Schema();
+      schema.addColumn("col1", TEXT);
+      schema.addColumn("col2", TEXT);
+      testEval(schema, "table1", "123,234", "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
+          new String[]{"123.0", "234.0"});
+      testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
+          new String[]{"123.0", "234.0"});
 
-    TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01+09");
-    testEval(schema, "table1", "1980-04-01 01:50:01,234", "select col1::timestamp as t1, col2::float from table1 " +
-        "where t1 = '1980-04-01 01:50:01'::timestamp",
-        new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true), "234.0"});
+      TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01" +
+          DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone()));
 
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String [] {timestamp.asChars(TajoConf.getCurrentTimeZone(), true)});
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String [] {"1980-04-01 01:50:01"});
+      testEval(schema, "table1", "1980-04-01 01:50:01,234", "select col1::timestamp as t1, col2::float from table1 " +
+              "where t1 = '1980-04-01 01:50:01'::timestamp",
+          new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true), "234.0"}
+      );
 
-    testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String [] {"100000"});
+      testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true)});
+      testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String[]{"1980-04-01 01:50:01"});
+
+      testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String[]{"100000"});
+    } finally {
+      TajoConf.setCurrentTimeZone(originTimeZone);
+    }
   }
 
   @Test

@@ -33,7 +33,6 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -41,6 +40,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -562,7 +562,7 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              KeyValueSet option,
+                              KeyValueSet tableOption,
                               String[][] tables,
                               String query) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
@@ -589,7 +589,7 @@ public class TajoTestingCluster {
         out.write((tables[i][j]+"\n").getBytes());
       }
       out.close();
-      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, option);
+      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, tableOption);
       client.createExternalTable(names[i], schemas[i], tablePath, meta);
     }
     Thread.sleep(1000);

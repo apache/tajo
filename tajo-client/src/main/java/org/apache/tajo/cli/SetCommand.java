@@ -44,6 +44,7 @@ public class SetCommand extends TajoShellCommand {
       Map<String, String> variables = new HashMap<String, String>();
       variables.put(cmd[1], cmd[2]);
       client.updateSessionVariables(variables);
+      context.setVariable(cmd[1], cmd[2]);
     } else {
       context.getOutput().println("usage: \\set [[NAME] VALUE]");
     }
