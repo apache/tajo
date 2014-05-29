@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.vector;
 
+import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Unsafe;
 
 public class VectorUtil {
@@ -119,6 +120,50 @@ public class VectorUtil {
 
   public static void pivotCharx2(int vecNum, VecRowBlock vecRowBlock, long resPtr, int[] columnIndices,
                                  int[] selVec) {
+    if (selVec != null) {
+      int selIdx;
+      long writePtr;
+      for (int rowIDx = 0; rowIDx < vecNum; rowIDx++) {
+        selIdx = selVec[rowIDx];
+        writePtr = resPtr + (selVec[rowIDx] * 2);
+
+        for (int k = 0; k < columnIndices.length; k++) {
+          TajoDataTypes.Type dataType = vecRowBlock.types[k];
+          switch (dataType) {
+          case CHAR:
+            vecRowBlock.getFixedText(columnIndices[k], selIdx, writePtr);
+            writePtr++;
+            break;
+          case INT4:
+            int int4Val = vecRowBlock.getInt4(columnIndices[k], selIdx);
+            UnsafeUtil.putInt(writePtr, 0, int4Val);
+            writePtr += 4;
+            break;
+          case INT8:
+            long int8Val = vecRowBlock.getInt8(columnIndices[k], selIdx);
+            UnsafeUtil.putLong(writePtr, 0, int8Val);
+            writePtr += 8;
+            break;
+          case FLOAT4:
+            float float4Val = vecRowBlock.getFloat4(columnIndices[k], selIdx);
+            UnsafeUtil.putFloat(writePtr, 0, float4Val);
+            writePtr += 4;
+            break;
+          case FLOAT8:
+            double float8Val = vecRowBlock.getFloat8(columnIndices[k], selIdx);
+            UnsafeUtil.putDouble(writePtr, 0, float8Val);
+            writePtr += 8;
+            break;
+          }
+        }
+      }
+    } else {
+      throw new RuntimeException("aaa");
+    }
+  }
+
+  public static void pivotCharx2Generated(int vecNum, VecRowBlock vecRowBlock, long resPtr, int[] columnIndices,
+                                          int[] selVec) {
     if (selVec != null) {
       int selIdx;
       long writePtr;

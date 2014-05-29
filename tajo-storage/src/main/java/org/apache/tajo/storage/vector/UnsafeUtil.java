@@ -114,6 +114,14 @@ public class UnsafeUtil {
     unsafe.putLong(addr + (index * SizeOf.SIZE_OF_LONG), val);
   }
 
+  public static void putFloat(long addr, int index, float val) {
+    unsafe.putFloat(addr + (index * SizeOf.SIZE_OF_FLOAT), val);
+  }
+
+  public static void putDouble(long addr, int index, double val) {
+    unsafe.putDouble(addr + (index * SizeOf.SIZE_OF_FLOAT), val);
+  }
+
   public static void putBytes(long addr, byte [] val, int srcPos, int length) {
     unsafe.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcPos, null, addr, length);
   }

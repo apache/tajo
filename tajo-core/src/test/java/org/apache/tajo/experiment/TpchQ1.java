@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.tajo.experiment;
 
 import com.google.common.collect.Lists;
@@ -117,7 +135,7 @@ public class TpchQ1 {
 
   @Test
   public void generateTuples() throws IOException, SQLException, ServiceException, PlanningException {
-    Path rawLineitemPath = new Path("file:///Users/hyunsik/Code/tpch_2_15_0/dbgen/lineitem.tbl");
+    Path rawLineitemPath = new Path("file:///home/hyunsik/Code/tpch_2_15_0/dbgen/lineitem.tbl");
 
     KeyValueSet kv = new KeyValueSet();
     kv.put(StorageConstants.CSVFILE_DELIMITER, "\\|");
@@ -134,11 +152,11 @@ public class TpchQ1 {
     FileFragment[] frags = new FileFragment[1];
     frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
 
-    Path workDir = CommonTestingUtil.getTestDir("file:///Users/hyunsik/experiment/test-data");
+    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
 
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
-    ctx.setOutputPath(new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet"));
+    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/data/lineitem.parquet"));
     ctx.setEnforcer(new Enforcer());
     int blockSize =  1024 * 1024 * 256;
     Expr context = analyzer.parse("insert overwrite into location 'file:///home/hyunsik/lineitem.parquet' USING PARQUET WITH ('parquet.block.size' = '" + blockSize + "') SELECT * FROM default.lineitem");
@@ -154,9 +172,14 @@ public class TpchQ1 {
     exec.close();
   }
 
+  public static void main(String [] args) throws Exception {
+    TpchQ1 q1 = new TpchQ1();
+    q1.processQ1InTupleWay();
+  }
+
   @Test
   public void processQ1InTupleWay() throws IOException, SQLException, ServiceException, PlanningException {
-    Path rawLineitemPath = new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet");
+    Path rawLineitemPath = new Path("file:///disk1/experiment/lineitem.parquet");
 
     KeyValueSet kv = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.PARQUET, kv);
@@ -169,9 +192,9 @@ public class TpchQ1 {
 
     FileFragment[] frags = new FileFragment[1];
     frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
-    Path workDir = CommonTestingUtil.getTestDir("file:///Users/hyunsik/experiment/test-data");
+    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
 
-    Expr expr = analyzer.parse(FileUtil.readTextFileFromResource("experiment/q1.sql"));
+    Expr expr = analyzer.parse(FileUtil.readTextFileFromResource("experiment/q1_remove_1.sql"));
     LogicalPlan plan = planner.createPlan(session, expr);
     optimizer.optimize(plan);
 
@@ -184,7 +207,7 @@ public class TpchQ1 {
 
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
-    ctx.setOutputPath(new Path("file:///Users/hyunsik/experiment/test-data"));
+    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
     ctx.setEnforcer(enforcer);
 
     System.out.println(plan);
@@ -200,6 +223,98 @@ public class TpchQ1 {
     while((tuple = exec.next()) != null) {
       resultCount++;
       System.out.println(tuple);
+    }
+    long endProcess = System.currentTimeMillis();
+    exec.close();
+    System.out.println((endProcess - beginProcess) + " msec (" + resultCount + " rows)");
+  }
+
+  @Test
+  public void processPureScanInTupleWayOnSSD() throws IOException, SQLException, ServiceException, PlanningException {
+    Path rawLineitemPath = new Path("file:///home/hyunsik/experiment/data/lineitem.parquet");
+
+    KeyValueSet kv = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.PARQUET, kv);
+
+    TableDesc tabledesc = new TableDesc("default.lineitem", LINEITEM, meta, rawLineitemPath, true);
+    catalog.createTable(tabledesc);
+
+    FileSystem localFS = FileSystem.getLocal(conf);
+    long length = localFS.getLength(rawLineitemPath);
+
+    FileFragment[] frags = new FileFragment[1];
+    frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
+    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
+
+    Expr expr = analyzer.parse(FileUtil.readTextFileFromResource("experiment/only_scan.sql"));
+    LogicalPlan plan = planner.createPlan(session, expr);
+    optimizer.optimize(plan);
+
+    Enforcer enforcer = new Enforcer();
+
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
+    ctx.setEnforcer(enforcer);
+
+    System.out.println(plan);
+
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+
+    long beginProcess = System.currentTimeMillis();
+    int resultCount = 0;
+    Tuple tuple;
+    while((tuple = exec.next()) != null) {
+      resultCount++;
+    }
+    long endProcess = System.currentTimeMillis();
+    exec.close();
+    System.out.println((endProcess - beginProcess) + " msec (" + resultCount + " rows)");
+  }
+
+  @Test
+  public void processPureScanInTupleWayOnDisk() throws IOException, SQLException, ServiceException, PlanningException {
+    Path rawLineitemPath = new Path("file:///disk1/experiment/lineitem.parquet");
+
+    KeyValueSet kv = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.PARQUET, kv);
+
+    TableDesc tabledesc = new TableDesc("default.lineitem", LINEITEM, meta, rawLineitemPath, true);
+    catalog.createTable(tabledesc);
+
+    FileSystem localFS = FileSystem.getLocal(conf);
+    long length = localFS.getLength(rawLineitemPath);
+
+    FileFragment[] frags = new FileFragment[1];
+    frags[0] = new FileFragment("default.lineitem", rawLineitemPath, 0, length, null);
+    Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
+
+    Expr expr = analyzer.parse(FileUtil.readTextFileFromResource("experiment/only_scan.sql"));
+    LogicalPlan plan = planner.createPlan(session, expr);
+    optimizer.optimize(plan);
+
+    Enforcer enforcer = new Enforcer();
+
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
+    ctx.setEnforcer(enforcer);
+
+    System.out.println(plan);
+
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+
+    long beginProcess = System.currentTimeMillis();
+    int resultCount = 0;
+    Tuple tuple;
+    while((tuple = exec.next()) != null) {
+      resultCount++;
     }
     long endProcess = System.currentTimeMillis();
     exec.close();
@@ -333,7 +448,7 @@ public class TpchQ1 {
 
     System.out.println(">>>>>>" + projected);
 
-    Path path = new Path("file:///Users/hyunsik/experiment/data/lineitem.parquet");
+    Path path = new Path("file:///disk1/experiment/lineitem.parquet");
     VecRowBlock vecRowBlock = new VecRowBlock(projected, 1024);
     VecRowParquetReader reader = new VecRowParquetReader(path, LINEITEM, projected);
     long readStart = System.currentTimeMillis();
@@ -387,13 +502,13 @@ public class TpchQ1 {
       // -------------------------------------------------------------------------------------------------------------
       // Aggregation
       // -------------------------------------------------------------------------------------------------------------
-      VectorUtil.pivotCharx2(selected, vecRowBlock, /* packed */ pivotVector, new int[]{4, 5}, selVec);
+      VectorUtil.pivotCharx2Generated(selected, vecRowBlock, /* packed */ pivotVector, new int[]{4, 5}, selVec);
       // testPivot(vecRowBlock, pivotVector, selected, selVec);
 
 
       VecFuncMulMul3LongCol.mulmul64FixedCharVector(selected, hashResVector, pivotVector, 2, 0, selVec);
       // testMapContents(vecRowBlock, hashResult, selected, selVec);
-
+//
       int missed = hashTable.findGroupIds(selected, groupIds, missedIndices, hashResVector, pivotVector, selVec);
 
       valueVectors[0] = vecRowBlock.getValueVecPtr(0);
