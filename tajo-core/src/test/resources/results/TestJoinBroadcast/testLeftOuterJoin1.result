@@ -3,5 +3,5 @@ c_custkey,o_orderkey,o_orderstatus,o_orderdate
 1,1,O,1996-01-02
 2,2,O,1996-12-01
 3,3,F,1993-10-14
-4,0,,
-5,0,,
+4,null,null,null
+5,null,null,null

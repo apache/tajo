@@ -324,13 +324,17 @@ public class TajoConf extends Configuration {
     CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
     CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
     CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
+    CLI_NULL_CHAR("tajo.cli.nullchar", ""),
 
     //TIME & DATE
     TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
     TAJO_DATE_ORDER("tajo.date.order", "YMD"),
 
     //PLANNER
-    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true)
+    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
+
+    // FILE FORMAT
+    CSVFILE_NULL("tajo.csvfile.null", "\\\\N")
     ;
 
     public final String varname;
