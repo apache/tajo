@@ -28,6 +28,9 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
@@ -375,23 +378,50 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testDateTimeNow() throws IOException {
-    long expectedTimestamp = System.currentTimeMillis();
-    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+    TimeZone originTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("GMT-6"));
+    TimeZone systemOriginTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
+    try {
+      Date expectedDate = new Date(System.currentTimeMillis());
 
-    testSimpleEval("select to_char(now(), 'yyyy-MM-dd');", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
-    testSimpleEval("select cast(extract(year from now()) as INT4);", new String[]{expectedDateTime.toString("yyyy")});
-    testSimpleEval("select current_date();", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
-    testSimpleEval("select cast(extract(hour from current_time()) as INT4);", new String[]{expectedDateTime.toString("HH")});
+      testSimpleEval("select to_char(now(), 'yyyy-MM-dd');",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(year from now()) as INT4);",
+          new String[]{dateFormat(expectedDate, "yyyy")});
+      testSimpleEval("select current_date();",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(hour from current_time()) as INT4);",
+          new String[]{dateFormat(expectedDate, "HH")});
+    } finally {
+      TajoConf.setCurrentTimeZone(originTimeZone);
+      TimeZone.setDefault(systemOriginTimeZone);
+    }
   }
 
   @Test
   public void testTimeValueKeyword() throws IOException {
-    long expectedTimestamp = System.currentTimeMillis();
-    DateTime expectedDateTime = new DateTime(expectedTimestamp);
+    TimeZone originTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("GMT-6"));
+    TimeZone systemOriginTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
+    try {
+      Date expectedDate = new Date(System.currentTimeMillis());
 
-    testSimpleEval("select to_char(current_timestamp, 'yyyy-MM-dd');", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
-    testSimpleEval("select cast(extract(year from current_timestamp) as INT4);", new String[]{expectedDateTime.toString("yyyy")});
-    testSimpleEval("select current_date;", new String[]{expectedDateTime.toString("yyyy-MM-dd")});
-    testSimpleEval("select cast(extract(hour from current_time) as INT4);", new String[]{expectedDateTime.toString("HH")});
+      testSimpleEval("select to_char(current_timestamp, 'yyyy-MM-dd');",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(year from current_timestamp) as INT4);",
+          new String[]{dateFormat(expectedDate, "yyyy")});
+      testSimpleEval("select current_date;",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(hour from current_time) as INT4);",
+          new String[]{dateFormat(expectedDate, "HH")});
+    } finally {
+      TajoConf.setCurrentTimeZone(originTimeZone);
+      TimeZone.setDefault(systemOriginTimeZone);
+    }
+  }
+
+  private String dateFormat(Date date, String format) {
+    SimpleDateFormat df = new SimpleDateFormat(format);
+    return df.format(date);
   }
 }

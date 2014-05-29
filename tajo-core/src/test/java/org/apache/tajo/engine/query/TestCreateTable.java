@@ -22,11 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
@@ -37,9 +33,7 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
@@ -59,6 +53,7 @@ public class TestCreateTable extends QueryTestCaseBase {
   public final void testCreateTable1() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1", "table1");
     assertTableExists(createdNames.get(0));
+    executeString("DROP TABLE table1");
   }
 
   @Test

@@ -49,6 +49,7 @@ public class CurrentDate extends GeneralFunction {
       long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
       TimeMeta tm = new TimeMeta();
       DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+      DateTimeUtil.toUserTimezone(tm);
       datum = DatumFactory.createDate(tm.years, tm.monthOfYear, tm.dayOfMonth);
     }
     return datum;
