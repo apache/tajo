@@ -34,6 +34,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -269,7 +270,7 @@ public class TestFullOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(dep3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestFullOuterHashJoinExec0");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -306,7 +307,7 @@ public class TestFullOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestFullOuter_HashJoinExec1");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -342,7 +343,7 @@ public class TestFullOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, job3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestFullOuterHashJoinExec2");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -380,7 +381,8 @@ public class TestFullOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, phone3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestFullOuterHashJoinExec3");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(), merged,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged,
         workDir);
     ctx.setEnforcer(enforcer);
 

@@ -19,12 +19,15 @@
 package org.apache.tajo.engine.parser;
 
 import com.google.common.base.Preconditions;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
+import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
@@ -268,4 +271,14 @@ public class TestHiveQLAnalyzer {
   public void testDrop() throws IOException {
     compareJsonResult("drop_table.sql");
   }
+
+  @Test
+  public void testCreateTableLike1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_like_1.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertEquals("orig_name", createTable.getLikeParentTableName());
+  }
+
 }
