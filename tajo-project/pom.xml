@@ -65,6 +65,16 @@
       <timezone></timezone>
     </developer>
     <developer>
+      <id>ahenrick</id>
+      <name>Alvin Derek Henrick</name>
+      <email>ahenrick@apache.org</email>
+      <organization></organization>
+      <roles>
+        <role>Committer</role>
+      </roles>
+      <timezone></timezone>
+    </developer>
+    <developer>
       <id>mattmann</id>
       <name>Chris Mattmann</name>
       <email>chris.a.mattmann@jpl.nasa.gov</email>
@@ -206,10 +216,6 @@
   </developers>
 
   <contributors>
-    <contributor>
-      <name>Alvin Henrick</name>
-      <roles><role>Contributor</role></roles>
-    </contributor>
     <contributor>
       <name>Camelia</name>
       <roles><role>Contributor</role></roles>
