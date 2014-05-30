@@ -46,7 +46,6 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto> {
   private String outputPath;
   private String workingPath;
 
-  //TAJO-846
   private int finishedFetchCount;
   private int totalFetchCount;
   private List<FetcherHistoryProto> fetcherHistories;

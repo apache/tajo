@@ -305,8 +305,6 @@ message TaskHistoryProto {
   optional TableStatsProto outputStats = 7;
   optional string outputPath = 8;
   optional string workingPath = 9;
-
-  //TAJO-846
   optional int32 finishedFetchCount = 10;
   optional int32 totalFetchCount = 11;
   repeated FetcherHistoryProto fetcherHistories = 12;
