@@ -95,28 +95,28 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
       }
     }
     return relationNames.toArray(new String[]{});
-  }
+ }
 
   public Collection<EvalNode> addJoin(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       JoinNode joinNode) throws PlanningException {
     if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-      Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
-//      if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
-        String[] leftNodeRelationName = findRelationName(block, joinNode.getLeftChild(), cnf);
-        String[] rightNodeRelationName = findRelationName(block, joinNode.getRightChild(), cnf);
-        JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
+      JoinEdge edge;
+      //if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
+        edge = new JoinEdge(joinNode.getJoinType(),
             joinNode.getLeftChild(), joinNode.getRightChild(), joinNode.getJoinQual());
+      //} else {
+      //  edge = new JoinEdge(joinNode.getJoinType(),
+      //      joinNode.getRightChild(), joinNode.getLeftChild(), joinNode.getJoinQual());
+      //}
 
-        addEdge(TUtil.arrayToString(leftNodeRelationName), TUtil.arrayToString(rightNodeRelationName), edge);
-//      }
-//      else {
-//        String[] leftNodeRelationName = findRelationName(block, joinNode.getLeftChild(), cnf);
-//        String[] rightNodeRelationName = findRelationName(block, joinNode.getRightChild(), cnf);
-//        JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
-//            joinNode.getRightChild(), joinNode.getLeftChild(), joinNode.getJoinQual());
-//
-//        addEdge(TUtil.arrayToString(rightNodeRelationName), TUtil.arrayToString(leftNodeRelationName), edge);
-//      }
+      SortedSet<String> leftNodeRelationName =
+          new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild()));
+      SortedSet<String> rightNodeRelationName =
+          new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getRightChild()));
+
+      System.out.println(">>>>>>>>>>" + TUtil.collectionToString(leftNodeRelationName) + "," + TUtil.collectionToString(rightNodeRelationName));
+      addEdge(TUtil.collectionToString(leftNodeRelationName), TUtil.collectionToString(rightNodeRelationName), edge);
+
       Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();
       allInOneCnf.add(joinNode.getJoinQual());
 

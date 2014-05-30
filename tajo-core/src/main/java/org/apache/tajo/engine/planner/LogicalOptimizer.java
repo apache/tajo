@@ -79,9 +79,6 @@ public class LogicalOptimizer {
   }
 
   private void optimizeJoinOrder(LogicalPlan plan, String blockName) throws PlanningException {
-    if (1 == 1) {
-      return;
-    }
     LogicalPlan.QueryBlock block = plan.getBlock(blockName);
 
     if (block.hasNode(NodeType.JOIN)) {

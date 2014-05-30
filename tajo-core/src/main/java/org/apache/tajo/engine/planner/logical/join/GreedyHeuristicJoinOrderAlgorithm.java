@@ -167,26 +167,73 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     JoinEdge foundJoinEdge = null;
 
     // If outer is outer join, make edge key using all relation names in outer.
-    if (outer.getType() == NodeType.JOIN) {
-      JoinNode joinNode = (JoinNode)outer;
-      if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER ) {
-        SortedSet<String> relationNames =
-            new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
-        String outerEdgeKey = TUtil.arrayToString(relationNames.toArray(new String[]{}));
-        for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
-          if (graph.hasEdge(outerEdgeKey, innerName)) {
-            JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
-            if (foundJoinEdge == null) {
-              foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
-                  existJoinEdge.getJoinQual());
-            } else {
-              foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
-                  existJoinEdge.getJoinQual()));
-            }
-          }
+    SortedSet<String> relationNames =
+        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
+    String outerEdgeKey = TUtil.collectionToString(relationNames);
+    for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
+      if (graph.hasEdge(outerEdgeKey, innerName)) {
+        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
+        if (foundJoinEdge == null) {
+          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
+              existJoinEdge.getJoinQual());
+        } else {
+          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+              existJoinEdge.getJoinQual()));
         }
       }
     }
+    if (foundJoinEdge != null) {
+      return foundJoinEdge;
+    }
+
+    relationNames =
+        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner));
+    outerEdgeKey = TUtil.collectionToString(relationNames);
+    for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
+      if (graph.hasEdge(outerEdgeKey, outerName)) {
+        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);
+        if (foundJoinEdge == null) {
+          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), inner, outer,
+              existJoinEdge.getJoinQual());
+        } else {
+          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+              existJoinEdge.getJoinQual()));
+        }
+      }
+    }
+    if (foundJoinEdge != null) {
+      return foundJoinEdge;
+    }
+
+//    JoinNode joinNode = null;
+//
+//    if (outer.getType() == NodeType.JOIN) {
+//      joinNode = (JoinNode) outer;
+//    } else if(inner.getType() == NodeType.JOIN) {
+//      joinNode = (JoinNode) inner;
+//    }
+//    if (joinNode != null) {
+//      if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER ) {
+//
+//        String outerEdgeKey = TUtil.collectionToString(relationNames);
+//        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>AAAA>" + outerEdgeKey);
+//        for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
+//          if (graph.hasEdge(outerEdgeKey, innerName)) {
+//            JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
+//            if (foundJoinEdge == null) {
+//              foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
+//                  existJoinEdge.getJoinQual());
+//            } else {
+//              foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+//                  existJoinEdge.getJoinQual()));
+//            }
+//          }
+//        }
+//        if (foundJoinEdge != null) {
+//          return foundJoinEdge;
+//        }
+//      }
+//    }
 
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
