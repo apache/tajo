@@ -217,30 +217,71 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     boolean isTopMostJoin = stack.peek().getType() != NodeType.JOIN;
 
-
-
-    List<EvalNode> outerJoinConditionEvals = new ArrayList<EvalNode>();
-    List<EvalNode> outerJoinFilterEvalsExcludeJoinCondition = new ArrayList<EvalNode>();
+    List<EvalNode> outerJoinPredicationEvals = new ArrayList<EvalNode>();
+    List<EvalNode> outerJoinFilterEvalsExcludePredication = new ArrayList<EvalNode>();
     if (LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
+      // TAJO-853
       // In the case of top most JOIN, all filters except JOIN condition aren't pushed down.
       // That filters are processed by SELECTION NODE.
-      for (EvalNode eachEval: context.pushingDownFilters) {
-        if (isTopMostJoin && !EvalTreeUtil.isJoinQual(eachEval, true)) {
-          outerJoinFilterEvalsExcludeJoinCondition.add(eachEval);
+      Set<String> nullSupplyingTableNameSet;
+      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
+      } else {
+        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
+      }
 
+      for (EvalNode eachEval: context.pushingDownFilters) {
+//        if (isTopMostJoin && !EvalTreeUtil.isJoinQual(eachEval, true)) {
+//          outerJoinFilterEvalsExcludePredication.add(eachEval);
+//        } else {
+//          outerJoinPredicationEvals.add(eachEval);
+//        }
+        if (EvalTreeUtil.isJoinQual(eachEval, true)) {
+          outerJoinPredicationEvals.add(eachEval);
         } else {
-          outerJoinConditionEvals.add(eachEval);
+          Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachEval);
+          boolean canPushDown = true;
+          for (Column eachColumn: columns) {
+            if (nullSupplyingTableNameSet.contains(eachColumn.getQualifier())) {
+              canPushDown = false;
+              break;
+            }
+          }
+          if (canPushDown) {
+            context.pushingDownFilters.add(eachEval);
+          } else {
+            outerJoinFilterEvalsExcludePredication.add(eachEval);
+          }
         }
       }
 
+//      context.pushingDownFilters.removeAll(outerJoinFilterEvalsExcludePredication);
+
+      Set<String> preservedTableNameSet;
+      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
+      } else {
+        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
+      }
       for (EvalNode eachOnEval: onConditions) {
         if (EvalTreeUtil.isJoinQual(eachOnEval, true)) {
-          // join condition이면 자기가 처리
-          outerJoinConditionEvals.add(eachOnEval);
+          // If join condition, processing in the JoinNode.
+          outerJoinPredicationEvals.add(eachOnEval);
         } else {
-          // TODO pushdown(Null Supplying table) or add join condition(Preserved Row table)
-          // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
-          throw new PlanningException("Currently not support filter condition ON clause in the case of OUTER JOIN.");
+          // If Eval has a column which belong to Preserved Row table, not using to push down but using JoinCondition
+          Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachOnEval);
+          boolean canPushDown = true;
+          for (Column eachColumn: columns) {
+            if (preservedTableNameSet.contains(eachColumn.getQualifier())) {
+              canPushDown = false;
+              break;
+            }
+          }
+          if (canPushDown) {
+            context.pushingDownFilters.add(eachOnEval);
+          } else {
+            outerJoinPredicationEvals.add(eachOnEval);
+          }
         }
       }
     } else {
@@ -267,7 +308,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> matched = Lists.newArrayList();
     if(LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
-      matched.addAll(outerJoinConditionEvals);
+      matched.addAll(outerJoinPredicationEvals);
     } else {
       for (EvalNode eval : context.pushingDownFilters) {
         if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, isTopMostJoin)) {
@@ -295,7 +336,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(matched);
     }
 
-    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludeJoinCondition);
+    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
     return joinNode;
   }
 

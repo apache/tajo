@@ -79,18 +79,26 @@ public class LogicalOptimizer {
   }
 
   private void optimizeJoinOrder(LogicalPlan plan, String blockName) throws PlanningException {
+    if (1 == 1) {
+      return;
+    }
     LogicalPlan.QueryBlock block = plan.getBlock(blockName);
 
     if (block.hasNode(NodeType.JOIN)) {
       String originalOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       double nonOptimizedJoinCost = JoinCostComputer.computeCost(plan, block);
 
+      System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>After Filter PushDown");
+      System.out.println(plan);
+      System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>");
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
           joinGraphContext.joinGraph, joinGraphContext.relationsForProduct);
+
+      // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
@@ -104,9 +112,14 @@ public class LogicalOptimizer {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
       PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+      // End of replacement logic
+
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");
+      System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>After Join Order");
+      System.out.println(plan);
+      System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>");
     }
   }
 
