@@ -681,7 +681,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       for (int i = 0; i < windowSpec.getPartitionKeys().length; i++) {
         key = windowSpec.getPartitionKeys()[i];
         visit(ctx, stack, key);
-        ctx.currentBlock.namedExprsMgr.addExpr(key);
       }
     }
 
@@ -691,7 +690,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       for (int i = 0; i < windowSpec.getSortSpecs().length; i++) {
         key = windowSpec.getSortSpecs()[i].getKey();
         sortKeys[i] = visit(ctx, stack, key);
-        ctx.currentBlock.namedExprsMgr.addExpr(key);
       }
     }
 
