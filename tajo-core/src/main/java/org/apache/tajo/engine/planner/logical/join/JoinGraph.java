@@ -32,7 +32,6 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
 import org.apache.tajo.engine.planner.logical.JoinNode;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -79,42 +78,17 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     return relationNames;
   }
 
-  private String[] findRelationName(LogicalPlan.QueryBlock block, LogicalNode node, Set<EvalNode> cnf) throws PlanningException {
-    Set<String> leftTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(node));
-
-    SortedSet<String> relationNames = new TreeSet<String>();
-    for (EvalNode eachEval: cnf) {
-      if (EvalTreeUtil.isJoinQual(eachEval, true)) {
-        String[] relationsInExpr = guessRelationsFromJoinQual(block, (BinaryEval)eachEval);
-        if (leftTableNameSet.contains(relationsInExpr[0])) {
-          relationNames.add(relationsInExpr[0]);
-        }
-        if (leftTableNameSet.contains(relationsInExpr[1])) {
-          relationNames.add(relationsInExpr[1]);
-        }
-      }
-    }
-    return relationNames.toArray(new String[]{});
- }
-
   public Collection<EvalNode> addJoin(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       JoinNode joinNode) throws PlanningException {
     if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-      JoinEdge edge;
-      //if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
-        edge = new JoinEdge(joinNode.getJoinType(),
+      JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
             joinNode.getLeftChild(), joinNode.getRightChild(), joinNode.getJoinQual());
-      //} else {
-      //  edge = new JoinEdge(joinNode.getJoinType(),
-      //      joinNode.getRightChild(), joinNode.getLeftChild(), joinNode.getJoinQual());
-      //}
 
       SortedSet<String> leftNodeRelationName =
           new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild()));
       SortedSet<String> rightNodeRelationName =
           new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getRightChild()));
 
-      System.out.println(">>>>>>>>>>" + TUtil.collectionToString(leftNodeRelationName) + "," + TUtil.collectionToString(rightNodeRelationName));
       addEdge(TUtil.collectionToString(leftNodeRelationName), TUtil.collectionToString(rightNodeRelationName), edge);
 
       Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();
@@ -152,11 +126,5 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
       }
       return cnf;
     }
-//    for (EvalNode singleQual : cnf) {
-//      if (!EvalTreeUtil.isJoinQual(singleQual, true)) {
-//        edge.addFilterPredicate(singleQual);
-//      }
-//    }
-
   }
 }
