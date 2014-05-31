@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Objects;
+
 public class QueryId implements Comparable<QueryId> {
   public static final String SEPARATOR = "_";
   public static final String QUERY_ID_PREFIX = "q";
@@ -63,7 +65,7 @@ public class QueryId implements Comparable<QueryId> {
 
   @Override
   public int hashCode() {
-    return toString().hashCode();
+    return Objects.hashCode(id, seq);
   }
 
   @Override

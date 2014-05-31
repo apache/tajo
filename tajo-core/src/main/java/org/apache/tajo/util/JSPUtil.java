@@ -20,11 +20,14 @@ package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.worker.TaskRunnerHistory;
 import org.apache.tajo.worker.TaskRunner;
 
 import java.text.DecimalFormat;
@@ -48,6 +51,19 @@ public class JSPUtil {
       @Override
       public int compare(TaskRunner taskRunner, TaskRunner taskRunner2) {
         return taskRunner.getId().compareTo(taskRunner2.getId());
+      }
+    });
+  }
+
+  public static void sortTaskRunnerHistory(List<TaskRunnerHistory> histories) {
+    Collections.sort(histories, new Comparator<TaskRunnerHistory>() {
+      @Override
+      public int compare(TaskRunnerHistory h1, TaskRunnerHistory h2) {
+        int value = h1.getExecutionBlockId().compareTo(h2.getExecutionBlockId());
+        if(value == 0){
+          return h1.getContainerId().compareTo(h2.getContainerId());
+        }
+        return value;
       }
     });
   }
@@ -205,5 +221,29 @@ public class JSPUtil {
   static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.0");
   public static String percentFormat(float value) {
     return PERCENT_FORMAT.format(value * 100.0f);
+  }
+
+  public static String tableStatToString(TableStats tableStats) {
+    if(tableStats != null){
+      return tableStatToString(tableStats.getProto());
+    }
+    else {
+      return "No input statistics";
+    }
+  }
+
+  public static String tableStatToString(CatalogProtos.TableStatsProto tableStats) {
+    if (tableStats == null) {
+      return "No input statistics";
+    }
+
+    String result = "";
+    result += "TotalBytes: " + FileUtil.humanReadableByteCount(tableStats.getNumBytes(), false) + " ("
+        + tableStats.getNumBytes() + " B)";
+    result += ", ReadBytes: " + FileUtil.humanReadableByteCount(tableStats.getReadBytes(), false) + " ("
+        + tableStats.getReadBytes() + " B)";
+    result += ", ReadRows: " + (tableStats.getNumRows() == 0 ? "-" : tableStats.getNumRows());
+
+    return result;
   }
 }

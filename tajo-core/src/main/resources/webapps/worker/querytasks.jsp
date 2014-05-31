@@ -19,23 +19,24 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.master.querymaster.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.worker.*" %>
-<%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="org.apache.tajo.QueryId" %>
-<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
-<%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="java.util.HashMap" %>
+<%@ page import="org.apache.tajo.QueryId" %>
 <%@ page import="org.apache.tajo.QueryUnitAttemptId" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="java.util.Locale" %>
-<%@ page import="java.text.NumberFormat" %>
 <%@ page import="org.apache.tajo.engine.planner.PlannerUtil" %>
+<%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
+<%@ page import="org.apache.tajo.master.querymaster.*" %>
 <%@ page import="org.apache.tajo.util.FileUtil" %>
+<%@ page import="org.apache.tajo.util.JSPUtil" %>
+<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.worker.TajoWorker" %>
+<%@ page import="java.text.NumberFormat" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Locale" %>
+<%@ page import="java.util.Map" %>
 
 <%
   String paramQueryId = request.getParameter("queryId");
@@ -157,7 +158,7 @@
     <tr><td align='right' width='180px'>Status:</td><td><%=subQuery.getState()%></td></tr>
     <tr><td align='right'>Started:</td><td><%=df.format(subQuery.getStartTime())%> ~ <%=subQuery.getFinishTime() == 0 ? "-" : df.format(subQuery.getFinishTime())%></td></tr>
     <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=subQuery.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=subQuery.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
-    <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float)(totalProgress/numTasks))%>%</td></tr>
+    <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>
     <tr><td align='right'>Actual Processed Bytes:</td><td><%=totalReadBytes == 0 ? "-" : FileUtil.humanReadableByteCount(totalReadBytes, false) + " (" + nf.format(totalReadBytes) + " B)"%></td></tr>
