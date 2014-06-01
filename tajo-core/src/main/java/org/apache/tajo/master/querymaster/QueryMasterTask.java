@@ -58,6 +58,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -364,11 +365,10 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  private void initStagingDir() throws IOException {
+  private void initStagingDir() throws Exception {
     Path stagingDir = null;
     Path outputDir = null;
-    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
-
+    FileSystem defaultFS = FileSystemUtil.getFileSystem(TajoConf.getWarehouseDir(systemConf), systemConf);
     try {
 
       stagingDir = initStagingDir(systemConf, defaultFS, queryId.toString());
