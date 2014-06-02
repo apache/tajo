@@ -19,15 +19,10 @@
 package org.apache.tajo.storage;
 
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,22 +31,21 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod;
 import org.apache.hadoop.security.token.Token;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 
 public class FileSystemUtil {
   private static final Log LOG = LogFactory.getLog(FileSystemUtil.class);
 
+  /**
+   * Returns instance of DistributedFileSystem object pointing to secure hadoop using
+   * hadoop delegation token.
+   * @param path Path for which fileSystem is requested
+   * @param systemConf TajoConf
+   * @param rootUriParam URI string param pointing to root of filesytem
+   * @return Returns filesystem object
+   *
+   */
   private static FileSystem getDFSUsingDelegationToken(Path path, TajoConf systemConf,
                                                        String rootUriParam) throws Exception {
     String delegationToken = systemConf.getVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN);
@@ -86,8 +80,19 @@ public class FileSystemUtil {
       });
     return fs;
   }
+
+  /**
+   * Returns instance of DistributedFileSystem object of secure hadoop cluster using
+   * user principal and keytab file.
+   *
+   * @param path Path for which fileSystem is requested
+   * @param systemConf TajoConf
+   * @param rootUriParam URI string param pointing to root of filesytem
+   * @return Returns filesystem object
+   * @throws Exception Throws exception for wrong config values.
+   */
   private static FileSystem getDFSUsingKeyTab(Path path, TajoConf systemConf,
-                                             String rootUriParam) throws Exception {
+                                              String rootUriParam) throws Exception {
     Configuration conf = new Configuration();
     SecurityUtil.setAuthenticationMethod(AuthenticationMethod.KERBEROS, conf );
     UserGroupInformation.setConfiguration(conf);
@@ -101,20 +106,24 @@ public class FileSystemUtil {
       loginUserFromKeytabAndReturnUGI(kerberosPrincipal, kerberosKeyTabLocation);
     final String rootUri = rootUriParam;
     FileSystem fs = ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
-                @Override
-                public FileSystem run() throws Exception {
-                  Configuration conf = new HdfsConfiguration();
-                  conf.set("fs.defaultFs", rootUri);
-                  conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
-                  return FileSystem.get(conf);
-                }
+        @Override
+        public FileSystem run() throws Exception {
+          Configuration conf = new HdfsConfiguration();
+          conf.set("fs.defaultFs", rootUri);
+          conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
+          return FileSystem.get(conf);
+        }
       });
-    Token dfsToken = fs.getDelegationToken(ugi.getShortUserName());
+    Token<?> dfsToken = fs.getDelegationToken(ugi.getShortUserName());
     String dfsTokenString = dfsToken.encodeToUrlString();
     systemConf.setVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN, dfsTokenString);
     return fs;
   }
 
+  /**
+   * This method is helper method to be called from worker code.
+   *
+   */
   public static FileSystem getFileSystem(Path path, TajoConf systemConf
                                          ) throws Exception {
     return getFileSystem(path, systemConf, false);
@@ -124,6 +133,12 @@ public class FileSystemUtil {
    * Returns file system object from the path.
    * Does the authentication with underlying filesystem if it is required
    * (Eg. Hadoop kerberose/tokens)
+   *
+   * @param path Input path for which FileSystem object is requested
+   * @param systemConf TajoConf object
+   * @param callFromTajoMaster boolean value indicating if this call is being made form master
+   * @return Returns filesystem object corresponding to input path
+   *
    */
   public static FileSystem getFileSystem(Path path, TajoConf systemConf,
                                          boolean callFromTajoMaster
@@ -147,7 +162,7 @@ public class FileSystemUtil {
         throw new Exception("Host missing/malformed in hdfs path :" + path);
       }
       String rootUri = path.toUri().getScheme() + "://" + path.toUri().getHost() + ":"
-                       + path.toUri().getPort();
+        + path.toUri().getPort();
       if(callFromTajoMaster)
         return getDFSUsingKeyTab(path, systemConf, rootUri);
       return getDFSUsingDelegationToken(path, systemConf, rootUri);

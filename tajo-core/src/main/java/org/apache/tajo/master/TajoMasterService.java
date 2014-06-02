@@ -27,6 +27,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.Worker;
@@ -34,6 +35,7 @@ import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
@@ -167,6 +169,13 @@ public class TajoMasterService extends AbstractService {
         builder.addWorkerResources(workerResource);
       }
       done.run(builder.build());
+    }
+
+    @Override
+    public void getHDFSDelegationToken(RpcController controller, PrimitiveProtos.NullProto request,
+                                       RpcCallback<PrimitiveProtos.StringProto> done) {
+      String delegationToken = conf.getVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN);
+      done.run(StringProto.newBuilder().setValue(delegationToken).build());
     }
   }
 }

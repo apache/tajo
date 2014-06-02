@@ -238,9 +238,6 @@ public class TajoMaster extends CompositeService {
       defaultFS.mkdirs(tajoRootPath, new FsPermission(TAJO_ROOT_DIR_PERMISSION));
       LOG.info("Tajo Root Directory '" + tajoRootPath + "' is created.");
     }
-    String delegationToken = systemConf.getVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN);
-    LOG.info("Delegation token :" + delegationToken);
-
     // Check and Create system and system resource dir
     Path systemPath = TajoConf.getSystemDir(systemConf);
     if (!defaultFS.exists(systemPath)) {

@@ -48,6 +48,10 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -58,6 +62,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
@@ -160,7 +165,7 @@ public class TajoWorker extends CompositeService {
       System.exit(0);
     }
   }
-  
+
   @Override
   public void init(Configuration conf) {
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
@@ -230,7 +235,6 @@ public class TajoWorker extends CompositeService {
         }
       }
     }
-
     LOG.info("Tajo Worker started: queryMaster=" + queryMasterMode + " taskRunner=" + taskRunnerMode +
         ", qmRpcPort=" + qmManagerPort +
         ",yarnContainer=" + yarnContainerMode + ", clientPort=" + clientPort +
@@ -256,6 +260,34 @@ public class TajoWorker extends CompositeService {
     workerHeartbeatThread = new WorkerHeartbeatService(workerContext);
     workerHeartbeatThread.init(conf);
     addIfService(workerHeartbeatThread);
+
+    LOG.info("--------------------- Delegation token start ----------");
+    getDelegationToken();
+    LOG.info("--------------------- Delegation token end ----------");
+  }
+
+  private void getDelegationToken() {
+    NettyClientBase rpc = null;
+    try {
+      rpc = connPool.getConnection(tajoMasterAddress,
+                                   TajoMasterProtocol.class, true);
+      TajoMasterProtocol.TajoMasterProtocolService masterService = rpc.getStub();
+
+      CallFuture<PrimitiveProtos.StringProto> callBack =
+          new CallFuture<PrimitiveProtos.StringProto>();
+
+      masterService.getHDFSDelegationToken(callBack.getController(),
+          PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
+
+      PrimitiveProtos.StringProto dfsTokenString = callBack.get(2, TimeUnit.SECONDS);
+      LOG.info("Got following delegation token: " + dfsTokenString.getValue());
+      systemConf.setVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN, dfsTokenString.getValue());
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    } finally {
+      connPool.releaseConnection(rpc);
+    }
+    return;
   }
 
   private void initWorkerMetrics() {

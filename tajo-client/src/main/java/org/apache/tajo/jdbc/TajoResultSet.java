@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.FileScanner;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.MergeScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
@@ -60,7 +61,7 @@ public class TajoResultSet extends TajoResultSetBase {
     init();
   }
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws Exception {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
@@ -70,17 +71,17 @@ public class TajoResultSet extends TajoResultSetBase {
   }
 
   public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, long maxRowNum)
-      throws IOException {
+      throws Exception {
     this(tajoClient, queryId, conf, table);
     this.maxRowNum = maxRowNum;
     initScanner();
     init();
   }
 
-  private void initScanner() throws IOException {
+  private void initScanner() throws Exception {
     if(desc != null) {
       schema = desc.getSchema();
-      fs = FileScanner.getFileSystem(conf, desc.getPath());
+      fs = FileSystemUtil.getFileSystem(desc.getPath(), conf);
       if (maxRowNum != null) {
         this.totalRow = maxRowNum;
       } else {
@@ -172,7 +173,7 @@ public class TajoResultSet extends TajoResultSetBase {
         initScanner();
       }
       init();
-    } catch (IOException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
