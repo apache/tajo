@@ -1193,7 +1193,7 @@ public class GlobalPlanner {
 
       if (child.getType() == NodeType.UNION) {
         List<TableSubQueryNode> addedTableSubQueries = new ArrayList<TableSubQueryNode>();
-        TableSubQueryNode leftMostUnionNode = null;
+        TableSubQueryNode leftMostSubQueryNode = null;
         for (ExecutionBlock childBlock : context.plan.getChilds(currentBlock.getId())) {
           TableSubQueryNode copy = PlannerUtil.clone(plan, node);
           copy.setSubQuery(childBlock.getPlan());
@@ -1205,26 +1205,27 @@ public class GlobalPlanner {
             for (Target eachTarget : copy.getTargets()) {
               Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
               if (copy.getInSchema().containsAll(columns)) {
-                leftMostUnionNode = copy;
+                leftMostSubQueryNode = copy;
+                break;
               }
             }
           }
         }
 
-        if (leftMostUnionNode != null) {
+        if (leftMostSubQueryNode != null) {
           // replace target column name
-          Target[] targets = leftMostUnionNode.getTargets();
+          Target[] targets = leftMostSubQueryNode.getTargets();
           int[] targetMappings = new int[targets.length];
           for (int i = 0; i < targets.length; i++) {
             if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
               throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
             }
-            int index = leftMostUnionNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
+            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
             targetMappings[i] = index;
           }
 
           for (TableSubQueryNode eachNode: addedTableSubQueries) {
-            if (eachNode.getPID() == leftMostUnionNode.getPID()) {
+            if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
               continue;
             }
             Target[] eachNodeTargets = eachNode.getTargets();
