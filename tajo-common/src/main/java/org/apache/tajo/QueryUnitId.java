@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Objects;
+
 public class QueryUnitId implements Comparable<QueryUnitId> {
   public static final String QU_ID_PREFIX = "t";
 
@@ -66,15 +68,15 @@ public class QueryUnitId implements Comparable<QueryUnitId> {
     if (this == obj) {
       return true;
     }
-    if(!(obj instanceof QueryUnitId)) {
+    if (!(obj instanceof QueryUnitId)) {
       return false;
     }
-    return compareTo((QueryUnitId)obj) == 0;
+    return compareTo((QueryUnitId) obj) == 0;
   }
 
   @Override
   public int hashCode() {
-    return toString().hashCode();
+    return Objects.hashCode(executionBlockId, id);
   }
 
   @Override

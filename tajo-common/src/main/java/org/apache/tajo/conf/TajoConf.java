@@ -334,7 +334,10 @@ public class TajoConf extends Configuration {
     PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
 
     // FILE FORMAT
-    CSVFILE_NULL("tajo.csvfile.null", "\\\\N")
+    CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+
+    // DEBUG OPTION
+    TAJO_DEBUG("tajo.debug", false)
     ;
 
     public final String varname;

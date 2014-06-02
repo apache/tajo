@@ -18,107 +18,159 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.util.FileUtil;
+import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.ProtoObject;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 
-public class TaskHistory {
+import static org.apache.tajo.TajoProtos.TaskAttemptState;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.FetcherHistoryProto;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
+
+/**
+ * The history class for Task processing.
+ */
+public class TaskHistory implements ProtoObject<TaskHistoryProto> {
+
+  private QueryUnitAttemptId queryUnitAttemptId;
+  private TaskAttemptState state;
+  private float progress;
   private long startTime;
   private long finishTime;
-
-  private String status;
+  private CatalogProtos.TableStatsProto inputStats;
+  private CatalogProtos.TableStatsProto outputStats;
   private String outputPath;
   private String workingPath;
-  private float progress;
 
-  private TableStats inputStats;
-  private TableStats outputStats;
+  private int finishedFetchCount;
+  private int totalFetchCount;
+  private List<FetcherHistoryProto> fetcherHistories;
 
-  Map<URI, FetcherHistory> fetchers;
+  public TaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskAttemptState state, float progress,
+                     long startTime, long finishTime, CatalogProtos.TableStatsProto inputStats) {
+    init();
+    this.queryUnitAttemptId = queryUnitAttemptId;
+    this.state = state;
+    this.progress = progress;
+    this.startTime = startTime;
+    this.finishTime = finishTime;
+    this.inputStats = inputStats;
+  }
 
-  public static class FetcherHistory {
-    private long startTime;
-    private long finishTime;
+  public TaskHistory(TaskHistoryProto proto) {
+    this.queryUnitAttemptId = new QueryUnitAttemptId(proto.getQueryUnitAttemptId());
+    this.state = proto.getState();
+    this.progress = proto.getProgress();
+    this.startTime = proto.getStartTime();
+    this.finishTime = proto.getFinishTime();
+    this.inputStats = proto.getInputStats();
 
-    private String status;
-    private String uri;
-    private long fileLen;
-    private int messageReceiveCount;
-
-    public long getStartTime() {
-      return startTime;
+    if (proto.hasOutputStats()) {
+      this.outputStats = proto.getOutputStats();
     }
 
-    public void setStartTime(long startTime) {
-      this.startTime = startTime;
+    if (proto.hasOutputPath()) {
+      this.outputPath = proto.getOutputPath();
     }
 
-    public long getFinishTime() {
-      return finishTime;
+    if (proto.hasWorkingPath()) {
+      this.workingPath = proto.getWorkingPath();
     }
 
-    public void setFinishTime(long finishTime) {
-      this.finishTime = finishTime;
+    if (proto.hasFinishedFetchCount()) {
+      this.finishedFetchCount = proto.getFinishedFetchCount();
     }
 
-    public String getStatus() {
-      return status;
+    if (proto.hasTotalFetchCount()) {
+      this.totalFetchCount = proto.getTotalFetchCount();
     }
 
-    public void setStatus(String status) {
-      this.status = status;
+    this.fetcherHistories = proto.getFetcherHistoriesList();
+  }
+
+  private void init() {
+    this.fetcherHistories = Lists.newArrayList();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(queryUnitAttemptId, state);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof TaskHistory) {
+      TaskHistory other = (TaskHistory) o;
+      return getProto().equals(other.getProto());
+    }
+    return false;
+  }
+
+  @Override
+  public TaskHistoryProto getProto() {
+    TaskHistoryProto.Builder builder = TaskHistoryProto.newBuilder();
+    builder.setQueryUnitAttemptId(queryUnitAttemptId.getProto());
+    builder.setState(state);
+    builder.setProgress(progress);
+    builder.setStartTime(startTime);
+    builder.setFinishTime(finishTime);
+    builder.setInputStats(inputStats);
+
+    if (outputStats != null) {
+      builder.setOutputStats(outputStats);
     }
 
-    public String getUri() {
-      return uri;
+    if (workingPath != null) {
+      builder.setWorkingPath(workingPath);
     }
 
-    public void setUri(String uri) {
-      this.uri = uri;
+    if (totalFetchCount > 0) {
+      builder.setTotalFetchCount(totalFetchCount);
+      builder.setFinishedFetchCount(finishedFetchCount);
     }
 
-    public long getFileLen() {
-      return fileLen;
-    }
-
-    public void setFileLen(long fileLen) {
-      this.fileLen = fileLen;
-    }
-
-    public int getMessageReceiveCount() {
-      return messageReceiveCount;
-    }
-
-    public void setMessageReceiveCount(int messageReceiveCount) {
-      this.messageReceiveCount = messageReceiveCount;
-    }
+    builder.addAllFetcherHistories(fetcherHistories);
+    return builder.build();
   }
 
   public long getStartTime() {
     return startTime;
   }
 
-  public void setStartTime(long startTime) {
-    this.startTime = startTime;
-  }
-
   public long getFinishTime() {
     return finishTime;
   }
 
-  public void setFinishTime(long finishTime) {
-    this.finishTime = finishTime;
+  public List<FetcherHistoryProto> getFetcherHistories() {
+    return Collections.unmodifiableList(fetcherHistories);
   }
 
-  public String getStatus() {
-    return status;
+  public boolean hasFetcherHistories(){
+    return totalFetchCount > 0;
   }
 
-  public void setStatus(String status) {
-    this.status = status;
+  public void addFetcherHistory(FetcherHistoryProto fetcherHistory) {
+    fetcherHistories.add(fetcherHistory);
+  }
+
+  public QueryUnitAttemptId getQueryUnitAttemptId() {
+    return queryUnitAttemptId;
+  }
+
+  public TaskAttemptState getState() {
+    return state;
+  }
+
+  public float getProgress() {
+    return progress;
+  }
+
+  public CatalogProtos.TableStatsProto getInputStats() {
+    return inputStats;
   }
 
   public String getOutputPath() {
@@ -137,62 +189,27 @@ public class TaskHistory {
     this.workingPath = workingPath;
   }
 
-  public Collection<FetcherHistory> getFetchers() {
-    return fetchers.values();
+  public Integer getFinishedFetchCount() {
+    return finishedFetchCount;
   }
 
-  public void setFetchers(Map<URI, FetcherHistory> fetchers) {
-    this.fetchers = fetchers;
+  public void setFinishedFetchCount(int finishedFetchCount) {
+    this.finishedFetchCount = finishedFetchCount;
   }
 
-  public float getProgress() {
-    return progress;
+  public Integer getTotalFetchCount() {
+    return totalFetchCount;
   }
 
-  public void setProgress(float progress) {
-    this.progress = progress;
+  public void setTotalFetchCount(int totalFetchCount) {
+    this.totalFetchCount = totalFetchCount;
   }
 
-  public boolean hasFetcher() {
-    return fetchers != null && !fetchers.isEmpty();
-  }
-
-  public TableStats getInputStats() {
-    return inputStats;
-  }
-
-  public void setInputStats(TableStats inputStats) {
-    this.inputStats = inputStats;
-  }
-
-  public TableStats getOutputStats() {
+  public CatalogProtos.TableStatsProto getOutputStats() {
     return outputStats;
   }
 
-  public void setOutputStats(TableStats outputStats) {
+  public void setOutputStats(CatalogProtos.TableStatsProto outputStats) {
     this.outputStats = outputStats;
-  }
-
-  public static String toInputStatsString(TableStats tableStats) {
-    if (tableStats == null) {
-      return "No input statistics";
-    }
-
-    String result = "";
-    result += "TotalBytes: " + FileUtil.humanReadableByteCount(tableStats.getNumBytes(), false) + " ("
-        + tableStats.getNumBytes() + " B)";
-    result += ", ReadBytes: " + FileUtil.humanReadableByteCount(tableStats.getReadBytes(), false) + " ("
-        + tableStats.getReadBytes() + " B)";
-    result += ", ReadRows: " + (tableStats.getNumRows() == 0 ? "-" : tableStats.getNumRows());
-
-    return result;
-  }
-
-  public static String toOutputStatsString(TableStats tableStats) {
-    if (tableStats == null) {
-      return "No output statistics";
-    }
-
-    return tableStats.toJson();
   }
 }
