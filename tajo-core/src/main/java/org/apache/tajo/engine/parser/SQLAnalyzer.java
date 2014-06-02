@@ -1053,6 +1053,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return createTable;
   }
 
+  @Override
+  public Expr visitTruncate_table_statement(@NotNull SQLParser.Truncate_table_statementContext ctx) {
+    List<Table_nameContext> tableNameContexts = ctx.table_name();
+    List<String> tableNames = new ArrayList<String>();
+
+    for (Table_nameContext eachTableNameContext: tableNameContexts) {
+      tableNames.add(eachTableNameContext.getChild(0).getText());
+    }
+
+    return new TruncateTable(tableNames);
+  }
+
   private ColumnDefinition[] getDefinitions(SQLParser.Table_elementsContext ctx) {
     int size = ctx.field_element().size();
     ColumnDefinition[] elements = new ColumnDefinition[size];
