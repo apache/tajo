@@ -21,6 +21,7 @@ package org.apache.tajo.worker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.TajoProtos;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
@@ -42,6 +43,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
  * a specific file. It aims at asynchronous and efficient data transmit.
  */
 public class Fetcher {
+
   private final static Log LOG = LogFactory.getLog(Fetcher.class);
 
   private final URI uri;
@@ -54,12 +56,14 @@ public class Fetcher {
   private long finishTime;
   private long fileLen;
   private int messageReceiveCount;
+  private TajoProtos.FetcherState state;
 
   private ClientBootstrap bootstrap;
 
   public Fetcher(URI uri, File file, ClientSocketChannelFactory factory) {
     this.uri = uri;
     this.file = file;
+    this.state = TajoProtos.FetcherState.FETCH_INIT;
 
     String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
     this.host = uri.getHost() == null ? "localhost" : uri.getHost();
@@ -93,24 +97,17 @@ public class Fetcher {
     return fileLen;
   }
 
+  public TajoProtos.FetcherState getState() {
+    return state;
+  }
+
   public int getMessageReceiveCount() {
     return messageReceiveCount;
   }
 
-  public String getStatus() {
-    if(startTime == 0) {
-      return "READY";
-    }
-
-    if(startTime > 0 && finishTime == 0) {
-      return "FETCHING";
-    } else {
-      return "FINISH";
-    }
-  }
-
   public File get() throws IOException {
     startTime = System.currentTimeMillis();
+    this.state = TajoProtos.FetcherState.FETCH_FETCHING;
 
     ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
 
@@ -142,6 +139,7 @@ public class Fetcher {
     // Close the channel to exit.
     future.getChannel().close();
     finishTime = System.currentTimeMillis();
+    this.state = TajoProtos.FetcherState.FETCH_FINISHED;
     return file;
   }
 

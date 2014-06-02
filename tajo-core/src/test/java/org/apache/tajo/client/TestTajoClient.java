@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
 import com.sun.org.apache.commons.logging.Log;
 import com.sun.org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
@@ -32,8 +33,10 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -42,12 +45,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoClient {
@@ -162,6 +165,13 @@ public class TestTajoClient {
   public final void testSessionVariables() throws IOException, ServiceException, InterruptedException {
     String prefixName = "key_";
     String prefixValue = "val_";
+
+    List<String> unsetList = new ArrayList<String>();
+    for(Map.Entry<String, String> entry: client.getAllSessionVariables().entrySet()) {
+      unsetList.add(entry.getKey());
+    }
+    client.unsetSessionVariables(unsetList);
+
     for (int i = 0; i < 10; i++) {
       String key = prefixName + i;
       String val = prefixValue + i;
@@ -662,5 +672,54 @@ public class TestTajoClient {
     } finally {
       client.closeQuery(queryId);
     }
+  }
+
+  @Test
+  public void testSetCvsNull() throws Exception {
+    String sql =
+        "select\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey,\n" +
+            "  orders.o_orderstatus \n" +
+            "from\n" +
+            "  orders full outer join customer on c_custkey = o_orderkey\n" +
+            "order by\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey;\n";
+
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(ConfVars.CSVFILE_NULL.varname, "\\\\T");
+    client.updateSessionVariables(variables);
+
+    TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
+
+    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.CSVFILE_NULL), "\\\\T");
+
+    Path path = res.getTableDesc().getPath();
+    FileSystem fs = path.getFileSystem(tajoConf);
+
+    FileStatus[] files = fs.listStatus(path);
+    assertNotNull(files);
+    assertEquals(1, files.length);
+
+    InputStream in = fs.open(files[0].getPath());
+    byte[] buf = new byte[1024];
+
+
+    int readBytes = in.read(buf);
+    assertTrue(readBytes > 0);
+
+    // text type field's value is replaced with \T
+    String expected = "1|1|O\n" +
+        "2|2|O\n" +
+        "3|3|F\n" +
+        "4||\\T\n" +
+        "5||\\T\n";
+
+    String resultDatas = new String(buf, 0, readBytes);
+
+    assertEquals(expected, resultDatas);
   }
 }

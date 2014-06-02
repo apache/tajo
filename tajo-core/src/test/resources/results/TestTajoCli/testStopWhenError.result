@@ -1,0 +1,5 @@
+?count
+-------------------------------
+5
+(1 rows, , 2 B selected)
+ERROR: relation "default.lineitem2" does not exist

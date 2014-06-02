@@ -19,19 +19,24 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.worker.*" %>
+<%@ page import="org.apache.tajo.worker.TajoWorker" %>
+<%@ page import="org.apache.tajo.worker.TaskRunner" %>
 <%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.List" %>
+<%@ page import="org.apache.tajo.worker.TaskRunnerHistory" %>
+<%@ page import="org.apache.tajo.worker.TaskRunnerHistory" %>
 
 <%
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
   List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
-  List<TaskRunner> finishedTaskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getFinishedTaskRunners());
+  List<TaskRunnerHistory> histories = new ArrayList<TaskRunnerHistory>(tajoWorker.getWorkerContext().getTaskRunnerManager().getExecutionBlockHistories());
 
   JSPUtil.sortTaskRunner(taskRunners);
-  JSPUtil.sortTaskRunner(finishedTaskRunners);
+  JSPUtil.sortTaskRunnerHistory(histories);
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 %>
@@ -55,7 +60,7 @@
       for(TaskRunner eachTaskRunner: taskRunners) {
 %>
     <tr>
-      <td><a href="tasks.jsp?containerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
+      <td><a href="tasks.jsp?taskRunnerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
       <td><%=df.format(eachTaskRunner.getStartTime())%></td>
       <td><%=eachTaskRunner.getFinishTime() == 0 ? "-" : df.format(eachTaskRunner.getFinishTime())%></td>
       <td><%=JSPUtil.getElapsedTime(eachTaskRunner.getStartTime(), eachTaskRunner.getFinishTime())%></td>
@@ -70,14 +75,15 @@
   <table width="100%" border="1" class="border_table">
     <tr><th>ContainerId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
 <%
-      for(TaskRunner eachTaskRunner: finishedTaskRunners) {
+      for(TaskRunnerHistory history: histories) {
+          String taskRunnerId = TaskRunner.getId(history.getExecutionBlockId(), history.getContainerId());
 %>
     <tr>
-      <td><a href="tasks.jsp?containerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
-      <td><%=df.format(eachTaskRunner.getStartTime())%></td>
-      <td><%=eachTaskRunner.getFinishTime() == 0 ? "-" : df.format(eachTaskRunner.getFinishTime())%></td>
-      <td><%=JSPUtil.getElapsedTime(eachTaskRunner.getStartTime(), eachTaskRunner.getFinishTime())%></td>
-      <td><%=eachTaskRunner.getServiceState()%></td>
+        <td><a href="tasks.jsp?taskRunnerId=<%=taskRunnerId%>"><%=taskRunnerId%></a></td>
+      <td><%=df.format(history.getStartTime())%></td>
+      <td><%=history.getFinishTime() == 0 ? "-" : df.format(history.getFinishTime())%></td>
+      <td><%=JSPUtil.getElapsedTime(history.getStartTime(), history.getFinishTime())%></td>
+      <td><%=history.getState()%></td>
 <%
   }
 %>

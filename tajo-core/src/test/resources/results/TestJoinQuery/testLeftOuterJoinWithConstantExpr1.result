@@ -3,5 +3,5 @@ c_custkey,o_orderkey,val
 1,1,val
 2,2,val
 3,3,val
-4,0,val
-5,0,val
+4,null,val
+5,null,val

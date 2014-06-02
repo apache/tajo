@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -90,5 +91,34 @@ public class TestFetcher {
     assertEquals(0.25f, Task.adjustFetchProcess(10, 5), 0);
     assertEquals(0.45f, Task.adjustFetchProcess(10, 1), 0);
     assertEquals(0.5f, Task.adjustFetchProcess(10, 0), 0);
+  }
+
+  @Test
+  public void testStatus() throws Exception {
+    Random rnd = new Random();
+    FileWriter writer = new FileWriter(INPUT_DIR + "data");
+    String data;
+    for (int i = 0; i < 100; i++) {
+      data = ""+rnd.nextInt();
+      writer.write(data);
+    }
+    writer.flush();
+    writer.close();
+
+    DataRetriever ret = new DirectoryRetriever(INPUT_DIR);
+    final HttpDataServer server = new HttpDataServer(
+        NetUtils.createSocketAddr("127.0.0.1:0"), ret);
+    server.start();
+    InetSocketAddress addr = server.getBindAddress();
+
+    URI uri = URI.create("http://127.0.0.1:"+addr.getPort() + "/data");
+    ClientSocketChannelFactory channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
+
+    final Fetcher fetcher = new Fetcher(uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FINISHED, fetcher.getState());
+    server.stop();
   }
 }
