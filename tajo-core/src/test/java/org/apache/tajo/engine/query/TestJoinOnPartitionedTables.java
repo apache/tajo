@@ -40,21 +40,21 @@ public class TestJoinOnPartitionedTables extends QueryTestCaseBase {
     assertResultSet(res);
     res.close();
 
-//    res = executeFile("selfJoinOfPartitionedTable.sql");
-//    assertResultSet(res, "selfJoinOfPartitionedTable.result");
-//    res.close();
-//
-//    res = executeFile("testNoProjectionJoinQual.sql");
-//    assertResultSet(res, "testNoProjectionJoinQual.result");
-//    res.close();
-//
-//    res = executeFile("testPartialFilterPushDown.sql");
-//    assertResultSet(res, "testPartialFilterPushDown.result");
-//    res.close();
-//
-//    res = executeFile("testPartialFilterPushDownOuterJoin.sql");
-//    assertResultSet(res, "testPartialFilterPushDownOuterJoin.result");
-//    res.close();
+    res = executeFile("selfJoinOfPartitionedTable.sql");
+    assertResultSet(res, "selfJoinOfPartitionedTable.result");
+    res.close();
+
+    res = executeFile("testNoProjectionJoinQual.sql");
+    assertResultSet(res, "testNoProjectionJoinQual.result");
+    res.close();
+
+    res = executeFile("testPartialFilterPushDown.sql");
+    assertResultSet(res, "testPartialFilterPushDown.result");
+    res.close();
+
+    res = executeFile("testPartialFilterPushDownOuterJoin.sql");
+    assertResultSet(res, "testPartialFilterPushDownOuterJoin.result");
+    res.close();
 
     res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
     assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");

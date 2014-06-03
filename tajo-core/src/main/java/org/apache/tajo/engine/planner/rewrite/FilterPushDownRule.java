@@ -230,14 +230,18 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
       }
 
+      Set<String> preservedTableNameSet;
+      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
+      } else {
+        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
+      }
+
+      List<EvalNode> removedFromFilter = new ArrayList<EvalNode>();
       for (EvalNode eachEval: context.pushingDownFilters) {
-//        if (isTopMostJoin && !EvalTreeUtil.isJoinQual(eachEval, true)) {
-//          outerJoinFilterEvalsExcludePredication.add(eachEval);
-//        } else {
-//          outerJoinPredicationEvals.add(eachEval);
-//        }
         if (EvalTreeUtil.isJoinQual(eachEval, true)) {
           outerJoinPredicationEvals.add(eachEval);
+          removedFromFilter.add(eachEval);
         } else {
           Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachEval);
           boolean canPushDown = true;
@@ -247,22 +251,15 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
               break;
             }
           }
-          if (canPushDown) {
-            context.pushingDownFilters.add(eachEval);
-          } else {
+          if (!canPushDown) {
             outerJoinFilterEvalsExcludePredication.add(eachEval);
+            removedFromFilter.add(eachEval);
           }
         }
       }
 
-//      context.pushingDownFilters.removeAll(outerJoinFilterEvalsExcludePredication);
+      context.pushingDownFilters.removeAll(removedFromFilter);
 
-      Set<String> preservedTableNameSet;
-      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
-      } else {
-        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
-      }
       for (EvalNode eachOnEval: onConditions) {
         if (EvalTreeUtil.isJoinQual(eachOnEval, true)) {
           // If join condition, processing in the JoinNode.
