@@ -609,12 +609,14 @@ public class TajoTestingCluster {
     }
     Path tablePath = new Path(rootDir, tableName);
     fs.mkdirs(tablePath);
-    Path dfsPath = new Path(tablePath, tableName + ".tbl");
-    FSDataOutputStream out = fs.create(dfsPath);
-    for (int j = 0; j < tableDatas.length; j++) {
-      out.write((tableDatas[j]+"\n").getBytes());
+    if (tableDatas.length > 0) {
+      Path dfsPath = new Path(tablePath, tableName + ".tbl");
+      FSDataOutputStream out = fs.create(dfsPath);
+      for (int j = 0; j < tableDatas.length; j++) {
+        out.write((tableDatas[j] + "\n").getBytes());
+      }
+      out.close();
     }
-    out.close();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, tableOption);
     client.createExternalTable(tableName, schema, tablePath, meta);
   }

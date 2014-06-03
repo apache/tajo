@@ -633,6 +633,34 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeftOuterWithEmptyTable() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case W2: Where Predicate on Null Supplying Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id\n" +
+              "from table11 t1\n" +
+              "left outer join table15 t2\n" +
+              "on t1.id = t2.id"
+      );
+
+      String expected =
+          "id,name,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,null\n" +
+              "2,table11-2,null\n" +
+              "3,table11-3,null\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
   public final void testRightOuterJoinPredicationCaseByCase1() throws Exception {
     createOuterJoinTestTable();
     try {
@@ -777,6 +805,12 @@ public class TestJoinQuery extends QueryTestCaseBase {
     schema.addColumn("name", Type.TEXT);
     data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4" };
     TajoTestingCluster.createTable("table14", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    data = new String[]{};
+    TajoTestingCluster.createTable("table15", schema, tableOptions, data);
   }
 
   private void dropOuterJoinTestTable() throws Exception {
@@ -784,5 +818,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
     executeString("DROP TABLE table12 PURGE;");
     executeString("DROP TABLE table13 PURGE;");
     executeString("DROP TABLE table14 PURGE;");
+    executeString("DROP TABLE table15 PURGE;");
   }
 }
