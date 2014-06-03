@@ -21,6 +21,7 @@ package org.apache.tajo;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
@@ -40,6 +41,7 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -561,5 +563,62 @@ public class QueryTestCaseBase {
       }
     }
     return result;
+  }
+
+  /**
+   * Reads data file from Test Cluster's HDFS
+   * @param path data parent path
+   * @return data file's contents
+   * @throws Exception
+   */
+  public String getTableFileContents(Path path) throws Exception {
+    FileSystem fs = path.getFileSystem(conf);
+
+    FileStatus[] files = fs.listStatus(path);
+
+    if (files == null || files.length == 0) {
+      return null;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    byte[] buf = new byte[1024];
+
+    for (FileStatus file: files) {
+      if (file.isDirectory()) {
+        continue;
+      }
+
+      InputStream in = fs.open(file.getPath());
+      try {
+        while (true) {
+          int readBytes = in.read(buf);
+          if (readBytes <= 0) {
+            break;
+          }
+
+          sb.append(new String(buf, 0, readBytes));
+        }
+      } finally {
+        in.close();
+      }
+    }
+
+    return sb.toString();
+  }
+
+  /**
+   * Reads data file from Test Cluster's HDFS
+   * @param tableName
+   * @return data file's contents
+   * @throws Exception
+   */
+  public String getTableFileContents(String tableName) throws Exception {
+    TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
+    if (tableDesc == null) {
+      return null;
+    }
+
+    Path path = tableDesc.getPath();
+    return getTableFileContents(path);
   }
 }

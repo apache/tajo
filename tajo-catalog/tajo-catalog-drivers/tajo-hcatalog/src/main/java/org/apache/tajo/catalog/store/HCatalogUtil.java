@@ -30,6 +30,7 @@ import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
 public class HCatalogUtil {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -128,7 +129,9 @@ public class HCatalogUtil {
     } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
-        return CatalogProtos.StoreType.RCFILE.name();
+      return CatalogProtos.StoreType.RCFILE.name();
+    } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
+      return CatalogProtos.StoreType.PARQUET.name();
     } else {
       throw new CatalogException("Not supported file output format. - file output format:" + fileFormat);
     }
