@@ -585,6 +585,7 @@ public class LogicalPlan {
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
     private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
+    private final List<RelationNode> relationList = TUtil.newList();
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */
@@ -668,10 +669,11 @@ public class LogicalPlan {
         TUtil.putToNestedList(aliasMap, relation.getTableName(), relation.getCanonicalName());
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationList.add(relation);
     }
 
     public Collection<RelationNode> getRelations() {
-      return this.canonicalNameToRelationMap.values();
+      return Collections.unmodifiableList(relationList);
     }
 
     public boolean hasTableExpression() {
