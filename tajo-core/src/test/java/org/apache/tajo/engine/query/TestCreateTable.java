@@ -22,11 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
@@ -502,14 +498,19 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     // Table created using CTAS
     executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
-    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2,c3 from table3;").close();
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table3"));
+
+    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2, c3 from table3;").close();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table4"));
+
     executeString("CREATE TABLE table2 LIKE table4");
     testMsg = "testCreateTableLike1: Table using CTAS test failed";
+
     assertTrue(testMsg, isClonedTable("table4","table2"));
     executeString("DROP TABLE table3");
     executeString("DROP TABLE table4");
     executeString("DROP TABLE table2");
-
 
     /* Enable when view is supported
     // View

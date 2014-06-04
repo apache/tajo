@@ -124,6 +124,17 @@ public class Task {
         }
       };
 
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SEQ =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(3);
+          return fmt;
+        }
+      };
+
   public Task(QueryUnitAttemptId taskId,
               final TaskRunner.TaskRunnerContext worker,
               final QueryMasterProtocolService.Interface masterProxy,
@@ -172,7 +183,8 @@ public class Task {
       Path outFilePath = StorageUtil.concatPath(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME,
           OUTPUT_FILE_PREFIX +
           OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
-          OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()));
+          OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()) + "-" +
+          OUTPUT_FILE_FORMAT_SEQ.get().format(0));
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }

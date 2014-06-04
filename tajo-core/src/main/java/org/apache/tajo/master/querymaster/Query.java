@@ -23,6 +23,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -49,9 +50,11 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -424,10 +427,37 @@ public class Query implements EventHandler<QueryEvent> {
               }
             }
           } else {
-            fs.rename(stagingResultDir, finalOutputDir);
-            LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+            NodeType queryType = queryContext.getCommandType();
+
+            if (queryType == NodeType.INSERT) {
+              NumberFormat fmt = NumberFormat.getInstance();
+              fmt.setGroupingUsed(false);
+              fmt.setMinimumIntegerDigits(3);
+
+              if (queryContext.hasPartition()) {
+                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1);
+                }
+              } else {
+                int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
+                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++);
+                }
+              }
+              // checking all file moved
+              FileStatus[] files = fs.listStatus(stagingResultDir);
+              if (files != null && files.length != 0) {
+                for (FileStatus eachFile: files) {
+                  LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
+                }
+              }
+            } else {
+              fs.rename(stagingResultDir, finalOutputDir);
+              LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+            }
           }
         } catch (IOException e) {
+          // TODO report to client
           e.printStackTrace();
         }
       } else {
@@ -435,6 +465,71 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       return finalOutputDir;
+    }
+
+    private String replaceFileNameSeq(Path path, int seq, NumberFormat nf) throws IOException {
+      String[] tokens = path.getName().split("-");
+      if (tokens.length != 4) {
+        throw new IOException("Wrong result file name:" + path);
+      }
+      return tokens[0] + "-" + tokens[1] + "-" + tokens[2] + "-" + nf.format(seq);
+    }
+
+    private void moveResultFromStageToFinal(FileSystem fs, Path stagingResultDir,
+                                            FileStatus stagingFile, Path finalOutputPath,
+                                            NumberFormat nf,
+                                            int fileSeq) throws IOException {
+      if (stagingFile.isDirectory()) {
+        String subPath = extractSubPath(stagingResultDir, stagingFile.getPath());
+        if (subPath != null) {
+          Path finalSubPath = new Path(finalOutputPath, subPath);
+          if (!fs.exists(finalSubPath)) {
+            fs.mkdirs(finalSubPath);
+          }
+          int maxSeq = StorageUtil.getMaxFileSequence(fs, finalSubPath, false);
+          for (FileStatus eachFile : fs.listStatus(stagingFile.getPath())) {
+            moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputPath, nf, maxSeq + 1);
+          }
+        } else {
+          throw new IOException("Wrong staging dir:" + stagingResultDir + "," + stagingFile.getPath());
+        }
+      } else {
+        String subPath = extractSubPath(stagingResultDir, stagingFile.getPath());
+        if (subPath != null) {
+          Path finalSubPath = new Path(finalOutputPath, subPath);
+          finalSubPath = new Path(finalSubPath.getParent(), replaceFileNameSeq(finalSubPath, fileSeq, nf));
+          if (!fs.exists(finalSubPath.getParent())) {
+            fs.mkdirs(finalSubPath.getParent());
+          }
+          if (fs.exists(finalSubPath)) {
+            throw new IOException("Already exists data file:" + finalSubPath);
+          }
+          boolean success = fs.rename(stagingFile.getPath(), finalSubPath);
+          if (success) {
+            LOG.info("Moving staging file[" + stagingFile.getPath() + "] + " +
+                "to final output[" + finalSubPath + "]");
+          } else {
+            LOG.error("Can't move staging file[" + stagingFile.getPath() + "] + " +
+                "to final output[" + finalSubPath + "]");
+          }
+        }
+      }
+    }
+
+    private String extractSubPath(Path parentPath, Path childPath) {
+      String parentPathStr = parentPath.toUri().getPath();
+      String childPathStr = childPath.toUri().getPath();
+
+      if (parentPathStr.length() > childPathStr.length()) {
+        return null;
+      }
+
+      int index = childPathStr.indexOf(parentPathStr);
+      if (index != 0) {
+        return null;
+      }
+
+      return childPathStr.substring(parentPathStr.length() + 1);
     }
 
     private static interface QueryHook {

@@ -35,8 +35,10 @@ import org.junit.experimental.categories.Category;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
+import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestInsertQuery extends QueryTestCaseBase {
@@ -56,6 +58,56 @@ public class TestInsertQuery extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+
+    executeString("DROP TABLE table1 PURGE");
+  }
+
+  @Test
+  public final void testInsertInto() throws Exception {
+    // create table and upload test data
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeFile("testInsertOverwrite.sql");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeFile("testInsertInto.sql");
+    res.close();
+
+    List<Path> dataFiles = listTableFiles("table1");
+    assertEquals(2, dataFiles.size());
+
+    for (int i = 0; i < dataFiles.size(); i++) {
+      String name = dataFiles.get(i).getName();
+      assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+      String[] tokens = name.split("-");
+      assertEquals(4, tokens.length);
+      assertEquals(i, Integer.parseInt(tokens[3]));
+    }
+
+    String tableDatas = getTableFileContents("table1");
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n";
+
+    assertNotNull(tableDatas);
+    assertEquals(expected, tableDatas);
 
     executeString("DROP TABLE table1 PURGE");
   }
