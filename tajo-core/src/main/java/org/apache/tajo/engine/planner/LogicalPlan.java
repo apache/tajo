@@ -221,6 +221,10 @@ public class LogicalPlan {
     }
   }
 
+  public void disconnectBlocks(QueryBlock srcBlock, QueryBlock targetBlock) {
+    queryBlockGraph.removeEdge(srcBlock.getName(), targetBlock.getName());
+  }
+
   public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
     queryBlockGraph.addEdge(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
   }
@@ -746,6 +750,12 @@ public class LogicalPlan {
       nodeTypeToNodeMap.put(node.getType(), node);
 
       queryBlockByPID.put(node.getPID(), this);
+    }
+
+    public void unregisterNode(LogicalNode node) {
+      nodeMap.remove(node.getPID());
+      nodeTypeToNodeMap.remove(node.getType());
+      queryBlockByPID.remove(node.getPID());
     }
 
     @SuppressWarnings("unchecked")

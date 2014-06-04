@@ -31,10 +31,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
@@ -1248,10 +1245,60 @@ public class GlobalPlanner {
       ExecutionBlock currentBlock = context.execBlockMap.remove(child.getPID());
 
       if (child.getType() == NodeType.UNION) {
+        List<TableSubQueryNode> addedTableSubQueries = new ArrayList<TableSubQueryNode>();
+        TableSubQueryNode leftMostSubQueryNode = null;
         for (ExecutionBlock childBlock : context.plan.getChilds(currentBlock.getId())) {
           TableSubQueryNode copy = PlannerUtil.clone(plan, node);
           copy.setSubQuery(childBlock.getPlan());
           childBlock.setPlan(copy);
+          addedTableSubQueries.add(copy);
+
+          //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
+          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
+            for (Target eachTarget : copy.getTargets()) {
+              Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
+              if (copy.getInSchema().containsAll(columns)) {
+                leftMostSubQueryNode = copy;
+                break;
+              }
+            }
+          }
+        }
+
+        if (leftMostSubQueryNode != null) {
+          // replace target column name
+          Target[] targets = leftMostSubQueryNode.getTargets();
+          int[] targetMappings = new int[targets.length];
+          for (int i = 0; i < targets.length; i++) {
+            if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
+              throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+            }
+            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
+            targetMappings[i] = index;
+          }
+
+          for (TableSubQueryNode eachNode: addedTableSubQueries) {
+            if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
+              continue;
+            }
+            Target[] eachNodeTargets = eachNode.getTargets();
+            if (eachNodeTargets.length != targetMappings.length) {
+              throw new PlanningException("Union query can't have different number of target columns.");
+            }
+            for (int i = 0; i < eachNodeTargets.length; i++) {
+              Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
+              eachNodeTargets[i].setAlias(eachNodeTargets[i].getNamedColumn().getQualifiedName());
+              EvalNode evalNode = eachNodeTargets[i].getEvalTree();
+              if (evalNode.getType() != EvalType.FIELD) {
+                throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+              }
+              FieldEval fieldEval = (FieldEval) evalNode;
+              EvalTreeUtil.changeColumnRef(fieldEval,
+                  fieldEval.getColumnRef().getQualifiedName(), inColumn.getQualifiedName());
+            }
+          }
+        } else {
+          LOG.warn("Can't find left most SubQuery in the UnionNode.");
         }
       } else {
         currentBlock.setPlan(node);
