@@ -142,9 +142,9 @@ public class PartitionMergeScanExec extends PhysicalExec {
     if (iterator != null) {
       inputStats.reset();
       for (SeqScanExec scanner : scanners) {
-        TableStats scannerTableStsts = scanner.getInputStats();
-        if (scannerTableStsts != null) {
-          inputStats.merge(scannerTableStsts);
+        TableStats scannerTableStats = scanner.getInputStats();
+        if (scannerTableStats != null) {
+          inputStats.merge(scannerTableStats);
         }
       }
     }

@@ -851,8 +851,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (ctx.getTable(scanNode.getCanonicalName()) == null) {
         return new SeqScanExec(ctx, sm, scanNode, null);
       }
-      Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
-          "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, sm, (SortNode) node.peek(), fragments);
     } else {
@@ -888,9 +886,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (ctx.getTable(scanNode.getCanonicalName()) == null) {
         return new SeqScanExec(ctx, sm, scanNode, null);
       }
-      Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
-          "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");
-
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new SeqScanExec(ctx, sm, scanNode, fragments);
     }

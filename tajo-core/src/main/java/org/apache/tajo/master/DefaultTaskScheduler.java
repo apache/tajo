@@ -820,7 +820,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               host, container.getTaskPort()));
           assignedRequest.add(attemptId);
 
-          //scheduledObjectNum -= task.getAllFragments().size();
           scheduledObjectNum--;
           taskRequest.getCallback().run(taskAssign.getProto());
         } else {

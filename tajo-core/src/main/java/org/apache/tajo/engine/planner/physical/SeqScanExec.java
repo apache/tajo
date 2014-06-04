@@ -66,14 +66,11 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  private String planInfo;
-
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                      ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
-    this.planInfo = plan.toString();
     this.qual = plan.getQual();
     this.fragments = fragments;
 
@@ -200,11 +197,6 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
-    System.out.println("=======================>" + plan.getTableDesc().getName());
-    for (FragmentProto f: fragments) {
-      FileFragment ff = (FileFragment)FragmentConvertor.convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-      System.out.println(">>>>>>>>>>>>>>>>>>>" + ff.getPath());
-    }
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
@@ -330,9 +322,9 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   public String toString() {
     if (scanner != null) {
-      return "SeqScanExec:" + planInfo + "," + scanner.getClass().getName();
+      return "SeqScanExec:" + plan + "," + scanner.getClass().getName();
     } else {
-      return "SeqScanExec:" + planInfo;
+      return "SeqScanExec:" + plan;
     }
   }
 }
