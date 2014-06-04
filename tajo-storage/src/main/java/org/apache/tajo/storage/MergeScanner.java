@@ -135,6 +135,7 @@ public class MergeScanner implements Scanner {
   public void close() throws IOException {
     if(currentScanner != null) {
       currentScanner.close();
+      currentScanner = null;
     }
     iterator = null;
     progress = 1.0f;

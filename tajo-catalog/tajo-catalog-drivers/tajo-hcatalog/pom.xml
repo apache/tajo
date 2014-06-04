@@ -138,6 +138,8 @@
       </activation>
       <properties>
         <hive.version>0.12.0</hive.version>
+        <parquet.version>1.4.2</parquet.version>
+        <parquet.format.version>2.0.0</parquet.format.version>
       </properties>
       <dependencies>
         <dependency>
@@ -303,6 +305,11 @@
               <artifactId>bonecp</artifactId>
             </exclusion>
           </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>com.twitter</groupId>
+          <artifactId>parquet-hive-bundle</artifactId>
+          <version>${parquet.version}</version>
         </dependency>
       </dependencies>
     </profile>

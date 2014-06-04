@@ -584,7 +584,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-    HavingNode having = new HavingNode(context.plan.newPID());
+    HavingNode having = context.queryBlock.getNodeFromExpr(expr);
     having.setChild(child);
     having.setInSchema(child.getOutSchema());
     having.setOutSchema(child.getOutSchema());
@@ -1218,7 +1218,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
       insertNode.setTargetSchema(targetColumns);
       insertNode.setOutSchema(targetColumns);
-      buildProjectedInsert(insertNode);
+      buildProjectedInsert(context, insertNode);
 
     } else { // when a user do not specified target columns
 
@@ -1231,7 +1231,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         targetColumns.addColumn(tableSchema.getColumn(i));
       }
       insertNode.setTargetSchema(targetColumns);
-      buildProjectedInsert(insertNode);
+      buildProjectedInsert(context, insertNode);
     }
 
     if (desc.hasPartition()) {
@@ -1240,11 +1240,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return insertNode;
   }
 
-  private void buildProjectedInsert(InsertNode insertNode) {
+  private void buildProjectedInsert(PlanContext context, InsertNode insertNode) {
     Schema tableSchema = insertNode.getTableSchema();
     Schema targetColumns = insertNode.getTargetSchema();
 
     LogicalNode child = insertNode.getChild();
+
+    if (child.getType() == NodeType.UNION) {
+      child = makeProjectionForInsertUnion(context, insertNode);
+    }
+
     if (child instanceof Projectable) {
       Projectable projectionNode = (Projectable) insertNode.getChild();
 
@@ -1270,6 +1275,45 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
+  private ProjectionNode makeProjectionForInsertUnion(PlanContext context, InsertNode insertNode) {
+    LogicalNode child = insertNode.getChild();
+    // add (projection - subquery) to RootBlock and create new QueryBlock for UnionNode
+    TableSubQueryNode subQueryNode = context.plan.createNode(TableSubQueryNode.class);
+    subQueryNode.init(context.queryBlock.getName(), child);
+    subQueryNode.setTargets(PlannerUtil.schemaToTargets(subQueryNode.getOutSchema()));
+
+    ProjectionNode projectionNode = context.plan.createNode(ProjectionNode.class);
+    projectionNode.setChild(subQueryNode);
+    projectionNode.setInSchema(subQueryNode.getInSchema());
+    projectionNode.setTargets(subQueryNode.getTargets());
+
+    context.queryBlock.registerNode(projectionNode);
+    context.queryBlock.registerNode(subQueryNode);
+
+    // add child QueryBlock to the UnionNode's QueryBlock
+    UnionNode unionNode = (UnionNode)child;
+    context.queryBlock.unregisterNode(unionNode);
+
+    QueryBlock unionBlock = context.plan.newQueryBlock();
+    unionBlock.registerNode(unionNode);
+    unionBlock.setRoot(unionNode);
+
+    QueryBlock leftBlock = context.plan.getBlock(unionNode.getLeftChild());
+    QueryBlock rightBlock = context.plan.getBlock(unionNode.getRightChild());
+
+    context.plan.disconnectBlocks(leftBlock, context.queryBlock);
+    context.plan.disconnectBlocks(rightBlock, context.queryBlock);
+
+    context.plan.connectBlocks(unionBlock, context.queryBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(leftBlock, unionBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(rightBlock, unionBlock, BlockType.TableSubQuery);
+
+    // set InsertNode's child with ProjectionNode which is created.
+    insertNode.setChild(projectionNode);
+
+    return projectionNode;
+  }
+
   /**
    * Build a InsertNode with a location.
    *
@@ -1278,7 +1322,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private InsertNode buildInsertIntoLocationPlan(PlanContext context, InsertNode insertNode, Insert expr) {
     // INSERT (OVERWRITE)? INTO LOCATION path (USING file_type (param_clause)?)? query_expression
 
-    Schema childSchema = insertNode.getChild().getOutSchema();
+    LogicalNode child = insertNode.getChild();
+
+    if (child.getType() == NodeType.UNION) {
+      child = makeProjectionForInsertUnion(context, insertNode);
+    }
+
+    Schema childSchema = child.getOutSchema();
     insertNode.setInSchema(childSchema);
     insertNode.setOutSchema(childSchema);
     insertNode.setTableSchema(childSchema);
@@ -1310,10 +1360,37 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitDropDatabase(PlanContext context, Stack<Expr> stack, DropDatabase expr)
       throws PlanningException {
-    DropDatabaseNode dropDatabaseNode = context.plan.createNode(DropDatabaseNode.class);
+    DropDatabaseNode dropDatabaseNode = context.queryBlock.getNodeFromExpr(expr);
     dropDatabaseNode.init(expr.getDatabaseName(), expr.isIfExists());
     return dropDatabaseNode;
   }
+
+  public LogicalNode handleCreateTableLike(PlanContext context, CreateTable expr, CreateTableNode createTableNode)
+    throws PlanningException {
+    String parentTableName = expr.getLikeParentTableName();
+
+    if (CatalogUtil.isFQTableName(parentTableName) == false) {
+      parentTableName =
+	CatalogUtil.buildFQName(context.session.getCurrentDatabase(),
+				parentTableName);
+    }
+    TableDesc parentTableDesc = catalog.getTableDesc(parentTableName);
+    if(parentTableDesc == null)
+      throw new PlanningException("Table '"+parentTableName+"' does not exist");
+    PartitionMethodDesc partitionDesc = parentTableDesc.getPartitionMethod();
+    createTableNode.setTableSchema(parentTableDesc.getSchema());
+    createTableNode.setPartitionMethod(partitionDesc);
+
+    createTableNode.setStorageType(parentTableDesc.getMeta().getStoreType());
+    createTableNode.setOptions(parentTableDesc.getMeta().getOptions());
+
+    createTableNode.setExternal(parentTableDesc.isExternal());
+    if(parentTableDesc.isExternal()) {
+      createTableNode.setPath(parentTableDesc.getPath());
+    }
+    return createTableNode;
+  }
+
 
   @Override
   public LogicalNode visitCreateTable(PlanContext context, Stack<Expr> stack, CreateTable expr)
@@ -1329,7 +1406,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setTableName(
           CatalogUtil.buildFQName(context.session.getCurrentDatabase(), expr.getTableName()));
     }
-
+    // This is CREATE TABLE <tablename> LIKE <parentTable>
+    if(expr.getLikeParentTableName() != null)
+      return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
