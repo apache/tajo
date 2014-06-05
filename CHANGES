@@ -58,6 +58,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-863: Column order mismatched in the JOIN query with asterisk selection. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-851: Timestamp type test of TestSQLExpression::testCastFromTable fails 
     in jenkins CI test. (Hyoungjun Kim via hyunsik)
 
