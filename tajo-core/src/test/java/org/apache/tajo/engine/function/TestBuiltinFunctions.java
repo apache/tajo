@@ -26,8 +26,6 @@ import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 
-import static org.junit.Assert.assertTrue;
-
 @Category(IntegrationTest.class)
 public class TestBuiltinFunctions extends QueryTestCaseBase {
 
@@ -91,14 +89,14 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  @Test
-  public void testRandom() throws Exception {
-    ResultSet res = executeQuery();
-    while(res.next()) {
-      assertTrue(res.getInt(2) >= 0 && res.getInt(2) < 3);
-    }
-    cleanupQuery(res);
-  }
+//  @Test
+//  public void testRandom() throws Exception {
+//    ResultSet res = executeQuery();
+//    while(res.next()) {
+//      assertTrue(res.getInt(2) >= 0 && res.getInt(2) < 3);
+//    }
+//    cleanupQuery(res);
+//  }
 
   @Test
   public void testSplitPart() throws Exception {

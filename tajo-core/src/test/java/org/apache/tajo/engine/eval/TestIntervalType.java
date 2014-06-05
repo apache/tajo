@@ -103,7 +103,14 @@ public class TestIntervalType extends ExprTestBase {
     testSimpleEval("select interval '1 month' * 2.3", new String[]{"2 months 9 days"});
     testSimpleEval("select interval '3 year 5 month 1 hour' / 1.5", new String[]{"2 years 3 months 10 days 00:40:00"});
 
-    testSimpleEval("select date '2001-09-28' - time '03:00'", new String[]{"2001-09-27 21:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select date '2001-09-28' - time '03:00'",
+        new String[]{"2001-09-27 21:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("select date '2014-03-20' + interval '1 day'",
+        new String[]{"2014-03-21 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("select date '2014-03-20' - interval '1 day'",
+        new String[]{"2014-03-19 00:00:00" + getUserTimeZoneDisplay()});
   }
 
   @Test

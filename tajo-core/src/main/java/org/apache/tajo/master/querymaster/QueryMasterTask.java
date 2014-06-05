@@ -210,7 +210,9 @@ public class QueryMasterTask extends CompositeService {
     super.stop();
 
     //TODO change report to tajo master
-    queryMetrics.report(new MetricsConsoleReporter());
+    if (queryMetrics != null) {
+      queryMetrics.report(new MetricsConsoleReporter());
+    }
 
     LOG.info("Stopped QueryMasterTask:" + queryId);
   }
@@ -392,8 +394,12 @@ public class QueryMasterTask extends CompositeService {
       }
     } catch (IOException ioe) {
       if (stagingDir != null && defaultFS.exists(stagingDir)) {
-        defaultFS.delete(stagingDir, true);
-        LOG.info("The staging directory '" + stagingDir + "' is deleted");
+        try {
+          defaultFS.delete(stagingDir, true);
+          LOG.info("The staging directory '" + stagingDir + "' is deleted");
+        } catch (Exception e) {
+          LOG.warn(e.getMessage());
+        }
       }
 
       throw ioe;

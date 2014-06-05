@@ -16,31 +16,41 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 @Description(
-  functionName = "today",
-  description = "get current time millis",
-  example = "> SELECT today();",
-  returnType = TajoDataTypes.Type.INT8,
-  paramTypes = {@ParamTypes(paramTypes = {})}
+    functionName = "current_time",
+    description = "Get current time. Result is TIME type.",
+    example = "> SELECT current_time();\n12:30:40",
+    returnType = TajoDataTypes.Type.TIME,
+    paramTypes = {@ParamTypes(paramTypes = {})}
 )
-public class Today extends GeneralFunction {
+public class CurrentTime extends GeneralFunction {
+  TimeDatum datum;
 
-  public Today() {
+  public CurrentTime() {
     super(NoArgs);
   }
 
   @Override
   public Datum eval(Tuple params) {
-    return DatumFactory.createInt8(System.currentTimeMillis());
+    if (datum == null) {
+      long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
+      TimeMeta tm = new TimeMeta();
+      DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+      datum = DatumFactory.createTime(DateTimeUtil.toTime(tm));
+    }
+    return datum;
   }
 }
