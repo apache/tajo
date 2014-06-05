@@ -321,6 +321,10 @@ public class TestJoinQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+
+    executeString("DROP TABLE JOINS.part_ PURGE");
+    executeString("DROP TABLE JOINS.supplier_ PURGE");
+    executeString("DROP DATABASE JOINS");
   }
 
   @Test
@@ -360,5 +364,9 @@ public class TestJoinQuery extends QueryTestCaseBase {
     ResultSet res = executeJsonQuery();
     assertResultSet(res);
     cleanupQuery(res);
+
+    executeString("DROP TABLE JOINS.part_ PURGE");
+    executeString("DROP TABLE JOINS.supplier_ PURGE");
+    executeString("DROP DATABASE JOINS");
   }
 }
