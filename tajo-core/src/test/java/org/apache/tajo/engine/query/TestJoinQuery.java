@@ -43,10 +43,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class TestJoinQuery extends QueryTestCaseBase {
 
-//  public TestJoinQuery() {
-//    super(TajoConstants.DEFAULT_DATABASE_NAME);
-//  }
-
   public TestJoinQuery(String joinOption) {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
@@ -91,9 +87,9 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"Hash_NoBroadcast"},
-//        {"Sort_NoBroadcast"},
-//        {"Hash"},
-//        {"Sort"},
+        {"Sort_NoBroadcast"},
+        {"Hash"},
+        {"Sort"},
     });
   }
 
@@ -272,6 +268,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeString("DROP TABLE table1").close();
+    executeString("DROP TABLE table2").close();
   }
 
   @Test
@@ -380,8 +378,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from table11 a " +
-//          "left outer join (select table12.id from table12 inner join lineitem on table12.id = lineitem.l_orderkey and table12.id > 10) b " +
-          "left outer join (select table12.id from table12 where table12.id > 10) b " +
+          "left outer join (" +
+          "select table12.id from table12 inner join lineitem on table12.id = lineitem.l_orderkey and table12.id > 10) b " +
           "on a.id = b.id order by a.id");
 
       String expected = "id,id\n" +
@@ -397,8 +395,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
           ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
-      executeString("DROP TABLE table11 PURGE");
-      executeString("DROP TABLE table12 PURGE");
+      executeString("DROP TABLE table11 PURGE").close();
+      executeString("DROP TABLE table12 PURGE").close();
     }
   }
 
@@ -422,7 +420,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from " +
-          "(select table12.id from table12 inner join lineitem on table12.id = lineitem.l_orderkey and table12.id > 10) a " +
+          "(select table12.id, table12.name, lineitem.l_shipdate " +
+          "from table12 inner join lineitem on table12.id = lineitem.l_orderkey and table12.id > 10) a " +
           "left outer join table11 b " +
           "on a.id = b.id");
 
