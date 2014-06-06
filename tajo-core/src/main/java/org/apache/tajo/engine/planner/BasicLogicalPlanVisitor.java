@@ -125,6 +125,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case ALTER_TABLE:
         current = visitAlterTable(context, plan, block, (AlterTableNode) node, stack);
         break;
+      case TRUNCATE_TABLE:
+        current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
+        break;
       default:
         throw new PlanningException("Unknown logical node type: " + node.getType());
     }
@@ -328,4 +331,10 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
                                  Stack<LogicalNode> stack) {
         return null;
     }
+
+  @Override
+  public RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   TruncateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
 }

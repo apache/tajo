@@ -369,4 +369,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
     executeString("DROP TABLE JOINS.supplier_ PURGE");
     executeString("DROP DATABASE JOINS");
   }
+
+  @Test
+  public final void testJoinAsterisk() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

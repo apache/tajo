@@ -64,6 +64,7 @@ schema_statement
   | drop_table_statement
   | alter_tablespace_statement
   | alter_table_statement
+  | truncate_table_statement
   ;
 
 index_statement
@@ -184,6 +185,10 @@ column_partitions
 
 partition_name
   : identifier
+  ;
+
+truncate_table_statement
+  : TRUNCATE (TABLE)? table_name (COMMA table_name)*
   ;
 
 /*
