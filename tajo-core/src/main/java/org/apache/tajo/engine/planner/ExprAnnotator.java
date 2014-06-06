@@ -78,7 +78,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr)
       throws PlanningException {
     Context context = new Context(plan, block);
-    return visit(context, new Stack<Expr>(), expr);
+    return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
   }
 
   public static void assertEval(boolean condition, String message) throws PlanningException {

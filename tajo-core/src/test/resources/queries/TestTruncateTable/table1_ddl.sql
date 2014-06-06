@@ -1,0 +1,1 @@
+CREATE TABLE truncate_table1 AS SELECT * FROM lineitem;

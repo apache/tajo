@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
@@ -346,6 +347,9 @@ public class TajoClient implements Closeable {
       throws ServiceException, IOException {
     SubmitQueryResponse response = executeQuery(sql);
 
+    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+      throw new ServiceException(response.getErrorTrace());
+    }
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
@@ -369,7 +373,9 @@ public class TajoClient implements Closeable {
 
   public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
     SubmitQueryResponse response = executeQueryWithJson(json);
-
+    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+      throw new ServiceException(response.getErrorTrace());
+    }
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {

@@ -1743,6 +1743,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return alterTableNode;
   }
 
+  @Override
+  public LogicalNode visitTruncateTable(PlanContext context, Stack<Expr> stack, TruncateTable truncateTable)
+      throws PlanningException {
+    TruncateTableNode truncateTableNode = context.queryBlock.getNodeFromExpr(truncateTable);
+    truncateTableNode.setTableNames(truncateTable.getTableNames());
+    return truncateTableNode;
+  }
+
   /*===============================================================================================
     Util SECTION
   ===============================================================================================*/

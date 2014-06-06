@@ -53,7 +53,8 @@ public class PlannerUtil {
             (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
             baseNode.getType() == NodeType.DROP_TABLE ||
             baseNode.getType() == NodeType.ALTER_TABLESPACE ||
-            baseNode.getType() == NodeType.ALTER_TABLE;
+            baseNode.getType() == NodeType.ALTER_TABLE ||
+            baseNode.getType() == NodeType.TRUNCATE_TABLE;
   }
 
   /**
