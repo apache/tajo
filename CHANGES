@@ -19,6 +19,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-843: implements COALESCE for BOOLEAN, DATE, TIME, TIMESTAMP. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-854: Supports INSERT INTO with UNION. (Hyoungjun Kim via jihoon)
 
     TAJO-793: CLI should be able to exit when single query is failed.
@@ -58,7 +61,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
-    TAJO-868: TestDateTimeFunctions unit test is occasionally failed. (hyunsik)
+    TAJO-863: Column order mismatched in the JOIN query with asterisk selection. 
+    (Hyoungjun Kim via hyunsik)
 
     TAJO-851: Timestamp type test of TestSQLExpression::testCastFromTable fails 
     in jenkins CI test. (Hyoungjun Kim via hyunsik)

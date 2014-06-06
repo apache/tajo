@@ -658,6 +658,14 @@ public class CatalogUtil {
         if (Type.TEXT_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
           flag = true;
         }
+      } else if (givenType == Type.BOOLEAN && (definedType == Type.BOOLEAN || definedType == Type.BOOLEAN_ARRAY)) {
+        flag = true;
+      } else if (givenType == Type.DATE && (definedType == Type.DATE || definedType == Type.DATE_ARRAY)) {
+        flag = true;
+      } else if (givenType == Type.TIME && (definedType == Type.TIME || definedType == Type.TIME_ARRAY)) {
+        flag = true;
+      } else if (givenType == Type.TIMESTAMP && (definedType == Type.TIMESTAMP || definedType == Type.TIMESTAMP_ARRAY)) {
+        flag = true;
       }
     }
     return flag;
