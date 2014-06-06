@@ -88,12 +88,9 @@ public class Repartitioner {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
         // TODO - to be fixed (wrong directory)
-        ExecutionBlock [] childBlocks = new ExecutionBlock[2];
-        childBlocks[0] = masterPlan.getChild(execBlock.getId(), 0);
-        childBlocks[1] = masterPlan.getChild(execBlock.getId(), 1);
-
         tablePath = storageManager.getTablePath(scans[i].getTableName());
-        stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getResultStats().getNumBytes();
+        ExecutionBlockId scanEBId = TajoIdUtils.createExecutionBlockId(scans[i].getTableName());
+        stats[i] = masterContext.getSubQuery(scanEBId).getResultStats().getNumBytes();
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
         tablePath = tableDesc.getPath();
@@ -115,13 +112,42 @@ public class Repartitioner {
       }
     }
 
-    // If one of inner join tables has no input data,
-    // it should return zero rows.
+    // If one of inner join tables has no input data, it should return zero rows.
     JoinNode joinNode = PlannerUtil.findMostBottomNode(execBlock.getPlan(), NodeType.JOIN);
     if (joinNode != null) {
-      if ( (joinNode.getJoinType().equals(JoinType.INNER))) {
+      if ( (joinNode.getJoinType() == JoinType.INNER)) {
         for (int i = 0; i < stats.length; i++) {
           if (stats[i] == 0) {
+            return;
+          }
+        }
+      }
+    }
+
+    // If node is outer join and a preserved relation is empty, it should return zero rows.
+    joinNode = PlannerUtil.findTopNode(execBlock.getPlan(), NodeType.JOIN);
+    if (joinNode != null) {
+      // find left top scan node
+      ScanNode leftScanNode = PlannerUtil.findTopNode(joinNode.getLeftChild(), NodeType.SCAN);
+      ScanNode rightScanNode = PlannerUtil.findTopNode(joinNode.getRightChild(), NodeType.SCAN);
+
+      long leftStats = -1;
+      long rightStats = -1;
+      if (stats.length == 2) {
+        for (int i = 0; i < stats.length; i++) {
+          if (scans[i].equals(leftScanNode)) {
+            leftStats = stats[i];
+          } else if (scans[i].equals(rightScanNode)) {
+            rightStats = stats[i];
+          }
+        }
+        if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
+          if (leftStats == 0) {
+            return;
+          }
+        }
+        if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+          if (rightStats == 0) {
             return;
           }
         }
@@ -285,14 +311,16 @@ public class Repartitioner {
                                      Map<String, List<IntermediateEntry>> grouppedPartitions) {
     Map<String, List<FetchImpl>> fetches = new HashMap<String, List<FetchImpl>>();
     for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
-      Collection<FetchImpl> requests;
       if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
-          requests = mergeShuffleRequest(execBlock.getId(), partitionId, HASH_SHUFFLE,
+        Collection<FetchImpl> requests = mergeShuffleRequest(execBlock.getId(), partitionId, HASH_SHUFFLE,
               grouppedPartitions.get(execBlock.getId().toString()));
-      } else {
-        return;
+        fetches.put(execBlock.getId().toString(), Lists.newArrayList(requests));
       }
-      fetches.put(execBlock.getId().toString(), Lists.newArrayList(requests));
+    }
+
+    if (fetches.isEmpty()) {
+      LOG.info(subQuery.getId() + "'s " + partitionId + " partition has empty result.");
+      return;
     }
     SubQuery.scheduleFetches(subQuery, fetches);
   }

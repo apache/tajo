@@ -338,7 +338,10 @@ public class TajoConf extends Configuration {
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
     // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false)
+    TAJO_DEBUG("tajo.debug", false),
+
+    // ONLY FOR TESTCASE
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
     ;
 
     public final String varname;
