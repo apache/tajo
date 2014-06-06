@@ -140,7 +140,17 @@ public class TestWindowQuery extends QueryTestCaseBase {
         "select r_name, c, rank() over (partition by r_regionkey order by r_regionkey) as ran from " +
             "(select r_name, r_regionkey, count(*) as c from region group by r_name, r_regionkey) a limit 3;"
     );
-    System.out.println(resultSetToString(res));
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithSubQuery3() throws Exception {
+    ResultSet res = executeString(
+        "select a.r_name, a.r_regionkey, row_number() over (partition by a.r_name order by a.cnt desc) mk from " +
+            "(select r_name, r_regionkey, count(*) cnt from default.region group by r_name, r_regionkey) a;"
+    );
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
