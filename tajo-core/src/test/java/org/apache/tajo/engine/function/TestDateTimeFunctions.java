@@ -391,7 +391,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
       testSimpleEval("select current_date();",
           new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
       testSimpleEval("select cast(extract(hour from current_time()) as INT4);",
-          new String[]{dateFormat(expectedDate, "HH")});
+          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
     } finally {
       TajoConf.setCurrentTimeZone(originTimeZone);
       TimeZone.setDefault(systemOriginTimeZone);
@@ -413,7 +413,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
       testSimpleEval("select current_date;",
           new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
       testSimpleEval("select cast(extract(hour from current_time) as INT4);",
-          new String[]{dateFormat(expectedDate, "HH")});
+          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
     } finally {
       TajoConf.setCurrentTimeZone(originTimeZone);
       TimeZone.setDefault(systemOriginTimeZone);

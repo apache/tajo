@@ -63,6 +63,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-868: TestDateTimeFunctions unit test is occasionally failed. (hyunsik)
+
     TAJO-863: Column order mismatched in the JOIN query with asterisk selection. 
     (Hyoungjun Kim via hyunsik)
 
