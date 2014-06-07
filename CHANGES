@@ -1,8 +1,10 @@
-Tajo Change Log
+Tajo Change Log 
 
 Release 0.9.0 - unreleased
 
   NEW FEATURES
+
+    TAJO-860: Implements TRUNCATE table. (Hyoungjun Kim via hyunsik)
 
     TAJO-849: Add Parquet storage to HCatalogStore. (jaehwa)
 
