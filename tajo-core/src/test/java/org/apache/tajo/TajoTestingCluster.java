@@ -595,6 +595,39 @@ public class TajoTestingCluster {
     return res;
   }
 
+  public static void createTable(String tableName, Schema schema,
+                                 KeyValueSet tableOption, String[] tableDatas) throws Exception {
+    TpchTestBase instance = TpchTestBase.getInstance();
+    TajoTestingCluster util = instance.getTestingCluster();
+    while(true) {
+      if(util.getMaster().isMasterRunning()) {
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    TajoConf conf = util.getConfiguration();
+    TajoClient client = new TajoClient(conf);
+
+    FileSystem fs = util.getDefaultFileSystem();
+    Path rootDir = util.getMaster().
+        getStorageManager().getWarehouseDir();
+    if (!fs.exists(rootDir)) {
+      fs.mkdirs(rootDir);
+    }
+    Path tablePath = new Path(rootDir, tableName);
+    fs.mkdirs(tablePath);
+    if (tableDatas.length > 0) {
+      Path dfsPath = new Path(tablePath, tableName + ".tbl");
+      FSDataOutputStream out = fs.create(dfsPath);
+      for (int j = 0; j < tableDatas.length; j++) {
+        out.write((tableDatas[j] + "\n").getBytes());
+      }
+      out.close();
+    }
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, tableOption);
+    client.createExternalTable(tableName, schema, tablePath, meta);
+  }
+
     /**
     * Write lines to a file.
     *

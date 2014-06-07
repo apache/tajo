@@ -22,10 +22,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Float8Datum;
-import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
@@ -63,7 +60,11 @@ public class AvgLong extends AggFunction<Float8Datum> {
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
-    ProtobufDatum datum = (ProtobufDatum) part.get(0);
+    Datum d = part.get(0);
+    if (d instanceof NullDatum) {
+      return;
+    }
+    ProtobufDatum datum = (ProtobufDatum) d;
     AvgLongProto proto = (AvgLongProto) datum.get();
     avgCtx.sum += proto.getSum();
     avgCtx.count += proto.getCount();
