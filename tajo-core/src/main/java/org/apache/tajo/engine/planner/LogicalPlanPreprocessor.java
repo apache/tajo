@@ -431,6 +431,13 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
     return alterTableNode;
   }
 
+  @Override
+  public LogicalNode visitTruncateTable(PreprocessContext ctx, Stack<Expr> stack, TruncateTable expr)
+      throws PlanningException {
+    TruncateTableNode truncateTableNode = ctx.plan.createNode(TruncateTableNode.class);
+    return truncateTableNode;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

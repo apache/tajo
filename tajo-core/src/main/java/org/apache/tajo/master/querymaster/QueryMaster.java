@@ -42,7 +42,6 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -337,10 +336,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         try {
           queryMasterTask.stop();
-          if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")
-              && !workerContext.isYarnContainerMode()) {
+          //if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")
+         //     && !workerContext.isYarnContainerMode()) {
             cleanup(queryId);       // TODO We will support yarn mode
-          }
+          //}
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }

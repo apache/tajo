@@ -217,6 +217,10 @@ public class LogicalPlan {
     }
   }
 
+  public void disconnectBlocks(QueryBlock srcBlock, QueryBlock targetBlock) {
+    queryBlockGraph.removeEdge(srcBlock.getName(), targetBlock.getName());
+  }
+
   public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
     queryBlockGraph.addEdge(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
   }
@@ -581,6 +585,7 @@ public class LogicalPlan {
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
     private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
+    private final List<RelationNode> relationList = TUtil.newList();
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */
@@ -664,10 +669,11 @@ public class LogicalPlan {
         TUtil.putToNestedList(aliasMap, relation.getTableName(), relation.getCanonicalName());
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationList.add(relation);
     }
 
     public Collection<RelationNode> getRelations() {
-      return this.canonicalNameToRelationMap.values();
+      return Collections.unmodifiableList(relationList);
     }
 
     public boolean hasTableExpression() {
@@ -741,6 +747,12 @@ public class LogicalPlan {
       nodeTypeToNodeMap.put(node.getType(), node);
 
       queryBlockByPID.put(node.getPID(), this);
+    }
+
+    public void unregisterNode(LogicalNode node) {
+      nodeMap.remove(node.getPID());
+      nodeTypeToNodeMap.remove(node.getType());
+      queryBlockByPID.remove(node.getPID());
     }
 
     @SuppressWarnings("unchecked")

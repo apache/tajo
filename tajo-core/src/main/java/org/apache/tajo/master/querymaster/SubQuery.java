@@ -1129,7 +1129,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           return SubQueryState.SUCCEEDED;
         }
       } catch (Throwable t) {
-        LOG.error(t);
+        LOG.error(t.getMessage(), t);
         subQuery.abort(SubQueryState.ERROR);
         return SubQueryState.ERROR;
       }

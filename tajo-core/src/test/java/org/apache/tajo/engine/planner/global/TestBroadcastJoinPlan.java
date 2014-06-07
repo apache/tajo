@@ -348,8 +348,8 @@ public class TestBroadcastJoinPlan {
   @Test
   public final void testBroadcastJoinSubquery() throws IOException, PlanningException {
     String query = "select count(*) from large1 " +
-        "join (select * from small1) a on large1_id = a.small1_id " +
-        "join small2 on large1_id = small2_id";
+        "join small2 on large1_id = small2_id " +
+        "join (select * from small1) a on large1_id = a.small1_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
