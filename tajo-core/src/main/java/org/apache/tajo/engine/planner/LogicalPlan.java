@@ -589,11 +589,9 @@ public class LogicalPlan {
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
     private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
-<<<<<<< HEAD
-    private boolean hasWindowFunction = false;
-=======
     private final List<RelationNode> relationList = TUtil.newList();
->>>>>>> ace1d47effd83a4c9409c85ffaf14ba83c385b3f
+    private boolean hasWindowFunction = false;
+
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */

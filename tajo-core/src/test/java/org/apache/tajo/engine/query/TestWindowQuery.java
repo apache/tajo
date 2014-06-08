@@ -155,6 +155,34 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWindowWithSubQuery4() throws Exception {
+    ResultSet res = executeString(
+        "select a.r_name, a.r_regionkey, row_number() over (partition by a.r_regionkey order by a.cnt desc) mk from " +
+            "(select r_name, r_regionkey, count(*) cnt from default.region group by r_name, r_regionkey) a;"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithComplexOrderBy2() throws Exception {
+    ResultSet res = executeString(
+        "select count(*) + sum(r_regionkey) as total from region"
+    );
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithComplexOrderBy() throws Exception {
+    ResultSet res = executeString(
+        "select r_name, count(r_regionkey) as cnt, row_number() over (partition by r_name order by cnt desc) mk from region"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void rowNumber1() throws Exception {
     ResultSet res = executeString(
         "SELECT l_orderkey, row_number() OVER () as row_num FROM LINEITEM");
