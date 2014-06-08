@@ -751,5 +751,14 @@ public class TajoMasterClientService extends AbstractService {
         throw new ServiceException(t);
       }
     }
+
+    @Override
+    public StringProto getHDFSDelegationToken(RpcController controller,
+                                       PrimitiveProtos.NullProto request) throws ServiceException
+                                        {
+      String delegationToken = conf.getVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN);
+      return (StringProto.newBuilder().setValue(delegationToken).build());
+    }
+
   }
 }

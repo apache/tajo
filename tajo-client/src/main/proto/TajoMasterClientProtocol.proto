@@ -65,4 +65,7 @@ service TajoMasterClientProtocolService {
   rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
   rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
+
+  // HDFS Authentication related API
+  rpc getHDFSDelegationToken(NullProto) returns (StringProto);
 }

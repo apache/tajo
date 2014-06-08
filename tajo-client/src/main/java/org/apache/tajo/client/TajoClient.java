@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -43,6 +44,7 @@ import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.KeyValueSet;
@@ -213,6 +215,17 @@ public class TajoClient implements Closeable {
     }.withRetries();
   }
 
+  public String getHDFSDelegationToken() throws ServiceException {
+    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public String call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getHDFSDelegationToken(null, NullProto.getDefaultInstance()).getValue();
+      }
+    }.withRetries();
+  }
+
   public Boolean selectDatabase(final String databaseName) throws ServiceException {
     return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
 
@@ -343,7 +356,7 @@ public class TajoClient implements Closeable {
    * @return If failed, return null.
    */
   public ResultSet executeQueryAndGetResult(final String sql)
-      throws ServiceException, IOException {
+      throws Exception {
     SubmitQueryResponse response = executeQuery(sql);
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -367,7 +380,7 @@ public class TajoClient implements Closeable {
     }
   }
 
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws Exception {
     SubmitQueryResponse response = executeQueryWithJson(json);
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -449,7 +462,7 @@ public class TajoClient implements Closeable {
   }
 
   public ResultSet getQueryResult(QueryId queryId)
-      throws ServiceException, IOException {
+    throws Exception {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
@@ -460,14 +473,14 @@ public class TajoClient implements Closeable {
   }
 
   public static ResultSet createResultSet(TajoClient client, QueryId queryId, GetQueryResultResponse response)
-      throws IOException {
+      throws Exception {
     TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
     TajoConf conf = new TajoConf(client.getConf());
     conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
     return new TajoResultSet(client, queryId, conf, desc);
   }
 
-  public static ResultSet createResultSet(TajoClient client, SubmitQueryResponse response) throws IOException {
+  public static ResultSet createResultSet(TajoClient client, SubmitQueryResponse response) throws Exception {
     if (response.hasTableDesc()) {
       TajoConf conf = new TajoConf(client.getConf());
       conf.setVar(ConfVars.USERNAME, response.getUserName());
@@ -495,7 +508,7 @@ public class TajoClient implements Closeable {
   }
 
   private ResultSet getQueryResultAndWait(QueryId queryId)
-      throws ServiceException, IOException {
+      throws Exception {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
@@ -526,7 +539,7 @@ public class TajoClient implements Closeable {
     }
   }
 
-  public ResultSet createNullResultSet(QueryId queryId) throws IOException {
+  public ResultSet createNullResultSet(QueryId queryId) throws Exception {
     return new TajoResultSet(this, queryId);
   }
 
