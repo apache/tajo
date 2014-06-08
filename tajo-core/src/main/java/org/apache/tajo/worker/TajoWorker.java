@@ -261,12 +261,10 @@ public class TajoWorker extends CompositeService {
     workerHeartbeatThread.init(conf);
     addIfService(workerHeartbeatThread);
 
-    LOG.info("--------------------- Delegation token start ----------");
-    getDelegationToken();
-    LOG.info("--------------------- Delegation token end ----------");
+    getAndSetDelegationToken();
   }
 
-  private void getDelegationToken() {
+  private void getAndSetDelegationToken() {
     NettyClientBase rpc = null;
     try {
       rpc = connPool.getConnection(tajoMasterAddress,

@@ -74,7 +74,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -225,7 +224,7 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  private void checkAndInitializeSystemDirectories() throws Exception {
+  private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
     this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
     LOG.info("Tajo Root Directory: " + tajoRootPath);

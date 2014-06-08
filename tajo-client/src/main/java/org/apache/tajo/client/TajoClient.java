@@ -356,7 +356,7 @@ public class TajoClient implements Closeable {
    * @return If failed, return null.
    */
   public ResultSet executeQueryAndGetResult(final String sql)
-      throws Exception {
+      throws ServiceException, IOException {
     SubmitQueryResponse response = executeQuery(sql);
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -380,7 +380,7 @@ public class TajoClient implements Closeable {
     }
   }
 
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws Exception {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
     SubmitQueryResponse response = executeQueryWithJson(json);
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -462,7 +462,7 @@ public class TajoClient implements Closeable {
   }
 
   public ResultSet getQueryResult(QueryId queryId)
-    throws Exception {
+    throws ServiceException, IOException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
@@ -473,14 +473,14 @@ public class TajoClient implements Closeable {
   }
 
   public static ResultSet createResultSet(TajoClient client, QueryId queryId, GetQueryResultResponse response)
-      throws Exception {
+      throws IOException {
     TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
     TajoConf conf = new TajoConf(client.getConf());
     conf.setVar(ConfVars.USERNAME, response.getTajoUserName());
     return new TajoResultSet(client, queryId, conf, desc);
   }
 
-  public static ResultSet createResultSet(TajoClient client, SubmitQueryResponse response) throws Exception {
+  public static ResultSet createResultSet(TajoClient client, SubmitQueryResponse response) throws IOException {
     if (response.hasTableDesc()) {
       TajoConf conf = new TajoConf(client.getConf());
       conf.setVar(ConfVars.USERNAME, response.getUserName());
@@ -508,7 +508,7 @@ public class TajoClient implements Closeable {
   }
 
   private ResultSet getQueryResultAndWait(QueryId queryId)
-      throws Exception {
+      throws ServiceException, IOException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
@@ -539,7 +539,7 @@ public class TajoClient implements Closeable {
     }
   }
 
-  public ResultSet createNullResultSet(QueryId queryId) throws Exception {
+  public ResultSet createNullResultSet(QueryId queryId) throws IOException {
     return new TajoResultSet(this, queryId);
   }
 

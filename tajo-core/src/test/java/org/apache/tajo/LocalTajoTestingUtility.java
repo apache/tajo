@@ -122,7 +122,7 @@ public class LocalTajoTestingUtility {
     return util;
   }
 
-  public ResultSet execute(String query) throws Exception {
+  public ResultSet execute(String query) throws IOException, ServiceException {
     return client.executeQueryAndGetResult(query);
   }
 

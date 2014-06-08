@@ -61,7 +61,7 @@ public class TajoResultSet extends TajoResultSetBase {
     init();
   }
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws Exception {
+  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
@@ -71,14 +71,14 @@ public class TajoResultSet extends TajoResultSetBase {
   }
 
   public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, long maxRowNum)
-      throws Exception {
+      throws IOException {
     this(tajoClient, queryId, conf, table);
     this.maxRowNum = maxRowNum;
     initScanner();
     init();
   }
 
-  private void initScanner() throws Exception {
+  private void initScanner() throws IOException {
     if(desc != null) {
       schema = desc.getSchema();
       fs = FileSystemUtil.getFileSystem(desc.getPath(), conf);
@@ -173,7 +173,7 @@ public class TajoResultSet extends TajoResultSetBase {
         initScanner();
       }
       init();
-    } catch (Exception e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }

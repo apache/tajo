@@ -365,7 +365,7 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  private void initStagingDir() throws Exception {
+  private void initStagingDir() throws IOException {
     Path stagingDir = null;
     Path outputDir = null;
     FileSystem defaultFS = FileSystemUtil.getFileSystem(TajoConf.getWarehouseDir(systemConf), systemConf);

@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 
+import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 
 import org.apache.commons.logging.Log;
@@ -33,6 +34,7 @@ import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod;
 import org.apache.hadoop.security.token.Token;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.conf.TajoConfException;
 
 public class FileSystemUtil {
   private static final Log LOG = LogFactory.getLog(FileSystemUtil.class);
@@ -47,11 +49,11 @@ public class FileSystemUtil {
    *
    */
   private static FileSystem getDFSUsingDelegationToken(Path path, TajoConf systemConf,
-                                                       String rootUriParam) throws Exception {
+                                                       String rootUriParam) throws IOException, TajoConfException {
     String delegationToken = systemConf.getVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN);
     LOG.info("Delegation token :" + delegationToken);
     if(delegationToken.equals("null"))
-      throw new Exception("Hadoop DFS delegationToken is null, It should have been set in TajoMaster");
+      throw new TajoConfException("Hadoop DFS delegationToken is null, It should have been set in TajoMaster");
 
     Token<?> dfsToken =
       new Token<org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier>();
@@ -66,18 +68,24 @@ public class FileSystemUtil {
       LOG.info("DFS Token added to hadoop usergroup information");
     final String kerberosPrincipal = systemConf.getVar(ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL);
     if(kerberosPrincipal.equals("null"))
-      throw new Exception("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL+" : null");
+      throw new TajoConfException("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL+" : null");
 
     final String rootUri = rootUriParam;
-    FileSystem fs = ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
-        @Override
-        public FileSystem run() throws Exception {
-          Configuration conf = new HdfsConfiguration();
-          conf.set("fs.defaultFs", rootUri);
-          conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
-          return FileSystem.get(conf);
-        }
-      });
+    FileSystem fs = null;
+    try {
+      fs = ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
+          @Override
+          public FileSystem run() throws InterruptedException, IOException {
+            Configuration conf = new HdfsConfiguration();
+            conf.set("fs.defaultFs", rootUri);
+            conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
+            return FileSystem.get(conf);
+          }
+        });
+    }
+    catch(InterruptedException e) {
+      throw new IOException(e);
+    }
     return fs;
   }
 
@@ -92,28 +100,35 @@ public class FileSystemUtil {
    * @throws Exception Throws exception for wrong config values.
    */
   private static FileSystem getDFSUsingKeyTab(Path path, TajoConf systemConf,
-                                              String rootUriParam) throws Exception {
+                                              String rootUriParam) throws  IOException, TajoConfException {
     Configuration conf = new Configuration();
     SecurityUtil.setAuthenticationMethod(AuthenticationMethod.KERBEROS, conf );
     UserGroupInformation.setConfiguration(conf);
     final String kerberosPrincipal = systemConf.getVar(ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL);
     final String kerberosKeyTabLocation = systemConf.getVar(ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_KEYTAB_LOC);
     if(kerberosPrincipal.equals("null"))
-      throw new Exception("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL+" : null");
+      throw new TajoConfException("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL+" : null");
     if(kerberosKeyTabLocation.equals("null"))
-      throw new Exception("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_KEYTAB_LOC+" : null");
+      throw new TajoConfException("Wrong value for "+ConfVars.HADOOP_DFS_NAMENODE_KERBEROS_KEYTAB_LOC+" : null");
     UserGroupInformation ugi = UserGroupInformation.
       loginUserFromKeytabAndReturnUGI(kerberosPrincipal, kerberosKeyTabLocation);
     final String rootUri = rootUriParam;
-    FileSystem fs = ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
-        @Override
-        public FileSystem run() throws Exception {
-          Configuration conf = new HdfsConfiguration();
-          conf.set("fs.defaultFs", rootUri);
-          conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
-          return FileSystem.get(conf);
-        }
-      });
+    FileSystem fs = null;
+    try {
+      fs = ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
+          @Override
+          public FileSystem run() throws InterruptedException, IOException {
+            Configuration conf = new HdfsConfiguration();
+            conf.set("fs.defaultFs", rootUri);
+            conf.set("dfs.namenode.kerberos.principal",kerberosPrincipal);
+            return FileSystem.get(conf);
+          }
+        });
+    }
+    catch(InterruptedException e) {
+      throw new IOException(e);
+    }
+
     Token<?> dfsToken = fs.getDelegationToken(ugi.getShortUserName());
     String dfsTokenString = dfsToken.encodeToUrlString();
     systemConf.setVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN, dfsTokenString);
@@ -125,8 +140,9 @@ public class FileSystemUtil {
    *
    */
   public static FileSystem getFileSystem(Path path, TajoConf systemConf
-                                         ) throws Exception {
-    return getFileSystem(path, systemConf, false);
+                                         ) throws IOException {
+    FileSystem fs = getFileSystem(path, systemConf, false);
+    return fs;
   }
 
   /**
@@ -142,30 +158,35 @@ public class FileSystemUtil {
    */
   public static FileSystem getFileSystem(Path path, TajoConf systemConf,
                                          boolean callFromTajoMaster
-                                         ) throws Exception {
+                                         ) throws IOException {
     path = new Path(path.toString().toLowerCase());
     if(path.toUri().getScheme() != null && path.toUri().getScheme().equals("hdfs")) {
-      String hdfsSecurtyType = systemConf.getVar(ConfVars.HADOOP_SECURTY_AUTH_TYPE);
-      LOG.info("HDFS securty type "+ hdfsSecurtyType);
-      if(hdfsSecurtyType.equals("simple")) {
-        return path.getFileSystem(systemConf);
-      }
-      if(hdfsSecurtyType.equals("kerberos") == false) {
-        throw new Exception("Unsupported value for " + ConfVars.HADOOP_SECURTY_AUTH_TYPE +
-                            " , Supported values : kerberos, simple");
-      }
+      try {
+        String hdfsSecurtyType = systemConf.getVar(ConfVars.HADOOP_SECURTY_AUTH_TYPE);
+        LOG.info("HDFS securty type "+ hdfsSecurtyType);
+        if(hdfsSecurtyType.equals("simple")) {
+          return path.getFileSystem(systemConf);
+        }
+        if(hdfsSecurtyType.equals("kerberos") == false) {
+          throw new TajoConfException("Unsupported value for " + ConfVars.HADOOP_SECURTY_AUTH_TYPE +
+                                      " , Supported values : kerberos, simple");
+        }
 
-      if(path.toUri().getPort() == -1) {
-        throw new Exception("Port missing in hdfs path :"+path);
+        if(path.toUri().getPort() == -1) {
+          throw new TajoConfException("Port missing in hdfs path :"+path);
+        }
+        if(path.toUri().getHost() == null) {
+          throw new TajoConfException("Host missing/malformed in hdfs path :" + path);
+        }
+        String rootUri = path.toUri().getScheme() + "://" + path.toUri().getHost() + ":"
+          + path.toUri().getPort();
+        if(callFromTajoMaster)
+          return getDFSUsingKeyTab(path, systemConf, rootUri);
+        return getDFSUsingDelegationToken(path, systemConf, rootUri);
       }
-      if(path.toUri().getHost() == null) {
-        throw new Exception("Host missing/malformed in hdfs path :" + path);
+      catch(TajoConfException e) {
+        throw new IOException(e);
       }
-      String rootUri = path.toUri().getScheme() + "://" + path.toUri().getHost() + ":"
-        + path.toUri().getPort();
-      if(callFromTajoMaster)
-        return getDFSUsingKeyTab(path, systemConf, rootUri);
-      return getDFSUsingDelegationToken(path, systemConf, rootUri);
     }
     return path.getFileSystem(systemConf);
   }
