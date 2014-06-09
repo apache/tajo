@@ -288,7 +288,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // Join's input schema = right child output columns + left child output columns
-    Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, joinNode, left, notMatched, true,
+    Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, joinNode, left, notMatched, null, true,
         0);
     context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, block, left, stack);
@@ -296,7 +296,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.setToOrigin(transformedMap);
     context.addFiltersTobePushed(notMatched);
 
-    transformedMap = findCanPushdownAndTransform(context, joinNode, right, notMatched, true, left.getOutSchema().size());
+    notMatched.clear();
+    transformedMap = findCanPushdownAndTransform(context, joinNode, right, notMatched, null, true, left.getOutSchema().size());
     context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
 
     visit(context, plan, block, right, stack);
@@ -512,7 +513,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     //copy -> origin
     Map<EvalNode, EvalNode> matched = findCanPushdownAndTransform(
-        context, projectionNode, childNode, notMatched, false, 0);
+        context, projectionNode, childNode, notMatched, null, false, 0);
 
     context.setFiltersTobePushed(matched.keySet());
 
@@ -555,6 +556,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private Map<EvalNode, EvalNode> findCanPushdownAndTransform(
       FilterPushDownContext context, Projectable node,
       LogicalNode childNode, List<EvalNode> notMatched,
+      Set<String> partitionColumns,
       boolean ignoreJoin, int columnOffset) throws PlanningException {
     // canonical name -> target
     Map<String, Target> nodeTargetMap = new HashMap<String, Target>();
@@ -587,7 +589,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
       if (columnMatched) {
         // transform eval column to child's output column
-        EvalNode copyEvalNode = transformEval(node, childNode, eval, nodeTargetMap, columnOffset);
+        EvalNode copyEvalNode = transformEval(node, childNode, eval, nodeTargetMap, partitionColumns, columnOffset);
         if (copyEvalNode != null) {
           matched.put(copyEvalNode, eval);
         } else {
@@ -602,7 +604,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private EvalNode transformEval(Projectable node, LogicalNode childNode, EvalNode origin,
-                                 Map<String, Target> targetMap, int columnOffset) throws PlanningException {
+                                 Map<String, Target> targetMap, Set<String> partitionColumns,
+                                 int columnOffset) throws PlanningException {
     Schema outputSchema = childNode != null ? childNode.getOutSchema() : node.getInSchema();
     EvalNode copy;
     try {
@@ -641,11 +644,28 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         index = index - columnOffset;
       }
       if (index < 0 || index >= outputSchema.size()) {
-        return null;
+        if (partitionColumns != null && !partitionColumns.isEmpty() && node instanceof ScanNode) {
+          ScanNode scanNode = (ScanNode)node;
+          boolean isPartitionColumn = false;
+          if (CatalogUtil.isFQColumnName(partitionColumns.iterator().next())) {
+            isPartitionColumn = partitionColumns.contains(
+                CatalogUtil.buildFQName(scanNode.getTableName() + c.getSimpleName()));
+          } else {
+            isPartitionColumn = partitionColumns.contains(c.getSimpleName());
+          }
+          if (isPartitionColumn) {
+            EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(),
+                scanNode.getCanonicalName() + "." + c.getSimpleName());
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      } else {
+        Column outputColumn = outputSchema.getColumn(index);
+        EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), outputColumn.getQualifiedName());
       }
-      Column outputColumn = outputSchema.getColumn(index);
-
-      EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), outputColumn.getQualifiedName());
     }
 
     return copy;
@@ -753,7 +773,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // transform
     Map<EvalNode, EvalNode> tranformed =
-        findCanPushdownAndTransform(context, groupbyNode,groupbyNode.getChild(), notMatched, false, 0);
+        findCanPushdownAndTransform(context, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
 
     context.setFiltersTobePushed(tranformed.keySet());
     LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
@@ -818,7 +838,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, scanNode, null, notMatched, true, 0);
+        findCanPushdownAndTransform(context, scanNode, null, notMatched, partitionColumns, true, 0);
 
     for (EvalNode eval : transformed.keySet()) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {

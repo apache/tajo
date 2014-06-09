@@ -59,5 +59,20 @@ public class TestJoinOnPartitionedTables extends QueryTestCaseBase {
     res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
     assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");
     res.close();
+
+    executeString("DROP TABLE customer_parts PURGE").close();
+  }
+
+  @Test
+  public void testFilterPushDownPartitionColumnCaseWhen() throws Exception {
+    executeDDL("customer_ddl.sql", null);
+    ResultSet res = executeFile("insert_into_customer.sql");
+    res.close();
+
+    res = executeQuery();
+    assertResultSet(res);
+    res.close();
+
+    executeString("DROP TABLE customer_parts PURGE").close();
   }
 }
