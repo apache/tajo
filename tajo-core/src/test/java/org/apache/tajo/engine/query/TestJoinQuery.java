@@ -414,6 +414,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testJoinAsterisk() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testLeftOuterJoinWithNull1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -440,18 +447,18 @@ public class TestJoinQuery extends QueryTestCaseBase {
     try {
       ResultSet res = executeString(
           "select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
-          "on t1.id = t2.id\n" +
-          "left outer join table13 t3\n" +
-          "on t1.id = t3.id and t2.id = t3.id");
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id and t2.id = t3.id");
 
       String expected =
           "id,name,id,id\n" +
-          "-------------------------------\n" +
-          "1,table11-1,1,null\n" +
-          "2,table11-2,null,null\n" +
-          "3,table11-3,null,null\n";
+              "-------------------------------\n" +
+              "1,table11-1,1,null\n" +
+              "2,table11-2,null,null\n" +
+              "3,table11-3,null,null\n";
 
       String result = resultSetToString(res);
 
