@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.FileSystemUtil;
 
 import java.io.IOException;
 
@@ -102,10 +103,14 @@ public abstract class FileScanner implements Scanner {
         fs = FileSystem.get(path.toUri(), tajoConf, tajoUser);
       } catch (InterruptedException e) {
         LOG.warn("Occur InterruptedException while FileSystem initiating with user[" + tajoUser + "]");
-        fs = FileSystem.get(path.toUri(), tajoConf);
+        fs = FileSystemUtil.getFileSystem(path, tajoConf);
+      }
+      catch (IOException e) {
+        LOG.warn("IOException while getting FileSystem object, Tring FileSystemUtil.getFileSystem to check secure access");
+        fs = FileSystemUtil.getFileSystem(path, tajoConf);
       }
     } else {
-      fs = FileSystem.get(path.toUri(), tajoConf);
+      fs = FileSystemUtil.getFileSystem(path, tajoConf);
     }
 
     return fs;

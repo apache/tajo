@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -60,7 +61,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
     if (appender == null) {
       Path dataFile = getDataFile(partition);
-      FileSystem fs = dataFile.getFileSystem(context.getConf());
+      FileSystem fs = FileSystemUtil.getFileSystem(dataFile, context.getConf());
 
       if (fs.exists(dataFile.getParent())) {
         LOG.info("Path " + dataFile.getParent() + " already exists!");

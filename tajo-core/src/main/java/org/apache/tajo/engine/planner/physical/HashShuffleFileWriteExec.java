@@ -53,7 +53,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
-  
+
   public HashShuffleFileWriteExec(TaskAttemptContext context, final AbstractStorageManager sm,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
@@ -82,13 +82,13 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
   }
-  
+
   private Appender getAppender(int partId) throws IOException {
     Appender appender = appenderMap.get(partId);
 
     if (appender == null) {
       Path dataFile = getDataFile(partId);
-      FileSystem fs = dataFile.getFileSystem(context.getConf());
+      FileSystem fs = FileSystemUtil.getFileSystem(dataFile, context.getConf());
       if (fs.exists(dataFile)) {
         LOG.info("File " + dataFile + " already exists!");
         FileStatus status = fs.getFileStatus(dataFile);
@@ -119,7 +119,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       appender = getAppender(partId);
       appender.addTuple(tuple);
     }
-    
+
     List<TableStats> statSet = new ArrayList<TableStats>();
     for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
       int partNum = entry.getKey();
@@ -131,17 +131,17 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         context.addShuffleFileOutput(partNum, getDataFile(partNum).getName());
       }
     }
-    
+
     // Collect and aggregated statistics data
     TableStats aggregated = StatisticsUtil.aggregateTableStat(statSet);
     context.setResultStats(aggregated);
-    
+
     return null;
   }
 
   @Override
   public void rescan() throws IOException {
-    // nothing to do   
+    // nothing to do
   }
 
   @Override

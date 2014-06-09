@@ -46,6 +46,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetSocketAddress;
@@ -172,7 +173,8 @@ public class TaskRunner extends AbstractService {
 
     try {
       // initialize DFS and LocalFileSystems
-      defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(conf);
+      defaultFS = FileSystemUtil.getFileSystem(TajoConf.getTajoRootDir(systemConf),
+                                               this.systemConf);
       localFS = FileSystem.getLocal(conf);
 
       // the base dir for an output dir

@@ -28,6 +28,7 @@ import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -87,7 +88,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     super.init();
 
     storeTablePath = context.getOutputPath();
-    FileSystem fs = storeTablePath.getFileSystem(context.getConf());
+    FileSystem fs = FileSystemUtil.getFileSystem(storeTablePath, context.getConf());
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());
     }

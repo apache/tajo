@@ -52,6 +52,7 @@ import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -674,7 +675,7 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         Path path = new Path(request.getPath());
-        FileSystem fs = path.getFileSystem(conf);
+        FileSystem fs = FileSystemUtil.getFileSystem(path, conf);
 
         if (!fs.exists(path)) {
           throw new IOException("No such a directory: " + path);
