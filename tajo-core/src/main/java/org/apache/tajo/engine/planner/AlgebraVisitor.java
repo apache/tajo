@@ -49,6 +49,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws PlanningException;
   RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException;
   RESULT visitCreateIndex(CONTEXT ctx, Stack<Expr> stack, CreateIndex expr) throws PlanningException;
+  RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws PlanningException;
 
     // Insert or Update
   RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException;

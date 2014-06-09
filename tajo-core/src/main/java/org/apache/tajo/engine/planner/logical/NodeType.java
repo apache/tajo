@@ -54,7 +54,8 @@ public enum NodeType {
   DROP_TABLE(DropTableNode.class),
   ALTER_TABLESPACE (AlterTablespaceNode.class),
   ALTER_TABLE (AlterTableNode.class),
-  CREATE_INDEX(CreateIndexNode.class);
+  CREATE_INDEX(CreateIndexNode.class),
+  TRUNCATE_TABLE (TruncateTableNode.class);
 
   private final Class<? extends LogicalNode> baseClass;
 

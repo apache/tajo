@@ -290,6 +290,9 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeString("DROP TABLE JOINS.part_ PURGE");
+    executeString("DROP TABLE JOINS.supplier_ PURGE");
+    executeString("DROP DATABASE JOINS");
   }
 
   private MasterPlan getQueryPlan(QueryId queryId) {

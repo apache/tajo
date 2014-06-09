@@ -1609,9 +1609,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createIndexNode.setUnique(createIndex.isUnique());
     Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();
     int sortKeyNum = sortSpecs.length;
-    String [] referNames = new String[sortKeyNum];
+    String[] referNames = new String[sortKeyNum];
 
-    ExprNormalizedResult [] normalizedExprList = new ExprNormalizedResult[sortKeyNum];
+    ExprNormalizedResult[] normalizedExprList = new ExprNormalizedResult[sortKeyNum];
     for (int i = 0; i < sortKeyNum; i++) {
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
@@ -1632,6 +1632,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createIndexNode.setChild(child);
     return createIndexNode;
+  }
+
+  @Override
+  public LogicalNode visitTruncateTable(PlanContext context, Stack<Expr> stack, TruncateTable truncateTable)
+      throws PlanningException {
+    TruncateTableNode truncateTableNode = context.queryBlock.getNodeFromExpr(truncateTable);
+    truncateTableNode.setTableNames(truncateTable.getTableNames());
+    return truncateTableNode;
   }
 
   /*===============================================================================================

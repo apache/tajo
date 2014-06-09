@@ -129,6 +129,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case CREATE_INDEX:
         current = visitCreateIndex(context, plan, block, (CreateIndexNode) node, stack);
         break;
+      case TRUNCATE_TABLE:
+        current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
+        break;
       default:
         throw new PlanningException("Unknown logical node type: " + node.getType());
     }
@@ -341,5 +344,11 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   TruncateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return null;
   }
 }

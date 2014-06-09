@@ -95,4 +95,7 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, CreateIndexNode node,
                                Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, TruncateTableNode node,
+                         Stack<LogicalNode> stack) throws PlanningException;
 }
