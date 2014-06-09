@@ -323,4 +323,26 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP DATABASE \"TestSelectQuery\"").close();
     }
   }
+
+  @Test
+  public final void testSumIntOverflow() throws Exception {
+    // Test data's min value is 17 and number of rows is 5.
+    // 25264513 = 2147483647/17/5
+    // result is 116,848,374,845 ==> int overflow
+    // select sum(cast(l_quantity * 25264513 as INT4)) from lineitem where l_quantity > 0;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSumFloatOverflow() throws Exception {
+    // Test data's min value is 21168.23 and number of rows is 5.
+    // 3.21506374375027E33 = 3.40282346638529E38/21168/ 5
+    // result is 6.838452478692677E38 ==> float4 overflow
+    // select sum(cast(L_EXTENDEDPRICE * 3.21506374375027E33 as FLOAT4)) from lineitem where l_quantity > 0;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

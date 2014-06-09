@@ -27,24 +27,19 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 @Description(
     functionName = "to_date",
-    description = "Convert string to date. Format should be a java format string.",
-    example = "> SELECT to_date('2014-01-01', 'yyyy-MM-dd');\n"
+    description = "Convert string to date. Format should be a SQL standard format string.",
+    example = "> SELECT to_date('2014-01-01', 'YYYY-MM-DD');\n"
         + "2014-01-01",
     returnType = TajoDataTypes.Type.DATE,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
 public class ToDate extends GeneralFunction {
-  private static Map<String, DateTimeFormatter> formattercCache =
-      new ConcurrentHashMap<String, DateTimeFormatter>();
-
   public ToDate() {
     super(new Column[]{
         new Column("string", TajoDataTypes.Type.TEXT),
@@ -60,12 +55,8 @@ public class ToDate extends GeneralFunction {
     String value = params.get(0).asChars();
     String pattern = params.get(1).asChars();
 
-    DateTimeFormatter formatter = formattercCache.get(pattern);
-    if (formatter == null) {
-      formatter = DateTimeFormat.forPattern(pattern);
-      formattercCache.put(pattern, formatter);
-    }
+    TimeMeta tm = DateTimeFormat.parseDateTime(value, pattern);
 
-    return new DateDatum(formatter.parseDateTime(value).toLocalDate());
+    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
   }
 }

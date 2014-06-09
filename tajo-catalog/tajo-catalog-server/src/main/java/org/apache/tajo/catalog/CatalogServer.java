@@ -864,10 +864,12 @@ public class CatalogServer extends AbstractService {
        * to implement compareTo so decided to take the shortcut.
        *
        * */
-      for (FunctionDescProto existing : functions.get(signature)) {
-        if (existing.getParameterTypesList() != null &&
+      if (functions.containsKey(signature)) {
+        for (FunctionDescProto existing : functions.get(signature)) {
+          if (existing.getParameterTypesList() != null &&
               CatalogUtil.isMatchedFunction(existing.getParameterTypesList(), params)) {
-          return existing;
+            return existing;
+          }
         }
       }
       return null;

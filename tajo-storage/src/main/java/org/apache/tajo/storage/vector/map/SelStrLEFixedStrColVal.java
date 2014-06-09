@@ -30,7 +30,7 @@ import sun.misc.Unsafe;
 public class SelStrLEFixedStrColVal {
   static Unsafe unsafe = UnsafeUtil.unsafe;
 
-  public static int sel(int vecNum, int [] sel, VecRowBlock rowBlock, int lhsIdx, byte [] value, long nullFlags, long selId) {
+  public static int sel(int vecNum, int [] sel, VecRowBlock rowBlock, int lhsIdx, byte [] value, long nullVec, long selId) {
     int selected = 0;
 
     long strVec = rowBlock.getValueVecPtr(lhsIdx);

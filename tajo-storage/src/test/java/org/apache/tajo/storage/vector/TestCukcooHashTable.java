@@ -37,7 +37,7 @@ public class TestCukcooHashTable {
   @Test
   public void testCukcooLongLong() {
     LongKeyValueReaderWriter bucketHandler = new LongKeyValueReaderWriter();
-    CukcooHashTable<Long, Long, Pair<Long, Long>> hashTable = new CukcooHashTable(bucketHandler);
+    CukcooHashTable<Long, Long> hashTable = new CukcooHashTable(bucketHandler);
 
     final int TEST_SIZE = 1 << 27;
 
@@ -91,7 +91,7 @@ public class TestCukcooHashTable {
   @Test
   public void testCukcooLongString() {
     LongStringReaderWriter bucketHandler = new LongStringReaderWriter();
-    CukcooHashTable<Long, String, Pair<Long, String>> hashTable = new CukcooHashTable(bucketHandler);
+    CukcooHashTable<Long, String> hashTable = new CukcooHashTable(bucketHandler);
 
     UnsafeBuf unsafeBuf = bucketHandler.createBucketBuffer();
     long writeStart = System.currentTimeMillis();
@@ -138,7 +138,7 @@ public class TestCukcooHashTable {
     Map<Long, Long> map = Maps.newHashMap();
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 27); i++) {
+    for (int i = 0; i < (1 << 24); i++) {
       Long key = new Long(i);
 
       Long found = map.get(key);
@@ -160,7 +160,7 @@ public class TestCukcooHashTable {
 
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < (1 << 27); i++) {
+    for (int i = 0; i < (1 << 24); i++) {
       Long key = new Long(i);
       assertEquals(key, map.get(key));
     }
@@ -169,8 +169,8 @@ public class TestCukcooHashTable {
 
     long startRandom = System.currentTimeMillis();
     Random rnd = new Random(System.currentTimeMillis());
-    for (int i = 1; i < (1 << 27); i++) {
-      Long val = new Long(rnd.nextInt(1 << 27));
+    for (int i = 1; i < (1 << 24); i++) {
+      Long val = new Long(rnd.nextInt(1 << 24));
       assertEquals(val, map.get(val));
     }
     long endRandom = System.currentTimeMillis();

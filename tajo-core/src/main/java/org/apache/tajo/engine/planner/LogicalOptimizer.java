@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.eval.AlgebraicUtil;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
@@ -54,7 +55,9 @@ public class LogicalOptimizer {
 
   public LogicalOptimizer(TajoConf systemConf) {
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
-    rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
+    if (systemConf.getBoolVar(ConfVars.PLANNER_USE_FILTER_PUSHDOWN)) {
+      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
+    }
 
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());

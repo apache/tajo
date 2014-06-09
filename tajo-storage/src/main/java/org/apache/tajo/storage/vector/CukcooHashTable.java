@@ -24,7 +24,7 @@ import org.apache.tajo.util.FileUtil;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class CukcooHashTable<K, V, P> {
+public class CukcooHashTable<K, V> {
   static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
   static final int MAXIMUM_CAPACITY = 1 << 30;
   static final int DEFAULT_MAX_LOOP = 1 << 4;
@@ -320,36 +320,37 @@ public class CukcooHashTable<K, V, P> {
   public UnsafeBuf createEmptyBucket() {
     int payloadOffset = 2;
     payload = bucketHandler.createBucketBuffer();
-    payload.putFloat8(payloadOffset, 0); // sum(l_quantity)
+    payload.putFloat8(payloadOffset, 0);    // sum(l_quantity)
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice)
+    payload.putFloat8(payloadOffset, 0);    // sum(l_extendedprice)
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice*(1-l_discount))
+    payload.putFloat8(payloadOffset, 0);    // sum(l_extendedprice*(1-l_discount))
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putFloat8(payloadOffset, 0); // sum(l_extendedprice*(1-l_discount)*(1+l_tax))
+    payload.putFloat8(payloadOffset, 0);    // sum(l_extendedprice*(1-l_discount)*(1+l_tax))
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
 
-    payload.putFloat8(payloadOffset, 0); // avg(l_quantity) : sum
+    payload.putFloat8(payloadOffset, 0);    // avg(l_quantity) : sum
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putLong(payloadOffset, 0);                // avg(l_quantity) : count
+    payload.putLong(payloadOffset, 0);      // avg(l_quantity) : count
     payloadOffset += SizeOf.SIZE_OF_LONG;
 
-    payload.putFloat8(payloadOffset, 0); // avg(l_extendedprice) : sum
+    payload.putFloat8(payloadOffset, 0);    // avg(l_extendedprice) : sum
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putLong(payloadOffset, 0);                // avg(l_extendedprice) : count
+    payload.putLong(payloadOffset, 0);      // avg(l_extendedprice) : count
     payloadOffset += SizeOf.SIZE_OF_LONG;
 
 
-    payload.putFloat8(payloadOffset, 0); // avg(l_discount) : sum
+    payload.putFloat8(payloadOffset, 0);    // avg(l_discount) : sum
     payloadOffset += SizeOf.SIZE_OF_DOUBLE;
-    payload.putLong(payloadOffset, 0);                // avg(l_discount) : count
+    payload.putLong(payloadOffset, 0);      // avg(l_discount) : count
     payloadOffset += SizeOf.SIZE_OF_LONG;
 
-    payload.putLong(payloadOffset, 0);                // count(*)
+    payload.putLong(payloadOffset, 0);      // count(*)
     return payload;
   }
 
-  public void insertMissedGroups(int missed, /* compacted */ int [] missedVector, /* compacted */ int [] groupdIds, long hashVec, long keyVector, int[] selVec) {
+  public void insertMissedGroups(int missed, /* compacted */ int [] missedVector, /* compacted */ int [] groupdIds,
+                                 long hashVec, long keyVector, int[] selVec) {
     int hashVecOffset;
     int keyVecOffset;
 
@@ -377,7 +378,6 @@ public class CukcooHashTable<K, V, P> {
    * @param selVec
    */
   public void computeAggregate(int vecNum, /* compacted */ int[] groupIds, long [] valueVecs, int[] selVec) {
-    int hashVecOffset;
     int payloadOffset;
     long valueOffset = 0;
     UnsafeBuf bucket = bucketHandler.createBucketBuffer();

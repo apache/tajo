@@ -161,9 +161,12 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
           EnumSet.of(
               TaskAttemptEventType.TA_UPDATE))
       .addTransition(TaskAttemptState.TA_KILLED, TaskAttemptState.TA_KILLED,
-          TaskAttemptEventType.TA_LOCAL_KILLED,
+          EnumSet.of(
+              TaskAttemptEventType.TA_LOCAL_KILLED,
+              TaskAttemptEventType.TA_KILL,
+              TaskAttemptEventType.TA_ASSIGNED,
+              TaskAttemptEventType.TA_DONE),
           new TaskKilledCompleteTransition())
-
       .installTopology();
 
   private final StateMachine<TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -427,7 +430,11 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       try {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state of " + event.getTaskAttemptId() + ")", e);
+        LOG.error("Can't handle this event at current state of " + event.getTaskAttemptId() + ")"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(
             new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
                 "Can't handle this event at current state of " + event.getTaskAttemptId() + ")"));

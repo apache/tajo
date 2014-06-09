@@ -26,22 +26,26 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
 
   @Test
   public void testTimestamp() throws IOException {
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';", new String[]{"1970-01-17 10:09:37"});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';", new String[]{"1970-01-17 10:09:37.5"});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';", new String[]{"1970-01-17 10:09:37.01"});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.003';", new String[]{"1970-01-17 10:09:37.003"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';",
+        new String[]{"1970-01-17 10:09:37" + getUserTimeZoneDisplay()});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';",
+        new String[]{"1970-01-17 10:09:37.5" + getUserTimeZoneDisplay()});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';",
+        new String[]{"1970-01-17 10:09:37.01" + getUserTimeZoneDisplay()});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.003';",
+        new String[]{"1970-01-17 10:09:37.003" + getUserTimeZoneDisplay()});
   }
 
   @Test
   public void testToTimestamp() throws IOException {
-    testSimpleEval("select to_char(TIMESTAMP '1970-01-17 10:09:37', 'yyyy-MM-dd HH:mm:ss');",
+    testSimpleEval("select to_char(TIMESTAMP '1970-01-17 10:09:37', 'YYYY-MM-DD HH24:MI:SS');",
         new String[]{"1970-01-17 10:09:37"});
   }
 
   @Test
   public void testTimeLiteral() throws IOException {
     testSimpleEval("select TIME '10:09:37';",
-        new String[]{"10:09:37"});
+        new String[]{"10:09:37" + getUserTimeZoneDisplay()});
   }
 
   @Test

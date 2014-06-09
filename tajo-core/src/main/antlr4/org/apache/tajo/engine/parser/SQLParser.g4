@@ -64,6 +64,7 @@ schema_statement
   | drop_table_statement
   | alter_tablespace_statement
   | alter_table_statement
+  | truncate_table_statement
   ;
 
 index_statement
@@ -94,6 +95,7 @@ create_table_statement
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
   | CREATE TABLE (if_not_exists)? table_name (USING file_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
+  | CREATE TABLE (if_not_exists)? table_name LIKE like_table_name=table_name
   ;
 
 table_elements
@@ -183,6 +185,10 @@ column_partitions
 
 partition_name
   : identifier
+  ;
+
+truncate_table_statement
+  : TRUNCATE (TABLE)? table_name (COMMA table_name)*
   ;
 
 /*
@@ -652,6 +658,7 @@ value_expression
 common_value_expression
   : numeric_value_expression
   | string_value_expression
+  | datetime_value_expression
   | NULL
   ;
 
@@ -713,8 +720,7 @@ time_zone_field
   ;
 
 extract_source
-  : column_reference
-  | datetime_literal
+  : datetime_value_expression
   ;
 
 /*
@@ -765,6 +771,53 @@ trim_specification
 
 /*
 ===============================================================================
+  6.30 <datetime_value_expression>
+===============================================================================
+*/
+datetime_value_expression
+  : datetime_term
+  ;
+datetime_term
+  : datetime_factor
+  ;
+
+datetime_factor
+  : datetime_primary
+  ;
+
+datetime_primary
+  : value_expression_primary
+  | datetime_value_function
+  ;
+
+/*
+===============================================================================
+  6.31 <datetime_value_function>
+===============================================================================
+*/
+
+datetime_value_function
+  : current_date_value_function
+  | current_time_value_function
+  | current_timestamp_value_function
+  ;
+
+current_date_value_function
+  : CURRENT_DATE
+  | CURRENT_DATE LEFT_PAREN RIGHT_PAREN
+  ;
+
+current_time_value_function
+  : CURRENT_TIME
+  | CURRENT_TIME LEFT_PAREN RIGHT_PAREN
+  ;
+
+current_timestamp_value_function
+  : CURRENT_TIMESTAMP
+  ;
+
+/*
+===============================================================================
   6.34 <boolean value expression>
 ===============================================================================
 */
@@ -804,7 +857,7 @@ boolean_primary
   ;
 
 boolean_predicand
-  : parenthesized_boolean_value_expression 
+  : parenthesized_boolean_value_expression
   | nonparenthesized_value_expression_primary
   ;
 

@@ -13,6 +13,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.JSPUtil;
+import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -170,7 +171,24 @@ public class QueryExecutorServlet extends HttpServlet {
           }
           queryRunners.clear();
         }
+      } else if("killQuery".equals(action)) {
+        String queryId = request.getParameter("queryId");
+        if(queryId == null || queryId.trim().isEmpty()) {
+          errorResponse(response, "No queryId parameter");
+          return;
+        }
+        QueryStatus status = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryId));
+
+        if (status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
+          returnValue.put("successMessage", queryId + " is killed successfully.");
+        } else if (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT) {
+          returnValue.put("successMessage", queryId + " will be finished after a while.");
+        } else {
+          errorResponse(response, "ERROR:" + status.getErrorMessage());
+          return;
+        }
       }
+
       returnValue.put("success", "true");
       writeHttpResponse(response, returnValue);
     } catch (Exception e) {

@@ -29,6 +29,9 @@ import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.codegen.ExprCodeGenerator;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
@@ -40,6 +43,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,6 +65,10 @@ public class ExprTestBase {
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
   private static LogicalPlanVerifier annotatedPlanVerifier;
+
+  public static String getUserTimeZoneDisplay() {
+    return DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone());
+  }
 
   private boolean runtimeCodeGenFlag = true;
 
@@ -209,7 +217,16 @@ public class ExprTestBase {
       }
 
       for (int i = 0; i < expected.length; i++) {
-        assertEquals(query, expected[i], outTuple.get(i).asChars());
+        Datum datum = outTuple.get(i);
+        String outTupleAsChars;
+        if (datum.type() == Type.TIMESTAMP) {
+          outTupleAsChars = ((TimestampDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true);
+        } else if (datum.type() == Type.TIME) {
+          outTupleAsChars = ((TimeDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true);
+        } else {
+          outTupleAsChars = datum.asChars();
+        }
+        assertEquals(query, expected[i], outTupleAsChars);
       }
     } catch (InvalidStatementException e) {
       assertFalse(e.getMessage(), true);

@@ -1425,6 +1425,11 @@ public class HiveQLAnalyzer extends HiveQLParserBaseVisitor<Expr> {
         createTable.setExternal();
       }
 
+      if(ctx.KW_LIKE() != null)  {
+        createTable.setLikeParentTable(ctx.likeName.getText());
+        return createTable;
+      }
+
       if (ctx.tableFileFormat() != null) {
         if (ctx.tableFileFormat().KW_RCFILE() != null) {
           createTable.setStorageType("rcfile");

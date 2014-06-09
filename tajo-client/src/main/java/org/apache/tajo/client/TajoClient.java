@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
@@ -346,6 +347,9 @@ public class TajoClient implements Closeable {
       throws ServiceException, IOException {
     SubmitQueryResponse response = executeQuery(sql);
 
+    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+      throw new ServiceException(response.getErrorTrace());
+    }
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
@@ -369,7 +373,9 @@ public class TajoClient implements Closeable {
 
   public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
     SubmitQueryResponse response = executeQueryWithJson(json);
-
+    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+      throw new ServiceException(response.getErrorTrace());
+    }
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded()) {
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
@@ -854,7 +860,7 @@ public class TajoClient implements Closeable {
     }.withRetries();
   }
 
-  public boolean killQuery(final QueryId queryId)
+  public QueryStatus killQuery(final QueryId queryId)
       throws ServiceException, IOException {
 
     QueryStatus status = getQueryStatus(queryId);
@@ -874,7 +880,9 @@ public class TajoClient implements Closeable {
 
       long currentTimeMillis = System.currentTimeMillis();
       long timeKillIssued = currentTimeMillis;
-      while ((currentTimeMillis < timeKillIssued + 10000L) && (status.getState() != QueryState.QUERY_KILLED)) {
+      while ((currentTimeMillis < timeKillIssued + 10000L)
+          && ((status.getState() != QueryState.QUERY_KILLED)
+          || (status.getState() == QueryState.QUERY_KILL_WAIT))) {
         try {
           Thread.sleep(100L);
         } catch(InterruptedException ie) {
@@ -883,13 +891,13 @@ public class TajoClient implements Closeable {
         currentTimeMillis = System.currentTimeMillis();
         status = getQueryStatus(queryId);
       }
-      return status.getState() == QueryState.QUERY_KILLED;
+
     } catch(Exception e) {
       LOG.debug("Error when checking for application status", e);
-      return false;
     } finally {
       connPool.releaseConnection(tmClient);
     }
+    return status;
   }
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {

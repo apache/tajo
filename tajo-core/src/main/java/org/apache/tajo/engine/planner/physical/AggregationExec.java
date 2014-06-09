@@ -49,7 +49,11 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
     Column col;
     for (int idx = 0; idx < plan.getGroupingColumns().length; idx++) {
       col = keyColumns[idx];
-      groupingKeyIds[idx] = inSchema.getColumnId(col.getQualifiedName());
+      if (col.hasQualifier()) {
+        groupingKeyIds[idx] = inSchema.getColumnId(col.getQualifiedName());
+      } else {
+        groupingKeyIds[idx] = inSchema.getColumnIdByName(col.getSimpleName());
+      }
     }
 
     if (plan.hasAggFunctions()) {

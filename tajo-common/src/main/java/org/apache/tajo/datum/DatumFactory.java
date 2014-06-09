@@ -23,9 +23,9 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalTime;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.io.IOException;
 
@@ -96,7 +96,7 @@ public class DatumFactory {
     case TIME:
       return createTime(value);
     case TIMESTAMP:
-      return createTimeStamp(value);
+      return createTimestamp(value);
     case INTERVAL:
       return createInterval(value);
     case BLOB:
@@ -128,11 +128,11 @@ public class DatumFactory {
       case TEXT:
         return createText(bytes);
       case DATE:
-        return new DateDatum(bytes);
+        return new DateDatum(Bytes.toInt(bytes));
       case TIME:
-        return new TimeDatum(bytes);
+        return new TimeDatum(Bytes.toLong(bytes));
       case TIMESTAMP:
-        return new TimestampDatum(bytes);
+        return new TimestampDatum(Bytes.toLong(bytes));
       case BIT:
         return createBit(bytes[0]);
       case BLOB:
@@ -170,7 +170,7 @@ public class DatumFactory {
     case INT8:
       return new Int8Datum(val);
     case TIMESTAMP:
-      return createTimeStampFromMillis(val);
+      return new TimestampDatum(val);
     case TIME:
       return createTime(val); 
     default:
@@ -266,8 +266,13 @@ public class DatumFactory {
     return new DateDatum(instance);
   }
 
+  public static DateDatum createDate(int year, int month, int day) {
+    return new DateDatum(DateTimeUtil.date2j(year, month, day));
+  }
+
   public static DateDatum createDate(String dateStr) {
-    return new DateDatum(LocalDate.parse(dateStr));
+    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
+    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
   }
 
   public static TimeDatum createTime(long instance) {
@@ -275,19 +280,20 @@ public class DatumFactory {
   }
 
   public static TimeDatum createTime(String dateStr) {
-    return new TimeDatum(LocalTime.parse(dateStr));
+    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
+    return new TimeDatum(DateTimeUtil.toTime(tm));
   }
 
-  public static TimestampDatum createTimeStamp(int unixTime) {
-    return new TimestampDatum(unixTime);
+  public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
+    return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
 
-  public static TimestampDatum createTimeStampFromMillis(long millis) {
-    return new TimestampDatum(new DateTime(millis));
+  public static TimestampDatum createTimestmpDatumWithUnixTime(int unixTime) {
+    return createTimestmpDatumWithJavaMillis(unixTime * 1000L);
   }
 
-  public static TimestampDatum createTimeStamp(String timeStamp) {
-    return new TimestampDatum(timeStamp);
+  public static TimestampDatum createTimestamp(String datetimeStr) {
+    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(datetimeStr));
   }
 
   public static IntervalDatum createInterval(String intervalStr) {
@@ -301,7 +307,7 @@ public class DatumFactory {
     case INT8:
       return new DateDatum(datum.asInt4());
     case TEXT:
-      return new DateDatum(datum.asChars());
+      return createDate(datum.asChars());
     case DATE:
       return (DateDatum) datum;
     default:
@@ -314,7 +320,9 @@ public class DatumFactory {
     case INT8:
       return new TimeDatum(datum.asInt8());
     case TEXT:
-      return new TimeDatum(datum.asChars());
+      TimeMeta tm = DateTimeFormat.parseDateTime(datum.asChars(), "HH24:MI:SS.MS");
+      DateTimeUtil.toUTCTimezone(tm);
+      return new TimeDatum(DateTimeUtil.toTime(tm));
     case TIME:
       return (TimeDatum) datum;
     default:
@@ -325,7 +333,11 @@ public class DatumFactory {
   public static TimestampDatum createTimestamp(Datum datum) {
     switch (datum.type()) {
       case TEXT:
-        return new TimestampDatum(datum.asChars());
+        long timestamp = DateTimeUtil.toJulianTimestamp(datum.asChars());
+        TimeMeta tm = new TimeMeta();
+        DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+        DateTimeUtil.toUTCTimezone(tm);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
@@ -375,7 +387,24 @@ public class DatumFactory {
     case FLOAT8:
       return DatumFactory.createFloat8(operandDatum.asFloat8());
     case TEXT:
-      return DatumFactory.createText(operandDatum.asTextBytes());
+      switch (operandDatum.type()) {
+        case TIMESTAMP: {
+          TimestampDatum timestampDatum = (TimestampDatum)operandDatum;
+          TimeMeta tm = timestampDatum.toTimeMeta();
+          DateTimeUtil.toUserTimezone(tm);
+          TimestampDatum convertedTimestampDatum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+          return DatumFactory.createText(convertedTimestampDatum.asTextBytes());
+        }
+        case TIME: {
+          TimeDatum timeDatum = (TimeDatum)operandDatum;
+          TimeMeta tm = timeDatum.toTimeMeta();
+          DateTimeUtil.toUserTimezone(tm);
+          TimeDatum convertedTimeDatum = new TimeDatum(DateTimeUtil.toTime(tm));
+          return DatumFactory.createText(convertedTimeDatum.asTextBytes());
+        }
+        default:
+          return DatumFactory.createText(operandDatum.asTextBytes());
+      }
     case DATE:
       return DatumFactory.createDate(operandDatum);
     case TIME:

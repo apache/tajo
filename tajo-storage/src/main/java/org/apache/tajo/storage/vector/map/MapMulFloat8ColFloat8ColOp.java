@@ -20,6 +20,7 @@ package org.apache.tajo.storage.vector.map;
 
 import org.apache.tajo.storage.vector.SizeOf;
 import org.apache.tajo.storage.vector.UnsafeUtil;
+import org.apache.tajo.storage.vector.VectorUtil;
 import sun.misc.Unsafe;
 
 public class MapMulFloat8ColFloat8ColOp {
