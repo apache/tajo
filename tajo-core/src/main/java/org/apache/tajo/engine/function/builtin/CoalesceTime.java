@@ -18,29 +18,27 @@
 
 package org.apache.tajo.engine.function.builtin;
 
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
-  functionName = "today",
-  description = "get current time millis",
-  example = "> SELECT today();",
-  returnType = TajoDataTypes.Type.INT8,
-  paramTypes = {@ParamTypes(paramTypes = {})}
+    functionName = "coalesce",
+    description = "Returns the first of its arguments that is not null.",
+    detail = "Like a CASE expression, COALESCE only evaluates the arguments that are needed to determine the result; " +
+        "that is, arguments to the right of the first non-null argument are not evaluated",
+    example = "> SELECT coalesce(null, null, time '12:10:00');\n"
+        + "12:10:00",
+    returnType = Type.TIME,
+    paramTypes = {@ParamTypes(paramTypes = {Type.TIME, Type.TIME_ARRAY})}
 )
-public class Today extends GeneralFunction {
-
-  public Today() {
-    super(NoArgs);
-  }
-
-  @Override
-  public Datum eval(Tuple params) {
-    return DatumFactory.createInt8(System.currentTimeMillis());
+public class CoalesceTime extends Coalesce {
+  public CoalesceTime() {
+    super(new Column[] {
+        new Column("column", TajoDataTypes.Type.TIME),
+        new Column("params", TajoDataTypes.Type.TIME_ARRAY),
+    });
   }
 }

@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Objects;
+
 public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
   public static final String QUA_ID_PREFIX = "ta";
 
@@ -78,7 +80,7 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
 
   @Override
   public int hashCode() {
-    return toString().hashCode();
+    return Objects.hashCode(queryUnitId, id);
   }
 
   @Override

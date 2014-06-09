@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -36,6 +37,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
   private boolean printPause;
   private boolean printErrorTrace;
+  private String nullChar;
 
   @Override
   public void init(TajoConf tajoConf) {
@@ -44,6 +46,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPause = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_PAUSE);
     this.printPauseRecords = tajoConf.getIntVar(TajoConf.ConfVars.CLI_PRINT_PAUSE_NUM_RECORDS);
     this.printErrorTrace = tajoConf.getBoolVar(TajoConf.ConfVars.CLI_PRINT_ERROR_TRACE);
+    this.nullChar = tajoConf.getVar(ConfVars.CLI_NULL_CHAR);
   }
 
   @Override
@@ -90,9 +93,9 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     while (res.next()) {
       for (int i = 1; i <= numOfColumns; i++) {
         if (i > 1) sout.print(",  ");
-        String columnValue = res.getObject(i).toString();
+        String columnValue = res.getString(i);
         if(res.wasNull()){
-          sout.print("null");
+          sout.print(nullChar);
         } else {
           sout.print(columnValue);
         }
@@ -125,6 +128,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printNoResult(PrintWriter sout) {
     sout.println("(0 rows)");
+    sout.flush();
   }
 
   @Override
@@ -138,6 +142,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printMessage(PrintWriter sout, String message) {
     sout.println(message);
+    sout.flush();
   }
 
   @Override
@@ -146,16 +151,19 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     if (printErrorTrace) {
       sout.println(ExceptionUtils.getStackTrace(t));
     }
+    sout.flush();
   }
 
   @Override
   public void printErrorMessage(PrintWriter sout, String message) {
     sout.println(parseErrorMessage(message));
+    sout.flush();
   }
 
   @Override
   public void printKilledMessage(PrintWriter sout, QueryId queryId) {
     sout.println(TajoCli.KILL_PREFIX + queryId);
+    sout.flush();
   }
 
   @Override
@@ -168,6 +176,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     if (printErrorTrace && status.getErrorTrace() != null && !status.getErrorTrace().isEmpty()) {
       sout.println(status.getErrorTrace());
     }
+    sout.flush();
   }
 
   public static String parseErrorMessage(String message) {

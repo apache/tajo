@@ -286,3 +286,35 @@ message DistinctGroupbyEnforcer {
 message EnforcerProto {
   repeated EnforceProperty properties = 1;
 }
+
+message FetcherHistoryProto {
+  required int64 startTime = 1;
+  optional int64 finishTime = 2;
+  required FetcherState state = 3;
+  required int64 fileLength = 4;
+  required int32 messageReceivedCount = 5;
+}
+
+message TaskHistoryProto {
+  required QueryUnitAttemptIdProto queryUnitAttemptId = 1;
+  required TaskAttemptState state = 2;
+  required float progress = 3;
+  required int64 startTime = 4;
+  required int64 finishTime = 5;
+  required TableStatsProto inputStats = 6;
+  optional TableStatsProto outputStats = 7;
+  optional string outputPath = 8;
+  optional string workingPath = 9;
+  optional int32 finishedFetchCount = 10;
+  optional int32 totalFetchCount = 11;
+  repeated FetcherHistoryProto fetcherHistories = 12;
+}
+
+message TaskRunnerHistoryProto {
+  required ExecutionBlockIdProto executionBlockId = 1;
+  required string state = 2;
+  required string containerId = 3;
+  optional int64 startTime = 4;
+  optional int64 finishTime = 5;
+  repeated TaskHistoryProto taskHistories = 6;
+}

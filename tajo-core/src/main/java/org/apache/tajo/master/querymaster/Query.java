@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
@@ -48,6 +49,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.FileSystemUtil;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -480,6 +482,10 @@ public class Query implements EventHandler<QueryEvent> {
                           Path finalOutputDir) throws Exception {
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
+
+        String nullChar = queryContext.get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+        meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+
         TableStats stats = lastStage.getResultStats();
 
         TableDesc resultTableDesc =

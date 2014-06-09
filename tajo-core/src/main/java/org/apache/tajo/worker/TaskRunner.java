@@ -37,7 +37,6 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -52,6 +51,7 @@ import org.apache.tajo.util.TajoIdUtils;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
@@ -82,12 +82,9 @@ public class TaskRunner extends AbstractService {
   private TajoQueryEngine queryEngine;
 
   // for Fetcher
-  private final ExecutorService fetchLauncher;
+  private ExecutorService fetchLauncher;
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<QueryUnitAttemptId, Task>();
-
-  private final Map<QueryUnitAttemptId, TaskHistory> taskHistories =
-      new ConcurrentHashMap<QueryUnitAttemptId, TaskHistory>();
 
   private LocalDirAllocator lDirAllocator;
 
@@ -111,6 +108,8 @@ public class TaskRunner extends AbstractService {
 
   private InetSocketAddress qmMasterAddr;
 
+  private TaskRunnerHistory history;
+
   public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
     super(TaskRunner.class.getName());
 
@@ -130,6 +129,7 @@ public class TaskRunner extends AbstractService {
       // NodeId has a form of hostname:port.
       NodeId nodeId = ConverterUtils.toNodeId(args[2]);
       this.containerId = ConverterUtils.toContainerId(args[3]);
+
 
       // QueryMaster's address
       String host = args[4];
@@ -158,12 +158,18 @@ public class TaskRunner extends AbstractService {
       this.taskOwner = taskOwner;
 
       this.taskRunnerContext = new TaskRunnerContext();
+      this.history = new TaskRunnerHistory(containerId, executionBlockId);
+      this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
   }
 
   public String getId() {
+    return getId(executionBlockId, containerId);
+  }
+
+  public static String getId(ExecutionBlockId executionBlockId, ContainerId containerId) {
     return executionBlockId + "," + containerId;
   }
 
@@ -195,11 +201,14 @@ public class TaskRunner extends AbstractService {
     }
 
     super.init(conf);
+    this.history.setState(getServiceState());
   }
 
   @Override
   public void start() {
     super.start();
+    history.setStartTime(getStartTime());
+    this.history.setState(getServiceState());
     run();
   }
 
@@ -208,7 +217,8 @@ public class TaskRunner extends AbstractService {
     if(isStopped()) {
       return;
     }
-    finishTime = System.currentTimeMillis();
+    this.finishTime = System.currentTimeMillis();
+    this.history.setFinishTime(finishTime);
     // If this flag become true, taskLauncher will be terminated.
     this.stopped = true;
 
@@ -217,11 +227,13 @@ public class TaskRunner extends AbstractService {
       if (task.getStatus() == TaskAttemptState.TA_PENDING ||
           task.getStatus() == TaskAttemptState.TA_RUNNING) {
         task.setState(TaskAttemptState.TA_FAILED);
+        task.abort();
       }
     }
 
     tasks.clear();
     fetchLauncher.shutdown();
+    fetchLauncher = null;
     this.queryEngine = null;
 
     TupleCache.getInstance().removeBroadcastCache(executionBlockId);
@@ -230,6 +242,8 @@ public class TaskRunner extends AbstractService {
     synchronized (this) {
       notifyAll();
     }
+    super.stop();
+    this.history.setState(getServiceState());
   }
 
   public long getFinishTime() {
@@ -237,6 +251,11 @@ public class TaskRunner extends AbstractService {
   }
 
   public class TaskRunnerContext {
+    public AtomicInteger completedTasksNum = new AtomicInteger();
+    public AtomicInteger succeededTasksNum = new AtomicInteger();
+    public AtomicInteger killedTasksNum = new AtomicInteger();
+    public AtomicInteger failedTasksNum = new AtomicInteger();
+
     public TajoConf getConf() {
       return systemConf;
     }
@@ -282,15 +301,11 @@ public class TaskRunner extends AbstractService {
     }
 
     public void addTaskHistory(QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
-      taskHistories.put(quAttemptId, taskHistory);
+      history.addTaskHistory(quAttemptId, taskHistory);
     }
 
-    public TaskHistory getTaskHistory(QueryUnitAttemptId quAttemptId) {
-      return taskHistories.get(quAttemptId);
-    }
-
-    public Map<QueryUnitAttemptId, TaskHistory> getTaskHistories() {
-      return taskHistories;
+    public TaskRunnerHistory getExcutionBlockHistory(){
+      return history;
     }
   }
 
@@ -312,7 +327,6 @@ public class TaskRunner extends AbstractService {
 
   public void run() {
     LOG.info("TaskRunner startup");
-
     try {
 
       taskLauncher = new Thread(new Runnable() {
@@ -366,6 +380,7 @@ public class TaskRunner extends AbstractService {
                   if(taskRunnerManager != null) {
                     //notify to TaskRunnerManager
                     taskRunnerManager.stopTask(getId());
+                    taskRunnerManager= null;
                   }
                 } else {
                   taskRunnerManager.getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();

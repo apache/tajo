@@ -8,7 +8,7 @@ FROM (
   FROM
     lineitem
   WHERE
-    l_returnflag = 'K'
+    l_returnflag = 'N'
 
   UNION ALL
 

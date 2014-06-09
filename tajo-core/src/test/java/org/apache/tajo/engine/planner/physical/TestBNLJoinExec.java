@@ -34,6 +34,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -151,7 +152,7 @@ public class TestBNLJoinExec {
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLCrossJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -188,7 +189,8 @@ public class TestBNLJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLInnerJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+        LocalTajoTestingUtility.newQueryUnitAttemptId(),
         merged, workDir);
     ctx.setEnforcer(enforcer);
 
