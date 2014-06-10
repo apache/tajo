@@ -108,6 +108,10 @@ public class Sort extends UnaryOperator {
       this.nullFirst = true;
     }
 
+    public void setKey(Expr expr) {
+      this.key = expr;
+    }
+
     public final Expr getKey() {
       return this.key;
     }

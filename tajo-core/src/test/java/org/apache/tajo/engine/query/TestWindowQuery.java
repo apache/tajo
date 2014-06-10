@@ -174,9 +174,46 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testWindowWithComplexOrderBy() throws Exception {
+  public final void testWindowWithAggregation1() throws Exception {
     ResultSet res = executeString(
-        "select r_name, count(r_regionkey) as cnt, row_number() over (partition by r_name order by cnt desc) mk from region"
+        "select row_number() over (order by count(*) desc) row_num from lineitem"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithAggregation2() throws Exception {
+    ResultSet res = executeString(
+        "select l_orderkey, row_number() over (partition by l_orderkey order by count(*) desc) row_num from lineitem " +
+            "group by l_orderkey"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithAggregation3() throws Exception {
+    ResultSet res = executeString(
+        "select count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithAggregation4() throws Exception {
+    ResultSet res = executeString(
+        "select l_orderkey, count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem group by l_orderkey"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithAggregation5() throws Exception {
+    ResultSet res = executeString(
+        "select l_orderkey, count(*) as cnt, row_number() over (partition by l_orderkey order by count(*) desc) row_num from lineitem group by l_orderkey"
     );
     assertResultSet(res);
     cleanupQuery(res);

@@ -132,7 +132,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @return The widest DataType
    * @throws PlanningException when types are not compatible, it throws the exception.
    */
-  static DataType getWidestType(DataType...types) throws PlanningException {
+  public static DataType getWidestType(DataType...types) throws PlanningException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
       Type candidate = TUtil.getFromNestedMap(TYPE_CONVERSION_MAP, widest.getType(), types[i].getType());
@@ -668,7 +668,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
-  static final Set<String> WINDOW_FUNCTIONS =
+  public static final Set<String> WINDOW_FUNCTIONS =
       Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist");
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)

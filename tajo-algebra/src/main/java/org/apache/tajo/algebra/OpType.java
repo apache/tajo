@@ -141,13 +141,36 @@ public enum OpType {
     }
   }
 
+  public static boolean isLogicalType(OpType type) {
+    return type == And || type == Or;
+  }
+
+  public static boolean isComparisonType(OpType type) {
+    return
+        type == OpType.Equals ||
+        type == OpType.NotEquals ||
+        type == OpType.LessThan ||
+        type == OpType.GreaterThan ||
+        type == OpType.LessThanOrEquals ||
+        type == OpType.GreaterThanOrEquals;
+  }
+
+  public static boolean isArithmeticType(OpType type) {
+    return
+        type == Plus ||
+        type == Minus ||
+        type == Multiply ||
+        type == Divide ||
+        type == Modular;
+  }
+
   /**
    * Check if it is one of the literal types.
    *
    * @param type The type to be checked
    * @return True if it is one of the literal types. Otherwise, it returns False.
    */
-  public static boolean isLiteral(OpType type) {
+  public static boolean isLiteralType(OpType type) {
     return  type == Literal ||
             type == NullLiteral ||
             type == TimeLiteral ||

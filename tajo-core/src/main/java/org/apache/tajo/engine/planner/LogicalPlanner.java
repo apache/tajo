@@ -119,6 +119,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PreprocessContext preProcessorCtx = new PreprocessContext(session, plan, rootBlock);
     preprocessor.visit(preProcessorCtx, new Stack<Expr>(), expr);
+    plan.resetGeneratedId();
 
     PlanContext context = new PlanContext(session, plan, plan.getRootBlock(), debug);
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
@@ -207,17 +208,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.push(projection);
     LogicalNode child = visit(context, stack, projection.getChild());
 
+    // check if it is implicit aggregation. If so, it inserts group-by node to its child.
+    if (block.isAggregationRequired()) {
+      child = insertGroupbyNode(context, child, stack);
+    }
+
     if (block.hasWindowSpecs()) {
       LogicalNode windowAggNode =
           insertWindowAggNode(context, child, stack, referenceNames, referencesPair.getSecond());
       if (windowAggNode != null) {
         child = windowAggNode;
       }
-    }
-
-    // check if it is implicit aggregation. If so, it inserts group-by node to its child.
-    if (block.isAggregationRequired()) {
-      child = insertGroupbyNode(context, child, stack);
     }
     stack.pop();
     ////////////////////////////////////////////////////////
@@ -297,6 +298,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = TUtil.newList();
 
+    List<Integer> targetsIds = new ArrayList<Integer>();
     NamedExpr namedExpr;
     for (int i = 0; i < finalTargetNum; i++) {
       namedExpr = projection.getNamedExprs()[i];
@@ -304,8 +306,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       if (PlannerUtil.existsAggregationFunction(namedExpr)) {
         block.setAggregationRequire();
       }
-      // dissect an expression into multiple parts (at most dissected into three parts)
-      normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
+
+      if (ExprFinder.finds(namedExpr.getExpr(), OpType.WindowFunction).size() == 0) {
+        // dissect an expression into multiple parts (at most dissected into three parts)
+        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
+        targetsIds.add(i);
+      }
     }
 
     // Note: Why separate normalization and add(Named)Expr?
@@ -313,7 +319,46 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // ExprNormalizer internally makes use of the named exprs in NamedExprsManager.
     // If we don't separate normalization work and addExprWithName, addExprWithName will find named exprs evaluated
     // the same logical node. It will cause impossible evaluation in physical executors.
+    for (int i : targetsIds) {
+      namedExpr = projection.getNamedExprs()[i];
+      // Get all projecting references
+      if (namedExpr.hasAlias()) {
+        NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
+        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
+      } else {
+        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      }
+
+      // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
+
+      windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
+    }
+
+    targetsIds.clear();
+
     for (int i = 0; i < finalTargetNum; i++) {
+      namedExpr = projection.getNamedExprs()[i];
+
+      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
+        block.setAggregationRequire();
+      }
+
+      if (ExprFinder.finds(namedExpr.getExpr(), OpType.WindowFunction).size() > 0) {
+        // dissect an expression into multiple parts (at most dissected into three parts)
+        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
+        targetsIds.add(i);
+      }
+    }
+
+    // Note: Why separate normalization and add(Named)Expr?
+    //
+    // ExprNormalizer internally makes use of the named exprs in NamedExprsManager.
+    // If we don't separate normalization work and addExprWithName, addExprWithName will find named exprs evaluated
+    // the same logical node. It will cause impossible evaluation in physical executors.
+    for (int i : targetsIds) {
       namedExpr = projection.getNamedExprs()[i];
       // Get all projecting references
       if (namedExpr.hasAlias()) {
@@ -381,14 +426,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   public static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
-    if (projectable instanceof ProjectionNode && block.hasNode(NodeType.GROUP_BY)) {
-      for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-        for (Column c : columns) {
-          if (!projectable.getInSchema().contains(c)) {
-            throw new PlanningException(c.getQualifiedName()
-                + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
-                + projectable.getPID() + ")" );
+    if (projectable instanceof ProjectionNode) {
+      if (block.hasNode(NodeType.GROUP_BY) && !block.hasWindowSpecs()) {
+        for (Target target : projectable.getTargets()) {
+          Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
+          for (Column c : columns) {
+            if (!projectable.getInSchema().contains(c)) {
+              throw new PlanningException(c.getQualifiedName()
+                  + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
+                  + projectable.getPID() + ")");
+            }
           }
         }
       }
@@ -463,6 +510,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       windowAggNode.setChild(limitNode.getChild());
       windowAggNode.setInSchema(limitNode.getChild().getOutSchema());
       limitNode.setChild(windowAggNode);
+    } else if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
+      windowAggNode.setChild(sortNode.getChild());
+      windowAggNode.setInSchema(sortNode.getChild().getOutSchema());
+      sortNode.setChild(windowAggNode);
     } else {
       windowAggNode.setChild(child);
       windowAggNode.setInSchema(child.getOutSchema());
@@ -558,11 +610,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
 
-
     if (child.getType() == NodeType.LIMIT) {
       LimitNode limitNode = (LimitNode) child;
       limitNode.setInSchema(windowAggNode.getOutSchema());
       limitNode.setOutSchema(windowAggNode.getOutSchema());
+      return null;
+    } else if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
+      sortNode.setInSchema(windowAggNode.getOutSchema());
+      sortNode.setOutSchema(windowAggNode.getOutSchema());
       return null;
     } else {
       return windowAggNode;
@@ -1696,7 +1752,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
-  static TajoDataTypes.DataType convertDataType(DataTypeExpr dataType) {
+  public static TajoDataTypes.DataType convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
     TajoDataTypes.DataType.Builder builder = TajoDataTypes.DataType.newBuilder();

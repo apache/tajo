@@ -100,7 +100,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
   /**
    * This is verified by ExprsVerifier.checkArithmeticOperand().
    */
-  private DataType determineType(DataType left, DataType right) throws InvalidEvalException {
+  public static DataType determineType(DataType left, DataType right) throws InvalidEvalException {
     switch (left.getType()) {
 
     case INT1:

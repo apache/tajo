@@ -224,7 +224,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
       // If parameters are all constants, we don't need to dissect an aggregation expression into two parts:
       // function and parameter parts.
-      if (!OpType.isLiteral(param.getType()) && param.getType() != OpType.Column) {
+      if (!OpType.isLiteralType(param.getType()) && param.getType() != OpType.Column) {
         String referenceName = ctx.block.namedExprsMgr.addExpr(param);
         ctx.scalarExprs.add(new NamedExpr(param, referenceName));
         expr.getParams()[i] = new ColumnReferenceExpr(referenceName);
@@ -261,7 +261,12 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
         for (int i = 0; i < windowSpec.getSortSpecs().length; i++) {
           key = windowSpec.getSortSpecs()[i].getKey();
           visit(ctx, stack, key);
-          orderKeyReferenceNames[i] = ctx.block.namedExprsMgr.addExpr(key);
+          String referenceName = ctx.block.namedExprsMgr.addExpr(key);
+          if (OpType.isAggregationFunction(key.getType())) {
+            ctx.aggExprs.add(new NamedExpr(key, referenceName));
+            windowSpec.getSortSpecs()[i].setKey(new ColumnReferenceExpr(referenceName));
+          }
+          orderKeyReferenceNames[i] = referenceName;
         }
       }
       windowSpecReferences =

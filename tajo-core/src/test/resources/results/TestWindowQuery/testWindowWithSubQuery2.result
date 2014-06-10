@@ -1,7 +1,5 @@
-r_name,r_regionkey,mk
+r_name,c,ran
 -------------------------------
-AFRICA,0,1
+AFRICA,1,1
 AMERICA,1,1
-ASIA,2,1
-EUROPE,3,1
-MIDDLE EAST,4,1
+ASIA,1,1

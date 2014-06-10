@@ -137,6 +137,10 @@ public class LogicalPlan {
     return newAndGetBlock(NONAME_BLOCK_PREFIX + (noNameBlockId++));
   }
 
+  public void resetGeneratedId() {
+    noNameColumnId = 0;
+  }
+
   /**
    * It generates an unique column name from EvalNode. It is usually used for an expression or predicate without
    * a specified name (i.e., alias).

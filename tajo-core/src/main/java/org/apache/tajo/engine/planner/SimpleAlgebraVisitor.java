@@ -163,6 +163,11 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
     return super.visitFunction(ctx, stack, expr);
   }
 
+  @Override
+  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException {
+    return super.visitWindowFunction(ctx, stack, expr);
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // General Set Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,11 +191,6 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   @Override
   public RESULT visitDataType(CONTEXT ctx, Stack<Expr> stack, DataTypeExpr expr) throws PlanningException {
     return super.visitDataType(ctx, stack, expr);
-  }
-
-  @Override
-  public RESULT visitCastExpr(CONTEXT ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
-    return super.visitCastExpr(ctx, stack, expr);
   }
 
   @Override
