@@ -456,6 +456,10 @@ public class GlobalEngine extends AbstractService {
         AlterTableNode alterTable = (AlterTableNode) root;
         alterTable(session,alterTable);
         return true;
+      case TRUNCATE_TABLE:
+        TruncateTableNode truncateTable = (TruncateTableNode) root;
+        truncateTable(session, truncateTable);
+        return true;
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -589,6 +593,57 @@ public class GlobalEngine extends AbstractService {
         break;
       default:
         //TODO
+    }
+  }
+
+  /**
+   * Truncate table a given table
+   */
+  public void truncateTable(final Session session, final TruncateTableNode truncateTableNode) throws IOException {
+    List<String> tableNames = truncateTableNode.getTableNames();
+    final CatalogService catalog = context.getCatalog();
+
+    String databaseName;
+    String simpleTableName;
+
+    List<TableDesc> tableDescList = new ArrayList<TableDesc>();
+    for (String eachTableName: tableNames) {
+      if (CatalogUtil.isFQTableName(eachTableName)) {
+        String[] split = CatalogUtil.splitFQTableName(eachTableName);
+        databaseName = split[0];
+        simpleTableName = split[1];
+      } else {
+        databaseName = session.getCurrentDatabase();
+        simpleTableName = eachTableName;
+      }
+      final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+
+      if (!catalog.existsTable(databaseName, simpleTableName)) {
+        throw new NoSuchTableException(qualifiedName);
+      }
+
+      Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
+      TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
+      Path tablePath = tableDesc.getPath();
+      if (tablePath.getParent() == null ||
+          !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
+        throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
+            ", warehouse dir=" + warehousePath);
+      }
+      tableDescList.add(tableDesc);
+    }
+
+    for (TableDesc eachTable: tableDescList) {
+      Path path = eachTable.getPath();
+      LOG.info("Truncate table: " + eachTable.getName() + ", delete all data files in " + path);
+      FileSystem fs = path.getFileSystem(context.getConf());
+
+      FileStatus[] files = fs.listStatus(path);
+      if (files != null) {
+        for (FileStatus eachFile: files) {
+          fs.delete(eachFile.getPath(), true);
+        }
+      }
     }
   }
 
