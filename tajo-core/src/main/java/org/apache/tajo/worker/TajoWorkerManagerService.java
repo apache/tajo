@@ -139,7 +139,9 @@ public class TajoWorkerManagerService extends CompositeService
   @Override
   public void killTaskAttempt(RpcController controller, TajoIdProtos.QueryUnitAttemptIdProto request,
                               RpcCallback<PrimitiveProtos.BoolProto> done) {
-    workerContext.getTaskRunnerManager().findTaskByQueryUnitAttemptId(new QueryUnitAttemptId(request)).kill();
+    Task task = workerContext.getTaskRunnerManager().getTaskByQueryUnitAttemptId(new QueryUnitAttemptId(request));
+    if(task != null) task.kill();
+
     done.run(TajoWorker.TRUE_PROTO);
   }
 

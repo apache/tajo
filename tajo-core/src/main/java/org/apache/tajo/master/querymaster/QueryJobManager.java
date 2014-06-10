@@ -98,15 +98,21 @@ public class QueryJobManager extends CompositeService {
   }
 
   public Collection<QueryInProgress> getSubmittedQueries() {
-    return Collections.unmodifiableCollection(submittedQueries.values());
+    synchronized (submittedQueries){
+      return Collections.unmodifiableCollection(submittedQueries.values());
+    }
   }
 
   public Collection<QueryInProgress> getRunningQueries() {
-    return Collections.unmodifiableCollection(runningQueries.values());
+    synchronized (runningQueries){
+      return Collections.unmodifiableCollection(runningQueries.values());
+    }
   }
 
   public Collection<QueryInProgress> getFinishedQueries() {
-    return Collections.unmodifiableCollection(finishedQueries.values());
+    synchronized (finishedQueries){
+      return Collections.unmodifiableCollection(finishedQueries.values());
+    }
   }
 
   public QueryInfo createNewQueryJob(Session session, QueryContext queryContext, String sql,
