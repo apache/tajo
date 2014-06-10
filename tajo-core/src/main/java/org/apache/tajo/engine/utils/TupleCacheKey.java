@@ -29,28 +29,12 @@ public class TupleCacheKey {
     this.pathName = pathName;
   }
 
-  public String getEbId() {
-    return ebId;
-  }
-
-  public void setEbId(String ebId) {
-    this.ebId = ebId;
-  }
-
   public String getTableName() {
     return tableName;
   }
 
   public void setTableName(String tableName) {
     this.tableName = tableName;
-  }
-
-  public String getPathName() {
-    return pathName;
-  }
-
-  public void setPathName(String pathName) {
-    this.pathName = pathName;
   }
 
   @Override

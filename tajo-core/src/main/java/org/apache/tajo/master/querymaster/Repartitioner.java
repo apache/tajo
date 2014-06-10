@@ -80,7 +80,6 @@ public class Repartitioner {
     ScanNode[] scans = execBlock.getScanNodes();
 
     Path tablePath;
-    List<FileFragment> fragmentList = new ArrayList<FileFragment>();
     FileFragment[] fragments = new FileFragment[scans.length];
     long[] stats = new long[scans.length];
 
@@ -263,7 +262,6 @@ public class Repartitioner {
                                                           int baseScanId, FileFragment[] fragments) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
-    //Preconditions.checkArgument(scans.length == 2, "Must be Join Query");
 
     for (int i = 0; i < scans.length; i++) {
       if (i != baseScanId) {
