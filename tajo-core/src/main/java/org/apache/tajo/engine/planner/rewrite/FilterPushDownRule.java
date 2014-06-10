@@ -649,7 +649,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           boolean isPartitionColumn = false;
           if (CatalogUtil.isFQColumnName(partitionColumns.iterator().next())) {
             isPartitionColumn = partitionColumns.contains(
-                CatalogUtil.buildFQName(scanNode.getTableName() + c.getSimpleName()));
+                CatalogUtil.buildFQName(scanNode.getTableName(), c.getSimpleName()));
           } else {
             isPartitionColumn = partitionColumns.contains(c.getSimpleName());
           }

@@ -205,36 +205,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       return foundJoinEdge;
     }
 
-//    JoinNode joinNode = null;
-//
-//    if (outer.getType() == NodeType.JOIN) {
-//      joinNode = (JoinNode) outer;
-//    } else if(inner.getType() == NodeType.JOIN) {
-//      joinNode = (JoinNode) inner;
-//    }
-//    if (joinNode != null) {
-//      if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER ) {
-//
-//        String outerEdgeKey = TUtil.collectionToString(relationNames);
-//        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>AAAA>" + outerEdgeKey);
-//        for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
-//          if (graph.hasEdge(outerEdgeKey, innerName)) {
-//            JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
-//            if (foundJoinEdge == null) {
-//              foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
-//                  existJoinEdge.getJoinQual());
-//            } else {
-//              foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
-//                  existJoinEdge.getJoinQual()));
-//            }
-//          }
-//        }
-//        if (foundJoinEdge != null) {
-//          return foundJoinEdge;
-//        }
-//      }
-//    }
-
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
 

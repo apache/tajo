@@ -91,11 +91,8 @@ public class SeqScanExec extends PhysicalExec {
   private void rewriteColumnPartitionedTableSchema() throws IOException {
     PartitionMethodDesc partitionDesc = plan.getTableDesc().getPartitionMethod();
     Schema columnPartitionSchema = SchemaUtil.clone(partitionDesc.getExpressionSchema());
-    if (!columnPartitionSchema.getColumns().get(0).hasQualifier()) {
-      // In the case of HCatalog a partition column has qualifier.
-      String qualifier = inSchema.getColumn(0).getQualifier();
-      columnPartitionSchema.setQualifier(qualifier);
-    }
+    String qualifier = inSchema.getColumn(0).getQualifier();
+    columnPartitionSchema.setQualifier(qualifier);
 
     // Remove partition key columns from an input schema.
     this.inSchema = plan.getTableDesc().getSchema();
