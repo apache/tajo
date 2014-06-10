@@ -220,6 +220,15 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWindowWithAggregation6() throws Exception {
+    ResultSet res = executeString(
+        "select l_orderkey, count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem group by l_orderkey order by l_orderkey"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void rowNumber1() throws Exception {
     ResultSet res = executeString(
         "SELECT l_orderkey, row_number() OVER () as row_num FROM LINEITEM");

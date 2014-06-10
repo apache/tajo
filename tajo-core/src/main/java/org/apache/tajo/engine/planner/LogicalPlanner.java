@@ -298,86 +298,76 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = TUtil.newList();
 
-    List<Integer> targetsIds = new ArrayList<Integer>();
-    NamedExpr namedExpr;
-    for (int i = 0; i < finalTargetNum; i++) {
-      namedExpr = projection.getNamedExprs()[i];
-
-      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
-        block.setAggregationRequire();
+    List<Integer> targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
+      @Override
+      public boolean isMatch(Expr expr) {
+        return ExprFinder.finds(expr, OpType.WindowFunction).size() == 0;
       }
-
-      if (ExprFinder.finds(namedExpr.getExpr(), OpType.WindowFunction).size() == 0) {
-        // dissect an expression into multiple parts (at most dissected into three parts)
-        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
-        targetsIds.add(i);
-      }
-    }
+    });
 
     // Note: Why separate normalization and add(Named)Expr?
     //
     // ExprNormalizer internally makes use of the named exprs in NamedExprsManager.
     // If we don't separate normalization work and addExprWithName, addExprWithName will find named exprs evaluated
     // the same logical node. It will cause impossible evaluation in physical executors.
-    for (int i : targetsIds) {
-      namedExpr = projection.getNamedExprs()[i];
-      // Get all projecting references
-      if (namedExpr.hasAlias()) {
-        NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
-        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
-      } else {
-        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+    addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
+
+    targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
+      @Override
+      public boolean isMatch(Expr expr) {
+        return ExprFinder.finds(expr, OpType.WindowFunction).size() > 0;
       }
-
-      // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
-
-      windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
-    }
-
-    targetsIds.clear();
-
-    for (int i = 0; i < finalTargetNum; i++) {
-      namedExpr = projection.getNamedExprs()[i];
-
-      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
-        block.setAggregationRequire();
-      }
-
-      if (ExprFinder.finds(namedExpr.getExpr(), OpType.WindowFunction).size() > 0) {
-        // dissect an expression into multiple parts (at most dissected into three parts)
-        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
-        targetsIds.add(i);
-      }
-    }
-
-    // Note: Why separate normalization and add(Named)Expr?
-    //
-    // ExprNormalizer internally makes use of the named exprs in NamedExprsManager.
-    // If we don't separate normalization work and addExprWithName, addExprWithName will find named exprs evaluated
-    // the same logical node. It will cause impossible evaluation in physical executors.
-    for (int i : targetsIds) {
-      namedExpr = projection.getNamedExprs()[i];
-      // Get all projecting references
-      if (namedExpr.hasAlias()) {
-        NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
-        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
-      } else {
-        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
-      }
-
-      // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
-
-      windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
-    }
+    });
+    addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
 
     return new Pair<String[], ExprNormalizer.WindowSpecReferences []>(referenceNames,
         windowSpecReferencesList.toArray(new ExprNormalizer.WindowSpecReferences[windowSpecReferencesList.size()]));
+  }
+
+  private interface Matcher {
+    public boolean isMatch(Expr expr);
+  }
+
+  public List<Integer> normalize(PlanContext context, Projection projection, ExprNormalizedResult [] normalizedExprList,
+                                 Matcher matcher) throws PlanningException {
+    List<Integer> targetIds = new ArrayList<Integer>();
+    for (int i = 0; i < projection.size(); i++) {
+      NamedExpr namedExpr = projection.getNamedExprs()[i];
+
+      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
+        context.queryBlock.setAggregationRequire();
+      }
+
+      if (matcher.isMatch(namedExpr.getExpr())) {
+        // dissect an expression into multiple parts (at most dissected into three parts)
+        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
+        targetIds.add(i);
+      }
+    }
+
+    return targetIds;
+  }
+
+  private void addNamedExprs(QueryBlock block, String [] referenceNames, ExprNormalizedResult [] normalizedExprList,
+                             List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList, Projection projection,
+                             List<Integer> targetIds) throws PlanningException {
+    for (int i : targetIds) {
+      NamedExpr namedExpr = projection.getNamedExprs()[i];
+      // Get all projecting references
+      if (namedExpr.hasAlias()) {
+        NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
+        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
+      } else {
+        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      }
+
+      // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
+
+      windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
+    }
   }
 
   /**
