@@ -38,8 +38,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private EvalNode joinQual;
   @Expose private Target[] targets;
 
-  @Expose private boolean candidateBroadcast = false;
-  @Expose private List<LogicalNode> broadcastTargets = new ArrayList<LogicalNode>();
+  private boolean candidateBroadcast = false;
+  private List<LogicalNode> leftBaseBroadcastCandidateTargets = new ArrayList<LogicalNode>();
+  private List<LogicalNode> rightBaseBroadcastCandidateTargets = new ArrayList<LogicalNode>();
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);
@@ -59,12 +60,20 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     this.candidateBroadcast = candidateBroadcast;
   }
 
-  public List<LogicalNode> getBroadcastTargets() {
-    return broadcastTargets;
+  public List<LogicalNode> getLeftBaseBroadcastCandidateTargets() {
+    return leftBaseBroadcastCandidateTargets;
   }
 
-  public void setBroadcastTargets(List<LogicalNode> broadcastTargets) {
-    this.broadcastTargets = broadcastTargets;
+  public List<LogicalNode> getRightBaseBroadcastCandidateTargets() {
+    return rightBaseBroadcastCandidateTargets;
+  }
+
+  public void setLeftBaseBroadcastCandidateTargets(List<LogicalNode> leftBaseBroadcastCandidateTargets) {
+    this.leftBaseBroadcastCandidateTargets = leftBaseBroadcastCandidateTargets;
+  }
+
+  public void setRightBaseBroadcastCandidateTargets(List<LogicalNode> rightBaseBroadcastCandidateTargets) {
+    this.rightBaseBroadcastCandidateTargets = rightBaseBroadcastCandidateTargets;
   }
 
   public JoinType getJoinType() {

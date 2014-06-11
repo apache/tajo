@@ -123,7 +123,11 @@ public class GlobalPlanner {
     if (autoBroadcast) {
       // pre-visit finding broadcast join target table
       // this visiting doesn't make any execution block and change plan
-      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor();
+      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor(true);
+      broadcastJoinPlanVisitor.visit(globalPlanContext,
+          masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
+
+      broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor(false);
       broadcastJoinPlanVisitor.visit(globalPlanContext,
           masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
     }
@@ -233,19 +237,19 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock = null;
 
     boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
     // to check when the tajo.dist-query.join.broadcast.auto property is true
     if (autoBroadcast && joinNode.isCandidateBroadcast()) {
-      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
       List<LogicalNode> broadtargetTables = new ArrayList<LogicalNode>();
       int numLargeTables = 0;
-      for(LogicalNode eachNode: joinNode.getBroadcastTargets()) {
+      for(LogicalNode eachNode: joinNode.getLeftBaseBroadcastCandidateTargets()) {
         ScanNode scanNode = (ScanNode)eachNode;
         TableDesc tableDesc = scanNode.getTableDesc();
         if (tableDesc.getStats().getNumBytes() < broadcastThreshold) {
           broadtargetTables.add(scanNode);
           LOG.info("The table " + scanNode.getCanonicalName() + " ("
-              + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+              + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcast table");
         } else {
           numLargeTables++;
         }
@@ -259,7 +263,7 @@ public class GlobalPlanner {
           currentBlock.addBroadcastTable(((ScanNode)eachBroadcastTargetNode).getCanonicalName());
         }
 
-        for (LogicalNode eachNode: joinNode.getBroadcastTargets()) {
+        for (LogicalNode eachNode: joinNode.getLeftBaseBroadcastCandidateTargets()) {
           context.execBlockMap.remove(eachNode.getPID());
         }
         return currentBlock;
@@ -280,7 +284,6 @@ public class GlobalPlanner {
 
       TableDesc leftDesc = leftScan.getTableDesc();
       TableDesc rightDesc = rightScan.getTableDesc();
-      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
       if (leftDesc.getStats().getNumBytes() < broadcastThreshold) {
         leftBroadcasted = true;
@@ -305,6 +308,51 @@ public class GlobalPlanner {
 
         context.execBlockMap.remove(leftScan.getPID());
         context.execBlockMap.remove(rightScan.getPID());
+        return currentBlock;
+      }
+    }
+
+    // Find broad candidate node from right side.
+    if (autoBroadcast) { // && checkIfCanBeOneOfBroadcastJoin(rightNode)) {
+      List<JoinNode> broadcastTargetNodes = new ArrayList<JoinNode>();
+      for(LogicalNode eachNode: joinNode.getRightBaseBroadcastCandidateTargets()) {
+        JoinNode broadcastJoinNode = (JoinNode)eachNode;
+        ScanNode scanNode = broadcastJoinNode.getRightChild();
+        TableDesc tableDesc = scanNode.getTableDesc();
+        if (tableDesc.getStats().getNumBytes() < broadcastThreshold) {
+          broadcastTargetNodes.add(broadcastJoinNode);
+          LOG.info("The table " + scanNode.getCanonicalName() + " ("
+              + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
+        } else {
+          break;
+        }
+      }
+
+      if (!broadcastTargetNodes.isEmpty()) {
+        // current join node channel
+        currentBlock = masterPlan.newExecutionBlock();
+
+        DataChannel leftChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, true);
+        ScanNode leftScan = buildInputExecutor(masterPlan.getLogicalPlan(), leftChannel);
+        joinNode.setLeftChild(leftScan);
+        masterPlan.addConnect(leftChannel);
+
+        DataChannel rightChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, false);
+        ScanNode rightScan = buildInputExecutor(masterPlan.getLogicalPlan(), rightChannel);
+        joinNode.setRightChild(rightScan);
+        masterPlan.addConnect(rightChannel);
+
+        // set current execution block's plan with last broadcast join node
+        currentBlock.setPlan(broadcastTargetNodes.get(broadcastTargetNodes.size() - 1));
+
+        for (JoinNode eachBroadcastTargetNode: broadcastTargetNodes) {
+          currentBlock.addBroadcastTable(((ScanNode) eachBroadcastTargetNode.getRightChild()).getCanonicalName());
+        }
+
+        for (LogicalNode eachNode: joinNode.getRightBaseBroadcastCandidateTargets()) {
+          context.execBlockMap.remove(eachNode.getPID());
+        }
+
         return currentBlock;
       }
     }
@@ -1098,9 +1146,17 @@ public class GlobalPlanner {
     public LogicalNode visitJoin(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
       LogicalNode leftChild = visit(context, plan, block, node.getLeftChild(), stack);
-      LogicalNode rightChild = visit(context, plan, block, node.getRightChild(), stack);
-
       ExecutionBlock leftChildBlock = context.execBlockMap.get(leftChild.getPID());
+
+      if (leftChild.getType() == NodeType.JOIN && checkIfCanBeOneOfBroadcastJoin(node.getRightChild())) {
+        ScanNode scanNode = node.getRightChild();
+        if (leftChildBlock.isBroadcastTable(scanNode.getCanonicalName())) {
+          context.execBlockMap.put(node.getPID(), leftChildBlock);
+          return node;
+        }
+      }
+
+      LogicalNode rightChild = visit(context, plan, block, node.getRightChild(), stack);
       ExecutionBlock rightChildBlock = context.execBlockMap.get(rightChild.getPID());
 
       ExecutionBlock newExecBlock = buildJoinPlan(context, node, leftChildBlock, rightChildBlock);

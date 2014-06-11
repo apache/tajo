@@ -115,6 +115,13 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeftOuterJoin2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testLeftOuterJoinWithConstantExpr1() throws Exception {
     // outer join with constant projections
     //
