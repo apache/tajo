@@ -26,9 +26,9 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
-public abstract class WindowAggFunction<T extends Datum> extends AggFunction<T> {
+public abstract class WindowAggFunc<T extends Datum> extends AggFunction<T> {
 
-  public WindowAggFunction(Column[] definedArgs) {
+  public WindowAggFunc(Column[] definedArgs) {
     super(definedArgs);
   }
 
@@ -52,7 +52,7 @@ public abstract class WindowAggFunction<T extends Datum> extends AggFunction<T> 
 
   @Override
   public String toJson() {
-    return CatalogGsonHelper.toJson(this, WindowAggFunction.class);
+    return CatalogGsonHelper.toJson(this, WindowAggFunc.class);
   }
 
   @Override

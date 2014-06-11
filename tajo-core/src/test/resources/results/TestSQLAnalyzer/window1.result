@@ -10,7 +10,7 @@
     },
     {
       "Expr": {
-        "windowSpec": {},
+        "WindowSpec": {},
         "IsDistinct": false,
         "Signature": "sum",
         "FuncParams": [

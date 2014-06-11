@@ -20,16 +20,12 @@ package org.apache.tajo.engine.planner.logical;
 
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.algebra.WindowSpecExpr;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Comparator;
-
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 
 public class WindowSpec {
   @Expose private String windowName;
@@ -73,7 +69,7 @@ public class WindowSpec {
   public static class WindowFrame {
     @Expose private WindowStartBound startBound;
     @Expose private WindowEndBound endBound;
-    @Expose WindowSpecExpr.WindowFrameUnit unit; // TODO - to be supported
+    @Expose org.apache.tajo.algebra.WindowSpec.WindowFrameUnit unit; // TODO - to be supported
 
     public WindowFrame() {
       this.startBound = new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING);
@@ -105,11 +101,11 @@ public class WindowSpec {
       return this.unit != null;
     }
 
-    public void setFrameUnit(WindowSpecExpr.WindowFrameUnit unit) {
+    public void setFrameUnit(org.apache.tajo.algebra.WindowSpec.WindowFrameUnit unit) {
       this.unit = unit;
     }
 
-    public WindowSpecExpr.WindowFrameUnit getFrameUnit() {
+    public org.apache.tajo.algebra.WindowSpec.WindowFrameUnit getFrameUnit() {
       return this.unit;
     }
   }

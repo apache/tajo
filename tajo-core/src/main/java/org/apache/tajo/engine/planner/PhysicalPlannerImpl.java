@@ -997,7 +997,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
     }
 
-    return new WinAggregateExec(context, windowAggNode, child);
+    return new WindowAggExec(context, windowAggNode, child);
   }
 
   public PhysicalExec createDistinctGroupByPlan(TaskAttemptContext context,

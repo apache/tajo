@@ -715,7 +715,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       result = visit(ctx, stack, param);
     }
 
-    WindowSpecExpr windowSpec = expr.getWindowSpec();
+    WindowSpec windowSpec = expr.getWindowSpec();
 
     if (windowSpec.hasPartitionBy()) {
       for (Expr partitionKey : windowSpec.getPartitionKeys()) {

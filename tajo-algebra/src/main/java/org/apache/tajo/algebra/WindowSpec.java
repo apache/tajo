@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.util.TUtil;
 
-public class WindowSpecExpr implements Cloneable {
+public class WindowSpec implements Cloneable {
   @Expose private String windowName;
   @Expose private Expr [] partitionKeys; // OVER (PARTITION BY ?,...,?)
   @Expose private Sort.SortSpec [] sortSpecs; // OVER (... ORDER BY ?,...,?)
@@ -77,7 +77,7 @@ public class WindowSpecExpr implements Cloneable {
   }
 
   public Object clone() throws CloneNotSupportedException {
-    WindowSpecExpr windowSpec = (WindowSpecExpr) super.clone();
+    WindowSpec windowSpec = (WindowSpec) super.clone();
     windowSpec.windowName = windowName;
     if (hasPartitionBy()) {
       windowSpec.partitionKeys = new Expr[windowSpec.partitionKeys.length];
@@ -108,8 +108,8 @@ public class WindowSpecExpr implements Cloneable {
       return true;
     }
 
-    if (obj instanceof WindowSpecExpr) {
-      WindowSpecExpr another = (WindowSpecExpr) obj;
+    if (obj instanceof WindowSpec) {
+      WindowSpec another = (WindowSpec) obj;
       return TUtil.checkEquals(windowName, another.windowName) &&
           TUtil.checkEquals(partitionKeys, another.partitionKeys) &&
           TUtil.checkEquals(sortSpecs, another.sortSpecs);

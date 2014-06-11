@@ -20,13 +20,16 @@ package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class WindowFunctionExpr extends GeneralSetFunctionExpr {
 
   // over clause - only one of both is used.
-  @Expose private String windowName;
-  @Expose private WindowSpecExpr windowSpec;
+  @Expose @SerializedName("WindowName")
+  private String windowName;
+  @Expose @SerializedName("WindowSpec")
+  private WindowSpec windowSpec;
 
   public WindowFunctionExpr(GeneralSetFunctionExpr function) {
     super(OpType.WindowFunction, function.getSignature(), function.isDistinct(), function.getParams());
@@ -48,11 +51,11 @@ public class WindowFunctionExpr extends GeneralSetFunctionExpr {
     return windowSpec != null;
   }
 
-  public void setWindowSpec(WindowSpecExpr windowSpec) {
+  public void setWindowSpec(WindowSpec windowSpec) {
     this.windowSpec = windowSpec;
   }
 
-  public WindowSpecExpr getWindowSpec() {
+  public WindowSpec getWindowSpec() {
     return this.windowSpec;
   }
 

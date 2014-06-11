@@ -238,7 +238,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       throws PlanningException {
     stack.push(expr);
 
-    WindowSpecExpr windowSpec = expr.getWindowSpec();
+    WindowSpec windowSpec = expr.getWindowSpec();
     Expr key;
 
     WindowSpecReferences windowSpecReferences;

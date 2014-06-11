@@ -786,50 +786,6 @@ public class LogicalPlan {
     public boolean hasWindowSpecs() {
       return hasWindowFunction;
     }
-//
-//    public String addWindowSpecs(WindowSpecExpr windowSpecExpr) {
-//      if (windowSpecExpr.hasWindowName()) {
-//        if (!windowSpecs.containsKey(windowSpecExpr.getWindowName())) {
-//          windowSpecs.put(windowSpecExpr.getWindowName(), windowSpecExpr);
-//        }
-//        return windowSpecExpr.getWindowName();
-//      } else {
-//        WindowSpecExpr newWindowSpec = null;
-//
-//        try {
-//          newWindowSpec = (WindowSpecExpr) windowSpecExpr.clone();
-//        } catch (CloneNotSupportedException e) {
-//          throw new RuntimeException(e);
-//        }
-//        newWindowSpec.setWindowName(null); // remove name
-//
-//        String windowName = null;
-//        for (WindowSpecExpr existing : windowSpecs.values()) {
-//          WindowSpecExpr noNameExistingWindow = null;
-//          try {
-//            noNameExistingWindow = (WindowSpecExpr) windowSpecExpr.clone();
-//          } catch (CloneNotSupportedException e) {
-//            throw new RuntimeException(e);
-//          }
-//          if (newWindowSpec.equals(noNameExistingWindow)) {
-//            windowName = existing.getWindowName();
-//            break;
-//          }
-//        }
-//
-//        if (windowName == null) {
-//          windowName = NONAMED_WINDOW_PREFIX + "window" + noNameWindowId++;
-//        }
-//
-//        newWindowSpec.setWindowName(windowName);
-//        windowSpecs.put(newWindowSpec.getWindowName(), newWindowSpec);
-//        return windowName;
-//      }
-//    }
-//
-//    public Map<String, WindowSpecExpr> getWindowSpecs() {
-//      return windowSpecs;
-//    }
 
     /**
      * This flag can be changed as a plan is generated.

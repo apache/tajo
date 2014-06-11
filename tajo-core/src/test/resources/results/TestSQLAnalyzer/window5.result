@@ -17,7 +17,7 @@
     },
     {
       "Expr": {
-        "windowSpec": {
+        "WindowSpec": {
           "partitionKeys": [
             {
               "Signature": "round",

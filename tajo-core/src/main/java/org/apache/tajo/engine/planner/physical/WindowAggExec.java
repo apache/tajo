@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.algebra.WindowSpecExpr;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -39,13 +38,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameStartBoundType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-
 /**
- * This is the sort-based window operator.
+ * The sort-based window aggregation operator
  */
-public class WinAggregateExec extends UnaryPhysicalExec {
+public class WindowAggExec extends UnaryPhysicalExec {
   // plan information
   protected final int outputColumnNum;
   protected final int nonFunctionColumnNum;
@@ -90,7 +86,7 @@ public class WinAggregateExec extends UnaryPhysicalExec {
   WindowState state = WindowState.NEW_WINDOW;
   Iterator<Tuple> tupleInFrameIterator = null;
 
-  public WinAggregateExec(TaskAttemptContext context, WindowAggNode plan, PhysicalExec child) throws IOException {
+  public WindowAggExec(TaskAttemptContext context, WindowAggNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
 
     if (plan.hasPartitionKeys()) {

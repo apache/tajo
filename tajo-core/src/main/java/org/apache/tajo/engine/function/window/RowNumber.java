@@ -18,16 +18,13 @@
 
 package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
-import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.WindowAggFunction;
+import org.apache.tajo.engine.function.WindowAggFunc;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
@@ -39,7 +36,7 @@ import org.apache.tajo.storage.Tuple;
   returnType = Type.INT8,
   paramTypes = {@ParamTypes(paramTypes = {})}
 )
-public class RowNumber extends WindowAggFunction<Datum> {
+public class RowNumber extends WindowAggFunc<Datum> {
 
   public RowNumber() {
     super(NoArgs);

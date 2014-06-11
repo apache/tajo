@@ -32,7 +32,6 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.WindowSpec;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -43,9 +42,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameStartBoundType;
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameUnit;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -543,6 +541,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     throw new PlanningException("ExprAnnotator cannot take NamedExpr");
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Functions and General Set Functions Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   @Override
   public EvalNode visitFunction(Context ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
     stack.push(expr); // <--- Push
@@ -612,10 +614,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // General Set Section
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   @Override
   public EvalNode visitCountRowsFunction(Context ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
       throws PlanningException {
@@ -674,7 +672,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
       throws PlanningException {
 
-    WindowSpecExpr windowSpec = windowFunc.getWindowSpec();
+    WindowSpec windowSpec = windowFunc.getWindowSpec();
 
     Expr key;
     if (windowSpec.hasPartitionBy()) {

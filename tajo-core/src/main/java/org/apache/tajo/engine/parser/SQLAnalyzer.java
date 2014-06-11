@@ -37,8 +37,8 @@ import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpecExpr.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -361,14 +361,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (int i = 0; i < definitions.length; i++) {
       Window_definitionContext windowDefinitionContext = ctx.window_definition_list().window_definition(i);
       String windowName = windowDefinitionContext.window_name().identifier().getText();
-      WindowSpecExpr windowSpec = buildWindowSpec(windowDefinitionContext.window_specification());
+      WindowSpec windowSpec = buildWindowSpec(windowDefinitionContext.window_specification());
       definitions[i] = new Window.WindowDefinition(windowName, windowSpec);
     }
     return new Window(definitions);
   }
 
-  public WindowSpecExpr buildWindowSpec(SQLParser.Window_specificationContext ctx) {
-    WindowSpecExpr windowSpec = new WindowSpecExpr();
+  public WindowSpec buildWindowSpec(SQLParser.Window_specificationContext ctx) {
+    WindowSpec windowSpec = new WindowSpec();
     if (checkIfExist(ctx.window_specification_details())) {
       Window_specification_detailsContext windowSpecDetail = ctx.window_specification_details();
 
@@ -389,26 +389,26 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(windowSpecDetail.window_frame_clause())) {
         Window_frame_clauseContext frameContext = windowSpecDetail.window_frame_clause();
 
-        WindowSpecExpr.WindowFrameUnit unit;
+        WindowSpec.WindowFrameUnit unit;
         // frame unit - there are only two cases: RANGE and ROW
         if (checkIfExist(frameContext.window_frame_units().RANGE())) {
-          unit = WindowSpecExpr.WindowFrameUnit.RANGE;
+          unit = WindowSpec.WindowFrameUnit.RANGE;
         } else {
-          unit = WindowSpecExpr.WindowFrameUnit.ROW;
+          unit = WindowSpec.WindowFrameUnit.ROW;
         }
 
-        WindowSpecExpr.WindowFrame windowFrame;
+        WindowSpec.WindowFrame windowFrame;
 
         if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
           Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
-          WindowSpecExpr.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
-          WindowSpecExpr.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
+          WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
+          WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
 
-          windowFrame = new WindowSpecExpr.WindowFrame(unit, startBound, endBound);
+          windowFrame = new WindowSpec.WindowFrame(unit, startBound, endBound);
         } else { // if there is only start bound
-          WindowSpecExpr.WindowStartBound startBound =
+          WindowSpec.WindowStartBound startBound =
               buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
-          windowFrame = new WindowSpecExpr.WindowFrame(unit, startBound);
+          windowFrame = new WindowSpec.WindowFrame(unit, startBound);
         }
 
         windowSpec.setWindowFrame(windowFrame);
@@ -417,7 +417,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return windowSpec;
   }
 
-  public WindowSpecExpr.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
+  public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
     WindowFrameStartBoundType boundType = null;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
@@ -427,7 +427,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       boundType = WindowFrameStartBoundType.CURRENT_ROW;
     }
 
-    WindowSpecExpr.WindowStartBound bound = new WindowSpecExpr.WindowStartBound(boundType);
+    WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
     if (boundType == WindowFrameStartBoundType.PRECEDING) {
       bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
@@ -435,7 +435,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return bound;
   }
 
-  public WindowSpecExpr.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
+  public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
     WindowFrameEndBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
@@ -445,7 +445,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       boundType = WindowFrameEndBoundType.CURRENT_ROW;
     }
 
-    WindowSpecExpr.WindowEndBound endBound = new WindowSpecExpr.WindowEndBound(boundType);
+    WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
     if (boundType == WindowFrameEndBoundType.FOLLOWING) {
       endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }

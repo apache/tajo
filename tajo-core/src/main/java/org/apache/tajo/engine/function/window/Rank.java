@@ -25,7 +25,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.WindowAggFunction;
+import org.apache.tajo.engine.function.WindowAggFunc;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
@@ -38,7 +38,7 @@ import org.apache.tajo.storage.Tuple;
     returnType = TajoDataTypes.Type.INT8,
     paramTypes = {@ParamTypes(paramTypes = {})}
 )
-public final class Rank extends WindowAggFunction {
+public final class Rank extends WindowAggFunc {
 
   public Rank() {
     super(new Column[] {

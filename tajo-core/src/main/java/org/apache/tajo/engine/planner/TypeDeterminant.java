@@ -36,7 +36,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
 import static org.apache.tajo.engine.planner.LogicalPlanPreprocessor.PreprocessContext;
 
 public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, DataType> {
-  private DataType BOOL_TYPE = CatalogUtil.newSimpleDataType(BOOLEAN);;
+  private DataType BOOL_TYPE = CatalogUtil.newSimpleDataType(BOOLEAN);
   private CatalogService catalog;
 
   public TypeDeterminant(CatalogService catalog) {
@@ -137,50 +137,9 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
     return column.getDataType();
   }
 
-  @Override
-  public DataType visitWindowFunction(PreprocessContext ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
-      throws PlanningException {
-    stack.push(windowFunc); // <--- Push
-
-    String funcName = windowFunc.getSignature();
-    boolean distinct = windowFunc.isDistinct();
-    Expr[] params = windowFunc.getParams();
-    DataType[] givenArgs = new DataType[params.length];
-    TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[params.length];
-    CatalogProtos.FunctionType functionType;
-
-    if (params.length > 0) {
-      givenArgs[0] = visit(ctx, stack, params[0]);
-      if (windowFunc.getSignature().equalsIgnoreCase("count")) {
-        paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
-      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
-        paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
-      } else {
-        paramTypes[0] = givenArgs[0];
-      }
-    }
-
-    stack.pop(); // <--- Pop
-
-    // TODO - containFunction and getFunction should support the function type mask which provides ORing multiple types.
-    // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
-    if (ExprAnnotator.WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
-      if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
-      }
-      functionType = CatalogProtos.FunctionType.WINDOW;
-    } else {
-      functionType = distinct ? CatalogProtos.FunctionType.DISTINCT_AGGREGATION : CatalogProtos.FunctionType.AGGREGATION;
-    }
-
-    if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(funcName, paramTypes);
-    }
-
-    FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);
-
-    return funcDesc.getReturnType();
-  }
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // General Set Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
   public DataType visitFunction(PreprocessContext ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
@@ -209,10 +168,6 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
     return funcDesc.getReturnType();
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // General Set Section
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
   public DataType visitCountRowsFunction(PreprocessContext ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
@@ -250,6 +205,53 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
     return funcDesc.getReturnType();
   }
 
+  @Override
+  public DataType visitWindowFunction(PreprocessContext ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
+      throws PlanningException {
+    stack.push(windowFunc); // <--- Push
+
+    String funcName = windowFunc.getSignature();
+    boolean distinct = windowFunc.isDistinct();
+    Expr[] params = windowFunc.getParams();
+    DataType[] givenArgs = new DataType[params.length];
+    TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[params.length];
+    CatalogProtos.FunctionType functionType;
+
+    // Rewrite parameters if necessary
+    if (params.length > 0) {
+      givenArgs[0] = visit(ctx, stack, params[0]);
+
+      if (windowFunc.getSignature().equalsIgnoreCase("count")) {
+        paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
+      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
+        paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
+      } else {
+        paramTypes[0] = givenArgs[0];
+      }
+    }
+    stack.pop(); // <--- Pop
+
+    // TODO - containFunction and getFunction should support the function type mask which provides ORing multiple types.
+    // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
+    if (ExprAnnotator.WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+      if (distinct) {
+        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+      }
+      functionType = CatalogProtos.FunctionType.WINDOW;
+    } else {
+      functionType = distinct ?
+          CatalogProtos.FunctionType.DISTINCT_AGGREGATION : CatalogProtos.FunctionType.AGGREGATION;
+    }
+
+    if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
+      throw new NoSuchFunctionException(funcName, paramTypes);
+    }
+
+    FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);
+
+    return funcDesc.getReturnType();
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Literal Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -280,17 +282,20 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
   }
 
   @Override
-  public DataType visitNullLiteral(PreprocessContext ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
+  public DataType visitNullLiteral(PreprocessContext ctx, Stack<Expr> stack, NullLiteral expr)
+      throws PlanningException {
     return CatalogUtil.newSimpleDataType(BOOLEAN);
   }
 
   @Override
-  public DataType visitTimestampLiteral(PreprocessContext ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
+  public DataType visitTimestampLiteral(PreprocessContext ctx, Stack<Expr> stack, TimestampLiteral expr)
+      throws PlanningException {
     return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIMESTAMP);
   }
 
   @Override
-  public DataType visitTimeLiteral(PreprocessContext ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
+  public DataType visitTimeLiteral(PreprocessContext ctx, Stack<Expr> stack, TimeLiteral expr)
+      throws PlanningException {
     return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIME);
   }
 }

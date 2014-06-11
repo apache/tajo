@@ -155,22 +155,12 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // Other Expressions
+  // Functions and General Set Function Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   @Override
   public RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
     return super.visitFunction(ctx, stack, expr);
   }
-
-  @Override
-  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException {
-    return super.visitWindowFunction(ctx, stack, expr);
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // General Set Section
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
   public RESULT visitCountRowsFunction(CONTEXT ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
@@ -182,6 +172,11 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   public RESULT visitGeneralSetFunction(CONTEXT ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
       throws PlanningException {
     return super.visitGeneralSetFunction(ctx, stack, expr);
+  }
+
+  @Override
+  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException {
+    return super.visitWindowFunction(ctx, stack, expr);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

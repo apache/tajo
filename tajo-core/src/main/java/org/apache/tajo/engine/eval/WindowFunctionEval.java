@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.algebra.WindowSpecExpr;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;

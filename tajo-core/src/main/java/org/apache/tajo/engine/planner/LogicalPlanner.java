@@ -21,7 +21,6 @@ package org.apache.tajo.engine.planner;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +30,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -415,76 +415,113 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
+  /**
+   * It checks if all targets of Projectable plan node can be evaluated from the child node.
+   * It can avoid potential errors which possibly occur in physical operators.
+   *
+   * @param block QueryBlock which includes the Projectable node
+   * @param projectable Projectable node to be valid
+   * @throws PlanningException
+   */
   public static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
-    if (projectable instanceof ProjectionNode) {
-      if (block.hasNode(NodeType.GROUP_BY) && !block.hasWindowSpecs()) {
-        for (Target target : projectable.getTargets()) {
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-          for (Column c : columns) {
-            if (!projectable.getInSchema().contains(c)) {
-              throw new PlanningException(c.getQualifiedName()
-                  + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
-                  + projectable.getPID() + ")");
-            }
-          }
-        }
-      }
-    } else  if (projectable instanceof GroupbyNode) {
+    if (projectable instanceof GroupbyNode) {
       GroupbyNode groupbyNode = (GroupbyNode) projectable;
-      // It checks if all column references within each target can be evaluated with the input schema.
-      int groupingColumnNum = groupbyNode.getGroupingColumns().length;
-      for (int i = 0; i < groupingColumnNum; i++) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(groupbyNode.getTargets()[i].getEvalTree());
-        if (!projectable.getInSchema().containsAll(columns)) {
-          throw new PlanningException(String.format("Cannot get the field(s) \"%s\" at node (%d)",
-              TUtil.collectionToString(columns), projectable.getPID()));
-        }
-      }
-      if (groupbyNode.hasAggFunctions()) {
-        for (AggregationFunctionCallEval f : groupbyNode.getAggFunctions()) {
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(f);
-          for (Column c : columns) {
-            if (!projectable.getInSchema().contains(c)) {
-              throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                  c, projectable.getPID()));
+
+      if (!groupbyNode.isEmptyGrouping()) { // it should be targets instead of
+        int groupingKeyNum = groupbyNode.getGroupingColumns().length;
+
+        for (int i = 0; i < groupingKeyNum; i++) {
+          Target target = groupbyNode.getTargets()[i];
+          if (groupbyNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD) {
+            FieldEval grpKeyEvalNode = target.getEvalTree();
+            if (!groupbyNode.getInSchema().contains(grpKeyEvalNode.getColumnRef())) {
+              throwCannotEvaluateException(projectable, grpKeyEvalNode.getName());
             }
           }
         }
       }
-    } else if (projectable instanceof RelationNode) {
-      RelationNode relationNode = (RelationNode) projectable;
-      for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-        for (Column c : columns) {
-          if (!relationNode.getTableSchema().contains(c)) {
-            throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                c, projectable.getPID()));
-          }
-        }
+
+      if (groupbyNode.hasAggFunctions()) {
+        verifyIfEvalNodesCanBeEvaluated(projectable, groupbyNode.getAggFunctions());
       }
+
     } else if (projectable instanceof WindowAggNode) {
       WindowAggNode windowAggNode = (WindowAggNode) projectable;
-      if (windowAggNode.hasAggFunctions()) {
-        for (AggregationFunctionCallEval f : windowAggNode.getWindowFunctions()) {
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(f);
-          for (Column c : columns) {
-            if (!projectable.getInSchema().contains(c)) {
-              throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                  c, projectable.getPID()));
-            }
-          }
-        }
+
+      if (windowAggNode.hasPartitionKeys()) {
+        verifyIfColumnCanBeEvaluated(projectable.getInSchema(), projectable, windowAggNode.getPartitionKeys());
       }
-    } else {
-      for (Target target : projectable.getTargets()) {
+
+      if (windowAggNode.hasAggFunctions()) {
+        verifyIfEvalNodesCanBeEvaluated(projectable, windowAggNode.getWindowFunctions());
+      }
+
+      if (windowAggNode.hasSortSpecs()) {
+        Column [] sortKeys = PlannerUtil.sortSpecsToSchema(windowAggNode.getSortSpecs()).toArray();
+        verifyIfColumnCanBeEvaluated(projectable.getInSchema(), projectable, sortKeys);
+      }
+
+      // verify targets except for function slots
+      for (int i = 0; i < windowAggNode.getTargets().length - windowAggNode.getWindowFunctions().length; i++) {
+        Target target = windowAggNode.getTargets()[i];
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
         for (Column c : columns) {
-          if (!projectable.getInSchema().contains(c)) {
-            throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                c, projectable.getPID()));
+          if (!windowAggNode.getInSchema().contains(c)) {
+            throwCannotEvaluateException(projectable, c.getQualifiedName());
           }
         }
       }
+
+    } else if (projectable instanceof RelationNode) {
+      RelationNode relationNode = (RelationNode) projectable;
+      verifyIfTargetsCanBeEvaluated(relationNode.getTableSchema(), (Projectable) relationNode);
+
+    } else {
+      verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
+    }
+  }
+
+  public static void verifyIfEvalNodesCanBeEvaluated(Projectable projectable, EvalNode[] evalNodes)
+      throws PlanningException {
+    for (EvalNode e : evalNodes) {
+      Set<Column> columns = EvalTreeUtil.findUniqueColumns(e);
+      for (Column c : columns) {
+        if (!projectable.getInSchema().contains(c)) {
+          throwCannotEvaluateException(projectable, c.getQualifiedName());
+        }
+      }
+    }
+  }
+
+  public static void verifyIfTargetsCanBeEvaluated(Schema baseSchema, Projectable projectable)
+      throws PlanningException {
+    for (Target target : projectable.getTargets()) {
+      Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
+      for (Column c : columns) {
+        if (!baseSchema.contains(c)) {
+          throwCannotEvaluateException(projectable, c.getQualifiedName());
+        }
+      }
+    }
+  }
+
+  public static void verifyIfColumnCanBeEvaluated(Schema baseSchema, Projectable projectable, Column [] columns)
+      throws PlanningException {
+    for (Column c : columns) {
+      if (!baseSchema.contains(c)) {
+        throwCannotEvaluateException(projectable, c.getQualifiedName());
+      }
+    }
+  }
+
+  public static void throwCannotEvaluateException(Projectable projectable, String columnName) throws PlanningException {
+    if (projectable instanceof UnaryNode && ((UnaryNode) projectable).getChild().getType() == NodeType.GROUP_BY) {
+      throw new PlanningException(columnName
+          + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
+          + projectable.getPID() + ")");
+    } else {
+      throw new PlanningException(String.format("Cannot evaluate the field \"%s\" at node (%d)",
+          columnName, projectable.getPID()));
     }
   }
 
@@ -512,7 +549,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     List<String> winFuncRefs = new ArrayList<String>();
     List<WindowFunctionEval> winFuncs = new ArrayList<WindowFunctionEval>();
-    List<WindowSpecExpr> rawWindowSpecs = Lists.newArrayList();
+    List<WindowSpec> rawWindowSpecs = Lists.newArrayList();
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
       NamedExpr rawTarget = it.next();
       try {
@@ -546,7 +583,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     SortSpec [][] sortGroups = new SortSpec[rawWindowSpecs.size()][];
 
     for (int winSpecIdx = 0; winSpecIdx < rawWindowSpecs.size(); winSpecIdx++) {
-      WindowSpecExpr spec = rawWindowSpecs.get(winSpecIdx);
+      WindowSpec spec = rawWindowSpecs.get(winSpecIdx);
       if (spec.hasOrderBy()) {
         Sort.SortSpec [] sortSpecs = spec.getSortSpecs();
         int sortNum = sortSpecs.length;
@@ -656,6 +693,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // this inserted group-by node doesn't pass through preprocessor. So manually added.
     block.registerNode(groupbyNode);
     postHook(context, stack, null, groupbyNode);
+
+    verifyProjectedFields(block, groupbyNode);
     return groupbyNode;
   }
 

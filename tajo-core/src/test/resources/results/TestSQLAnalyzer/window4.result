@@ -10,7 +10,7 @@
     },
     {
       "Expr": {
-        "windowSpec": {
+        "WindowSpec": {
           "sortSpecs": [
             {
               "SortKey": {

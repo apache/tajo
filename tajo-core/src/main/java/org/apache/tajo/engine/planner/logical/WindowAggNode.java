@@ -36,7 +36,7 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
   /** Aggregation Functions */
   @Expose private WindowFunctionEval[] windowFuncs;
   /**
-   * It's a list of targets. The grouping columns should be followed by aggregation functions.
+   * It's a list of targets. The partition key columns should be followed by window functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.
    * */
   @Expose private Target [] targets;
@@ -111,13 +111,16 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
   }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder("GroupBy (");
-    if (partitionKeys != null || partitionKeys.length > 0) {
+    StringBuilder sb = new StringBuilder("WinAgg (");
+    if (hasPartitionKeys()) {
       sb.append("partition keys=").append(TUtil.arrayToString(partitionKeys));
       sb.append(", ");
     }
     if (hasAggFunctions()) {
       sb.append("funcs=").append(TUtil.arrayToString(windowFuncs));
+    }
+    if (hasSortSpecs()) {
+      sb.append("sort=").append(TUtil.arrayToString(sortSpecs));
     }
     sb.append(")");
     return sb.toString();
