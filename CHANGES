@@ -27,7 +27,7 @@ Release 0.9.0 - unreleased
     TAJO-843: implements COALESCE for BOOLEAN, DATE, TIME, TIMESTAMP. 
     (Hyoungjun Kim via hyunsik)
 
-    TAJO-854: Supports INSERT INTO with UNION. (Hyoungjun Kim via jihoon)
+    TAJO-854: Supports INSERT INTO with UNION. (Hyoungjun Kim via jihoon) 
 
     TAJO-793: CLI should be able to exit when single query is failed.
     (Hyoungjun Kim via jinho)
