@@ -454,12 +454,6 @@ public class Repartitioner {
                                                  SubQuery subQuery, DataChannel channel,
                                                  int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
-
-    if (totalStat.getNumRows() == 0) {
-      return;
-    }
-
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
@@ -500,9 +494,15 @@ public class Repartitioner {
     // get a proper number of tasks
     int determinedTaskNum = Math.min(maxNum, finalFetches.size());
     LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetches.size());
+
     if (groupby != null && groupby.getGroupingColumns().length == 0) {
       determinedTaskNum = 1;
       LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+    } else {
+      TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
+      if (totalStat.getNumRows() == 0) {
+        determinedTaskNum = 1;
+      }
     }
 
     // set the proper number of tasks to the estimated task num

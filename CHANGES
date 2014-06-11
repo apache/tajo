@@ -21,6 +21,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-840: Improve query result print with counting empty table. (jaehwa)
+
     TAJO-844: JDBC should be support getTime, getDate, and getTimestamp. 
     (Hyoungjun Kim via hyunsik)
 
