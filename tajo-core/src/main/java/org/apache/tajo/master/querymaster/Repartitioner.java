@@ -195,6 +195,7 @@ public class Repartitioner {
             intermediateScans, intermediateScanStats, intermediateFragments, broadcastFragments);
       }
     } else {
+      LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
       scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null);
     }
   }
@@ -216,7 +217,6 @@ public class Repartitioner {
                                                        long[] stats,
                                                        FileFragment[] fragments,
                                                        FileFragment[] broadcastFragments) throws IOException {
-    LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
     // The hash map is modeling as follows:
     // <Part Id, <Table Name, Intermediate Data>>
     Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries = new HashMap<Integer, Map<String, List<IntermediateEntry>>>();

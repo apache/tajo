@@ -722,7 +722,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
 
       // Is this subquery the first step of join?
-      if (parent != null && parent.getScanNodes().length == 2) {
+      if (parent != null && parent.getScanNodes().length >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer

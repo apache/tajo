@@ -49,6 +49,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
     executeDDL("create_lineitem_large_ddl.sql", "lineitem_large");
     executeDDL("create_customer_large_ddl.sql", "customer_large");
+    executeDDL("create_orders_large_ddl.sql", "orders_large");
   }
 
   @Test
@@ -116,6 +117,15 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testLeftOuterJoin2() throws Exception {
+    // large, large, small, small
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoin3() throws Exception {
+    // large, large, small, large, small, small
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
