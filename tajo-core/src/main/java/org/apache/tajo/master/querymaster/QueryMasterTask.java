@@ -360,6 +360,7 @@ public class QueryMasterTask extends CompositeService {
 
       dispatcher.register(QueryEventType.class, query);
       queryTaskContext.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.START));
+      touchSessionTime();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       initError = t;
@@ -457,7 +458,9 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public void expiredSessionTimeout() {
-    stop();
+    //stop();
+    QueryMasterQueryCompletedEvent event = new QueryMasterQueryCompletedEvent(queryId);
+    getEventHandler().handle(event);
   }
 
   public QueryMasterTaskContext getQueryTaskContext() {
