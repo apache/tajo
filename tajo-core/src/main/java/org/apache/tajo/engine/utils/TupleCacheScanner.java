@@ -51,7 +51,12 @@ public class TupleCacheScanner implements Scanner {
   public Tuple next() throws IOException {
     if (it.hasNext()) {
       count++;
-      return it.next();
+      Tuple tuple = it.next();
+      try {
+        return (Tuple)tuple.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e.getMessage(), e);
+      }
     } else {
       return null;
     }
