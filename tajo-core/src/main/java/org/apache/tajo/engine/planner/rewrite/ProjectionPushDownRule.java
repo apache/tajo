@@ -554,6 +554,21 @@ public class ProjectionPushDownRule extends
       }
     }
 
+    if (node.hasSortSpecs()) {
+      for (SortSpec sortSpec : node.getSortSpecs()) {
+        newContext.addNecessaryReferences(new FieldEval(sortSpec.getSortKey()));
+      }
+    }
+
+    for (WindowFunctionEval winFunc : node.getWindowFunctions()) {
+      if (winFunc.hasSortSpecs()) {
+        for (SortSpec sortSpec : winFunc.getSortSpecs()) {
+          newContext.addNecessaryReferences(new FieldEval(sortSpec.getSortKey()));
+        }
+      }
+    }
+
+
     int nonFunctionColumnNum = node.getTargets().length - node.getWindowFunctions().length;
     LinkedHashSet<String> nonFunctionColumns = Sets.newLinkedHashSet();
     for (int i = 0; i < nonFunctionColumnNum; i++) {
@@ -568,8 +583,8 @@ public class ProjectionPushDownRule extends
       for (int evalIdx = 0, targetIdx = nonFunctionColumnNum; targetIdx < node.getTargets().length; evalIdx++,
           targetIdx++) {
         Target target = node.getTargets()[targetIdx];
-        EvalNode evalNode = node.getWindowFunctions()[evalIdx];
-        aggEvalNames[evalIdx] = newContext.addExpr(new Target(evalNode, target.getCanonicalName()));
+        WindowFunctionEval winFunc = node.getWindowFunctions()[evalIdx];
+        aggEvalNames[evalIdx] = newContext.addExpr(new Target(winFunc, target.getCanonicalName()));
       }
     } else {
       aggEvalNames = null;

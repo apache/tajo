@@ -29,6 +29,7 @@ import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.TUtil;
 
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
@@ -95,5 +96,20 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
       }
     }
     return windowFunctionEval;
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0; i < argEvals.length; i++) {
+      sb.append(argEvals[i]);
+      if(i+1 < argEvals.length)
+        sb.append(",");
+    }
+    sb.append(funcDesc.getSignature()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
+        .append(")");
+    if (hasSortSpecs()) {
+      sb.append("ORDER BY ").append(TUtil.arrayToString(sortSpecs));
+    }
+    return sb.toString();
   }
 }

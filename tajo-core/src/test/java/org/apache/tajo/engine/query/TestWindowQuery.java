@@ -229,6 +229,15 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testComplexOrderBy1() throws Exception {
+    ResultSet res = executeString(
+        "select l_orderkey, row_number() over (order by l_quantity * (1 - l_discount)) row_num from lineitem"
+    );
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void rowNumber1() throws Exception {
     ResultSet res = executeString(
         "SELECT l_orderkey, row_number() OVER () as row_num FROM LINEITEM");
