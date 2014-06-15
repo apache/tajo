@@ -65,15 +65,19 @@ public class StatisticsUtil {
             continue;
           }
 
-          agg.setNumDistVals(agg.getNumDistValues() + cs.getNumDistValues());
-          agg.setNumNulls(agg.getNumNulls() + cs.getNumNulls());
-          if (!cs.minIsNotSet() && (agg.minIsNotSet() ||
-              agg.getMinValue().compareTo(cs.getMinValue()) > 0)) {
-            agg.setMinValue(cs.getMinValue());
-          }
-          if (!cs.maxIsNotSet() && (agg.maxIsNotSet() ||
-              agg.getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
-            agg.setMaxValue(stats.getColumnStats().get(i).getMaxValue());
+          try {
+            agg.setNumDistVals(agg.getNumDistValues() + cs.getNumDistValues());
+            agg.setNumNulls(agg.getNumNulls() + cs.getNumNulls());
+            if (!cs.minIsNotSet() && (agg.minIsNotSet() ||
+                agg.getMinValue().compareTo(cs.getMinValue()) > 0)) {
+              agg.setMinValue(cs.getMinValue());
+            }
+            if (!cs.maxIsNotSet() && (agg.maxIsNotSet() ||
+                agg.getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
+              agg.setMaxValue(stats.getColumnStats().get(i).getMaxValue());
+            }
+          } catch (Exception e) {
+            LOG.warn(e.getMessage(), e);
           }
         }
       }
@@ -117,15 +121,19 @@ public class StatisticsUtil {
             LOG.warn("ERROR: One of column stats is NULL (expected column: " + css[i].getColumn() + ")");
             continue;
           }
-          css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
-          css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
-          if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||
-              css[i].getMinValue().compareTo(cs.getMinValue()) > 0)) {
-            css[i].setMinValue(cs.getMinValue());
-          }
-          if (!cs.maxIsNotSet() && (css[i].maxIsNotSet() ||
-              css[i].getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
-            css[i].setMaxValue(ts.getColumnStats().get(i).getMaxValue());
+          try {
+            css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
+            css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
+            if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||
+                css[i].getMinValue().compareTo(cs.getMinValue()) > 0)) {
+              css[i].setMinValue(cs.getMinValue());
+            }
+            if (!cs.maxIsNotSet() && (css[i].maxIsNotSet() ||
+                css[i].getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
+              css[i].setMaxValue(ts.getColumnStats().get(i).getMaxValue());
+            }
+          } catch (Exception e) {
+            LOG.warn(e.getMessage(), e);
           }
         }
       }
