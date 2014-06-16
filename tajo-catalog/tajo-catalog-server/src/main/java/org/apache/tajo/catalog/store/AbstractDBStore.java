@@ -672,18 +672,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.close();
       }
 
-      String tidSql =
-          "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
-      pstmt = conn.prepareStatement(tidSql);
-      pstmt.setInt(1, dbid);
-      pstmt.setString(2, tableName);
-      res = pstmt.executeQuery();
-
-      if (!res.next()) {
-        throw new CatalogException("ERROR: there is no TID matched to " + table.getTableName());
-      }
-
-      int tableId = res.getInt("TID");
+//      String tidSql =
+//          "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
+//      pstmt = conn.prepareStatement(tidSql);
+//      pstmt.setInt(1, dbid);
+//      pstmt.setString(2, tableName);
+//      res = pstmt.executeQuery();
+//
+//      if (!res.next()) {
+//        throw new CatalogException("ERROR: there is no TID matched to " + table.getTableName());
+//      }
+//
+//      int tableId = res.getInt("TID");
+      int tableId = getTableId(dbid, databaseName, tableName);
       res.close();
       pstmt.close();
 
