@@ -33,7 +33,7 @@ public class CreateIndex extends UnaryOperator {
   private String indexName;
   @Expose @SerializedName("SortSpecs")
   private SortSpec[] sortSpecs;
-  @Expose @SerializedName("IndexProperties")
+  @Expose @SerializedName("Properties")
   private Map<String, String> params;
   @Expose @SerializedName("IndexMethodSpec")
   private IndexMethodSpec methodSpec;

@@ -38,7 +38,7 @@ public class Insert extends Expr {
   private String location;
   @Expose @SerializedName("SubPlan")
   private Expr subquery;
-  @Expose @SerializedName("InsertParams")
+  @Expose @SerializedName("Properties")
   private Map<String, String> params;
 
   public Insert() {
