@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.function.FunctionContext;
@@ -156,7 +157,18 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     if (nullCount == hashAggregators.length) {
       finished = true;
       progress = 1.0f;
-      return null;
+
+      // If DistinctGroupbyHashAggregationExec didn't has any rows,
+      // it should return NullDatum.
+      if (totalNumRows == 0 && groupbyNodeNum == 0) {
+        Tuple tuple = new VTuple(hashAggregators.length);
+        for (int i = 0; i < tuple.size(); i++) {
+          tuple.put(i, DatumFactory.createNullDatum());
+        }
+        return tuple;
+      } else {
+        return null;
+      }
     }
 
 
