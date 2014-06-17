@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
@@ -64,7 +65,18 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
   @Override
   public DataType getValueType() {
-    return whens.get(0).getResult().getValueType();
+    // Find not null type
+    for (IfThenEval eachWhen: whens) {
+      if (eachWhen.getResult().getValueType().getType() != Type.NULL_TYPE) {
+        return eachWhen.getResult().getValueType();
+      }
+    }
+
+    if (elseResult != null) { // without else clause
+      return elseResult.getValueType();
+    }
+
+    return NullDatum.getDataType();
   }
 
   @Override
