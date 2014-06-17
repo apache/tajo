@@ -68,6 +68,10 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-862: Restore failure of dumped relations. (jihoon)
+
+    TAJO-861: tajo-dump script are not executable. (jinho)
+
     TAJO-839: If all tables participate in the BROADCAST JOIN, there is some 
     missing data. (Hyoungjun Kim via jihoon)
 

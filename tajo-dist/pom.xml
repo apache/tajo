@@ -135,6 +135,7 @@
                     <exec executable="sh" dir="${project.build.directory}" failonerror="true">
                       <arg line="./dist-layout-stitching.sh"/>
                     </exec>
+                    <chmod dir="${project.build.directory}/tajo-${project.version}/bin" perm="ugo+rx" includes="**/*.sh,tajo,tajo-dump,tsql"/>
                   </target>
                 </configuration>
               </execution>
