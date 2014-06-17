@@ -369,8 +369,9 @@ public class MemStore implements CatalogStore {
     }
 
     index.put(proto.getIndexName(), proto);
-    indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
-        + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
+    // TODO
+//    indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
+//        + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
   }
 
   /* (non-Javadoc)

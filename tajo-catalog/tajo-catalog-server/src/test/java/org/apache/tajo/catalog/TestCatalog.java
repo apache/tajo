@@ -372,17 +372,18 @@ public class TestCatalog {
   static IndexDesc desc3;
 
   static {
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
-
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+    // TODO
+//    desc1 = new IndexDesc(
+//        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+//        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+//
+//    desc2 = new IndexDesc(
+//        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
+//        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
+//
+//    desc3 = new IndexDesc(
+//        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+//        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
   }
 
   public static TableDesc prepareTable() throws IOException {
