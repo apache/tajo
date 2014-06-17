@@ -56,6 +56,18 @@ public class MariaDBStore extends AbstractDBStore  {
   }
 
   @Override
+  protected boolean isConnValid(int timeout) throws CatalogException {
+    boolean isValid = false;
+
+    try {
+      isValid = super.isConnValid(timeout);
+    } catch (NullPointerException e) {
+      LOG.info("Conn abortion when checking isValid; retrieve false to create another Conn.");
+    }
+    return isValid;
+  }
+
+  @Override
   public String readSchemaFile(String filename) throws CatalogException {
     return super.readSchemaFile("mariadb/" + filename);
   }

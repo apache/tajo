@@ -152,18 +152,20 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogUri;
   }
 
-  public Connection getConnection() {
+  protected boolean isConnValid(int timeout) throws CatalogException {
     boolean isValid = false;
 
     try {
-      isValid = conn.isValid(100);
+      isValid = conn.isValid(timeout);
     } catch (SQLException e) {
       e.printStackTrace();
-    } catch (NullPointerException e) {
-      LOG.info("Conn abortion when checking validity; Try to connect database");
     }
+    return isValid;
+  }
 
+  public Connection getConnection() {
     try {
+      boolean isValid = isConnValid(100);
       if (!isValid) {
         CatalogUtil.closeQuietly(conn);
         conn = createConnection(conf);
