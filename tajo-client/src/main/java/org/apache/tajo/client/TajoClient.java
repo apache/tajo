@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -44,6 +45,7 @@ import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.KeyValueSet;
@@ -210,6 +212,17 @@ public class TajoClient implements Closeable {
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         return tajoMasterService.getCurrentDatabase(null, sessionId).getValue();
+      }
+    }.withRetries();
+  }
+
+  public String getHDFSDelegationToken() throws ServiceException {
+    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+      public String call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getHDFSDelegationToken(null, NullProto.getDefaultInstance()).getValue();
       }
     }.withRetries();
   }
@@ -455,7 +468,7 @@ public class TajoClient implements Closeable {
   }
 
   public ResultSet getQueryResult(QueryId queryId)
-      throws ServiceException, IOException {
+    throws ServiceException, IOException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }

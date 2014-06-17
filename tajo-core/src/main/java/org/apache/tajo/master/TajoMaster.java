@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -28,6 +29,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -53,6 +57,7 @@ import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -224,15 +229,14 @@ public class TajoMaster extends CompositeService {
     this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
     LOG.info("Tajo Root Directory: " + tajoRootPath);
 
+    this.defaultFS = FileSystemUtil.getFileSystem(tajoRootPath, systemConf, true);
     // Check and Create Tajo root dir
-    this.defaultFS = tajoRootPath.getFileSystem(systemConf);
     systemConf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, defaultFS.getUri().toString());
     LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
     if (!defaultFS.exists(tajoRootPath)) {
       defaultFS.mkdirs(tajoRootPath, new FsPermission(TAJO_ROOT_DIR_PERMISSION));
       LOG.info("Tajo Root Directory '" + tajoRootPath + "' is created.");
     }
-
     // Check and Create system and system resource dir
     Path systemPath = TajoConf.getSystemDir(systemConf);
     if (!defaultFS.exists(systemPath)) {

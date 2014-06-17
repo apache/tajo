@@ -268,6 +268,9 @@ public class TajoConnection implements Connection {
     } catch (IOException e) {
       LOG.error("JDBC connection is not valid.");
       return false;
+    } catch(Exception e) {
+      LOG.error("General error while accessing tajomaster");
+      return false;
     }
   }
 

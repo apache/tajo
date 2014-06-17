@@ -46,6 +46,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 
@@ -219,7 +220,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           totalSize = Long.parseLong(properties.getProperty("totalSize"));
         } else {
           try {
-            FileSystem fs = path.getFileSystem(conf);
+            FileSystem fs = FileSystemUtil.getFileSystem(path, conf);
             if (fs.exists(path)) {
               totalSize = fs.getContentSummary(path).getLength();
             }
@@ -438,7 +439,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         table.setTableType(TableType.EXTERNAL_TABLE.name());
         table.putToParameters("EXTERNAL", "TRUE");
 
-        FileSystem fs = tableDesc.getPath().getFileSystem(conf);
+        FileSystem fs = FileSystemUtil.getFileSystem(tableDesc.getPath(), conf);
         if (fs.isFile(tableDesc.getPath())) {
           LOG.warn("A table path is a file, but HCatalog does not allow a file path.");
           sd.setLocation(tableDesc.getPath().getParent().toString());

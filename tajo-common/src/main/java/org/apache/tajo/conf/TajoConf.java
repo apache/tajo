@@ -304,6 +304,15 @@ public class TajoConf extends Configuration {
     HIVE_QUERY_MODE("tajo.hive.query.mode", false),
 
     //////////////////////////////////
+    // HDFS Authentication Configuration
+    //////////////////////////////////
+    HADOOP_SECURTY_AUTH_TYPE("tajo.hadoop.security.authentication", "simple"),
+    HADOOP_DFS_NAMENODE_KERBEROS_PRINCIPAL("tajo.dfs.namenode.kerberos.principal", "null"),
+    HADOOP_DFS_NAMENODE_KERBEROS_KEYTAB_LOC("tajo.dfs.namenode.keytab.file", "null"),
+    HADOOP_DFS_DELEGATION_TOKEN("tajo.dfs.delegation.token","null"),
+
+
+    //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),

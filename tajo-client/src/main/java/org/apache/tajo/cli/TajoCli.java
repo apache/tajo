@@ -195,6 +195,10 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
+    String dfsTokenString = client.getHDFSDelegationToken();
+    System.err.println("HDFS Delegation token " + dfsTokenString);
+    conf.setVar(ConfVars.HADOOP_DFS_DELEGATION_TOKEN, dfsTokenString);
+
     context = new TajoCliContext();
     context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();

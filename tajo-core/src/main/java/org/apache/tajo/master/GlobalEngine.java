@@ -306,7 +306,7 @@ public class GlobalEngine extends AbstractService {
     String nodeUniqName = insertNode.getTableName() == null ? insertNode.getPath().getName() : insertNode.getTableName();
     String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
-    FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
+    FileSystem fs = FileSystemUtil.getFileSystem(TajoConf.getWarehouseDir(context.getConf()), context.getConf());
     Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), fs, queryId.toString());
 
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
@@ -565,7 +565,7 @@ public class GlobalEngine extends AbstractService {
               databaseName, simpleTableName);
           Path newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
               databaseName, alterTable.getNewTableName());
-          FileSystem fs = oldPath.getFileSystem(context.getConf());
+          FileSystem fs = FileSystemUtil.getFileSystem(oldPath , context.getConf());
 
           if (!fs.exists(oldPath)) {
             throw new IOException("No such a table directory: " + oldPath);
@@ -710,7 +710,7 @@ public class GlobalEngine extends AbstractService {
       }
     }
 
-    FileSystem fs = path.getFileSystem(context.getConf());
+    FileSystem fs = FileSystemUtil.getFileSystem(path, context.getConf());
 
     if (isExternal) {
       if(!fs.exists(path)) {
@@ -772,7 +772,7 @@ public class GlobalEngine extends AbstractService {
     if (catalog.createDatabase(databaseName, tablespaceName)) {
       String normalized = databaseName;
       Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
-      FileSystem fs = databaseDir.getFileSystem(context.getConf());
+      FileSystem fs = FileSystemUtil.getFileSystem(databaseDir, context.getConf());
       fs.mkdirs(databaseDir);
     }
 
@@ -836,7 +836,7 @@ public class GlobalEngine extends AbstractService {
 
     if (purge) {
       try {
-        FileSystem fs = path.getFileSystem(context.getConf());
+        FileSystem fs = FileSystemUtil.getFileSystem(path, context.getConf());
         fs.delete(path, true);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());

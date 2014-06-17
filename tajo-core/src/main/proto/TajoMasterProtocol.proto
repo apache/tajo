@@ -151,4 +151,5 @@ service TajoMasterProtocolService {
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
   rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
   rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
+  rpc getHDFSDelegationToken(NullProto) returns (StringProto);
 }

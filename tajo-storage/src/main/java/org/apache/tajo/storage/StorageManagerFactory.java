@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.v2.StorageManagerV2;
 
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class StorageManagerFactory {
   public static synchronized SeekableScanner getSeekableScanner(
       TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
 
-    FileSystem fs = path.getFileSystem(conf);
+    FileSystem fs = FileSystemUtil.getFileSystem(path, conf);
     FileStatus status = fs.getFileStatus(path);
     FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
 

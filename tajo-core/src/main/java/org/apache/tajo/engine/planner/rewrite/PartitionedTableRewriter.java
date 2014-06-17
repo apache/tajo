@@ -35,6 +35,7 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -133,7 +134,7 @@ public class PartitionedTableRewriter implements RewriteRule {
   private Path [] findFilteredPaths(Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
       throws IOException {
 
-    FileSystem fs = tablePath.getFileSystem(systemConf);
+    FileSystem fs = FileSystemUtil.getFileSystem(tablePath, systemConf);
 
     PathFilter [] filters;
     if (conjunctiveForms == null) {
@@ -327,7 +328,7 @@ public class PartitionedTableRewriter implements RewriteRule {
   private void updateTableStat(PartitionedTableScanNode scanNode) throws PlanningException {
     if (scanNode.getInputPaths().length > 0) {
       try {
-        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(systemConf);
+        FileSystem fs = FileSystemUtil.getFileSystem(scanNode.getInputPaths()[0], systemConf);
         long totalVolume = 0;
 
         for (Path input : scanNode.getInputPaths()) {

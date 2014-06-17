@@ -48,6 +48,7 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.FileSystemUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.TUtil;
 
@@ -305,11 +306,11 @@ public class Query implements EventHandler<QueryEvent> {
   public StateMachine<QueryState, QueryEventType, QueryEvent> getStateMachine() {
     return stateMachine;
   }
-  
+
   public void addSubQuery(SubQuery subquery) {
     subqueries.put(subquery.getId(), subquery);
   }
-  
+
   public QueryId getId() {
     return this.id;
   }
@@ -398,7 +399,7 @@ public class Query implements EventHandler<QueryEvent> {
       if (queryContext.hasOutputPath()) {
         finalOutputDir = queryContext.getOutputPath();
         try {
-          FileSystem fs = stagingResultDir.getFileSystem(query.systemConf);
+          FileSystem fs = FileSystemUtil.getFileSystem(stagingResultDir, query.systemConf);
 
           if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
 
@@ -585,7 +586,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public static long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(systemConf);
+    FileSystem fs = FileSystemUtil.getFileSystem(tablePath, systemConf);
     ContentSummary directorySummary = fs.getContentSummary(tablePath);
     return directorySummary.getLength();
   }
