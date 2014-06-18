@@ -135,13 +135,19 @@ message FunctionDescProto {
   optional string detail = 8;
 }
 
+message IndexKeyProto {
+  required string keyJson = 1;
+  optional bool ascending = 2 [default = true];
+  optional bool nullFirst = 3 [default = false];
+}
+
 message IndexDescProto {
   required string indexName = 1;
   required TableIdentifierProto tableIdentifier = 2;
   required IndexMethod method = 3;
-  optional bool isUnique = 4 [default = false];
-  optional bool isClustered = 5 [default = false];
-  repeated SortSpecProto keys = 6;
+  repeated IndexKeyProto keys = 4;
+  optional bool isUnique = 5 [default = false];
+  optional bool isClustered = 6 [default = false];
   optional string predicate = 7;
   // optional string path = 8;
 }

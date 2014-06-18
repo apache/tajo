@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.GsonObject;
 
 /**
@@ -145,5 +146,4 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	public String toJson() {
 		return CatalogGsonHelper.toJson(this, Column.class);
 	}
-
 }
