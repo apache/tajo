@@ -1600,7 +1600,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String databaseName = proto.getTableIdentifier().getDatabaseName();
     String tableName = proto.getTableIdentifier().getTableName();
-//    String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
 
     try {
       int databaseId = getDatabaseId(databaseName);
@@ -1608,11 +1607,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-          "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) VALUES (?,?,?,?,?,?,?,?,?)";
+          "METHOD, EXPR_NUM, EXPRS, ASC_ORDERS, NULL_ORDERS, IS_UNIQUE, IS_CLUSTERED, PRED) " +
+          "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
+
+      StringBuilder exprsBuilder = new StringBuilder();
+      StringBuilder ascOrdersBuilder = new StringBuilder();
+      StringBuilder nullOrdersBuilder = new StringBuilder();
+      for (IndexKeyProto eachKey : proto.getKeysList()) {
+        exprsBuilder.append(eachKey.getKeyJson()).append(",");
+        ascOrdersBuilder.append(eachKey.getAscending()).append(",");
+        nullOrdersBuilder.append(eachKey.getNullFirst()).append(",");
+      }
+      exprsBuilder.deleteCharAt(exprsBuilder.length()-1);
+      ascOrdersBuilder.deleteCharAt(ascOrdersBuilder.length()-1);
+      nullOrdersBuilder.deleteCharAt(nullOrdersBuilder.length()-1);
 
       conn = getConnection();
       conn.setAutoCommit(false);
@@ -1621,11 +1633,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, proto.getIndexName());
-//      pstmt.setString(4, columnName);
-//      pstmt.setString(5, proto.getColumn().getDataType().getType().name());
-//      pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setBoolean(7, proto.hasIsUnique() && proto.getIsUnique());
-      pstmt.setBoolean(8, proto.hasIsClustered() && proto.getIsClustered());
+      pstmt.setString(4, proto.getMethod().name());
+      pstmt.setInt(5, proto.getKeysCount());
+      pstmt.setString(6, exprsBuilder.toString());
+      pstmt.setString(7, ascOrdersBuilder.toString());
+      pstmt.setString(8, nullOrdersBuilder.toString());
+      pstmt.setBoolean(9, proto.hasIsUnique() && proto.getIsUnique());
+      pstmt.setBoolean(10, proto.hasIsClustered() && proto.getIsClustered());
+      pstmt.setString(11, proto.getPredicate());
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
