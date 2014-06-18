@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.catalog.store.MySQLStore;
+import org.apache.tajo.catalog.store.MariaDBStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -85,8 +86,8 @@ public class TestCatalog {
     conf.set(CATALOG_URI, catalogURI);
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
-    // MySQLStore requires password
-    if (driverClass.equals(MySQLStore.class.getCanonicalName())) {
+    // MySQLStore/MariaDB requires password
+    if (driverClass.equals(MySQLStore.class.getCanonicalName()) || driverClass.equals(MariaDBStore.class.getCanonicalName())) {
       if (connectionId == null) {
         throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
