@@ -78,9 +78,9 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          FileFragment fileFragement = (FileFragment) FragmentConvertor.convert(
+          FileFragment fileFragement = FragmentConvertor.convert(
               context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-          pathNameKey += fileFragement.getPath().getParent().getName();
+          pathNameKey += fileFragement.getPath();
         }
       }
 
