@@ -20,6 +20,8 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
@@ -32,10 +34,7 @@ import org.apache.tajo.engine.planner.logical.join.FoundJoinOrder;
 import org.apache.tajo.engine.planner.logical.join.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.engine.planner.logical.join.JoinGraph;
 import org.apache.tajo.engine.planner.logical.join.JoinOrderAlgorithm;
-import org.apache.tajo.engine.planner.rewrite.BasicQueryRewriteEngine;
-import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule;
-import org.apache.tajo.engine.planner.rewrite.PartitionedTableRewriter;
-import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
+import org.apache.tajo.engine.planner.rewrite.*;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -49,6 +48,8 @@ import static org.apache.tajo.engine.planner.logical.join.GreedyHeuristicJoinOrd
  */
 @InterfaceStability.Evolving
 public class LogicalOptimizer {
+  private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
+
   private BasicQueryRewriteEngine rulesBeforeJoinOpt;
   private BasicQueryRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
@@ -62,6 +63,20 @@ public class LogicalOptimizer {
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
     rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
+
+    // Currently only use for injecting exception to the testcase.
+    String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
+    if (userDefinedRewriterClass != null && !userDefinedRewriterClass.isEmpty()) {
+      for (String eachRewriterClass : userDefinedRewriterClass.split(",")) {
+        try {
+          RewriteRule rule = (RewriteRule) Class.forName(eachRewriterClass).newInstance();
+          rulesAfterToJoinOpt.addRewriteRule(rule);
+        } catch (Exception e) {
+          LOG.error("Can't initiate a Rewriter object: " + eachRewriterClass, e);
+          continue;
+        }
+      }
+    }
   }
 
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {

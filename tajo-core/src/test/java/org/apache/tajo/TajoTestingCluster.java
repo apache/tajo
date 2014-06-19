@@ -617,6 +617,10 @@ public class TajoTestingCluster {
 
   public void setAllTajoDaemonConfValue(String key, String value) {
     tajoMaster.getContext().getConf().set(key, value);
+    setAllWorkersConfValue(key, value);
+  }
+
+  public void setAllWorkersConfValue(String key, String value) {
     for (TajoWorker eachWorker: tajoWorkers) {
       eachWorker.getConfig().set(key, value);
     }
