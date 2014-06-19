@@ -40,10 +40,7 @@ import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
@@ -1651,7 +1648,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(8, nullOrdersBuilder.toString());
       pstmt.setBoolean(9, proto.hasIsUnique() && proto.getIsUnique());
       pstmt.setBoolean(10, proto.hasIsClustered() && proto.getIsClustered());
-      pstmt.setString(11, proto.getPredicate());
+      if (proto.hasPredicate()) {
+        pstmt.setString(11, proto.getPredicate());
+      } else {
+        pstmt.setNull(11, Types.VARCHAR, "PRED");
+      }
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
@@ -1663,12 +1664,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public void dropIndex(String databaseName, final String indexName) throws CatalogException {
-    Connection conn = null;
+    Connection conn;
     PreparedStatement pstmt = null;
 
     try {
       int databaseId = getDatabaseId(databaseName);
-      String sql = "DELETE FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
+      String sql = "DELETE FROM " + TB_INDEXES +
+          " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);

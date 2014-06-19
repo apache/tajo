@@ -35,6 +35,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.IndexDesc.IndexKey;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -460,6 +461,11 @@ public class GlobalEngine extends AbstractService {
         TruncateTableNode truncateTable = (TruncateTableNode) root;
         truncateTable(session, truncateTable);
         return true;
+      case CREATE_INDEX:
+        CreateIndexNode createIndexNode = (CreateIndexNode) root;
+        createIndex(session, createIndexNode);
+        return true;
+
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -647,6 +653,58 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
+  /**
+   * Create an index for a given table.
+   * @param session user session
+   * @param createIndexNode the root of logical plan
+   */
+  private void createIndex(final Session session, final CreateIndexNode createIndexNode) {
+    final CatalogService catalog = context.getCatalog();
+    final String dbName = session.getCurrentDatabase();
+
+    boolean exists = catalog.existIndexByName(dbName, createIndexNode.getIndexName());
+    if (exists) {
+      if (createIndexNode.isIfNotExists()) {
+        LOG.info("index \"" + createIndexNode.getIndexName() + "\" already exists." );
+      } else {
+        throw new AlreadyExistsIndexException(createIndexNode.getIndexName());
+      }
+    } else {
+      // get the table name and predicate from scan
+      ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+      String tableName = scanNode.getTableName();
+      String predicate = scanNode.hasQual() ? scanNode.getQual().toJson() : null;
+      // extract index keys
+      List<IndexKey> indexKeys;
+
+
+      IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), dbName, tableName, createIndexNode.getIndexType(),
+          indexKeys, createIndexNode.isUnique(), createIndexNode.isClustered(), predicate);
+      catalog.createIndex(indexDesc);
+    }
+  }
+
+  /**
+   * Drop the specified index.
+   * @param session user session
+   * @param dropIndexNode the root of logical plan
+   */
+  private void dropIndex(final Session session, final DropIndexNode dropIndexNode) {
+    final CatalogService catalog = context.getCatalog();
+    final String dbName = session.getCurrentDatabase();
+
+    boolean exists = catalog.existIndexByName(dbName, dropIndexNode.getIndexName());
+    if (!exists) {
+      if (dropIndexNode.isIfExists()) {
+        LOG.info("index \"" + dropIndexNode.getIndexName() + "\" does not exist." );
+      } else {
+        throw new NoSuchIndexException(dropIndexNode.getIndexName());
+      }
+    } else {
+      catalog.dropIndex(dbName, dropIndexNode.getIndexName());
+    }
+  }
+
   private boolean existColumnName(String tableName, String columnName) {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     return tableDesc.getSchema().containsByName(columnName) ? true : false;
@@ -703,7 +761,7 @@ public class GlobalEngine extends AbstractService {
 
     if (exists) {
       if (ifNotExists) {
-        LOG.info("relation \"" + qualifiedName + "\" is already exists." );
+        LOG.info("relation \"" + qualifiedName + "\" already exists." );
         return catalog.getTableDesc(databaseName, simpleTableName);
       } else {
         throw new AlreadyExistsTableException(CatalogUtil.buildFQName(databaseName, tableName));

@@ -29,10 +29,12 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
 public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Expose private boolean isUnique;
+  @Expose private boolean isClustered;
   @Expose private String indexName;
   @Expose private SortSpec[] sortSpecs;
   @Expose private IndexMethod indexType = IndexMethod.TWO_LEVEL_BIN_TREE;
   @Expose private KeyValueSet options;
+  @Expose private boolean ifNotExists;
 
   public CreateIndexNode(int pid) {
     super(pid, NodeType.CREATE_INDEX);
@@ -76,6 +78,14 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   public KeyValueSet getOptions() {
     return this.options;
+  }
+
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
+  public void setIfNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
   }
 
   @Override
@@ -129,5 +139,13 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
+  }
+
+  public boolean isClustered() {
+    return isClustered;
+  }
+
+  public void setClustered(boolean isClustered) {
+    this.isClustered = isClustered;
   }
 }

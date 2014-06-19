@@ -44,8 +44,7 @@ public class TestIndexDesc {
   static {
     keys1 = TUtil.newList();
     keys1.add(new IndexKey("{\"name\":\"id\",\"dataType\":{\"type\":\"INT4\"}}", true, true));
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed",
+    desc1 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed",
         IndexMethod.TWO_LEVEL_BIN_TREE, keys1, true, true, null);
 
     keys2 = TUtil.newList();
@@ -62,14 +61,12 @@ public class TestIndexDesc {
         "  },\n" +
         "  \"OpType\": \"Equals\"\n" +
         "}";
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed",
+    desc2 = new IndexDesc("idx_test2", DEFAULT_DATABASE_NAME, "indexed",
         IndexMethod.TWO_LEVEL_BIN_TREE, keys2, false, false, pred2);
 
     keys3 = TUtil.newList();
     keys3.add(new IndexKey("{\"name\":\"id\",\"dataType\":{\"type\":\"INT4\"}}", true, true));
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed",
+    desc3 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed",
         IndexMethod.TWO_LEVEL_BIN_TREE, keys3, true, true, null);
   }
 

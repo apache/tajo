@@ -103,6 +103,10 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return predicate;
   }
 
+  public boolean hasPredicate() {
+    return predicate != null;
+  }
+
   @Override
   public IndexDescProto getProto() {
     if (builder == null) {
