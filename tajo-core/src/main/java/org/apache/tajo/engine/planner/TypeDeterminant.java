@@ -33,6 +33,7 @@ import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
+import static org.apache.tajo.common.TajoDataTypes.Type.NULL_TYPE;
 import static org.apache.tajo.engine.planner.LogicalPlanPreprocessor.PreprocessContext;
 
 public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, DataType> {
@@ -284,7 +285,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
   @Override
   public DataType visitNullLiteral(PreprocessContext ctx, Stack<Expr> stack, NullLiteral expr)
       throws PlanningException {
-    return CatalogUtil.newSimpleDataType(BOOLEAN);
+    return CatalogUtil.newSimpleDataType(NULL_TYPE);
   }
 
   @Override
