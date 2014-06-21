@@ -44,6 +44,7 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
@@ -154,7 +155,7 @@ public class TpchQ1 {
 
     Path workDir = CommonTestingUtil.getTestDir("file:///home/hyunsik/experiment/test-data");
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(), LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/data/lineitem.parquet"));
     ctx.setEnforcer(new Enforcer());
@@ -205,7 +206,7 @@ public class TpchQ1 {
     }
     enforcer.enforceHashAggregation(groupbyNode.getPID());
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(), LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
     ctx.setEnforcer(enforcer);
@@ -252,7 +253,7 @@ public class TpchQ1 {
 
     Enforcer enforcer = new Enforcer();
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(), LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
     ctx.setEnforcer(enforcer);
@@ -298,7 +299,7 @@ public class TpchQ1 {
 
     Enforcer enforcer = new Enforcer();
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(), LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setOutputPath(new Path("file:///home/hyunsik/experiment/test-data"));
     ctx.setEnforcer(enforcer);
