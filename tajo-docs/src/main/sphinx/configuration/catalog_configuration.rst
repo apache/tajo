@@ -13,6 +13,8 @@ If you want to customize the catalog service, copy ``$TAJO_HOME/conf/catalog-sit
 | tajo.catalog.store.DerbyStore     | this storage class uses Apache Derby.          |
 +-----------------------------------+------------------------------------------------+
 | tajo.catalog.store.MySQLStore     | this storage class uses MySQL.                 |
+++-----------------------------------+------------------------------------------------+
+| tajo.catalog.store.MariaDBStore   | this storage class uses MariaDB.               |
 +-----------------------------------+------------------------------------------------+
 | tajo.catalog.store.MemStore       | this is the in-memory storage. It is only used |
 |                                   | in unit tests to shorten the duration of unit  |
@@ -63,9 +65,31 @@ Finally, you should add the following config to `conf/catalog-site.xml` :
     <name>tajo.catalog.jdbc.connection.password</name>
     <value><mysql user password></value>
   </property>
-    <property>
+  <property>
     <name>tajo.catalog.jdbc.uri</name>
     <value>jdbc:mysql://<mysql host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  </property>
+
+
+===========================
+MariaDBStore Configuration
+===========================
+
+All configurations for using MariaDBStore is compatible with MySQLStore except following:
+
+.. code-block:: sh
+
+  export TAJO_CLASSPATH=/usr/local/mariadb/lib/mariadb-java-client-x.x.x.jar
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.MariaDBStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
 
