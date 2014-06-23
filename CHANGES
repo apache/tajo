@@ -71,6 +71,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-879: Some data is missing in the case of BROADCAST JOIN and multi-column partition.
+    (Hyoungjun Kim via jaehwa)
+
     TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller expressions than target
     columns for a partitioned table. (jaehwa)
 

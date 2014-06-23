@@ -21,13 +21,8 @@ package org.apache.tajo.engine.query;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.*;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
@@ -50,6 +45,7 @@ import java.io.File;
 import java.sql.ResultSet;
 
 import static junit.framework.TestCase.*;
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotNull;
 
 @Category(IntegrationTest.class)
@@ -391,7 +387,6 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testBroadcastPartitionTable() throws Exception {
-    // https://issues.apache.org/jira/browse/TAJO-839
     // If all tables participate in the BROADCAST JOIN, there is some missing data.
     executeDDL("customer_partition_ddl.sql", null);
     ResultSet res = executeFile("insert_into_customer_partition.sql");
@@ -426,6 +421,31 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     executeString("DROP TABLE nation_multifile PURGE");
     executeString("DROP TABLE orders_multifile PURGE");
   }
+
+  @Test
+  public final void testBroadcastMultiColumnPartitionTable() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (col1 int4, col2 float4) partition by column(col3 text, col4 text) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select o_orderkey, o_totalprice, substr(o_orderdate, 6, 2), substr(o_orderdate, 1, 4) from orders");
+    res.close();
+
+    res = executeString(
+        "select distinct a.col3 from " + tableName + " as a " +
+            "left outer join lineitem_large b " +
+            "on a.col1 = b.l_orderkey"
+    );
+
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
 
   static interface TupleCreator {
     public Tuple createTuple(String[] columnDatas);
