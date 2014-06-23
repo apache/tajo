@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collections;
@@ -33,6 +32,7 @@ public class JoinEdge {
   private final LogicalNode leftRelation;
   private final LogicalNode rightRelation;
   private final Set<EvalNode> joinQual = Sets.newHashSet();
+//  private final Set<EvalNode> filterPredicates = Sets.newHashSet();
 
   public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation) {
     this.joinType = joinType;

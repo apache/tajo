@@ -1,0 +1,4 @@
+c_custkey,o_orderkey,?coalesce,o_orderdate
+-------------------------------
+4,null,N/A,null
+5,null,N/A,null
