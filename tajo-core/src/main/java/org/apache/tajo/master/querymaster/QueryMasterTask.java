@@ -457,12 +457,6 @@ public class QueryMasterTask extends CompositeService {
     return query;
   }
 
-  public void expiredSessionTimeout() {
-    //stop();
-    QueryMasterQueryCompletedEvent event = new QueryMasterQueryCompletedEvent(queryId);
-    getEventHandler().handle(event);
-  }
-
   public QueryMasterTaskContext getQueryTaskContext() {
     return queryTaskContext;
   }

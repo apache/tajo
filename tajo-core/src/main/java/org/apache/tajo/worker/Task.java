@@ -691,7 +691,9 @@ public class Task {
         @Override
         public void run() {
           RpcErrorController errorControllers[] = new RpcErrorController[2];
+          // for updating status
           errorControllers[0] = new RpcErrorController();
+          // for ping
           errorControllers[1] = new RpcErrorController();
 
           while (!stop.get() && !stopped) {
