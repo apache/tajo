@@ -31,6 +31,7 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
 import org.apache.tajo.engine.planner.logical.JoinNode;
+import org.apache.tajo.engine.planner.logical.RelationNode;
 
 import java.util.Collection;
 import java.util.Set;
@@ -58,7 +59,17 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
         String qualifier = CatalogUtil.extractQualifier(columnName);
         relationNames[0] = qualifier;
       } else {
-        throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        // search for a relation which evaluates a right term included in a join condition
+        for (RelationNode rel : block.getRelations()) {
+          if (rel.getOutSchema().contains(leftExpr)) {
+            String qualifier = rel.getCanonicalName();
+            relationNames[0] = qualifier;
+          }
+        }
+
+        if (relationNames[0] == null) { // if not found
+          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        }
       }
     }
 
@@ -70,7 +81,17 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
         String qualifier = CatalogUtil.extractQualifier(columnName);
         relationNames[1] = qualifier;
       } else {
-        throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
+        // search for a relation which evaluates a right term included in a join condition
+        for (RelationNode rel : block.getRelations()) {
+          if (rel.getOutSchema().contains(rightExpr)) {
+            String qualifier = rel.getCanonicalName();
+            relationNames[1] = qualifier;
+          }
+        }
+
+        if (relationNames[1] == null) { // if not found
+          throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
+        }
       }
     }
 

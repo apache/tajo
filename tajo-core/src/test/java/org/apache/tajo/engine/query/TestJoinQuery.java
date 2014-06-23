@@ -376,4 +376,47 @@ public class TestJoinQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public void testDifferentTypesJoinCondition() throws Exception {
+    // select * from table3 t3 join table4 t4 on t3.id = t4.id;
+    executeDDL("table1_int8_ddl.sql", "table1", "table3");
+    executeDDL("table1_int4_ddl.sql", "table1", "table4");
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition1() throws Exception {
+    // select n1.n_nationkey, n1.n_name, n2.n_name  from nation n1 join nation n2 on n1.n_name = upper(n2.n_name);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition2() throws Exception {
+    // select n1.n_nationkey, n1.n_name, upper(n2.n_name) name from nation n1 join nation n2
+    // on n1.n_name = upper(n2.n_name);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition3() throws Exception {
+    // select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 on lower(n1.n_name) = lower(n2.n_name);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
