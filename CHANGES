@@ -71,6 +71,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller expressions than target
+    columns for a partitioned table. (jaehwa)
+
     TAJO-880: NULL in CASE clause occurs Exception. (Hyoungjun Kim via hyunsik)
 
     TAJO-862: Restore failure of dumped relations. (jihoon)
