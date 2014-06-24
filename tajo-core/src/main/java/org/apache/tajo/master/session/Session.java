@@ -85,6 +85,16 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
     }
   }
 
+  public String getVariable(String name, String defaultValue) {
+    synchronized (sessionVariables) {
+      if (sessionVariables.containsKey(name)) {
+        return sessionVariables.get(name);
+      } else {
+        return defaultValue;
+      }
+    }
+  }
+
   public void removeVariable(String name) {
     synchronized (sessionVariables) {
       sessionVariables.remove(name);

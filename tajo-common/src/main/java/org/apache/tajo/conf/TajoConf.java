@@ -337,6 +337,9 @@ public class TajoConf extends Configuration {
     // FILE FORMAT
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
+    //OPTIMIZER
+    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
+
     // DEBUG OPTION
     TAJO_DEBUG("tajo.debug", false)
     ;
