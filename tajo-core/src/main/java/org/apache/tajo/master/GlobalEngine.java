@@ -45,7 +45,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.VerifyException;
-import org.apache.tajo.engine.parser.HiveQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
@@ -80,7 +79,6 @@ public class GlobalEngine extends AbstractService {
   private final AbstractStorageManager sm;
 
   private SQLAnalyzer analyzer;
-  private HiveQLAnalyzer converter;
   private CatalogService catalog;
   private PreLogicalPlanVerifier preVerifier;
   private LogicalPlanner planner;
@@ -98,7 +96,6 @@ public class GlobalEngine extends AbstractService {
   public void start() {
     try  {
       analyzer = new SQLAnalyzer();
-      converter = new HiveQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer(context.getConf());
@@ -182,7 +179,7 @@ public class GlobalEngine extends AbstractService {
 
     context.getSystemMetrics().counter("Query", "totalQuery").inc();
 
-    return hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+    return analyzer.parse(sql);
   }
 
   private SubmitQueryResponse executeQueryInternal(QueryContext queryContext,
