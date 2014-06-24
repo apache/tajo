@@ -496,6 +496,10 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
+  public Throwable getInitError() {
+    return initError;
+  }
+
   public String getErrorMessage() {
     if (isInitError()) {
       return StringUtils.stringifyException(initError);
