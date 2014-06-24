@@ -855,9 +855,14 @@ public class TestJoinQuery extends QueryTestCaseBase {
     // select * from table3 t3 join table4 t4 on t3.id = t4.id;
     executeDDL("table1_int8_ddl.sql", "table1", "table3");
     executeDDL("table1_int4_ddl.sql", "table1", "table4");
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table3");
+      executeString("DROP TABLE table4");
+    }
   }
 
   @Test

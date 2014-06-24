@@ -478,11 +478,12 @@ public class GlobalEngine extends AbstractService {
     }
 
     LogicalPlan plan = planner.createPlan(session, expression);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("=============================================");
-      LOG.debug("Non Optimized Query: \n" + plan.toString());
-      LOG.debug("=============================================");
-    }
+//    if (LOG.isDebugEnabled()) {
+//      LOG.debug("=============================================");
+//      LOG.debug("Non Optimized Query: \n" + plan.toString());
+//      LOG.debug("=============================================");
+//    }
+    LOG.info("Non Optimized Query: \n" + plan.toString());
     optimizer.optimize(session, plan);
     LOG.info("=============================================");
     LOG.info("Optimized Query: \n" + plan.toString());
