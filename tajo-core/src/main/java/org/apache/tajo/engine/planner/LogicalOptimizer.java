@@ -20,6 +20,8 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
@@ -36,6 +38,7 @@ import org.apache.tajo.engine.planner.rewrite.BasicQueryRewriteEngine;
 import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule;
 import org.apache.tajo.engine.planner.rewrite.PartitionedTableRewriter;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
+import org.apache.tajo.master.session.Session;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -49,6 +52,8 @@ import static org.apache.tajo.engine.planner.logical.join.GreedyHeuristicJoinOrd
  */
 @InterfaceStability.Evolving
 public class LogicalOptimizer {
+  private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
+
   private BasicQueryRewriteEngine rulesBeforeJoinOpt;
   private BasicQueryRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
@@ -65,15 +70,23 @@ public class LogicalOptimizer {
   }
 
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
+    return optimize(null, plan);
+  }
+
+  public LogicalNode optimize(Session session, LogicalPlan plan) throws PlanningException {
     rulesBeforeJoinOpt.rewrite(plan);
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
         new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
 
-    while(blockCursor.hasNext()) {
-      optimizeJoinOrder(plan, blockCursor.nextBlock());
+    if (session == null || "true".equals(session.getVariable(ConfVars.OPTIMIZER_JOIN_ENABLE.varname, "true"))) {
+      // default is true
+      while (blockCursor.hasNext()) {
+        optimizeJoinOrder(plan, blockCursor.nextBlock());
+      }
+    } else {
+      LOG.info("Skip Join Optimized.");
     }
-
     rulesAfterToJoinOpt.rewrite(plan);
     return plan.getRootBlock().getRoot();
   }
@@ -91,6 +104,8 @@ public class LogicalOptimizer {
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
           joinGraphContext.joinGraph, joinGraphContext.relationsForProduct);
+
+      // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
@@ -103,8 +118,9 @@ public class LogicalOptimizer {
       } else {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
-
       PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+      // End of replacement logic
+
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");

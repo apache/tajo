@@ -233,8 +233,10 @@ public class SeqScanExec extends PhysicalExec {
       }
     }
 
-    scanner.close();
-    scanner = null;
+    if (scanner != null) {
+      scanner.close();
+      scanner = null;
+    }
 
     TupleCache.getInstance().addBroadcastCache(cacheKey, broadcastTupleCacheList);
   }

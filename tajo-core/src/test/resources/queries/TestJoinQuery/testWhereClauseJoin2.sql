@@ -5,4 +5,5 @@ from
   nation,
   region
 where
-  n_regionkey = r_regionkey;
+  n_regionkey = r_regionkey
+order by n_name
