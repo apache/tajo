@@ -71,11 +71,14 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
-    TAJO-879: Some data is missing in the case of BROADCAST JOIN and multi-column partition.
-    (Hyoungjun Kim via jaehwa)
+    TAJO-850: OUTER JOIN does not properly handle a NULL.
+    (Hyoungjun Kim via hyunsik)
 
-    TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller expressions than target
-    columns for a partitioned table. (jaehwa)
+    TAJO-879: Some data is missing in the case of BROADCAST JOIN and
+    multi-column partition. (Hyoungjun Kim via jaehwa)
+
+    TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller
+    expressions than target columns for a partitioned table. (jaehwa)
 
     TAJO-880: NULL in CASE clause occurs Exception. (Hyoungjun Kim via hyunsik)
 
@@ -125,7 +128,8 @@ Release 0.9.0 - unreleased
     TAJO-800: CLI's meta command should be aware "TABLE_NAME" style. 
     (Hyoungjun Kim via hyunsik)
 
-    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
+    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join.
+    (jaehwa)
 
     TAJO-792: Insert table error with database name. 
     (Hyoungjun Kim via hyunsik)
