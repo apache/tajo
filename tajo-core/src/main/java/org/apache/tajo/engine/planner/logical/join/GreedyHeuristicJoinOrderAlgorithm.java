@@ -26,9 +26,9 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.util.TUtil;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This is a greedy heuristic algorithm to fin
@@ -166,6 +166,45 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   private static JoinEdge findJoin(LogicalPlan plan, JoinGraph graph, LogicalNode outer, LogicalNode inner)
       throws PlanningException {
     JoinEdge foundJoinEdge = null;
+
+    // If outer is outer join, make edge key using all relation names in outer.
+    SortedSet<String> relationNames =
+        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
+    String outerEdgeKey = TUtil.collectionToString(relationNames);
+    for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
+      if (graph.hasEdge(outerEdgeKey, innerName)) {
+        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
+        if (foundJoinEdge == null) {
+          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
+              existJoinEdge.getJoinQual());
+        } else {
+          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+              existJoinEdge.getJoinQual()));
+        }
+      }
+    }
+    if (foundJoinEdge != null) {
+      return foundJoinEdge;
+    }
+
+    relationNames =
+        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner));
+    outerEdgeKey = TUtil.collectionToString(relationNames);
+    for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
+      if (graph.hasEdge(outerEdgeKey, outerName)) {
+        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);
+        if (foundJoinEdge == null) {
+          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), inner, outer,
+              existJoinEdge.getJoinQual());
+        } else {
+          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
+              existJoinEdge.getJoinQual()));
+        }
+      }
+    }
+    if (foundJoinEdge != null) {
+      return foundJoinEdge;
+    }
 
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {

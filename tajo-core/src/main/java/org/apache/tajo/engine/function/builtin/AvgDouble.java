@@ -24,6 +24,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
@@ -64,7 +65,11 @@ public class AvgDouble extends AggFunction {
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
-    ProtobufDatum datum = (ProtobufDatum) part.get(0);
+    Datum d = part.get(0);
+    if (d instanceof NullDatum) {
+      return;
+    }
+    ProtobufDatum datum = (ProtobufDatum) d;
     AvgDoubleProto proto = (AvgDoubleProto) datum.get();
     avgCtx.sum += proto.getSum();
     avgCtx.count += proto.getCount();

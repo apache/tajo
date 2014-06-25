@@ -141,7 +141,7 @@ public class CharDatum extends Datum {
         return datum;
 
       default:
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(datum.type());
     }
   }
   
@@ -157,7 +157,7 @@ public class CharDatum extends Datum {
         return -1;
 
       default:
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(datum.type());
     }
   }
 }
