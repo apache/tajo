@@ -21,17 +21,20 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.engine.utils.test.ErrorInjectionRewriter;
+import org.apache.tajo.jdbc.TajoResultSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestSelectQuery extends QueryTestCaseBase {
@@ -303,6 +306,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  @Test
   public final void testDatabaseRef() throws Exception {
     if (!testingCluster.isHCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();
@@ -344,5 +348,43 @@ public class TestSelectQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testQueryMasterTaskInitError() throws Exception {
+    // In this testcase we can check that a TajoClient receives QueryMasterTask's init error message.
+    testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes",
+        ErrorInjectionRewriter.class.getCanonicalName());
+
+    try {
+      // If client can't receive error status, thread runs forever.
+      Thread t = new Thread() {
+        public void run() {
+          try {
+            TajoResultSet res = (TajoResultSet) client.executeQueryAndGetResult("select l_orderkey from lineitem");
+            QueryStatus status = client.getQueryStatus(res.getQueryId());
+            assertEquals(QueryState.QUERY_ERROR, status.getState());
+            assertEquals(NullPointerException.class.getName(), status.getErrorMessage());
+            cleanupQuery(res);
+          } catch (Exception e) {
+            fail(e.getMessage());
+          }
+        }
+      };
+
+      t.start();
+
+      for (int i = 0; i < 10; i++) {
+        Thread.sleep(1 * 1000);
+        if (!t.isAlive()) {
+          break;
+        }
+      }
+
+      // If query runs more than 10 secs, test is fail.
+      assertFalse(t.isAlive());
+    } finally {
+      testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes", "");
+    }
   }
 }

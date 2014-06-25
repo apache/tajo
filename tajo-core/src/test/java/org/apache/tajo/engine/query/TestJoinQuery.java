@@ -21,16 +21,68 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.Collection;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 public class TestJoinQuery extends QueryTestCaseBase {
 
-  public TestJoinQuery() {
+  public TestJoinQuery(String joinOption) {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+
+    if ("Hash".equals(joinOption)) {
+      testingCluster.setAllTajoDaemonConfValue(
+          ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.defaultLongVal));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.defaultLongVal));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultLongVal));
+    } else {
+      testingCluster.setAllTajoDaemonConfValue(
+          ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname, String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(1));
+    }
+  }
+
+  @Parameters
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+        {"Hash"},
+        {"Sort"}
+    });
+  }
+
+  @AfterClass
+  public static void tearDown() {
+    // recover the default configuration.
+    testingCluster.setAllTajoDaemonConfValue(
+        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+        String.valueOf(ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.defaultLongVal));
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+        String.valueOf(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.defaultLongVal));
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        String.valueOf(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultLongVal));
   }
 
   @Test
@@ -205,9 +257,14 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public void testOuterJoinAndCaseWhen1() throws Exception {
     executeDDL("oj_table1_ddl.sql", "table1");
     executeDDL("oj_table2_ddl.sql", "table2");
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+    }
   }
 
   @Test
@@ -284,6 +341,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLeftOuterJoinWithEmptyTable4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithEmptyTable5() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -375,5 +439,421 @@ public class TestJoinQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithNull1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithNull2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithNull3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id and t2.id = t3.id");
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,1,null\n" +
+              "2,table11-2,null,null\n" +
+              "3,table11-3,null,null\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
+    // outer -> outer -> inner
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t2.id = t3.id\n" +
+              "inner join table14 t4\n" +
+              "on t2.id = t4.id"
+      );
+
+      String expected =
+          "id,name,id,id,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,1,null,1\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase2_1() throws Exception {
+    // inner(on predication) -> outer(on predication) -> outer -> where
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
+              "from table11 t1\n" +
+              "inner join table14 t4\n" +
+              "on t1.id = t4.id and t4.id > 1\n" +
+              "left outer join table13 t3\n" +
+              "on t4.id = t3.id and t3.id = 2\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id \n" +
+              "where t1.id > 1"
+      );
+
+      String expected =
+          "id,name,id,id,id\n" +
+              "-------------------------------\n" +
+              "2,table11-2,null,2,2\n" +
+              "3,table11-3,null,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase3() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case J1: Join Predicate on Preserved Row Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2 \n" +
+              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id "
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,1,null\n" +
+              "2,table11-2,null,2\n" +
+              "3,table11-3,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase4() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case J2: Join Predicate on Null Supplying Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id and t2.id > 1 \n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,null,null\n" +
+              "2,table11-2,null,2\n" +
+              "3,table11-3,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase5() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case W1: Where Predicate on Preserved Row Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id\n" +
+              "where t1.name > 'table11-1'"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "2,table11-2,null,2\n" +
+              "3,table11-3,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase6() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case W2: Where Predicate on Null Supplying Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id\n" +
+              "where t3.id > 2"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "3,table11-3,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterWithEmptyTable() throws Exception {
+    // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
+    // Case W2: Where Predicate on Null Supplying Table
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id\n" +
+              "from table11 t1\n" +
+              "left outer join table15 t2\n" +
+              "on t1.id = t2.id"
+      );
+
+      String expected =
+          "id,name,id\n" +
+              "-------------------------------\n" +
+              "1,table11-1,null\n" +
+              "2,table11-2,null\n" +
+              "3,table11-3,null\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoinPredicationCaseByCase1() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "right outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "right outer join table13 t3\n" +
+              "on t1.id = t3.id and t2.id = t3.id"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "null,null,null,2\n" +
+              "null,null,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoinPredicationCaseByCase2() throws Exception {
+    // inner -> right
+    // Notice: Join order should be preserved with origin order.
+    // JoinEdge: t1 -> t4, t3 -> t1,t4
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t3.id, t4.id\n" +
+              "from table11 t1\n" +
+              "inner join table14 t4\n" +
+              "on t1.id = t4.id and t4.id > 1\n" +
+              "right outer join table13 t3\n" +
+              "on t4.id = t3.id and t3.id = 2\n" +
+              "where t3.id > 1"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "2,table11-2,2,2\n" +
+              "null,null,3,null\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "right outer join table12 t2 \n" +
+              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
+              "right outer join table13 t3\n" +
+              "on t1.id = t3.id "
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "null,null,null,2\n" +
+              "null,null,null,3\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testFullOuterJoinPredicationCaseByCase1() throws Exception {
+    createOuterJoinTestTable();
+
+    try {
+      ResultSet res = executeString(
+          "select t1.id, t1.name, t3.id, t4.id\n" +
+              "from table11 t1\n" +
+              "full outer join table13 t3\n" +
+              "on t1.id = t3.id\n" +
+              "full outer join table14 t4\n" +
+              "on t3.id = t4.id \n" +
+              "order by t4.id"
+      );
+
+      String expected =
+          "id,name,id,id\n" +
+              "-------------------------------\n" +
+              "null,null,null,1\n" +
+              "2,table11-2,2,2\n" +
+              "3,table11-3,3,3\n" +
+              "null,null,null,4\n" +
+              "1,table11-1,null,null\n";
+
+      String result = resultSetToString(res);
+
+      assertEquals(expected, result);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  private void createOuterJoinTestTable() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    data = new String[]{ "1|table12-1" };
+    TajoTestingCluster.createTable("table12", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    data = new String[]{"2|table13-2", "3|table13-3" };
+    TajoTestingCluster.createTable("table13", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4" };
+    TajoTestingCluster.createTable("table14", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    data = new String[]{};
+    TajoTestingCluster.createTable("table15", schema, tableOptions, data);
+  }
+
+  private void dropOuterJoinTestTable() throws Exception {
+    executeString("DROP TABLE table11 PURGE;");
+    executeString("DROP TABLE table12 PURGE;");
+    executeString("DROP TABLE table13 PURGE;");
+    executeString("DROP TABLE table14 PURGE;");
+    executeString("DROP TABLE table15 PURGE;");
   }
 }
