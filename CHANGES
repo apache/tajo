@@ -74,6 +74,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-866: COUNT DISTINCT with other aggregation function throws
+    ClassCastException. (Hyoungjun Kim via hyunsik)
+
     TAJO-882: CLI hangs when a error occurs in the GlobalPlanner.
     (Hyoungjun Kim via hyunsik)
 
