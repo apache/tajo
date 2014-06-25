@@ -156,6 +156,9 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-890: Redirect stdout of maven test to /dev/null in Travis CI 
+    script. (hyunsik)
+
     TAJO-887: Eliminate HiveQL support feature. (hyunsik)
 
     TAJO-886: Add IRC page to community section in site. (hyunsik)
