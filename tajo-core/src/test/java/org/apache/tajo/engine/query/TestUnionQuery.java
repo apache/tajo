@@ -220,14 +220,6 @@ public class TestUnionQuery extends QueryTestCaseBase {
          "  ) a " +
          "  join customer b on a.id = b.c_custkey" +
         ") c order by id, code"
-
-//          "select a.code, a.id from (" +
-//            "select 'a' as code, l_partkey as id from lineitem " +
-//            "union all " +
-//            "select 'b' as code, o_orderkey as id from orders " +
-//            "union all " +
-//            "select 'c' as code, c_custkey as id from customer " +
-//           ") a order by a.code, a.id"
     );
 
     String expected =
