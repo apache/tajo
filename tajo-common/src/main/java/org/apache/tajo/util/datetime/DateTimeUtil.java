@@ -346,6 +346,10 @@ public class DateTimeUtil {
         DateTimeConstants.USECS_PER_SEC) + fsec;
   }
 
+  public static long toJavaTime(int hour, int min, int sec, int fsec) {
+    return toTime(hour, min, sec, fsec)/DateTimeConstants.MSECS_PER_SEC;
+  }
+
   /**
    * Calculate julian timestamp.
    * @param years

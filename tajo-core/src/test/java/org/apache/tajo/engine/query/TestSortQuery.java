@@ -120,6 +120,8 @@ public class TestSortQuery extends QueryTestCaseBase {
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
     TimeZone oldTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
+    TimeZone systemOldTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     try {
       if (!testingCluster.isHCatalogStoreRunning()) {
         // create external table table1 (col1 timestamp, col2 date, col3 time) ...
@@ -131,6 +133,7 @@ public class TestSortQuery extends QueryTestCaseBase {
       }
     } finally {
       TajoConf.setCurrentTimeZone(oldTimeZone);
+      TimeZone.setDefault(systemOldTimeZone);
     }
   }
 

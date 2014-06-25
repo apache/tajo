@@ -113,6 +113,11 @@ public class ExecutionBlock {
     enforcer.addBroadcast(tableName);
   }
 
+  public void removeBroadcastTable(String tableName) {
+    broadcasted.remove(tableName);
+    enforcer.removeBroadcast(tableName);
+  }
+
   public boolean isBroadcastTable(String tableName) {
     return broadcasted.contains(tableName);
   }

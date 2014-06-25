@@ -497,14 +497,20 @@ public class LogicalPlan {
     sb.append(queryBlockGraph.toStringGraph(getRootBlock().getName()));
     sb.append("-----------------------------\n");
     sb.append("Optimization Log:\n");
+    if (!planingHistory.isEmpty()) {
+      sb.append("[LogicalPlan]\n");
+      for (String eachHistory: planingHistory) {
+        sb.append("\t> ").append(eachHistory).append("\n");
+      }
+    }
     DirectedGraphCursor<String, BlockEdge> cursor =
         new DirectedGraphCursor<String, BlockEdge>(queryBlockGraph, getRootBlock().getName());
     while(cursor.hasNext()) {
       QueryBlock block = getBlock(cursor.nextBlock());
       if (block.getPlanHistory().size() > 0) {
-        sb.append("\n[").append(block.getName()).append("]\n");
+        sb.append("[").append(block.getName()).append("]\n");
         for (String log : block.getPlanHistory()) {
-          sb.append("> ").append(log).append("\n");
+          sb.append("\t> ").append(log).append("\n");
         }
       }
     }

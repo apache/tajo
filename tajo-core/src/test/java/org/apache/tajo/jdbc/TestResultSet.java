@@ -36,14 +36,16 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import static org.junit.Assert.*;
 
@@ -123,5 +125,91 @@ public class TestResultSet {
     }
     assertEquals(10000, i);
     assertTrue(rs.isAfterLast());
+  }
+
+  @Test
+  public void testDateTimeType() throws Exception {
+    TimeZone tajoCurrentTimeZone = TajoConf.getCurrentTimeZone();
+    TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
+
+    TimeZone systemCurrentTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
+    ResultSet res = null;
+    try {
+      String tableName = "datetimetable";
+      String query = "select col1, col2, col3 from " + tableName;
+
+      String [] table = new String[] {tableName};
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.DATE);
+      schema.addColumn("col2", Type.TIME);
+      schema.addColumn("col3", Type.TIMESTAMP);
+      Schema [] schemas = new Schema[] {schema};
+      String [] data = {
+          "2014-01-01|01:00:00|2014-01-01 01:00:00"
+      };
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+
+      res = TajoTestingCluster
+          .run(table, schemas, tableOptions, new String[][]{data}, query);
+
+      assertTrue(res.next());
+
+      Date date = res.getDate(1);
+      assertNotNull(date);
+      assertEquals(Date.valueOf("2014-01-01"), date);
+
+      date = res.getDate("col1");
+      assertNotNull(date);
+      assertEquals(Date.valueOf("2014-01-01"), date);
+
+      Time time = res.getTime(2);
+      assertNotNull(time);
+      assertEquals(Time.valueOf("01:00:00"), time);
+
+      time = res.getTime("col2");
+      assertNotNull(time);
+      assertEquals(Time.valueOf("01:00:00"), time);
+
+      Timestamp timestamp = res.getTimestamp(3);
+      assertNotNull(timestamp);
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
+
+      timestamp = res.getTimestamp("col3");
+      assertNotNull(timestamp);
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
+
+      // assert with timezone
+      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+9"));
+      date = res.getDate(1, cal);
+      assertNotNull(date);
+      assertEquals("2014-01-01", date.toString());
+
+      date = res.getDate("col1", cal);
+      assertNotNull(date);
+      assertEquals("2014-01-01", date.toString());
+
+      time = res.getTime(2, cal);
+      assertNotNull(time);
+      assertEquals("10:00:00", time.toString());
+
+      time = res.getTime("col2", cal);
+      assertNotNull(time);
+      assertEquals("10:00:00", time.toString());
+
+      timestamp = res.getTimestamp(3, cal);
+      assertNotNull(timestamp);
+      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
+
+      timestamp = res.getTimestamp("col3", cal);
+      assertNotNull(timestamp);
+      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
+    } finally {
+      TajoConf.setCurrentTimeZone(tajoCurrentTimeZone);
+      TimeZone.setDefault(systemCurrentTimeZone);
+      res.close();
+    }
   }
 }

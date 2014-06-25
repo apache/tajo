@@ -133,9 +133,17 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public static DataType getWidestType(DataType...types) throws PlanningException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
-      Type candidate = TUtil.getFromNestedMap(TYPE_CONVERSION_MAP, widest.getType(), types[i].getType());
-      assertEval(candidate != null, "No matched operation for those types: " + TUtil.arrayToString(types));
-      widest = CatalogUtil.newSimpleDataType(candidate);
+
+      if (widest.getType() == Type.NULL_TYPE) { // if null, skip this type
+        widest = types[i];
+        continue;
+      }
+
+      if (types[i].getType() != Type.NULL_TYPE) {
+        Type candidate = TUtil.getFromNestedMap(TYPE_CONVERSION_MAP, widest.getType(), types[i].getType());
+        assertEval(candidate != null, "No matched operation for those types: " + TUtil.arrayToString(types));
+        widest = CatalogUtil.newSimpleDataType(candidate);
+      }
     }
 
     return widest;

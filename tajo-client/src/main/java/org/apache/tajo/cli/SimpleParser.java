@@ -148,6 +148,7 @@ public class SimpleParser {
       } else if (isStatementContinue() || isStatementStart(chars[idx])) {
         if (!isStatementContinue()) { // TOK_START -> STATEMENT
           state = ParsingState.STATEMENT;
+          rawAppender.append("\n");
         }
 
         while (!isTerminateState(state) && idx < chars.length) {

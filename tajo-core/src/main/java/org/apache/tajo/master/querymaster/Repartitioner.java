@@ -131,17 +131,29 @@ public class Repartitioner {
     // Assigning either fragments or fetch urls to query units
     boolean isAllBroadcastTable = true;
     int baseScanIdx = -1;
+    long maxStats = Long.MIN_VALUE;
+    int maxStatsScanIdx = -1;
     for (int i = 0; i < scans.length; i++) {
       if (!execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
         isAllBroadcastTable = false;
         baseScanIdx = i;
       }
+      // finding largest table.
+      if (stats[i] > maxStats) {
+        maxStats = stats[i];
+        maxStatsScanIdx = i;
+      }
     }
 
+
     if (isAllBroadcastTable) {
-      LOG.info("[Distributed Join Strategy] : Immediate " +  fragments.length + " Way Join on Single Machine");
-      SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(Arrays.copyOfRange(fragments, 1, fragments.length)));
-      schedulerContext.setEstimatedTaskNum(1);
+      // set largest table to normal mode
+      baseScanIdx = maxStatsScanIdx;
+      scans[baseScanIdx].setBroadcastTable(false);
+      execBlock.removeBroadcastTable(scans[baseScanIdx].getCanonicalName());
+      LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join with all tables, base_table=%s, base_volume=%d",
+          scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
+      scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments);
     } else if (!execBlock.getBroadcastTables().isEmpty()) {
       LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, base_table=%s, base_volume=%d",
           scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
@@ -250,7 +262,6 @@ public class Repartitioner {
                                                           int baseScanId, FileFragment[] fragments) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
-    //Preconditions.checkArgument(scans.length == 2, "Must be Join Query");
 
     for (int i = 0; i < scans.length; i++) {
       if (i != baseScanId) {
@@ -258,25 +269,53 @@ public class Repartitioner {
       }
     }
 
-    TableMeta meta;
-    ScanNode scan = scans[baseScanId];
-    TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getCanonicalName());
-    meta = desc.getMeta();
-
-    Collection<FileFragment> baseFragments;
-    if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-      baseFragments = getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, desc);
-    } else {
-      baseFragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
-          desc.getPath());
-    }
-
+    // Large table(baseScan)
+    //  -> add all fragment to baseFragments
+    //  -> each fragment is assigned to a Task by DefaultTaskScheduler.handle()
+    // Broadcast table
+    //  all fragments or paths assigned every Large table's scan task.
+    //  -> PARTITIONS_SCAN
+    //     . add all partition paths to node's inputPaths variable
+    //  -> SCAN
+    //     . add all fragments to broadcastFragments
+    Collection<FileFragment> baseFragments = null;
     List<FileFragment> broadcastFragments = new ArrayList<FileFragment>();
-    for (int i = 0; i < fragments.length; i++) {
-      if (i != baseScanId) {
-        broadcastFragments.add(fragments[i]);
+    for (int i = 0; i < scans.length; i++) {
+      ScanNode scan = scans[i];
+      TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getCanonicalName());
+      TableMeta meta = desc.getMeta();
+
+      Collection<FileFragment> scanFragments;
+      Path[] partitionScanPaths = null;
+      if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
+        partitionScanPaths = partitionScan.getInputPaths();
+        // set null to inputPaths in getFragmentsFromPartitionedTable()
+        scanFragments = getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, desc);
+      } else {
+        scanFragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
+            desc.getPath());
+      }
+
+      if (scanFragments != null) {
+        if (i == baseScanId) {
+          baseFragments = scanFragments;
+        } else {
+          if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+            PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
+            // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
+            partitionScan.setInputPaths(partitionScanPaths);
+          } else {
+            broadcastFragments.addAll(scanFragments);
+          }
+        }
       }
     }
+
+    if (baseFragments == null) {
+      throw new IOException("No fragments for " + scans[baseScanId].getTableName());
+    }
+
     SubQuery.scheduleFragments(subQuery, baseFragments, broadcastFragments);
     schedulerContext.setEstimatedTaskNum(baseFragments.size());
   }
@@ -454,12 +493,6 @@ public class Repartitioner {
                                                  SubQuery subQuery, DataChannel channel,
                                                  int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
-
-    if (totalStat.getNumRows() == 0) {
-      return;
-    }
-
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
@@ -500,9 +533,15 @@ public class Repartitioner {
     // get a proper number of tasks
     int determinedTaskNum = Math.min(maxNum, finalFetches.size());
     LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetches.size());
+
     if (groupby != null && groupby.getGroupingColumns().length == 0) {
       determinedTaskNum = 1;
       LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+    } else {
+      TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
+      if (totalStat.getNumRows() == 0) {
+        determinedTaskNum = 1;
+      }
     }
 
     // set the proper number of tasks to the estimated task num

@@ -18,9 +18,11 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
@@ -223,7 +225,6 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
 
   public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws PlanningException {
     Expr child = super.visitInsert(context, stack, expr);
-
     if (!expr.isOverwrite()) {
       context.state.addVerification("INSERT INTO statement is not supported yet.");
     }
@@ -233,15 +234,35 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
     }
 
     if (child != null && child.getType() == OpType.Projection) {
+      Projection projection = (Projection) child;
+      int projectColumnNum = projection.getNamedExprs().length;
+
       if (expr.hasTargetColumns()) {
-        Projection projection = (Projection) child;
-        int projectColumnNum = projection.getNamedExprs().length;
         int targetColumnNum = expr.getTargetColumns().length;
 
         if (targetColumnNum > projectColumnNum)  {
           context.state.addVerification("INSERT has more target columns than expressions");
         } else if (targetColumnNum < projectColumnNum) {
           context.state.addVerification("INSERT has more expressions than target columns");
+        }
+      } else {
+        if (expr.hasTableName()) {
+          String qualifiedName = expr.getTableName();
+          if (TajoConstants.EMPTY_STRING.equals(CatalogUtil.extractQualifier(expr.getTableName()))) {
+            qualifiedName = CatalogUtil.buildFQName(context.session.getCurrentDatabase(),
+                expr.getTableName());
+          }
+
+          TableDesc table = catalog.getTableDesc(qualifiedName);
+          if (table.hasPartition()) {
+            int columnSize = table.getSchema().getColumns().size();
+            columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();
+            if (projectColumnNum < columnSize) {
+              context.state.addVerification("INSERT has smaller expressions than target columns");
+            } else if (projectColumnNum > columnSize) {
+              context.state.addVerification("INSERT has more expressions than target columns");
+            }
+          }
         }
       }
     }

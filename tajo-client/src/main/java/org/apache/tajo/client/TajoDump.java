@@ -139,10 +139,10 @@ public class TajoDump {
     writer.write("--\n");
     writer.write("-- Tajo database dump\n");
     if (includeUSerName) {
-      writer.write("--\nDump user: " + userInfo.getUserName() + "\n");
+      writer.write("--\n-- Dump user: " + userInfo.getUserName() + "\n");
     }
     if (includeDate) {
-      writer.write("\n-- Dump date: " + toDateString() + "\n");
+      writer.write("--\n-- Dump date: " + toDateString() + "\n");
     }
     writer.write("--\n");
     writer.write("\n");
