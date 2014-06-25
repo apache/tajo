@@ -130,7 +130,7 @@ public class Int4Datum extends NumericDatum {
     case NULL_TYPE:
       return datum;
     default:
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -190,7 +190,7 @@ public class Int4Datum extends NumericDatum {
       case NULL_TYPE:
         return -1;
       default:
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -263,7 +263,7 @@ public class Int4Datum extends NumericDatum {
     case NULL_TYPE:
       return datum;
     default:
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

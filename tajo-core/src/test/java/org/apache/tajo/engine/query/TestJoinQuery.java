@@ -347,6 +347,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeftOuterJoinWithEmptyTable5() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testRightOuterJoinWithEmptyTable1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

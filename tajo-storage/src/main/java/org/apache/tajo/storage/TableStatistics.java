@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -30,6 +32,7 @@ import org.apache.tajo.datum.NullDatum;
  * This class is not thread-safe.
  */
 public class TableStatistics {
+  private static final Log LOG = LogFactory.getLog(TableStatistics.class);
   private Schema schema;
   private Tuple minValues;
   private Tuple maxValues;
@@ -104,8 +107,18 @@ public class TableStatistics {
     for (int i = 0; i < schema.size(); i++) {
       columnStats = new ColumnStats(schema.getColumn(i));
       columnStats.setNumNulls(numNulls[i]);
-      columnStats.setMinValue(minValues.get(i));
-      columnStats.setMaxValue(maxValues.get(i));
+      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
+        columnStats.setMinValue(minValues.get(i));
+      } else {
+        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
+            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
+      }
+      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
+        columnStats.setMaxValue(maxValues.get(i));
+      } else {
+        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
+            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
+      }
       stat.addColumnStat(columnStats);
     }
 

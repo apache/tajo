@@ -110,7 +110,7 @@ public class TextDatum extends Datum {
         return -1;
 
       default:
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(datum.type());
     }
   }
 

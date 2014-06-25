@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
@@ -209,6 +210,14 @@ public class TajoWorkerClientService extends AbstractService {
           TajoWorkerProtocol.TaskFatalErrorReport firstError = diagnostics.iterator().next();
           builder.setErrorMessage(firstError.getErrorMessage());
           builder.setErrorTrace(firstError.getErrorTrace());
+        }
+
+        if (queryMasterTask.isInitError()) {
+          Throwable initError = queryMasterTask.getInitError();
+          builder.setErrorMessage(
+              initError.getMessage() == null ? initError.getClass().getName() : initError.getMessage());
+          builder.setErrorTrace(StringUtils.stringifyException(initError));
+          builder.setState(queryMasterTask.getState());
         }
       }
       return builder.build();
