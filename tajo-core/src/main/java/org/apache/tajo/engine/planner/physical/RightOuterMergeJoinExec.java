@@ -25,6 +25,7 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.logical.JoinNode;
+import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -298,10 +299,16 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          joinQual.eval(inSchema, frameTuple);
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
-
+          if (joinQual.eval(inSchema, frameTuple).asBool()) {
+            projector.eval(frameTuple, outTuple);
+            return outTuple;
+          } else {
+            // padding null
+            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+            frameTuple.set(nullPaddedTuple, aTuple);
+            projector.eval(frameTuple, outTuple);
+            return outTuple;
+          }
         } else {
           // right (inner) slots reached end and should be rewind if there are still tuples in the outer slots
           if(posLeftTupleSlots <= (leftTupleSlots.size() - 1)) {
@@ -313,9 +320,17 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
             frameTuple.set(nextLeft, aTuple);
-            joinQual.eval(inSchema, frameTuple);
-            projector.eval(frameTuple, outTuple);
-            return outTuple;
+
+            if (joinQual.eval(inSchema, frameTuple).asBool()) {
+              projector.eval(frameTuple, outTuple);
+              return outTuple;
+            } else {
+              // padding null
+              Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+              frameTuple.set(nullPaddedTuple, aTuple);
+              projector.eval(frameTuple, outTuple);
+              return outTuple;
+            }
           }
         }
       } // the second if end false

@@ -141,18 +141,20 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
-      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-        projector.eval(frameTuple, outTuple);
-        found = true;
-      }
-
       if (!iterator.hasNext()) { // no more right tuples for this hash key
         shouldGetLeftTuple = true;
       }
 
-      if (found) {
-        break;
+      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
+      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+        projector.eval(frameTuple, outTuple);
+        return outTuple;
+      } else {
+        // null padding
+        Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
+        frameTuple.set(leftTuple, nullPaddedTuple);
+        projector.eval(frameTuple, outTuple);
+        return outTuple;
       }
     }
 

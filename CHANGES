@@ -4,6 +4,9 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-847: Supporting MariaDB-based Store, which is compatible with MySQL.
+    (Jinhang Choi via jihoon)
+
     TAJO-860: Implements TRUNCATE table. (Hyoungjun Kim via hyunsik)
 
     TAJO-849: Add Parquet storage to HCatalogStore. (jaehwa)
@@ -20,6 +23,9 @@ Release 0.9.0 - unreleased
     TAJO-762: Implements current date/time function (Hyoungjun Kim via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-853: Refactoring FilterPushDown for OUTER JOIN.
+    (Hyoungjun Kim via hyunsik)
 
     TAJO-840: Improve query result print with counting empty table. (jaehwa)
 
@@ -68,6 +74,24 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-882: CLI hangs when a error occurs in the GlobalPlanner.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-850: OUTER JOIN does not properly handle a NULL.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-879: Some data is missing in the case of BROADCAST JOIN and
+    multi-column partition. (Hyoungjun Kim via jaehwa)
+
+    TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller
+    expressions than target columns for a partitioned table. (jaehwa)
+
+    TAJO-880: NULL in CASE clause occurs Exception. (Hyoungjun Kim via hyunsik)
+
+    TAJO-862: Restore failure of dumped relations. (jihoon)
+
+    TAJO-861: tajo-dump script are not executable. (jinho)
+
     TAJO-839: If all tables participate in the BROADCAST JOIN, there is some 
     missing data. (Hyoungjun Kim via jihoon)
 
@@ -110,7 +134,8 @@ Release 0.9.0 - unreleased
     TAJO-800: CLI's meta command should be aware "TABLE_NAME" style. 
     (Hyoungjun Kim via hyunsik)
 
-    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
+    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join.
+    (jaehwa)
 
     TAJO-792: Insert table error with database name. 
     (Hyoungjun Kim via hyunsik)
@@ -130,6 +155,13 @@ Release 0.9.0 - unreleased
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   TASKS
+
+    TAJO-890: Redirect stdout of maven test to /dev/null in Travis CI 
+    script. (hyunsik)
+
+    TAJO-887: Eliminate HiveQL support feature. (hyunsik)
+
+    TAJO-886: Add IRC page to community section in site. (hyunsik)
 
     TAJO-859: Update site for new committer Alvin Henrick. (hyunsik)
 
