@@ -238,10 +238,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void accumulatingWindow(Tuple currentKey, Tuple inTuple) {
-    if (lastKey == null || lastKey.equals(currentKey)) {
+
+    if (lastKey == null || lastKey.equals(currentKey)) { // if the current key is same to the previous key
       accumulatedInTuples.add(new VTuple(inTuple));
 
     } else {
+      // if the current key is different from the previous key,
+      // the current key belongs to the next window frame. preaccumulatingNextWindow() will
+      // aggregate the current key for next window frame.
       preAccumulatingNextWindow(inTuple);
       transition(WindowState.EVALUATION);
     }

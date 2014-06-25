@@ -142,7 +142,7 @@ public enum OpType {
   }
 
   public static boolean isLogicalType(OpType type) {
-    return type == And || type == Or;
+    return type == Not || type == And || type == Or;
   }
 
   public static boolean isComparisonType(OpType type) {

@@ -112,7 +112,8 @@ public class WindowSpec implements Cloneable {
       WindowSpec another = (WindowSpec) obj;
       return TUtil.checkEquals(windowName, another.windowName) &&
           TUtil.checkEquals(partitionKeys, another.partitionKeys) &&
-          TUtil.checkEquals(sortSpecs, another.sortSpecs);
+          TUtil.checkEquals(sortSpecs, another.sortSpecs) &&
+          TUtil.checkEquals(windowFrame, another.windowFrame);
     } else {
       return false;
     }
@@ -137,7 +138,7 @@ public class WindowSpec implements Cloneable {
   }
 
   public static class WindowFrame implements Cloneable {
-    @Expose WindowFrameUnit unit;
+    @Expose private WindowFrameUnit unit;
     @Expose private WindowStartBound startBound;
     @Expose private WindowEndBound endBound;
 

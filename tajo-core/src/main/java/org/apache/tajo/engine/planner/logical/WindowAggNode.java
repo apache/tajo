@@ -132,8 +132,10 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
       WindowAggNode other = (WindowAggNode) obj;
       boolean eq = super.equals(other);
       eq = eq && TUtil.checkEquals(partitionKeys, other.partitionKeys);
+      eq = eq && TUtil.checkEquals(sortSpecs, other.sortSpecs);
       eq = eq && TUtil.checkEquals(windowFuncs, other.windowFuncs);
       eq = eq && TUtil.checkEquals(targets, other.targets);
+      eq = eq && TUtil.checkEquals(hasDistinct, other.hasDistinct);
       return eq;
     } else {
       return false;  

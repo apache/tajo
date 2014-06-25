@@ -26,8 +26,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.eval.BinaryEval;
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.utils.DataTypeUtil;
 
 import java.util.Stack;
 
@@ -81,7 +80,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<PreprocessContext, Dat
     if(OpType.isLogicalType(type) || OpType.isComparisonType(type)) {
       return BOOL_TYPE;
     } else if (OpType.isArithmeticType(type)) {
-      return BinaryEval.determineType(lhsDataType, rhsDataType);
+      return DataTypeUtil.determineType(lhsDataType, rhsDataType);
     } else if (type == OpType.Concatenate) {
       return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
     } else if (type == OpType.InPredicate) {

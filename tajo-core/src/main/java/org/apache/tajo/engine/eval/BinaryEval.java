@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.utils.DataTypeUtil;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
@@ -60,7 +61,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
             type == EvalType.MULTIPLY ||
             type == EvalType.DIVIDE ||
             type == EvalType.MODULAR ) {
-      this.returnType = determineType(left.getValueType(), right.getValueType());
+      this.returnType = DataTypeUtil.determineType(left.getValueType(), right.getValueType());
 
     } else if (type == EvalType.CONCATENATE) {
       this.returnType = CatalogUtil.newSimpleDataType(Type.TEXT);
@@ -94,102 +95,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
       return this.rightExpr;
     } else {
       throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available (" + id + " is not available)");
-    }
-  }
-
-  /**
-   * This is verified by ExprsVerifier.checkArithmeticOperand().
-   */
-  public static DataType determineType(DataType left, DataType right) throws InvalidEvalException {
-    switch (left.getType()) {
-
-    case INT1:
-    case INT2:
-    case INT4: {
-      switch(right.getType()) {
-      case INT1:
-      case INT2:
-      case INT4: return CatalogUtil.newSimpleDataType(Type.INT4);
-      case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    case INT8: {
-      switch(right.getType()) {
-      case INT1:
-      case INT2:
-      case INT4:
-      case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    case FLOAT4: {
-      switch(right.getType()) {
-      case INT1:
-      case INT2:
-      case INT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    case FLOAT8: {
-      switch(right.getType()) {
-      case INT1:
-      case INT2:
-      case INT4:
-      case INT8:
-      case FLOAT4:
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    case DATE: {
-      switch(right.getType()) {
-      case INT2:
-      case INT4:
-      case INT8: return CatalogUtil.newSimpleDataType(Type.DATE);
-      case INTERVAL:
-      case TIME: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
-      }
-    }
-
-    case TIME: {
-      switch(right.getType()) {
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIME);
-      case TIME: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
-      }
-    }
-
-    case TIMESTAMP: {
-      switch (right.getType()) {
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
-      case TIMESTAMP: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    case INTERVAL: {
-      switch (right.getType()) {
-      case INTERVAL:
-      case FLOAT4:
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      }
-    }
-
-    default: return left;
     }
   }
 
