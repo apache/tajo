@@ -169,16 +169,7 @@ public class GlobalEngine extends AbstractService {
 
   public Expr buildExpressionFromSql(QueryContext queryContext, String sql)
       throws InterruptedException, IOException, IllegalQueryStatusException {
-    final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
-    LOG.info("hive.query.mode:" + hiveQueryMode);
-
-    if (hiveQueryMode) {
-      context.getSystemMetrics().counter("Query", "numHiveMode").inc();
-      queryContext.setHiveQueryMode();
-    }
-
     context.getSystemMetrics().counter("Query", "totalQuery").inc();
-
     return analyzer.parse(sql);
   }
 
