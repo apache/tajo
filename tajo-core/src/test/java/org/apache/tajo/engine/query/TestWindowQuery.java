@@ -116,6 +116,15 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWindowWithOrderBy5() throws Exception {
+    ResultSet res = executeString(
+        "SELECT l_orderkey, l_partkey, rank() OVER (ORDER BY l_orderkey) r1, rank() OVER(ORDER BY l_partkey desc) r2 " +
+            "FROM LINEITEM where l_partkey > 0 and l_partkey < 100");
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testWindowBeforeLimit() throws Exception {
     ResultSet res = executeString(
         "select r_name, rank() over (order by r_regionkey) as ran from region limit 3;"
@@ -159,6 +168,26 @@ public class TestWindowQuery extends QueryTestCaseBase {
     ResultSet res = executeString(
         "select a.r_name, a.r_regionkey, row_number() over (partition by a.r_regionkey order by a.cnt desc) mk from " +
             "(select r_name, r_regionkey, count(*) cnt from default.region group by r_name, r_regionkey) a;"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithSubQuery5() throws Exception {
+    // filter push down test
+    ResultSet res = executeString(
+        "select * from (select r_name, rank() over (order by r_regionkey) as ran from region) a where ran >= 3"
+    );
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testWindowWithSubQuery6() throws Exception {
+    // filter push down test
+    ResultSet res = executeString(
+        "select * from (select r_name, rank() over (order by r_regionkey) as ran from region) a where r_name LIKE 'ASIA'"
     );
     assertResultSet(res);
     cleanupQuery(res);

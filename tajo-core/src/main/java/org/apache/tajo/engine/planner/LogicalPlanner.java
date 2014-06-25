@@ -637,6 +637,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
 
+    block.registerNode(windowAggNode);
+    postHook(context, stack, null, windowAggNode);
+
     if (child.getType() == NodeType.LIMIT) {
       LimitNode limitNode = (LimitNode) child;
       limitNode.setInSchema(windowAggNode.getOutSchema());
