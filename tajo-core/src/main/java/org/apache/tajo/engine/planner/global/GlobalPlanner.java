@@ -317,6 +317,27 @@ public class GlobalPlanner {
         ((TableSubQueryNode)rightNode).getSubQuery().getType() == NodeType.UNION;
 
     if (leftUnion || rightUnion) {
+      /*
+       Join with tableC and result of union tableA, tableB is expected the following physical plan.
+       But Union execution block is not necessary.
+       |-eb_0001_000006 (Terminal)
+          |-eb_0001_000005 (Join eb_0001_000003, eb_0001_000004)
+             |-eb_0001_000004 (Scan TableC)
+             |-eb_0001_000003 (Union TableA, TableB)
+               |-eb_0001_000002 (Scan TableB)
+               |-eb_0001_000001 (Scan TableA)
+
+       The above plan can be changed to the following plan.
+       |-eb_0001_000005 (Terminal)
+          |-eb_0001_000003    (Join [eb_0001_000001, eb_0001_000002], eb_0001_000004)
+             |-eb_0001_000004 (Scan TableC)
+             |-eb_0001_000002 (Scan TableB)
+             |-eb_0001_000001 (Scan TableA)
+
+       eb_0001_000003's left child should be eb_0001_000001 + eb_0001_000001 and right child should be eb_0001_000004.
+       For this eb_0001_000001 is representative of eb_0001_000001, eb_0001_000002.
+       So eb_0001_000003's left child is eb_0001_000001
+       */
       Column[][] joinColumns = null;
       if (joinNode.getJoinType() != JoinType.CROSS) {
         // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
