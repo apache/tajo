@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
@@ -54,11 +55,15 @@ public class ProjectionPushDownRule extends
   public boolean isEligible(LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
-    if (PlannerUtil.checkIfDDLPlan(toBeOptimized) || !plan.getRootBlock().hasTableExpression()) {
+    if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-
-    return true;
+    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+      if (eachBlock.hasTableExpression()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
