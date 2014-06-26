@@ -65,6 +65,16 @@
       <timezone></timezone>
     </developer>
     <developer>
+      <id>ahenrick</id>
+      <name>Alvin Derek Henrick</name>
+      <email>ahenrick@apache.org</email>
+      <organization></organization>
+      <roles>
+        <role>Committer</role>
+      </roles>
+      <timezone></timezone>
+    </developer>
+    <developer>
       <id>mattmann</id>
       <name>Chris Mattmann</name>
       <email>chris.a.mattmann@jpl.nasa.gov</email>
@@ -207,10 +217,6 @@
 
   <contributors>
     <contributor>
-      <name>Alvin Henrick</name>
-      <roles><role>Contributor</role></roles>
-    </contributor>
-    <contributor>
       <name>Camelia</name>
       <roles><role>Contributor</role></roles>
     </contributor>
@@ -242,6 +248,16 @@
     <contributor>
       <name>Jae Young Lee</name>
       <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Jinhang Choi</name>
+      <organization>Korea University</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Prafulla T.</name>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>

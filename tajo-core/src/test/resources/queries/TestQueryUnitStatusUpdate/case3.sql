@@ -8,4 +8,3 @@ from (
 ) test
 order by
   col1, col2
-;

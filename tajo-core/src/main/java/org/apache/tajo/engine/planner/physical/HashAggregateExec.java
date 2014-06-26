@@ -69,6 +69,16 @@ public class HashAggregateExec extends AggregationExec {
         hashTable.put(keyTuple, contexts);
       }
     }
+
+    // If HashAggregateExec received NullDatum and didn't has any grouping keys,
+    // it should return primitive values for NullLDatum.
+    if (groupingKeyNum == 0 && aggFunctionsNum > 0 && hashTable.entrySet().size() == 0) {
+      FunctionContext[] contexts = new FunctionContext[aggFunctionsNum];
+      for(int i = 0; i < aggFunctionsNum; i++) {
+        contexts[i] = aggFunctions[i].newContext();
+      }
+      hashTable.put(null, contexts);
+    }
   }
 
   @Override
@@ -101,7 +111,7 @@ public class HashAggregateExec extends AggregationExec {
   }
 
   @Override
-  public void rescan() throws IOException {    
+  public void rescan() throws IOException {
     iterator = hashTable.entrySet().iterator();
   }
 

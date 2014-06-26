@@ -86,9 +86,13 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
       res = executeQuery();
 
-      long[] expectedNumRows = new long[]{7, 2, 2, 2, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{63, 34, 34, 18, 109, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{63, 0, 34, 0, 109, 0, 34, 0};
+      String actualResult = resultSetToString(res);
+      System.out.println(actualResult);
+
+      // first stage's num rows = (left: 1 , right: 2 (filtered)) * 5 (tasks)
+      long[] expectedNumRows = new long[]{15, 2, 2, 2, 7, 2, 2, 2};
+      long[] expectedNumBytes = new long[]{45, 34, 34, 18, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{45, 0, 34, 0, 109, 0, 34, 0};
 
       assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
@@ -109,6 +113,7 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
+
     res.close();
   }
 

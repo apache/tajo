@@ -299,11 +299,6 @@ public class TajoConf extends Configuration {
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     //////////////////////////////////
-    // Hive Configuration
-    //////////////////////////////////
-    HIVE_QUERY_MODE("tajo.hive.query.mode", false),
-
-    //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
@@ -336,6 +331,9 @@ public class TajoConf extends Configuration {
 
     // FILE FORMAT
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+
+    //OPTIMIZER
+    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
 
     // DEBUG OPTION
     TAJO_DEBUG("tajo.debug", false),

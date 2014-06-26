@@ -21,15 +21,22 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 
+import static org.junit.Assert.assertEquals;
+
 @Category(IntegrationTest.class)
 public class TestGroupByQuery extends QueryTestCaseBase {
 
-  public TestGroupByQuery() {
+  public TestGroupByQuery() throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
@@ -253,6 +260,34 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     res = executeFile("testDistinctAggregation_case8.sql");
     assertResultSet(res, "testDistinctAggregation_case8.result");
     res.close();
+
+    // case9
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.TEXT);
+    schema.addColumn("code", Type.TEXT);
+    schema.addColumn("qty", Type.INT4);
+    schema.addColumn("qty2", Type.FLOAT8);
+    String[] data = new String[]{ "1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0" };
+    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+
+    res = executeString("select id, count(distinct code), " +
+        "avg(qty), min(qty), max(qty), sum(qty), " +
+        "cast(avg(qty2) as INT8), cast(min(qty2) as INT8), cast(max(qty2) as INT8), cast(sum(qty2) as INT8) " +
+        "from table10 group by id");
+    String result = resultSetToString(res);
+
+    String expected = "id,?count,?avg_1,?min_2,?max_3,?sum_4,?cast_5,?cast_6,?cast_7,?cast_8\n" +
+        "-------------------------------\n" +
+        "1,2,4.0,0,5,12,4,0,5,12\n" +
+        "2,3,2.0,0,3,6,7,0,8,21\n";
+
+    assertEquals(expected, result);
+
+    executeString("DROP TABLE table10 PURGE").close();
   }
 
   @Test
@@ -301,6 +336,115 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
     // having total >= 2 or num = 3;
     ResultSet res = executeJsonQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData5() throws Exception {
+    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
+    assertTableExists("table1");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table1");
+  }
+
+  @Test
+  public final void testGroupByWithNullData6() throws Exception {
+    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
+    assertTableExists("table1");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table1");
+  }
+
+  @Test
+  public final void testGroupByWithNullData7() throws Exception {
+    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
+    assertTableExists("table1");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table1");
+  }
+
+  @Test
+  public final void testGroupByWithNullData8() throws Exception {
+    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
+    assertTableExists("table1");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table1");
+  }
+
+  @Test
+  public final void testGroupByWithNullData9() throws Exception {
+    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
+    assertTableExists("table1");
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table1");
+  }
+
+  @Test
+  public final void testGroupByWithNullData10() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData11() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithNullData12() throws Exception {
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
