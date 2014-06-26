@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.engine.exception.NoSuchColumnException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,15 +81,21 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   public static class ExprNormalizedResult {
     private final LogicalPlan plan;
     private final LogicalPlan.QueryBlock block;
+    private final boolean tryBinaryCommonTermsElimination;
 
     Expr baseExpr; // outmost expressions, which can includes one or more references of the results of aggregation
                    // function.
     List<NamedExpr> aggExprs = new ArrayList<NamedExpr>(); // aggregation functions
     List<NamedExpr> scalarExprs = new ArrayList<NamedExpr>(); // scalar expressions which can be referred
 
-    private ExprNormalizedResult(LogicalPlanner.PlanContext context) {
+    private ExprNormalizedResult(LogicalPlanner.PlanContext context, boolean tryBinaryCommonTermsElimination) {
       this.plan = context.plan;
       this.block = context.queryBlock;
+      this.tryBinaryCommonTermsElimination = tryBinaryCommonTermsElimination;
+    }
+
+    public boolean isBinaryCommonTermsElimination() {
+      return tryBinaryCommonTermsElimination;
     }
 
     @Override
@@ -98,7 +105,11 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   }
 
   public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
-    ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context);
+    return normalize(context, expr, false);
+  }
+  public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr, boolean subexprElimination)
+      throws PlanningException {
+    ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context, subexprElimination);
     Stack<Expr> stack = new Stack<Expr>();
     stack.push(expr);
     visit(exprNormalizedResult, new Stack<Expr>(), expr);
@@ -152,9 +163,27 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     return expr;
   }
 
+  private boolean isBinaryCommonTermsElimination(ExprNormalizedResult ctx, Expr expr) {
+    return ctx.isBinaryCommonTermsElimination() && expr.getType() != OpType.Column
+        && ctx.block.namedExprsMgr.contains(expr);
+  }
+
   @Override
   public Expr visitBinaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
-    super.visitBinaryOperator(ctx, stack, expr);
+    stack.push(expr);
+
+    visit(ctx, new Stack<Expr>(), expr.getLeft());
+    if (isBinaryCommonTermsElimination(ctx, expr.getLeft())) {
+      String refName = ctx.block.namedExprsMgr.addExpr(expr.getLeft());
+      expr.setLeft(new ColumnReferenceExpr(refName));
+    }
+
+    visit(ctx, new Stack<Expr>(), expr.getRight());
+    if (isBinaryCommonTermsElimination(ctx, expr.getRight())) {
+      String refName = ctx.block.namedExprsMgr.addExpr(expr.getRight());
+      expr.setRight(new ColumnReferenceExpr(refName));
+    }
+    stack.pop();
 
     ////////////////////////
     // For Left Term
@@ -249,9 +278,12 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       throws PlanningException {
     // if a column reference is not qualified, it finds and sets the qualified column name.
     if (!(expr.hasQualifier() && CatalogUtil.isFQTableName(expr.getQualifier()))) {
-      if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName())) {
-        String normalized = ctx.plan.getNormalizedColumnName(ctx.block, expr);
-        expr.setName(normalized);
+      if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
+        try {
+          String normalized = ctx.plan.getNormalizedColumnName(ctx.block, expr);
+          expr.setName(normalized);
+        } catch (NoSuchColumnException nsc) {
+        }
       }
     }
     return expr;
