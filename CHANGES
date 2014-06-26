@@ -74,6 +74,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-891: Complex join conditions with UNION or inline should be supported.
+    (hyunsik)
+
     TAJO-881: JOIN with union query occurs NPE. (Hyoungjun Kim via hyunsik)
 
     TAJO-884: complex join conditions should be supported in ON clause.
