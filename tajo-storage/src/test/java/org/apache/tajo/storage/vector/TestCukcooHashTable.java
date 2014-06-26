@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestCukcooHashTable {
 
-  @Test
+  //@Test
   public void testCukcooLongLong() {
     LongKeyValueReaderWriter bucketHandler = new LongKeyValueReaderWriter();
     CukcooHashTable<Long, Long> hashTable = new CukcooHashTable(bucketHandler);
@@ -88,7 +88,7 @@ public class TestCukcooHashTable {
     System.out.println((endRandom - startRandom) + " msc random read time");
   }
 
-  @Test
+  //@Test
   public void testCukcooLongString() {
     LongStringReaderWriter bucketHandler = new LongStringReaderWriter();
     CukcooHashTable<Long, String> hashTable = new CukcooHashTable(bucketHandler);
@@ -133,7 +133,7 @@ public class TestCukcooHashTable {
     System.out.println((endRandom - startRandom) + " msc random read time");
   }
 
-  @Test
+  //@Test
   public void testHashMap() {
     Map<Long, Long> map = Maps.newHashMap();
 

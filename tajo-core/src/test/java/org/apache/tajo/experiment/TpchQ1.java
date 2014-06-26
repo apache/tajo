@@ -88,28 +88,28 @@ public class TpchQ1 {
   private static MasterPlan masterPlan;
 
   public TpchQ1() throws Exception {
-    util = new TajoTestingCluster();
-
-    util.startCatalogCluster();
-    conf = util.getConfiguration();
-    testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
-    sm = StorageManagerFactory.getStorageManager(conf, testDir);
-    catalog = util.getMiniCatalogCluster().getCatalog();
-    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
-    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.createFunction(funcDesc);
-    }
-
-    analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf);
-
-    masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
+//    util = new TajoTestingCluster();
+//
+//    util.startCatalogCluster();
+//    conf = util.getConfiguration();
+//    testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
+//    sm = StorageManagerFactory.getStorageManager(conf, testDir);
+//    catalog = util.getMiniCatalogCluster().getCatalog();
+//    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
+//    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
+//    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+//      catalog.createFunction(funcDesc);
+//    }
+//
+//    analyzer = new SQLAnalyzer();
+//    planner = new LogicalPlanner(catalog);
+//    optimizer = new LogicalOptimizer(conf);
+//
+//    masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
   }
 
   public void shutdown() {
-    util.shutdownCatalogCluster();
+    //util.shutdownCatalogCluster();
   }
 
   static final Schema LINEITEM;
@@ -134,7 +134,7 @@ public class TpchQ1 {
         .addColumn("l_comment", TajoDataTypes.Type.TEXT); // 15
   }
 
-  @Test
+  //@Test
   public void generateTuples() throws IOException, SQLException, ServiceException, PlanningException {
     Path rawLineitemPath = new Path("file:///home/hyunsik/Code/tpch_2_15_0/dbgen/lineitem.tbl");
 
@@ -178,7 +178,7 @@ public class TpchQ1 {
     q1.processQ1InTupleWay();
   }
 
-  @Test
+  //@Test
   public void processQ1InTupleWay() throws IOException, SQLException, ServiceException, PlanningException {
     Path rawLineitemPath = new Path("file:///disk1/experiment/lineitem.parquet");
 
@@ -230,7 +230,7 @@ public class TpchQ1 {
     System.out.println((endProcess - beginProcess) + " msec (" + resultCount + " rows)");
   }
 
-  @Test
+  //@Test
   public void processPureScanInTupleWayOnSSD() throws IOException, SQLException, ServiceException, PlanningException {
     Path rawLineitemPath = new Path("file:///home/hyunsik/experiment/data/lineitem.parquet");
 
@@ -276,7 +276,7 @@ public class TpchQ1 {
     System.out.println((endProcess - beginProcess) + " msec (" + resultCount + " rows)");
   }
 
-  @Test
+  //@Test
   public void processPureScanInTupleWayOnDisk() throws IOException, SQLException, ServiceException, PlanningException {
     Path rawLineitemPath = new Path("file:///disk1/experiment/lineitem.parquet");
 
@@ -420,7 +420,7 @@ public class TpchQ1 {
     }
   }
 
-  @Test
+  //@Test
   public void testQ1InVectorization() throws IOException {
     KeyValueSet KeyValueSet = StorageUtil.newPhysicalProperties(CatalogProtos.StoreType.PARQUET);
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.PARQUET, KeyValueSet);
