@@ -248,13 +248,16 @@ public class EvalTreeUtil {
       }
 
       BinaryEval binaryEval = (BinaryEval) expr;
-      boolean isBothTermFields =
-          binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-          binaryEval.getRightExpr().getType() == EvalType.FIELD;
+      boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
+
       return joinComparator && isBothTermFields;
     } else {
       return false;
     }
+  }
+
+  static boolean isSingleColumn(EvalNode evalNode) {
+    return EvalTreeUtil.findUniqueColumns(evalNode).size() == 1;
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    

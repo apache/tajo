@@ -87,7 +87,6 @@ public class Repartitioner {
     for (int i = 0; i < scans.length; i++) {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
-        // TODO - to be fixed (wrong directory)
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         ExecutionBlockId scanEBId = TajoIdUtils.createExecutionBlockId(scans[i].getTableName());
         stats[i] = masterContext.getSubQuery(scanEBId).getResultStats().getNumBytes();
@@ -187,28 +186,38 @@ public class Repartitioner {
     } else {
       LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
       // The hash map is modeling as follows:
-      // <Part Id, <Table Name, Intermediate Data>>
-      Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries = new HashMap<Integer, Map<String, List<IntermediateEntry>>>();
+      // <Part Id, <EbId, Intermediate Data>>
+      Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
+          new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
       // Grouping IntermediateData by a partition key and a table name
-      for (ScanNode scan : scans) {
-        SubQuery childSubQuery = masterContext.getSubQuery(TajoIdUtils.createExecutionBlockId(scan.getCanonicalName()));
-        for (QueryUnit task : childSubQuery.getQueryUnits()) {
+      List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
+
+      // In the case of join with union, there is one ScanNode for union.
+      Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = execBlock.getUnionScanMap();
+      for (ExecutionBlock childBlock : childBlocks) {
+        ExecutionBlockId scanEbId = unionScanMap.get(childBlock.getId());
+        if (scanEbId == null) {
+          scanEbId = childBlock.getId();
+        }
+        SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
+        for (QueryUnit task : childExecSM.getQueryUnits()) {
           if (task.getIntermediateData() != null && !task.getIntermediateData().isEmpty()) {
             for (IntermediateEntry intermEntry : task.getIntermediateData()) {
+              intermEntry.setEbId(childBlock.getId());
               if (hashEntries.containsKey(intermEntry.getPartId())) {
-                Map<String, List<IntermediateEntry>> tbNameToInterm =
+                Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                     hashEntries.get(intermEntry.getPartId());
 
-                if (tbNameToInterm.containsKey(scan.getCanonicalName())) {
-                  tbNameToInterm.get(scan.getCanonicalName()).add(intermEntry);
+                if (tbNameToInterm.containsKey(scanEbId)) {
+                  tbNameToInterm.get(scanEbId).add(intermEntry);
                 } else {
-                  tbNameToInterm.put(scan.getCanonicalName(), TUtil.newList(intermEntry));
+                  tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
                 }
               } else {
-                Map<String, List<IntermediateEntry>> tbNameToInterm =
-                    new HashMap<String, List<IntermediateEntry>>();
-                tbNameToInterm.put(scan.getCanonicalName(), TUtil.newList(intermEntry));
+                Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                    new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+                tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
                 hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
               }
             }
@@ -216,15 +225,15 @@ public class Repartitioner {
             //if no intermidatedata(empty table), make empty entry
             int emptyPartitionId = 0;
             if (hashEntries.containsKey(emptyPartitionId)) {
-              Map<String, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
-              if (tbNameToInterm.containsKey(scan.getCanonicalName()))
-                tbNameToInterm.get(scan.getCanonicalName())
-                    .addAll(new ArrayList<IntermediateEntry>());
+              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
+              if (tbNameToInterm.containsKey(scanEbId))
+                tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
               else
-                tbNameToInterm.put(scan.getCanonicalName(), new ArrayList<IntermediateEntry>());
+                tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
             } else {
-              Map<String, List<IntermediateEntry>> tbNameToInterm = new HashMap<String, List<IntermediateEntry>>();
-              tbNameToInterm.put(scan.getCanonicalName(), new ArrayList<IntermediateEntry>());
+              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                  new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+              tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
               hashEntries.put(emptyPartitionId, tbNameToInterm);
             }
           }
@@ -260,7 +269,7 @@ public class Repartitioner {
       SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(new FileFragment[]{fragments[1]}));
 
       // Assign partitions to tasks in a round robin manner.
-      for (Entry<Integer, Map<String, List<IntermediateEntry>>> entry
+      for (Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry
           : hashEntries.entrySet()) {
         addJoinShuffle(subQuery, entry.getKey(), entry.getValue());
       }
@@ -347,12 +356,12 @@ public class Repartitioner {
   }
 
   private static void addJoinShuffle(SubQuery subQuery, int partitionId,
-                                     Map<String, List<IntermediateEntry>> grouppedPartitions) {
+                                     Map<ExecutionBlockId, List<IntermediateEntry>> grouppedPartitions) {
     Map<String, List<FetchImpl>> fetches = new HashMap<String, List<FetchImpl>>();
     for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
-      if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
-        Collection<FetchImpl> requests = mergeShuffleRequest(execBlock.getId(), partitionId, HASH_SHUFFLE,
-              grouppedPartitions.get(execBlock.getId().toString()));
+      if (grouppedPartitions.containsKey(execBlock.getId())) {
+        Collection<FetchImpl> requests = mergeShuffleRequest(partitionId, HASH_SHUFFLE,
+            grouppedPartitions.get(execBlock.getId()));
         fetches.put(execBlock.getId().toString(), Lists.newArrayList(requests));
       }
     }
@@ -370,20 +379,23 @@ public class Repartitioner {
    *
    * @return key: pullserver's address, value: a list of requests
    */
-  private static Collection<FetchImpl> mergeShuffleRequest(ExecutionBlockId ebid, int partitionId,
+  private static Collection<FetchImpl> mergeShuffleRequest(int partitionId,
                                                           TajoWorkerProtocol.ShuffleType type,
                                                           List<IntermediateEntry> partitions) {
-    Map<QueryUnit.PullHost, FetchImpl> mergedPartitions = new HashMap<QueryUnit.PullHost, FetchImpl>();
+    // ebId + pullhost -> FetchImmpl
+    Map<String, FetchImpl> mergedPartitions = new HashMap<String, FetchImpl>();
 
     for (IntermediateEntry partition : partitions) {
-      QueryUnit.PullHost host = partition.getPullHost();
-      if (mergedPartitions.containsKey(host)) {
-        FetchImpl fetch = mergedPartitions.get(partition.getPullHost());
+      String mergedKey = partition.getEbId().toString() + "," + partition.getPullHost();
+
+      if (mergedPartitions.containsKey(mergedKey)) {
+        FetchImpl fetch = mergedPartitions.get(mergedKey);
         fetch.addPart(partition.getTaskId(), partition.getAttemptId());
       } else {
-        FetchImpl fetch = new FetchImpl(host, type, ebid, partitionId);
+        // In some cases like union each IntermediateEntry has different EBID.
+        FetchImpl fetch = new FetchImpl(partition.getPullHost(), type, partition.getEbId(), partitionId);
         fetch.addPart(partition.getTaskId(), partition.getAttemptId());
-        mergedPartitions.put(partition.getPullHost(), fetch);
+        mergedPartitions.put(mergedKey, fetch);
       }
     }
     return mergedPartitions.values();

@@ -311,6 +311,8 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
       }
       break;
     case SORTED_INPUT:
+      SortedInputEnforce sortedInput = property.getSortedInput();
+      sb.append("sorted input=" + sortedInput.getTableName());
     }
 
     return sb.toString();
