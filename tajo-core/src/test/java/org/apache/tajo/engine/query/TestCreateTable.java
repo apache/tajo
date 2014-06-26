@@ -499,7 +499,7 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     // Table created using CTAS
     executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
-    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2,c3 from table3;").close();
+    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2 as c2_a,c3 from table3;").close();
     executeString("CREATE TABLE table2 LIKE table4");
     testMsg = "testCreateTableLike1: Table using CTAS test failed";
     assertTrue(testMsg, isClonedTable("table4","table2"));

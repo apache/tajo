@@ -74,6 +74,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-884: complex join conditions should be supported in ON clause.
+    (hyunsik)
+
     TAJO-874: Sometimes InvalidOperationException occurs when aggregates
     TableStat. (Hyoungjun Kim via hyunsik) 
 
