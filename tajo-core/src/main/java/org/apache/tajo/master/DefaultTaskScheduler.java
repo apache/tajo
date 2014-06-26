@@ -30,7 +30,6 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -872,11 +871,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
-          for (ScanNode scan : task.getScanNodes()) {
-            Collection<FetchImpl> fetches = task.getFetch(scan);
+          for(Map.Entry<String, Set<FetchImpl>> entry: task.getFetchMap().entrySet()) {
+            Collection<FetchImpl> fetches = entry.getValue();
             if (fetches != null) {
               for (FetchImpl fetch : fetches) {
-                taskAssign.addFetch(scan.getTableName(), fetch);
+                taskAssign.addFetch(entry.getKey(), fetch);
               }
             }
           }
