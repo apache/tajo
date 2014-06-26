@@ -31,8 +31,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.*;
 
 /**
- * This is a greedy heuristic algorithm to fin
- * d a bushy join tree. This algorithm finds
+ * This is a greedy heuristic algorithm to find a bushy join tree. This algorithm finds
  * the best join order with join conditions and pushed-down join conditions to
  * all join operators.
  */
