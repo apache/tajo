@@ -870,10 +870,11 @@ public class TestSQLExpression extends ExprTestBase {
       Schema schema = new Schema();
       schema.addColumn("col1", TEXT);
       schema.addColumn("col2", TEXT);
-      testEval(schema, "table1", "123,234", "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
-          new String[]{"123.0", "234.0"});
-      testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
-          new String[]{"123.0", "234.0"});
+
+//      testEval(schema, "table1", "123,234", "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
+//          new String[]{"123.0", "234.0"});
+//      testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
+//          new String[]{"123.0", "234.0"});
 
       TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01" +
           DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone()));

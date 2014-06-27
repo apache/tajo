@@ -333,16 +333,20 @@ public class DatumFactory {
   public static TimestampDatum createTimestamp(Datum datum) {
     switch (datum.type()) {
       case TEXT:
-        long timestamp = DateTimeUtil.toJulianTimestamp(datum.asChars());
-        TimeMeta tm = new TimeMeta();
-        DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-        DateTimeUtil.toUTCTimezone(tm);
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+        return parseTimestamp(datum.asChars());
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
         throw new InvalidCastException(datum.type(), Type.TIMESTAMP);
     }
+  }
+
+  public static TimestampDatum createTimestamp(long julianTimestamp) {
+    return new TimestampDatum(julianTimestamp);
+  }
+
+  public static TimestampDatum parseTimestamp(String str) {
+    return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str));
   }
 
   public static BlobDatum createBlob(byte[] val) {

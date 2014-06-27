@@ -73,7 +73,6 @@ public class ExprTestBase {
   private boolean runtimeCodeGenFlag = true;
 
   public ExprTestBase() {
-
   }
 
   public ExprTestBase(boolean runtimeCodeGenFlag) {

@@ -663,6 +663,21 @@ public class DateTimeUtil {
     return toJulianTimestamp(tm);
   }
 
+
+  /**
+   * Parse datetime string to julian time.
+   * The result is the local time basis.
+   * @param str
+   * @return
+   */
+  public static long toJulianTimestampWithTZ(String str) {
+    long timestamp = DateTimeUtil.toJulianTimestamp(str);
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+    DateTimeUtil.toUTCTimezone(tm);
+    return DateTimeUtil.toJulianTimestamp(tm);
+  }
+
   public static TimeMeta decodeDateTime(String str) {
     return decodeDateTime(str, MAXDATEFIELDS);
   }

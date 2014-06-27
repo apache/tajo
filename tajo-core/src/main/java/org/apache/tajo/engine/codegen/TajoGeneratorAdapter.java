@@ -27,6 +27,7 @@ import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -535,6 +536,11 @@ public class TajoGeneratorAdapter {
       case FLOAT4: emitParseFloat4(); break;
       case FLOAT8: emitParseFloat8(); break;
       case TEXT: break;
+      case TIMESTAMP: {
+        methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(DateTimeUtil.class),
+            "toJulianTimestampWithTZ", "(L" + Type.getInternalName(String.class) + ";)J");
+        break;
+      }
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -649,6 +655,11 @@ public class TajoGeneratorAdapter {
       methodName = "createText";
       returnType = TextDatum.class;
       paramTypes = new Class[] {String.class};
+      break;
+    case TIMESTAMP:
+      methodName = "createTimestamp";
+      returnType = TimestampDatum.class;
+      paramTypes = new Class[] {long.class};
       break;
     default:
       throw new RuntimeException("Unsupported type: " + type.getType().name());

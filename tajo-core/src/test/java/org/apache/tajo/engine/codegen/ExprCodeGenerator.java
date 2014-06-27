@@ -421,8 +421,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
         paramTypes = new Class [] {int.class};
         break;
       case TIMESTAMP:
-        methodName = "getTimestamp";
-        returnType = TimestampDatum.class;
+        methodName = "getInt8";
+        returnType = long.class;
         paramTypes = new Class [] {int.class};
         break;
       default:
