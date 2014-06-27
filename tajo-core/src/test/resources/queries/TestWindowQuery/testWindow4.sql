@@ -1,0 +1,1 @@
+SELECT l_orderkey, l_discount, sum(l_discount) OVER (PARTITION BY l_orderkey), sum(l_quantity) OVER (PARTITION BY l_orderkey) FROM LINEITEM;

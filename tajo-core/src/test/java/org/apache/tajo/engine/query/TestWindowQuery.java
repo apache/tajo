@@ -35,140 +35,112 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testWindow1() throws Exception {
-    ResultSet res = executeString("SELECT sum(l_quantity) OVER () FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindow2() throws Exception {
-    ResultSet res = executeString("SELECT l_orderkey, l_quantity, sum(l_quantity) OVER () FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindow3() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_quantity, sum(l_quantity) OVER (PARTITION BY l_orderkey) FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindow4() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_discount, sum(l_discount) OVER (PARTITION BY l_orderkey), sum(l_quantity) " +
-            "OVER (PARTITION BY l_orderkey) FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindow5() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, sum(l_discount) OVER (PARTITION BY l_orderkey), l_discount, sum(l_quantity) " +
-            "OVER (PARTITION BY l_orderkey) FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindow6() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_discount, row_number() OVER (PARTITION BY l_orderkey) r1 , sum(l_discount) " +
-            "OVER (PARTITION BY l_orderkey) r2 FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithOrderBy1() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_discount, rank() OVER (ORDER BY l_discount) r1 FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithOrderBy2() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_partkey, rank() OVER (PARTITION BY L_ORDERKEY ORDER BY l_partkey) r1 FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithOrderBy3() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_partkey, rank() OVER (PARTITION BY L_ORDERKEY ORDER BY l_partkey desc) r1 FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithOrderBy4() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_partkey, rank() OVER (ORDER BY l_orderkey) r1, rank() OVER(ORDER BY l_partkey desc) r2 " +
-            "FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithOrderBy5() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, l_partkey, rank() OVER (ORDER BY l_orderkey) r1, rank() OVER(ORDER BY l_partkey desc) r2 " +
-            "FROM LINEITEM where l_partkey > 0 and l_partkey < 100");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowBeforeLimit() throws Exception {
-    ResultSet res = executeString(
-        "select r_name, rank() over (order by r_regionkey) as ran from region limit 3;"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithSubQuery() throws Exception {
-    ResultSet res = executeString(
-        "select r_name, c, rank() over (order by r_regionkey) as ran from " +
-            "(select r_name, r_regionkey, count(*) as c from region group by r_name, r_regionkey) a;"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithSubQuery2() throws Exception {
-    ResultSet res = executeString(
-        "select r_name, c, rank() over (partition by r_regionkey order by r_regionkey) as ran from " +
-            "(select r_name, r_regionkey, count(*) as c from region group by r_name, r_regionkey) a limit 3;"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithSubQuery3() throws Exception {
-    ResultSet res = executeString(
-        "select a.r_name, a.r_regionkey, row_number() over (partition by a.r_name order by a.cnt desc) mk from " +
-            "(select r_name, r_regionkey, count(*) cnt from default.region group by r_name, r_regionkey) a;"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithSubQuery4() throws Exception {
-    ResultSet res = executeString(
-        "select a.r_name, a.r_regionkey, row_number() over (partition by a.r_regionkey order by a.cnt desc) mk from " +
-            "(select r_name, r_regionkey, count(*) cnt from default.region group by r_name, r_regionkey) a;"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -176,9 +148,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
   @Test
   public final void testWindowWithSubQuery5() throws Exception {
     // filter push down test
-    ResultSet res = executeString(
-        "select * from (select r_name, rank() over (order by r_regionkey) as ran from region) a where ran >= 3"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -186,107 +156,77 @@ public class TestWindowQuery extends QueryTestCaseBase {
   @Test
   public final void testWindowWithSubQuery6() throws Exception {
     // filter push down test
-    ResultSet res = executeString(
-        "select * from (select r_name, rank() over (order by r_regionkey) as ran from region) a where r_name LIKE 'ASIA'"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void testWindowWithComplexOrderBy2() throws Exception {
-    ResultSet res = executeString(
-        "select count(*) + sum(r_regionkey) as total from region"
-    );
-    System.out.println(resultSetToString(res));
-    cleanupQuery(res);
-  }
-
-  @Test
   public final void testWindowWithAggregation1() throws Exception {
-    ResultSet res = executeString(
-        "select row_number() over (order by count(*) desc) row_num from lineitem"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithAggregation2() throws Exception {
-    ResultSet res = executeString(
-        "select l_orderkey, row_number() over (partition by l_orderkey order by count(*) desc) row_num from lineitem " +
-            "group by l_orderkey"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithAggregation3() throws Exception {
-    ResultSet res = executeString(
-        "select count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithAggregation4() throws Exception {
-    ResultSet res = executeString(
-        "select l_orderkey, count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem group by l_orderkey"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithAggregation5() throws Exception {
-    ResultSet res = executeString(
-        "select l_orderkey, count(*) as cnt, row_number() over (partition by l_orderkey order by count(*) desc) row_num from lineitem group by l_orderkey"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testWindowWithAggregation6() throws Exception {
-    ResultSet res = executeString(
-        "select l_orderkey, count(*) as cnt, row_number() over (order by count(*) desc) row_num from lineitem group by l_orderkey order by l_orderkey"
-    );
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testComplexOrderBy1() throws Exception {
-    ResultSet res = executeString(
-        "select l_orderkey, row_number() over (order by l_quantity * (1 - l_discount)) row_num from lineitem"
-    );
-    System.out.println(resultSetToString(res));
+    ResultSet res = executeQuery();
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void rowNumber1() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, row_number() OVER () as row_num FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void rowNumber2() throws Exception {
-    ResultSet res = executeString(
-        "SELECT l_orderkey, row_number() OVER (PARTITION BY L_ORDERKEY) as row_num FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void rowNumber3() throws Exception {
-    ResultSet res = executeString(
-    "SELECT l_orderkey, row_number() OVER (PARTITION BY L_ORDERKEY) as row_num, l_discount, avg(l_discount) " +
-        "OVER (PARTITION BY L_ORDERKEY) as average FROM LINEITEM");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
