@@ -1007,7 +1007,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     if (join.hasQual()) {
-      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual());
+      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
       block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
@@ -1447,13 +1447,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      ScanNode scanNode = context.plan.createNode(ScanNode.class);
-      scanNode.init(desc);
-      context.queryBlock.addRelation(scanNode);
       String [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = context.plan.resolveColumn(context.queryBlock, new ColumnReferenceExpr(targets[i]));
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
         targetColumns.addColumn(targetColumn);
       }
       insertNode.setTargetSchema(targetColumns);

@@ -160,7 +160,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   private static EvalNode convertType(EvalNode evalNode, DataType toType) {
 
     // if original and toType is the same, we don't need type conversion.
-    if (evalNode.getValueType() == toType) {
+    if (evalNode.getValueType().equals(toType)) {
       return evalNode;
     }
     // the conversion to null is not allowed.

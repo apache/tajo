@@ -2,7 +2,7 @@ Tajo Change Log
 
 Release 0.9.0 - unreleased
 
-  NEW FEATURES
+  NEW FEATURES 
 
     TAJO-847: Supporting MariaDB-based Store, which is compatible with MySQL.
     (Jinhang Choi via jihoon)
@@ -73,6 +73,17 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-867: OUTER JOIN with empty result subquery produces a wrong result.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-881: JOIN with union query occurs NPE. (Hyoungjun Kim via hyunsik)
+
+    TAJO-884: complex join conditions should be supported in ON clause.
+    (hyunsik)
+
+    TAJO-874: Sometimes InvalidOperationException occurs when aggregates
+    TableStat. (Hyoungjun Kim via hyunsik) 
 
     TAJO-866: COUNT DISTINCT with other aggregation function throws
     ClassCastException. (Hyoungjun Kim via hyunsik)
