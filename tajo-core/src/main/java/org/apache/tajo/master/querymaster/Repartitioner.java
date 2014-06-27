@@ -111,13 +111,42 @@ public class Repartitioner {
       }
     }
 
-    // If one of inner join tables has no input data,
-    // it should return zero rows.
+    // If one of inner join tables has no input data, it should return zero rows.
     JoinNode joinNode = PlannerUtil.findMostBottomNode(execBlock.getPlan(), NodeType.JOIN);
     if (joinNode != null) {
-      if ( (joinNode.getJoinType().equals(JoinType.INNER))) {
+      if ( (joinNode.getJoinType() == JoinType.INNER)) {
         for (int i = 0; i < stats.length; i++) {
           if (stats[i] == 0) {
+            return;
+          }
+        }
+      }
+    }
+
+    // If node is outer join and a preserved relation is empty, it should return zero rows.
+    joinNode = PlannerUtil.findTopNode(execBlock.getPlan(), NodeType.JOIN);
+    if (joinNode != null) {
+      // find left top scan node
+      ScanNode leftScanNode = PlannerUtil.findTopNode(joinNode.getLeftChild(), NodeType.SCAN);
+      ScanNode rightScanNode = PlannerUtil.findTopNode(joinNode.getRightChild(), NodeType.SCAN);
+
+      long leftStats = -1;
+      long rightStats = -1;
+      if (stats.length == 2) {
+        for (int i = 0; i < stats.length; i++) {
+          if (scans[i].equals(leftScanNode)) {
+            leftStats = stats[i];
+          } else if (scans[i].equals(rightScanNode)) {
+            rightStats = stats[i];
+          }
+        }
+        if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
+          if (leftStats == 0) {
+            return;
+          }
+        }
+        if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+          if (rightStats == 0) {
             return;
           }
         }
@@ -360,7 +389,7 @@ public class Repartitioner {
       String mergedKey = partition.getEbId().toString() + "," + partition.getPullHost();
 
       if (mergedPartitions.containsKey(mergedKey)) {
-        FetchImpl fetch = mergedPartitions.get(partition.getPullHost());
+        FetchImpl fetch = mergedPartitions.get(mergedKey);
         fetch.addPart(partition.getTaskId(), partition.getAttemptId());
       } else {
         // In some cases like union each IntermediateEntry has different EBID.

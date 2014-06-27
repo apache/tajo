@@ -61,8 +61,17 @@ public class JoinTupleComparator implements Comparator<Tuple> {
   @Override
   public int compare(Tuple outerTuple, Tuple innerTuple) {
     for (int i = 0; i < numSortKey; i++) {
-      outer = outerTuple.get(outerSortKeyIds[i]);
-      inner = innerTuple.get(innerSortKeyIds[i]);
+      if (outerTuple == null) {
+        outer = NullDatum.get();
+      } else {
+        outer = outerTuple.get(outerSortKeyIds[i]);
+      }
+
+      if (innerTuple == null) {
+        inner = NullDatum.get();
+      } else {
+        inner = innerTuple.get(innerSortKeyIds[i]);
+      }
 
       if (outer instanceof NullDatum || inner instanceof NullDatum) {
         if (!outer.equals(inner)) {
