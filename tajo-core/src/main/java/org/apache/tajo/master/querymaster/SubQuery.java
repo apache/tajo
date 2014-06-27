@@ -749,6 +749,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
+        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+          LOG.warn("!!!!! TESTCASE MODE !!!!!");
+        }
         LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
 
         // The shuffle output numbers of join may be inconsistent by execution block order.
