@@ -31,6 +31,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.mockito.asm.Type;
 import org.objectweb.asm.*;
+import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
@@ -42,7 +43,7 @@ import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.SwitchCase;
 import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.SwitchCaseGenerator;
 import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
 
-public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.CodeGenContext> {
+public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.EvalCodeGenContext> {
 
   public static final byte UNKNOWN = 0;
   public static final byte TRUE = 1;
@@ -68,7 +69,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       new byte [] {UNKNOWN, TRUE,    FALSE}    // false
   };
 
-  public EvalNode visitBinaryEval(CodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+  public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     if (EvalType.isLogicalOperator(binaryEval)) {
       return visitAndOrEval(context, binaryEval, stack);
     } else if (EvalType.isArithmeticOperator(binaryEval)) {
@@ -86,7 +87,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     }
   }
 
-  public EvalNode visitUnaryEval(CodeGenContext context, Stack<EvalNode> stack, UnaryEval unary) {
+  public EvalNode visitUnaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, UnaryEval unary) {
     stack.push(unary);
     if (unary.getType() == EvalType.CAST) {
       visitCast(context, stack, (CastEval) unary);
@@ -155,7 +156,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return unary;
   }
 
-  public EvalNode visitBetween(CodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack) {
+  public EvalNode visitBetween(EvalCodeGenContext context, BetweenPredicateEval between, Stack<EvalNode> stack) {
     EvalNode predicand = between.getPredicand();
     EvalNode begin = between.getBegin();
     EvalNode end = between.getEnd();
@@ -269,16 +270,16 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return between;
   }
 
-  private void emitGotoLabel(CodeGenContext context, Label label) {
+  private void emitGotoLabel(EvalCodeGenContext context, Label label) {
     context.methodvisitor.visitJumpInsn(Opcodes.GOTO, label);
   }
 
-  private void emitLabel(CodeGenContext context, Label label) {
+  private void emitLabel(EvalCodeGenContext context, Label label) {
     context.methodvisitor.visitLabel(label);
   }
 
-  public static class VariableBuilder extends SimpleEvalNodeVisitor<CodeGenContext> {
-    public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+  public static class VariableBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+    public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
 
       return null;
     }
@@ -288,36 +289,9 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       InvocationTargetException, InstantiationException, PlanningException {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-
-    classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/apache/tajo/Test3", null,
-        TajoGeneratorAdapter.getInternalName(EvalNode.class), null);
-    classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;", null, null).visitEnd();
-
-    // constructor method
-    MethodVisitor initMV = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-    initMV.visitCode();
-    initMV.visitVarInsn(Opcodes.ALOAD, 0);
-    initMV.visitMethodInsn(Opcodes.INVOKESPECIAL, TajoGeneratorAdapter.getInternalName(EvalNode.class), "<init>",
-        "()V");
-    initMV.visitInsn(Opcodes.RETURN);
-    initMV.visitMaxs(1, 1);
-    initMV.visitEnd();
-
-    String methodName = "eval";
-    String methodDesc = TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class});
-    // method
-    MethodVisitor evalMV = classWriter.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodDesc, null, null);
-    evalMV.visitCode();
-
-    CodeGenContext context = new CodeGenContext(schema, Opcodes.ACC_PUBLIC, evalMV, methodName, methodDesc);
-
+    EvalCodeGenContext context = new EvalCodeGenContext(schema, classWriter, expr);
     visit(context, expr, new Stack<EvalNode>());
-
-    context.convertToDatum(expr.getValueType(), true);
-    context.methodvisitor.visitInsn(Opcodes.ARETURN);
-    context.methodvisitor.visitMaxs(0, 0);
-    context.methodvisitor.visitEnd();
-    classWriter.visitEnd();
+    context.emitReturn();
 
     TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
     Class aClass = myClassLoader.defineClass("org.apache.tajo.Test3", classWriter.toByteArray());
@@ -326,13 +300,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return r;
   }
 
-  private void printOut(CodeGenContext context, String message) {
+  private void printOut(EvalCodeGenContext context, String message) {
     context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
     context.push(message);
     context.invokeVirtual(PrintStream.class, "println", void.class, new Class[]{String.class});
   }
 
-  public EvalNode visitCast(CodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
+  public EvalNode visitCast(EvalCodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
     DataType  srcType = cast.getOperand().getValueType();
     DataType targetType = cast.getValueType();
 
@@ -361,7 +335,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return cast;
   }
 
-  public EvalNode visitField(CodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
+  public EvalNode visitField(EvalCodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
     printOut(context, "enter visitField");
 
     if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
@@ -451,7 +425,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return field;
   }
 
-  public EvalNode visitAndOrEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitAndOrEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
 
     stack.push(evalNode);
     visit(context, evalNode.getLeftExpr(), stack);
@@ -481,7 +455,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public static int store(CodeGenContext context, DataType type, int idx) {
+  public static int store(EvalCodeGenContext context, DataType type, int idx) {
     switch (type.getType()) {
     case NULL_TYPE:
     case BOOLEAN:
@@ -500,7 +474,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return idx + TajoGeneratorAdapter.getWordSize(type);
   }
 
-  public EvalNode visitArithmeticEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitArithmeticEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getLeftExpr(), stack);          // < left_child, push nullflag
     int LHS_NULLFLAG = context.istore();
@@ -534,7 +508,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public EvalNode visitComparisonEval(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
+  public EvalNode visitComparisonEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
       throws CodeGenException {
 
     DataType lhsType = evalNode.getLeftExpr().getValueType();
@@ -584,7 +558,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public EvalNode visitStringConcat(CodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
+  public EvalNode visitStringConcat(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
       throws CodeGenException {
 
     stack.push(evalNode);
@@ -619,7 +593,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public EvalNode visitIsNull(CodeGenContext context, IsNullEval isNullEval, Stack<EvalNode> stack) {
+  public EvalNode visitIsNull(EvalCodeGenContext context, IsNullEval isNullEval, Stack<EvalNode> stack) {
 
     visit(context, isNullEval.getChild(), stack);
 
@@ -644,7 +618,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
 
   @Override
-  public EvalNode visitConst(CodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitConst(EvalCodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
     switch (evalNode.getValueType().getType()) {
     case NULL_TYPE:
       if (!stack.isEmpty() && stack.peek() instanceof BinaryEval) {
@@ -711,7 +685,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return paramTypes;
   }
 
-  public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
+  public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
     int paramNum = func.getArgs().length;
     context.push(paramNum);
     context.newArray(Datum.class); // new Datum[paramNum]
@@ -772,13 +746,50 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return func;
   }
 
-  public static class CodeGenContext extends TajoGeneratorAdapter {
-    private Schema schema;
-    private Map<EvalNode, String> variableMap;
+  public static class EvalCodeGenContext extends TajoGeneratorAdapter {
+    private final Schema schema;
+    private final ClassWriter classWriter;
+    private final EvalNode evalNode;
+    private final Map<EvalNode, String> variableMap;
 
-    public CodeGenContext(Schema schema, int access, MethodVisitor methodVisitor, String name, String desc) {
-      super(access, methodVisitor, name, desc);
+    public EvalCodeGenContext(Schema schema, ClassWriter classWriter, EvalNode evalNode) {
+      this.classWriter = classWriter;
       this.schema = schema;
+      this.evalNode = evalNode;
+      this.variableMap = Maps.newHashMap();
+
+      init();
+
+      String methodName = "eval";
+      String methodDesc = TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class});
+      MethodVisitor evalMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodDesc, null, null);
+      evalMethod.visitCode();
+      this.methodvisitor = evalMethod;
+      generatorAdapter = new GeneratorAdapter(this.methodvisitor, access, methodDesc, methodDesc);
+    }
+
+    public void init() {
+      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/apache/tajo/Test3", null,
+          TajoGeneratorAdapter.getInternalName(EvalNode.class), null);
+      classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;", null, null).visitEnd();
+
+      // constructor method
+      MethodVisitor initMV = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+      initMV.visitCode();
+      initMV.visitVarInsn(Opcodes.ALOAD, 0);
+      initMV.visitMethodInsn(Opcodes.INVOKESPECIAL, TajoGeneratorAdapter.getInternalName(EvalNode.class), "<init>",
+          "()V");
+      initMV.visitInsn(Opcodes.RETURN);
+      initMV.visitMaxs(1, 1);
+      initMV.visitEnd();
+    }
+
+    public void emitReturn() {
+      convertToDatum(evalNode.getValueType(), true);
+      methodvisitor.visitInsn(Opcodes.ARETURN);
+      methodvisitor.visitMaxs(0, 0);
+      methodvisitor.visitEnd();
+      classWriter.visitEnd();
     }
   }
 
@@ -849,13 +860,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
   public static class CaseWhenSwitchGenerator implements SwitchCaseGenerator {
     final private ExprCodeGenerator generator;
-    final private CodeGenContext context;
+    final private EvalCodeGenContext context;
     final private Stack<EvalNode> stack;
 
     final NavigableMap<Integer, SwitchCase> casesMap;
     final EvalNode defaultEval;
 
-    public CaseWhenSwitchGenerator(ExprCodeGenerator generator, CodeGenContext context, Stack<EvalNode> stack,
+    public CaseWhenSwitchGenerator(ExprCodeGenerator generator, EvalCodeGenContext context, Stack<EvalNode> stack,
                                    SwitchCase[] cases, EvalNode defaultEval) {
       this.generator = generator;
       this.context = context;
@@ -913,7 +924,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     }
   }
 
-  public EvalNode visitCaseWhen(CodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
+  public EvalNode visitCaseWhen(EvalCodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
 
     EvalNode commonTerm = extractCommonTerm(caseWhen.getIfThenEvals());
 
@@ -1004,7 +1015,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return caseWhen;
   }
 
-  public EvalNode visitIfThen(CodeGenContext context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitIfThen(EvalCodeGenContext context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getCondition(), stack);
     visit(context, evalNode.getResult(), stack);
@@ -1012,7 +1023,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     return evalNode;
   }
 
-  public EvalNode visitInPredicate(CodeGenContext context, InEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitInPredicate(EvalCodeGenContext context, InEval evalNode, Stack<EvalNode> stack) {
     return visitBinaryEval(context, stack, evalNode);
   }
 }

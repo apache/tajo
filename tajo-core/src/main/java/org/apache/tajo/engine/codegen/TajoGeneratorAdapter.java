@@ -147,15 +147,16 @@ public class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT8, Opcodes.DCMPG);
   }
 
-  protected final int access;
-  protected final MethodVisitor methodvisitor;
+  protected int access;
+  protected MethodVisitor methodvisitor;
+  protected GeneratorAdapter generatorAdapter;
 
-  protected final GeneratorAdapter generatorAdapter;
+  public TajoGeneratorAdapter() {}
 
   public TajoGeneratorAdapter(int access, MethodVisitor methodVisitor, String name, String desc) {
     this.access = access;
     this.methodvisitor = methodVisitor;
-    generatorAdapter = new GeneratorAdapter(methodVisitor, access, "eval", desc);
+    generatorAdapter = new GeneratorAdapter(methodVisitor, access, name, desc);
   }
 
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
