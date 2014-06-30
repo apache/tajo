@@ -170,7 +170,6 @@ public class Repartitioner {
       }
     }
 
-
     if (isAllBroadcastTable) {
       // set largest table to normal mode
       baseScanIdx = maxStatsScanIdx;
