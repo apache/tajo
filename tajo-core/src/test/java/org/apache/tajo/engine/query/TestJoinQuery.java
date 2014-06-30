@@ -1010,4 +1010,24 @@ public class TestJoinQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public void testFullOuterJoinWithEmptyIntermediateData() throws Exception {
+    ResultSet res = executeString(
+        "select a.l_orderkey \n" +
+            "from (select * from lineitem where l_orderkey < 0) a\n" +
+            "full outer join (select * from lineitem where l_orderkey < 0) b\n" +
+            "on a.l_orderkey = b.l_orderkey"
+    );
+
+    try {
+      String expected =
+          "l_orderkey\n" +
+              "-------------------------------\n";
+
+      assertEquals(expected, resultSetToString(res));
+    } finally {
+      cleanupQuery(res);
+    }
+  }
 }
