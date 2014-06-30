@@ -123,11 +123,7 @@ public class GlobalPlanner {
     if (autoBroadcast) {
       // pre-visit finding broadcast join target table
       // this visiting doesn't make any execution block and change plan
-      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor(true);
-      broadcastJoinPlanVisitor.visit(globalPlanContext,
-          masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
-
-      broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor(false);
+      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor();
       broadcastJoinPlanVisitor.visit(globalPlanContext,
           masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
     }
@@ -248,7 +244,15 @@ public class GlobalPlanner {
       int numLargeTables = 0;
       boolean leftBroadcast = false;
       boolean rightBroadcast = false;
-      if (leftNode.getType() == NodeType.SCAN) {
+
+      // TODO Currently the following case not supported
+      //        Join
+      //       /    \
+      //   Join     Join
+      //   /  \     /  \
+      // Scan Scan Scan Scan
+
+      if (ScanNode.isScanNode(leftNode)) {
         ScanNode scanNode = (ScanNode)leftNode;
         if (scanNode.getTableDesc().getStats().getNumBytes() >= broadcastThreshold) {
           numLargeTables++;
@@ -259,7 +263,7 @@ public class GlobalPlanner {
               + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
         }
       }
-      if (rightNode.getType() == NodeType.SCAN) {
+      if (ScanNode.isScanNode(rightNode)) {
         ScanNode scanNode = (ScanNode)rightNode;
         if (scanNode.getTableDesc().getStats().getNumBytes() >= broadcastThreshold) {
           numLargeTables++;
@@ -272,7 +276,7 @@ public class GlobalPlanner {
       }
 
       JoinNode blockJoinNode = null;
-      for(LogicalNode eachNode: joinNode.getRightBaseBroadcastCandidateTargets()) {
+      for(LogicalNode eachNode: joinNode.getBroadcastCandidateTargets()) {
         if (numLargeTables > 2) {
           break;
         }

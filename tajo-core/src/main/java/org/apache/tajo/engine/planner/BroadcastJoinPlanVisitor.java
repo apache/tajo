@@ -22,88 +22,39 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.ScanNode;
 
 import java.util.Stack;
 
 public class BroadcastJoinPlanVisitor extends BasicLogicalPlanVisitor<GlobalPlanner.GlobalPlanContext, LogicalNode> {
-
-  private boolean leftBase;
-
-  public BroadcastJoinPlanVisitor(boolean leftBase) {
-    this.leftBase = leftBase;
-  }
-
   @Override
   public LogicalNode visitJoin(GlobalPlanner.GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
-    if (leftBase) {
-      return findLeftBaseBroadcastJoin(context, plan, block, node, stack);
-    } else {
-      return findRightBaseBroadcastJoin(context, plan, block, node, stack);
-    }
-  }
-
-  private LogicalNode findRightBaseBroadcastJoin(GlobalPlanner.GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode leftChild = node.getLeftChild();
     LogicalNode rightChild = node.getRightChild();
 
-    if (leftChild.getType() == NodeType.JOIN  && isScanNode(rightChild)) {
-      node.getRightBaseBroadcastCandidateTargets().add(node);
+    if (isBroadcastCandidateNode(leftChild) && isBroadcastCandidateNode(rightChild)) {
+      node.setCandidateBroadcast(true);
+    }
+
+    if (leftChild.getType() == NodeType.JOIN  && ScanNode.isScanNode(rightChild)) {
+      node.getBroadcastCandidateTargets().add(node);
     }
     LogicalNode parentNode = stack.peek();
     if (parentNode != null && parentNode.getType() == NodeType.JOIN) {
-      node.getRightBaseBroadcastCandidateTargets().addAll(((JoinNode)parentNode).getRightBaseBroadcastCandidateTargets());
+      node.getBroadcastCandidateTargets().addAll(((JoinNode)parentNode).getBroadcastCandidateTargets());
     }
 
     Stack<LogicalNode> currentStack = new Stack<LogicalNode>();
     currentStack.push(node);
-    if(!isScanNode(leftChild)) {
+    if(!ScanNode.isScanNode(leftChild)) {
       visit(context, plan, block, leftChild, currentStack);
     }
 
-    if(!isScanNode(rightChild)) {
+    if(!ScanNode.isScanNode(rightChild)) {
       visit(context, plan, block, rightChild, currentStack);
     }
     currentStack.pop();
-
-    return node;
-  }
-
-  private LogicalNode findLeftBaseBroadcastJoin(GlobalPlanner.GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
-    LogicalNode leftChild = node.getLeftChild();
-    LogicalNode rightChild = node.getRightChild();
-
-    if (isScanNode(leftChild) && isScanNode(rightChild)) {
-      node.setCandidateBroadcast(true);
-      node.getLeftBaseBroadcastCandidateTargets().add(leftChild);
-      node.getLeftBaseBroadcastCandidateTargets().add(rightChild);
-      return node;
-    }
-
-    if(!isScanNode(leftChild)) {
-      visit(context, plan, block, leftChild, stack);
-    }
-
-    if(!isScanNode(rightChild)) {
-      visit(context, plan, block, rightChild, stack);
-    }
-
-    if(isBroadcastCandidateNode(leftChild) && isBroadcastCandidateNode(rightChild)) {
-      node.setCandidateBroadcast(true);
-      if(leftChild.getType() == NodeType.JOIN) {
-        node.getLeftBaseBroadcastCandidateTargets().addAll(((JoinNode)leftChild).getLeftBaseBroadcastCandidateTargets());
-      } else {
-        node.getLeftBaseBroadcastCandidateTargets().add(leftChild);
-      }
-
-      if(rightChild.getType() == NodeType.JOIN) {
-        node.getLeftBaseBroadcastCandidateTargets().addAll(((JoinNode)rightChild).getLeftBaseBroadcastCandidateTargets());
-      } else {
-        node.getLeftBaseBroadcastCandidateTargets().add(rightChild);
-      }
-    }
 
     return node;
   }
@@ -119,10 +70,5 @@ public class BroadcastJoinPlanVisitor extends BasicLogicalPlanVisitor<GlobalPlan
     }
 
     return false;
-  }
-
-  private static boolean isScanNode(LogicalNode node) {
-    return node.getType() == NodeType.SCAN ||
-        node.getType() == NodeType.PARTITIONS_SCAN;
   }
 }

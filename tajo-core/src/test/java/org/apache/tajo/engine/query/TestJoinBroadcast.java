@@ -391,5 +391,4 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
-
 }
