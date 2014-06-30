@@ -36,4 +36,4 @@ notifications:
 
 install: ./dev-support/travis-install-dependencies.sh
 
-script: mvn clean install -Phcatalog-0.12.0 -q 1> /dev/null
+script: mvn clean install -Phcatalog-0.12.0 | grep "^Tests run:\|Running\|Results :"

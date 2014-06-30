@@ -6,4 +6,4 @@ from
   nation, region
 where
   n_regionkey = r_regionkey
-order by n_name
+order by n_name;

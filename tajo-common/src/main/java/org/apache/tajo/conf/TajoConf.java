@@ -336,7 +336,10 @@ public class TajoConf extends Configuration {
     OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
 
     // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false)
+    TAJO_DEBUG("tajo.debug", false),
+
+    // ONLY FOR TESTCASE
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
     ;
 
     public final String varname;
