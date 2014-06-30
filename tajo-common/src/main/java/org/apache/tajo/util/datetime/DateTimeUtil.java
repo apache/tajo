@@ -19,6 +19,7 @@
 package org.apache.tajo.util.datetime;
 
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
@@ -667,15 +668,35 @@ public class DateTimeUtil {
   /**
    * Parse datetime string to julian time.
    * The result is the local time basis.
-   * @param str
+   * @param timestampStr
    * @return
    */
-  public static long toJulianTimestampWithTZ(String str) {
-    long timestamp = DateTimeUtil.toJulianTimestamp(str);
+  public static long toJulianTimestampWithTZ(String timestampStr) {
+    long timestamp = DateTimeUtil.toJulianTimestamp(timestampStr);
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
     DateTimeUtil.toUTCTimezone(tm);
     return DateTimeUtil.toJulianTimestamp(tm);
+  }
+
+  /**
+   * Parse datetime string to julian date.
+   * @param dateStr
+   * @return
+   */
+  public static int toJulianDate(String dateStr) {
+    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
+    return DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth);
+  }
+
+  /**
+   * Parse datetime string to julian time.
+   * @param timeStr
+   * @return
+   */
+  public static long toJulianTime(String timeStr) {
+    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);
+    return DateTimeUtil.toTime(tm);
   }
 
   public static TimeMeta decodeDateTime(String str) {

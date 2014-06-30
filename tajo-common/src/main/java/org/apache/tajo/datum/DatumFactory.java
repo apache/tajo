@@ -271,17 +271,15 @@ public class DatumFactory {
   }
 
   public static DateDatum createDate(String dateStr) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
-    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+    return new DateDatum(DateTimeUtil.toJulianDate(dateStr));
   }
 
   public static TimeDatum createTime(long instance) {
     return new TimeDatum(instance);
   }
 
-  public static TimeDatum createTime(String dateStr) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
-    return new TimeDatum(DateTimeUtil.toTime(tm));
+  public static TimeDatum createTime(String timeStr) {
+    return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
   public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
@@ -341,6 +339,7 @@ public class DatumFactory {
     }
   }
 
+  @SuppressWarnings("unused")
   public static TimestampDatum createTimestamp(long julianTimestamp) {
     return new TimestampDatum(julianTimestamp);
   }

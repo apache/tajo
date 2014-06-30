@@ -68,10 +68,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       new byte [] {UNKNOWN, TRUE,    FALSE}    // false
   };
 
-  public static void test() {
-    System.out.println(AND_LOGIC[0][1]);
-  }
-
   public EvalNode visitBinaryEval(CodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     if (EvalType.isLogicalOperator(binaryEval)) {
       return visitAndOrEval(context, binaryEval, stack);
@@ -281,6 +277,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     context.methodvisitor.visitLabel(label);
   }
 
+  public static class VariableBuilder extends SimpleEvalNodeVisitor<CodeGenContext> {
+    public EvalNode visitFuncCall(CodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
+
+      return null;
+    }
+  }
+
   public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, PlanningException {
 
@@ -366,7 +369,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       context.pushNullOfThreeValuedLogic();
       context.pushNullFlag(false);
     } else {
-      String methodName;
+      String methodName = null;
       int idx = context.schema.getColumnId(field.getColumnRef().getQualifiedName());
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
@@ -379,8 +382,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       Label afterAll = new Label();
       context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
 
-      Class returnType;
-      Class [] paramTypes;
+      Class returnType = null;
+      Class [] paramTypes = null;
       switch (field.getValueType().getType()) {
       case BOOLEAN:
         methodName = "getByte";
@@ -396,11 +399,14 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
       case INT1:
       case INT2:
       case INT4:
+      case DATE:
         methodName = "getInt4";
         returnType = int.class;
         paramTypes = new Class [] {int.class};
         break;
       case INT8:
+      case TIMESTAMP:
+      case TIME:
         methodName = "getInt8";
         returnType = long.class;
         paramTypes = new Class [] {int.class};
@@ -420,9 +426,9 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
         returnType = String.class;
         paramTypes = new Class [] {int.class};
         break;
-      case TIMESTAMP:
-        methodName = "getInt8";
-        returnType = long.class;
+      case INTERVAL:
+        methodName = "getInterval";
+        returnType = IntervalDatum.class;
         paramTypes = new Class [] {int.class};
         break;
       default:
@@ -659,9 +665,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     case INT1:
     case INT2:
     case INT4:
+    case DATE:
       context.push(evalNode.getValue().asInt4());
       break;
     case INT8:
+    case TIMESTAMP:
+    case TIME:
       context.push(evalNode.getValue().asInt8());
       break;
     case FLOAT4:
@@ -674,6 +683,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
     case TEXT:
       context.push(evalNode.getValue().asChars());
       break;
+    case INTERVAL:
+//      context.methodvisitor.visitVarInsn(Opcodes.SIPUSH, evalNode.getValue());
+      break;
+    default:
+      throw new UnsupportedOperationException(evalNode.getValueType().getType().name() +
+          " const type is not supported");
     }
 
     context.pushNullFlag(evalNode.getValueType().getType() != TajoDataTypes.Type.NULL_TYPE);
@@ -759,6 +774,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.C
 
   public static class CodeGenContext extends TajoGeneratorAdapter {
     private Schema schema;
+    private Map<EvalNode, String> variableMap;
 
     public CodeGenContext(Schema schema, int access, MethodVisitor methodVisitor, String name, String desc) {
       super(access, methodVisitor, name, desc);

@@ -167,7 +167,7 @@ public class TajoGeneratorAdapter {
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
-    if (type.getType() == INT8 || type.getType() == FLOAT8) {
+    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
       return 2;
     } else {
       return 1;
@@ -389,7 +389,9 @@ public class TajoGeneratorAdapter {
   public void pushDummyValue(TajoDataTypes.DataType type) {
     if (type.getType() == NULL_TYPE) {
       pushNullOfThreeValuedLogic();
-    } else if (type.getType() == TajoDataTypes.Type.INT8) {                // < dummy_value
+    } else if (isJVMInternalInt(type) || type.getType() == DATE) {
+      push(0);
+    } else if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
       push(0L);
     } else if (type.getType() == TajoDataTypes.Type.FLOAT8) {
       push(0.0d);
@@ -397,8 +399,10 @@ public class TajoGeneratorAdapter {
       push(0.0f);
     } else if (type.getType() == TajoDataTypes.Type.CHAR || type.getType() == TajoDataTypes.Type.TEXT) {
       push("");
+    } else if (type.getType() == INTERVAL) {
+      methodvisitor.visitLdcInsn(NullDatum.get());
     } else {
-      push(0);
+      assert false;
     }
   }
 
@@ -541,6 +545,19 @@ public class TajoGeneratorAdapter {
             "toJulianTimestampWithTZ", "(L" + Type.getInternalName(String.class) + ";)J");
         break;
       }
+      case DATE: {
+        methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(DateTimeUtil.class),
+            "toJulianDate", "(L" + Type.getInternalName(String.class) + ";)I");
+        break;
+      }
+      case TIME: {
+        methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(DateTimeUtil.class),
+            "toJulianTime", "(L" + Type.getInternalName(String.class) + ";)J");
+        break;
+      }
+      case INTERVAL: {
+
+      }
       default: throw new InvalidCastException(srcType, targetType);
       }
       break;
@@ -572,9 +589,12 @@ public class TajoGeneratorAdapter {
       invokeVirtual(Datum.class, "asInt2", short.class, new Class[] {});
       break;
     case INT4:
+    case DATE:
       invokeVirtual(Datum.class, "asInt4", int.class, new Class[] {});
       break;
     case INT8:
+    case TIMESTAMP:
+    case TIME:
       invokeVirtual(Datum.class, "asInt8", long.class, new Class[] {});
       break;
     case FLOAT4:
@@ -661,6 +681,16 @@ public class TajoGeneratorAdapter {
       returnType = TimestampDatum.class;
       paramTypes = new Class[] {long.class};
       break;
+    case DATE:
+      methodName = "createDate";
+      returnType = DateDatum.class;
+      paramTypes = new Class[] {int.class};
+      break;
+    case TIME:
+      methodName = "createTime";
+      returnType = TimeDatum.class;
+      paramTypes = new Class[] {long.class};
+      break;
     default:
       throw new RuntimeException("Unsupported type: " + type.getType().name());
     }
@@ -684,7 +714,7 @@ public class TajoGeneratorAdapter {
   }
 
   public void pop(TajoDataTypes.DataType type) {
-    if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TajoDataTypes.Type.FLOAT8) {
+    if (getWordSize(type) == 2) {
       methodvisitor.visitInsn(Opcodes.POP2);
     } else {
       methodvisitor.visitInsn(Opcodes.POP);
