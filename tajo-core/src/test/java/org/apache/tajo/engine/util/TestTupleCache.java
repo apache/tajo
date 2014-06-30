@@ -53,7 +53,7 @@ public class TestTupleCache {
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(
         QueryIdFactory.newQueryId(System.currentTimeMillis(), 0));
 
-    TupleCacheKey cacheKey = new TupleCacheKey(ebId.toString(), "TestTable");
+    TupleCacheKey cacheKey = new TupleCacheKey(ebId.toString(), "TestTable", "test");
     TupleCache tupleCache = TupleCache.getInstance();
 
     assertFalse(tupleCache.isBroadcastCacheReady(cacheKey));

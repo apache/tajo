@@ -14,4 +14,4 @@ left outer join (
   b
 on a.c_custkey = b.c_custkey
 order by
-  c_custkey;
+  a.c_custkey;

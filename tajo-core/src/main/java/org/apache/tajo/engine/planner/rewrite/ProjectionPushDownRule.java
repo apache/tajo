@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
@@ -54,11 +55,15 @@ public class ProjectionPushDownRule extends
   public boolean isEligible(LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
-    if (PlannerUtil.checkIfDDLPlan(toBeOptimized) || !plan.getRootBlock().hasTableExpression()) {
+    if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-
-    return true;
+    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+      if (eachBlock.hasTableExpression()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -135,8 +140,10 @@ public class ProjectionPushDownRule extends
     private BiMap<Integer, EvalNode> idToEvalBiMap;
     /** Map: Id -> Names */
     private LinkedHashMap<Integer, List<String>> idToNamesMap;
-    /** Map: Name -> Boolean */
-    private LinkedHashMap<String, Boolean> evaluationStateMap;
+    /** Map: Id -> Boolean */
+    private LinkedHashMap<Integer, Boolean> evaluationStateMap;
+    /** Map: alias name -> Id */
+    private LinkedHashMap<String, Integer> aliasMap;
 
     private LogicalPlan plan;
 
@@ -146,10 +153,33 @@ public class ProjectionPushDownRule extends
       idToEvalBiMap = HashBiMap.create();
       idToNamesMap = Maps.newLinkedHashMap();
       evaluationStateMap = Maps.newLinkedHashMap();
+      aliasMap = Maps.newLinkedHashMap();
     }
 
     private int getNextSeqId() {
       return seqId++;
+    }
+
+    /**
+     * If some expression is duplicated, we call an alias indicating the duplicated expression 'native alias'.
+     * This method checks whether a reference is native alias or not.
+     *
+     * @param name The reference name
+     * @return True if the reference is native alias. Otherwise, it will return False.
+     */
+    public boolean isNativeAlias(String name) {
+      return aliasMap.containsKey(name);
+    }
+
+    /**
+     * This method retrieves the name indicating actual expression that an given alias indicate.
+     *
+     * @param name an alias name
+     * @return Real reference name
+     */
+    public String getRealReferenceName(String name) {
+      int refId = aliasMap.get(name);
+      return getPrimaryName(refId);
     }
 
     /**
@@ -163,12 +193,19 @@ public class ProjectionPushDownRule extends
       if (nameToIdBiMap.containsKey(specifiedName)) {
         int refId = nameToIdBiMap.get(specifiedName);
         EvalNode found = idToEvalBiMap.get(refId);
-        if (found != null && !evalNode.equals(found)) {
-          if (found.getType() != EvalType.FIELD && evalNode.getType() != EvalType.FIELD) {
-            throw new PlanningException("Duplicate alias: " + evalNode);
-          }
-          if (found.getType() == EvalType.FIELD) {
-            idToEvalBiMap.forcePut(refId, evalNode);
+        if (found != null) {
+          if (evalNode.equals(found)) { // if input expression already exists
+            return specifiedName;
+          } else {
+            // The case where if existing reference name and a given reference name are the same to each other and
+            // existing EvalNode and a given EvalNode is the different
+            if (found.getType() != EvalType.FIELD && evalNode.getType() != EvalType.FIELD) {
+              throw new PlanningException("Duplicate alias: " + evalNode);
+            }
+
+            if (found.getType() == EvalType.FIELD) {
+              idToEvalBiMap.forcePut(refId, evalNode);
+            }
           }
         }
       }
@@ -176,18 +213,19 @@ public class ProjectionPushDownRule extends
       int refId;
       if (idToEvalBiMap.inverse().containsKey(evalNode)) {
         refId = idToEvalBiMap.inverse().get(evalNode);
+        aliasMap.put(specifiedName, refId);
+
       } else {
         refId = getNextSeqId();
         idToEvalBiMap.put(refId, evalNode);
+        TUtil.putToNestedList(idToNamesMap, refId, specifiedName);
+        for (Column column : EvalTreeUtil.findUniqueColumns(evalNode)) {
+          add(new FieldEval(column));
+        }
+        evaluationStateMap.put(refId, false);
       }
 
       nameToIdBiMap.put(specifiedName, refId);
-      TUtil.putToNestedList(idToNamesMap, refId, specifiedName);
-      evaluationStateMap.put(specifiedName, false);
-
-      for (Column column : EvalTreeUtil.findUniqueColumns(evalNode)) {
-        add(new FieldEval(column));
-      }
 
       return specifiedName;
     }
@@ -287,7 +325,8 @@ public class ProjectionPushDownRule extends
       if (!nameToIdBiMap.containsKey(name)) {
         throw new RuntimeException("No Such target name: " + name);
       }
-      return evaluationStateMap.get(name);
+      int refId = nameToIdBiMap.get(name);
+      return evaluationStateMap.get(refId);
     }
 
     public void markAsEvaluated(Target target) {
@@ -296,7 +335,7 @@ public class ProjectionPushDownRule extends
       if (!idToNamesMap.containsKey(refId)) {
         throw new RuntimeException("No such eval: " + evalNode);
       }
-      evaluationStateMap.put(target.getCanonicalName(), true);
+      evaluationStateMap.put(refId, true);
     }
 
     public Iterator<Target> getFilteredTargets(Set<String> required) {
@@ -305,6 +344,7 @@ public class ProjectionPushDownRule extends
 
     class FilteredTargetIterator implements Iterator<Target> {
       List<Target> filtered = TUtil.newList();
+      Iterator<Target> iterator;
 
       public FilteredTargetIterator(Set<String> required) {
         for (String name : nameToIdBiMap.keySet()) {
@@ -312,16 +352,17 @@ public class ProjectionPushDownRule extends
             filtered.add(getTarget(name));
           }
         }
+        iterator = filtered.iterator();
       }
 
       @Override
       public boolean hasNext() {
-        return false;
+        return iterator.hasNext();
       }
 
       @Override
       public Target next() {
-        return null;
+        return iterator.next();
       }
 
       @Override
@@ -412,8 +453,15 @@ public class ProjectionPushDownRule extends
     for (String referenceName : referenceNames) {
       Target target = context.targetListMgr.getTarget(referenceName);
 
-      if (context.targetListMgr.isEvaluated(referenceName)) {
-        finalTargets.add(new Target(new FieldEval(target.getNamedColumn())));
+      if (target.getEvalTree().getType() == EvalType.CONST) {
+        finalTargets.add(target);
+      } else if (context.targetListMgr.isEvaluated(referenceName)) {
+        if (context.targetListMgr.isNativeAlias(referenceName)) {
+          String realRefName = context.targetListMgr.getRealReferenceName(referenceName);
+          finalTargets.add(new Target(new FieldEval(realRefName, target.getDataType()), referenceName));
+        } else {
+          finalTargets.add(new Target(new FieldEval(target.getNamedColumn())));
+        }
       } else if (LogicalPlanner.checkIfBeEvaluatedAtThis(target.getEvalTree(), node)) {
         finalTargets.add(target);
         context.targetListMgr.markAsEvaluated(target);
@@ -687,12 +735,35 @@ public class ProjectionPushDownRule extends
     return node;
   }
 
+  private static void pushDownIfComplexTermInJoinCondition(Context ctx, EvalNode cnf, EvalNode term)
+      throws PlanningException {
+
+    // If one of both terms in a binary operator is a complex expression, the binary operator will require
+    // multiple phases. In this case, join cannot evaluate a binary operator.
+    // So, we should prevent dividing the binary operator into more subexpressions.
+    if (term.getType() != EvalType.FIELD && !(term instanceof BinaryEval)) {
+      String refName = ctx.addExpr(term);
+      EvalTreeUtil.replace(cnf, term, new FieldEval(refName, term.getValueType()));
+    }
+  }
+
   public LogicalNode visitJoin(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
                           Stack<LogicalNode> stack) throws PlanningException {
     Context newContext = new Context(context);
 
     String joinQualReference = null;
     if (node.hasJoinQual()) {
+      for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(node.getJoinQual())) {
+        if (eachQual instanceof BinaryEval) {
+          BinaryEval binaryQual = (BinaryEval) eachQual;
+
+          for (int i = 0; i < 2; i++) {
+            EvalNode term = binaryQual.getExpr(i);
+            pushDownIfComplexTermInJoinCondition(newContext, eachQual, term);
+          }
+        }
+      }
+
       joinQualReference = newContext.addExpr(node.getJoinQual());
       newContext.addNecessaryReferences(node.getJoinQual());
     }
@@ -874,7 +945,7 @@ public class ProjectionPushDownRule extends
       newContext.addExpr(target);
     }
 
-    for (Iterator<Target> it = getFilteredTarget(targets, context.requiredSet); it.hasNext();) {
+    for (Iterator<Target> it = context.targetListMgr.getFilteredTargets(newContext.requiredSet); it.hasNext();) {
       Target target = it.next();
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {

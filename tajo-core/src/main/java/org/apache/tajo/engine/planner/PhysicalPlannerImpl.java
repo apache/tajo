@@ -844,16 +844,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
-    if (ctx.getTable(scanNode.getCanonicalName()) == null) {
-      return new SeqScanExec(ctx, sm, scanNode, null);
-    }
-    Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
-        "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");    
-
     // check if an input is sorted in the same order to the subsequence sort operator.
     // TODO - it works only if input files are raw files. We should check the file format.
     // Since the default intermediate file format is raw file, it is not problem right now.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
+      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+        return new SeqScanExec(ctx, sm, scanNode, null);
+      }
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, sm, (SortNode) node.peek(), fragments);
     } else {
@@ -889,6 +886,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
+      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+        return new SeqScanExec(ctx, sm, scanNode, null);
+      }
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new SeqScanExec(ctx, sm, scanNode, fragments);
     }

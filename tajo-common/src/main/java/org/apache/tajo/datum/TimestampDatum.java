@@ -170,7 +170,7 @@ public class TimestampDatum extends Datum {
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new RuntimeException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -182,7 +182,7 @@ public class TimestampDatum extends Datum {
     } else if (datum.isNull()) {
       return -1;
     } else {
-      throw new RuntimeException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

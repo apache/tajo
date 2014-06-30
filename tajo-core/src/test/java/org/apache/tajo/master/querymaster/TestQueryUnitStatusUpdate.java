@@ -23,7 +23,9 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.worker.TajoWorker;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,6 +40,11 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
   public TestQueryUnitStatusUpdate() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    conf.set(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
   }
 
   @Test
@@ -84,13 +91,24 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
     try {
       createColumnPartitionedTable();
 
+      /*
+      |-eb_1404143727281_0002_000005
+         |-eb_1404143727281_0002_000004        (order by)
+            |-eb_1404143727281_0002_000003     (join)
+               |-eb_1404143727281_0002_000002  (scan)
+               |-eb_1404143727281_0002_000001  (scan, filter)
+       */
       res = executeQuery();
 
-      long[] expectedNumRows = new long[]{7, 2, 2, 2, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{63, 34, 34, 18, 109, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{63, 0, 34, 0, 109, 0, 34, 0};
+      String actualResult = resultSetToString(res);
+      System.out.println(actualResult);
 
-      assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      // in/out * subquery(4)
+      long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
+      long[] expectedNumBytes = new long[]{18, 34, 45, 75, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{18, 0, 45, 0, 109, 0, 34, 0};
+
+      assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }
@@ -109,6 +127,7 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
+
     res.close();
   }
 

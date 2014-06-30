@@ -254,7 +254,7 @@ public class DateDatum extends Datum {
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

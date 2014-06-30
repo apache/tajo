@@ -33,10 +33,6 @@ public class BroadcastJoinPlanVisitor extends BasicLogicalPlanVisitor<GlobalPlan
     LogicalNode leftChild = node.getLeftChild();
     LogicalNode rightChild = node.getRightChild();
 
-    if (isBroadcastCandidateNode(leftChild) && isBroadcastCandidateNode(rightChild)) {
-      node.setCandidateBroadcast(true);
-    }
-
     if (leftChild.getType() == NodeType.JOIN  && ScanNode.isScanNode(rightChild)) {
       node.getBroadcastCandidateTargets().add(node);
     }
@@ -57,18 +53,5 @@ public class BroadcastJoinPlanVisitor extends BasicLogicalPlanVisitor<GlobalPlan
     currentStack.pop();
 
     return node;
-  }
-
-  public static boolean isBroadcastCandidateNode(LogicalNode node) {
-    if(node.getType() == NodeType.SCAN ||
-        node.getType() == NodeType.PARTITIONS_SCAN) {
-      return true;
-    }
-
-    if(node.getType() == NodeType.JOIN && ((JoinNode)node).isCandidateBroadcast()) {
-      return true;
-    }
-
-    return false;
   }
 }

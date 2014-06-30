@@ -54,16 +54,22 @@ public class ExecExternalShellCommand extends TajoShellCommand {
 
     CountDownLatch latch = new CountDownLatch(2);
     Process process = Runtime.getRuntime().exec(execCommand);
-    InputStreamConsoleWriter inWriter = new InputStreamConsoleWriter(process.getInputStream(), sout, "", latch);
-    InputStreamConsoleWriter errWriter = new InputStreamConsoleWriter(process.getErrorStream(), sout, "ERROR: ", latch);
+    try {
+      InputStreamConsoleWriter inWriter = new InputStreamConsoleWriter(process.getInputStream(), sout, "", latch);
+      InputStreamConsoleWriter errWriter = new InputStreamConsoleWriter(process.getErrorStream(), sout, "ERROR: ", latch);
 
-    inWriter.start();
-    errWriter.start();
+      inWriter.start();
+      errWriter.start();
 
-    int processResult = process.waitFor();
-    latch.await();
-    if (processResult != 0) {
-      throw new IOException("ERROR: Failed with exit code = " + processResult);
+      int processResult = process.waitFor();
+      latch.await();
+      if (processResult != 0) {
+        throw new IOException("ERROR: Failed with exit code = " + processResult);
+      }
+    } finally {
+      org.apache.commons.io.IOUtils.closeQuietly(process.getInputStream());
+      org.apache.commons.io.IOUtils.closeQuietly(process.getOutputStream());
+      org.apache.commons.io.IOUtils.closeQuietly(process.getErrorStream());
     }
   }
 

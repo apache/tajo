@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.exception.AmbiguousFieldException;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
@@ -384,6 +385,21 @@ public class LogicalPlan {
 
   private Column resolveColumnWithoutQualifier(QueryBlock block,
                                                ColumnReferenceExpr columnRef)throws PlanningException {
+
+    List<Column> candidates = TUtil.newList();
+
+    // It tries to find a full qualified column name from all relations in the current block.
+    for (RelationNode rel : block.getRelations()) {
+      Column found = rel.getTableSchema().getColumn(columnRef.getName());
+      if (found != null) {
+        candidates.add(found);
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return ensureUniqueColumn(candidates);
+    }
+
     // Trying to find the column within the current block
     if (block.currentNode != null && block.currentNode.getInSchema() != null) {
       Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
@@ -399,7 +415,7 @@ public class LogicalPlan {
       }
     }
 
-    List<Column> candidates = TUtil.newList();
+
     // Trying to find columns from aliased references.
     if (block.namedExprsMgr.isAliased(columnRef.getCanonicalName())) {
       String originalName = block.namedExprsMgr.getAlias(columnRef.getCanonicalName());
@@ -412,22 +428,10 @@ public class LogicalPlan {
       return ensureUniqueColumn(candidates);
     }
 
-    // Trying to find columns from other relations in the current block
-    for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getTableSchema().getColumn(columnRef.getName());
-      if (found != null) {
-        candidates.add(found);
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
     // This is an exception case. It means that there are some bugs in other parts.
     LogicalNode blockRootNode = block.getRoot();
     if (blockRootNode != null && blockRootNode.getOutSchema().getColumn(columnRef.getCanonicalName()) != null) {
-      throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+      throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
     }
 
     // Trying to find columns from other relations in other blocks
@@ -456,7 +460,7 @@ public class LogicalPlan {
       return ensureUniqueColumn(candidates);
     }
 
-    throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+    throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
   }
 
   private static Column ensureUniqueColumn(List<Column> candidates)
@@ -474,7 +478,7 @@ public class LogicalPlan {
         }
         sb.append(column);
       }
-      throw new VerifyException("Ambiguous Column Name: " + sb.toString());
+      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
     } else {
       return null;
     }
@@ -489,14 +493,20 @@ public class LogicalPlan {
     sb.append(queryBlockGraph.toStringGraph(getRootBlock().getName()));
     sb.append("-----------------------------\n");
     sb.append("Optimization Log:\n");
+    if (!planingHistory.isEmpty()) {
+      sb.append("[LogicalPlan]\n");
+      for (String eachHistory: planingHistory) {
+        sb.append("\t> ").append(eachHistory).append("\n");
+      }
+    }
     DirectedGraphCursor<String, BlockEdge> cursor =
         new DirectedGraphCursor<String, BlockEdge>(queryBlockGraph, getRootBlock().getName());
     while(cursor.hasNext()) {
       QueryBlock block = getBlock(cursor.nextBlock());
       if (block.getPlanHistory().size() > 0) {
-        sb.append("\n[").append(block.getName()).append("]\n");
+        sb.append("[").append(block.getName()).append("]\n");
         for (String log : block.getPlanHistory()) {
-          sb.append("> ").append(log).append("\n");
+          sb.append("\t> ").append(log).append("\n");
         }
       }
     }

@@ -96,7 +96,6 @@ public class IntervalDatum extends Datum {
 
       int length = intervalStr.getBytes().length;
 
-      int start = 0;
       StringBuilder digitChars = new StringBuilder();
       StringBuilder unitChars = new StringBuilder();
       for (int i = 0; i < length; i++) {
@@ -406,7 +405,7 @@ public class IntervalDatum extends Datum {
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

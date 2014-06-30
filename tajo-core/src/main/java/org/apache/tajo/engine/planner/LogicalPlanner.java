@@ -767,7 +767,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     if (join.hasQual()) {
-      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual());
+      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
       block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
@@ -835,8 +835,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
-      } catch (VerifyException ve) {} catch (PlanningException e) {
-        e.printStackTrace();
+      } catch (VerifyException ve) {
+      } catch (PlanningException e) {
       }
     }
     return newlyEvaluatedExprs;
@@ -1207,13 +1207,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      ScanNode scanNode = context.plan.createNode(ScanNode.class);
-      scanNode.init(desc);
-      context.queryBlock.addRelation(scanNode);
       String [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = context.plan.resolveColumn(context.queryBlock, new ColumnReferenceExpr(targets[i]));
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
         targetColumns.addColumn(targetColumn);
       }
       insertNode.setTargetSchema(targetColumns);
@@ -1629,22 +1626,25 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (!checkIfCaseWhenWithOuterJoinBeEvaluated(block, evalNode, isTopMostJoin)) {
-      return false;
+    if (containsOuterJoin(block)) {
+      if (!isTopMostJoin) {
+        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
+        if (found.size() > 0) {
+          return false;
+        }
+      }
     }
 
     return true;
   }
 
-  private static boolean checkIfCaseWhenWithOuterJoinBeEvaluated(QueryBlock block, EvalNode evalNode,
-                                                                 boolean isTopMostJoin) {
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> caseWhenEvals = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
-      if (caseWhenEvals.size() > 0 && !isTopMostJoin) {
-        return false;
-      }
-    }
-    return true;
+  public static boolean isOuterJoin(JoinType joinType) {
+    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
+  }
+
+  public static boolean containsOuterJoin(QueryBlock block) {
+    return block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER) ||
+        block.containsJoinType(JoinType.FULL_OUTER);
   }
 
   /**
@@ -1663,8 +1663,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+    if (containsOuterJoin(block)) {
+      Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
       if (found.size() > 0) {
         return false;
       }
