@@ -74,6 +74,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-894: Left outer join with partitioned large table and small table 
+    returns empty result. (Hyoungjun Kim via hyunsik)
+
     TAJO-867: OUTER JOIN with empty result subquery produces a wrong result.
     (Hyoungjun Kim via hyunsik)
 
