@@ -701,19 +701,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     }
     stack.pop();
 
-//    context.push(paramNum);
-//    context.newArray(ParamType.class); // new ParamType[paramNum]
-//    final int PARAM_TYPE_ARRAY = context.astore();
-//
-//    ParamType [] paramTypes = getParamTypes(func.getArgs());
-//    for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
-//      context.aload(PARAM_TYPE_ARRAY);
-//      context.methodvisitor.visitLdcInsn(paramIdx);
-//      context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, TajoGeneratorAdapter.getInternalName(ParamType.class),
-//          paramTypes[paramIdx].name(), TajoGeneratorAdapter.getDescription(ParamType.class));
-//      context.methodvisitor.visitInsn(Opcodes.AASTORE);
-//    }
-
     context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(VTuple.class));
     context.methodvisitor.visitInsn(Opcodes.DUP);
     context.aload(DATUM_ARRAY);
@@ -725,11 +712,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
 
     String fieldName = context.variableMap.get(func);
     String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getFuncClass()) + ";";
-    context.aload(0);
-    context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
-
-//    context.aload(PARAM_TYPE_ARRAY);
-//    context.invokeVirtual(desc.getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
 
     context.aload(0);
     context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
