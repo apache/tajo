@@ -20,11 +20,15 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.FunctionExpr;
+import org.apache.tajo.algebra.GeneralSetFunctionExpr;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
@@ -278,18 +282,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     context.methodvisitor.visitLabel(label);
   }
 
-  public static class VariableBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
-    public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
-
-      return null;
-    }
-  }
-
   public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, PlanningException {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
     EvalCodeGenContext context = new EvalCodeGenContext(schema, classWriter, expr);
+
+
     visit(context, expr, new Stack<EvalNode>());
     context.emitReturn();
 
@@ -702,18 +701,18 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     }
     stack.pop();
 
-    context.push(paramNum);
-    context.newArray(ParamType.class); // new Datum[paramNum]
-    final int PARAM_TYPE_ARRAY = context.astore();
-
-    ParamType [] paramTypes = getParamTypes(func.getArgs());
-    for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
-      context.aload(PARAM_TYPE_ARRAY);
-      context.methodvisitor.visitLdcInsn(paramIdx);
-      context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, TajoGeneratorAdapter.getInternalName(ParamType.class),
-          paramTypes[paramIdx].name(), TajoGeneratorAdapter.getDescription(ParamType.class));
-      context.methodvisitor.visitInsn(Opcodes.AASTORE);
-    }
+//    context.push(paramNum);
+//    context.newArray(ParamType.class); // new ParamType[paramNum]
+//    final int PARAM_TYPE_ARRAY = context.astore();
+//
+//    ParamType [] paramTypes = getParamTypes(func.getArgs());
+//    for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
+//      context.aload(PARAM_TYPE_ARRAY);
+//      context.methodvisitor.visitLdcInsn(paramIdx);
+//      context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, TajoGeneratorAdapter.getInternalName(ParamType.class),
+//          paramTypes[paramIdx].name(), TajoGeneratorAdapter.getDescription(ParamType.class));
+//      context.methodvisitor.visitInsn(Opcodes.AASTORE);
+//    }
 
     context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(VTuple.class));
     context.methodvisitor.visitInsn(Opcodes.DUP);
@@ -723,42 +722,42 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     final int TUPLE = context.astore();
 
     FunctionDesc desc = func.getFuncDesc();
-    try {
-      context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(desc.getFuncClass()));
-      int FUNC_INSTANCE = context.astore();
 
-      context.aload(FUNC_INSTANCE);
-      context.methodvisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, TajoGeneratorAdapter.getInternalName(desc.getFuncClass()),
-          "<init>", "()V"); // func
+    String fieldName = context.variableMap.get(func);
+    String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getFuncClass()) + ";";
+    context.aload(0);
+    context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
 
-      context.aload(FUNC_INSTANCE);
-      context.aload(PARAM_TYPE_ARRAY);
-      context.invokeVirtual(desc.getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
+//    context.aload(PARAM_TYPE_ARRAY);
+//    context.invokeVirtual(desc.getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
 
-      context.aload(FUNC_INSTANCE);
-      context.aload(TUPLE);
-      context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
-    } catch (InternalException e) {
-      e.printStackTrace();
-    }
+    context.aload(0);
+    context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
+    context.aload(TUPLE);
+    context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
 
     context.convertToPrimitive(func.getValueType());
     return func;
   }
 
   public static class EvalCodeGenContext extends TajoGeneratorAdapter {
+    private final String owner;
     private final Schema schema;
     private final ClassWriter classWriter;
     private final EvalNode evalNode;
     private final Map<EvalNode, String> variableMap;
+    private int seqId = 0;
 
     public EvalCodeGenContext(Schema schema, ClassWriter classWriter, EvalNode evalNode) {
+      this.owner = "org/apache/tajo/Test3";
       this.classWriter = classWriter;
       this.schema = schema;
       this.evalNode = evalNode;
       this.variableMap = Maps.newHashMap();
 
-      init();
+      emitClassDefinition();
+      emitMemberFields();
+      emitConstructor();
 
       String methodName = "eval";
       String methodDesc = TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class});
@@ -768,20 +767,82 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       generatorAdapter = new GeneratorAdapter(this.methodvisitor, access, methodDesc, methodDesc);
     }
 
-    public void init() {
-      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, "org/apache/tajo/Test3", null,
+    public void emitClassDefinition() {
+      classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, this.owner, null,
           TajoGeneratorAdapter.getInternalName(EvalNode.class), null);
-      classWriter.visitField(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;", null, null).visitEnd();
+    }
 
+    public void emitMemberFields() {
+      FuncToMembersBuilder builder = new FuncToMembersBuilder();
+      builder.visit(this, evalNode, new Stack<EvalNode>());
+    }
+
+    public void emitConstructor() {
       // constructor method
-      MethodVisitor initMV = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
-      initMV.visitCode();
-      initMV.visitVarInsn(Opcodes.ALOAD, 0);
-      initMV.visitMethodInsn(Opcodes.INVOKESPECIAL, TajoGeneratorAdapter.getInternalName(EvalNode.class), "<init>",
+      MethodVisitor initMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+      initMethod.visitCode();
+      initMethod.visitVarInsn(Opcodes.ALOAD, 0);
+      initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, TajoGeneratorAdapter.getInternalName(EvalNode.class), "<init>",
           "()V");
-      initMV.visitInsn(Opcodes.RETURN);
-      initMV.visitMaxs(1, 1);
-      initMV.visitEnd();
+
+      TajoGeneratorAdapter consAdapter = new TajoGeneratorAdapter(Opcodes.ACC_PUBLIC, initMethod, "<init>", "()V");
+
+      for (Map.Entry<EvalNode, String> entry : variableMap.entrySet()) {
+        if (entry.getKey().getType() == EvalType.FUNCTION) {
+          GeneralFunctionEval function = (GeneralFunctionEval) entry.getKey();
+          final String internalName = TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass());
+
+          // new and initialization of function
+          initMethod.visitTypeInsn(Opcodes.NEW, internalName);
+          int FUNCTION = consAdapter.astore();
+          initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
+          initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "()V");
+
+          // commParam
+          int paramNum = function.getArgs().length;
+          initMethod.visitLdcInsn(paramNum);
+          consAdapter.newArray(ParamType.class);
+          final int PARAM_TYPE_ARRAY = consAdapter.astore();
+          ParamType [] paramTypes = getParamTypes(function.getArgs());
+          for (int paramIdx = 0; paramIdx < paramTypes.length; paramIdx++) {
+            consAdapter.aload(PARAM_TYPE_ARRAY);
+            consAdapter.methodvisitor.visitLdcInsn(paramIdx);
+            consAdapter.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, TajoGeneratorAdapter.getInternalName(ParamType.class),
+                paramTypes[paramIdx].name(), TajoGeneratorAdapter.getDescription(ParamType.class));
+            consAdapter.methodvisitor.visitInsn(Opcodes.AASTORE);
+          }
+
+          initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
+          consAdapter.aload(PARAM_TYPE_ARRAY);
+          consAdapter.invokeVirtual(function.getFuncDesc().getFuncClass(), "init", void.class, new Class[] {ParamType[].class});
+
+          initMethod.visitVarInsn(Opcodes.ALOAD, 0);
+          initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
+          initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, entry.getValue(),
+              "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";");
+
+        }
+      }
+
+      initMethod.visitInsn(Opcodes.RETURN);
+      initMethod.visitMaxs(1, 1);
+      initMethod.visitEnd();
+    }
+
+    public static class FuncToMembersBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+      public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval function, Stack<EvalNode> stack) {
+        super.visitFuncCall(context, function, stack);
+
+        if (!context.variableMap.containsKey(function)) {
+          String fieldName = function.getFuncDesc().getSignature() + "_" + context.seqId++;
+          context.variableMap.put(function, fieldName);
+          context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+              "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);
+          context.classWriter.visitEnd();
+        }
+
+        return function;
+      }
     }
 
     public void emitReturn() {
