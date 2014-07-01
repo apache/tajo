@@ -126,6 +126,19 @@ public class Repartitioner {
     // If node is outer join and a preserved relation is empty, it should return zero rows.
     joinNode = PlannerUtil.findTopNode(execBlock.getPlan(), NodeType.JOIN);
     if (joinNode != null) {
+      // If all stats are zero, return
+      boolean isEmptyAllJoinTables = true;
+      for (int i = 0; i < stats.length; i++) {
+        if (stats[i] > 0) {
+          isEmptyAllJoinTables = false;
+          break;
+        }
+      }
+      if (isEmptyAllJoinTables) {
+        LOG.info("All input join tables are empty.");
+        return;
+      }
+
       // find left top scan node
       ScanNode leftScanNode = PlannerUtil.findTopNode(joinNode.getLeftChild(), NodeType.SCAN);
       ScanNode rightScanNode = PlannerUtil.findTopNode(joinNode.getRightChild(), NodeType.SCAN);
