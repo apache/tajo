@@ -348,9 +348,10 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
               Thread.sleep(100);
             }
           }
-
         } catch(InterruptedException ie) {
           LOG.error(ie);
+        } catch (Throwable t) {
+          LOG.error(t);
         }
       }
     }

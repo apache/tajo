@@ -238,7 +238,11 @@ public class MasterPlan {
       if (!isLeaf(block)) {
         sb.append("\n[Incoming]\n");
         for (DataChannel channel : getIncomingChannels(block.getId())) {
-          sb.append(channel).append("\n");
+          sb.append(channel);
+          if (block.getUnionScanMap().containsKey(channel.getSrcId())) {
+            sb.append(", union delegated scan: ").append(block.getUnionScanMap().get(channel.getSrcId()));
+          }
+          sb.append("\n");
         }
       }
 
@@ -249,6 +253,7 @@ public class MasterPlan {
           sb.append("\n");
         }
       }
+
 
       if (block.getEnforcer().getProperties().size() > 0) {
         sb.append("\n[Enforcers]\n");

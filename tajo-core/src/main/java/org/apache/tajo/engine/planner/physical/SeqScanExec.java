@@ -78,9 +78,9 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          FileFragment fileFragement = (FileFragment) FragmentConvertor.convert(
+          FileFragment fileFragement = FragmentConvertor.convert(
               context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-          pathNameKey += fileFragement.getPath().getParent().getName();
+          pathNameKey += fileFragement.getPath();
         }
       }
 
@@ -233,8 +233,10 @@ public class SeqScanExec extends PhysicalExec {
       }
     }
 
-    scanner.close();
-    scanner = null;
+    if (scanner != null) {
+      scanner.close();
+      scanner = null;
+    }
 
     TupleCache.getInstance().addBroadcastCache(cacheKey, broadcastTupleCacheList);
   }
