@@ -76,21 +76,8 @@ public class PartitionedTableRewriter implements RewriteRule {
 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
-    boolean containsPartitionedTables;
-    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      containsPartitionedTables = false;
-      for (RelationNode relation : block.getRelations()) {
-        if (relation.getType() == NodeType.SCAN) {
-          TableDesc table = ((ScanNode)relation).getTableDesc();
-          if (table.hasPartition()) {
-            containsPartitionedTables = true;
-          }
-        }
-      }
-      if (containsPartitionedTables) {
-        rewriter.visit(block, plan, block, block.getRoot(), new Stack<LogicalNode>());
-      }
-    }
+    LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
+    rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
 
@@ -360,7 +347,7 @@ public class PartitionedTableRewriter implements RewriteRule {
         updateTableStat(rewrittenScanNode);
 
         // if it is topmost node, set it as the rootnode of this block.
-        if (stack.empty()) {
+        if (stack.empty() || block.getRoot().equals(scanNode)) {
           block.setRoot(rewrittenScanNode);
         } else {
           PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
