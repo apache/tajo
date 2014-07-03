@@ -599,7 +599,7 @@ public class PlannerUtil {
           for (int j = 0; j < schemas.length; j++) {
             // check whether the column is for either outer or inner
             // 0 is outer, and 1 is inner
-            if (schemas[j].containsByQualifiedName(column.getQualifiedName())) {
+            if (schemas[j].contains(column.getQualifiedName())) {
               pair[j] = column;
             }
           }
