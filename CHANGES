@@ -74,6 +74,12 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-891: Complex join conditions with UNION or inline should be supported.
+    (hyunsik)
+    
+    TAJO-899: Nested now() has different value for each task. (Hyoungjun Kim 
+    via hyunsik)
+
     TAJO-894: Left outer join with partitioned large table and small table 
     returns empty result. (Hyoungjun Kim via hyunsik)
 
