@@ -425,4 +425,29 @@ public class TestUnionQuery extends QueryTestCaseBase {
 
     cleanupQuery(res);
   }
+
+  @Test
+  public void testUnionCaseOfFirstEmptyAndJoin() throws Exception {
+    ResultSet res = executeString(
+        "select a.c_custkey, b.c_custkey from " +
+            "  (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
+            "   union all " +
+            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
+            ") a " +
+            "left outer join customer b " +
+            "on a.c_custkey = b.c_custkey "
+    );
+
+    String expected =
+        "c_custkey,c_custkey\n" +
+            "-------------------------------\n" +
+            "1,1\n" +
+            "2,2\n" +
+            "3,3\n" +
+            "4,4\n" +
+            "5,5\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+  }
 }
