@@ -51,4 +51,5 @@ enum FetcherState {
   FETCH_INIT = 0;
   FETCH_FETCHING = 1;
   FETCH_FINISHED = 2;
+  FETCH_FAILED = 3;
 }
