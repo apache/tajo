@@ -175,6 +175,7 @@ public class AlgebraicUtil {
         constant = false;
       } else {
         for (EvalNode arg : evalNode.getArgs()) {
+          arg = visit(context, arg, stack);
           constant &= (arg.getType() == EvalType.CONST);
         }
       }

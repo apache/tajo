@@ -1012,6 +1012,27 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public void testComplexJoinCondition5() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition6() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinCondition7() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public void testFullOuterJoinWithEmptyIntermediateData() throws Exception {
     ResultSet res = executeString(
         "select a.l_orderkey \n" +
