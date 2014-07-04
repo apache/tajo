@@ -168,7 +168,8 @@ public class TajoGeneratorAdapter {
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
-    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
+    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME
+        || type.getType() == INTERVAL) {
       return 2;
     } else {
       return 1;
@@ -401,7 +402,7 @@ public class TajoGeneratorAdapter {
     } else if (type.getType() == TajoDataTypes.Type.CHAR || type.getType() == TajoDataTypes.Type.TEXT) {
       push("");
     } else if (type.getType() == INTERVAL) {
-      methodvisitor.visitLdcInsn(NullDatum.get());
+      invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
     } else {
       assert false;
     }
@@ -566,6 +567,10 @@ public class TajoGeneratorAdapter {
     }
   }
 
+  public static String getInternalName(String className) {
+    return className.replace('.', '/');
+  }
+
   public static String getInternalName(Class clazz) {
     return clazz.getName().replace('.', '/');
   }
@@ -623,7 +628,7 @@ public class TajoGeneratorAdapter {
   }
 
   public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
-    String methodName;
+    String convertMethod;
     Class returnType;
     Class [] paramTypes;
     switch (type.getType()) {
@@ -637,59 +642,64 @@ public class TajoGeneratorAdapter {
       return;
 
     case BOOLEAN:
-      methodName = "createBool";
+      convertMethod = "createBool";
       returnType = Datum.class;
       paramTypes = new Class[] {int.class};
       break;
     case CHAR:
-      methodName = "createChar";
+      convertMethod = "createChar";
       returnType = CharDatum.class;
       paramTypes = new Class[] {String.class};
       break;
     case INT1:
     case INT2:
-      methodName = "createInt2";
+      convertMethod = "createInt2";
       returnType = Int2Datum.class;
       paramTypes = new Class[] {short.class};
       break;
     case INT4:
-      methodName = "createInt4";
+      convertMethod = "createInt4";
       returnType = Int4Datum.class;
       paramTypes = new Class[] {int.class};
       break;
     case INT8:
-      methodName = "createInt8";
+      convertMethod = "createInt8";
       returnType = Int8Datum.class;
       paramTypes = new Class[] {long.class};
       break;
     case FLOAT4:
-      methodName = "createFloat4";
+      convertMethod = "createFloat4";
       returnType = Float4Datum.class;
       paramTypes = new Class[] {float.class};
       break;
     case FLOAT8:
-      methodName = "createFloat8";
+      convertMethod = "createFloat8";
       returnType = Float8Datum.class;
       paramTypes = new Class[] {double.class};
       break;
     case TEXT:
-      methodName = "createText";
+      convertMethod = "createText";
       returnType = TextDatum.class;
       paramTypes = new Class[] {String.class};
       break;
     case TIMESTAMP:
-      methodName = "createTimestamp";
+      convertMethod = "createTimestamp";
       returnType = TimestampDatum.class;
       paramTypes = new Class[] {long.class};
       break;
     case DATE:
-      methodName = "createDate";
+      convertMethod = "createDate";
       returnType = DateDatum.class;
       paramTypes = new Class[] {int.class};
       break;
     case TIME:
-      methodName = "createTime";
+      convertMethod = "createTime";
       returnType = TimeDatum.class;
+      paramTypes = new Class[] {long.class};
+      break;
+    case INTERVAL:
+      convertMethod = "createInterval";
+      returnType = IntervalDatum.class;
       paramTypes = new Class[] {long.class};
       break;
     default:
@@ -700,8 +710,9 @@ public class TajoGeneratorAdapter {
     Label afterAll = new Label();
 
     emitNullityCheck(ifNull);
-
-    invokeStatic(DatumFactory.class, methodName, returnType, paramTypes);
+    if (convertMethod != null) {
+      invokeStatic(DatumFactory.class, convertMethod, returnType, paramTypes);
+    }
     methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 
     methodvisitor.visitLabel(ifNull);

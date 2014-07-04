@@ -20,17 +20,12 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.algebra.FunctionExpr;
-import org.apache.tajo.algebra.GeneralSetFunctionExpr;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.mockito.asm.Type;
@@ -282,18 +277,20 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     context.methodvisitor.visitLabel(label);
   }
 
+  static int classSeq = 1;
+
   public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, PlanningException {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-    EvalCodeGenContext context = new EvalCodeGenContext(schema, classWriter, expr);
 
-
+    String className = "org.Test.Test" + classSeq++;
+    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className), schema, classWriter, expr);
     visit(context, expr, new Stack<EvalNode>());
     context.emitReturn();
 
     TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
-    Class aClass = myClassLoader.defineClass("org.apache.tajo.Test3", classWriter.toByteArray());
+    Class aClass = myClassLoader.defineClass(className, classWriter.toByteArray());
     Constructor constructor = aClass.getConstructor();
     EvalNode r = (EvalNode) constructor.newInstance();
     return r;
@@ -617,12 +614,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
 
 
   @Override
-  public EvalNode visitConst(EvalCodeGenContext context, ConstEval evalNode, Stack<EvalNode> stack) {
-    switch (evalNode.getValueType().getType()) {
+  public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
+    switch (constEval.getValueType().getType()) {
     case NULL_TYPE:
       if (!stack.isEmpty() && stack.peek() instanceof BinaryEval) {
         BinaryEval parent = (BinaryEval) stack.peek();
-        if (parent.getLeftExpr() == evalNode) {
+        if (parent.getLeftExpr() == constEval) {
           context.pushDummyValue(parent.getRightExpr().getValueType());
         } else {
           context.pushDummyValue(parent.getLeftExpr().getValueType());
@@ -632,40 +629,44 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       }
       break;
     case BOOLEAN:
-      context.push(evalNode.getValue().asInt4());
+      context.push(constEval.getValue().asInt4());
       break;
 
     case INT1:
     case INT2:
     case INT4:
     case DATE:
-      context.push(evalNode.getValue().asInt4());
+      context.push(constEval.getValue().asInt4());
       break;
     case INT8:
     case TIMESTAMP:
     case TIME:
-      context.push(evalNode.getValue().asInt8());
+      context.push(constEval.getValue().asInt8());
       break;
     case FLOAT4:
-      context.push(evalNode.getValue().asFloat4());
+      context.push(constEval.getValue().asFloat4());
       break;
     case FLOAT8:
-      context.push(evalNode.getValue().asFloat8());
+      context.push(constEval.getValue().asFloat8());
       break;
     case CHAR:
     case TEXT:
-      context.push(evalNode.getValue().asChars());
+      context.push(constEval.getValue().asChars());
       break;
     case INTERVAL:
-//      context.methodvisitor.visitVarInsn(Opcodes.SIPUSH, evalNode.getValue());
+      //context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 0);
+      //context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, context.owner,
+          //context.variableMap.get(constEval), "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";");
+      //context.invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
+      context.push(constEval.getValue().asInt8());
       break;
     default:
-      throw new UnsupportedOperationException(evalNode.getValueType().getType().name() +
+      throw new UnsupportedOperationException(constEval.getValueType().getType().name() +
           " const type is not supported");
     }
 
-    context.pushNullFlag(evalNode.getValueType().getType() != TajoDataTypes.Type.NULL_TYPE);
-    return evalNode;
+    context.pushNullFlag(constEval.getValueType().getType() != TajoDataTypes.Type.NULL_TYPE);
+    return constEval;
   }
 
   public static ParamType [] getParamTypes(EvalNode [] arguments) {
@@ -730,8 +731,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     private final Map<EvalNode, String> variableMap;
     private int seqId = 0;
 
-    public EvalCodeGenContext(Schema schema, ClassWriter classWriter, EvalNode evalNode) {
-      this.owner = "org/apache/tajo/Test3";
+    public EvalCodeGenContext(String className, Schema schema, ClassWriter classWriter, EvalNode evalNode) {
+      this.owner = className;
       this.classWriter = classWriter;
       this.schema = schema;
       this.evalNode = evalNode;
@@ -739,6 +740,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
 
       emitClassDefinition();
       emitMemberFields();
+      classWriter.visitEnd();
       emitConstructor();
 
       String methodName = "eval";
@@ -755,7 +757,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     }
 
     public void emitMemberFields() {
-      FuncToMembersBuilder builder = new FuncToMembersBuilder();
+      VariablesBuilder builder = new VariablesBuilder();
       builder.visit(this, evalNode, new Stack<EvalNode>());
     }
 
@@ -770,7 +772,26 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       TajoGeneratorAdapter consAdapter = new TajoGeneratorAdapter(Opcodes.ACC_PUBLIC, initMethod, "<init>", "()V");
 
       for (Map.Entry<EvalNode, String> entry : variableMap.entrySet()) {
-        if (entry.getKey().getType() == EvalType.FUNCTION) {
+        if (entry.getKey().getType() == EvalType.CONST) {
+          ConstEval constEval = (ConstEval) entry.getKey();
+
+          if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+            final String internalName = TajoGeneratorAdapter.getInternalName(IntervalDatum.class);
+
+            initMethod.visitTypeInsn(Opcodes.NEW, internalName);
+            int INTERVAL_DATUM = consAdapter.astore();
+
+            initMethod.visitVarInsn(Opcodes.ALOAD, INTERVAL_DATUM);
+            initMethod.visitLdcInsn(constEval.getValue().asInt8());
+            initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "(J)V");
+
+            consAdapter.aload(0);
+            consAdapter.aload(INTERVAL_DATUM);
+            initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, entry.getValue(),
+                "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";");
+          }
+
+        } else if (entry.getKey().getType() == EvalType.FUNCTION) {
           GeneralFunctionEval function = (GeneralFunctionEval) entry.getKey();
           final String internalName = TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass());
 
@@ -811,7 +832,22 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       initMethod.visitEnd();
     }
 
-    public static class FuncToMembersBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+    public static class VariablesBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+      @Override
+      public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
+
+        if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+          if (!context.variableMap.containsKey(constEval)) {
+            String fieldName = constEval.getValueType().getType().name() + "_" + context.seqId++;
+            context.variableMap.put(constEval, fieldName);
+
+            context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+                "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";", null, null);
+          }
+        }
+        return constEval;
+      }
+
       public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval function, Stack<EvalNode> stack) {
         super.visitFuncCall(context, function, stack);
 
@@ -820,7 +856,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
           context.variableMap.put(function, fieldName);
           context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
               "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);
-          context.classWriter.visitEnd();
         }
 
         return function;

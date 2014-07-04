@@ -298,6 +298,11 @@ public class DatumFactory {
     return new IntervalDatum(intervalStr);
   }
 
+  @SuppressWarnings("unused")
+  public static IntervalDatum createInterval(long interval) {
+    return new IntervalDatum(interval);
+  }
+
   public static DateDatum createDate(Datum datum) {
     switch (datum.type()) {
     case INT4:

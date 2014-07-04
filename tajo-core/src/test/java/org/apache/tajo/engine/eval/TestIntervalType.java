@@ -26,6 +26,12 @@ import java.io.IOException;
 import static org.junit.Assert.fail;
 
 public class TestIntervalType extends ExprTestBase {
+
+  @Test
+  public void testIntervalType() throws IOException {
+    //testSimpleEval("select interval '1 day'", new String[]{"1 day 00:00:00"});
+  }
+
   @Test
   public void testIntervalPostgresqlCase() throws IOException {
 
