@@ -270,6 +270,7 @@ public class Fetcher {
       }
 
       // this fetching will be retry
+      IOUtils.cleanup(LOG, fc, raf);
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
     }
