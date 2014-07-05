@@ -28,12 +28,12 @@ import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.commons.TableSwitchGenerator;
+import org.apache.tajo.org.objectweb.asm.Label;
+import org.apache.tajo.org.objectweb.asm.MethodVisitor;
+import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.org.objectweb.asm.Type;
+import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
+import org.apache.tajo.org.objectweb.asm.commons.TableSwitchGenerator;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -32,6 +32,7 @@ import org.apache.tajo.engine.codegen.ExprCodeGenerator;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
@@ -199,11 +200,13 @@ public class ExprTestBase {
 
     Target [] targets;
 
+    TajoClassLoader classLoader = new TajoClassLoader();
+
     try {
       targets = getRawTargets(query, condition);
       ExprCodeGenerator codegen = null;
       if (runtimeCodeGenFlag) {
-        codegen = new ExprCodeGenerator();
+        codegen = new ExprCodeGenerator(classLoader);
       }
 
       Tuple outTuple = new VTuple(targets.length);
@@ -214,6 +217,8 @@ public class ExprTestBase {
         }
         outTuple.put(i, eval.eval(inputSchema, vtuple));
       }
+
+      classLoader.clean();
 
       for (int i = 0; i < expected.length; i++) {
         Datum datum = outTuple.get(i);
@@ -245,6 +250,8 @@ public class ExprTestBase {
       e.printStackTrace();
     } catch (IllegalAccessException e) {
       e.printStackTrace();
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
     } finally {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);

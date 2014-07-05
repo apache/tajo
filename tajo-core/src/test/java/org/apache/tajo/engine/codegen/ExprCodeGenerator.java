@@ -26,11 +26,14 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.org.objectweb.asm.ClassWriter;
+import org.apache.tajo.org.objectweb.asm.Label;
+import org.apache.tajo.org.objectweb.asm.MethodVisitor;
+import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.mockito.asm.Type;
-import org.objectweb.asm.*;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
@@ -67,6 +70,37 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       new byte [] {TRUE,    TRUE,    TRUE},    // true
       new byte [] {UNKNOWN, TRUE,    FALSE}    // false
   };
+
+  private final TajoClassLoader classLoader;
+  static int classSeq = 1;
+
+  public ExprCodeGenerator(TajoClassLoader classLoader) {
+    this.classLoader = classLoader;
+  }
+
+  public EvalNode generate(Schema schema, EvalNode expr)
+      throws NoSuchMethodException, IllegalAccessException,
+      InvocationTargetException, InstantiationException, PlanningException {
+
+    ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+
+    String className = "org.Test.Test" + classSeq++;
+    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className), schema, classWriter, expr);
+    visit(context, expr, new Stack<EvalNode>());
+    context.emitReturn();
+
+    TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
+    Class aClass = myClassLoader.defineClass(className, classWriter.toByteArray());
+    Constructor constructor = aClass.getConstructor();
+    EvalNode r = (EvalNode) constructor.newInstance();
+    return r;
+  }
+
+  private void printOut(EvalCodeGenContext context, String message) {
+    context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+    context.push(message);
+    context.invokeVirtual(PrintStream.class, "println", void.class, new Class[]{String.class});
+  }
 
   public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     if (EvalType.isLogicalOperator(binaryEval)) {
@@ -277,31 +311,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     context.methodvisitor.visitLabel(label);
   }
 
-  static int classSeq = 1;
-
-  public EvalNode generate(Schema schema, EvalNode expr) throws NoSuchMethodException, IllegalAccessException,
-      InvocationTargetException, InstantiationException, PlanningException {
-
-    ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-
-    String className = "org.Test.Test" + classSeq++;
-    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className), schema, classWriter, expr);
-    visit(context, expr, new Stack<EvalNode>());
-    context.emitReturn();
-
-    TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
-    Class aClass = myClassLoader.defineClass(className, classWriter.toByteArray());
-    Constructor constructor = aClass.getConstructor();
-    EvalNode r = (EvalNode) constructor.newInstance();
-    return r;
-  }
-
-  private void printOut(EvalCodeGenContext context, String message) {
-    context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-    context.push(message);
-    context.invokeVirtual(PrintStream.class, "println", void.class, new Class[]{String.class});
-  }
-
   public EvalNode visitCast(EvalCodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
     DataType  srcType = cast.getOperand().getValueType();
     DataType targetType = cast.getValueType();
@@ -435,10 +444,10 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
 
     if (evalNode.getType() == EvalType.AND) {
       context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC,
-          org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "AND_LOGIC", "[[B");
+          org.apache.tajo.org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "AND_LOGIC", "[[B");
     } else if (evalNode.getType() == EvalType.OR) {
       context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC,
-          org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "OR_LOGIC", "[[B");
+          org.apache.tajo.org.objectweb.asm.Type.getInternalName(ExprCodeGenerator.class), "OR_LOGIC", "[[B");
     } else {
       throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
     }

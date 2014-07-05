@@ -32,7 +32,7 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, time '12:10:00');\n"
         + "12:10:00",
     returnType = Type.TIME,
-    paramTypes = {@ParamTypes(paramTypes = {Type.TIME, Type.TIME_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {Type.TIME_ARRAY})}
 )
 public class CoalesceTime extends Coalesce {
   public CoalesceTime() {

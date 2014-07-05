@@ -743,6 +743,12 @@
         <version>${tajo.version}</version>
         <type>test-jar</type>
       </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>asm</artifactId>
+        <version>${tajo.version}</version>
+        <type>jar</type>
+      </dependency>
 
       <dependency>
         <groupId>org.apache.hadoop</groupId>

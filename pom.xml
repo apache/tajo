@@ -90,6 +90,7 @@
     <module>tajo-storage</module>
     <module>tajo-yarn-pullserver</module>
     <module>tajo-dist</module>
+    <module>asm</module>
   </modules>
 
   <build>
@@ -350,6 +351,7 @@
           <numUnapprovedLicenses>0</numUnapprovedLicenses>
           <excludes>
             <exclude>CHANGES</exclude>
+            <exclude>asm/**</exclude>
             <exclude>**/workers</exclude>
             <exclude>**/querymasters</exclude>
             <exclude>**/*.sql</exclude>
