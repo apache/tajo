@@ -979,7 +979,7 @@ public class ProjectionPushDownRule extends
       newContext.addExpr(target);
     }
 
-    for (Iterator<Target> it = getFilteredTarget(targets, context.requiredSet); it.hasNext();) {
+    for (Iterator<Target> it = context.targetListMgr.getFilteredTargets(newContext.requiredSet); it.hasNext();) {
       Target target = it.next();
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {
@@ -1002,8 +1002,6 @@ public class ProjectionPushDownRule extends
     node.setSubQuery(child);
     stack.pop();
 
-    Context newContext = new Context(upperContext);
-
     Target [] targets;
     if (node.hasTargets()) {
       targets = node.getTargets();
@@ -1012,17 +1010,17 @@ public class ProjectionPushDownRule extends
     }
 
     LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();
-    for (Iterator<Target> it = getFilteredTarget(targets, newContext.requiredSet); it.hasNext();) {
+    for (Iterator<Target> it = getFilteredTarget(targets, upperContext.requiredSet); it.hasNext();) {
       Target target = it.next();
-      childContext.addExpr(target);
+      upperContext.addExpr(target);
     }
 
-    for (Iterator<Target> it = getFilteredTarget(targets, upperContext.requiredSet); it.hasNext();) {
+    for (Iterator<Target> it = upperContext.targetListMgr.getFilteredTargets(upperContext.requiredSet); it.hasNext();) {
       Target target = it.next();
 
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, target.getEvalTree(), node)) {
         projectedTargets.add(target);
-        childContext.targetListMgr.markAsEvaluated(target);
+        upperContext.targetListMgr.markAsEvaluated(target);
       }
     }
 

@@ -24,10 +24,15 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.utils.test.ErrorInjectionRewriter;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -385,6 +390,57 @@ public class TestSelectQuery extends QueryTestCaseBase {
       assertFalse(t.isAlive());
     } finally {
       testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes", "");
+    }
+  }
+
+  @Test
+  public final void testNowInMultipleTasks() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
+
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+
+      ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+
+      String nowValue = null;
+      int numRecords = 0;
+      while (res.next()) {
+        String currentNowValue = res.getString(1);
+        if (nowValue != null) {
+          assertTrue(nowValue.equals(currentNowValue));
+        }
+        nowValue = currentNowValue;
+        numRecords++;
+      }
+      assertEquals(5, numRecords);
+
+      res.close();
+
+      res = executeString("select concat(substr(to_char(current_timestamp,'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+
+      nowValue = null;
+      numRecords = 0;
+      while (res.next()) {
+        String currentNowValue = res.getString(1);
+        if (nowValue != null) {
+          assertTrue(nowValue.equals(currentNowValue));
+        }
+        nowValue = currentNowValue;
+        numRecords++;
+      }
+      assertEquals(5, numRecords);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
+          ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
+      executeString("DROP TABLE table11 PURGE");
     }
   }
 }
