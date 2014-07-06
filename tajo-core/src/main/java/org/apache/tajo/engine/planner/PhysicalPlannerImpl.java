@@ -52,6 +52,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Stack;
 
@@ -148,6 +149,21 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         stack.push(selNode);
         leftExec = createPlanRecursive(ctx, selNode.getChild(), stack);
         stack.pop();
+
+//        try {
+//          selNode.setQual(ctx.getCodeGen().generate(selNode.getInSchema(), selNode.getQual()));
+//        } catch (NoSuchMethodException e) {
+//          e.printStackTrace();
+//        } catch (IllegalAccessException e) {
+//          e.printStackTrace();
+//        } catch (InvocationTargetException e) {
+//          e.printStackTrace();
+//        } catch (InstantiationException e) {
+//          e.printStackTrace();
+//        } catch (PlanningException e) {
+//          e.printStackTrace();
+//        }
+
         return new SelectionExec(ctx, selNode, leftExec);
 
       case PROJECTION:
@@ -155,6 +171,23 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         stack.push(prjNode);
         leftExec = createPlanRecursive(ctx, prjNode.getChild(), stack);
         stack.pop();
+
+        for (Target target : prjNode.getTargets()) {
+          try {
+            target.setExpr(ctx.getCodeGen().compile(prjNode.getInSchema(), target.getEvalTree()));
+          } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          } catch (InvocationTargetException e) {
+            e.printStackTrace();
+          } catch (InstantiationException e) {
+            e.printStackTrace();
+          } catch (PlanningException e) {
+            e.printStackTrace();
+          }
+        }
+
         return new ProjectionExec(ctx, prjNode, leftExec);
 
       case TABLE_SUBQUERY: {
@@ -205,6 +238,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, joinNode.getLeftChild(), stack);
         rightExec = createPlanRecursive(ctx, joinNode.getRightChild(), stack);
         stack.pop();
+
         return createJoinPlan(ctx, joinNode, leftExec, rightExec);
 
       case UNION:

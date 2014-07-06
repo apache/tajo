@@ -18,12 +18,17 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class LikePredicateEval extends PatternMatchPredicateEval {
+
+  public LikePredicateEval(boolean not, EvalNode field, ConstEval pattern) {
+    super(EvalType.LIKE, not, field, pattern, false);
+  }
 
   public LikePredicateEval(boolean not, EvalNode field, ConstEval pattern, boolean caseSensitive) {
     super(EvalType.LIKE, not, field, pattern, caseSensitive);

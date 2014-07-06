@@ -21,7 +21,9 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
@@ -31,6 +33,7 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 
@@ -100,6 +103,27 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
     leftNumCols = outer.getSchema().size();
     rightNumCols = inner.getSchema().size();
+  }
+
+  @Override
+  public void init() throws IOException {
+    super.init();
+
+    for (Target target : plan.getTargets()) {
+      try {
+        target.setExpr(context.getCodeGen().compile(plan.getInSchema(), target.getEvalTree()));
+      } catch (NoSuchMethodException e) {
+        e.printStackTrace();
+      } catch (IllegalAccessException e) {
+        e.printStackTrace();
+      } catch (InvocationTargetException e) {
+        e.printStackTrace();
+      } catch (InstantiationException e) {
+        e.printStackTrace();
+      } catch (PlanningException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {

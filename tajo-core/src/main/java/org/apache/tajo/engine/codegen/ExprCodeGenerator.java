@@ -20,29 +20,31 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.apache.tajo.algebra.PatternMatchPredicate;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
+import org.apache.tajo.datum.BooleanDatum;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.org.objectweb.asm.ClassWriter;
-import org.apache.tajo.org.objectweb.asm.Label;
-import org.apache.tajo.org.objectweb.asm.MethodVisitor;
-import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.org.objectweb.asm.*;
 import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.mockito.asm.Type;
 
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
-import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.SwitchCase;
-import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.SwitchCaseGenerator;
+import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.*;
 import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
 
 public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.EvalCodeGenContext> {
@@ -78,7 +80,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     this.classLoader = classLoader;
   }
 
-  public EvalNode generate(Schema schema, EvalNode expr)
+  public EvalNode compile(Schema schema, EvalNode expr)
       throws NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, PlanningException {
 
@@ -89,8 +91,7 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     visit(context, expr, new Stack<EvalNode>());
     context.emitReturn();
 
-    TestExprCodeGenerator.MyClassLoader myClassLoader = new TestExprCodeGenerator.MyClassLoader();
-    Class aClass = myClassLoader.defineClass(className, classWriter.toByteArray());
+    Class aClass = classLoader.defineClass(className, classWriter.toByteArray());
     Constructor constructor = aClass.getConstructor();
     EvalNode r = (EvalNode) constructor.newInstance();
     return r;
@@ -111,6 +112,9 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       return visitComparisonEval(context, binaryEval, stack);
     } else if (binaryEval.getType() == EvalType.CONCATENATE) {
       return visitStringConcat(context, binaryEval, stack);
+    } else if (binaryEval.getType() == EvalType.LIKE || binaryEval.getType() == EvalType.SIMILAR_TO
+        || binaryEval.getType() == EvalType.REGEX) {
+      return visitStringPatternMatch(context, binaryEval, stack);
     } else {
       stack.push(binaryEval);
       visit(context, binaryEval.getLeftExpr(), stack);
@@ -732,6 +736,77 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     return func;
   }
 
+  public EvalNode visitStringPatternMatch(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
+
+    if (EvalType.isStringPatternMatchOperator(patternEval.getType())) {
+      PatternMatchPredicateEval patternPredicate = (PatternMatchPredicateEval) patternEval;
+
+      context.push(1);
+      context.newArray(Datum.class); // new Datum[paramNum]
+      final int DATUM_ARRAY = context.astore();
+
+      stack.push(patternEval);
+      context.aload(DATUM_ARRAY);       // array ref
+      context.methodvisitor.visitLdcInsn(0); // array idx
+      visit(context, patternPredicate.getLeftExpr(), stack);
+      context.convertToDatum(patternPredicate.getLeftExpr().getValueType(), true);  // value
+      context.methodvisitor.visitInsn(Opcodes.AASTORE);
+      stack.pop();
+
+      context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(VTuple.class));
+      context.methodvisitor.visitInsn(Opcodes.DUP);
+      context.aload(DATUM_ARRAY);
+      context.newInstance(VTuple.class, new Class[]{Datum[].class});  // new VTuple(datum [])
+      context.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(Tuple.class)); // cast to Tuple
+
+      final int TUPLE = context.astore();
+
+      Class clazz = getStringPatternEvalClass(patternEval.getType());
+      String fieldName = context.variableMap.get(patternEval);
+      emitGetField(context, context.owner, fieldName, clazz);
+      if (context.schema != null) {
+        emitGetField(context, context.owner, "schema", Schema.class);
+      } else {
+        context.methodvisitor.visitInsn(Opcodes.ACONST_NULL);
+      }
+      context.aload(TUPLE);
+      context.invokeVirtual(clazz, "eval", Datum.class, new Class[]{Schema.class, Tuple.class});
+      context.convertToPrimitive(patternEval.getValueType());
+   }
+
+    return patternEval;
+  }
+
+  public static void emitGetField(EvalCodeGenContext context, String owner, String fieldName, Class clazz) {
+    context.aload(0);
+    context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, owner, fieldName, getDescription(clazz));
+  }
+
+  public static Class getStringPatternEvalClass(EvalType type) {
+    if (type == EvalType.LIKE) {
+      return LikePredicateEval.class;
+    } else if (type == EvalType.SIMILAR_TO) {
+      return SimilarToPredicateEval.class;
+    } else {
+      return RegexPredicateEval.class;
+    }
+  }
+
+  @SuppressWarnings("unused")
+  public static EvalNode createEval(String json) {
+    return CoreGsonHelper.fromJson(json, EvalNode.class);
+  }
+
+  @SuppressWarnings("unused")
+  public static ConstEval createConstEval(String json) {
+    return (ConstEval) CoreGsonHelper.fromJson(json, EvalNode.class);
+  }
+
+  @SuppressWarnings("unused")
+  public static Schema createSchema(String json) {
+    return CoreGsonHelper.fromJson(json, Schema.class);
+  }
+
   public static class EvalCodeGenContext extends TajoGeneratorAdapter {
     private final String owner;
     private final Schema schema;
@@ -766,8 +841,26 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     }
 
     public void emitMemberFields() {
+      classWriter.visitField(Opcodes.ACC_PRIVATE, "schema",
+          "L" + TajoGeneratorAdapter.getInternalName(Schema.class) + ";", null, null);
+
       VariablesBuilder builder = new VariablesBuilder();
       builder.visit(this, evalNode, new Stack<EvalNode>());
+    }
+
+    public static void emitCreateSchema(TajoGeneratorAdapter adapter, MethodVisitor mv, Schema schema) {
+      mv.visitLdcInsn(schema.toJson());
+      adapter.invokeStatic(ExprCodeGenerator.class, "createSchema", Schema.class, new Class[] {String.class});
+    }
+
+    public static void emitCreateEval(TajoGeneratorAdapter adapter, MethodVisitor mv, EvalNode evalNode) {
+      mv.visitLdcInsn(evalNode.toJson());
+      adapter.invokeStatic(ExprCodeGenerator.class, "createEval", EvalNode.class, new Class[] {String.class});
+    }
+
+    public static void emitConstEval(TajoGeneratorAdapter adapter, MethodVisitor mv, ConstEval evalNode) {
+      mv.visitLdcInsn(evalNode.toJson());
+      adapter.invokeStatic(ExprCodeGenerator.class, "createConstEval", ConstEval.class, new Class[] {String.class});
     }
 
     public void emitConstructor() {
@@ -780,6 +873,13 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
 
       TajoGeneratorAdapter consAdapter = new TajoGeneratorAdapter(Opcodes.ACC_PUBLIC, initMethod, "<init>", "()V");
 
+      // == this.schema = schema;
+      if (schema != null) {
+        consAdapter.aload(0);
+        emitCreateSchema(consAdapter, initMethod, schema);
+        initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, "schema", getDescription(Schema.class));
+      }
+
       for (Map.Entry<EvalNode, String> entry : variableMap.entrySet()) {
         if (entry.getKey().getType() == EvalType.CONST) {
           ConstEval constEval = (ConstEval) entry.getKey();
@@ -788,11 +888,10 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
             final String internalName = TajoGeneratorAdapter.getInternalName(IntervalDatum.class);
 
             initMethod.visitTypeInsn(Opcodes.NEW, internalName);
-            int INTERVAL_DATUM = consAdapter.astore();
-
-            initMethod.visitVarInsn(Opcodes.ALOAD, INTERVAL_DATUM);
+            consAdapter.dup();
             initMethod.visitLdcInsn(constEval.getValue().asInt8());
             initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "(J)V");
+            int INTERVAL_DATUM = consAdapter.astore();
 
             consAdapter.aload(0);
             consAdapter.aload(INTERVAL_DATUM);
@@ -800,15 +899,37 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
                 "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";");
           }
 
+
+        } else if (EvalType.isStringPatternMatchOperator(entry.getKey().getType())) {
+          PatternMatchPredicateEval patternPredicate = (PatternMatchPredicateEval) entry.getKey();
+
+          Class clazz = getStringPatternEvalClass(entry.getKey().getType());
+          final String internalName = TajoGeneratorAdapter.getInternalName(clazz);
+
+          initMethod.visitTypeInsn(Opcodes.NEW, internalName);
+          consAdapter.dup();
+          consAdapter.push(patternPredicate.isNot());
+          emitCreateEval(consAdapter, initMethod, patternPredicate.getLeftExpr());
+          emitConstEval(consAdapter, initMethod, (ConstEval) patternPredicate.getRightExpr());
+          consAdapter.push(patternPredicate.isCaseInsensitive());
+          consAdapter.invokeSpecial(clazz, "<init>", void.class,
+              new Class [] {boolean.class, EvalNode.class, ConstEval.class, boolean.class});
+
+          int PatternEval = consAdapter.astore();
+
+          consAdapter.aload(0);
+          consAdapter.aload(PatternEval);
+          initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, entry.getValue(), getDescription(clazz));
+
         } else if (entry.getKey().getType() == EvalType.FUNCTION) {
           GeneralFunctionEval function = (GeneralFunctionEval) entry.getKey();
           final String internalName = TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass());
 
           // new and initialization of function
           initMethod.visitTypeInsn(Opcodes.NEW, internalName);
-          int FUNCTION = consAdapter.astore();
-          initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
+          consAdapter.dup();
           initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "()V");
+          int FUNCTION = consAdapter.astore();
 
           // commParam
           int paramNum = function.getArgs().length;
@@ -842,6 +963,24 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     }
 
     public static class VariablesBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+
+      public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+        super.visitBinaryEval(context, stack, binaryEval);
+
+        if (EvalType.isStringPatternMatchOperator(binaryEval.getType())) {
+          if (!context.variableMap.containsKey(binaryEval)) {
+            String fieldName = binaryEval.getType().name() + "_" + context.seqId++;
+            context.variableMap.put(binaryEval, fieldName);
+
+            Class clazz = getStringPatternEvalClass(binaryEval.getType());
+            context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+                "L" + TajoGeneratorAdapter.getInternalName(clazz) + ";", null, null);
+          }
+        }
+
+        return binaryEval;
+      }
+
       @Override
       public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
 

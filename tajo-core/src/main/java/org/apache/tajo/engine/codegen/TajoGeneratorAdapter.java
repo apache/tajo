@@ -71,7 +71,7 @@ public class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT4, Opcodes.IDIV);
     TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, INT8, Opcodes.LDIV);
     TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT4, Opcodes.FDIV);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT8, Opcodes.DMUL);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.DIVIDE, FLOAT8, Opcodes.DDIV);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT1, Opcodes.IREM);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MODULAR, INT2, Opcodes.IREM);

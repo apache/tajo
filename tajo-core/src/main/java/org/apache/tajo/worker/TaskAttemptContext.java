@@ -28,6 +28,8 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.codegen.ExprCodeGenerator;
+import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
@@ -71,12 +73,18 @@ public class TaskAttemptContext {
   private Enforcer enforcer;
   private QueryContext queryContext;
 
+  private TajoClassLoader classLoader;
+  private ExprCodeGenerator codeGen;
+
   public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.conf = conf;
     this.queryContext = queryContext;
     this.queryId = queryId;
+
+    classLoader = new TajoClassLoader();
+    codeGen = new ExprCodeGenerator(classLoader);
 
     if (fragments != null) {
       for (FragmentProto t : fragments) {
@@ -129,6 +137,24 @@ public class TaskAttemptContext {
 
   public Enforcer getEnforcer() {
     return this.enforcer;
+  }
+
+  public ExprCodeGenerator getCodeGen() {
+    return codeGen;
+  }
+
+  public void unloadGeneratedClasses() {
+    if (codeGen != null) {
+      codeGen = null;
+    }
+    if (classLoader != null) {
+      try {
+        classLoader.clean();
+      } catch (Throwable throwable) {
+        throwable.printStackTrace();
+      }
+      classLoader = null;
+    }
   }
 
   public boolean hasResultStats() {

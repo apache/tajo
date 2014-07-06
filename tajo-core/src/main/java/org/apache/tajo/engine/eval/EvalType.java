@@ -117,6 +117,16 @@ public enum EvalType {
     return match;
   }
 
+  public static boolean isStringPatternMatchOperator(EvalType type) {
+    boolean match = false;
+
+    match |= type == LIKE;
+    match |= type == SIMILAR_TO;
+    match |= type == REGEX;
+
+    return match;
+  }
+
   public String getOperatorName() {
     return operatorName != null ? operatorName : name();
   }

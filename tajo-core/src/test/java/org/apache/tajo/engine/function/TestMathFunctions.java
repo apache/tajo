@@ -430,18 +430,16 @@ public class TestMathFunctions extends ExprTestBase {
   public void testRoundWithSpecifiedPrecision() throws IOException {
     testSimpleEval("select round(42.4382,2) ", new String[]{"42.44"});
     testSimpleEval("select round(-42.4382,2) ", new String[]{"-42.44"});
+    testSimpleEval("select round(-425,2) ", new String[]{"-425"});
+    testSimpleEval("select round(425,2) ", new String[]{"425"});
 
-    // TODO - to be fixed
-//    testSimpleEval("select round(-425,2) ", new String[]{"-425.00"});
-//    testSimpleEval("select round(425,2) ", new String[]{"425"});
+    testSimpleEval("select round(1234567890,0) ", new String[]{"1234567890"});
+    testSimpleEval("select round(1234567890,1) ", new String[]{"1234567890"});
+    testSimpleEval("select round(1234567890,2) ", new String[]{"1234567890"});
 
-//    testSimpleEval("select round(1234567890,0) ", new String[]{"1234567890"});
-//    testSimpleEval("select round(1234567890,1) ", new String[]{"1234567890"});
-//    testSimpleEval("select round(1234567890,2) ", new String[]{"1234567890"});
-
-//    testSimpleEval("select round(1.2345678901234567,13) ", new String[]{"1.2345678901235"});
-//    testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1234567890.123"});
-//    testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1234567890.12346"});
+    testSimpleEval("select round(1.2345678901234567,13) ", new String[]{"1.2345678901235"});
+    testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1234567890.123"});
+    testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1234567890.12346"});
     //testSimpleEval("select round(1234567890.1234567890,7) ", new String[]{"1234567890.1234568"});
 
     Schema schema = new Schema();

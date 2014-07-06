@@ -351,7 +351,6 @@
           <numUnapprovedLicenses>0</numUnapprovedLicenses>
           <excludes>
             <exclude>CHANGES</exclude>
-            <exclude>asm/**</exclude>
             <exclude>**/workers</exclude>
             <exclude>**/querymasters</exclude>
             <exclude>**/*.sql</exclude>

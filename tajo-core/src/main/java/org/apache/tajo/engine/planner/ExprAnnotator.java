@@ -576,8 +576,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // trying the implicit type conversion between actual parameter types and the definition types.
     if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
-      DataType lastDataType = givenArgs[0].getValueType();
-      for (int i = 1; i < givenArgs.length; i++) {
+      DataType lastDataType = funcDesc.getParamTypes()[0];
+      for (int i = 0; i < givenArgs.length; i++) {
         if (i < (funcDesc.getParamTypes().length - 1)) { // variable length
           lastDataType = funcDesc.getParamTypes()[i];
         } else {
@@ -851,7 +851,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   /** It is the relationship graph of type conversions. It represents each type can be converted to which types. */
-  public static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
+  static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
   static {
     TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT1, Type.INT1);
     TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT2, Type.INT2);

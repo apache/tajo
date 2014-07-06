@@ -37,7 +37,6 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
 public class CoalesceTimestamp extends Coalesce {
   public CoalesceTimestamp() {
     super(new Column[] {
-        new Column("column", TajoDataTypes.Type.TIMESTAMP),
         new Column("params", TajoDataTypes.Type.TIMESTAMP_ARRAY),
     });
   }

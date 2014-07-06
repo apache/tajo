@@ -19,7 +19,6 @@
 package org.apache.tajo.util.datetime;
 
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;

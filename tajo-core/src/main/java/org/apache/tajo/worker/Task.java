@@ -387,14 +387,22 @@ public class Task {
 
       while(!killed && executor.next() != null) {
       }
-      this.executor.close();
       reloadInputStats();
-      this.executor = null;
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
+      if (executor != null) {
+        try {
+          executor.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        this.executor = null;
+      }
+      context.unloadGeneratedClasses();
+
       context.setProgress(1.0f);
       stopped = true;
       taskRunnerContext.completedTasksNum.incrementAndGet();

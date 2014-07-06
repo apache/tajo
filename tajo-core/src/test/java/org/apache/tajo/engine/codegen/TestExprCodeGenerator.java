@@ -287,12 +287,6 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select (1 < 2) or false;", new String [] {"t"});
   }
 
-  static class MyClassLoader extends ClassLoader {
-    public Class defineClass(String name, byte[] b) {
-      return defineClass(name, b, 0, b.length);
-    }
-  }
-
   @Test
   public void testFunction() throws IOException {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('abc');", new String [] {"ABC"});

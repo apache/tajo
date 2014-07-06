@@ -32,11 +32,12 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, true);\n"
         + "true",
     returnType = Type.BOOLEAN,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.BOOLEAN_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.BOOLEAN, TajoDataTypes.Type.BOOLEAN_ARRAY})}
 )
 public class CoalesceBoolean extends Coalesce {
   public CoalesceBoolean() {
     super(new Column[] {
+        new Column("param", TajoDataTypes.Type.BOOLEAN),
         new Column("params", TajoDataTypes.Type.BOOLEAN_ARRAY),
     });
   }

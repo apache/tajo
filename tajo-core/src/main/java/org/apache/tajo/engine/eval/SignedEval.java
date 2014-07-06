@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NumericDatum;
-import org.apache.tajo.engine.planner.logical.UnaryNode;
 import org.apache.tajo.storage.Tuple;
 
 public class SignedEval extends UnaryEval implements Cloneable {

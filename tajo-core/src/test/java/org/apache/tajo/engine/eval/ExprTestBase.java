@@ -213,12 +213,16 @@ public class ExprTestBase {
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
         if (runtimeCodeGenFlag) {
-          eval = codegen.generate(inputSchema, eval);
+          eval = codegen.compile(inputSchema, eval);
         }
         outTuple.put(i, eval.eval(inputSchema, vtuple));
       }
 
-      classLoader.clean();
+      try {
+        classLoader.clean();
+      } catch (Throwable throwable) {
+        throwable.printStackTrace();
+      }
 
       for (int i = 0; i < expected.length; i++) {
         Datum datum = outTuple.get(i);
@@ -250,8 +254,6 @@ public class ExprTestBase {
       e.printStackTrace();
     } catch (IllegalAccessException e) {
       e.printStackTrace();
-    } catch (Throwable throwable) {
-      throwable.printStackTrace();
     } finally {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);

@@ -125,6 +125,20 @@ public class TestPredicates extends ExprTestBase {
     schema.addColumn("nullable", TajoDataTypes.Type.INT4);
 
     testEval(schema, "t1", "0,1,2,3,4.1,5.1,cmp,asm,", "SELECT col6 = 'cmp' from t1", new String [] {"t"});
+
+    Schema schema1 = new Schema();
+    schema1.addColumn("col1", INT4);
+    schema1.addColumn("col2", INT4);
+    schema1.addColumn("col3", INT4);
+    schema1.addColumn("col4", INT4);
+    testEval(schema1,
+        "table1", "123,123,456,-123",
+        "select col1 = col2, col1 = col3, col1 = col4 from table1",
+        new String[]{"t", "f", "f"});
+    testEval(schema1,
+        "table1", "123,123,,",
+        "select col1 = col2, (col1 = col3) is null, (col3 = col2) is null from table1",
+        new String[]{"t", "t", "t"});
   }
 
   @Test
