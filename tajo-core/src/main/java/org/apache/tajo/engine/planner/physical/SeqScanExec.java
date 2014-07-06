@@ -193,6 +193,16 @@ public class SeqScanExec extends PhysicalExec {
     } else {
       initScanner(projected);
     }
+
+    if (plan.hasTargets()) {
+      for (Target target : plan.getTargets()) {
+        try {
+          target.setExpr(context.getCodeGen().compile(plan.getTableSchema(), target.getEvalTree()));
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
+      }
+    }
   }
 
   private void initScanner(Schema projected) throws IOException {

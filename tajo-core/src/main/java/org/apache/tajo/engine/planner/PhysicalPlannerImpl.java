@@ -150,19 +150,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, selNode.getChild(), stack);
         stack.pop();
 
-//        try {
-//          selNode.setQual(ctx.getCodeGen().generate(selNode.getInSchema(), selNode.getQual()));
-//        } catch (NoSuchMethodException e) {
-//          e.printStackTrace();
-//        } catch (IllegalAccessException e) {
-//          e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//          e.printStackTrace();
-//        } catch (InstantiationException e) {
-//          e.printStackTrace();
-//        } catch (PlanningException e) {
-//          e.printStackTrace();
-//        }
+        try {
+          selNode.setQual(ctx.getCodeGen().compile(selNode.getInSchema(), selNode.getQual()));
+        } catch (NoSuchMethodException e) {
+          e.printStackTrace();
+        } catch (IllegalAccessException e) {
+          e.printStackTrace();
+        } catch (InvocationTargetException e) {
+          e.printStackTrace();
+        } catch (InstantiationException e) {
+          e.printStackTrace();
+        } catch (PlanningException e) {
+          e.printStackTrace();
+        }
 
         return new SelectionExec(ctx, selNode, leftExec);
 
@@ -175,15 +175,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         for (Target target : prjNode.getTargets()) {
           try {
             target.setExpr(ctx.getCodeGen().compile(prjNode.getInSchema(), target.getEvalTree()));
-          } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-          } catch (IllegalAccessException e) {
-            e.printStackTrace();
-          } catch (InvocationTargetException e) {
-            e.printStackTrace();
-          } catch (InstantiationException e) {
-            e.printStackTrace();
-          } catch (PlanningException e) {
+          } catch (Throwable e) {
             e.printStackTrace();
           }
         }

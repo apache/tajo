@@ -60,9 +60,6 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
       case IF_THEN:
         result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
         break;
-      case IN:
-        result = visitInPredicate(context, (InEval) evalNode, stack);
-        break;
 
       // Functions
       case FUNCTION:
@@ -153,10 +150,6 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     visit(context, evalNode.getResult(), stack);
     stack.pop();
     return evalNode;
-  }
-
-  public EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
-    return visitBinaryEval(context, stack, evalNode);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////

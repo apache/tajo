@@ -20,11 +20,10 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.apache.tajo.algebra.PatternMatchPredicate;
+import org.apache.tajo.algebra.InPredicate;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.engine.eval.*;
@@ -115,6 +114,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     } else if (binaryEval.getType() == EvalType.LIKE || binaryEval.getType() == EvalType.SIMILAR_TO
         || binaryEval.getType() == EvalType.REGEX) {
       return visitStringPatternMatch(context, binaryEval, stack);
+    } else if (binaryEval.getType() == EvalType.IN) {
+      return visitInPredicate(context, binaryEval, stack);
     } else {
       stack.push(binaryEval);
       visit(context, binaryEval.getLeftExpr(), stack);
@@ -345,7 +346,6 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
   }
 
   public EvalNode visitField(EvalCodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
-    printOut(context, "enter visitField");
 
     if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
       printOut(context, "visitField >> NULL");
@@ -736,43 +736,33 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     return func;
   }
 
+  public EvalNode visitInPredicate(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
+    String fieldName = context.variableMap.get(patternEval);
+    emitGetField(context, context.owner, fieldName, InEval.class);
+    if (context.schema != null) {
+      emitGetField(context, context.owner, "schema", Schema.class);
+    } else {
+      context.methodvisitor.visitInsn(Opcodes.ACONST_NULL);
+    }
+    context.aload(2); // tuple
+    context.invokeVirtual(InEval.class, "eval", Datum.class, new Class[]{Schema.class, Tuple.class});
+    context.convertToPrimitive(patternEval.getValueType());
+
+    return patternEval;
+  }
+
   public EvalNode visitStringPatternMatch(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
-
-    if (EvalType.isStringPatternMatchOperator(patternEval.getType())) {
-      PatternMatchPredicateEval patternPredicate = (PatternMatchPredicateEval) patternEval;
-
-      context.push(1);
-      context.newArray(Datum.class); // new Datum[paramNum]
-      final int DATUM_ARRAY = context.astore();
-
-      stack.push(patternEval);
-      context.aload(DATUM_ARRAY);       // array ref
-      context.methodvisitor.visitLdcInsn(0); // array idx
-      visit(context, patternPredicate.getLeftExpr(), stack);
-      context.convertToDatum(patternPredicate.getLeftExpr().getValueType(), true);  // value
-      context.methodvisitor.visitInsn(Opcodes.AASTORE);
-      stack.pop();
-
-      context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(VTuple.class));
-      context.methodvisitor.visitInsn(Opcodes.DUP);
-      context.aload(DATUM_ARRAY);
-      context.newInstance(VTuple.class, new Class[]{Datum[].class});  // new VTuple(datum [])
-      context.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(Tuple.class)); // cast to Tuple
-
-      final int TUPLE = context.astore();
-
-      Class clazz = getStringPatternEvalClass(patternEval.getType());
-      String fieldName = context.variableMap.get(patternEval);
-      emitGetField(context, context.owner, fieldName, clazz);
-      if (context.schema != null) {
-        emitGetField(context, context.owner, "schema", Schema.class);
-      } else {
-        context.methodvisitor.visitInsn(Opcodes.ACONST_NULL);
-      }
-      context.aload(TUPLE);
-      context.invokeVirtual(clazz, "eval", Datum.class, new Class[]{Schema.class, Tuple.class});
-      context.convertToPrimitive(patternEval.getValueType());
-   }
+    Class clazz = getStringPatternEvalClass(patternEval.getType());
+    String fieldName = context.variableMap.get(patternEval);
+    emitGetField(context, context.owner, fieldName, clazz);
+    if (context.schema != null) {
+      emitGetField(context, context.owner, "schema", Schema.class);
+    } else {
+      context.methodvisitor.visitInsn(Opcodes.ACONST_NULL);
+    }
+    context.aload(2); // tuple
+    context.invokeVirtual(clazz, "eval", Datum.class, new Class[]{Schema.class, Tuple.class});
+    context.convertToPrimitive(patternEval.getValueType());
 
     return patternEval;
   }
@@ -800,6 +790,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
   @SuppressWarnings("unused")
   public static ConstEval createConstEval(String json) {
     return (ConstEval) CoreGsonHelper.fromJson(json, EvalNode.class);
+  }
+
+  @SuppressWarnings("unused")
+  public static RowConstantEval createRowConstantEval(String json) {
+    return (RowConstantEval) CoreGsonHelper.fromJson(json, EvalNode.class);
   }
 
   @SuppressWarnings("unused")
@@ -863,6 +858,12 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       adapter.invokeStatic(ExprCodeGenerator.class, "createConstEval", ConstEval.class, new Class[] {String.class});
     }
 
+    public static void emitRowConstantEval(TajoGeneratorAdapter adapter, MethodVisitor mv, RowConstantEval evalNode) {
+      mv.visitLdcInsn(evalNode.toJson());
+      adapter.invokeStatic(ExprCodeGenerator.class, "createRowConstantEval", RowConstantEval.class,
+          new Class[] {String.class});
+    }
+
     public void emitConstructor() {
       // constructor method
       MethodVisitor initMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
@@ -899,6 +900,22 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
                 "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";");
           }
 
+        } else if (entry.getKey().getType() == EvalType.IN) {
+          InEval inEval = (InEval) entry.getKey();
+
+          final String internalName = getInternalName(InEval.class);
+          initMethod.visitTypeInsn(Opcodes.NEW, internalName);
+          consAdapter.dup();
+          emitCreateEval(consAdapter, initMethod, inEval.getLeftExpr());
+          emitRowConstantEval(consAdapter, initMethod, (RowConstantEval) inEval.getRightExpr());
+          consAdapter.push(inEval.isNot());
+          consAdapter.invokeSpecial(InEval.class, "<init>", void.class,
+              new Class [] {EvalNode.class, RowConstantEval.class, boolean.class});
+          int IN_PREDICATE_EVAL = consAdapter.astore();
+
+          consAdapter.aload(0);
+          consAdapter.aload(IN_PREDICATE_EVAL);
+          initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, entry.getValue(), getDescription(InEval.class));
 
         } else if (EvalType.isStringPatternMatchOperator(entry.getKey().getType())) {
           PatternMatchPredicateEval patternPredicate = (PatternMatchPredicateEval) entry.getKey();
@@ -975,6 +992,14 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
             Class clazz = getStringPatternEvalClass(binaryEval.getType());
             context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
                 "L" + TajoGeneratorAdapter.getInternalName(clazz) + ";", null, null);
+          }
+        } else if (binaryEval.getType() == EvalType.IN) {
+          if (!context.variableMap.containsKey(binaryEval)) {
+            String fieldName = binaryEval.getType().name() + "_" + context.seqId++;
+            context.variableMap.put(binaryEval, fieldName);
+
+            context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+                "L" + TajoGeneratorAdapter.getInternalName(InEval.class) + ";", null, null);
           }
         }
 
@@ -1247,9 +1272,5 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     visit(context, evalNode.getResult(), stack);
     stack.pop();
     return evalNode;
-  }
-
-  public EvalNode visitInPredicate(EvalCodeGenContext context, InEval evalNode, Stack<EvalNode> stack) {
-    return visitBinaryEval(context, stack, evalNode);
   }
 }
