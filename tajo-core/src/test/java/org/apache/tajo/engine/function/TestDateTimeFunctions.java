@@ -312,6 +312,8 @@ public class TestDateTimeFunctions extends ExprTestBase {
     testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD')", new String[]{"2014-01-04"});
     testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD') + interval '1 day'",
         new String[]{"2014-01-05 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT to_date('201404', 'yyyymm');", new String[]{"2014-04-01"});
   }
 
   @Test
