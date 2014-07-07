@@ -168,19 +168,20 @@ public class AlgebraicUtil {
       return unaryEval;
     }
 
-    public EvalNode visitFuncCall(Object context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
-      boolean constant = true;
+    @Override
+    public EvalNode visitFuncCall(Object context, FunctionEval evalNode, Stack<EvalNode> stack) {
+      boolean constantOfAllDescendents = true;
 
       if ("sleep".equals(evalNode.funcDesc.getSignature())) {
-        constant = false;
+        constantOfAllDescendents = false;
       } else {
         for (EvalNode arg : evalNode.getArgs()) {
           arg = visit(context, arg, stack);
-          constant &= (arg.getType() == EvalType.CONST);
+          constantOfAllDescendents &= (arg.getType() == EvalType.CONST);
         }
       }
 
-      if (constant) {
+      if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
         return new ConstEval(evalNode.eval(null, null));
       } else {
         return evalNode;
