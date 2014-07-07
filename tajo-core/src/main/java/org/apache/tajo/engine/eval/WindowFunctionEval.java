@@ -100,10 +100,12 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
 
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    for(int i=0; i < argEvals.length; i++) {
-      sb.append(argEvals[i]);
-      if(i+1 < argEvals.length)
-        sb.append(",");
+    if (argEvals != null) {
+      for(int i=0; i < argEvals.length; i++) {
+        sb.append(argEvals[i]);
+        if(i+1 < argEvals.length)
+          sb.append(",");
+      }
     }
     sb.append(funcDesc.getSignature()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
         .append(")");

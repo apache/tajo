@@ -175,9 +175,11 @@ public class AlgebraicUtil {
       if ("sleep".equals(evalNode.funcDesc.getSignature())) {
         constantOfAllDescendents = false;
       } else {
-        for (EvalNode arg : evalNode.getArgs()) {
-          arg = visit(context, arg, stack);
-          constantOfAllDescendents &= (arg.getType() == EvalType.CONST);
+        if (evalNode.getArgs() != null) {
+          for (EvalNode arg : evalNode.getArgs()) {
+            arg = visit(context, arg, stack);
+            constantOfAllDescendents &= (arg.getType() == EvalType.CONST);
+          }
         }
       }
 

@@ -719,7 +719,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       }
     } else {
       if (windowFunc.getSignature().equalsIgnoreCase("rank")) {
-        givenArgs = sortKeys;
+        givenArgs = sortKeys != null ? sortKeys : new EvalNode[0];
       }
     }
 
