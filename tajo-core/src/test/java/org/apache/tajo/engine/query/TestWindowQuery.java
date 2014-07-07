@@ -76,6 +76,13 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testWindow7() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testWindowWithOrderBy1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
