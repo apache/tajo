@@ -74,6 +74,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-898: Left outer join with union returns empty result. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-897: PartitionedTableRewriter is repeated several times with same 
     table. (Hyoungjun Kim via hyunsik)
 
