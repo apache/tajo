@@ -24,15 +24,14 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.StringUtils;
 
-import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
@@ -1341,22 +1340,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     Map<String, String> params = new HashMap<String, String>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
       if (entry.getKey().equals(StorageConstants.CSVFILE_DELIMITER)) {
-        params.put(entry.getKey(), escapeDelimiter(entry.getValue()));
+        params.put(entry.getKey(), StringUtils.unicodeEscapedDelimiter(entry.getValue()));
       } else {
         params.put(entry.getKey(), entry.getValue());
       }
     }
     return params;
-  }
-
-  public static String escapeDelimiter(String value) {
-    try {
-      String delimiter = StringEscapeUtils.unescapeJava(value);
-      delimiter = new String(new byte[]{Byte.valueOf(delimiter).byteValue()}, Charset.defaultCharset());
-      return StringEscapeUtils.escapeJava(delimiter);
-    } catch (NumberFormatException e) {
-    }
-    return value;
   }
 
   private static String stripQuote(String str) {
