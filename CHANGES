@@ -74,6 +74,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-902: Unicode delimiter does not work correctly. (jinho)
+
     TAJO-905: When to_date() parses some date without day, the result will be 
     wrong. (hyunsik)
 
