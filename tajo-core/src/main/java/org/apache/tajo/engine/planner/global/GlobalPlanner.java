@@ -199,7 +199,6 @@ public class GlobalPlanner {
     if (node instanceof RelationNode) {
       switch (node.getType()) {
       case SCAN:
-      case PARTITIONS_SCAN:
         ScanNode scanNode = (ScanNode) node;
         if (scanNode.getTableDesc().getStats() == null) {
           // TODO - this case means that data is not located in HDFS. So, we need additional
@@ -207,6 +206,20 @@ public class GlobalPlanner {
           return Long.MAX_VALUE;
         } else {
           return scanNode.getTableDesc().getStats().getNumBytes();
+        }
+      case PARTITIONS_SCAN:
+        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
+        if (pScanNode.getTableDesc().getStats() == null) {
+          // TODO - this case means that data is not located in HDFS. So, we need additional
+          // broadcast method.
+          return Long.MAX_VALUE;
+        } else {
+          // if there is no selected partition
+          if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+            return 0;
+          } else {
+            return pScanNode.getTableDesc().getStats().getNumBytes();
+          }
         }
       case TABLE_SUBQUERY:
         return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());
@@ -227,6 +240,23 @@ public class GlobalPlanner {
     return node.getType() == NodeType.SCAN || node.getType() == NodeType.PARTITIONS_SCAN;
   }
 
+  /**
+   * Get a volume of a table of a partitioned table
+   * @param scanNode ScanNode corresponding to a table
+   * @return table volume (bytes)
+   */
+  private static long getTableVolume(ScanNode scanNode) {
+    long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
+    if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
+      PartitionedTableScanNode pScanNode = (PartitionedTableScanNode)scanNode;
+      if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+        scanBytes = 0L;
+      }
+    }
+
+    return scanBytes;
+  }
+
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
                                         ExecutionBlock leftBlock, ExecutionBlock rightBlock)
       throws PlanningException {
@@ -242,8 +272,7 @@ public class GlobalPlanner {
       int numLargeTables = 0;
       for(LogicalNode eachNode: joinNode.getBroadcastTargets()) {
         ScanNode scanNode = (ScanNode)eachNode;
-        TableDesc tableDesc = scanNode.getTableDesc();
-        if (tableDesc.getStats().getNumBytes() < broadcastThreshold) {
+        if (getTableVolume(scanNode) < broadcastThreshold) {
           broadtargetTables.add(scanNode);
           LOG.info("The table " + scanNode.getCanonicalName() + " ("
               + scanNode.getTableDesc().getStats().getNumBytes() + ") is marked a broadcasted table");
@@ -283,10 +312,10 @@ public class GlobalPlanner {
       TableDesc rightDesc = rightScan.getTableDesc();
       long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
-      if (leftDesc.getStats().getNumBytes() < broadcastThreshold) {
+      if (getTableVolume(leftScan) < broadcastThreshold) {
         leftBroadcasted = true;
       }
-      if (rightDesc.getStats().getNumBytes() < broadcastThreshold) {
+      if (getTableVolume(rightScan) < broadcastThreshold) {
         rightBroadcasted = true;
       }
 

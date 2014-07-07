@@ -230,7 +230,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       return true;
     }
     if (fieldsByName.containsKey(name)) {
-      if (fieldsByName.size() > 1) {
+      if (fieldsByName.get(name).size() > 1) {
         throw new RuntimeException("Ambiguous Column name");
       }
       return true;
