@@ -150,7 +150,7 @@ public class TajoConf extends Configuration {
     SYSTEM_CONF_PATH("tajo.system-conf.path", EMPTY_VALUE),
     SYSTEM_CONF_REPLICA_COUNT("tajo.system-conf.replica-count", 20),
 
-    INDEX_DIR("tajo.index.rootdir", "file:///tmp/tajo-${user.name}/index"),
+//    INDEX_DIR("tajo.index.rootdir", "file:///tmp/tajo-${user.name}/index"),
 
     // Tajo Master Service Addresses
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),

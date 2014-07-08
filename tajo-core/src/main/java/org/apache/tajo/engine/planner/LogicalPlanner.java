@@ -1602,7 +1602,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock block = context.queryBlock;
     CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
-    createIndexNode.setIndexName(createIndex.getIndexName());
+    if (CatalogUtil.isFQTableName(createIndex.getIndexName())) {
+      createIndexNode.setIndexName(createIndex.getIndexName());
+    } else {
+      createIndexNode.setIndexName(
+          CatalogUtil.buildFQName(context.session.getCurrentDatabase(), createIndex.getIndexName()));
+    }
     createIndexNode.setUnique(createIndex.isUnique());
     Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();
     int sortKeyNum = sortSpecs.length;

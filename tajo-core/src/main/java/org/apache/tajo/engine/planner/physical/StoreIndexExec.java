@@ -69,7 +69,8 @@ public class StoreIndexExec extends UnaryPhysicalExec {
 
     TajoConf conf = new TajoConf();
 
-    Path indexPath = new Path(conf.getVar(ConfVars.INDEX_DIR), logicalPlan.getIndexName() + "/" +
+    String[] splits = logicalPlan.getIndexName().split("\\.");
+    Path indexPath = new Path(conf.getVar(ConfVars.ROOT_DIR), splits[0] + "/" + splits[1] + "/" +
         context.getUniqueKeyFromFragments());
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
