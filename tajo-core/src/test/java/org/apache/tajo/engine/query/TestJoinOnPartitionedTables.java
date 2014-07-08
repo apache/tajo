@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.sql.ResultSet;
 
+import static org.junit.Assert.assertEquals;
+
 public class TestJoinOnPartitionedTables extends QueryTestCaseBase {
 
   public TestJoinOnPartitionedTables() {
@@ -58,6 +60,32 @@ public class TestJoinOnPartitionedTables extends QueryTestCaseBase {
 
     res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
     assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");
+    res.close();
+
+    executeString("DROP TABLE customer_parts PURGE").close();
+  }
+
+  @Test
+  public void testPartitionMultiplePartitionFilter() throws Exception {
+    executeDDL("customer_ddl.sql", null);
+    ResultSet res = executeFile("insert_into_customer.sql");
+    res.close();
+
+    res = executeString(
+        "select a.c_custkey, b.c_custkey from " +
+            "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+            "   union all " +
+            "   select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+            ") a " +
+            "left outer join customer_parts b " +
+            "on a.c_custkey = b.c_custkey " +
+            "and a.c_nationkey > 0"
+    );
+
+    String expected =
+        "c_custkey,c_custkey\n" +
+            "-------------------------------\n";
+    assertEquals(expected, resultSetToString(res));
     res.close();
 
     executeString("DROP TABLE customer_parts PURGE").close();

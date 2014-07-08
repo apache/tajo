@@ -24,6 +24,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-911: Refactoring Mysql/Maria Catalog Store. (DaeMyung Kang via hyunsik)
+
     TAJO-853: Refactoring FilterPushDown for OUTER JOIN.
     (Hyoungjun Kim via hyunsik)
 
@@ -73,6 +75,17 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-902: Unicode delimiter does not work correctly. (jinho)
+
+    TAJO-905: When to_date() parses some date without day, the result will be 
+    wrong. (hyunsik)
+
+    TAJO-898: Left outer join with union returns empty result. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-897: PartitionedTableRewriter is repeated several times with same 
+    table. (Hyoungjun Kim via hyunsik)
 
     TAJO-891: Complex join conditions with UNION or inline should be supported.
     (hyunsik)
