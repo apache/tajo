@@ -52,6 +52,7 @@ import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
@@ -741,16 +742,16 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb /
-            conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
+            QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
 
         int totalMem = getClusterTotalMemory(subQuery);
         LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-        int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
+        int slots = Math.max(totalMem /  QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.TASK_DEFAULT_MEMORY), 1);
 
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
-        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
-          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+        if ( QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
+          taskNum = QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.TESTCASE_MIN_TASK_NUM);
           LOG.warn("!!!!! TESTCASE MODE !!!!!");
         }
         LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
@@ -787,12 +788,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
           // determine the number of task
           int taskNumBySize = (int) Math.ceil((double) mb /
-              conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
+              QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
 
           int totalMem = getClusterTotalMemory(subQuery);
 
           LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-          int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
+          int slots = Math.max(totalMem / QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.TASK_DEFAULT_MEMORY), 1);
           int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
           LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
@@ -926,7 +927,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.schedulerContext.setEstimatedTaskNum(fragments.size());
       } else {
         TajoConf conf = subQuery.context.getConf();
-        subQuery.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
+        subQuery.schedulerContext.setTaskSize( QueryContext.getIntVar(subQuery.getContext().getQueryContext(), conf, ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
         int estimatedTaskNum = (int) Math.ceil((double) table.getStats().getNumBytes() /
             (double) subQuery.schedulerContext.getTaskSize());
         subQuery.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);

@@ -38,6 +38,7 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -120,7 +121,7 @@ public class GlobalPlanner {
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
 
-    boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    boolean autoBroadcast = QueryContext.getBoolVar(masterPlan.getContext(), conf, TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
     if (autoBroadcast) {
       // pre-visit finding broadcast join target table
       // this visiting doesn't make any execution block and change plan
@@ -263,11 +264,12 @@ public class GlobalPlanner {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
-    boolean autoBroadcast = conf.getBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    boolean autoBroadcast =
+        QueryContext.getBoolVar(context.plan.getContext(), conf, TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
 
     // to check when the tajo.dist-query.join.broadcast.auto property is true
     if (autoBroadcast && joinNode.isCandidateBroadcast()) {
-      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
+      long broadcastThreshold = QueryContext.getLongVar(context.plan.getContext(), conf, TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
       List<LogicalNode> broadtargetTables = new ArrayList<LogicalNode>();
       int numLargeTables = 0;
       for(LogicalNode eachNode: joinNode.getBroadcastTargets()) {
@@ -310,7 +312,7 @@ public class GlobalPlanner {
 
       TableDesc leftDesc = leftScan.getTableDesc();
       TableDesc rightDesc = rightScan.getTableDesc();
-      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
+      long broadcastThreshold = QueryContext.getLongVar(context.getPlan().getContext(), conf, TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
       if (getTableVolume(leftScan) < broadcastThreshold) {
         leftBroadcasted = true;

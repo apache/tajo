@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -27,6 +29,8 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public class QueryContext extends KeyValueSet {
+  private static final Log LOG = LogFactory.getLog(QueryContext.class);
+
   public static final String COMMAND_TYPE = "tajo.query.command";
 
   public static final String STAGING_DIR = "tajo.query.staging_dir";
@@ -39,8 +43,8 @@ public class QueryContext extends KeyValueSet {
   public static final String OUTPUT_OVERWRITE = "tajo.query.output.overwrite";
   public static final String OUTPUT_AS_DIRECTORY = "tajo.query.output.asdirectory";
 
-  public static final String TRUE_VALUE = "1";
-  public static final String FALSE_VALUE = "0";
+  public static final String TRUE_VALUE = "true";
+  public static final String FALSE_VALUE = "false";
 
   public QueryContext() {}
 
@@ -66,7 +70,7 @@ public class QueryContext extends KeyValueSet {
 
   public boolean getBool(String key) {
     String strVal = get(key);
-    return strVal != null ? strVal.equals(TRUE_VALUE) : false;
+    return strVal != null ? strVal.equalsIgnoreCase(TRUE_VALUE) : false;
   }
 
   public void setUser(String username) {
@@ -187,5 +191,41 @@ public class QueryContext extends KeyValueSet {
 
   public boolean isHiveQueryMode() {
     return getBool("hive.query.mode");
+  }
+
+  public static boolean getBoolVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
+    if (context.get(key.varname) != null) {
+      return context.getBool(key.varname);
+    } else {
+      return conf.getBoolVar(key);
+    }
+  }
+
+  public static Integer getIntVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
+    if (context.get(key.varname) != null) {
+      String val = context.get(key.varname);
+      try {
+        return Integer.valueOf(val);
+      } catch (NumberFormatException nfe) {
+        LOG.warn(nfe.getMessage());
+        return conf.getIntVar(key);
+      }
+    } else {
+      return conf.getIntVar(key);
+    }
+  }
+
+  public static Long getLongVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
+    if (context.get(key.varname) != null) {
+      String val = context.get(key.varname);
+      try {
+        return Long.valueOf(val);
+      } catch (NumberFormatException nfe) {
+        LOG.warn(nfe.getMessage());
+        return conf.getLongVar(key);
+      }
+    } else {
+      return conf.getLongVar(key);
+    }
   }
 }

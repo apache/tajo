@@ -105,6 +105,10 @@ public class TaskAttemptContext {
   public TajoConf getConf() {
     return this.conf;
   }
+
+  public String getConfig(String key) {
+    return queryContext.get(key) != null ? queryContext.get(key) : conf.get(key);
+  }
   
   public TaskAttemptState getState() {
     return this.state;
