@@ -31,7 +31,9 @@ public class SchemaUtil {
       }
     }
     for(Column col : right.getColumns()) {
-      if (!merged.containsByQualifiedName(col.getQualifiedName())) {
+      if (merged.containsByQualifiedName(col.getQualifiedName())) {
+        merged.addColumn("_" + col.getQualifiedName(), col.getDataType());
+      } else {
         merged.addColumn(col);
       }
     }
