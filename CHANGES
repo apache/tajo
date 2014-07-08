@@ -24,6 +24,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-911: Refactoring Mysql/Maria Catalog Store. (DaeMyung Kang via hyunsik)
+
     TAJO-853: Refactoring FilterPushDown for OUTER JOIN.
     (Hyoungjun Kim via hyunsik)
 
