@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -58,12 +59,18 @@ public class WindowSpec {
   public boolean equals(Object obj) {
     if (obj instanceof WindowSpec) {
       WindowSpec another = (WindowSpec) obj;
-      return TUtil.checkEquals(partitionKeys, another.partitionKeys) &&
-
+      return
+          TUtil.checkEquals(windowName, another.windowName) &&
+          TUtil.checkEquals(partitionKeys, another.partitionKeys) &&
           TUtil.checkEquals(windowFrame, another.windowFrame);
     } else {
       return false;
     }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(windowName, partitionKeys, windowFrame);
   }
 
   public static class WindowFrame {
@@ -108,6 +115,23 @@ public class WindowSpec {
     public org.apache.tajo.algebra.WindowSpec.WindowFrameUnit getFrameUnit() {
       return this.unit;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof WindowFrame) {
+        WindowFrame another = (WindowFrame) obj;
+        return
+            TUtil.checkEquals(startBound, another.startBound) &&
+            TUtil.checkEquals(endBound, another.endBound) &&
+            TUtil.checkEquals(unit, another.unit);
+      } else {
+        return false;
+      }
+    }
+
+    public int hashCode() {
+      return Objects.hashCode(startBound, endBound, unit);
+    }
   }
 
   public static class WindowStartBound {
@@ -129,6 +153,21 @@ public class WindowSpec {
     public EvalNode getNumber() {
       return number;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof WindowStartBound) {
+        WindowStartBound other = (WindowStartBound) obj;
+        return boundType == other.boundType && number.equals(other.number);
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(boundType, number);
+    }
   }
 
   public static class WindowEndBound {
@@ -149,6 +188,21 @@ public class WindowSpec {
 
     public EvalNode getNumber() {
       return number;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof WindowStartBound) {
+        WindowEndBound other = (WindowEndBound) obj;
+        return boundType == other.boundType && number.equals(other.number);
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(boundType, number);
     }
   }
 }

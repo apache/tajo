@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.logical;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -140,6 +141,11 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
     } else {
       return false;  
     }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(partitionKeys, sortSpecs, windowFuncs, targets, hasDistinct);
   }
   
   @Override
