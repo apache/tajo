@@ -33,6 +33,11 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   @Expose boolean firstPhase = false;
   private Tuple params;
 
+  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+    super(type, desc, givenArgs);
+    this.instance = instance;
+  }
+
   public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
     super(EvalType.AGG_FUNCTION, desc, givenArgs);
     this.instance = instance;

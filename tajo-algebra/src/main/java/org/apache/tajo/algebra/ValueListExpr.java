@@ -46,4 +46,14 @@ public class ValueListExpr extends Expr {
     ValueListExpr valueListExpr = (ValueListExpr) expr;
     return TUtil.checkEquals(values, valueListExpr.values);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    ValueListExpr valueListExpr = (ValueListExpr) super.clone();
+    valueListExpr.values = new Expr[values.length];
+    for (int i = 0; i < values.length; i++) {
+      valueListExpr.values = (Expr[]) values[i].clone();
+    }
+    return valueListExpr;
+  }
 }

@@ -52,4 +52,12 @@ public class DropDatabase extends Expr {
     DropDatabase another = (DropDatabase) expr;
     return databaseName.equals(another.databaseName) && ifExists == another.ifExists;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DropDatabase drop = (DropDatabase) super.clone();
+    drop.databaseName = databaseName;
+    drop.ifExists = ifExists;
+    return drop;
+  }
 }

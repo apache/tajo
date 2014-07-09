@@ -18,12 +18,16 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -87,6 +91,8 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
                    // function.
     List<NamedExpr> aggExprs = new ArrayList<NamedExpr>(); // aggregation functions
     List<NamedExpr> scalarExprs = new ArrayList<NamedExpr>(); // scalar expressions which can be referred
+    List<NamedExpr> windowAggExprs = new ArrayList<NamedExpr>(); // window expressions which can be referred
+    Set<WindowSpecReferences> windowSpecs = Sets.newLinkedHashSet();
 
     private ExprNormalizedResult(LogicalPlanner.PlanContext context, boolean tryBinaryCommonTermsElimination) {
       this.plan = context.plan;
@@ -248,13 +254,61 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
       // If parameters are all constants, we don't need to dissect an aggregation expression into two parts:
       // function and parameter parts.
-      if (!OpType.isLiteral(param.getType()) && param.getType() != OpType.Column) {
+      if (!OpType.isLiteralType(param.getType()) && param.getType() != OpType.Column) {
         String referenceName = ctx.block.namedExprsMgr.addExpr(param);
         ctx.scalarExprs.add(new NamedExpr(param, referenceName));
         expr.getParams()[i] = new ColumnReferenceExpr(referenceName);
       }
     }
     stack.pop();
+    return expr;
+  }
+
+  public Expr visitWindowFunction(ExprNormalizedResult ctx, Stack<Expr> stack, WindowFunctionExpr expr)
+      throws PlanningException {
+    stack.push(expr);
+
+    WindowSpec windowSpec = expr.getWindowSpec();
+    Expr key;
+
+    WindowSpecReferences windowSpecReferences;
+    if (windowSpec.hasWindowName()) {
+      windowSpecReferences = new WindowSpecReferences(windowSpec.getWindowName());
+    } else {
+      String [] partitionKeyReferenceNames = null;
+      if (windowSpec.hasPartitionBy()) {
+        partitionKeyReferenceNames = new String [windowSpec.getPartitionKeys().length];
+        for (int i = 0; i < windowSpec.getPartitionKeys().length; i++) {
+          key = windowSpec.getPartitionKeys()[i];
+          visit(ctx, stack, key);
+          partitionKeyReferenceNames[i] = ctx.block.namedExprsMgr.addExpr(key);
+        }
+      }
+
+      String [] orderKeyReferenceNames = null;
+      if (windowSpec.hasOrderBy()) {
+        orderKeyReferenceNames = new String[windowSpec.getSortSpecs().length];
+        for (int i = 0; i < windowSpec.getSortSpecs().length; i++) {
+          key = windowSpec.getSortSpecs()[i].getKey();
+          visit(ctx, stack, key);
+          String referenceName = ctx.block.namedExprsMgr.addExpr(key);
+          if (OpType.isAggregationFunction(key.getType())) {
+            ctx.aggExprs.add(new NamedExpr(key, referenceName));
+            windowSpec.getSortSpecs()[i].setKey(new ColumnReferenceExpr(referenceName));
+          }
+          orderKeyReferenceNames[i] = referenceName;
+        }
+      }
+      windowSpecReferences =
+          new WindowSpecReferences(partitionKeyReferenceNames,orderKeyReferenceNames);
+    }
+    ctx.windowSpecs.add(windowSpecReferences);
+
+    String funcExprRef = ctx.block.namedExprsMgr.addExpr(expr);
+    ctx.windowAggExprs.add(new NamedExpr(expr, funcExprRef));
+    stack.pop();
+
+    ctx.block.setHasWindowFunction();
     return expr;
   }
 
@@ -287,5 +341,41 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       }
     }
     return expr;
+  }
+
+  public static class WindowSpecReferences {
+    String windowName;
+
+    String [] partitionKeys;
+    String [] orderKeys;
+
+    public WindowSpecReferences(String windowName) {
+      this.windowName = windowName;
+    }
+
+    public WindowSpecReferences(String [] partitionKeys, String [] orderKeys) {
+      this.partitionKeys = partitionKeys;
+      this.orderKeys = orderKeys;
+    }
+
+    public String getWindowName() {
+      return windowName;
+    }
+
+    public boolean hasPartitionKeys() {
+      return partitionKeys != null;
+    }
+
+    public String [] getPartitionKeys() {
+      return partitionKeys;
+    }
+
+    public boolean hasOrderBy() {
+      return orderKeys != null;
+    }
+
+    public String [] getOrderKeys() {
+      return orderKeys;
+    }
   }
 }

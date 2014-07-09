@@ -82,4 +82,17 @@ public class FunctionExpr extends Expr {
     return signature.equals(another.signature) &&
         TUtil.checkEquals(params, another.params);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    FunctionExpr func = (FunctionExpr) super.clone();
+    func.signature = signature;
+    if (params != null) {
+      func.params = new Expr[params.length];
+      for (int i = 0; i < params.length; i++) {
+        func.params[i] = (Expr) params[i].clone();
+      }
+    }
+    return func;
+  }
 }

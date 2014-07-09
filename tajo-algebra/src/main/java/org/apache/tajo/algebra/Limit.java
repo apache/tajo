@@ -55,4 +55,11 @@ public class Limit extends UnaryOperator {
     Limit another = (Limit) expr;
     return fetchFirstNum.equals(another.fetchFirstNum);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Limit limit = (Limit) super.clone();
+    limit.fetchFirstNum = (Expr) fetchFirstNum.clone();
+    return limit;
+  }
 }
