@@ -61,4 +61,11 @@ public class Selection extends UnaryOperator implements JsonSerializable {
     }
     return false;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Selection selection = (Selection) super.clone();
+    selection.qual = (Expr) qual.clone();
+    return selection;
+  }
 }

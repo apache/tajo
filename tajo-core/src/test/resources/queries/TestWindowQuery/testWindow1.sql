@@ -1,0 +1,1 @@
+SELECT sum(l_quantity) OVER () FROM LINEITEM;

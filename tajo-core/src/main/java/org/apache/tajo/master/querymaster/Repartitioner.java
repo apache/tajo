@@ -88,8 +88,15 @@ public class Repartitioner {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
         tablePath = storageManager.getTablePath(scans[i].getTableName());
-        ExecutionBlockId scanEBId = TajoIdUtils.createExecutionBlockId(scans[i].getTableName());
-        stats[i] = masterContext.getSubQuery(scanEBId).getResultStats().getNumBytes();
+        if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
+          for (Map.Entry<ExecutionBlockId, ExecutionBlockId> unionScanEntry: execBlock.getUnionScanMap().entrySet()) {
+            ExecutionBlockId originScanEbId = unionScanEntry.getKey();
+            stats[i] += masterContext.getSubQuery(originScanEbId).getResultStats().getNumBytes();
+          }
+        } else {
+          ExecutionBlockId scanEBId = TajoIdUtils.createExecutionBlockId(scans[i].getTableName());
+          stats[i] = masterContext.getSubQuery(scanEBId).getResultStats().getNumBytes();
+        }
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
         tablePath = tableDesc.getPath();

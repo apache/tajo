@@ -18,6 +18,8 @@
 
 package org.apache.tajo.util;
 
+import org.apache.commons.lang.CharUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
@@ -164,5 +166,18 @@ public class StringUtils {
                 "Shutting down " + classname + " at " + hostname}));
           }
         }, SHUTDOWN_HOOK_PRIORITY);
+  }
+
+  public static String unicodeEscapedDelimiter(String value) {
+    try {
+      String delimiter = StringEscapeUtils.unescapeJava(value);
+      return unicodeEscapedDelimiter(delimiter.charAt(0));
+    } catch (Throwable e) {
+    }
+    return value;
+  }
+
+  public static String unicodeEscapedDelimiter(char c) {
+    return CharUtils.unicodeEscaped(c);
   }
 }

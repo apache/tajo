@@ -1,0 +1,83 @@
+{
+  "IsDistinct": false,
+  "Projections": [
+    {
+      "Expr": {
+        "ColumnName": "dt",
+        "OpType": "Column"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "ColumnName": "dt2",
+        "OpType": "Column"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "WindowSpec": {
+          "partitionKeys": [
+            {
+              "Signature": "round",
+              "FuncParams": [
+                {
+                  "ColumnName": "dt",
+                  "OpType": "Column"
+                }
+              ],
+              "OpType": "Function"
+            },
+            {
+              "ColumnName": "dt2",
+              "OpType": "Column"
+            }
+          ],
+          "sortSpecs": [
+            {
+              "SortKey": {
+                "Signature": "ceil",
+                "FuncParams": [
+                  {
+                    "ColumnName": "dt",
+                    "OpType": "Column"
+                  }
+                ],
+                "OpType": "Function"
+              },
+              "IsAsc": true,
+              "IsNullFirst": false
+            }
+          ],
+          "windowFrame": {
+            "unit": "ROW",
+            "startBound": {
+              "boundType": "UNBOUNDED_PRECEDING"
+            }
+          }
+        },
+        "IsDistinct": false,
+        "Signature": "sum",
+        "FuncParams": [
+          {
+            "ColumnName": "xy",
+            "OpType": "Column"
+          }
+        ],
+        "OpType": "WindowFunction"
+      },
+      "OpType": "Target"
+    }
+  ],
+  "Expr": {
+    "Relations": [
+      {
+        "TableName": "sum_example",
+        "OpType": "Relation"
+      }
+    ],
+    "OpType": "RelationList"
+  },
+  "OpType": "Projection"
+}
