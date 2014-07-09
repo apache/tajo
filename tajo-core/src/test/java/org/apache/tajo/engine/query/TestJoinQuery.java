@@ -1053,7 +1053,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testOnClauseJoin1() throws Exception {
+  public final void testJoinFilterOfRowPreservedTable1() throws Exception {
+    // this test is for join filter of a row preserved table.
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
