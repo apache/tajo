@@ -278,6 +278,15 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testCreateTableLike1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_like_1.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.CreateTable, expr.getType());
+    CreateTable createTable = (CreateTable) expr;
+    assertEquals("orig_name", createTable.getLikeParentTableName());
+  }
+
+  @Test
   public void testCreateTablePartitionByHash1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/create_table_partition_by_hash_1.sql"));
     Expr expr = parseQuery(sql);

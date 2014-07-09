@@ -25,6 +25,9 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
@@ -49,7 +52,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum target = params.get(0);
-    TimestampDatum timestamp = null;
+    TimestampDatum timestamp;
 
     if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
       return NullDatum.get();
@@ -111,147 +114,150 @@ public class DatePartFromTimestamp extends GeneralFunction {
       }
     }
 
-    return extractor.extract(timestamp);
+    TimeMeta tm = timestamp.toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm);
+
+    return extractor.extract(tm);
   }
 
   private interface DatePartExtractorFromTimestamp {
-    public Datum extract(TimestampDatum timestamp);
+    public Datum extract(TimeMeta tm);
   }
 
   private class CenturyExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getCenturyOfEra());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.getCenturyOfEra());
     }
   } 
 
   private class DayExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getDayOfMonth());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.dayOfMonth);
     }
   }
 
   private class DecadeExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) (timestamp.getYear() / 10));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (tm.years / 10));
     }
   }
 
   private class DowExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      Integer tdow = timestamp.getDayOfWeek();
+    public Datum extract(TimeMeta tm) {
+      Integer tdow = tm.getDayOfWeek();
       return DatumFactory.createFloat8((double) ((tdow == 7) ? 0 : tdow));
     }
   }
 
   private class DoyExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getDayOfYear());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double)tm.getDayOfYear());
     }
   }
 
   private class EpochExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getUnixTime());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double)DateTimeUtil.julianTimeToEpoch(DateTimeUtil.toJulianTimestamp(tm)));
     }
   }
 
   private class HourExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getHourOfDay());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.hours);
     }
   }
 
   private class ISODowExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getDayOfWeek());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.getISODayOfWeek());
     }
   }
 
   private class ISOYearExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getWeekyear());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.getWeekyear());
     }
   }
 
   private class MicrosecondsExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) (timestamp.getSecondOfMinute() * 1000000 + timestamp.getMillisOfSecond() * 1000));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (tm.secs * 1000000 + tm.fsecs));
     }
   }
 
   private class MillenniumExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) (((timestamp.getYear() - 1) / 1000) + 1));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (((tm.years - 1) / 1000) + 1));
     }
   }
 
   private class MillisecondsExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) (timestamp.getSecondOfMinute() * 1000 + timestamp.getMillisOfSecond()));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (tm.secs * 1000 + tm.fsecs / 1000.0));
     }
   }
 
   private class MinuteExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getMinuteOfHour());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.minutes);
     }
   }
 
   private class MonthExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getMonthOfYear());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.monthOfYear);
     }
   }
 
   private class QuarterExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) (((timestamp.getMonthOfYear() - 1) / 3) + 1));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (((tm.monthOfYear - 1) / 3) + 1));
     }
   }
 
   private class SecondExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      if (timestamp.getMillisOfSecond() != 0) {
-        return DatumFactory.createFloat8(timestamp.getSecondOfMinute() + (((double) timestamp.getMillisOfSecond()) / 1000));
+    public Datum extract(TimeMeta tm) {
+      if (tm.fsecs != 0) {
+        return DatumFactory.createFloat8(tm.secs + (((double) tm.fsecs) / (double) DateTimeConstants.USECS_PER_SEC));
       } else {
-        return DatumFactory.createFloat8((double) timestamp.getSecondOfMinute());
+        return DatumFactory.createFloat8((double) tm.secs);
       }
     }
   }
 
   private class WeekExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getWeekOfWeekyear());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.getWeekOfYear());
     }
   }
 
   private class YearExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
-      return DatumFactory.createFloat8((double) timestamp.getYear());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.years);
     }
   }
 
   private class NullExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override
-    public Datum extract(TimestampDatum timestamp) {
+    public Datum extract(TimeMeta tm) {
       return NullDatum.get();
     }
   }

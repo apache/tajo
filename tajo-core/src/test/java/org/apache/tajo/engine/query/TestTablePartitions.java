@@ -31,6 +31,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.ipc.ClientProtos;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -59,7 +60,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
 
     res = testBase.execute(
-        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_quantity from lineitem");
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+            "l_quantity from lineitem");
     res.close();
   }
 
@@ -485,5 +487,84 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("select * from " + tableName + " where col2 = 9");
     assertFalse(res.next());
     res.close();
+  }
+
+  @Test
+  public final void testColumnPartitionedTableWithSmallerExpressions1() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions1");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
+        + " select l_orderkey, l_partkey from lineitem");
+
+    assertTrue(response.hasErrorMessage());
+    assertEquals(response.getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+
+    res = executeFile("case14.sql");
+    assertResultSet(res, "case14.result");
+    res.close();
+  }
+
+  @Test
+  public final void testColumnPartitionedTableWithSmallerExpressions2() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions2");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
+        + " select l_returnflag , l_orderkey, l_partkey from lineitem");
+
+    assertTrue(response.hasErrorMessage());
+    assertEquals(response.getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+
+    res = executeFile("case15.sql");
+    assertResultSet(res, "case15.result");
+    res.close();
+  }
+
+
+  @Test
+  public final void testColumnPartitionedTableWithSmallerExpressions3() throws Exception {
+    ResultSet res = executeString("create database testinsertquery1;");
+    res.close();
+    res = executeString("create database testinsertquery2;");
+    res.close();
+
+    res = executeString("create table testinsertquery1.table1 " +
+        "(col1 int4, col2 int4, col3 float8)");
+    res.close();
+
+    res = executeString("create table testinsertquery2.table1 " +
+        "(col1 int4, col2 int4, col3 float8)");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable("testinsertquery1", "table1"));
+    assertTrue(catalog.existsTable("testinsertquery2", "table1"));
+
+    res = executeString("insert overwrite into testinsertquery1.table1 " +
+        "select l_orderkey, l_partkey, l_quantity from default.lineitem;");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeString("insert overwrite into testinsertquery2.table1 " +
+        "select col1, col2, col3 from testinsertquery1.table1;");
+    res.close();
+
+    desc = catalog.getTableDesc("testinsertquery2", "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
   }
 }

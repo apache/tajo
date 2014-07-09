@@ -35,7 +35,10 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -236,7 +239,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   SubQueryEventType.SQ_START,
                   SubQueryEventType.SQ_KILL,
                   SubQueryEventType.SQ_FAILED,
-                  SubQueryEventType.SQ_INTERNAL_ERROR))
+                  SubQueryEventType.SQ_INTERNAL_ERROR,
+                  SubQueryEventType.SQ_SUBQUERY_COMPLETED))
 
           .installTopology();
 
@@ -594,7 +598,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       try {
         getStateMachine().doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         eventHandler.handle(new SubQueryEvent(getId(),
             SubQueryEventType.SQ_INTERNAL_ERROR));
       }
@@ -741,6 +749,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
+        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+          LOG.warn("!!!!! TESTCASE MODE !!!!!");
+        }
         LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
 
         // The shuffle output numbers of join may be inconsistent by execution block order.
@@ -899,6 +911,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // Otherwise, it creates at least one fragments for a table, which may
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        // After calling this method, partition paths are removed from the physical plan.
         fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
       } else {
         Path inputPath = table.getPath();
@@ -1121,7 +1134,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           return SubQueryState.SUCCEEDED;
         }
       } catch (Throwable t) {
-        LOG.error(t);
+        LOG.error(t.getMessage(), t);
         subQuery.abort(SubQueryState.ERROR);
         return SubQueryState.ERROR;
       }

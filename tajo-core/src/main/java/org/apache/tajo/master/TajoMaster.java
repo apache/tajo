@@ -537,8 +537,9 @@ public class TajoMaster extends CompositeService {
 
   public static List<File> getMountPath() throws Exception {
     BufferedReader mountOutput = null;
+    Process mountProcess = null;
     try {
-      Process mountProcess = Runtime.getRuntime ().exec("mount");
+      mountProcess = Runtime.getRuntime ().exec("mount");
       mountOutput = new BufferedReader(new InputStreamReader(mountProcess.getInputStream()));
       List<File> mountPaths = new ArrayList<File>();
       while (true) {
@@ -559,6 +560,11 @@ public class TajoMaster extends CompositeService {
     } finally {
       if(mountOutput != null) {
         mountOutput.close();
+      }
+      if (mountProcess != null) {
+        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getInputStream());
+        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getOutputStream());
+        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getErrorStream());
       }
     }
   }

@@ -537,7 +537,14 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
         }
       } else {
-        throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType().name()));
+        if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.PARQUET)) {
+          sd.setInputFormat(parquet.hive.DeprecatedParquetInputFormat.class.getName());
+          sd.setOutputFormat(parquet.hive.DeprecatedParquetOutputFormat.class.getName());
+          sd.getSerdeInfo().setSerializationLib(parquet.hive.serde.ParquetHiveSerDe.class.getName());
+        } else {
+          throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType
+              ().name()));
+        }
       }
 
       sd.setSortCols(new ArrayList<Order>());

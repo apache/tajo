@@ -281,7 +281,11 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
       try {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state", e);
+        LOG.error("Can't handle this event at current state"
+            + ", eventType:" + event.getType().name()
+            + ", oldState:" + oldState.name()
+            + ", nextState:" + getState().name()
+            , e);
         LOG.error("Invalid event " + event.getType() + " on Worker  " + getWorkerId());
       }
       if (oldState != getState()) {

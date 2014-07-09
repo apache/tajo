@@ -27,9 +27,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -39,10 +39,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.planner.logical.SortNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
@@ -90,11 +87,6 @@ public class Task {
   private boolean stopped = false;
   private final Reporter reporter;
   private Path inputTableBaseDir;
-
-  private static int completedTasksNum = 0;
-  private static int succeededTasksNum = 0;
-  private static int killedTasksNum = 0;
-  private static int failedTasksNum = 0;
 
   private long startTime;
   private long finishTime;
@@ -145,7 +137,7 @@ public class Task {
     this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(systemConf, taskId,
+    this.context = new TaskAttemptContext(systemConf, queryContext, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
@@ -156,9 +148,19 @@ public class Task {
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
-    for (LogicalNode node : scanNode) {
-      ScanNode scan = (ScanNode)node;
-      descs.put(scan.getCanonicalName(), scan.getTableDesc());
+    if (scanNode != null) {
+      for (LogicalNode node : scanNode) {
+        ScanNode scan = (ScanNode) node;
+        descs.put(scan.getCanonicalName(), scan.getTableDesc());
+      }
+    }
+
+    LogicalNode [] partitionScanNode = PlannerUtil.findAllNodes(plan, NodeType.PARTITIONS_SCAN);
+    if (partitionScanNode != null) {
+      for (LogicalNode node : partitionScanNode) {
+        PartitionedTableScanNode scan = (PartitionedTableScanNode) node;
+        descs.put(scan.getCanonicalName(), scan.getTableDesc());
+      }
     }
 
     interQuery = request.getProto().getInterQuery();
@@ -257,6 +259,10 @@ public class Task {
 
   public boolean hasFetchPhase() {
     return fetcherRunners.size() > 0;
+  }
+
+  public List<Fetcher> getFetchers() {
+    return new ArrayList<Fetcher>(fetcherRunners);
   }
 
   public void fetch() {
@@ -375,17 +381,15 @@ public class Task {
         context.setProgress(FETCHER_PROGRESS);
       }
 
-      if (context.getFragmentSize() > 0) {
-        this.executor = taskRunnerContext.getTQueryEngine().
-            createPlan(context, plan);
-        this.executor.init();
+      this.executor = taskRunnerContext.getTQueryEngine().
+          createPlan(context, plan);
+      this.executor.init();
 
-        while(!killed && executor.next() != null) {
-        }
-        this.executor.close();
-        reloadInputStats();
-        this.executor = null;
+      while(!killed && executor.next() != null) {
       }
+      this.executor.close();
+      reloadInputStats();
+      this.executor = null;
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
@@ -393,7 +397,7 @@ public class Task {
     } finally {
       context.setProgress(1.0f);
       stopped = true;
-      completedTasksNum++;
+      taskRunnerContext.completedTasksNum.incrementAndGet();
 
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
@@ -401,19 +405,23 @@ public class Task {
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
           masterProxy.statusUpdate(null, getReport(), NullCallback.get());
-          killedTasksNum++;
+          taskRunnerContext.killedTasksNum.incrementAndGet();
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
           TaskFatalErrorReport.Builder errorBuilder =
               TaskFatalErrorReport.newBuilder()
                   .setId(getId().getProto());
           if (error != null) {
-            errorBuilder.setErrorMessage(error.getMessage());
+            if (error.getMessage() == null) {
+              errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
+            } else {
+              errorBuilder.setErrorMessage(error.getMessage());
+            }
             errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
           masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
-          failedTasksNum++;
+          taskRunnerContext.failedTasksNum.incrementAndGet();
         }
 
         // stopping the status report
@@ -437,69 +445,76 @@ public class Task {
 
         TaskCompletionReport report = getTaskCompletionReport();
         masterProxy.done(null, report, NullCallback.get());
-        succeededTasksNum++;
+        taskRunnerContext.succeededTasksNum.incrementAndGet();
       }
 
       finishTime = System.currentTimeMillis();
-
+      LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
+          ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
+          + ", killed: " + taskRunnerContext.killedTasksNum.incrementAndGet()
+          + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
       cleanupTask();
-      LOG.info("Worker's task counter - total:" + completedTasksNum + ", succeeded: " + succeededTasksNum
-          + ", killed: " + killedTasksNum + ", failed: " + failedTasksNum);
     }
   }
 
   public void cleanupTask() {
-    taskRunnerContext.addTaskHistory(getId(), getTaskHistory());
+    taskRunnerContext.addTaskHistory(getId(), createTaskHistory());
     taskRunnerContext.getTasks().remove(getId());
     taskRunnerContext = null;
 
     fetcherRunners.clear();
-    executor = null;
+    fetcherRunners = null;
+    try {
+      if(executor != null) {
+        executor.close();
+        executor = null;
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     plan = null;
     context = null;
     releaseChannelFactory();
   }
 
-  public TaskHistory getTaskHistory() {
-    TaskHistory taskHistory = new TaskHistory();
-    taskHistory.setStartTime(startTime);
-    taskHistory.setFinishTime(finishTime);
-    if (context.getOutputPath() != null) {
-      taskHistory.setOutputPath(context.getOutputPath().toString());
-    }
-
-    if (context.getWorkDir() != null) {
-      taskHistory.setWorkingPath(context.getWorkDir().toString());
-    }
-
+  public TaskHistory createTaskHistory() {
+    TaskHistory taskHistory = null;
     try {
-      taskHistory.setStatus(getStatus().toString());
-      taskHistory.setProgress(context.getProgress());
+      taskHistory = new TaskHistory(getTaskId(), getStatus(), context.getProgress(),
+          startTime, finishTime, reloadInputStats());
 
-      taskHistory.setInputStats(new TableStats(reloadInputStats()));
+      if (context.getOutputPath() != null) {
+        taskHistory.setOutputPath(context.getOutputPath().toString());
+      }
+
+      if (context.getWorkDir() != null) {
+        taskHistory.setWorkingPath(context.getWorkDir().toString());
+      }
+
       if (context.getResultStats() != null) {
-        taskHistory.setOutputStats((TableStats)context.getResultStats().clone());
+        taskHistory.setOutputStats(context.getResultStats().getProto());
       }
 
       if (hasFetchPhase()) {
-        Map<URI, TaskHistory.FetcherHistory> fetcherHistories = new HashMap<URI, TaskHistory.FetcherHistory>();
+        taskHistory.setTotalFetchCount(fetcherRunners.size());
+        int i = 0;
+        FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
+        for (Fetcher fetcher : fetcherRunners) {
+          // TODO store the fetcher histories
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+            builder.setStartTime(fetcher.getStartTime());
+            builder.setFinishTime(fetcher.getFinishTime());
+            builder.setFileLength(fetcher.getFileLen());
+            builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
+            builder.setState(fetcher.getState());
 
-        for(Fetcher eachFetcher: fetcherRunners) {
-          TaskHistory.FetcherHistory fetcherHistory = new TaskHistory.FetcherHistory();
-          fetcherHistory.setStartTime(eachFetcher.getStartTime());
-          fetcherHistory.setFinishTime(eachFetcher.getFinishTime());
-          fetcherHistory.setStatus(eachFetcher.getStatus());
-          fetcherHistory.setUri(eachFetcher.getURI().toString());
-          fetcherHistory.setFileLen(eachFetcher.getFileLen());
-          fetcherHistory.setMessageReceiveCount(eachFetcher.getMessageReceiveCount());
-
-          fetcherHistories.put(eachFetcher.getURI(), fetcherHistory);
+            taskHistory.addFetcherHistory(builder.build());
+          }
+          if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED) i++;
         }
-
-        taskHistory.setFetchers(fetcherHistories);
+        taskHistory.setFinishedFetchCount(i);
       }
     } catch (Exception e) {
-      taskHistory.setStatus(StringUtils.stringifyException(e));
       e.printStackTrace();
     }
 
@@ -559,7 +574,7 @@ public class Task {
       int retryWaitTime = 1000;
 
       try { // for releasing fetch latch
-        while(retryNum < maxRetryNum) {
+        while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);
@@ -661,6 +676,7 @@ public class Task {
     private Thread pingThread;
     private AtomicBoolean stop = new AtomicBoolean(false);
     private static final int PROGRESS_INTERVAL = 3000;
+    private static final int MAX_RETRIES = 3;
     private QueryUnitAttemptId taskId;
 
     public Reporter(QueryUnitAttemptId taskId, QueryMasterProtocolService.Interface masterStub) {
@@ -671,7 +687,6 @@ public class Task {
     Runnable createReporterThread() {
 
       return new Runnable() {
-        final int MAX_RETRIES = 3;
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {

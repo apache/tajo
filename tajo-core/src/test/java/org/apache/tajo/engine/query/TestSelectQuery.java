@@ -21,17 +21,25 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.utils.test.ErrorInjectionRewriter;
+import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestSelectQuery extends QueryTestCaseBase {
@@ -303,6 +311,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  @Test
   public final void testDatabaseRef() throws Exception {
     if (!testingCluster.isHCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();
@@ -321,6 +330,117 @@ public class TestSelectQuery extends QueryTestCaseBase {
       cleanupQuery(res);
 
       executeString("DROP DATABASE \"TestSelectQuery\"").close();
+    }
+  }
+
+  @Test
+  public final void testSumIntOverflow() throws Exception {
+    // Test data's min value is 17 and number of rows is 5.
+    // 25264513 = 2147483647/17/5
+    // result is 116,848,374,845 ==> int overflow
+    // select sum(cast(l_quantity * 25264513 as INT4)) from lineitem where l_quantity > 0;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSumFloatOverflow() throws Exception {
+    // Test data's min value is 21168.23 and number of rows is 5.
+    // 3.21506374375027E33 = 3.40282346638529E38/21168/ 5
+    // result is 6.838452478692677E38 ==> float4 overflow
+    // select sum(cast(L_EXTENDEDPRICE * 3.21506374375027E33 as FLOAT4)) from lineitem where l_quantity > 0;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testQueryMasterTaskInitError() throws Exception {
+    // In this testcase we can check that a TajoClient receives QueryMasterTask's init error message.
+    testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes",
+        ErrorInjectionRewriter.class.getCanonicalName());
+
+    try {
+      // If client can't receive error status, thread runs forever.
+      Thread t = new Thread() {
+        public void run() {
+          try {
+            TajoResultSet res = (TajoResultSet) client.executeQueryAndGetResult("select l_orderkey from lineitem");
+            QueryStatus status = client.getQueryStatus(res.getQueryId());
+            assertEquals(QueryState.QUERY_ERROR, status.getState());
+            assertEquals(NullPointerException.class.getName(), status.getErrorMessage());
+            cleanupQuery(res);
+          } catch (Exception e) {
+            fail(e.getMessage());
+          }
+        }
+      };
+
+      t.start();
+
+      for (int i = 0; i < 10; i++) {
+        Thread.sleep(1 * 1000);
+        if (!t.isAlive()) {
+          break;
+        }
+      }
+
+      // If query runs more than 10 secs, test is fail.
+      assertFalse(t.isAlive());
+    } finally {
+      testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes", "");
+    }
+  }
+
+  @Test
+  public final void testNowInMultipleTasks() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
+
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+
+      ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+
+      String nowValue = null;
+      int numRecords = 0;
+      while (res.next()) {
+        String currentNowValue = res.getString(1);
+        if (nowValue != null) {
+          assertTrue(nowValue.equals(currentNowValue));
+        }
+        nowValue = currentNowValue;
+        numRecords++;
+      }
+      assertEquals(5, numRecords);
+
+      res.close();
+
+      res = executeString("select concat(substr(to_char(current_timestamp,'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+
+      nowValue = null;
+      numRecords = 0;
+      while (res.next()) {
+        String currentNowValue = res.getString(1);
+        if (nowValue != null) {
+          assertTrue(nowValue.equals(currentNowValue));
+        }
+        nowValue = currentNowValue;
+        numRecords++;
+      }
+      assertEquals(5, numRecords);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
+          ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
+      executeString("DROP TABLE table11 PURGE");
     }
   }
 }

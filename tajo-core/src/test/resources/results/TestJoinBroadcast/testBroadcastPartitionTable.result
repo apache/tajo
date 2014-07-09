@@ -1,0 +1,5 @@
+c_custkey,c_name,c_nationkey,n_nationkey,o_orderkey
+-------------------------------
+2,Customer#000000002,13,13,3
+3,Customer#000000003,1,1,1
+4,Customer#000000004,4,4,2

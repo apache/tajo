@@ -22,65 +22,47 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
 
 public class TimeDatum extends Datum {
   public static final int SIZE = 8;
-  /** ISO 8601/SQL standard format - ex) 07:37:16-08 */
-  public static final String DEFAULT_FORMAT_STRING = "HH:mm:ss";
-  private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private final LocalTime time;
+  private final long time;
 
-  public TimeDatum(long value) {
-    super(TajoDataTypes.Type.TIME);
-    time = new LocalTime(value);
-  }
-
-  public TimeDatum(int hour, int minute, int second) {
-    super(TajoDataTypes.Type.TIME);
-    time = new LocalTime(hour, minute, second);
-  }
-
-  public TimeDatum(int hour, int minute, int second, int millis) {
-    super(TajoDataTypes.Type.TIME);
-    time = new LocalTime(hour, minute, second, millis);
-  }
-
-  public TimeDatum(String timeStr) {
-    super(TajoDataTypes.Type.TIME);
-    time = LocalTime.parse(timeStr, DEFAULT_FORMATTER);
-  }
-
-  public TimeDatum(LocalTime time) {
+  public TimeDatum(long time) {
     super(TajoDataTypes.Type.TIME);
     this.time = time;
   }
 
-  public TimeDatum(byte [] bytes) {
-    this(Bytes.toLong(bytes));
+  public TimeMeta toTimeMeta() {
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.date2j(time, tm);
+
+    return tm;
   }
 
   public int getHourOfDay() {
-    return time.getHourOfDay();
+    TimeMeta tm = toTimeMeta();
+    return tm.hours;
   }
 
   public int getMinuteOfHour() {
-    return time.getMinuteOfHour();
+    TimeMeta tm = toTimeMeta();
+    return tm.minutes;
   }
 
   public int getSecondOfMinute() {
-    return time.getSecondOfMinute();
-  }
-
-  public int getMillisOfDay() {
-    return time.getMillisOfDay();
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.date2j(time, tm);
+    return tm.secs;
   }
 
   public int getMillisOfSecond() {
-    return time.getMillisOfSecond();
+    TimeMeta tm = toTimeMeta();
+    return tm.fsecs / 1000;
   }
 
   public String toString() {
@@ -94,7 +76,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public long asInt8() {
-    return time.toDateTimeToday().getMillis();
+    return time;
   }
 
   @Override
@@ -109,11 +91,21 @@ public class TimeDatum extends Datum {
 
   @Override
   public String asChars() {
-    return time.toString(DEFAULT_FORMATTER);
+    TimeMeta tm = toTimeMeta();
+    return DateTimeUtil.encodeTime(tm, DateStyle.ISO_DATES);
   }
 
-  public String toChars(String format) {
-    return time.toString(format);
+  public String asChars(TimeZone timeZone, boolean includeTimeZone) {
+    TimeMeta tm = toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm, timeZone);
+    if (includeTimeZone) {
+      tm.timeZone = timeZone.getRawOffset() / 1000;
+    }
+    return DateTimeUtil.encodeTime(tm, DateStyle.ISO_DATES);
+  }
+
+  public String toString(TimeZone timeZone, boolean includeTimeZone) {
+    return asChars(timeZone, includeTimeZone);
   }
 
   @Override
@@ -128,12 +120,23 @@ public class TimeDatum extends Datum {
 
   public Datum plus(Datum datum) {
     switch(datum.type()) {
-      case INTERVAL:
+      case INTERVAL: {
         IntervalDatum interval = ((IntervalDatum)datum);
-        return new TimeDatum(time.plusMillis((int)interval.getMilliSeconds()));
-      case DATE:
-        DateTime dateTime = DateDatum.createDateTime(((DateDatum)datum).getDate(), time, true);
-        return new TimestampDatum(dateTime);
+        TimeMeta tm = toTimeMeta();
+        tm.plusMillis(interval.getMilliSeconds());
+        return new TimeDatum(DateTimeUtil.toTime(tm));
+      }
+      case DATE: {
+        TimeMeta tm = toTimeMeta();
+        DateTimeUtil.toUserTimezone(tm);     //TimeDatum is UTC
+
+        DateDatum dateDatum = (DateDatum) datum;
+        TimeMeta dateTm = dateDatum.toTimeMeta();
+        dateTm.plusTime(DateTimeUtil.toTime(tm));
+
+        DateTimeUtil.toUTCTimezone(dateTm);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(dateTm));
+      }
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -141,12 +144,17 @@ public class TimeDatum extends Datum {
 
   public Datum minus(Datum datum) {
     switch(datum.type()) {
-      case INTERVAL:
+      case INTERVAL: {
         IntervalDatum interval = ((IntervalDatum)datum);
-        return new TimeDatum(time.minusMillis((int)interval.getMilliSeconds()));
+        TimeMeta tm = toTimeMeta();
+        tm.plusMillis(0 - interval.getMilliSeconds());
+        return new TimeDatum(DateTimeUtil.toTime(tm));
+      }
       case TIME:
-        return new IntervalDatum(
-            time.toDateTimeToday().getMillis() - ((TimeDatum)datum).getTime().toDateTimeToday().getMillis() );
+        TimeMeta tm1 = toTimeMeta();
+        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
+
+        return new IntervalDatum((DateTimeUtil.toTime(tm1) - DateTimeUtil.toTime(tm2))/1000);
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -155,29 +163,30 @@ public class TimeDatum extends Datum {
   @Override
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
-      return DatumFactory.createBool(time.equals(((TimeDatum) datum).time));
+      return DatumFactory.createBool(time == (((TimeDatum) datum).time));
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
   @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
-      return time.compareTo(((TimeDatum)datum).time);
+      TimeDatum another = (TimeDatum)datum;
+      return (time < another.time) ? -1 : ((time == another.time) ? 0 : 1);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
   public boolean equals(Object obj) {
     if (obj instanceof TimeDatum) {
       TimeDatum another = (TimeDatum) obj;
-      return time.isEqual(another.time);
+      return time == another.time;
     } else {
       return false;
     }
@@ -185,10 +194,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return time.hashCode();
+    return (int)(time ^ (time >>> 32));
   }
 
-  public LocalTime getTime() {
-    return time;
-  }
 }

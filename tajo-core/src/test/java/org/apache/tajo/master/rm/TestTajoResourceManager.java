@@ -34,8 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.NodeHeartbeat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestTajoResourceManager {
   private final PrimitiveProtos.BoolProto BOOL_TRUE = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
@@ -375,4 +374,80 @@ public class TestTajoResourceManager {
       }
     }
   }
+
+  @Test
+  public void testDiskResourceWithStoppedQuery() throws Exception {
+    TajoWorkerResourceManager tajoWorkerResourceManager = null;
+
+    try {
+      tajoWorkerResourceManager = initResourceManager(false);
+
+      final float minDiskSlots = 1.0f;
+      final float maxDiskSlots = 2.0f;
+      int memoryMB = 256;
+
+      QueryId queryId = QueryIdFactory.newQueryId(queryIdTime, 3);
+
+      WorkerResourceAllocationRequest request = WorkerResourceAllocationRequest.newBuilder()
+          .setResourceRequestPriority(ResourceRequestPriority.DISK)
+          .setNumContainers(60)
+          .setQueryId(queryId.getProto())
+          .setMaxDiskSlotPerContainer(maxDiskSlots)
+          .setMinDiskSlotPerContainer(minDiskSlots)
+          .setMinMemoryMBPerContainer(memoryMB)
+          .setMaxMemoryMBPerContainer(memoryMB)
+          .build();
+
+      final CountDownLatch barrier = new CountDownLatch(1);
+      final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
+
+
+      RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
+
+        @Override
+        public void run(WorkerResourceAllocationResponse response) {
+          TestTajoResourceManager.this.response = response;
+          barrier.countDown();
+        }
+      };
+
+      tajoWorkerResourceManager.getRMContext().getStoppedQueryIds().add(queryId);
+      tajoWorkerResourceManager.allocateWorkerResources(request, callBack);
+      assertFalse(barrier.await(3, TimeUnit.SECONDS));
+
+      assertNull(response);
+
+      // assert after callback
+      int totalUsedDisks = 0;
+      for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
+        WorkerResource resource = worker.getResource();
+        //each worker allocated 3 container (2 disk slot = 2, 1 disk slot = 1)
+        assertEquals(5.0f, resource.getAvailableDiskSlots(), 0);
+        assertEquals(0, resource.getUsedDiskSlots(), 0);
+        assertEquals(0, resource.getUsedMemoryMB());
+
+        totalUsedDisks += resource.getUsedDiskSlots();
+      }
+
+      assertEquals(0, totalUsedDisks, 0);
+
+      for(YarnProtos.ContainerIdProto eachContainerId: containerIds) {
+        tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
+      }
+
+      for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
+        WorkerResource resource = worker.getResource();
+        assertEquals(workerMemoryMB, resource.getAvailableMemoryMB());
+        assertEquals(0, resource.getUsedMemoryMB());
+
+        assertEquals(workerDiskSlots, resource.getAvailableDiskSlots(), 0);
+        assertEquals(0.0f, resource.getUsedDiskSlots(), 0);
+      }
+    } finally {
+      if (tajoWorkerResourceManager != null) {
+        tajoWorkerResourceManager.stop();
+      }
+    }
+  }
+
 }

@@ -18,29 +18,39 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.*;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.Int4Datum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
 import java.sql.ResultSet;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
+import static junit.framework.TestCase.*;
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotNull;
 
 @Category(IntegrationTest.class)
 public class TestJoinBroadcast extends QueryTestCaseBase {
+  private static final Log LOG = LogFactory.getLog(TestJoinBroadcast.class);
   public TestJoinBroadcast() throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "true");
@@ -290,6 +300,9 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+    executeString("DROP TABLE JOINS.part_ PURGE");
+    executeString("DROP TABLE JOINS.supplier_ PURGE");
+    executeString("DROP DATABASE JOINS");
   }
 
   private MasterPlan getQueryPlan(QueryId queryId) {
@@ -372,4 +385,152 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  @Test
+  public final void testBroadcastPartitionTable() throws Exception {
+    // If all tables participate in the BROADCAST JOIN, there is some missing data.
+    executeDDL("customer_partition_ddl.sql", null);
+    ResultSet res = executeFile("insert_into_customer_partition.sql");
+    res.close();
+
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+
+    createMultiFile("orders", 1, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new Int4Datum(Integer.parseInt(columnDatas[1])),
+            new TextDatum(columnDatas[2])
+        });
+      }
+    });
+
+    res = executeQuery();
+    assertResultSet(res);
+    res.close();
+
+    executeString("DROP TABLE customer_broad_parts PURGE");
+    executeString("DROP TABLE nation_multifile PURGE");
+    executeString("DROP TABLE orders_multifile PURGE");
+  }
+
+  @Test
+  public final void testBroadcastMultiColumnPartitionTable() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (col1 int4, col2 float4) partition by column(col3 text, col4 text) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select o_orderkey, o_totalprice, substr(o_orderdate, 6, 2), substr(o_orderdate, 1, 4) from orders");
+    res.close();
+
+    res = executeString(
+        "select distinct a.col3 from " + tableName + " as a " +
+            "left outer join lineitem_large b " +
+            "on a.col1 = b.l_orderkey"
+    );
+
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testCasebyCase1() throws Exception {
+    // Left outer join with a small table and a large partition table which not matched any partition path.
+    String tableName = CatalogUtil.normalizeIdentifier("largePartitionedTable");
+    testBase.execute(
+        "create table " + tableName + " (l_partkey int4, l_suppkey int4, l_linenumber int4, \n" +
+            "l_quantity float8, l_extendedprice float8, l_discount float8, l_tax float8, \n" +
+            "l_returnflag text, l_linestatus text, l_shipdate text, l_commitdate text, \n" +
+            "l_receiptdate text, l_shipinstruct text, l_shipmode text, l_comment text) \n" +
+            "partition by column(l_orderkey int4) ").close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    executeString("insert overwrite into " + tableName +
+        " select l_partkey, l_suppkey, l_linenumber, \n" +
+        " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
+        " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
+        " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem_large");
+
+    ResultSet res = executeString(
+        "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
+            "left outer join " + tableName + " b " +
+            "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000"
+    );
+
+    String expected = "key1,key2\n" +
+        "-------------------------------\n" +
+        "1,null\n" +
+        "1,null\n" +
+        "2,null\n" +
+        "3,null\n" +
+        "3,null\n";
+
+    try {
+      assertEquals(expected, resultSetToString(res));
+    } finally {
+      cleanupQuery(res);
+    }
+  }
+
+  static interface TupleCreator {
+    public Tuple createTuple(String[] columnDatas);
+  }
+
+  private void createMultiFile(String tableName, int numRowsEachFile, TupleCreator tupleCreator) throws Exception {
+    // make multiple small file
+    String multiTableName = tableName + "_multifile";
+    executeDDL(multiTableName + "_ddl.sql", null);
+
+    TableDesc table = client.getTableDesc(multiTableName);
+    assertNotNull(table);
+
+    TableMeta tableMeta = table.getMeta();
+    Schema schema = table.getLogicalSchema();
+
+    File file = new File("src/test/tpch/" + tableName + ".tbl");
+
+    if (!file.exists()) {
+      file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + tableName + ".tbl");
+    }
+    String[] rows = FileUtil.readTextFile(file).split("\n");
+
+    assertTrue(rows.length > 0);
+
+    int fileIndex = 0;
+
+    Appender appender = null;
+    for (int i = 0; i < rows.length; i++) {
+      if (i % numRowsEachFile == 0) {
+        if (appender != null) {
+          appender.flush();
+          appender.close();
+        }
+        Path dataPath = new Path(table.getPath(), fileIndex + ".csv");
+        fileIndex++;
+        appender = StorageManagerFactory.getStorageManager(conf).getAppender(tableMeta, schema,
+            dataPath);
+        appender.init();
+      }
+      String[] columnDatas = rows[i].split("\\|");
+      Tuple tuple = tupleCreator.createTuple(columnDatas);
+      appender.addTuple(tuple);
+    }
+    appender.flush();
+    appender.close();
+  }
 }

@@ -20,13 +20,20 @@ package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
+import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 @Description(
     functionName = "date_part",
@@ -85,55 +92,57 @@ public class DatePartFromTime extends GeneralFunction {
       }
     }
 
-    return extractor.extract(time);
+    TimeMeta tm = time.toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm);
+    return extractor.extract(tm);
   }
 
   private interface DatePartExtractorFromTime {
-    public Datum extract(TimeDatum time);
+    public Datum extract(TimeMeta tm);
   }
 
   private class HourExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
-      return DatumFactory.createFloat8((double) time.getHourOfDay());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.hours);
     }
   }
 
   private class MicrosecondsExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
-      return DatumFactory.createFloat8((double) (time.getSecondOfMinute() * 1000000 + time.getMillisOfSecond() * 1000));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (tm.secs * 1000000 + tm.fsecs));
     }
   }
 
   private class MillisecondsExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
-      return DatumFactory.createFloat8((double) (time.getSecondOfMinute() * 1000 + time.getMillisOfSecond()));
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) (tm.secs * 1000 + tm.fsecs / 1000.0));
     }
   }
 
   private class MinuteExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
-      return DatumFactory.createFloat8((double) time.getMinuteOfHour());
+    public Datum extract(TimeMeta tm) {
+      return DatumFactory.createFloat8((double) tm.minutes);
     }
   }
 
   private class SecondExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
-      if (time.getMillisOfSecond() != 0) {
-        return DatumFactory.createFloat8(time.getSecondOfMinute() + (((double) time.getMillisOfSecond()) / 1000));
+    public Datum extract(TimeMeta tm) {
+      if (tm.fsecs != 0) {
+        return DatumFactory.createFloat8(tm.secs + (((double) tm.fsecs) / (double)DateTimeConstants.USECS_PER_SEC));
       } else {
-        return DatumFactory.createFloat8((double) time.getSecondOfMinute());
+        return DatumFactory.createFloat8((double) tm.secs);
       }
     }
   }
 
   private class NullExtractorFromTime implements DatePartExtractorFromTime {
     @Override
-    public Datum extract(TimeDatum time) {
+    public Datum extract(TimeMeta tm) {
       return NullDatum.get();
     }
   }

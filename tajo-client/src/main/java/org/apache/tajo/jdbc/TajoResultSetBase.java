@@ -20,9 +20,11 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +34,7 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.TimeZone;
 
 public abstract class TajoResultSetBase implements ResultSet {
   protected int curRow;
@@ -64,6 +67,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public boolean getBoolean(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return false;
+    }
     return datum.asBool();
   }
 
@@ -71,6 +77,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public boolean getBoolean(String colName) throws SQLException {
     Datum datum = cur.get(findColumn(colName));
     handleNull(datum);
+    if (wasNull) {
+      return false;
+    }
     return datum.asBool();
   }
 
@@ -78,6 +87,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte getByte(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asByte();
   }
 
@@ -85,6 +97,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte getByte(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asByte();
   }
 
@@ -92,6 +107,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte[] getBytes(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
     return datum.asByteArray();
   }
 
@@ -99,6 +117,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public byte[] getBytes(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
     return datum.asByteArray();
   }
 
@@ -106,6 +127,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public double getDouble(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0.0d;
+    }
     return datum.asFloat8();
   }
 
@@ -113,6 +137,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public double getDouble(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0.0d;
+    }
     return datum.asFloat8();
   }
 
@@ -120,6 +147,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public float getFloat(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0.0f;
+    }
     return datum.asFloat4();
   }
 
@@ -127,6 +157,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public float getFloat(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0.0f;
+    }
     return datum.asFloat4();
   }
 
@@ -134,6 +167,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public int getInt(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt4();
   }
 
@@ -141,6 +177,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public int getInt(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt4();
   }
 
@@ -148,6 +187,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public long getLong(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt8();
   }
 
@@ -155,6 +197,9 @@ public abstract class TajoResultSetBase implements ResultSet {
   public long getLong(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt8();
   }
 
@@ -163,6 +208,9 @@ public abstract class TajoResultSetBase implements ResultSet {
     Datum d = cur.get(fieldId - 1);
     handleNull(d);
 
+    if (wasNull) {
+      return null;
+    }
     TajoDataTypes.Type dataType = schema.getColumn(fieldId - 1).getDataType().getType();
 
     switch(dataType) {
@@ -173,24 +221,35 @@ public abstract class TajoResultSetBase implements ResultSet {
       case INT8: return d.asInt8();
       case TEXT:
       case CHAR:
-      case DATE:
       case VARCHAR:  return d.asChars();
       case FLOAT4:  return d.asFloat4();
       case FLOAT8:  return d.asFloat8();
       case NUMERIC:  return d.asFloat8();
+      case DATE: {
+        return getDate((DateDatum)d, TajoConf.getCurrentTimeZone());
+      }
+      case TIME: {
+        return getTime((TimeDatum)d, TajoConf.getCurrentTimeZone());
+      }
+      case TIMESTAMP: {
+        return getTimestamp((TimestampDatum) d, TajoConf.getCurrentTimeZone());
+      }
       default: return d.asChars();
     }
   }
 
   @Override
   public Object getObject(String name) throws SQLException {
-    return getObject(findColumn(name));
+    return getObject(findColumn(name) + 1);
   }
 
   @Override
   public short getShort(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt2();
   }
 
@@ -198,21 +257,167 @@ public abstract class TajoResultSetBase implements ResultSet {
   public short getShort(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
+    if (wasNull) {
+      return 0;
+    }
     return datum.asInt2();
   }
 
   @Override
   public String getString(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    return datum.asChars();
+    return getString(datum, fieldId);
   }
 
   @Override
   public String getString(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
+    int id = findColumn(name);
+    Datum datum = cur.get(id);
+    return getString(datum, id + 1);
+  }
+
+  private String getString(Datum datum, int fieldId) throws SQLException {
     handleNull(datum);
-    return datum.asChars();
+
+    if (wasNull) {
+      return null;
+    }
+
+    TajoDataTypes.Type dataType = datum.type();
+
+    switch(dataType) {
+      case BOOLEAN:
+        return String.valueOf(datum.asBool());
+      case TIME: {
+        return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
+      case TIMESTAMP: {
+        return ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+      }
+      default :
+        return datum.asChars();
+    }
+  }
+
+  @Override
+  public Date getDate(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getDate((DateDatum)datum, TajoConf.getCurrentTimeZone());
+  }
+
+  @Override
+  public Date getDate(String name) throws SQLException {
+    return getDate(findColumn(name) + 1);
+  }
+
+  @Override
+  public Date getDate(int fieldId, Calendar x) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getDate((DateDatum)datum, x.getTimeZone());
+  }
+
+  @Override
+  public Date getDate(String name, Calendar x) throws SQLException {
+    return getDate(findColumn(name) + 1, x);
+  }
+
+  private Date getDate(DateDatum datum, TimeZone tz) {
+    TimeMeta tm = datum.toTimeMeta();
+    if (tz != null) {
+      DateTimeUtil.toUserTimezone(tm, tz);
+    }
+    return new Date(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
+  }
+
+  @Override
+  public Time getTime(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getTime((TimeDatum)datum, TajoConf.getCurrentTimeZone());
+
+  }
+
+  @Override
+  public Time getTime(String name) throws SQLException {
+    return getTime(findColumn(name) + 1);
+  }
+
+  @Override
+  public Time getTime(int fieldId, Calendar x) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getTime((TimeDatum)datum, x.getTimeZone());
+  }
+
+  @Override
+  public Time getTime(String name, Calendar x) throws SQLException {
+    return getTime(findColumn(name) + 1, x);
+  }
+
+  private Time getTime(TimeDatum datum, TimeZone tz) {
+    TimeMeta tm = datum.toTimeMeta();
+    if (tz != null) {
+      DateTimeUtil.toUserTimezone(tm, tz);
+    }
+    return new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs));
+  }
+
+  @Override
+  public Timestamp getTimestamp(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getTimestamp((TimestampDatum)datum, TajoConf.getCurrentTimeZone());
+  }
+
+  @Override
+  public Timestamp getTimestamp(String name) throws SQLException {
+    return getTimestamp(findColumn(name) + 1);
+  }
+
+  @Override
+  public Timestamp getTimestamp(int fieldId, Calendar x) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    if (wasNull) {
+      return null;
+    }
+
+    return getTimestamp((TimestampDatum)datum, x.getTimeZone());
+  }
+
+  @Override
+  public Timestamp getTimestamp(String name, Calendar x) throws SQLException {
+    return getTimestamp(findColumn(name) + 1, x);
+  }
+
+  private Timestamp getTimestamp(TimestampDatum datum, TimeZone tz) {
+    TimeMeta tm = datum.toTimeMeta();
+    if (tz != null) {
+      DateTimeUtil.toUserTimezone(tm, tz);
+    }
+    return new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
   }
 
   @Override
@@ -353,36 +558,6 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   @Override
-  public Date getDate(int index) throws SQLException {
-    Object obj = getObject(index);
-    if (obj == null) {
-      return null;
-    }
-
-    try {
-      return Date.valueOf((String) obj);
-    } catch (Exception e) {
-      throw new SQLException("Cannot convert column " + index
-          + " to date: " + e.toString());
-    }
-  }
-
-  @Override
-  public Date getDate(String name) throws SQLException {
-    return getDate(findColumn(name));
-  }
-
-  @Override
-  public Date getDate(int index, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getDate not supported");
-  }
-
-  @Override
-  public Date getDate(String name, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getDate not supported");
-  }
-
-  @Override
   public int getFetchDirection() throws SQLException {
     return ResultSet.FETCH_FORWARD;
   }
@@ -494,46 +669,6 @@ public abstract class TajoResultSetBase implements ResultSet {
   @Override
   public Statement getStatement() throws SQLException {
     throw new SQLFeatureNotSupportedException("getHistoryStatement not supported");
-  }
-
-  @Override
-  public Time getTime(int index) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTime not supported");
-  }
-
-  @Override
-  public Time getTime(String name) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTime not supported");
-  }
-
-  @Override
-  public Time getTime(int index, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTime not supported");
-  }
-
-  @Override
-  public Time getTime(String name, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTime not supported");
-  }
-
-  @Override
-  public Timestamp getTimestamp(int index) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTimestamp not supported");
-  }
-
-  @Override
-  public Timestamp getTimestamp(String name) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTimestamp not supported");
-  }
-
-  @Override
-  public Timestamp getTimestamp(int index, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTimestamp not supported");
-  }
-
-  @Override
-  public Timestamp getTimestamp(String name, Calendar x) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getTimestamp not supported");
   }
 
   @Override

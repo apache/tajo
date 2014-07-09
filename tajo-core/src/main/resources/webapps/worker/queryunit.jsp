@@ -23,6 +23,7 @@
 <%@ page import="org.apache.tajo.QueryId" %>
 <%@ page import="org.apache.tajo.QueryUnitId" %>
 <%@ page import="org.apache.tajo.catalog.proto.CatalogProtos" %>
+<%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
 <%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
 <%@ page import="org.apache.tajo.master.querymaster.Query" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
@@ -31,16 +32,15 @@
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
 <%@ page import="org.apache.tajo.storage.fragment.FileFragment" %>
 <%@ page import="org.apache.tajo.storage.fragment.FragmentConvertor" %>
+<%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.worker.FetchImpl" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.net.URI" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
-<%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="org.apache.tajo.worker.TaskHistory" %>
-<%@ page import="org.apache.tajo.worker.FetchImpl" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -165,8 +165,8 @@
         <tr><td align="right">Shuffles</td><td># Shuffle Outputs: <%=numShuffles%>, Shuffle Key: <%=shuffleKey%>, Shuffle file: <%=shuffleFileName%></td></tr>
         <tr><td align="right">Data Locations</td><td><%=dataLocationInfos%></td></tr>
         <tr><td align="right">Fragment</td><td><%=fragmentInfo%></td></tr>
-        <tr><td align="right">Input Statistics</td><td><%=TaskHistory.toInputStatsString(inputStat)%></td></tr>
-        <tr><td align="right">Output Statistics</td><td><%=TaskHistory.toOutputStatsString(outputStat)%></td></tr>
+        <tr><td align="right">Input Statistics</td><td><%=JSPUtil.tableStatToString(inputStat)%></td></tr>
+        <tr><td align="right">Output Statistics</td><td><%=JSPUtil.tableStatToString(outputStat)%></td></tr>
         <tr><td align="right">Fetches</td><td><%=fetchInfo%></td></tr>
     </table>
 </div>

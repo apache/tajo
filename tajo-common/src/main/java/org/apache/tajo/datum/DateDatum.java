@@ -19,80 +19,83 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.joda.time.*;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 public class DateDatum extends Datum {
   public static final int SIZE = 4;
-  /** ISO 8601/SQL standard format - ex) 1997-12-17 */
-  public static final String DEFAULT_FORMAT_STRING = "yyyy-MM-dd";
-  private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormat.forPattern(DEFAULT_FORMAT_STRING);
-  private final LocalDate date;
+
+  private int year;
+  private int monthOfYear;
+  private int dayOfMonth;
 
   public DateDatum(int value) {
     super(TajoDataTypes.Type.DATE);
-    date = decode(value);
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.j2date(value, tm);
+
+    year = tm.years;
+    monthOfYear = tm.monthOfYear;
+    dayOfMonth = tm.dayOfMonth;
   }
 
-  public DateDatum(int year, int month, int day) {
-    super(TajoDataTypes.Type.DATE);
-    date = new LocalDate(year, month, day);
-  }
-
-  public DateDatum(String dateStr) {
-    super(TajoDataTypes.Type.DATE);
-    this.date = LocalDate.parse(dateStr, DEFAULT_FORMATTER);
-  }
-
-  public DateDatum(LocalDate date) {
-    super(TajoDataTypes.Type.DATE);
-    this.date = date;
-  }
-
-  public LocalDate getDate() {
-    //LocalDate is immutable
-    return date;
-  }
-
-  public DateDatum(byte [] bytes) {
-    this(Bytes.toInt(bytes));
+  public TimeMeta toTimeMeta() {
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.j2date(DateTimeUtil.date2j(year, monthOfYear, dayOfMonth), tm);
+    return tm;
   }
 
   public int getCenturyOfEra() {
-    return date.getCenturyOfEra();
+    TimeMeta tm = toTimeMeta();
+    return tm.getCenturyOfEra();
   }
 
   public int getYear() {
-    return date.getYear();
-  }
-
-  public int getMonthOfYear() {
-    return date.getMonthOfYear();
+    TimeMeta tm = toTimeMeta();
+    return tm.years;
   }
 
   public int getWeekyear() {
-    return date.getWeekyear();
+    TimeMeta tm = toTimeMeta();
+    return tm.getWeekyear();
   }
 
-  public int getWeekOfWeekyear() {
-    return date.getWeekOfWeekyear();
-  }
-
-  public int getDayOfWeek() {
-    return date.getDayOfWeek();
-  }
-
-  public int getDayOfMonth() {
-    return date.getDayOfMonth();
+  public int getMonthOfYear() {
+    TimeMeta tm = toTimeMeta();
+    return tm.monthOfYear;
   }
 
   public int getDayOfYear() {
-    return date.getDayOfYear();
+    TimeMeta tm = toTimeMeta();
+    return tm.getDayOfYear();
   }
+
+  public int getDayOfWeek() {
+    TimeMeta tm = toTimeMeta();
+    return tm.getDayOfWeek();
+  }
+
+  public int getISODayOfWeek() {
+    TimeMeta tm = toTimeMeta();
+    return tm.getISODayOfWeek();
+  }
+
+  public int getWeekOfYear() {
+    TimeMeta tm = toTimeMeta();
+    return tm.getWeekOfYear();
+  }
+
+  public int getDayOfMonth() {
+    TimeMeta tm = toTimeMeta();
+    return tm.dayOfMonth;
+  }
+
 
   public String toString() {
     return asChars();
@@ -104,19 +107,31 @@ public class DateDatum extends Datum {
       case INT4:
       case INT8:
       case FLOAT4:
-      case FLOAT8:
-        return new DateDatum(date.plusDays(datum.asInt2()));
-      case INTERVAL:
-        IntervalDatum interval = (IntervalDatum)datum;
-        LocalDate localDate;
+      case FLOAT8: {
+        TimeMeta tm = toTimeMeta();
+        tm.plusDays(datum.asInt4());
+        return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      }
+      case INTERVAL: {
+        IntervalDatum interval = (IntervalDatum) datum;
+        TimeMeta tm = toTimeMeta();
+        tm.plusMillis(interval.getMilliSeconds());
         if (interval.getMonths() > 0) {
-          localDate = date.plusMonths(interval.getMonths());
-        } else {
-          localDate = date;
+          tm.plusMonths(interval.getMonths());
         }
-        return new TimestampDatum(localDate.toDateTimeAtStartOfDay().getMillis() + interval.getMilliSeconds());
-      case TIME:
-        return new TimestampDatum(createDateTime(date, ((TimeDatum)datum).getTime(), true));
+        DateTimeUtil.toUTCTimezone(tm);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
+      case TIME: {
+        TimeMeta tm1 = toTimeMeta();
+
+        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
+        DateTimeUtil.toUserTimezone(tm2);     //TimeDatum is UTC
+
+        tm1.plusTime(DateTimeUtil.toTime(tm2));
+        DateTimeUtil.toUTCTimezone(tm1);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+      }
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -128,41 +143,41 @@ public class DateDatum extends Datum {
       case INT4:
       case INT8:
       case FLOAT4:
-      case FLOAT8:
-        return new DateDatum(date.minusDays(datum.asInt2()));
-      case INTERVAL:
-        IntervalDatum interval = (IntervalDatum)datum;
-        LocalDate localDate;
+      case FLOAT8: {
+        TimeMeta tm = toTimeMeta();
+        tm.plusDays(0 - datum.asInt4());
+        return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      }
+      case INTERVAL: {
+        IntervalDatum interval = (IntervalDatum) datum;
+        TimeMeta tm = toTimeMeta();
         if (interval.getMonths() > 0) {
-          localDate = date.minusMonths(interval.getMonths());
-        } else {
-          localDate = date;
+          tm.plusMonths(0 - interval.getMonths());
         }
-        return new TimestampDatum(localDate.toDateTimeAtStartOfDay().getMillis() - interval.getMilliSeconds());
-      case TIME:
-        return new TimestampDatum(createDateTime(date, ((TimeDatum)datum).getTime(), false));
-      case DATE:
-        return new Int4Datum(Days.daysBetween(((DateDatum)datum).date, date).getDays());
+        tm.plusMillis(0 - interval.getMilliSeconds());
+        DateTimeUtil.toUTCTimezone(tm);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
+      case TIME: {
+        TimeMeta tm1 = toTimeMeta();
+
+        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
+        DateTimeUtil.toUserTimezone(tm2);     //TimeDatum is UTC
+
+        tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
+        DateTimeUtil.toUTCTimezone(tm1);
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+      }
+      case DATE: {
+        TimeMeta tm1 = toTimeMeta();
+        TimeMeta tm2 = ((DateDatum) datum).toTimeMeta();
+
+        int day1 = DateTimeUtil.date2j(tm1.years, tm1.monthOfYear, tm1.dayOfMonth);
+        int day2 = DateTimeUtil.date2j(tm2.years, tm2.monthOfYear, tm2.dayOfMonth);
+        return new Int4Datum(day1 - day2);
+      }
       default:
         throw new InvalidOperationException(datum.type());
-    }
-  }
-
-  public static DateTime createDateTime(LocalDate date, LocalTime time, boolean plus) {
-    //TODO create too many temporary instance. This must be improved.
-    DateTime dateTime = new DateTime(date.toDate().getTime());
-    if (plus) {
-      return dateTime
-                .plusHours(time.getHourOfDay())
-                .plusMinutes(time.getMinuteOfHour())
-                .plusSeconds(time.getSecondOfMinute())
-                .plusMillis(time.getMillisOfSecond());
-    } else {
-      return dateTime
-                .minusHours(time.getHourOfDay())
-                .minusMinutes(time.getMinuteOfHour())
-                .minusSeconds(time.getSecondOfMinute())
-                .minusMillis(time.getMillisOfSecond());
     }
   }
 
@@ -171,25 +186,8 @@ public class DateDatum extends Datum {
     return encode();
   }
 
-  private static LocalDate decode(int val) {
-    int year = (val >> 16);
-    int monthOfYear = (0xFFFF & val) >> 8;
-    int dayOfMonth = (0x00FF & val);
-    return new LocalDate(year, monthOfYear, dayOfMonth);
-  }
-
-  /**
-   *   Year     MonthOfYear   DayOfMonth
-   *  31-16       15-8          7 - 0
-   *
-   * 0xFF 0xFF    0xFF          0xFF
-   */
   private int encode() {
-    int instance = 0;
-    instance |= (date.getYear() << 16); // 1970 ~ : 2 bytes
-    instance |= (date.getMonthOfYear() << 8); // 1 - 12 : 1 byte
-    instance |= (date.getDayOfMonth()); // 0 - 31 : 1 byte
-    return instance;
+    return DateTimeUtil.date2j(year, monthOfYear, dayOfMonth);
   }
 
   @Override
@@ -209,11 +207,13 @@ public class DateDatum extends Datum {
 
   @Override
   public String asChars() {
-    return date.toString(DEFAULT_FORMATTER);
+    TimeMeta tm = toTimeMeta();
+    return DateTimeUtil.encodeDate(tm, DateStyle.ISO_DATES);
   }
 
   public String toChars(String format) {
-    return date.toString(format);
+    TimeMeta tm = toTimeMeta();
+    return DateTimeFormat.to_char(tm, format);
   }
 
   @Override
@@ -228,8 +228,8 @@ public class DateDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
-      return DatumFactory.createBool(date.equals(((DateDatum) datum).date));
+    if (datum.type() == Type.DATE) {
+      return DatumFactory.createBool(equals(datum));
     } else if (datum.isNull()) {
       return datum;
     } else {
@@ -240,18 +240,28 @@ public class DateDatum extends Datum {
   @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.DATE) {
-      return date.compareTo(((DateDatum)datum).date);
+      DateDatum another = (DateDatum) datum;
+      int compareResult = (year < another.year) ? -1 : ((year == another.year) ? 0 : 1);
+      if (compareResult != 0) {
+        return compareResult;
+      }
+      compareResult = (monthOfYear < another.monthOfYear) ? -1 : ((monthOfYear == another.monthOfYear) ? 0 : 1);
+      if (compareResult != 0) {
+        return compareResult;
+      }
+
+      return (dayOfMonth < another.dayOfMonth) ? -1 : ((dayOfMonth == another.dayOfMonth) ? 0 : 1);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
   public boolean equals(Object obj) {
     if (obj instanceof DateDatum) {
       DateDatum another = (DateDatum) obj;
-      return date.isEqual(another.date);
+      return year == another.year && monthOfYear == another.monthOfYear && dayOfMonth == another.dayOfMonth;
     } else {
       return false;
     }
@@ -259,6 +269,11 @@ public class DateDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return date.hashCode();
+    int total = 157;
+    total = 23 * total + year;
+    total = 23 * total + monthOfYear;
+    total = 23 * total + dayOfMonth;
+
+    return total;
   }
 }

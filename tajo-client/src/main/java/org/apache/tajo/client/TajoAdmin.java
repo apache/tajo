@@ -22,6 +22,7 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
@@ -395,11 +396,13 @@ public class TajoAdmin {
 
   public void processKill(Writer writer, String queryIdStr)
       throws IOException, ServiceException {
-    boolean killedSuccessfully = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
-    if (killedSuccessfully) {
+    QueryStatus status = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
+    if (status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
       writer.write(queryIdStr + " is killed successfully.\n");
+    } else if (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT) {
+      writer.write(queryIdStr + " will be finished after a while.\n");
     } else {
-      writer.write("killing query is failed.");
+      writer.write("ERROR:" + status.getErrorMessage());
     }
   }
 

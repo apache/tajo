@@ -48,6 +48,9 @@ public class TajoRMContext {
   private final Set<String> liveQueryMasterWorkerResources =
       Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
+  private final Set<QueryId> stoppedQueryIds =
+      Collections.newSetFromMap(new ConcurrentHashMap<QueryId, Boolean>());
+
   public TajoRMContext(Dispatcher dispatcher) {
     this.rmDispatcher = dispatcher;
   }
@@ -80,5 +83,9 @@ public class TajoRMContext {
 
   public Set<String> getQueryMasterWorker() {
     return liveQueryMasterWorkerResources;
+  }
+
+  public Set<QueryId> getStoppedQueryIds() {
+    return stoppedQueryIds;
   }
 }

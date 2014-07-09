@@ -584,7 +584,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     stack.pop();
     ////////////////////////////////////////////////////////
 
-    HavingNode having = new HavingNode(context.plan.newPID());
+    HavingNode having = context.queryBlock.getNodeFromExpr(expr);
     having.setChild(child);
     having.setInSchema(child.getOutSchema());
     having.setOutSchema(child.getOutSchema());
@@ -767,7 +767,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     if (join.hasQual()) {
-      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual());
+      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
       block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
@@ -835,8 +835,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
-      } catch (VerifyException ve) {} catch (PlanningException e) {
-        e.printStackTrace();
+      } catch (VerifyException ve) {
+      } catch (PlanningException e) {
       }
     }
     return newlyEvaluatedExprs;
@@ -1207,18 +1207,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      ScanNode scanNode = context.plan.createNode(ScanNode.class);
-      scanNode.init(desc);
-      context.queryBlock.addRelation(scanNode);
       String [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = context.plan.resolveColumn(context.queryBlock, new ColumnReferenceExpr(targets[i]));
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
         targetColumns.addColumn(targetColumn);
       }
       insertNode.setTargetSchema(targetColumns);
       insertNode.setOutSchema(targetColumns);
-      buildProjectedInsert(insertNode);
+      buildProjectedInsert(context, insertNode);
 
     } else { // when a user do not specified target columns
 
@@ -1231,7 +1228,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         targetColumns.addColumn(tableSchema.getColumn(i));
       }
       insertNode.setTargetSchema(targetColumns);
-      buildProjectedInsert(insertNode);
+      buildProjectedInsert(context, insertNode);
     }
 
     if (desc.hasPartition()) {
@@ -1240,11 +1237,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return insertNode;
   }
 
-  private void buildProjectedInsert(InsertNode insertNode) {
+  private void buildProjectedInsert(PlanContext context, InsertNode insertNode) {
     Schema tableSchema = insertNode.getTableSchema();
     Schema targetColumns = insertNode.getTargetSchema();
 
     LogicalNode child = insertNode.getChild();
+
+    if (child.getType() == NodeType.UNION) {
+      child = makeProjectionForInsertUnion(context, insertNode);
+    }
+
     if (child instanceof Projectable) {
       Projectable projectionNode = (Projectable) insertNode.getChild();
 
@@ -1270,6 +1272,45 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
+  private ProjectionNode makeProjectionForInsertUnion(PlanContext context, InsertNode insertNode) {
+    LogicalNode child = insertNode.getChild();
+    // add (projection - subquery) to RootBlock and create new QueryBlock for UnionNode
+    TableSubQueryNode subQueryNode = context.plan.createNode(TableSubQueryNode.class);
+    subQueryNode.init(context.queryBlock.getName(), child);
+    subQueryNode.setTargets(PlannerUtil.schemaToTargets(subQueryNode.getOutSchema()));
+
+    ProjectionNode projectionNode = context.plan.createNode(ProjectionNode.class);
+    projectionNode.setChild(subQueryNode);
+    projectionNode.setInSchema(subQueryNode.getInSchema());
+    projectionNode.setTargets(subQueryNode.getTargets());
+
+    context.queryBlock.registerNode(projectionNode);
+    context.queryBlock.registerNode(subQueryNode);
+
+    // add child QueryBlock to the UnionNode's QueryBlock
+    UnionNode unionNode = (UnionNode)child;
+    context.queryBlock.unregisterNode(unionNode);
+
+    QueryBlock unionBlock = context.plan.newQueryBlock();
+    unionBlock.registerNode(unionNode);
+    unionBlock.setRoot(unionNode);
+
+    QueryBlock leftBlock = context.plan.getBlock(unionNode.getLeftChild());
+    QueryBlock rightBlock = context.plan.getBlock(unionNode.getRightChild());
+
+    context.plan.disconnectBlocks(leftBlock, context.queryBlock);
+    context.plan.disconnectBlocks(rightBlock, context.queryBlock);
+
+    context.plan.connectBlocks(unionBlock, context.queryBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(leftBlock, unionBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(rightBlock, unionBlock, BlockType.TableSubQuery);
+
+    // set InsertNode's child with ProjectionNode which is created.
+    insertNode.setChild(projectionNode);
+
+    return projectionNode;
+  }
+
   /**
    * Build a InsertNode with a location.
    *
@@ -1278,7 +1319,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private InsertNode buildInsertIntoLocationPlan(PlanContext context, InsertNode insertNode, Insert expr) {
     // INSERT (OVERWRITE)? INTO LOCATION path (USING file_type (param_clause)?)? query_expression
 
-    Schema childSchema = insertNode.getChild().getOutSchema();
+    LogicalNode child = insertNode.getChild();
+
+    if (child.getType() == NodeType.UNION) {
+      child = makeProjectionForInsertUnion(context, insertNode);
+    }
+
+    Schema childSchema = child.getOutSchema();
     insertNode.setInSchema(childSchema);
     insertNode.setOutSchema(childSchema);
     insertNode.setTableSchema(childSchema);
@@ -1310,10 +1357,37 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitDropDatabase(PlanContext context, Stack<Expr> stack, DropDatabase expr)
       throws PlanningException {
-    DropDatabaseNode dropDatabaseNode = context.plan.createNode(DropDatabaseNode.class);
+    DropDatabaseNode dropDatabaseNode = context.queryBlock.getNodeFromExpr(expr);
     dropDatabaseNode.init(expr.getDatabaseName(), expr.isIfExists());
     return dropDatabaseNode;
   }
+
+  public LogicalNode handleCreateTableLike(PlanContext context, CreateTable expr, CreateTableNode createTableNode)
+    throws PlanningException {
+    String parentTableName = expr.getLikeParentTableName();
+
+    if (CatalogUtil.isFQTableName(parentTableName) == false) {
+      parentTableName =
+	CatalogUtil.buildFQName(context.session.getCurrentDatabase(),
+				parentTableName);
+    }
+    TableDesc parentTableDesc = catalog.getTableDesc(parentTableName);
+    if(parentTableDesc == null)
+      throw new PlanningException("Table '"+parentTableName+"' does not exist");
+    PartitionMethodDesc partitionDesc = parentTableDesc.getPartitionMethod();
+    createTableNode.setTableSchema(parentTableDesc.getSchema());
+    createTableNode.setPartitionMethod(partitionDesc);
+
+    createTableNode.setStorageType(parentTableDesc.getMeta().getStoreType());
+    createTableNode.setOptions(parentTableDesc.getMeta().getOptions());
+
+    createTableNode.setExternal(parentTableDesc.isExternal());
+    if(parentTableDesc.isExternal()) {
+      createTableNode.setPath(parentTableDesc.getPath());
+    }
+    return createTableNode;
+  }
+
 
   @Override
   public LogicalNode visitCreateTable(PlanContext context, Stack<Expr> stack, CreateTable expr)
@@ -1329,7 +1403,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setTableName(
           CatalogUtil.buildFQName(context.session.getCurrentDatabase(), expr.getTableName()));
     }
-
+    // This is CREATE TABLE <tablename> LIKE <parentTable>
+    if(expr.getLikeParentTableName() != null)
+      return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
@@ -1512,6 +1588,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return alterTableNode;
   }
 
+  @Override
+  public LogicalNode visitTruncateTable(PlanContext context, Stack<Expr> stack, TruncateTable truncateTable)
+      throws PlanningException {
+    TruncateTableNode truncateTableNode = context.queryBlock.getNodeFromExpr(truncateTable);
+    truncateTableNode.setTableNames(truncateTable.getTableNames());
+    return truncateTableNode;
+  }
+
   /*===============================================================================================
     Util SECTION
   ===============================================================================================*/
@@ -1542,22 +1626,25 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (!checkIfCaseWhenWithOuterJoinBeEvaluated(block, evalNode, isTopMostJoin)) {
-      return false;
+    if (containsOuterJoin(block)) {
+      if (!isTopMostJoin) {
+        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
+        if (found.size() > 0) {
+          return false;
+        }
+      }
     }
 
     return true;
   }
 
-  private static boolean checkIfCaseWhenWithOuterJoinBeEvaluated(QueryBlock block, EvalNode evalNode,
-                                                                 boolean isTopMostJoin) {
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> caseWhenEvals = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
-      if (caseWhenEvals.size() > 0 && !isTopMostJoin) {
-        return false;
-      }
-    }
-    return true;
+  public static boolean isOuterJoin(JoinType joinType) {
+    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
+  }
+
+  public static boolean containsOuterJoin(QueryBlock block) {
+    return block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER) ||
+        block.containsJoinType(JoinType.FULL_OUTER);
   }
 
   /**
@@ -1576,8 +1663,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+    if (containsOuterJoin(block)) {
+      Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
       if (found.size() > 0) {
         return false;
       }

@@ -171,8 +171,13 @@ public class AlgebraicUtil {
     public EvalNode visitFuncCall(Object context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
       boolean constant = true;
 
-      for (EvalNode arg : evalNode.getArgs()) {
-        constant &= (arg.getType() == EvalType.CONST);
+      if ("sleep".equals(evalNode.funcDesc.getSignature())) {
+        constant = false;
+      } else {
+        for (EvalNode arg : evalNode.getArgs()) {
+          arg = visit(context, arg, stack);
+          constant &= (arg.getType() == EvalType.CONST);
+        }
       }
 
       if (constant) {

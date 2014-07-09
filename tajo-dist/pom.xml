@@ -120,6 +120,14 @@
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}.jar ./share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/lib/* ./share/jdbc-dist
 
+                      if [ -f $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hcatalog/target/lib/parquet-hive-bundle-*.jar ]
+                      then
+                      run cp -r $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hcatalog/target/lib/parquet-hive-bundle-*.jar lib/
+                      echo
+                      echo "Tajo installed parquet-hive-bundle library at: ${project.build.directory}/tajo-${project.version}"
+                      echo
+                      fi
+
                       echo
                       echo "Tajo dist layout available at: ${project.build.directory}/tajo-${project.version}"
                       echo
@@ -127,6 +135,7 @@
                     <exec executable="sh" dir="${project.build.directory}" failonerror="true">
                       <arg line="./dist-layout-stitching.sh"/>
                     </exec>
+                    <chmod dir="${project.build.directory}/tajo-${project.version}/bin" perm="ugo+rx" includes="**/*.sh,tajo,tajo-dump,tsql"/>
                   </target>
                 </configuration>
               </execution>
