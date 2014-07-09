@@ -42,7 +42,7 @@ public class QueryContext extends KeyValueSet {
   public static final String OUTPUT_PARTITIONS = "tajo.query.output.partitions";
   public static final String OUTPUT_OVERWRITE = "tajo.query.output.overwrite";
   public static final String OUTPUT_AS_DIRECTORY = "tajo.query.output.asdirectory";
-  public static final String OUTPUT_PER_FILE_SIZE = "tajo.query.output.perfile-size-mb";
+  public static final String OUTPUT_PER_FILE_SIZE = "tajo.query.output.perfile-size-bytes";
 
   public static final String TRUE_VALUE = "true";
   public static final String FALSE_VALUE = "false";
