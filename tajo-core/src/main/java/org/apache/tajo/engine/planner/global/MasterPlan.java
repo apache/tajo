@@ -212,6 +212,17 @@ public class MasterPlan {
     sb.append(execBlockGraph.toStringGraph(getRoot().getId()));
     sb.append("-------------------------------------------------------------------------------\n");
 
+    ExecutionBlockCursor executionOrderCursor = new ExecutionBlockCursor(this, true);
+    sb.append("Order of Execution\n");
+    sb.append("-------------------------------------------------------------------------------");
+    int order = 1;
+    while (executionOrderCursor.hasNext()) {
+      ExecutionBlock currentEB = executionOrderCursor.nextBlock();
+      sb.append("\n").append(order).append(": ").append(currentEB.getId());
+      order++;
+    }
+    sb.append("\n-------------------------------------------------------------------------------\n");
+
     while(cursor.hasNext()) {
       ExecutionBlock block = cursor.nextBlock();
 
