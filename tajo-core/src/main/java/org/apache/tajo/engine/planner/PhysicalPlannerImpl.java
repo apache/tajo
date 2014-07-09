@@ -163,7 +163,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, subQueryNode.getSubQuery(), stack);
         stack.pop();
         return new ProjectionExec(ctx, subQueryNode, leftExec);
-
       }
 
       case PARTITIONS_SCAN:
@@ -177,6 +176,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, grpNode.getChild(), stack);
         stack.pop();
         return createGroupByPlan(ctx, grpNode, leftExec);
+
+      case WINDOW_AGG:
+        WindowAggNode windowAggNode = (WindowAggNode) logicalNode;
+        stack.push(windowAggNode);
+        leftExec = createPlanRecursive(ctx, windowAggNode.getChild(), stack);
+        stack.pop();
+        return createWindowAgg(ctx, windowAggNode, leftExec);
 
       case DISTINCT_GROUP_BY:
         DistinctGroupbyNode distinctNode = (DistinctGroupbyNode) logicalNode;
@@ -971,6 +977,27 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else {
       return createSortAggregation(context, null, groupbyNode, subOp);
     }
+  }
+
+  public PhysicalExec createWindowAgg(TaskAttemptContext context,WindowAggNode windowAggNode, PhysicalExec subOp)
+      throws IOException {
+    PhysicalExec child = subOp;
+    if (windowAggNode.hasPartitionKeys()) {
+      Column[] grpColumns = windowAggNode.getPartitionKeys();
+      SortSpec[] sortSpecs = new SortSpec[grpColumns.length];
+      for (int i = 0; i < grpColumns.length; i++) {
+        sortSpecs[i] = new SortSpec(grpColumns[i], true, false);
+      }
+
+      SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+      sortNode.setSortSpecs(sortSpecs);
+      sortNode.setInSchema(subOp.getSchema());
+      sortNode.setOutSchema(subOp.getSchema());
+      child = new ExternalSortExec(context, sm, sortNode, subOp);
+      LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+    }
+
+    return new WindowAggExec(context, windowAggNode, child);
   }
 
   public PhysicalExec createDistinctGroupByPlan(TaskAttemptContext context,

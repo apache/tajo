@@ -62,4 +62,11 @@ public class Having extends UnaryOperator implements JsonSerializable {
     }
     return false;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Having having = (Having) super.clone();
+    having.qual = (Expr) qual.clone();
+    return having;
+  }
 }

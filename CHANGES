@@ -4,6 +4,9 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES 
 
+    TAJO-774: Implement logical plan part and physical executor for window 
+    function. (hyunsik)
+
     TAJO-847: Supporting MariaDB-based Store, which is compatible with MySQL.
     (Jinhang Choi via jihoon)
 

@@ -44,4 +44,11 @@ public class SignedExpr extends UnaryOperator {
   boolean equalsTo(Expr expr) {
     return negative == ((SignedExpr)expr).negative;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    SignedExpr signedExpr = (SignedExpr) super.clone();
+    signedExpr.negative = negative;
+    return signedExpr;
+  }
 }

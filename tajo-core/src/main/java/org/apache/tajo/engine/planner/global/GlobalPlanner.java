@@ -756,7 +756,7 @@ public class GlobalPlanner {
 
     ExecutionBlock secondStage = context.plan.newExecutionBlock();
     secondStage.setPlan(secondPhaseGroupby);
-    SortSpec [] sortSpecs = PlannerUtil.columnsToSortSpec(firstStageGroupingColumns);
+    SortSpec [] sortSpecs = PlannerUtil.columnsToSortSpecs(firstStageGroupingColumns);
     secondStage.getEnforcer().enforceSortAggregation(secondPhaseGroupby.getPID(), sortSpecs);
 
     // Create a data channel between the first and second stages
@@ -1217,6 +1217,59 @@ public class GlobalPlanner {
       context.execBlockMap.put(node.getPID(), childBlock);
 
       return node;
+    }
+
+    @Override
+    public LogicalNode visitWindowAgg(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    WindowAggNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitWindowAgg(context, plan, block, node, stack);
+
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      ExecutionBlock newExecBlock = buildWindowAgg(context, childBlock, node);
+      context.execBlockMap.put(newExecBlock.getPlan().getPID(), newExecBlock);
+
+      return newExecBlock.getPlan();
+    }
+
+    private ExecutionBlock buildWindowAgg(GlobalPlanContext context, ExecutionBlock lastBlock,
+                                        WindowAggNode windowAgg) throws PlanningException {
+      MasterPlan masterPlan = context.plan;
+
+      ExecutionBlock childBlock = lastBlock;
+      ExecutionBlock currentBlock = masterPlan.newExecutionBlock();
+      DataChannel channel;
+      if (windowAgg.hasPartitionKeys()) { // if there is at one distinct aggregation function
+        channel = new DataChannel(childBlock, currentBlock, RANGE_SHUFFLE, 32);
+        channel.setShuffleKeys(windowAgg.getPartitionKeys());
+      } else {
+        channel = new DataChannel(childBlock, currentBlock, HASH_SHUFFLE, 1);
+        channel.setShuffleKeys(null);
+      }
+      channel.setSchema(windowAgg.getInSchema());
+      channel.setStoreType(storeType);
+
+      LogicalNode childNode = windowAgg.getChild();
+      ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+
+      if (windowAgg.hasPartitionKeys()) {
+        SortNode sortNode = masterPlan.getLogicalPlan().createNode(SortNode.class);
+        sortNode.setOutSchema(scanNode.getOutSchema());
+        sortNode.setInSchema(scanNode.getOutSchema());
+        sortNode.setSortSpecs(PlannerUtil.columnsToSortSpecs(windowAgg.getPartitionKeys()));
+        sortNode.setChild(childNode);
+        childBlock.setPlan(sortNode);
+
+        windowAgg.setChild(scanNode);
+      } else {
+        windowAgg.setInSchema(scanNode.getOutSchema());
+        windowAgg.setChild(scanNode);
+        childBlock.setPlan(childNode);
+      }
+
+      currentBlock.setPlan(windowAgg);
+      context.plan.addConnect(channel);
+
+      return currentBlock;
     }
 
     @Override

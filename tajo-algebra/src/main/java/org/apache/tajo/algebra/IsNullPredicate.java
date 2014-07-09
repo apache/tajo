@@ -24,7 +24,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class IsNullPredicate extends UnaryOperator {
   @Expose @SerializedName("IsNot")
-  private final boolean not;
+  private boolean not;
 
   public IsNullPredicate(boolean not, Expr column) {
     super(OpType.IsNullPredicate);
@@ -48,5 +48,12 @@ public class IsNullPredicate extends UnaryOperator {
   boolean equalsTo(Expr expr) {
     IsNullPredicate nullPredicate = (IsNullPredicate) expr;
     return not == nullPredicate.not;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    IsNullPredicate nullPredicate = (IsNullPredicate) super.clone();
+    nullPredicate.not = not;
+    return nullPredicate;
   }
 }

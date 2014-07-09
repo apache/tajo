@@ -68,4 +68,14 @@ public class RelationList extends Expr {
     Set<Expr> anotherSet = TUtil.newHashSet(another.relations);
     return thisSet.equals(anotherSet);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    RelationList relationList = (RelationList) super.clone();
+    relationList.relations = new Expr[relations.length];
+    for (int i = 0; i < relations.length; i++) {
+      relationList.relations[i] = (Expr) relations[i].clone();
+    }
+    return relationList;
+  }
 }

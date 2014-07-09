@@ -45,4 +45,11 @@ public abstract class UnaryOperator extends Expr {
   public int hashCode() {
     return Objects.hashCode(getType(), child.hashCode());
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    UnaryOperator unaryOperator = (UnaryOperator) super.clone();
+    unaryOperator.child = (Expr) child.clone();
+    return unaryOperator;
+  }
 }
