@@ -65,4 +65,12 @@ public class PatternMatchPredicate extends BinaryOperator {
     return opType == another.opType &&
         not == another.not && caseInsensitive == another.caseInsensitive;
   }
+
+  @Override
+  public PatternMatchPredicate clone() throws CloneNotSupportedException {
+    PatternMatchPredicate patternMatchPredicate = (PatternMatchPredicate) super.clone();
+    patternMatchPredicate.not = not;
+    patternMatchPredicate.caseInsensitive = caseInsensitive;
+    return patternMatchPredicate;
+  }
 }

@@ -51,4 +51,11 @@ public class TimeLiteral extends Expr {
     }
     return false;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    TimeLiteral timeLiteral = (TimeLiteral) super.clone();
+    timeLiteral.time = (TimeValue) timeLiteral.time.clone();
+    return timeLiteral;
+  }
 }

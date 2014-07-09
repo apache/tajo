@@ -46,9 +46,9 @@ public class Window extends UnaryOperator {
 
   public static class WindowDefinition {
     private String windowName;
-    private WindowSpecExpr windowSpec;
+    private WindowSpec windowSpec;
 
-    public WindowDefinition(String windowName, WindowSpecExpr spec) {
+    public WindowDefinition(String windowName, WindowSpec spec) {
       this.windowName = windowName;
       this.windowSpec = spec;
     }
@@ -57,7 +57,7 @@ public class Window extends UnaryOperator {
       return windowName;
     }
 
-    public WindowSpecExpr getWindowSpec() {
+    public WindowSpec getWindowSpec() {
       return windowSpec;
     }
   }

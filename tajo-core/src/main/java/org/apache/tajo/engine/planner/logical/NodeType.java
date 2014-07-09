@@ -35,6 +35,7 @@ public enum NodeType {
   SORT(SortNode.class),
   HAVING(HavingNode.class),
   GROUP_BY(GroupbyNode.class),
+  WINDOW_AGG(WindowAggNode.class),
   SELECTION(SelectionNode.class),
   JOIN(JoinNode.class),
   UNION(UnionNode.class),

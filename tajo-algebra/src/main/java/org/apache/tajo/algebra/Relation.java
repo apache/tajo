@@ -74,4 +74,12 @@ public class Relation extends Expr {
     return TUtil.checkEquals(tableName, other.tableName) &&
         TUtil.checkEquals(alias, other.alias);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Relation relation = (Relation) super.clone();
+    relation.tableName = tableName;
+    relation.alias = alias;
+    return relation;
+  }
 }

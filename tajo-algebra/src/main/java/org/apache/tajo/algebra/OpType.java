@@ -94,11 +94,10 @@ public enum OpType {
   Column(ColumnReferenceExpr.class),
   Target(NamedExpr.class),
   Function(FunctionExpr.class),
-  WindowFunction(WindowFunctionExpr.class),
-  WindowSpec(WindowSpecExpr.class),
   Asterisk(QualifiedAsteriskExpr.class),
 
   // Set Functions
+  WindowFunction(WindowFunctionExpr.class),
   CountRowsFunction(CountRowsFunctionExpr.class),
   GeneralSetFunction(GeneralSetFunctionExpr.class),
 
@@ -142,13 +141,36 @@ public enum OpType {
     }
   }
 
+  public static boolean isLogicalType(OpType type) {
+    return type == Not || type == And || type == Or;
+  }
+
+  public static boolean isComparisonType(OpType type) {
+    return
+        type == OpType.Equals ||
+        type == OpType.NotEquals ||
+        type == OpType.LessThan ||
+        type == OpType.GreaterThan ||
+        type == OpType.LessThanOrEquals ||
+        type == OpType.GreaterThanOrEquals;
+  }
+
+  public static boolean isArithmeticType(OpType type) {
+    return
+        type == Plus ||
+        type == Minus ||
+        type == Multiply ||
+        type == Divide ||
+        type == Modular;
+  }
+
   /**
    * Check if it is one of the literal types.
    *
    * @param type The type to be checked
    * @return True if it is one of the literal types. Otherwise, it returns False.
    */
-  public static boolean isLiteral(OpType type) {
+  public static boolean isLiteralType(OpType type) {
     return  type == Literal ||
             type == NullLiteral ||
             type == TimeLiteral ||
@@ -163,7 +185,7 @@ public enum OpType {
    * @return True if it is aggregation function type. Otherwise, it returns False.
    */
   public static boolean isFunction(OpType type) {
-    return type == Function || isAggregationFunction(type);
+    return type == Function || isAggregationFunction(type) || isWindowFunction(type);
   }
 
   /**
@@ -174,5 +196,15 @@ public enum OpType {
    */
   public static boolean isAggregationFunction(OpType type) {
     return type == GeneralSetFunction || type == CountRowsFunction;
+  }
+
+  /**
+   * Check if it is an window function type.
+   *
+   * @param type The type to be checked
+   * @return True if it is window function type. Otherwise, it returns False.
+   */
+  public static boolean isWindowFunction(OpType type) {
+    return type == WindowFunction;
   }
 }

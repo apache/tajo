@@ -19,19 +19,20 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
-public class WindowFunctionExpr extends Expr {
-  // set function
-  GeneralSetFunctionExpr function;
+public class WindowFunctionExpr extends GeneralSetFunctionExpr {
 
   // over clause - only one of both is used.
+  @Expose @SerializedName("WindowName")
   private String windowName;
-  private WindowSpecExpr windowSpec;
+  @Expose @SerializedName("WindowSpec")
+  private WindowSpec windowSpec;
 
   public WindowFunctionExpr(GeneralSetFunctionExpr function) {
-    super(OpType.WindowFunction);
-    this.function = function;
+    super(OpType.WindowFunction, function.getSignature(), function.isDistinct(), function.getParams());
   }
 
   public boolean hasWindowName() {
@@ -50,11 +51,11 @@ public class WindowFunctionExpr extends Expr {
     return windowSpec != null;
   }
 
-  public void setWindowSpec(WindowSpecExpr windowSpec) {
+  public void setWindowSpec(WindowSpec windowSpec) {
     this.windowSpec = windowSpec;
   }
 
-  public WindowSpecExpr getWindowSpec() {
+  public WindowSpec getWindowSpec() {
     return this.windowSpec;
   }
 
@@ -64,7 +65,7 @@ public class WindowFunctionExpr extends Expr {
   }
 
   @Override
-  boolean equalsTo(Expr expr) {
+  public boolean equalsTo(Expr expr) {
     return TUtil.checkEquals(windowName, windowSpec);
   }
 }

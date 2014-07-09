@@ -1,0 +1,1 @@
+SELECT l_orderkey, l_quantity, sum(l_quantity) OVER () FROM LINEITEM;

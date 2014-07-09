@@ -89,4 +89,11 @@ public class NamedExpr extends UnaryOperator {
   public String toJson() {
     return JsonHelper.toJson(this);
   }
+
+  @Override
+  public NamedExpr clone() throws CloneNotSupportedException {
+    NamedExpr namedExpr = (NamedExpr) super.clone();
+    namedExpr.alias = alias;
+    return namedExpr;
+  }
 }

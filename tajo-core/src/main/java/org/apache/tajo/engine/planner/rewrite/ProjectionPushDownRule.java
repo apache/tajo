@@ -592,6 +592,99 @@ public class ProjectionPushDownRule extends
     return node;
   }
 
+  public LogicalNode visitWindowAgg(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
+                        Stack<LogicalNode> stack) throws PlanningException {
+    Context newContext = new Context(context);
+
+    if (node.hasPartitionKeys()) {
+      for (Column c : node.getPartitionKeys()) {
+        newContext.addNecessaryReferences(new FieldEval(c));
+      }
+    }
+
+    if (node.hasSortSpecs()) {
+      for (SortSpec sortSpec : node.getSortSpecs()) {
+        newContext.addNecessaryReferences(new FieldEval(sortSpec.getSortKey()));
+      }
+    }
+
+    for (WindowFunctionEval winFunc : node.getWindowFunctions()) {
+      if (winFunc.hasSortSpecs()) {
+        for (SortSpec sortSpec : winFunc.getSortSpecs()) {
+          newContext.addNecessaryReferences(new FieldEval(sortSpec.getSortKey()));
+        }
+      }
+    }
+
+
+    int nonFunctionColumnNum = node.getTargets().length - node.getWindowFunctions().length;
+    LinkedHashSet<String> nonFunctionColumns = Sets.newLinkedHashSet();
+    for (int i = 0; i < nonFunctionColumnNum; i++) {
+      FieldEval fieldEval = (new FieldEval(node.getTargets()[i].getNamedColumn()));
+      nonFunctionColumns.add(newContext.addExpr(fieldEval));
+    }
+
+    final String [] aggEvalNames;
+    if (node.hasAggFunctions()) {
+      final int evalNum = node.getWindowFunctions().length;
+      aggEvalNames = new String[evalNum];
+      for (int evalIdx = 0, targetIdx = nonFunctionColumnNum; targetIdx < node.getTargets().length; evalIdx++,
+          targetIdx++) {
+        Target target = node.getTargets()[targetIdx];
+        WindowFunctionEval winFunc = node.getWindowFunctions()[evalIdx];
+        aggEvalNames[evalIdx] = newContext.addExpr(new Target(winFunc, target.getCanonicalName()));
+      }
+    } else {
+      aggEvalNames = null;
+    }
+
+    // visit a child node
+    LogicalNode child = super.visitWindowAgg(newContext, plan, block, node, stack);
+
+    node.setInSchema(child.getOutSchema());
+
+    List<Target> targets = Lists.newArrayList();
+    if (nonFunctionColumnNum > 0) {
+      for (String column : nonFunctionColumns) {
+        Target target = context.targetListMgr.getTarget(column);
+
+        // it rewrite grouping keys.
+        // This rewrite sets right column names and eliminates duplicated grouping keys.
+        if (context.targetListMgr.isEvaluated(column)) {
+          targets.add(new Target(new FieldEval(target.getNamedColumn())));
+        } else {
+          if (target.getEvalTree().getType() == EvalType.FIELD) {
+           targets.add(target);
+          }
+        }
+      }
+    }
+
+    // Getting projected targets
+    if (node.hasAggFunctions() && aggEvalNames != null) {
+      WindowFunctionEval [] aggEvals = new WindowFunctionEval[aggEvalNames.length];
+      int i = 0;
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, TUtil.newList(aggEvalNames)); it.hasNext();) {
+
+        String referenceName = it.next();
+        Target target = context.targetListMgr.getTarget(referenceName);
+
+        if (LogicalPlanner.checkIfBeEvaluatedAtWindowAgg(target.getEvalTree(), node)) {
+          aggEvals[i++] = target.getEvalTree();
+          context.targetListMgr.markAsEvaluated(target);
+
+          targets.add(new Target(new FieldEval(target.getNamedColumn())));
+        }
+      }
+      if (aggEvals.length > 0) {
+        node.setWindowFunctions(aggEvals);
+      }
+    }
+
+    node.setTargets(targets.toArray(new Target[targets.size()]));
+    return node;
+  }
+
   public LogicalNode visitGroupBy(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
                              Stack<LogicalNode> stack) throws PlanningException {
     Context newContext = new Context(context);

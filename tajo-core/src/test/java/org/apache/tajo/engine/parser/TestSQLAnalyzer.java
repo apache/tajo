@@ -57,7 +57,7 @@ public class TestSQLAnalyzer {
     String result = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/" + resultFileName);
 
     Expr expr = parseQuery(sql);
-    assertEquals(expr.toJson().trim(), result.trim());
+    assertEquals(result.trim(), expr.toJson().trim());
   }
 
 

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
@@ -42,7 +43,8 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	public FunctionEval(EvalType type, FunctionDesc funcDesc, EvalNode[] argEvals) {
 		super(type);
 		this.funcDesc = funcDesc;
-		this.argEvals = argEvals;
+    Preconditions.checkArgument(argEvals != null, "argEvals cannot be null");
+    this.argEvals = argEvals;
 	}
 
   public ParamType [] getParamType() {
@@ -85,6 +87,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 		return funcDesc.getSignature();
 	}
 
+  public FunctionDesc getFuncDesc() {
+    return this.funcDesc;
+  }
+
   @Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -119,26 +125,32 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     FunctionEval eval = (FunctionEval) super.clone();
     eval.funcDesc = (FunctionDesc) funcDesc.clone();
-    eval.argEvals = new EvalNode[argEvals.length];
-    for (int i = 0; i < argEvals.length; i++) {
-      eval.argEvals[i] = (EvalNode) argEvals[i].clone();
-    }    
+    if (argEvals != null) {
+      eval.argEvals = new EvalNode[argEvals.length];
+      for (int i = 0; i < argEvals.length; i++) {
+        eval.argEvals[i] = (EvalNode) argEvals[i].clone();
+      }
+    }
     return eval;
   }
 	
 	@Override
   public void preOrder(EvalNodeVisitor visitor) {
-    for (EvalNode eval : argEvals) {
-      eval.postOrder(visitor);
+    if (argEvals != null) {
+      for (EvalNode eval : argEvals) {
+        eval.postOrder(visitor);
+      }
     }
     visitor.visit(this);
   }
 	
 	@Override
 	public void postOrder(EvalNodeVisitor visitor) {
-	  for (EvalNode eval : argEvals) {
-	    eval.postOrder(visitor);
-	  }
+    if (argEvals != null) {
+      for (EvalNode eval : argEvals) {
+        eval.postOrder(visitor);
+      }
+    }
 	  visitor.visit(this);
 	}
 }
