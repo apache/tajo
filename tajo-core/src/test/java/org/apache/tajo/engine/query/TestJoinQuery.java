@@ -1051,4 +1051,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
       cleanupQuery(res);
     }
   }
+
+  @Test
+  public final void testOnClauseJoin1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
