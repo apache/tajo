@@ -387,7 +387,6 @@ public class Task {
 
       while(!killed && executor.next() != null) {
       }
-      reloadInputStats();
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
@@ -396,6 +395,7 @@ public class Task {
       if (executor != null) {
         try {
           executor.close();
+          reloadInputStats();
         } catch (IOException e) {
           e.printStackTrace();
         }
