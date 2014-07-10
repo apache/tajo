@@ -509,14 +509,21 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     executeDDL("customer_partition_ddl.sql", null);
     executeFile("insert_into_customer_partition.sql").close();
 
-// outer join table is empty
+    // outer join table is empty
     ResultSet res = executeString(
         "select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
             "inner join orders b on a.l_orderkey = b.o_orderkey " +
             "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0"
     );
 
-    String expected = "";
+    String expected = "l_orderkey,o_orderkey,c_custkey\n" +
+        "-------------------------------\n" +
+        "1,1,null\n" +
+        "1,1,null\n" +
+        "2,2,null\n" +
+        "3,3,null\n" +
+        "3,3,null\n";
+
     assertEquals(expected, resultSetToString(res));
     res.close();
 
