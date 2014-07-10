@@ -1586,6 +1586,20 @@ public class GlobalPlanner {
 
       return node;
     }
+
+    @Override
+    public LogicalNode visitCreateIndex(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                        CreateIndexNode node, Stack<LogicalNode> stack) throws PlanningException {
+      LogicalNode child = super.visitCreateIndex(context, plan, queryBlock, node, stack);
+
+      // Don't separate execution block. CreateIndex is pushed to the first execution block.
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      node.setChild(childBlock.getPlan());
+      childBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), childBlock);
+
+      return node;
+    }
   }
 
   @SuppressWarnings("unused")

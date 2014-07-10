@@ -43,7 +43,7 @@ public class CreateTable extends Expr {
   private String location;
   @Expose @SerializedName("SubPlan")
   private Expr subquery;
-  @Expose @SerializedName("TableProperties")
+  @Expose @SerializedName("Properties")
   private Map<String, String> params;
   @Expose @SerializedName("PartitionMethodDesc")
   private PartitionMethodDescExpr partition;
