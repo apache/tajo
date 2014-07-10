@@ -123,9 +123,14 @@ public class Repartitioner {
     JoinNode joinNode = PlannerUtil.findMostBottomNode(execBlock.getPlan(), NodeType.JOIN);
     if (joinNode != null) {
       if ( (joinNode.getJoinType() == JoinType.INNER)) {
+        LogicalNode leftNode = joinNode.getLeftChild();
+        LogicalNode rightNode = joinNode.getRightChild();
         for (int i = 0; i < stats.length; i++) {
-          if (stats[i] == 0) {
-            return;
+          if (scans[i].getPID() == leftNode.getPID() || scans[i].getPID() == rightNode.getPID()) {
+            if (stats[i] == 0) {
+              LOG.info(scans[i] + " 's input data is zero. Inner join's result is empty.");
+              return;
+            }
           }
         }
       }
