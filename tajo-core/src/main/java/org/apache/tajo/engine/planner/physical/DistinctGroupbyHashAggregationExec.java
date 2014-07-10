@@ -128,7 +128,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     }
 
     if (currentAggregatedTuples != null && currentAggregatedTupleIndex < currentAggregatedTupleSize) {
-      System.out.println(">>>>>>3333>" + currentAggregatedTuples.get(currentAggregatedTupleIndex));
       return currentAggregatedTuples.get(currentAggregatedTupleIndex++);
     }
 
@@ -178,7 +177,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
         for (int i = 0; i < tuple.size(); i++) {
           tuple.put(i, DatumFactory.createNullDatum());
         }
-        System.out.println(">>>>>>2222>" + tuple);
         return tuple;
       } else {
         return null;
