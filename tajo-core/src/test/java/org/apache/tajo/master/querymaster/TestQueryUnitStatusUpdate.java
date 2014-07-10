@@ -91,8 +91,12 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
       // first stage's num rows = (left: 1 , right: 2 (filtered)) * 5 (tasks)
       long[] expectedNumRows = new long[]{15, 2, 2, 2, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{45, 34, 34, 18, 109, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{45, 0, 34, 0, 109, 0, 34, 0};
+      long[] expectedNumBytes = new long[]{20, 34, 34, 18, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{20, 0, 34, 0, 109, 0, 34, 0};
+
+//      long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
+//      long[] expectedNumBytes = new long[]{8, 34, 20, 75, 109, 34, 34, 18};
+//      long[] expectedReadBytes = new long[]{8, 0, 20, 0, 109, 0, 34, 0};
 
       assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
