@@ -45,6 +45,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
@@ -359,7 +360,21 @@ public class Task {
     context.getFetchLatch().await();
     LOG.info(context.getTaskId() + " All fetches are done!");
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
+
+    // Get all broadcasted tables
+    Set<String> broadcastTableNames = new HashSet<String>();
+    List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
+    if (broadcasts != null) {
+      for (EnforceProperty eachBroadcast : broadcasts) {
+        broadcastTableNames.add(eachBroadcast.getBroadcast().getTableName());
+      }
+    }
+
+    // localize the fetched data and skip the broadcast table
     for (String inputTable: inputs) {
+      if (broadcastTableNames.contains(inputTable)) {
+        continue;
+      }
       File tableDir = new File(context.getFetchIn(), inputTable);
       FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.updateAssignedFragments(inputTable, frags);

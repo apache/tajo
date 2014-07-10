@@ -9,3 +9,4 @@ from
 where
     l_partkey = p_partkey
     and l_orderkey = a.o_orderkey
+order by l_orderkey, o_custkey, p_name

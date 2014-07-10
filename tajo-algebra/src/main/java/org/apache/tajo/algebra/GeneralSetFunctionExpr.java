@@ -34,7 +34,6 @@ public class GeneralSetFunctionExpr extends FunctionExpr {
    */
   protected GeneralSetFunctionExpr(OpType type, String signature, boolean distinct, Expr [] params) {
     super(type, signature, params);
-    Preconditions.checkArgument(OpType.isAggregationFunction(type));
     this.distinct = distinct;
   }
 
@@ -42,10 +41,10 @@ public class GeneralSetFunctionExpr extends FunctionExpr {
    *
    * @param signature Function name
    * @param distinct True if this function is a distinct aggregation function
-   * @param param Function parameter
+   * @param params Function parameters
    */
-  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr param) {
-    this(OpType.GeneralSetFunction, signature, distinct, new Expr [] {param});
+  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr[] params) {
+    this(OpType.GeneralSetFunction, signature, distinct, params);
   }
 
   /**
@@ -65,5 +64,12 @@ public class GeneralSetFunctionExpr extends FunctionExpr {
   @Override
   public boolean equalsTo(Expr expr) {
     return distinct == ((GeneralSetFunctionExpr)expr).distinct;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    GeneralSetFunctionExpr newSetFunc = (GeneralSetFunctionExpr) super.clone();
+    newSetFunc.distinct = distinct;
+    return newSetFunc;
   }
 }

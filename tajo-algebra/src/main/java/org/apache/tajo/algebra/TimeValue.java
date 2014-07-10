@@ -23,7 +23,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.StringUtils;
 
-public class TimeValue {
+public class TimeValue implements Cloneable {
   @Expose @SerializedName("Hour")
   private String hours;
   @Expose @SerializedName("Minute")
@@ -81,5 +81,15 @@ public class TimeValue {
 
   public int hashCode() {
     return Objects.hashCode(hours, minutes, seconds);
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    TimeValue timeValue = (TimeValue) super.clone();
+    timeValue.hours = hours;
+    timeValue.minutes = minutes;
+    timeValue.seconds = seconds;
+    timeValue.secondsFraction = secondsFraction;
+    return timeValue;
   }
 }

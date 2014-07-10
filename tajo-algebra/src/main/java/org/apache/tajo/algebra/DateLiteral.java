@@ -51,4 +51,11 @@ public class DateLiteral extends Expr {
     }
     return false;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DateLiteral newDate = (DateLiteral) super.clone();
+    newDate.date = date;
+    return newDate;
+  }
 }

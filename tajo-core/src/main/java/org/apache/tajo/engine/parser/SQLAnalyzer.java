@@ -36,6 +36,8 @@ import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -192,6 +194,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         current = sort;
       }
 
+      if (checkIfExist(ctx.table_expression().window_clause())) {
+        Window window = visitWindow_clause(ctx.table_expression().window_clause());
+        window.setChild(current);
+        current = window;
+      }
+
       if (ctx.table_expression().limit_clause() != null) {
         Limit limit = visitLimit_clause(ctx.table_expression().limit_clause());
         limit.setChild(current);
@@ -312,14 +320,146 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return clause;
   }
 
+  @Override public WindowFunctionExpr visitWindow_function(@NotNull SQLParser.Window_functionContext context) {
+    WindowFunctionExpr windowFunction = null;
+
+    Window_function_typeContext functionType = context.window_function_type();
+    GeneralSetFunctionExpr functionBody;
+    if (checkIfExist(functionType.rank_function_type())) {
+      Rank_function_typeContext rankFunction = functionType.rank_function_type();
+      if (checkIfExist(rankFunction.RANK())) {
+        functionBody = new GeneralSetFunctionExpr("rank", false, new Expr[] {});
+      } else if (checkIfExist(rankFunction.DENSE_RANK())) {
+        functionBody = new GeneralSetFunctionExpr("dense_rank", false, new Expr[] {});
+      } else if (checkIfExist(rankFunction.PERCENT_RANK())) {
+        functionBody = new GeneralSetFunctionExpr("percent_rank", false, new Expr[] {});
+      } else {
+        functionBody = new GeneralSetFunctionExpr("cume_dist", false, new Expr[] {});
+      }
+    } else if (checkIfExist(functionType.ROW_NUMBER())) {
+      functionBody = new GeneralSetFunctionExpr("row_number", false, new Expr[] {});
+    } else {
+      functionBody = visitAggregate_function(functionType.aggregate_function());
+    }
+    windowFunction = new WindowFunctionExpr(functionBody);
+
+    Window_name_or_specificationContext windowNameOrSpec = context.window_name_or_specification();
+    if (checkIfExist(windowNameOrSpec.window_name())) {
+      windowFunction.setWindowName(windowNameOrSpec.window_name().getText());
+    } else {
+      windowFunction.setWindowSpec(buildWindowSpec(windowNameOrSpec.window_specification()));
+    }
+
+    return windowFunction;
+  }
+
   @Override
-  public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
-    int size = ctx.sort_specifier_list().sort_specifier().size();
+  public Window visitWindow_clause(@NotNull SQLParser.Window_clauseContext ctx) {
+    Window.WindowDefinition [] definitions =
+        new Window.WindowDefinition[ctx.window_definition_list().window_definition().size()];
+    for (int i = 0; i < definitions.length; i++) {
+      Window_definitionContext windowDefinitionContext = ctx.window_definition_list().window_definition(i);
+      String windowName = windowDefinitionContext.window_name().identifier().getText();
+      WindowSpec windowSpec = buildWindowSpec(windowDefinitionContext.window_specification());
+      definitions[i] = new Window.WindowDefinition(windowName, windowSpec);
+    }
+    return new Window(definitions);
+  }
+
+  public WindowSpec buildWindowSpec(SQLParser.Window_specificationContext ctx) {
+    WindowSpec windowSpec = new WindowSpec();
+    if (checkIfExist(ctx.window_specification_details())) {
+      Window_specification_detailsContext windowSpecDetail = ctx.window_specification_details();
+
+      if (checkIfExist(windowSpecDetail.existing_window_name())) {
+        windowSpec.setWindowName(windowSpecDetail.existing_window_name().getText());
+      }
+
+      if (checkIfExist(windowSpecDetail.window_partition_clause())) {
+        windowSpec.setPartitionKeys(
+            buildRowValuePredicands(windowSpecDetail.window_partition_clause().row_value_predicand_list()));
+      }
+
+      if (checkIfExist(windowSpecDetail.window_order_clause())) {
+        windowSpec.setSortSpecs(
+            buildSortSpecs(windowSpecDetail.window_order_clause().orderby_clause().sort_specifier_list()));
+      }
+
+      if (checkIfExist(windowSpecDetail.window_frame_clause())) {
+        Window_frame_clauseContext frameContext = windowSpecDetail.window_frame_clause();
+
+        WindowSpec.WindowFrameUnit unit;
+        // frame unit - there are only two cases: RANGE and ROW
+        if (checkIfExist(frameContext.window_frame_units().RANGE())) {
+          unit = WindowSpec.WindowFrameUnit.RANGE;
+        } else {
+          unit = WindowSpec.WindowFrameUnit.ROW;
+        }
+
+        WindowSpec.WindowFrame windowFrame;
+
+        if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
+          Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
+          WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
+          WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
+
+          windowFrame = new WindowSpec.WindowFrame(unit, startBound, endBound);
+        } else { // if there is only start bound
+          WindowSpec.WindowStartBound startBound =
+              buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
+          windowFrame = new WindowSpec.WindowFrame(unit, startBound);
+        }
+
+        windowSpec.setWindowFrame(windowFrame);
+      }
+    }
+    return windowSpec;
+  }
+
+  public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
+    WindowFrameStartBoundType boundType = null;
+    if (checkIfExist(context.UNBOUNDED())) {
+      boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
+    } else if (checkIfExist(context.unsigned_value_specification())) {
+      boundType = WindowFrameStartBoundType.PRECEDING;
+    } else {
+      boundType = WindowFrameStartBoundType.CURRENT_ROW;
+    }
+
+    WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
+    if (boundType == WindowFrameStartBoundType.PRECEDING) {
+      bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
+    }
+
+    return bound;
+  }
+
+  public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
+    WindowFrameEndBoundType boundType;
+    if (checkIfExist(context.UNBOUNDED())) {
+      boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
+    } else if (checkIfExist(context.unsigned_value_specification())) {
+      boundType = WindowFrameEndBoundType.FOLLOWING;
+    } else {
+      boundType = WindowFrameEndBoundType.CURRENT_ROW;
+    }
+
+    WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
+    if (boundType == WindowFrameEndBoundType.FOLLOWING) {
+      endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
+    }
+
+    return endBound;
+  }
+
+  public Sort.SortSpec[] buildSortSpecs(Sort_specifier_listContext context) {
+    int size = context.sort_specifier().size();
+
     Sort.SortSpec specs[] = new Sort.SortSpec[size];
     for (int i = 0; i < size; i++) {
-      SQLParser.Sort_specifierContext specContext = ctx.sort_specifier_list().sort_specifier(i);
-      Expr column = visitRow_value_predicand(specContext.key);
-      specs[i] = new Sort.SortSpec(column);
+      SQLParser.Sort_specifierContext specContext = context.sort_specifier(i);
+      Expr sortKeyExpr = visitRow_value_predicand(specContext.key);
+      specs[i] = new Sort.SortSpec(sortKeyExpr);
       if (specContext.order_specification() != null) {
         if (specContext.order.DESC() != null) {
           specs[i].setDescending();
@@ -333,7 +473,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
-    return new Sort(specs);
+    return specs;
+  }
+
+  @Override
+  public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
+    return new Sort(buildSortSpecs(ctx.sort_specifier_list()));
   }
 
   @Override
@@ -388,7 +533,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
               join_condition().search_condition());
           join.setQual(searchCondition);
         } else if (ctx.join_specification().named_columns_join() != null) {
-          ColumnReferenceExpr[] columns = getColumnReferences(ctx.join_specification().
+          ColumnReferenceExpr[] columns = buildColumnReferenceList(ctx.join_specification().
               named_columns_join().column_reference_list());
           join.setJoinColumns(columns);
         }
@@ -413,12 +558,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       rowValuePredicands.add(visitRow_value_predicand(ctx.row_value_predicand()));
     }
     if (ctx.row_value_predicand_list() != null) {
-      Collections.addAll(rowValuePredicands, getRowValuePredicands(ctx.row_value_predicand_list()));
+      Collections.addAll(rowValuePredicands, buildRowValuePredicands(ctx.row_value_predicand_list()));
     }
     return rowValuePredicands.toArray(new Expr[rowValuePredicands.size()]);
   }
 
-  private Expr[] getRowValuePredicands(Row_value_predicand_listContext ctx) {
+  private Expr[] buildRowValuePredicands(Row_value_predicand_listContext ctx) {
     Expr[] rowValuePredicands = new Expr[ctx.row_value_predicand().size()];
     for (int i = 0; i < rowValuePredicands.length; i++) {
       rowValuePredicands[i] = visitRow_value_predicand(ctx.row_value_predicand(i));
@@ -426,7 +571,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return rowValuePredicands;
   }
 
-  private ColumnReferenceExpr[] getColumnReferences(Column_reference_listContext ctx) {
+  private ColumnReferenceExpr[] buildColumnReferenceList(Column_reference_listContext ctx) {
     ColumnReferenceExpr[] columnRefs = new ColumnReferenceExpr[ctx.column_reference().size()];
     for (int i = 0; i < columnRefs.length; i++) {
       columnRefs[i] = visitColumn_reference(ctx.column_reference(i));
@@ -853,7 +998,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public FunctionExpr visitAggregate_function(SQLParser.Aggregate_functionContext ctx) {
+  public GeneralSetFunctionExpr visitAggregate_function(SQLParser.Aggregate_functionContext ctx) {
     if (ctx.COUNT() != null && ctx.MULTIPLY() != null) {
       return new CountRowsFunctionExpr();
     } else {
@@ -862,12 +1007,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
+  public GeneralSetFunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
     boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT());
     Expr param = visitValue_expression(ctx.value_expression());
 
-    return new GeneralSetFunctionExpr(signature, distinct, param);
+    return new GeneralSetFunctionExpr(signature, distinct, new Expr [] {param});
   }
 
   @Override
@@ -1094,14 +1239,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
               visitValue_expression(rangeValue.value_expression())));
         }
       }
-      return new CreateTable.RangePartition(getColumnReferences(ctx.range_partitions().column_reference_list()),
+      return new CreateTable.RangePartition(buildColumnReferenceList(ctx.range_partitions().column_reference_list()),
           specifiers);
 
     } else if (checkIfExist(ctx.hash_partitions())) { // For Hash Partition
       Hash_partitionsContext hashPartitions = ctx.hash_partitions();
 
       if (checkIfExist(hashPartitions.hash_partitions_by_quantity())) { // PARTITIONS (num)
-        return new HashPartition(getColumnReferences(hashPartitions.column_reference_list()),
+        return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()),
             visitNumeric_value_expression(hashPartitions.hash_partitions_by_quantity().quantity));
 
       } else { // ( PARTITION part_name , ...)
@@ -1110,7 +1255,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             hashPartitions.individual_hash_partitions().individual_hash_partition()) {
           specifiers.add(new CreateTable.PartitionSpecifier(partition.partition_name().getText()));
         }
-        return new HashPartition(getColumnReferences(hashPartitions.column_reference_list()), specifiers);
+        return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()), specifiers);
       }
 
     } else if (checkIfExist(ctx.list_partitions())) { // For List Partition
@@ -1127,10 +1272,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         specifiers.add(new ListPartitionSpecifier(listValuePartition.partition_name().getText(),
             new ValueListExpr(exprs)));
       }
-      return new ListPartition(getColumnReferences(ctx.list_partitions().column_reference_list()), specifiers);
+      return new ListPartition(buildColumnReferenceList(ctx.list_partitions().column_reference_list()), specifiers);
 
     } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
-      return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()), true);
+      return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()));
     } else {
       throw new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree());
     }
