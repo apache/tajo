@@ -91,4 +91,12 @@ public class ColumnReferenceExpr extends Expr {
   public String toString() {
     return qualifier != null ? qualifier + "." + name : name;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    ColumnReferenceExpr column = (ColumnReferenceExpr) super.clone();
+    column.qualifier = qualifier;
+    column.name = name;
+    return column;
+  }
 }

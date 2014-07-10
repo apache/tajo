@@ -721,8 +721,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
       }
 
-      // Is this subquery the first step of join?
-      if (parent != null && parent.getScanNodes().length == 2) {
+      // We assume this execution block the first stage of join if two or more tables are included in this block,
+      if (parent != null && parent.getScanNodes().length >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer

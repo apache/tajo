@@ -499,10 +499,10 @@ public class PlannerUtil {
   }
 
   public static SortSpec[] schemaToSortSpecs(Schema schema) {
-    return schemaToSortSpecs(schema.toArray());
+    return columnsToSortSpecs(schema.toArray());
   }
 
-  public static SortSpec[] schemaToSortSpecs(Column[] columns) {
+  public static SortSpec[] columnsToSortSpecs(Column[] columns) {
     SortSpec[] specs = new SortSpec[columns.length];
 
     for (int i = 0; i < columns.length; i++) {
@@ -512,14 +512,8 @@ public class PlannerUtil {
     return specs;
   }
 
-  public static SortSpec[] columnsToSortSpec(Collection<Column> columns) {
-    SortSpec[] specs = new SortSpec[columns.size()];
-    int i = 0;
-    for (Column column : columns) {
-      specs[i++] = new SortSpec(column, true, false);
-    }
-
-    return specs;
+  public static SortSpec[] columnsToSortSpecs(Collection<Column> columns) {
+    return columnsToSortSpecs(columns.toArray(new Column[columns.size()]));
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {

@@ -221,7 +221,7 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
 
   private byte[] vLongBytes = new byte[9];
 
-  public int writeVLongToByteArray(byte[] bytes, int offset, long l) {
+  public static int writeVLongToByteArray(byte[] bytes, int offset, long l) {
     if (l >= -112 && l <= 127) {
       bytes[offset] = (byte) l;
       return 1;

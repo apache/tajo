@@ -280,7 +280,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "from table10 group by id");
     String result = resultSetToString(res);
 
-    String expected = "id,?count,?avg_1,?min_2,?max_3,?sum_4,?cast_5,?cast_6,?cast_7,?cast_8\n" +
+    String expected = "id,?count_4,?avg_5,?min_6,?max_7,?sum_8,?cast_9,?cast_10,?cast_11,?cast_12\n" +
         "-------------------------------\n" +
         "1,2,4.0,0,5,12,4,0,5,12\n" +
         "2,3,2.0,0,3,6,7,0,8,21\n";

@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class DateValue {
+public class DateValue implements Cloneable {
   @Expose @SerializedName("Year")
   private String years;
   @Expose @SerializedName("Month")
@@ -64,5 +64,14 @@ public class DateValue {
       return years.equals(another.years) && months.equals(another.months) && days.equals(another.days);
     }
     return false;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DateValue date = (DateValue) super.clone();
+    date.years = years;
+    date.months = months;
+    date.days = days;
+    return date;
   }
 }
