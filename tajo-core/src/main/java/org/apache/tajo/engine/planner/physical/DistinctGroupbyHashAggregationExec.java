@@ -114,11 +114,21 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     }
     if (first) {
       loadChildHashTable();
+
+      // Find largest aggregator and mapping groupby key column
+      int maxHashAggregator = 0;
+      for (int i = 0; i < hashAggregators.length; i++) {
+        if (hashAggregators[i].getTupleSize() > hashAggregators[maxHashAggregator].getTupleSize()) {
+          maxHashAggregator = i;
+        }
+      }
+
       progress = 0.5f;
       first = false;
     }
 
     if (currentAggregatedTuples != null && currentAggregatedTupleIndex < currentAggregatedTupleSize) {
+      System.out.println(">>>>>>3333>" + currentAggregatedTuples.get(currentAggregatedTupleIndex));
       return currentAggregatedTuples.get(currentAggregatedTupleIndex++);
     }
 
@@ -141,9 +151,12 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     //--------------------------------------------------------------------------------------
 
     List<List<Tuple>> tupleSlots = new ArrayList<List<Tuple>>();
+
+    // processing aggregation with single grouping key
     for (int i = 0; i < hashAggregators.length; i++) {
       if (!hashAggregators[i].iterator.hasNext()) {
         nullCount++;
+        tupleSlots.add(new ArrayList<Tuple>());
         continue;
       }
       Entry<Tuple, Map<Tuple, FunctionContext[]>> entry = hashAggregators[i].iterator.next();
@@ -161,10 +174,11 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
       // If DistinctGroupbyHashAggregationExec didn't has any rows,
       // it should return NullDatum.
       if (totalNumRows == 0 && groupbyNodeNum == 0) {
-        Tuple tuple = new VTuple(hashAggregators.length);
+        Tuple tuple = new VTuple(outputColumnNum);
         for (int i = 0; i < tuple.size(); i++) {
           tuple.put(i, DatumFactory.createNullDatum());
         }
+        System.out.println(">>>>>>2222>" + tuple);
         return tuple;
       } else {
         return null;
@@ -199,9 +213,11 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
     */
 
+    // currentAggregatedTuples has tuples which has same group key.
     currentAggregatedTuples = new ArrayList<Tuple>();
     int listIndex = 0;
     while (true) {
+      // Each item in tuples is VTuple. So the tuples variable is two dimensions(tuple[aggregator][datum]).
       Tuple[] tuples = new Tuple[hashAggregators.length];
       for (int i = 0; i < hashAggregators.length; i++) {
         List<Tuple> aggregatedTuples = tupleSlots.get(i);
@@ -212,7 +228,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
       //merge
       Tuple mergedTuple = new VTuple(outputColumnNum);
-      int mergeTupleIndex = 0;
+      int resultColumnIdx = 0;
 
       boolean allNull = true;
       for (int i = 0; i < hashAggregators.length; i++) {
@@ -222,14 +238,22 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
         int tupleSize = hashAggregators[i].getTupleSize();
         for (int j = 0; j < tupleSize; j++) {
-          if (resultColumnIdIndexes[mergeTupleIndex] >= 0) {
-            if (tuples[i] != null) {
-              mergedTuple.put(resultColumnIdIndexes[mergeTupleIndex], tuples[i].get(j));
+          int mergeTupleIndex = resultColumnIdIndexes[resultColumnIdx];
+          if (mergeTupleIndex >= 0) {
+            if (mergeTupleIndex < distinctGroupingKey.size()) {
+              // set group key tuple
+              // Because each hashAggregator has different number of tuples,
+              // sometimes getting group key from each hashAggregator will be null value.
+              mergedTuple.put(mergeTupleIndex, distinctGroupingKey.get(mergeTupleIndex));
             } else {
-              mergedTuple.put(resultColumnIdIndexes[mergeTupleIndex], NullDatum.get());
+              if (tuples[i] != null) {
+                mergedTuple.put(mergeTupleIndex, tuples[i].get(j));
+              } else {
+                mergedTuple.put(mergeTupleIndex, NullDatum.get());
+              }
             }
           }
-          mergeTupleIndex++;
+          resultColumnIdx++;
         }
       }
 

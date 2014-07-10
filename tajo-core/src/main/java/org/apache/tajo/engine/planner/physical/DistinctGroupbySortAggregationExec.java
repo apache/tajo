@@ -123,6 +123,7 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
         mergeTupleIndex++;
       }
     }
+    System.out.println(">>>>>>>>>>>>>>>Sort:" + mergedTuple);
     return mergedTuple;
   }
 
