@@ -26,7 +26,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
@@ -48,6 +47,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.rpc.RpcErrorController;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -705,6 +705,12 @@ public class Task {
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {
+          RpcErrorController errorControllers[] = new RpcErrorController[2];
+          // for updating status
+          errorControllers[0] = new RpcErrorController();
+          // for ping
+          errorControllers[1] = new RpcErrorController();
+
           while (!stop.get() && !stopped) {
             try {
               if(executor != null && context.getProgress() < 1.0f) {
@@ -717,15 +723,24 @@ public class Task {
 
             try {
               if (context.isPorgressChanged()) {
-                masterStub.statusUpdate(null, getReport(), NullCallback.get());
+                masterStub.statusUpdate(errorControllers[0], getReport(), NullCallback.get());
               } else {
-                masterStub.ping(null, taskId.getProto(), NullCallback.get());
+                masterStub.ping(errorControllers[1], taskId.getProto(), NullCallback.get());
+              }
+              for (int i = 0; i < errorControllers.length; i++) {
+                if (errorControllers[i].failed()) {
+                  String errorText = errorControllers[i].errorText();
+                  throw new IOException(errorText);
+                }
               }
             } catch (Throwable t) {
               LOG.error(t.getMessage(), t);
-              remainingRetries -=1;
+              if (t.getMessage() != null && t.getMessage().indexOf("java.nio.channels.ClosedChannelException") >= 0) {
+                remainingRetries = 0;
+              } else {
+                remainingRetries -= 1;
+              }
               if (remainingRetries == 0) {
-                ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
                 LOG.warn("Last retry, exiting ");
                 throw new RuntimeException(t);
               }
@@ -735,6 +750,7 @@ public class Task {
                   try {
                     pingThread.wait(PROGRESS_INTERVAL);
                   } catch (InterruptedException e) {
+                    break;
                   }
                 }
               }

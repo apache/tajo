@@ -34,6 +34,8 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoAsyncDispatcher;
+import org.apache.tajo.master.event.QueryEvent;
+import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -58,8 +60,6 @@ import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeatResponse;
 // TODO - when exception, send error status to QueryJobManager
 public class QueryMaster extends CompositeService implements EventHandler {
   private static final Log LOG = LogFactory.getLog(QueryMaster.class.getName());
-
-  private int querySessionTimeout;
 
   private Clock clock;
 
@@ -100,7 +100,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
       this.systemConf = (TajoConf)conf;
       this.connPool = RpcConnectionPool.getPool(systemConf);
 
-      querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);
 
       clock = new SystemClock();
@@ -311,6 +310,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public void stopQuery(QueryId queryId) {
+      LOG.info("Stop Query: " + queryId);
       QueryMasterTask queryMasterTask;
       queryMasterTask = queryMasterTasks.remove(queryId);
       finishedQueryMasterTasks.put(queryId, queryMasterTask);
@@ -336,10 +336,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         try {
           queryMasterTask.stop();
-          //if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")
-         //     && !workerContext.isYarnContainerMode()) {
-            cleanup(queryId);       // TODO We will support yarn mode
-          //}
+          cleanup(queryId);       // TODO We will support yarn mode
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
@@ -448,6 +445,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
           tempTasks.addAll(queryMasterTasks.values());
         }
 
+        int querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
+
         for(QueryMasterTask eachTask: tempTasks) {
           if(!eachTask.isStopped()) {
             try {
@@ -455,7 +454,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
               long time = System.currentTimeMillis() - lastHeartbeat;
               if(lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
                 LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
-                eachTask.expiredSessionTimeout();
+                Query query = eachTask.getQuery();
+                if (query != null) {
+                  query.handle(new QueryEvent(eachTask.getQueryId(), QueryEventType.KILL));
+                }
               }
             } catch (Exception e) {
               LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
