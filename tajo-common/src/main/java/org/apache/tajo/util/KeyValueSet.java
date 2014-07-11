@@ -111,7 +111,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 		if(object instanceof KeyValueSet) {
 			KeyValueSet other = (KeyValueSet)object;
 			for(Entry<String, String> entry : other.keyVals.entrySet()) {
-				if(!keyVals.get(entry.getKey()).equals(entry.getValue()))
+				if(!keyVals.containsKey(entry.getKey()) || !keyVals.get(entry.getKey()).equals(entry.getValue()))
 					return false;
 			}
 			return true;

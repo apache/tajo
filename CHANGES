@@ -81,11 +81,29 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+ 
+    TAJO-852: Integration test using HCatalog as a catalog store is failed. 
+    (jinho)
+
+    TAJO-934: Multiple DISTINCT returns null grouping key value.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-929: Broadcast join with empty outer join table returns empty result.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-927: Broadcast Join with Large, Small, Large, Small tables
+    makes a wrong plan. (Hyoungjun Kim via hyunsik)
+
+    TAJO-913: Add some missed tests for constant value group-by keys. 
+    (hyunsik)
 
     TAJO-909: {SortBased, Col}PartitionStoreExec should not write partition 
     keys to files. (Hyoungjun Kim via hyunsik)
 
     TAJO-912: Tsql prints wrong version. (Mai Hai Thanh via hyunsik)
+
+    TAJO-925: Child ExecutionBlock of JOIN node has different number of 
+    shuffle keys. (Hyoungjun Kim via hyunsik)
 
     TAJO-902: Unicode delimiter does not work correctly. (jinho)
 

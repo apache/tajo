@@ -129,6 +129,9 @@ public class TestResultSet {
 
   @Test
   public void testDateTimeType() throws Exception {
+    // Hcatalog does not support date type, time type in hive-0.12.0
+    if(util.isHCatalogStoreRunning()) return;
+
     TimeZone tajoCurrentTimeZone = TajoConf.getCurrentTimeZone();
     TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
 
