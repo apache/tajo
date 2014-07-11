@@ -576,23 +576,25 @@ public class Task {
   private class FetchRunner implements Runnable {
     private final TaskAttemptContext ctx;
     private final Fetcher fetcher;
+    private int maxRetryNum;
 
     public FetchRunner(TaskAttemptContext ctx, Fetcher fetcher) {
       this.ctx = ctx;
       this.fetcher = fetcher;
+      this.maxRetryNum = systemConf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_RETRY_MAX_NUM);
     }
 
     @Override
     public void run() {
       int retryNum = 0;
-      int maxRetryNum = 5;
-      int retryWaitTime = 1000;
+      int retryWaitTime = 1000; //sec
 
       try { // for releasing fetch latch
         while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);
+              retryWaitTime = Math.min(10 * 1000, retryWaitTime * 2);  // max 10 seconds
             } catch (InterruptedException e) {
               LOG.error(e);
             }
@@ -600,7 +602,7 @@ public class Task {
           }
           try {
             File fetched = fetcher.get();
-            if (fetched != null) {
+            if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
               break;
             }
           } catch (IOException e) {
@@ -609,11 +611,15 @@ public class Task {
           retryNum++;
         }
       } finally {
-        fetcherFinished(ctx);
-      }
-
-      if (retryNum == maxRetryNum) {
-        LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+        if(fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED){
+          fetcherFinished(ctx);
+        } else {
+          if (retryNum == maxRetryNum) {
+            LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+          }
+          aborted = true; // retry queryUnit
+          ctx.getFetchLatch().countDown();
+        }
       }
     }
   }
@@ -674,7 +680,7 @@ public class Task {
             storeDir.mkdirs();
           }
           storeFile = new File(storeDir, "in_" + i);
-          Fetcher fetcher = new Fetcher(uri, storeFile, channelFactory);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
           runnerList.add(fetcher);
           i++;
         }
