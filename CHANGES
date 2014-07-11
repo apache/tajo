@@ -82,7 +82,10 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
  
-    TAJO-927: Broadcast Join with Large, Small, Large, Small tables 
+    TAJO-929: Broadcast join with empty outer join table returns empty result.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-927: Broadcast Join with Large, Small, Large, Small tables
     makes a wrong plan. (Hyoungjun Kim via hyunsik)
 
     TAJO-913: Add some missed tests for constant value group-by keys. 
