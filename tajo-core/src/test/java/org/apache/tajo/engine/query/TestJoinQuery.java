@@ -1051,4 +1051,12 @@ public class TestJoinQuery extends QueryTestCaseBase {
       cleanupQuery(res);
     }
   }
+
+  @Test
+  public final void testJoinFilterOfRowPreservedTable1() throws Exception {
+    // this test is for join filter of a row preserved table.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
