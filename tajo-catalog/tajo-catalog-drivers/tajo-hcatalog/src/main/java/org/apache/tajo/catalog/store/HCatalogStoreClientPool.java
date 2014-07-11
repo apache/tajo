@@ -14,7 +14,6 @@
 package org.apache.tajo.catalog.store;
 
 
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -43,7 +42,7 @@ public class HCatalogStoreClientPool {
    */
   public class HCatalogStoreClient {
     private final HiveMetaStoreClient hiveClient;
-    private boolean isInUse;
+    public AtomicBoolean isInUse = new AtomicBoolean(false);
 
     private HCatalogStoreClient(HiveConf hiveConf) {
       try {
@@ -54,7 +53,6 @@ public class HCatalogStoreClientPool {
         // Turn in to an unchecked exception
         throw new IllegalStateException(e);
       }
-      this.isInUse = false;
     }
 
     /**
@@ -68,24 +66,23 @@ public class HCatalogStoreClientPool {
      * Returns this client back to the connection pool. If the connection pool has been
      * closed, just close the Hive client connection.
      */
-    public void release() {
-      Preconditions.checkState(isInUse);
-      isInUse = false;
+    public synchronized void release() {
+      if(!this.isInUse.getAndSet(false)){
+        return;
+      }
       // Ensure the connection isn't returned to the pool if the pool has been closed.
       // This lock is needed to ensure proper behavior when a thread reads poolClosed
       // is false, but a call to pool.close() comes in immediately afterward.
-      synchronized (poolClosed) {
-        if (poolClosed.get()) {
-          this.getHiveClient().close();
-        } else {
-          clientPool.add(this);
-        }
+      if (poolClosed.get()) {
+        this.getHiveClient().close();
+      } else {
+        clientPool.add(this);
       }
     }
 
     // Marks this client as in use
     private void markInUse() {
-      isInUse = true;
+      isInUse.set(true);
     }
   }
 
@@ -123,7 +120,7 @@ public class HCatalogStoreClientPool {
   /**
    * Gets a client from the pool. If the pool is empty a new client is created.
    */
-  public HCatalogStoreClient getClient() {
+  public synchronized HCatalogStoreClient getClient() {
     // The MetaStoreClient c'tor relies on knowing the Hadoop version by asking
     // org.apache.hadoop.util.VersionInfo. The VersionInfo class relies on opening
     // the 'common-version-info.properties' file as a resource from hadoop-common*.jar
@@ -149,11 +146,8 @@ public class HCatalogStoreClientPool {
    */
   public void close() {
     // Ensure no more items get added to the pool once close is called.
-    synchronized (poolClosed) {
-      if (poolClosed.get()) {
-        return;
-      }
-      poolClosed.set(true);
+    if (poolClosed.getAndSet(true)) {
+      return;
     }
 
     HCatalogStoreClient client = null;

@@ -82,17 +82,15 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
     // get table
     try {
-      try {
-        client = clientPool.getClient();
-        table = HCatUtil.getTable(client.getHiveClient(), databaseName, tableName);
-        if (table != null) {
-          exist = true;
-        }
-      } catch (NoSuchObjectException nsoe) {
-        exist = false;
-      } catch (Exception e) {
-        throw new CatalogException(e);
+      client = clientPool.getClient();
+      table = HCatUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      if (table != null) {
+        exist = true;
       }
+    } catch (NoSuchObjectException nsoe) {
+      exist = false;
+    } catch (Exception e) {
+      throw new CatalogException(e);
     } finally {
       if (client != null) {
         client.release();
@@ -168,6 +166,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       stats = new TableStats();
       options = new KeyValueSet();
       options.putAll(table.getParameters());
+      options.delete("EXTERNAL");
+
       Properties properties = table.getMetadata();
       if (properties != null) {
         // set field delimiter
@@ -186,6 +186,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         } else {
           nullFormat = "\\N";
         }
+        options.delete(serdeConstants.SERIALIZATION_NULL_FORMAT);
 
         // set file output format
         String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
@@ -260,8 +261,10 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       if(client != null) client.release();
     }
     TableMeta meta = new TableMeta(storeType, options);
-
     TableDesc tableDesc = new TableDesc(databaseName + "." + tableName, schema, meta, path);
+    if (table.getTableType().equals(TableType.EXTERNAL_TABLE)) {
+      tableDesc.setExternal(true);
+    }
     if (stats != null) {
       tableDesc.setStats(stats);
     }
