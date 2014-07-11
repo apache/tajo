@@ -82,6 +82,11 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-909: {SortBased, Col}PartitionStoreExec should not write partition 
+    keys to files. (Hyoungjun Kim via hyunsik)
+
+    TAJO-912: Tsql prints wrong version. (Mai Hai Thanh via hyunsik)
+
     TAJO-902: Unicode delimiter does not work correctly. (jinho)
 
     TAJO-905: When to_date() parses some date without day, the result will be 
