@@ -115,14 +115,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     if (first) {
       loadChildHashTable();
 
-      // Find largest aggregator and mapping groupby key column
-      int maxHashAggregator = 0;
-      for (int i = 0; i < hashAggregators.length; i++) {
-        if (hashAggregators[i].getTupleSize() > hashAggregators[maxHashAggregator].getTupleSize()) {
-          maxHashAggregator = i;
-        }
-      }
-
       progress = 0.5f;
       first = false;
     }
