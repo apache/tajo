@@ -288,19 +288,83 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     schema.addColumn("code", Type.TEXT);
     schema.addColumn("qty", Type.INT4);
     schema.addColumn("qty2", Type.FLOAT8);
-    String[] data = new String[]{ "1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0" };
+    String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
     TajoTestingCluster.createTable("table10", schema, tableOptions, data);
 
     res = executeString("select id, count(distinct code), " +
         "avg(qty), min(qty), max(qty), sum(qty), " +
         "cast(avg(qty2) as INT8), cast(min(qty2) as INT8), cast(max(qty2) as INT8), cast(sum(qty2) as INT8) " +
         "from table10 group by id");
-    String result = resultSetToString(res);
 
     String expected = "id,?count_4,?avg_5,?min_6,?max_7,?sum_8,?cast_9,?cast_10,?cast_11,?cast_12\n" +
         "-------------------------------\n" +
         "1,2,4.0,0,5,12,4,0,5,12\n" +
         "2,3,2.0,0,3,6,7,0,8,21\n";
+
+    assertEquals(expected, resultSetToString(res));
+
+  // multiple distinct with expression
+    res = executeString(
+        "select count(distinct code) + count(distinct qty) from table10"
+    );
+
+    expected = "?plus_2\n" +
+        "-------------------------------\n" +
+        "9\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+
+    res = executeString(
+        "select id, count(distinct code) + count(distinct qty) from table10 group by id"
+    );
+
+    expected = "id,?plus_2\n" +
+        "-------------------------------\n" +
+        "1,5\n" +
+        "2,6\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE table10 PURGE").close();
+  }
+
+  @Test
+  public final void testDistinctAggregationCasebyCase2() throws Exception {
+    // first distinct is smaller than second distinct.
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.TEXT);
+    schema.addColumn("col2", Type.TEXT);
+    schema.addColumn("col3", Type.TEXT);
+
+    String[] data = new String[]{
+        "a|b-1|\\N",
+        "a|b-2|\\N",
+        "a|b-2|\\N",
+        "a|b-3|\\N",
+        "a|b-3|\\N",
+        "a|b-3|\\N"
+    };
+
+    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+
+    ResultSet res = executeString(
+        "select col1 \n" +
+            ",count(distinct col2) as cnt1\n" +
+            ",count(distinct case when col3 is not null then col2 else null end) as cnt2\n" +
+            "from table10 \n" +
+            "group by col1"
+    );
+    String result = resultSetToString(res);
+
+    String expected = "col1,cnt1,cnt2\n" +
+        "-------------------------------\n" +
+        "a,3,1\n";
 
     assertEquals(expected, result);
 
