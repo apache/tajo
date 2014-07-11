@@ -230,6 +230,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case GeneralSetFunction:
       current = visitGeneralSetFunction(ctx, stack, (GeneralSetFunctionExpr) expr);
       break;
+    case WindowFunction:
+      current = visitWindowFunction(ctx, stack, (WindowFunctionExpr) expr);
+      break;
+
 
     case DataType:
       current = visitDataType(ctx, stack, (DataTypeExpr) expr);
@@ -699,6 +703,39 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     for (Expr param : expr.getParams()) {
       result = visit(ctx, stack, param);
     }
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException {
+    stack.push(expr);
+    RESULT result = null;
+    for (Expr param : expr.getParams()) {
+      result = visit(ctx, stack, param);
+    }
+
+    WindowSpec windowSpec = expr.getWindowSpec();
+
+    if (windowSpec.hasPartitionBy()) {
+      for (Expr partitionKey : windowSpec.getPartitionKeys()) {
+        visit(ctx, stack, partitionKey);
+      }
+    }
+    if (windowSpec.hasOrderBy()) {
+      for (Sort.SortSpec sortKey : windowSpec.getSortSpecs()) {
+        visit(ctx, stack, sortKey.getKey());
+      }
+    }
+    if (windowSpec.hasWindowFrame()) {
+      if (windowSpec.getWindowFrame().getStartBound().hasNumber()) {
+        visit(ctx, stack, windowSpec.getWindowFrame().getStartBound().getNumber());
+      }
+      if (windowSpec.getWindowFrame().getEndBound().hasNumber()) {
+        visit(ctx, stack, windowSpec.getWindowFrame().getEndBound().getNumber());
+      }
+    }
+
     stack.pop();
     return result;
   }

@@ -19,13 +19,14 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
@@ -38,10 +39,17 @@ import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.engine.planner.logical.WindowSpec.WindowEndBound;
+import static org.apache.tajo.engine.planner.logical.WindowSpec.WindowFrame;
+import static org.apache.tajo.engine.planner.logical.WindowSpec.WindowStartBound;
 
 /**
  * <code>ExprAnnotator</code> makes an annotated expression called <code>EvalNode</code> from an
@@ -122,7 +130,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @return The widest DataType
    * @throws PlanningException when types are not compatible, it throws the exception.
    */
-  static DataType getWidestType(DataType...types) throws PlanningException {
+  public static DataType getWidestType(DataType...types) throws PlanningException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
 
@@ -541,6 +549,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     throw new PlanningException("ExprAnnotator cannot take NamedExpr");
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Functions and General Set Functions Section
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   @Override
   public EvalNode visitFunction(Context ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
     stack.push(expr); // <--- Push
@@ -589,18 +601,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
 
     try {
-      CatalogProtos.FunctionType functionType = funcDesc.getFuncType();
-      if (functionType == CatalogProtos.FunctionType.GENERAL
-          || functionType == CatalogProtos.FunctionType.UDF) {
+      FunctionType functionType = funcDesc.getFuncType();
+      if (functionType == FunctionType.GENERAL
+          || functionType == FunctionType.UDF) {
         return new GeneralFunctionEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
-      } else if (functionType == CatalogProtos.FunctionType.AGGREGATION
-          || functionType == CatalogProtos.FunctionType.UDA) {
+      } else if (functionType == FunctionType.AGGREGATION
+          || functionType == FunctionType.UDA) {
         if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
           ctx.currentBlock.setAggregationRequire();
         }
         return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
-      } else if (functionType == CatalogProtos.FunctionType.DISTINCT_AGGREGATION
-          || functionType == CatalogProtos.FunctionType.DISTINCT_UDA) {
+      } else if (functionType == FunctionType.DISTINCT_AGGREGATION
+          || functionType == FunctionType.DISTINCT_UDA) {
         throw new PlanningException("Unsupported function: " + funcDesc.toString());
       } else {
         throw new PlanningException("Unsupported Function Type: " + functionType.name());
@@ -610,14 +622,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // General Set Section
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   @Override
   public EvalNode visitCountRowsFunction(Context ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
       throws PlanningException {
-    FunctionDesc countRows = catalog.getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
+    FunctionDesc countRows = catalog.getFunction("count", FunctionType.AGGREGATION,
         new DataType[] {});
     if (countRows == null) {
       throw new NoSuchFunctionException(expr.getSignature(), new DataType[]{});
@@ -641,8 +649,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode[] givenArgs = new EvalNode[params.length];
     DataType[] paramTypes = new DataType[params.length];
 
-    CatalogProtos.FunctionType functionType = setFunction.isDistinct() ?
-        CatalogProtos.FunctionType.DISTINCT_AGGREGATION : CatalogProtos.FunctionType.AGGREGATION;
+    FunctionType functionType = setFunction.isDistinct() ?
+        FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
     givenArgs[0] = visit(ctx, stack, params[0]);
     if (setFunction.getSignature().equalsIgnoreCase("count")) {
       paramTypes[0] = CatalogUtil.newSimpleDataType(Type.ANY);
@@ -661,6 +669,91 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     try {
       return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+    } catch (InternalException e) {
+      throw new PlanningException(e);
+    }
+  }
+
+  public static final Set<String> WINDOW_FUNCTIONS =
+      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist");
+
+  public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
+      throws PlanningException {
+
+    WindowSpec windowSpec = windowFunc.getWindowSpec();
+
+    Expr key;
+    if (windowSpec.hasPartitionBy()) {
+      for (int i = 0; i < windowSpec.getPartitionKeys().length; i++) {
+        key = windowSpec.getPartitionKeys()[i];
+        visit(ctx, stack, key);
+      }
+    }
+
+    EvalNode [] sortKeys = null;
+    if (windowSpec.hasOrderBy()) {
+      sortKeys = new EvalNode[windowSpec.getSortSpecs().length];
+      for (int i = 0; i < windowSpec.getSortSpecs().length; i++) {
+        key = windowSpec.getSortSpecs()[i].getKey();
+        sortKeys[i] = visit(ctx, stack, key);
+      }
+    }
+
+    String funcName = windowFunc.getSignature();
+    boolean distinct = windowFunc.isDistinct();
+    Expr[] params = windowFunc.getParams();
+    EvalNode[] givenArgs = new EvalNode[params.length];
+    TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[params.length];
+    FunctionType functionType;
+
+    WindowFrame frame = null;
+
+    if (params.length > 0) {
+      givenArgs[0] = visit(ctx, stack, params[0]);
+      if (windowFunc.getSignature().equalsIgnoreCase("count")) {
+        paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
+      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
+        paramTypes[0] = CatalogUtil.newSimpleDataType(Type.INT8);
+      } else {
+        paramTypes[0] = givenArgs[0].getValueType();
+      }
+    } else {
+      if (windowFunc.getSignature().equalsIgnoreCase("rank")) {
+        givenArgs = sortKeys != null ? sortKeys : new EvalNode[0];
+      }
+    }
+
+    if (frame == null) {
+      if (windowSpec.hasOrderBy()) {
+        frame = new WindowFrame(new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
+            new WindowEndBound(WindowFrameEndBoundType.CURRENT_ROW));
+      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
+        frame = new WindowFrame(new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
+            new WindowEndBound(WindowFrameEndBoundType.UNBOUNDED_FOLLOWING));
+      } else {
+        frame = new WindowFrame();
+      }
+    }
+
+    // TODO - containFunction and getFunction should support the function type mask which provides ORing multiple types.
+    // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
+    if (WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+      if (distinct) {
+        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+      }
+      functionType = FunctionType.WINDOW;
+    } else {
+      functionType = distinct ? FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
+    }
+
+    if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
+      throw new NoSuchFunctionException(funcName, paramTypes);
+    }
+
+    FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);
+
+    try {
+      return new WindowFunctionEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs, frame);
     } catch (InternalException e) {
       throw new PlanningException(e);
     }

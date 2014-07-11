@@ -19,7 +19,10 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -118,6 +121,18 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    assertEquals(6, count);
+    /*
+     |-eb_0000000000000_0001_000010
+       |-eb_0000000000000_0001_000009
+          |-eb_0000000000000_0001_000008
+          |-eb_0000000000000_0001_000007
+             |-eb_0000000000000_0001_000006
+                |-eb_0000000000000_0001_000005
+                |-eb_0000000000000_0001_000004
+             |-eb_0000000000000_0001_000003
+                |-eb_0000000000000_0001_000002
+                |-eb_0000000000000_0001_000001
+     */
+    assertEquals(10, count);
   }
 }

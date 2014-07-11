@@ -209,7 +209,19 @@ public class Query implements EventHandler<QueryEvent> {
     this.eventHandler = eventHandler;
     this.plan = plan;
     this.sm = context.getStorageManager();
-    cursor = new ExecutionBlockCursor(plan);
+    this.cursor = new ExecutionBlockCursor(plan, true);
+
+    StringBuilder sb = new StringBuilder("\n=======================================================");
+    sb.append("\nThe order of execution: \n");
+    int order = 1;
+    while (cursor.hasNext()) {
+      ExecutionBlock currentEB = cursor.nextBlock();
+      sb.append("\n").append(order).append(": ").append(currentEB.getId());
+      order++;
+    }
+    sb.append("\n=======================================================");
+    LOG.info(sb);
+    cursor.reset();
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
@@ -340,6 +352,7 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent queryEvent) {
+
       query.setStartTime();
       SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
           query.getExecutionBlockCursor().nextBlock(), query.sm);

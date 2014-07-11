@@ -574,23 +574,14 @@ public class QueryTestCaseBase {
   public String getTableFileContents(Path path) throws Exception {
     FileSystem fs = path.getFileSystem(conf);
 
-    FileStatus[] files = fs.listStatus(path);
-
-    if (files == null || files.length == 0) {
-      return null;
-    }
-
     StringBuilder sb = new StringBuilder();
-    byte[] buf = new byte[1024];
 
-    for (FileStatus file: files) {
-      if (file.isDirectory()) {
-        continue;
-      }
-
-      InputStream in = fs.open(file.getPath());
+    List<Path> paths = listFiles(fs, path);
+    for (Path eachPath: paths) {
+      InputStream in = fs.open(eachPath);
       try {
         while (true) {
+          byte[] buf = new byte[1024];
           int readBytes = in.read(buf);
           if (readBytes <= 0) {
             break;
@@ -602,7 +593,6 @@ public class QueryTestCaseBase {
         in.close();
       }
     }
-
     return sb.toString();
   }
 
@@ -620,5 +610,22 @@ public class QueryTestCaseBase {
 
     Path path = tableDesc.getPath();
     return getTableFileContents(path);
+  }
+
+  private List<Path> listFiles(FileSystem fs, Path path) throws Exception {
+    List<Path> result = new ArrayList<Path>();
+    FileStatus[] files = fs.listStatus(path);
+    if (files == null || files.length == 0) {
+      return result;
+    }
+
+    for (FileStatus eachFile: files) {
+      if (eachFile.isDirectory()) {
+        result.addAll(listFiles(fs, eachFile.getPath()));
+      } else {
+        result.add(eachFile.getPath());
+      }
+    }
+    return result;
   }
 }

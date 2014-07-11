@@ -69,10 +69,16 @@ public class Projection extends UnaryOperator implements Cloneable {
     return JsonHelper.toJson(this);
   }
 
+  @Override
   public Projection clone() throws CloneNotSupportedException {
     Projection projection = (Projection)super.clone();
     projection.distinct = distinct;
-    projection.targets = targets;
+    if (targets != null) {
+      projection.targets = new NamedExpr[targets.length];
+      for (int i = 0; i < targets.length; i++) {
+        projection.targets[i] = targets[i].clone();
+      }
+    }
 
     return projection;
   }
