@@ -87,4 +87,12 @@ public class LiteralValue extends Expr {
       return LiteralType.String;
     }
   }
+
+  @Override
+  public LiteralValue clone() throws CloneNotSupportedException {
+    LiteralValue literal = (LiteralValue) super.clone();
+    literal.valueType = valueType;
+    literal.value = value;
+    return literal;
+  }
 }

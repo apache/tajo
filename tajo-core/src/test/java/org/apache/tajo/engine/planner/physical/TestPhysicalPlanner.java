@@ -798,7 +798,7 @@ public class TestPhysicalPlanner {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
-    Path indexPath = StorageUtil.concatPath(conf.getVar(ConfVars.INDEX_DIR), "idx_employee");
+    Path indexPath = StorageUtil.concatPath(conf.getVar(ConfVars.ROOT_DIR), "default/idx_employee");
     if (sm.getFileSystem().exists(indexPath)) {
       sm.getFileSystem().delete(indexPath, true);
     }

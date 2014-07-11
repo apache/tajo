@@ -205,7 +205,23 @@ public class TaskAttemptContext {
       }
     }
   }
-  
+
+  public void addFragments(String tableId, FragmentProto[] fragments) {
+    if (fragments == null || fragments.length == 0) {
+      return;
+    }
+    List<FragmentProto> tableFragments = fragmentMap.get(tableId);
+
+    if (tableFragments == null) {
+      tableFragments = new ArrayList<FragmentProto>();
+    }
+
+    for (FragmentProto eachFragment: fragments) {
+      tableFragments.add(eachFragment);
+    }
+    fragmentMap.put(tableId, tableFragments);
+  }
+
   public Path getWorkDir() {
     return this.workDir;
   }

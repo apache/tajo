@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidCastException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -25,9 +26,11 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class NullDatum extends Datum {
   private static NullDatum instance;
   private static final byte [] EMPTY_BYTES = new byte[0];
+  private static final DataType NULL_DATA_TYPE;
 
   static {
     instance = new NullDatum();
+    NULL_DATA_TYPE = DataType.newBuilder().setType(Type.NULL_TYPE).build();
   }
 
   private NullDatum() {
@@ -36,6 +39,10 @@ public class NullDatum extends Datum {
 
   public static NullDatum get() {
     return instance;
+  }
+
+  public static DataType getDataType() {
+    return NULL_DATA_TYPE;
   }
 
   @Override

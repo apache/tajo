@@ -167,7 +167,7 @@ public class TimeDatum extends Datum {
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -179,7 +179,7 @@ public class TimeDatum extends Datum {
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

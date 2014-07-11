@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
@@ -35,13 +35,14 @@ import java.util.*;
 /**
  * It finds all relations for each block and builds base schema information.
  */
-class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor.PreprocessContext, LogicalNode> {
+public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor.PreprocessContext, LogicalNode> {
+  private TypeDeterminant typeDeterminant;
   private ExprAnnotator annotator;
 
-  static class PreprocessContext {
-    Session session;
-    LogicalPlan plan;
-    LogicalPlan.QueryBlock currentBlock;
+  public static class PreprocessContext {
+    public Session session;
+    public LogicalPlan plan;
+    public LogicalPlan.QueryBlock currentBlock;
 
     public PreprocessContext(Session session, LogicalPlan plan, LogicalPlan.QueryBlock currentBlock) {
       this.session = session;
@@ -62,6 +63,7 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
   LogicalPlanPreprocessor(CatalogService catalog, ExprAnnotator annotator) {
     this.catalog = catalog;
     this.annotator = annotator;
+    this.typeDeterminant = new TypeDeterminant(catalog);
   }
 
   @Override
@@ -201,16 +203,13 @@ class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPreprocessor
 
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
       NamedExpr namedExpr = expr.getNamedExprs()[i];
-      EvalNode evalNode = annotator.createEvalNode(ctx.plan, ctx.currentBlock, namedExpr.getExpr());
+      TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(ctx, namedExpr.getExpr());
 
       if (namedExpr.hasAlias()) {
-        targets[i] = new Target(evalNode, namedExpr.getAlias());
-      } else if (evalNode.getType() == EvalType.FIELD) {
-        targets[i] = new Target((FieldEval) evalNode);
+        targets[i] = new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType)));
       } else {
         String generatedName = ctx.plan.generateUniqueColumnName(namedExpr.getExpr());
-        targets[i] = new Target(evalNode, generatedName);
-        namedExpr.setAlias(generatedName);
+        targets[i] = new Target(new FieldEval(new Column(generatedName, dataType)));
       }
     }
     stack.pop(); // <--- Pop

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.cli;
 
+import org.apache.commons.lang.CharUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -84,8 +86,22 @@ public class DescTableCommand extends TajoShellCommand {
     }
     sb.append("Options: \n");
     for(Map.Entry<String, String> entry : desc.getMeta().toMap().entrySet()){
+
+      /*
+      *  Checks whether the character is ASCII 7 bit printable.
+      *  For example, a printable unicode '\u007c' become the character ‘|’.
+      *
+      *  Control-chars : ctrl-a(\u0001), tab(\u0009) ..
+      *  Printable-chars : '|'(\u007c), ','(\u002c) ..
+      * */
+
+      String value = entry.getValue();
+      String unescaped = StringEscapeUtils.unescapeJava(value);
+      if (unescaped.length() == 1 && CharUtils.isAsciiPrintable(unescaped.charAt(0))) {
+        value = unescaped;
+      }
       sb.append("\t").append("'").append(entry.getKey()).append("'").append("=")
-          .append("'").append(entry.getValue()).append("'").append("\n");
+          .append("'").append(value).append("'").append("\n");
     }
     sb.append("\n");
     sb.append("schema: \n");

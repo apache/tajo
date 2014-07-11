@@ -50,4 +50,11 @@ public class ExistsPredicate extends UnaryOperator {
     ExistsPredicate another = (ExistsPredicate) expr;
     return not == another.not;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    ExistsPredicate exists = (ExistsPredicate) super.clone();
+    exists.not = not;
+    return exists;
+  }
 }

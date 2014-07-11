@@ -119,9 +119,11 @@ enum FunctionType {
   GENERAL = 0;
   AGGREGATION = 1;
   DISTINCT_AGGREGATION = 2;
-  UDF = 3;
-  UDA = 4;
-  DISTINCT_UDA = 5;
+  WINDOW = 3;
+  UDF = 4;
+  UDA = 5;
+  DISTINCT_UDA = 6;
+  WINDOW_UDA = 7;
 }
 
 message FunctionDescProto {

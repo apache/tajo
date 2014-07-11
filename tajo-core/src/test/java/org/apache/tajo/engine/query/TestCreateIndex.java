@@ -39,8 +39,7 @@ public class TestCreateIndex extends QueryTestCaseBase {
   }
 
   private static void assertIndexExist(String indexName) throws IOException {
-    Path indexPath = new Path(conf.getVar(ConfVars.INDEX_DIR), indexName);
-    System.out.println(indexPath);
+    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), "default/" + indexName);
     FileSystem fs = indexPath.getFileSystem(conf);
     assertTrue(fs.exists(indexPath));
     assertEquals(2, fs.listStatus(indexPath).length);

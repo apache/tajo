@@ -21,13 +21,8 @@ package org.apache.tajo.engine.query;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.*;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
@@ -50,6 +45,7 @@ import java.io.File;
 import java.sql.ResultSet;
 
 import static junit.framework.TestCase.*;
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotNull;
 
 @Category(IntegrationTest.class)
@@ -63,6 +59,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
     executeDDL("create_lineitem_large_ddl.sql", "lineitem_large");
     executeDDL("create_customer_large_ddl.sql", "customer_large");
+    executeDDL("create_orders_large_ddl.sql", "orders_large");
   }
 
   @Test
@@ -123,6 +120,22 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testLeftOuterJoin1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoin2() throws Exception {
+    // large, large, small, small
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoin3() throws Exception {
+    // large, large, small, large, small, small
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -391,7 +404,6 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testBroadcastPartitionTable() throws Exception {
-    // https://issues.apache.org/jira/browse/TAJO-839
     // If all tables participate in the BROADCAST JOIN, there is some missing data.
     executeDDL("customer_partition_ddl.sql", null);
     ResultSet res = executeFile("insert_into_customer_partition.sql");
@@ -425,6 +437,71 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     executeString("DROP TABLE customer_broad_parts PURGE");
     executeString("DROP TABLE nation_multifile PURGE");
     executeString("DROP TABLE orders_multifile PURGE");
+  }
+
+  @Test
+  public final void testBroadcastMultiColumnPartitionTable() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (col1 int4, col2 float4) partition by column(col3 text, col4 text) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select o_orderkey, o_totalprice, substr(o_orderdate, 6, 2), substr(o_orderdate, 1, 4) from orders");
+    res.close();
+
+    res = executeString(
+        "select distinct a.col3 from " + tableName + " as a " +
+            "left outer join lineitem_large b " +
+            "on a.col1 = b.l_orderkey"
+    );
+
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testCasebyCase1() throws Exception {
+    // Left outer join with a small table and a large partition table which not matched any partition path.
+    String tableName = CatalogUtil.normalizeIdentifier("largePartitionedTable");
+    testBase.execute(
+        "create table " + tableName + " (l_partkey int4, l_suppkey int4, l_linenumber int4, \n" +
+            "l_quantity float8, l_extendedprice float8, l_discount float8, l_tax float8, \n" +
+            "l_returnflag text, l_linestatus text, l_shipdate text, l_commitdate text, \n" +
+            "l_receiptdate text, l_shipinstruct text, l_shipmode text, l_comment text) \n" +
+            "partition by column(l_orderkey int4) ").close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    executeString("insert overwrite into " + tableName +
+        " select l_partkey, l_suppkey, l_linenumber, \n" +
+        " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
+        " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
+        " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem_large");
+
+    ResultSet res = executeString(
+        "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
+            "left outer join " + tableName + " b " +
+            "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000"
+    );
+
+    String expected = "key1,key2\n" +
+        "-------------------------------\n" +
+        "1,null\n" +
+        "1,null\n" +
+        "2,null\n" +
+        "3,null\n" +
+        "3,null\n";
+
+    try {
+      assertEquals(expected, resultSetToString(res));
+    } finally {
+      cleanupQuery(res);
+    }
   }
 
   static interface TupleCreator {

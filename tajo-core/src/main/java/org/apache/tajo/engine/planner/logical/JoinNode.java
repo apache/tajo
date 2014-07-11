@@ -38,8 +38,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private EvalNode joinQual;
   @Expose private Target[] targets;
 
-  @Expose private boolean candidateBroadcast = false;
-  @Expose private List<LogicalNode> broadcastTargets = new ArrayList<LogicalNode>();
+  // transition states
+  private boolean candidateBroadcast = false;
+  private List<LogicalNode> broadcastCandidateTargets = new ArrayList<LogicalNode>();
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);
@@ -59,12 +60,8 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     this.candidateBroadcast = candidateBroadcast;
   }
 
-  public List<LogicalNode> getBroadcastTargets() {
-    return broadcastTargets;
-  }
-
-  public void setBroadcastTargets(List<LogicalNode> broadcastTargets) {
-    this.broadcastTargets = broadcastTargets;
+  public List<LogicalNode> getBroadcastCandidateTargets() {
+    return broadcastCandidateTargets;
   }
 
   public JoinType getJoinType() {

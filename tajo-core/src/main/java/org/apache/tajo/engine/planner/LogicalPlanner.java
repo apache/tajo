@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -44,6 +45,7 @@ import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
@@ -118,6 +120,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PreprocessContext preProcessorCtx = new PreprocessContext(session, plan, rootBlock);
     preprocessor.visit(preProcessorCtx, new Stack<Expr>(), expr);
+    plan.resetGeneratedId();
 
     PlanContext context = new PlanContext(session, plan, plan.getRootBlock(), debug);
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
@@ -197,7 +200,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     String [] referenceNames;
     // in prephase, insert all target list into NamedExprManagers.
     // Then it gets reference names, each of which points an expression in target list.
-    referenceNames = doProjectionPrephase(context, projection);
+    Pair<String [], ExprNormalizer.WindowSpecReferences []> referencesPair = doProjectionPrephase(context, projection);
+    referenceNames = referencesPair.getFirst();
 
     ////////////////////////////////////////////////////////
     // Visit and Build Child Plan
@@ -208,6 +212,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // check if it is implicit aggregation. If so, it inserts group-by node to its child.
     if (block.isAggregationRequired()) {
       child = insertGroupbyNode(context, child, stack);
+    }
+
+    if (block.hasWindowSpecs()) {
+      LogicalNode windowAggNode =
+          insertWindowAggNode(context, child, stack, referenceNames, referencesPair.getSecond());
+      if (windowAggNode != null) {
+        child = windowAggNode;
+      }
     }
     stack.pop();
     ////////////////////////////////////////////////////////
@@ -275,30 +287,73 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     projectionNode.setInSchema(dupRemoval.getOutSchema());
   }
 
-  private String [] doProjectionPrephase(PlanContext context, Projection projection) throws PlanningException {
+  private Pair<String [], ExprNormalizer.WindowSpecReferences []> doProjectionPrephase(PlanContext context,
+                                                                                    Projection projection)
+      throws PlanningException {
+
     QueryBlock block = context.queryBlock;
 
     int finalTargetNum = projection.size();
     String [] referenceNames = new String[finalTargetNum];
     ExprNormalizedResult [] normalizedExprList = new ExprNormalizedResult[finalTargetNum];
-    NamedExpr namedExpr;
-    for (int i = 0; i < finalTargetNum; i++) {
-      namedExpr = projection.getNamedExprs()[i];
 
-      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
-        block.setAggregationRequire();
+    List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = TUtil.newList();
+
+    List<Integer> targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
+      @Override
+      public boolean isMatch(Expr expr) {
+        return ExprFinder.finds(expr, OpType.WindowFunction).size() == 0;
       }
-      // dissect an expression into multiple parts (at most dissected into three parts)
-      normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
-    }
+    });
 
     // Note: Why separate normalization and add(Named)Expr?
     //
     // ExprNormalizer internally makes use of the named exprs in NamedExprsManager.
     // If we don't separate normalization work and addExprWithName, addExprWithName will find named exprs evaluated
     // the same logical node. It will cause impossible evaluation in physical executors.
-    for (int i = 0; i < finalTargetNum; i++) {
-      namedExpr = projection.getNamedExprs()[i];
+    addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
+
+    targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
+      @Override
+      public boolean isMatch(Expr expr) {
+        return ExprFinder.finds(expr, OpType.WindowFunction).size() > 0;
+      }
+    });
+    addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
+
+    return new Pair<String[], ExprNormalizer.WindowSpecReferences []>(referenceNames,
+        windowSpecReferencesList.toArray(new ExprNormalizer.WindowSpecReferences[windowSpecReferencesList.size()]));
+  }
+
+  private interface Matcher {
+    public boolean isMatch(Expr expr);
+  }
+
+  public List<Integer> normalize(PlanContext context, Projection projection, ExprNormalizedResult [] normalizedExprList,
+                                 Matcher matcher) throws PlanningException {
+    List<Integer> targetIds = new ArrayList<Integer>();
+    for (int i = 0; i < projection.size(); i++) {
+      NamedExpr namedExpr = projection.getNamedExprs()[i];
+
+      if (PlannerUtil.existsAggregationFunction(namedExpr)) {
+        context.queryBlock.setAggregationRequire();
+      }
+
+      if (matcher.isMatch(namedExpr.getExpr())) {
+        // dissect an expression into multiple parts (at most dissected into three parts)
+        normalizedExprList[i] = normalizer.normalize(context, namedExpr.getExpr());
+        targetIds.add(i);
+      }
+    }
+
+    return targetIds;
+  }
+
+  private void addNamedExprs(QueryBlock block, String [] referenceNames, ExprNormalizedResult [] normalizedExprList,
+                             List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList, Projection projection,
+                             List<Integer> targetIds) throws PlanningException {
+    for (int i : targetIds) {
+      NamedExpr namedExpr = projection.getNamedExprs()[i];
       // Get all projecting references
       if (namedExpr.hasAlias()) {
         NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
@@ -310,9 +365,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
-    }
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
 
-    return referenceNames;
+      windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
+    }
   }
 
   /**
@@ -360,61 +416,243 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
+  /**
+   * It checks if all targets of Projectable plan node can be evaluated from the child node.
+   * It can avoid potential errors which possibly occur in physical operators.
+   *
+   * @param block QueryBlock which includes the Projectable node
+   * @param projectable Projectable node to be valid
+   * @throws PlanningException
+   */
   public static void verifyProjectedFields(QueryBlock block, Projectable projectable) throws PlanningException {
-    if (projectable instanceof ProjectionNode && block.hasNode(NodeType.GROUP_BY)) {
-      for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-        for (Column c : columns) {
-          if (!projectable.getInSchema().contains(c)) {
-            throw new PlanningException(c.getQualifiedName()
-                + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
-                + projectable.getPID() + ")" );
-          }
-        }
-      }
-    } else  if (projectable instanceof GroupbyNode) {
+    if (projectable instanceof GroupbyNode) {
       GroupbyNode groupbyNode = (GroupbyNode) projectable;
-      // It checks if all column references within each target can be evaluated with the input schema.
-      int groupingColumnNum = groupbyNode.getGroupingColumns().length;
-      for (int i = 0; i < groupingColumnNum; i++) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(groupbyNode.getTargets()[i].getEvalTree());
-        if (!projectable.getInSchema().containsAll(columns)) {
-          throw new PlanningException(String.format("Cannot get the field(s) \"%s\" at node (%d)",
-              TUtil.collectionToString(columns), projectable.getPID()));
-        }
-      }
-      if (groupbyNode.hasAggFunctions()) {
-        for (AggregationFunctionCallEval f : groupbyNode.getAggFunctions()) {
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(f);
-          for (Column c : columns) {
-            if (!projectable.getInSchema().contains(c)) {
-              throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                  c, projectable.getPID()));
+
+      if (!groupbyNode.isEmptyGrouping()) { // it should be targets instead of
+        int groupingKeyNum = groupbyNode.getGroupingColumns().length;
+
+        for (int i = 0; i < groupingKeyNum; i++) {
+          Target target = groupbyNode.getTargets()[i];
+          if (groupbyNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD) {
+            FieldEval grpKeyEvalNode = target.getEvalTree();
+            if (!groupbyNode.getInSchema().contains(grpKeyEvalNode.getColumnRef())) {
+              throwCannotEvaluateException(projectable, grpKeyEvalNode.getName());
             }
           }
         }
       }
+
+      if (groupbyNode.hasAggFunctions()) {
+        verifyIfEvalNodesCanBeEvaluated(projectable, groupbyNode.getAggFunctions());
+      }
+
+    } else if (projectable instanceof WindowAggNode) {
+      WindowAggNode windowAggNode = (WindowAggNode) projectable;
+
+      if (windowAggNode.hasPartitionKeys()) {
+        verifyIfColumnCanBeEvaluated(projectable.getInSchema(), projectable, windowAggNode.getPartitionKeys());
+      }
+
+      if (windowAggNode.hasAggFunctions()) {
+        verifyIfEvalNodesCanBeEvaluated(projectable, windowAggNode.getWindowFunctions());
+      }
+
+      if (windowAggNode.hasSortSpecs()) {
+        Column [] sortKeys = PlannerUtil.sortSpecsToSchema(windowAggNode.getSortSpecs()).toArray();
+        verifyIfColumnCanBeEvaluated(projectable.getInSchema(), projectable, sortKeys);
+      }
+
+      // verify targets except for function slots
+      for (int i = 0; i < windowAggNode.getTargets().length - windowAggNode.getWindowFunctions().length; i++) {
+        Target target = windowAggNode.getTargets()[i];
+        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
+        for (Column c : columns) {
+          if (!windowAggNode.getInSchema().contains(c)) {
+            throwCannotEvaluateException(projectable, c.getQualifiedName());
+          }
+        }
+      }
+
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
-      for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-        for (Column c : columns) {
-          if (!relationNode.getTableSchema().contains(c)) {
-            throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                c, projectable.getPID()));
-          }
-        }
-      }
+      verifyIfTargetsCanBeEvaluated(relationNode.getTableSchema(), (Projectable) relationNode);
+
     } else {
-      for (Target target : projectable.getTargets()) {
-        Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
-        for (Column c : columns) {
-          if (!projectable.getInSchema().contains(c)) {
-            throw new PlanningException(String.format("Cannot get the field \"%s\" at node (%d)",
-                c, projectable.getPID()));
-          }
+      verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
+    }
+  }
+
+  public static void verifyIfEvalNodesCanBeEvaluated(Projectable projectable, EvalNode[] evalNodes)
+      throws PlanningException {
+    for (EvalNode e : evalNodes) {
+      Set<Column> columns = EvalTreeUtil.findUniqueColumns(e);
+      for (Column c : columns) {
+        if (!projectable.getInSchema().contains(c)) {
+          throwCannotEvaluateException(projectable, c.getQualifiedName());
         }
       }
+    }
+  }
+
+  public static void verifyIfTargetsCanBeEvaluated(Schema baseSchema, Projectable projectable)
+      throws PlanningException {
+    for (Target target : projectable.getTargets()) {
+      Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
+      for (Column c : columns) {
+        if (!baseSchema.contains(c)) {
+          throwCannotEvaluateException(projectable, c.getQualifiedName());
+        }
+      }
+    }
+  }
+
+  public static void verifyIfColumnCanBeEvaluated(Schema baseSchema, Projectable projectable, Column [] columns)
+      throws PlanningException {
+    for (Column c : columns) {
+      if (!baseSchema.contains(c)) {
+        throwCannotEvaluateException(projectable, c.getQualifiedName());
+      }
+    }
+  }
+
+  public static void throwCannotEvaluateException(Projectable projectable, String columnName) throws PlanningException {
+    if (projectable instanceof UnaryNode && ((UnaryNode) projectable).getChild().getType() == NodeType.GROUP_BY) {
+      throw new PlanningException(columnName
+          + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
+          + projectable.getPID() + ")");
+    } else {
+      throw new PlanningException(String.format("Cannot evaluate the field \"%s\" at node (%d)",
+          columnName, projectable.getPID()));
+    }
+  }
+
+  private LogicalNode insertWindowAggNode(PlanContext context, LogicalNode child, Stack<Expr> stack,
+                                          String [] referenceNames,
+                                          ExprNormalizer.WindowSpecReferences [] windowSpecReferenceses)
+      throws PlanningException {
+    LogicalPlan plan = context.plan;
+    QueryBlock block = context.queryBlock;
+    WindowAggNode windowAggNode = context.plan.createNode(WindowAggNode.class);
+    if (child.getType() == NodeType.LIMIT) {
+      LimitNode limitNode = (LimitNode) child;
+      windowAggNode.setChild(limitNode.getChild());
+      windowAggNode.setInSchema(limitNode.getChild().getOutSchema());
+      limitNode.setChild(windowAggNode);
+    } else if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
+      windowAggNode.setChild(sortNode.getChild());
+      windowAggNode.setInSchema(sortNode.getChild().getOutSchema());
+      sortNode.setChild(windowAggNode);
+    } else {
+      windowAggNode.setChild(child);
+      windowAggNode.setInSchema(child.getOutSchema());
+    }
+
+    List<String> winFuncRefs = new ArrayList<String>();
+    List<WindowFunctionEval> winFuncs = new ArrayList<WindowFunctionEval>();
+    List<WindowSpec> rawWindowSpecs = Lists.newArrayList();
+    for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
+      NamedExpr rawTarget = it.next();
+      try {
+        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
+        if (evalNode.getType() == EvalType.WINDOW_FUNCTION) {
+          winFuncRefs.add(rawTarget.getAlias());
+          winFuncs.add((WindowFunctionEval) evalNode);
+          block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
+
+          // TODO - Later, we also consider the possibility that a window function contains only a window name.
+          rawWindowSpecs.add(((WindowFunctionExpr) (rawTarget.getExpr())).getWindowSpec());
+        }
+      } catch (VerifyException ve) {
+      }
+    }
+
+    // we only consider one window definition.
+    if (windowSpecReferenceses[0].hasPartitionKeys()) {
+      Column [] partitionKeyColumns = new Column[windowSpecReferenceses[0].getPartitionKeys().length];
+      int i = 0;
+      for (String partitionKey : windowSpecReferenceses[0].getPartitionKeys()) {
+        if (block.namedExprsMgr.isEvaluated(partitionKey)) {
+          partitionKeyColumns[i++] = block.namedExprsMgr.getTarget(partitionKey).getNamedColumn();
+        } else {
+          throw new PlanningException("Each grouping column expression must be a scalar expression.");
+        }
+      }
+      windowAggNode.setPartitionKeys(partitionKeyColumns);
+    }
+
+    SortSpec [][] sortGroups = new SortSpec[rawWindowSpecs.size()][];
+
+    for (int winSpecIdx = 0; winSpecIdx < rawWindowSpecs.size(); winSpecIdx++) {
+      WindowSpec spec = rawWindowSpecs.get(winSpecIdx);
+      if (spec.hasOrderBy()) {
+        Sort.SortSpec [] sortSpecs = spec.getSortSpecs();
+        int sortNum = sortSpecs.length;
+        String [] sortKeyRefNames = windowSpecReferenceses[winSpecIdx].getOrderKeys();
+        SortSpec [] annotatedSortSpecs = new SortSpec[sortNum];
+
+        Column column;
+        for (int i = 0; i < sortNum; i++) {
+          if (block.namedExprsMgr.isEvaluated(sortKeyRefNames[i])) {
+            column = block.namedExprsMgr.getTarget(sortKeyRefNames[i]).getNamedColumn();
+          } else {
+            throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+          }
+          annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
+        }
+
+        sortGroups[winSpecIdx] = annotatedSortSpecs;
+      } else {
+        sortGroups[winSpecIdx] = null;
+      }
+    }
+
+    for (int i = 0; i < winFuncRefs.size(); i++) {
+      WindowFunctionEval winFunc = winFuncs.get(i);
+      if (sortGroups[i] != null) {
+        winFunc.setSortSpecs(sortGroups[i]);
+      }
+    }
+
+    Target [] targets = new Target[referenceNames.length];
+    List<Integer> windowFuncIndices = Lists.newArrayList();
+    Projection projection = (Projection) stack.peek();
+    int windowFuncIdx = 0;
+    for (NamedExpr expr : projection.getNamedExprs()) {
+      if (expr.getExpr().getType() == OpType.WindowFunction) {
+        windowFuncIndices.add(windowFuncIdx);
+      }
+      windowFuncIdx++;
+    }
+    windowAggNode.setWindowFunctions(winFuncs.toArray(new WindowFunctionEval[winFuncs.size()]));
+
+    int targetIdx = 0;
+    for (int i = 0; i < referenceNames.length ; i++) {
+      if (!windowFuncIndices.contains(i)) {
+        targets[targetIdx++] = block.namedExprsMgr.getTarget(referenceNames[i]);
+      }
+    }
+    for (int i = 0; i < winFuncRefs.size(); i++) {
+      targets[targetIdx++] = block.namedExprsMgr.getTarget(winFuncRefs.get(i));
+    }
+    windowAggNode.setTargets(targets);
+    verifyProjectedFields(block, windowAggNode);
+
+    block.registerNode(windowAggNode);
+    postHook(context, stack, null, windowAggNode);
+
+    if (child.getType() == NodeType.LIMIT) {
+      LimitNode limitNode = (LimitNode) child;
+      limitNode.setInSchema(windowAggNode.getOutSchema());
+      limitNode.setOutSchema(windowAggNode.getOutSchema());
+      return null;
+    } else if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
+      sortNode.setInSchema(windowAggNode.getOutSchema());
+      sortNode.setOutSchema(windowAggNode.getOutSchema());
+      return null;
+    } else {
+      return windowAggNode;
     }
   }
 
@@ -459,6 +697,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // this inserted group-by node doesn't pass through preprocessor. So manually added.
     block.registerNode(groupbyNode);
     postHook(context, stack, null, groupbyNode);
+
+    verifyProjectedFields(block, groupbyNode);
     return groupbyNode;
   }
 
@@ -772,7 +1012,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     if (join.hasQual()) {
-      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual());
+      ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
       block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
@@ -840,8 +1080,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
-      } catch (VerifyException ve) {} catch (PlanningException e) {
-        e.printStackTrace();
+      } catch (VerifyException ve) {
+      } catch (PlanningException e) {
       }
     }
     return newlyEvaluatedExprs;
@@ -1212,13 +1452,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      ScanNode scanNode = context.plan.createNode(ScanNode.class);
-      scanNode.init(desc);
-      context.queryBlock.addRelation(scanNode);
       String [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = context.plan.resolveColumn(context.queryBlock, new ColumnReferenceExpr(targets[i]));
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
         targetColumns.addColumn(targetColumn);
       }
       insertNode.setTargetSchema(targetColumns);
@@ -1549,7 +1786,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
-  static TajoDataTypes.DataType convertDataType(DataTypeExpr dataType) {
+  public static TajoDataTypes.DataType convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
     TajoDataTypes.DataType.Builder builder = TajoDataTypes.DataType.newBuilder();
@@ -1605,7 +1842,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock block = context.queryBlock;
     CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
-    createIndexNode.setIndexName(createIndex.getIndexName());
+    if (CatalogUtil.isFQTableName(createIndex.getIndexName())) {
+      createIndexNode.setIndexName(createIndex.getIndexName());
+    } else {
+      createIndexNode.setIndexName(
+          CatalogUtil.buildFQName(context.session.getCurrentDatabase(), createIndex.getIndexName()));
+    }
     createIndexNode.setUnique(createIndex.isUnique());
     Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();
     int sortKeyNum = sortSpecs.length;
@@ -1646,10 +1888,28 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Util SECTION
   ===============================================================================================*/
 
+  public static boolean checkIfBeEvaluatedAtWindowAgg(EvalNode evalNode, WindowAggNode node) {
+    Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
+
+    if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
+      return false;
+    }
+
+    if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
+      return false;
+    }
+
+    return true;
+  }
+
   public static boolean checkIfBeEvaluatedAtGroupBy(EvalNode evalNode, GroupbyNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
+      return false;
+    }
+
+    if (EvalTreeUtil.findEvalsByType(evalNode, EvalType.WINDOW_FUNCTION).size() > 0) {
       return false;
     }
 
@@ -1664,6 +1924,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
+    if (EvalTreeUtil.findEvalsByType(evalNode, EvalType.WINDOW_FUNCTION).size() > 0) {
+      return false;
+    }
+
     if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }
@@ -1672,22 +1936,25 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // at the topmost join operator.
     // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (!checkIfCaseWhenWithOuterJoinBeEvaluated(block, evalNode, isTopMostJoin)) {
-      return false;
+    if (containsOuterJoin(block)) {
+      if (!isTopMostJoin) {
+        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
+        if (found.size() > 0) {
+          return false;
+        }
+      }
     }
 
     return true;
   }
 
-  private static boolean checkIfCaseWhenWithOuterJoinBeEvaluated(QueryBlock block, EvalNode evalNode,
-                                                                 boolean isTopMostJoin) {
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> caseWhenEvals = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
-      if (caseWhenEvals.size() > 0 && !isTopMostJoin) {
-        return false;
-      }
-    }
-    return true;
+  public static boolean isOuterJoin(JoinType joinType) {
+    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
+  }
+
+  public static boolean containsOuterJoin(QueryBlock block) {
+    return block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER) ||
+        block.containsJoinType(JoinType.FULL_OUTER);
   }
 
   /**
@@ -1701,13 +1968,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
+    // aggregation functions cannot be evaluated in scan node
+    if (EvalTreeUtil.findEvalsByType(evalNode, EvalType.WINDOW_FUNCTION).size() > 0) {
+      return false;
+    }
+
     if (columnRefs.size() > 0 && !node.getTableSchema().containsAll(columnRefs)) {
       return false;
     }
 
     // Why? - When a {case when} is used with outer join, case when must be evaluated at topmost outer join.
-    if (block.containsJoinType(JoinType.LEFT_OUTER) || block.containsJoinType(JoinType.RIGHT_OUTER)) {
-      Collection<CaseWhenEval> found = EvalTreeUtil.findEvalsByType(evalNode, EvalType.CASE);
+    if (containsOuterJoin(block)) {
+      Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
       if (found.size() > 0) {
         return false;
       }

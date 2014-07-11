@@ -23,6 +23,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class Insert extends Expr {
@@ -139,5 +140,18 @@ public class Insert extends Expr {
         TUtil.checkEquals(storageType, another.storageType) &&
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(params, another.params);
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Insert insert = (Insert) super.clone();
+    insert.overwrite = overwrite;
+    insert.tableName = tableName;
+    insert.targetColumns = targetColumns != null ? targetColumns.clone() : null;
+    insert.storageType = storageType;
+    insert.location = location;
+    insert.subquery = (Expr) subquery.clone();
+    insert.params = new HashMap<String, String>(params);
+    return insert;
   }
 }

@@ -167,9 +167,10 @@ NOT : N O T;
 NULL : N U L L;
 
 ON : O N;
-OUTER : O U T E R;
 OR : O R;
 ORDER : O R D E R;
+OUTER : O U T E R;
+OVER : O V E R;
 RIGHT : R I G H T;
 SELECT : S E L E C T;
 SOME : S O M E;
@@ -187,6 +188,7 @@ USING : U S I N G;
 WHEN : W H E N;
 WHERE : W H E R E;
 WITH : W I T H;
+WINDOW : W I N D O W;
 
 /*
 ===============================================================================
@@ -207,17 +209,21 @@ COALESCE : C O A L E S C E;
 COLUMN : C O L U M N;
 COUNT : C O U N T;
 CUBE : C U B E;
+CUME_DIST : C U M E UNDERLINE D I S T;
+CURRENT : C U R R E N T;
 
 DAY : D A Y;
 DATABASE : D A T A B A S E;
 DEC : D E C;
 DECADE : D E C A D E;
+DENSE_RANK : D E N S E UNDERLINE R A N K;
 DOW : D O W;
 DOY : D O Y;
 DROP : D R O P;
 
 EPOCH : E P O C H;
 EVERY : E V E R Y;
+EXCLUDE : E X C L U D E;
 EXISTS : E X I S T S;
 EXPLAIN : E X P L A I N;
 EXTERNAL : E X T E R N A L;
@@ -225,6 +231,7 @@ EXTRACT : E X T R A C T;
 
 FILTER : F I L T E R;
 FIRST : F I R S T;
+FOLLOWING : F O L L O W I N G;
 FORMAT : F O R M A T;
 FUSION : F U S I O N;
 
@@ -256,20 +263,28 @@ MONTH : M O N T H;
 
 NATIONAL : N A T I O N A L;
 NULLIF : N U L L I F;
+NO : N O;
 
 OVERWRITE : O V E R W R I T E;
+OTHERS: O T H E R S;
 
 PARTITION : P A R T I T I O N;
 PARTITIONS : P A R T I T I O N S;
+PERCENT_RANK : P E R C E N T UNDERLINE R A N K;
+PRECEDING : P R E C E D I N G;
 PRECISION : P R E C I S I O N;
 PURGE : P U R G E;
 
 QUARTER : Q U A R T E R;
 
 RANGE : R A N G E;
+RANK : R A N K;
 REGEXP : R E G E X P;
 RLIKE : R L I K E;
 ROLLUP : R O L L U P;
+ROW : R O W;
+ROWS : R O W S;
+ROW_NUMBER :  R O W UNDERLINE N U M B E R;
 RENAME : R E N A M E;
 
 SECOND : S E C O N D;
@@ -282,6 +297,7 @@ SUM : S U M;
 
 TABLESPACE : T A B L E S P A C E;
 THAN : T H A N;
+TIES : T I E S;
 TIMEZONE: T I M E Z O N E;
 TIMEZONE_HOUR: T I M E Z O N E UNDERLINE H O U R;
 TIMEZONE_MINUTE: T I M E Z O N E UNDERLINE M I N U T E;
@@ -289,6 +305,7 @@ TRIM : T R I M;
 TO : T O;
 TRUNCATE : T R U N C A T E;
 
+UNBOUNDED : U N B O U N D E D;
 UNKNOWN : U N K N O W N;
 
 VALUES : V A L U E S;

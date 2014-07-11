@@ -150,7 +150,7 @@ public class TajoConf extends Configuration {
     SYSTEM_CONF_PATH("tajo.system-conf.path", EMPTY_VALUE),
     SYSTEM_CONF_REPLICA_COUNT("tajo.system-conf.replica-count", 20),
 
-    INDEX_DIR("tajo.index.rootdir", "file:///tmp/tajo-${user.name}/index"),
+//    INDEX_DIR("tajo.index.rootdir", "file:///tmp/tajo-${user.name}/index"),
 
     // Tajo Master Service Addresses
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),
@@ -301,11 +301,6 @@ public class TajoConf extends Configuration {
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     //////////////////////////////////
-    // Hive Configuration
-    //////////////////////////////////
-    HIVE_QUERY_MODE("tajo.hive.query.mode", false),
-
-    //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
@@ -339,8 +334,14 @@ public class TajoConf extends Configuration {
     // FILE FORMAT
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
+    //OPTIMIZER
+    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
+
     // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false)
+    TAJO_DEBUG("tajo.debug", false),
+
+    // ONLY FOR TESTCASE
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
     ;
 
     public final String varname;

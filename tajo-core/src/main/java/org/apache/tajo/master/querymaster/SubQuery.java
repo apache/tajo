@@ -721,8 +721,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
       }
 
-      // Is this subquery the first step of join?
-      if (parent != null && parent.getScanNodes().length == 2) {
+      // We assume this execution block the first stage of join if two or more tables are included in this block,
+      if (parent != null && parent.getScanNodes().length >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer
@@ -749,6 +749,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
+        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+          LOG.warn("!!!!! TESTCASE MODE !!!!!");
+        }
         LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
 
         // The shuffle output numbers of join may be inconsistent by execution block order.
@@ -907,6 +911,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // Otherwise, it creates at least one fragments for a table, which may
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        // After calling this method, partition paths are removed from the physical plan.
         fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
       } else {
         Path inputPath = table.getPath();

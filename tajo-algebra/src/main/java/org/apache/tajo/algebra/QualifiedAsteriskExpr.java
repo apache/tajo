@@ -64,4 +64,11 @@ public class QualifiedAsteriskExpr extends Expr {
   public String toString() {
     return hasQualifier() ? qualifier + "." + ASTERISK : ASTERISK;
   }
+
+  @Override
+  public QualifiedAsteriskExpr clone() throws CloneNotSupportedException {
+    QualifiedAsteriskExpr qualifiedAsteriskExpr = (QualifiedAsteriskExpr) super.clone();
+    qualifiedAsteriskExpr.qualifier = qualifier;
+    return qualifiedAsteriskExpr;
+  }
 }

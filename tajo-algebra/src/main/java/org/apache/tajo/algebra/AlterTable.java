@@ -115,5 +115,15 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(alterTableOpType, another.alterTableOpType);
   }
 
-
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    AlterTable alter = (AlterTable) super.clone();
+    alter.tableName = tableName;
+    alter.newTableName = newTableName;
+    alter.columnName = columnName;
+    alter.newColumnName = newColumnName;
+    alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
+    alter.alterTableOpType = alterTableOpType;
+    return alter;
+  }
 }

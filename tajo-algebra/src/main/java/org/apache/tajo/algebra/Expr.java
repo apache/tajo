@@ -25,9 +25,9 @@ import org.apache.tajo.algebra.LiteralValue.LiteralType;
 
 import java.lang.reflect.Type;
 
-public abstract class Expr implements JsonSerializable {
+public abstract class Expr implements JsonSerializable, Cloneable {
+  @Expose @SerializedName("type")
   private static final String SERIALIZED_NAME_OF_OP_TYPE = "OpType";
-
   @Expose @SerializedName(SERIALIZED_NAME_OF_OP_TYPE)
   protected OpType opType;
 
@@ -83,6 +83,13 @@ public abstract class Expr implements JsonSerializable {
 
     return false;
 	}
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Expr newExpr = (Expr) super.clone();
+    newExpr.opType = opType;
+    return newExpr;
+  }
 
   @Override
   public String toString() {

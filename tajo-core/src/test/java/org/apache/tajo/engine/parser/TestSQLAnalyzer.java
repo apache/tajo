@@ -52,6 +52,14 @@ public class TestSQLAnalyzer {
     return visitor.visitSql(context);
   }
 
+  public void assertParseResult(String sqlFileName, String resultFileName) throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/TestSQLAnalyzer/" + sqlFileName);
+    String result = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/" + resultFileName);
+
+    Expr expr = parseQuery(sql);
+    assertEquals(result.trim(), expr.toJson().trim());
+  }
+
 
   @Test
   public void testSelect1() throws IOException {
@@ -478,5 +486,50 @@ public class TestSQLAnalyzer {
     for (int i = 0; i < exprs.length; i++) {
       parseExpr(exprs[i]);
     }
+  }
+
+  @Test
+  public void windowFunction1() throws IOException {
+    assertParseResult("window1.sql", "window1.result");
+  }
+
+  @Test
+  public void windowFunction2() throws IOException {
+    assertParseResult("window2.sql", "window2.result");
+  }
+
+  @Test
+  public void windowFunction3() throws IOException {
+    assertParseResult("window3.sql", "window3.result");
+  }
+
+  @Test
+  public void windowFunction4() throws IOException {
+    assertParseResult("window4.sql", "window4.result");
+  }
+
+  @Test
+  public void windowFunction5() throws IOException {
+    assertParseResult("window5.sql", "window5.result");
+  }
+
+  @Test
+  public void windowFunction6() throws IOException {
+    assertParseResult("window6.sql", "window6.result");
+  }
+
+  @Test
+  public void windowFunction7() throws IOException {
+    assertParseResult("window7.sql", "window7.result");
+  }
+
+  @Test
+  public void windowFunction8() throws IOException {
+    assertParseResult("window8.sql", "window8.result");
+  }
+
+  @Test
+  public void windowFunction9() throws IOException {
+    assertParseResult("window9.sql", "window9.result");
   }
 }

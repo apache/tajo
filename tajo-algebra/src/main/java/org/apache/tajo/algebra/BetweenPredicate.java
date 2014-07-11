@@ -75,4 +75,14 @@ public class BetweenPredicate extends Expr {
     return symmetric == another.symmetric && predicand.equals(another.predicand) && begin.equals(another.begin) &&
         end.equals(another.end);
   }
+
+  public Object clone() throws CloneNotSupportedException {
+    BetweenPredicate between = (BetweenPredicate) super.clone();
+    between.not = not;
+    between.symmetric = symmetric;
+    between.predicand = (Expr) predicand.clone();
+    between.begin = (Expr) between.clone();
+    between.end = (Expr) end.clone();
+    return between;
+  }
 }

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical.join;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.AlgebraicUtil;
@@ -31,9 +32,10 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
 import org.apache.tajo.engine.planner.logical.JoinNode;
+import org.apache.tajo.engine.planner.logical.RelationNode;
+import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 
 public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
 
@@ -58,7 +60,17 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
         String qualifier = CatalogUtil.extractQualifier(columnName);
         relationNames[0] = qualifier;
       } else {
-        throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        // search for a relation which evaluates a right term included in a join condition
+        for (RelationNode rel : block.getRelations()) {
+          if (rel.getOutSchema().contains(leftExpr)) {
+            String qualifier = rel.getCanonicalName();
+            relationNames[0] = qualifier;
+          }
+        }
+
+        if (relationNames[0] == null) { // if not found
+          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
+        }
       }
     }
 
@@ -70,47 +82,70 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
         String qualifier = CatalogUtil.extractQualifier(columnName);
         relationNames[1] = qualifier;
       } else {
-        throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
+        // search for a relation which evaluates a right term included in a join condition
+        for (RelationNode rel : block.getRelations()) {
+          if (rel.getOutSchema().contains(rightExpr)) {
+            String qualifier = rel.getCanonicalName();
+            relationNames[1] = qualifier;
+          }
+        }
+
+        if (relationNames[1] == null) { // if not found
+          throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
+        }
       }
     }
 
     return relationNames;
   }
+
   public Collection<EvalNode> addJoin(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       JoinNode joinNode) throws PlanningException {
-    Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
-    Set<EvalNode> nonJoinQuals = Sets.newHashSet();
-    for (EvalNode singleQual : cnf) {
-      if (EvalTreeUtil.isJoinQual(singleQual, true)) {
+    if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+      JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
+            joinNode.getLeftChild(), joinNode.getRightChild(), joinNode.getJoinQual());
 
-        String [] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
-        String leftExprRelName = relations[0];
-        String rightExprRelName = relations[1];
+      SortedSet<String> leftNodeRelationName =
+          new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild()));
+      SortedSet<String> rightNodeRelationName =
+          new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getRightChild()));
 
-        Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
+      addEdge(TUtil.collectionToString(leftNodeRelationName), TUtil.collectionToString(rightNodeRelationName), edge);
 
-        boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelName);
-        JoinEdge edge;
-        edge = getEdge(leftExprRelName, rightExprRelName);
+      Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();
+      allInOneCnf.add(joinNode.getJoinQual());
 
-        if (edge != null) {
-          edge.addJoinQual(singleQual);
-        } else {
-          if (isLeftExprForLeftTable) {
-            edge = new JoinEdge(joinNode.getJoinType(),
-                block.getRelation(leftExprRelName), block.getRelation(rightExprRelName), singleQual);
-            addEdge(leftExprRelName, rightExprRelName, edge);
+      return allInOneCnf;
+    } else {
+      Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
+
+      for (EvalNode singleQual : cnf) {
+        if (EvalTreeUtil.isJoinQual(singleQual, true)) {
+          String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
+          String leftExprRelName = relations[0];
+          String rightExprRelName = relations[1];
+
+          Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
+
+          boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelName);
+
+          JoinEdge edge = getEdge(leftExprRelName, rightExprRelName);
+          if (edge != null) {
+            edge.addJoinQual(singleQual);
           } else {
-            edge = new JoinEdge(joinNode.getJoinType(),
-                block.getRelation(rightExprRelName), block.getRelation(leftExprRelName), singleQual);
-            addEdge(rightExprRelName, leftExprRelName, edge);
+            if (isLeftExprForLeftTable) {
+              edge = new JoinEdge(joinNode.getJoinType(),
+                  block.getRelation(leftExprRelName), block.getRelation(rightExprRelName), singleQual);
+              addEdge(leftExprRelName, rightExprRelName, edge);
+            } else {
+              edge = new JoinEdge(joinNode.getJoinType(),
+                  block.getRelation(rightExprRelName), block.getRelation(leftExprRelName), singleQual);
+              addEdge(rightExprRelName, leftExprRelName, edge);
+            }
           }
         }
-      } else {
-        nonJoinQuals.add(singleQual);
       }
+      return cnf;
     }
-    cnf.retainAll(nonJoinQuals);
-    return cnf;
   }
 }
