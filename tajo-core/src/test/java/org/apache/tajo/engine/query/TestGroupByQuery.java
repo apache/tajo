@@ -286,7 +286,18 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     assertEquals(expected, resultSetToString(res));
 
-    // multiple distinct with expression
+  // multiple distinct with expression
+    res = executeString(
+        "select count(distinct code) + count(distinct qty) from table10"
+    );
+
+    expected = "?plus_2\n" +
+        "-------------------------------\n" +
+        "9\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+
     res = executeString(
         "select id, count(distinct code) + count(distinct qty) from table10 group by id"
     );
@@ -297,6 +308,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "2,6\n";
 
     assertEquals(expected, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE table10 PURGE").close();
   }
 
   @Test
