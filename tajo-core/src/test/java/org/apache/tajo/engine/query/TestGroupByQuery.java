@@ -149,7 +149,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testGroupByWithConstantKeys2() throws Exception {
     // select l_partkey as a, timestamp '2014-07-07 04:28:31.561' as b, '##' as c, count(*) d from lineitem
-    // group by a, b, c;
+    // group by a, b, c order by l_partkey;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
