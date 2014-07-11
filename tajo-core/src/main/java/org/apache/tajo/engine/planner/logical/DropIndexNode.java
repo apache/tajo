@@ -27,7 +27,7 @@ public class DropIndexNode extends LogicalNode implements Cloneable {
   @Expose private String indexName;
   @Expose private boolean ifExists;
 
-  protected DropIndexNode(int pid) {
+  public DropIndexNode(int pid) {
     super(pid, NodeType.DROP_INDEX);
   }
 

@@ -1878,6 +1878,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   @Override
+  public LogicalNode visitDropIndex(PlanContext context, Stack<Expr> stack, DropIndex dropIndex) {
+    DropIndexNode dropIndexNode = context.queryBlock.getNodeFromExpr(dropIndex);
+    dropIndexNode.init(dropIndex.getIndexName(), dropIndex.isIfExists());
+    return dropIndexNode;
+  }
+
+  @Override
   public LogicalNode visitTruncateTable(PlanContext context, Stack<Expr> stack, TruncateTable truncateTable)
       throws PlanningException {
     TruncateTableNode truncateTableNode = context.queryBlock.getNodeFromExpr(truncateTable);

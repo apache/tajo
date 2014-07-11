@@ -69,6 +69,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
 
     TajoConf conf = context.getConf();
 
+    // assume that this exec builds an index for only one fragment
     String[] splits = logicalPlan.getIndexName().split("\\.");
     Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), splits[0] + "/" + splits[1] + "/" +
         context.getUniqueKeyFromFragments());

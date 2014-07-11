@@ -400,6 +400,10 @@ public class QueryTestCaseBase {
     assertTrue(!client.existTable(tableName));
   }
 
+  public void assertIndexNotExists(String indexName) throws ServiceException {
+    assertFalse(client.existIndex(indexName));
+  }
+
   public void assertColumnExists(String tableName,String columnName) throws ServiceException {
     TableDesc tableDesc = fetchTableMetaData(tableName);
     assertTrue(tableDesc.getSchema().containsByName(columnName));

@@ -31,6 +31,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
@@ -48,11 +49,20 @@ public class TestCreateIndex extends QueryTestCaseBase {
     assertIndexExists(indexName);
   }
 
+  private void checkIndexNotExist(String indexName) throws IOException, ServiceException {
+    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), "default/" + indexName);
+    FileSystem fs = indexPath.getFileSystem(conf);
+    assertFalse(fs.exists(indexPath));
+    assertIndexNotExists(indexName);
+  }
+
   @Test
   public final void testCreateIndex() throws Exception {
     executeQuery();
     checkIndexExist("l_orderkey_idx");
     executeString("drop index l_orderkey_idx");
+    assertFalse(client.existIndex("l_orderkey_idx"));
+    checkIndexNotExist("l_orderkey_idx");
   }
 
   @Test
@@ -60,6 +70,7 @@ public class TestCreateIndex extends QueryTestCaseBase {
     executeQuery();
     checkIndexExist("l_orderkey_partkey_idx");
     executeString("drop index l_orderkey_partkey_idx");
+    checkIndexNotExist("l_orderkey_partkey_idx");
   }
 
   @Test
@@ -67,6 +78,7 @@ public class TestCreateIndex extends QueryTestCaseBase {
     executeQuery();
     checkIndexExist("l_orderkey_partkey_lt10_idx");
     executeString("drop index l_orderkey_partkey_lt10_idx");
+    checkIndexNotExist("l_orderkey_partkey_lt10_idx");
   }
 
   @Test
@@ -74,5 +86,6 @@ public class TestCreateIndex extends QueryTestCaseBase {
     executeQuery();
     checkIndexExist("l_orderkey_100_lt10_idx");
     executeString("drop index l_orderkey_100_lt10_idx");
+    checkIndexNotExist("l_orderkey_100_lt10_idx");
   }
 }

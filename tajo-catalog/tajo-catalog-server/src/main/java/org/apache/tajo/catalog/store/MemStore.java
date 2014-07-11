@@ -370,7 +370,11 @@ public class MemStore implements CatalogStore {
       throw new AlreadyExistsIndexException(proto.getIndexName());
     }
 
-    index.put(proto.getIndexName(), proto);
+    String indexName = proto.getIndexName();
+    if (CatalogUtil.isFQTableName(indexName)) {
+      indexName = CatalogUtil.splitFQTableName(indexName)[1];
+    }
+    index.put(indexName, proto);
     // TODO
 //    indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
 //        + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
