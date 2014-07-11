@@ -82,6 +82,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-869: Sometimes, the unit test of testTaskRunnerHistory is failed.
+    (jinho)
+
     TAJO-908: Fetcher does not retry, when pull server connection was closed.
     (jinho)
  

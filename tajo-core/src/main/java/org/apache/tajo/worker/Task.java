@@ -85,7 +85,6 @@ public class Task {
   private boolean interQuery;
   private boolean killed = false;
   private boolean aborted = false;
-  private boolean stopped = false;
   private final Reporter reporter;
   private Path inputTableBaseDir;
 
@@ -411,7 +410,6 @@ public class Task {
       aborted = true;
     } finally {
       context.setProgress(1.0f);
-      stopped = true;
       taskRunnerContext.completedTasksNum.incrementAndGet();
 
       if (killed || aborted) {
@@ -466,7 +464,7 @@ public class Task {
       finishTime = System.currentTimeMillis();
       LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
           ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
-          + ", killed: " + taskRunnerContext.killedTasksNum.incrementAndGet()
+          + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
           + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
       cleanupTask();
     }
@@ -711,7 +709,7 @@ public class Task {
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {
-          while (!stop.get() && !stopped) {
+          while (!stop.get() && !context.isStopped()) {
             try {
               if(executor != null && context.getProgress() < 1.0f) {
                 float progress = executor.getProgress();
@@ -736,7 +734,7 @@ public class Task {
                 throw new RuntimeException(t);
               }
             } finally {
-              if (remainingRetries > 0) {
+              if (!context.isStopped() && remainingRetries > 0) {
                 synchronized (pingThread) {
                   try {
                     pingThread.wait(PROGRESS_INTERVAL);
