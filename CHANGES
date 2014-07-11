@@ -81,6 +81,9 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+ 
+    TAJO-913: Add some missed tests for constant value group-by keys. 
+    (hyunsik)
 
     TAJO-909: {SortBased, Col}PartitionStoreExec should not write partition 
     keys to files. (Hyoungjun Kim via hyunsik)
