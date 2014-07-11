@@ -85,6 +85,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("l_shipinstruct", Type.TEXT) // 13
         .addColumn("l_shipmode", Type.TEXT) // 14
         .addColumn("l_comment", Type.TEXT); // 15
+    lineitem.setQualifier("default");
     schemas.put(LINEITEM, lineitem);
 
     Schema customer = new Schema()
@@ -96,6 +97,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("c_acctbal", Type.FLOAT8) // 5
         .addColumn("c_mktsegment", Type.TEXT) // 6
         .addColumn("c_comment", Type.TEXT); // 7
+    customer.setQualifier("default");
     schemas.put(CUSTOMER, customer);
 
     Schema nation = new Schema()
@@ -103,6 +105,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("n_name", Type.TEXT) // 1
         .addColumn("n_regionkey", Type.INT4) // 2
         .addColumn("n_comment", Type.TEXT); // 3
+    nation.setQualifier("default");
     schemas.put(NATION, nation);
 
     Schema part = new Schema()
@@ -115,12 +118,14 @@ public class TPCH extends BenchmarkSet {
         .addColumn("p_container", Type.TEXT) // 6
         .addColumn("p_retailprice", Type.FLOAT8) // 7
         .addColumn("p_comment", Type.TEXT); // 8
+    part.setQualifier("default");
     schemas.put(PART, part);
 
     Schema region = new Schema()
         .addColumn("r_regionkey", Type.INT4) // 0
         .addColumn("r_name", Type.TEXT) // 1
         .addColumn("r_comment", Type.TEXT); // 2
+    region.setQualifier("default");
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
@@ -135,6 +140,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("o_shippriority", Type.INT4) // 7
         .addColumn("o_comment", Type.TEXT); // 8
     schemas.put(ORDERS, orders);
+    orders.setQualifier("default");
     schemas.put(EMPTY_ORDERS, orders);
 
 
@@ -154,6 +160,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("s_phone", Type.TEXT) // 4
         .addColumn("s_acctbal", Type.FLOAT8) // 5
         .addColumn("s_comment", Type.TEXT); // 6
+    supplier.setQualifier("default");
     schemas.put(SUPPLIER, supplier);
   }
 

@@ -42,6 +42,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
@@ -60,6 +61,7 @@ import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -189,8 +191,14 @@ public class GlobalEngine extends AbstractService {
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
       updateQuery(session, rootNode.getChild());
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      if (PlannerUtil.checkIfCreateIndexPlan(rootNode)) {
+        return executeInCluster(queryContext, plan, session, sql, jsonExpr, responseBuilder);
+      } else {
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+
+        return responseBuilder.build();
+      }
 
     } else if (plan.isExplain()) { // explain query
       String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
@@ -217,8 +225,10 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
 
-      // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
+      return responseBuilder.build();
+
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
+      // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       TableDesc desc = scanNode.getTableDesc();
       if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
@@ -233,8 +243,10 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
 
-      // NonFromQuery indicates a form of 'select a, x+y;'
+      return responseBuilder.build();
+
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
+      // NonFromQuery indicates a form of 'select a, x+y;'
       Target [] targets = plan.getRootBlock().getRawTargets();
       if (targets == null) {
         throw new PlanningException("No targets");
@@ -262,32 +274,40 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       }
+      return responseBuilder.build();
+
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
-      hookManager.doHooks(queryContext, plan);
-
-      QueryJobManager queryJobManager = this.context.getQueryJobManager();
-      QueryInfo queryInfo;
-
-      queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
-
-      if(queryInfo == null) {
-        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
-        responseBuilder.setErrorMessage("Fail starting QueryMaster.");
-      } else {
-        responseBuilder.setIsForwarded(true);
-        responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-        if(queryInfo.getQueryMasterHost() != null) {
-          responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
-        }
-        responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-        LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
-      }
+      return executeInCluster(queryContext, plan, session, sql, jsonExpr, responseBuilder);
     }
-    SubmitQueryResponse response = responseBuilder.build();
-    return response;
+  }
+
+  private SubmitQueryResponse executeInCluster(QueryContext queryContext, LogicalPlan plan, Session session, String sql, String jsonExpr,
+                                               SubmitQueryResponse.Builder responseBuilder)
+      throws Exception {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    hookManager.doHooks(queryContext, plan);
+
+    QueryJobManager queryJobManager = this.context.getQueryJobManager();
+    QueryInfo queryInfo;
+
+    queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
+
+    if(queryInfo == null) {
+      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+      responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+    } else {
+      responseBuilder.setIsForwarded(true);
+      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      if(queryInfo.getQueryMasterHost() != null) {
+        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+      }
+      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
+      LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    }
+    return responseBuilder.build();
   }
 
   private void insertNonFromQuery(QueryContext queryContext, InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
@@ -452,6 +472,10 @@ public class GlobalEngine extends AbstractService {
       case CREATE_INDEX:
         CreateIndexNode createIndexNode = (CreateIndexNode) root;
         createIndex(session, createIndexNode);
+        return true;
+      case DROP_INDEX:
+        DropIndexNode dropIndexNode = (DropIndexNode) root;
+        dropIndex(session, dropIndexNode);
         return true;
 
       default:
@@ -664,8 +688,10 @@ public class GlobalEngine extends AbstractService {
       String tableName = scanNode.getTableName();
       String predicate = scanNode.hasQual() ? scanNode.getQual().toJson() : null;
       // extract index keys
-      List<IndexKey> indexKeys;
-
+      List<IndexKey> indexKeys = TUtil.newList();
+      for (SortSpec eachKey : createIndexNode.getSortSpecs()) {
+        indexKeys.add(new IndexKey(eachKey.getSortKey().toJson(), eachKey.isAscending(), eachKey.isNullFirst()));
+      }
 
       IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), dbName, tableName, createIndexNode.getIndexType(),
           indexKeys, createIndexNode.isUnique(), createIndexNode.isClustered(), predicate);
@@ -676,22 +702,35 @@ public class GlobalEngine extends AbstractService {
   /**
    * Drop the specified index.
    * @param session user session
-   * @param dropIndexNode the root of logical plan
+   * @param indexName index name
+   * @param ifExists if exists
    */
-  private void dropIndex(final Session session, final DropIndexNode dropIndexNode) {
+  public void dropIndex(final Session session, String indexName, boolean ifExists) {
     final CatalogService catalog = context.getCatalog();
     final String dbName = session.getCurrentDatabase();
 
-    boolean exists = catalog.existIndexByName(dbName, dropIndexNode.getIndexName());
+    boolean exists = catalog.existIndexByName(dbName, indexName);
     if (!exists) {
-      if (dropIndexNode.isIfExists()) {
-        LOG.info("index \"" + dropIndexNode.getIndexName() + "\" does not exist." );
+      if (ifExists) {
+        LOG.info("index \"" + indexName + "\" does not exist." );
       } else {
-        throw new NoSuchIndexException(dropIndexNode.getIndexName());
+        throw new NoSuchIndexException(indexName);
       }
     } else {
-      catalog.dropIndex(dbName, dropIndexNode.getIndexName());
+      Path indexPath = new Path(context.getConf().getVar(ConfVars.WAREHOUSE_DIR), dbName + "/" + indexName);
+      try {
+        FileSystem fs = indexPath.getFileSystem(context.getConf());
+        fs.delete(indexPath, true);
+      } catch (IOException e) {
+        throw new InternalError(e.getMessage());
+      }
+
+      catalog.dropIndex(dbName, indexName);
     }
+  }
+
+  private void dropIndex(final Session session, final DropIndexNode dropIndexNode) {
+    dropIndex(session, dropIndexNode.getIndexName(), dropIndexNode.isIfExists());
   }
 
   private boolean existColumnName(String tableName, String columnName) {

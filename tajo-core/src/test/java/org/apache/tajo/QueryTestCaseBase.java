@@ -382,6 +382,16 @@ public class QueryTestCaseBase {
   }
 
   /**
+   * Assert that the index exists.
+   *
+   * @param indexName The index name to be checked. This name is case sensitive.
+   * @throws ServiceException
+   */
+  public void assertIndexExists(String indexName) throws ServiceException {
+    assertTrue(client.existIndex(indexName));
+  }
+
+  /**
    * Assert that the table does not exist.
    *
    * @param tableName The table name to be checked. This name is case sensitive.

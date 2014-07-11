@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
@@ -29,7 +30,8 @@ import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
 public class TestCreateIndex extends QueryTestCaseBase {
@@ -38,35 +40,39 @@ public class TestCreateIndex extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
-  private static void assertIndexExist(String indexName) throws IOException {
+  private void checkIndexExist(String indexName) throws IOException, ServiceException {
     Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), "default/" + indexName);
     FileSystem fs = indexPath.getFileSystem(conf);
     assertTrue(fs.exists(indexPath));
     assertEquals(2, fs.listStatus(indexPath).length);
-    fs.deleteOnExit(indexPath);
+    assertIndexExists(indexName);
   }
 
   @Test
   public final void testCreateIndex() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_idx");
+    checkIndexExist("l_orderkey_idx");
+    executeString("drop index l_orderkey_idx");
   }
 
   @Test
   public final void testCreateIndexOnMultiAttrs() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_idx");
+    checkIndexExist("l_orderkey_partkey_idx");
+    executeString("drop index l_orderkey_partkey_idx");
   }
 
   @Test
   public final void testCreateIndexWithCondition() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_lt10_idx");
+    checkIndexExist("l_orderkey_partkey_lt10_idx");
+    executeString("drop index l_orderkey_partkey_lt10_idx");
   }
 
   @Test
   public final void testCreateIndexOnExpression() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_100_lt10_idx");
+    checkIndexExist("l_orderkey_100_lt10_idx");
+    executeString("drop index l_orderkey_100_lt10_idx");
   }
 }

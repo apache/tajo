@@ -120,6 +120,8 @@ public class MemStore implements CatalogStore {
     }
 
     databases.put(databaseName, new HashMap<String, CatalogProtos.TableDescProto>());
+    indexes.put(databaseName, new HashMap<String, IndexDescProto>());
+    indexesByColumn.put(databaseName, new HashMap<String, IndexDescProto>());
   }
 
   @Override

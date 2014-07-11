@@ -1872,6 +1872,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createIndexNode.setOptions(keyValueSet);
     }
 
+    createIndexNode.setInSchema(child.getOutSchema());
     createIndexNode.setChild(child);
     return createIndexNode;
   }
