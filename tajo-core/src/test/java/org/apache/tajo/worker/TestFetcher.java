@@ -138,7 +138,7 @@ public class TestFetcher {
   }
 
   @Test
-  public void testEmptyFileTask() throws Exception {
+  public void testNoContentFetch() throws Exception {
 
     QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
     String sid = "1";
@@ -174,7 +174,10 @@ public class TestFetcher {
     String partId = "1";
 
     String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
-    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "x", ta);
+
+    //TajoPullServerService will be throws BAD_REQUEST by Unknown shuffle type
+    String shuffleType = "x";
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, shuffleType, ta);
 
     FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
 
