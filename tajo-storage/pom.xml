@@ -34,8 +34,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <parquet.version>1.4.2</parquet.version>
-    <parquet.format.version>2.0.0</parquet.format.version>
+    <parquet.version>1.5.0</parquet.version>
+    <parquet.format.version>2.1.0</parquet.format.version>
   </properties>
 
   <repositories>
