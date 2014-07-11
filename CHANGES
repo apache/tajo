@@ -82,7 +82,10 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
  
-    TAJO-852: Integration test using HCatalog as a catalog store is failed. 
+    TAJO-926: Join condition including column references of a row-preserving
+    table in left outer join causes incorrect result. (hyunsik)
+
+    TAJO-852: Integration test using HCatalog as a catalog store is failed.
     (jinho)
 
     TAJO-934: Multiple DISTINCT returns null grouping key value.

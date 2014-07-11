@@ -834,7 +834,9 @@ public class ProjectionPushDownRule extends
     // If one of both terms in a binary operator is a complex expression, the binary operator will require
     // multiple phases. In this case, join cannot evaluate a binary operator.
     // So, we should prevent dividing the binary operator into more subexpressions.
-    if (term.getType() != EvalType.FIELD && !(term instanceof BinaryEval)) {
+    if (term.getType() != EvalType.FIELD &&
+        !(term instanceof BinaryEval) &&
+        !(term.getType() == EvalType.ROW_CONSTANT)) {
       String refName = ctx.addExpr(term);
       EvalTreeUtil.replace(cnf, term, new FieldEval(refName, term.getValueType()));
     }
