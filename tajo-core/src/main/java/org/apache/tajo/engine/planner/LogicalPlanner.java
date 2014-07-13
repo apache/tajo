@@ -51,6 +51,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
+import static org.apache.tajo.engine.planner.ExprAnnotator.ColumnResolvingLevel;
 import static org.apache.tajo.engine.planner.ExprNormalizer.ExprNormalizedResult;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 import static org.apache.tajo.engine.planner.LogicalPlanPreprocessor.PreprocessContext;
@@ -407,7 +408,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         targets[i] = block.namedExprsMgr.getTarget(referenceNames[i]);
       } else {
         NamedExpr namedExpr = block.namedExprsMgr.getNamedExpr(referenceNames[i]);
-        EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
+        EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr(),
+            ColumnResolvingLevel.RELS_WITHIN_CURRENT_BLOCK_INCLUDING_SUBEXPRS);
         block.namedExprsMgr.markAsEvaluated(referenceNames[i], evalNode);
         targets[i] = new Target(evalNode, referenceNames[i]);
       }
@@ -1192,8 +1194,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Set<String> newlyEvaluatedExprsReferences = new LinkedHashSet<String>();
     for (Iterator<NamedExpr> iterator = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); iterator.hasNext();) {
       NamedExpr rawTarget = iterator.next();
+//      if (rawTarget.getExpr().getType() == OpType.Column) {
+//        continue;
+//      }
       try {
-        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
+        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr(),
+            ColumnResolvingLevel.RELS_WITHIN_CURRENT_BLOCK);
         if (checkIfBeEvaluatedAtRelation(block, evalNode, scanNode)) {
           block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
           newlyEvaluatedExprsReferences.add(rawTarget.getAlias()); // newly added exr

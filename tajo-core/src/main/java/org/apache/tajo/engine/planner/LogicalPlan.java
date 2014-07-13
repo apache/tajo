@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.derby.impl.sql.compile.ColumnReference;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -32,10 +33,8 @@ import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.RelationNode;
+import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Constructor;
@@ -266,6 +265,111 @@ public class LogicalPlan {
     return queryBlockGraph;
   }
 
+  public Pair<String, String> normalizeQualifierAndCanonicalName(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
+    String qualifier;
+    String canonicalName;
+
+    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
+      qualifier = columnRef.getQualifier();
+      canonicalName = columnRef.getCanonicalName();
+    } else {
+      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
+      if (resolvedDatabaseName == null) {
+        throw new NoSuchColumnException(columnRef.getQualifier());
+      }
+      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
+      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+    }
+
+    return new Pair<String, String>(qualifier, canonicalName);
+  }
+
+  Column resolveColumnFromRelationWithinBlock(QueryBlock block, String qualifier, String canonicalName)
+      throws NoSuchColumnException {
+    RelationNode relationOp = block.getRelation(qualifier);
+
+    // if a column name is outside of this query block
+    if (relationOp == null) {
+      // TODO - nested query can only refer outer query block? or not?
+      for (QueryBlock eachBlock : queryBlocks.values()) {
+        if (eachBlock.existsRelation(qualifier)) {
+          relationOp = eachBlock.getRelation(qualifier);
+        }
+      }
+    }
+
+    // If we cannot find any relation against a qualified column name
+    if (relationOp == null) {
+      throw new NoSuchColumnException(canonicalName);
+    }
+
+    if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
+      String changedName = CatalogUtil.buildFQName(
+          relationOp.getCanonicalName(),
+          CatalogUtil.extractSimpleName(canonicalName));
+      canonicalName = changedName;
+    }
+
+    Schema schema = relationOp.getTableSchema();
+    Column column = schema.getColumn(canonicalName);
+    if (column == null) {
+      throw new NoSuchColumnException(canonicalName);
+    }
+
+    return column;
+  }
+
+  Column resolveSubExprReferences(QueryBlock block, ColumnReferenceExpr columnRef) throws NoSuchColumnException {
+    // Trying to find the column within the current block
+    if (block.currentNode != null && block.currentNode.getInSchema() != null) {
+      Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
+      if (found != null) {
+        return found;
+      } else if (block.getLatestNode() != null) {
+        found = block.getLatestNode().getOutSchema().getColumn(columnRef.getName());
+        if (found != null) {
+          return found;
+        }
+      }
+    }
+    throw new NoSuchColumnException(columnRef.getCanonicalName());
+  }
+
+  Column resolveColumnForRelsWithinCurBlock(QueryBlock block, ColumnReferenceExpr columnRef, boolean allowNoNameColumn)
+      throws PlanningException {
+    String qualifier;
+    String canonicalName;
+
+    if (allowNoNameColumn && columnRef.getCanonicalName().charAt(0) == LogicalPlan.NONAMED_COLUMN_PREFIX) {
+      return resolveSubExprReferences(block, columnRef);
+    }
+
+    if (columnRef.hasQualifier()) {
+
+      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+      qualifier = normalized.getFirst();
+      canonicalName = normalized.getSecond();
+
+      return resolveColumnFromRelationWithinBlock(block, qualifier, canonicalName);
+    } else {
+      List<Column> candidates = TUtil.newList();
+
+      // It tries to find a full qualified column name from all relations in the current block.
+      for (RelationNode rel : block.getRelations()) {
+        Column found = rel.getTableSchema().getColumn(columnRef.getName());
+        if (found != null) {
+          candidates.add(found);
+        }
+      }
+
+      if (!candidates.isEmpty()) {
+        return ensureUniqueColumn(candidates);
+      } else {
+        throw new NoSuchColumnException(columnRef.getCanonicalName());
+      }
+    }
+  }
+
   public String getNormalizedColumnName(QueryBlock block, ColumnReferenceExpr columnRef)
       throws PlanningException {
     Column found = resolveColumn(block, columnRef);
@@ -307,49 +411,17 @@ public class LogicalPlan {
   }
 
   private Column resolveColumnWithQualifier(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
-    String qualifier;
+    final String qualifier;
     String canonicalName;
-    String qualifiedName;
+    final String qualifiedName;
 
-    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
-      qualifier = columnRef.getQualifier();
-      canonicalName = columnRef.getCanonicalName();
-    } else {
-      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
-      if (resolvedDatabaseName == null) {
-        throw new NoSuchColumnException(columnRef.getQualifier());
-      }
-      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
-      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
-    }
+    Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+    qualifier = normalized.getFirst();
+    canonicalName = normalized.getSecond();
+
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 
-    RelationNode relationOp = block.getRelation(qualifier);
-
-    // if a column name is outside of this query block
-    if (relationOp == null) {
-      // TODO - nested query can only refer outer query block? or not?
-      for (QueryBlock eachBlock : queryBlocks.values()) {
-        if (eachBlock.existsRelation(qualifier)) {
-          relationOp = eachBlock.getRelation(qualifier);
-        }
-      }
-    }
-
-    // If we cannot find any relation against a qualified column name
-    if (relationOp == null) {
-      throw new NoSuchColumnException(canonicalName);
-    }
-
-    if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
-      String changedName = CatalogUtil.buildFQName(
-          relationOp.getCanonicalName(),
-          CatalogUtil.extractSimpleName(canonicalName));
-      canonicalName = changedName;
-    }
-
-    Schema schema = relationOp.getTableSchema();
-    Column column = schema.getColumn(canonicalName);
+    Column column = resolveColumnFromRelationWithinBlock(block, qualifier, canonicalName);
     if (column == null) {
       throw new NoSuchColumnException(canonicalName);
     }

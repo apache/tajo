@@ -59,6 +59,13 @@ import static org.apache.tajo.engine.planner.logical.WindowSpec.WindowStartBound
 public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, EvalNode> {
   private CatalogService catalog;
 
+  public static enum ColumnResolvingLevel {
+    RELS_WITHIN_CURRENT_BLOCK, // finds from only relations
+    RELS_WITHIN_CURRENT_BLOCK_INCLUDING_SUBEXPRS, // finds from only relations and subexprs
+    ALL_NAMES_AND_RELS_FIRST,
+    GLOBAL
+  }
+
   public ExprAnnotator(CatalogService catalog) {
     this.catalog = catalog;
   }
@@ -66,16 +73,24 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   static class Context {
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
+    ColumnResolvingLevel columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block) {
+    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnResolvingLevel colRsvLevel) {
       this.plan = plan;
       this.currentBlock = block;
+      this.columnRsvLevel = colRsvLevel;
     }
+  }
+
+  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr, ColumnResolvingLevel colRsvLevel)
+      throws PlanningException {
+    Context context = new Context(plan, block, colRsvLevel);
+    return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
   }
 
   public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr)
       throws PlanningException {
-    Context context = new Context(plan, block);
+    Context context = new Context(plan, block, ColumnResolvingLevel.GLOBAL);
     return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
   }
 
@@ -540,7 +555,21 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitColumnReference(Context ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
-    Column column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+    Column column;
+
+    switch (ctx.columnRsvLevel) {
+    case GLOBAL:
+      column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+      break;
+    case RELS_WITHIN_CURRENT_BLOCK:
+      column = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, false);
+      break;
+    case RELS_WITHIN_CURRENT_BLOCK_INCLUDING_SUBEXPRS:
+      column = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, true);
+      break;
+    default:
+      throw new PlanningException("Unsupported column resolving level: " + ctx.columnRsvLevel.name());
+    }
     return new FieldEval(column);
   }
 

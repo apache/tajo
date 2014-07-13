@@ -49,6 +49,14 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testNonQualifiedNames() throws Exception {
+    // select l_orderkey, l_partkey from lineitem;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testNonFromSelect1() throws Exception {
     // select upper('abc');
     ResultSet res = executeQuery();

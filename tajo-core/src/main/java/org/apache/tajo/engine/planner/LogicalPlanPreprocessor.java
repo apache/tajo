@@ -197,6 +197,12 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     }
 
     NamedExpr[] projectTargetExprs = expr.getNamedExprs();
+    NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
+
+    for (int i = 0; i < expr.getNamedExprs().length; i++) {
+      NamedExpr namedExpr = expr.getNamedExprs()[i];
+      normalizer.visit(ctx, new Stack<Expr>(), namedExpr.getExpr());
+    }
 
     Target [] targets;
     targets = new Target[projectTargetExprs.length];
@@ -217,6 +223,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     ProjectionNode projectionNode = ctx.plan.createNode(ProjectionNode.class);
     projectionNode.setInSchema(child.getOutSchema());
     projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
+
+    ctx.currentBlock.setSchema(projectionNode.getOutSchema());
     return projectionNode;
   }
 
@@ -448,5 +456,17 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     insertNode.setInSchema(child.getOutSchema());
     insertNode.setOutSchema(child.getOutSchema());
     return insertNode;
+  }
+
+  class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PreprocessContext, Object> {
+    @Override
+    public Expr visitColumnReference(PreprocessContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
+        throws PlanningException {
+
+      String normalized = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, true).getQualifiedName();
+      expr.setName(normalized);
+
+      return expr;
+    }
   }
 }
