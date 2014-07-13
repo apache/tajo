@@ -386,7 +386,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     for (int i = 0; i < targets.length; i++) {
       NamedExpr namedExpr = projection.getNamedExprs()[i];
-      EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
+      EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr(), NameResolveLevel.RELS_ONLY);
       if (namedExpr.hasAlias()) {
         targets[i] = new Target(evalNode, namedExpr.getAlias());
       } else {
@@ -1052,7 +1052,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Create EvalNode for a search condition.
     EvalNode joinCondition = null;
     if (join.hasQual()) {
-      EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, block, join.getQual());
+      EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, block, join.getQual(),
+          NameResolveLevel.GLOBAL);
       joinCondition = AlgebraicUtil.eliminateConstantExprs(evalNode);
     }
 
@@ -1082,7 +1083,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
       NamedExpr namedExpr = it.next();
       try {
-        evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
+        evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr(), NameResolveLevel.GLOBAL);
         if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, stack.peek().getType() != OpType.Join)) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
@@ -1152,7 +1153,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
       NamedExpr namedExpr = it.next();
       try {
-        evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr());
+        evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr(), NameResolveLevel.GLOBAL);
         if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() == 0) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
@@ -1283,7 +1284,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
       try {
-        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr());
+        EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr(),
+            NameResolveLevel.RELS_ONLY);
         if (checkIfBeEvaluatedAtRelation(block, evalNode, subQueryNode)) {
           block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
           newlyEvaluatedExprs.add(rawTarget.getAlias()); // newly added exr
