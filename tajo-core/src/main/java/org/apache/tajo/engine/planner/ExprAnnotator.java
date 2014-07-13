@@ -32,6 +32,8 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
+import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -59,13 +61,6 @@ import static org.apache.tajo.engine.planner.logical.WindowSpec.WindowStartBound
 public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, EvalNode> {
   private CatalogService catalog;
 
-  public static enum ColumnResolvingLevel {
-    RELS_WITHIN_CURRENT_BLOCK, // finds from only relations
-    RELS_WITHIN_CURRENT_BLOCK_INCLUDING_SUBEXPRS, // finds from only relations and subexprs
-    ALL_NAMES_AND_RELS_FIRST,
-    GLOBAL
-  }
-
   public ExprAnnotator(CatalogService catalog) {
     this.catalog = catalog;
   }
@@ -73,16 +68,17 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   static class Context {
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
-    ColumnResolvingLevel columnRsvLevel;
+    NameResolveLevel columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnResolvingLevel colRsvLevel) {
+    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, NameResolveLevel colRsvLevel) {
       this.plan = plan;
       this.currentBlock = block;
       this.columnRsvLevel = colRsvLevel;
     }
   }
 
-  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr, ColumnResolvingLevel colRsvLevel)
+  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr,
+                                 NameResolveLevel colRsvLevel)
       throws PlanningException {
     Context context = new Context(plan, block, colRsvLevel);
     return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
@@ -90,7 +86,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr)
       throws PlanningException {
-    Context context = new Context(plan, block, ColumnResolvingLevel.GLOBAL);
+    Context context = new Context(plan, block, NameResolveLevel.GLOBAL);
     return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
   }
 
@@ -561,11 +557,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     case GLOBAL:
       column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
       break;
-    case RELS_WITHIN_CURRENT_BLOCK:
-      column = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, false);
-      break;
-    case RELS_WITHIN_CURRENT_BLOCK_INCLUDING_SUBEXPRS:
-      column = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, true);
+    case RELS_ONLY:
+    case RELS_AND_SUBEXPRS:
+    case SUBEXPRS_AND_RELS:
+      column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel);
       break;
     default:
       throw new PlanningException("Unsupported column resolving level: " + ctx.columnRsvLevel.name());

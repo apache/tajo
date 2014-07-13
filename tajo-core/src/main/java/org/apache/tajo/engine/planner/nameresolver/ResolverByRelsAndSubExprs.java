@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,8 +20,23 @@ package org.apache.tajo.engine.planner.nameresolver;
 
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.PlanningException;
 
-public interface ColumnResolver {
-  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr col);
+public class ResolverByRelsAndSubExprs extends NameResolver {
+  @Override
+  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+      throws PlanningException {
+
+    Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
+    if (column == null) {
+      column =  resolveSubExprReferences(plan, block, columnRef);
+    }
+
+    if (column == null) {
+      throw new NoSuchColumnException(columnRef.getCanonicalName());
+    }
+    return column;
+  }
 }

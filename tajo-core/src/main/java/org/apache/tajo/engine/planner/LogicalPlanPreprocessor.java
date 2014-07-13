@@ -26,6 +26,8 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
+import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
@@ -202,6 +204,11 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
       NamedExpr namedExpr = expr.getNamedExprs()[i];
       normalizer.visit(ctx, new Stack<Expr>(), namedExpr.getExpr());
+
+      if (namedExpr.getExpr().getType() == OpType.Column && namedExpr.hasAlias()) {
+        ctx.currentBlock.addColumnAlias(((ColumnReferenceExpr)namedExpr.getExpr()).getCanonicalName(),
+            namedExpr.getAlias());
+      }
     }
 
     Target [] targets;
@@ -275,7 +282,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
 
     for (int i = 0; i < finalTargetNum; i++) {
       NamedExpr namedExpr = projection.getNamedExprs()[i];
-      EvalNode evalNode = annotator.createEvalNode(ctx.plan, ctx.currentBlock, namedExpr.getExpr());
+      EvalNode evalNode = annotator.createEvalNode(ctx.plan, ctx.currentBlock, namedExpr.getExpr(),
+          NameResolveLevel.SUBEXPRS_AND_RELS);
 
       if (namedExpr.hasAlias()) {
         targets[i] = new Target(evalNode, namedExpr.getAlias());
@@ -463,7 +471,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     public Expr visitColumnReference(PreprocessContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
         throws PlanningException {
 
-      String normalized = ctx.plan.resolveColumnForRelsWithinCurBlock(ctx.currentBlock, expr, true).getQualifiedName();
+      String normalized = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr,
+          NameResolveLevel.RELS_AND_SUBEXPRS).getQualifiedName();
       expr.setName(normalized);
 
       return expr;

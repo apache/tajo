@@ -330,6 +330,12 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   @Override
   public Expr visitColumnReference(ExprNormalizedResult ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
+
+    if (ctx.block.isAliasedName(expr.getCanonicalName())) {
+      String originalName = ctx.block.getOriginalName(expr.getCanonicalName());
+      expr.setName(originalName);
+      return expr;
+    }
     // if a column reference is not qualified, it finds and sets the qualified column name.
     if (!(expr.hasQualifier() && CatalogUtil.isFQTableName(expr.getQualifier()))) {
       if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
