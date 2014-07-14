@@ -39,7 +39,7 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
@@ -156,7 +156,7 @@ public class TestEvalTreeUtil {
 
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
     return planner.getExprAnnotator().createEvalNode(plan, plan.getRootBlock(), selection.getQual(),
-        NameResolveLevel.RELS_AND_SUBEXPRS);
+        NameResolvingMode.RELS_AND_SUBEXPRS);
   }
 
   @Test

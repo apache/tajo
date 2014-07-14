@@ -31,7 +31,7 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.RelationNode;
-import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.util.TUtil;
 
@@ -262,7 +262,7 @@ public class LogicalPlan {
   }
 
   public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
-    return NameResolver.resolve(this, block, columnRef, NameResolveLevel.LEGACY);
+    return NameResolver.resolve(this, block, columnRef, NameResolvingMode.LEGACY);
   }
 
   public String getQueryGraphAsString() {

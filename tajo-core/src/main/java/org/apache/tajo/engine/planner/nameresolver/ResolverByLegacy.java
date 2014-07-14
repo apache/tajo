@@ -85,7 +85,7 @@ public class ResolverByLegacy extends NameResolver {
       List<Column> candidates = TUtil.newList();
       if (block.getNamedExprsManager().isAliased(qualifiedName)) {
         String alias = block.getNamedExprsManager().getAlias(canonicalName);
-        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolveLevel.LEGACY);
+        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolvingMode.LEGACY);
         if (found != null) {
           candidates.add(found);
         }
