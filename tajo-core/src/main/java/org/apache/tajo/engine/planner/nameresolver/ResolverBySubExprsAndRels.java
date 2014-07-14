@@ -29,7 +29,7 @@ public class ResolverBySubExprsAndRels extends NameResolver {
   public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
       throws PlanningException {
 
-    Column column = resolveSubExprReferences(plan, block, columnRef);
+    Column column = resolveFromCurrentAndChildNode(block, columnRef);
     if (column == null) {
       column = resolveFromRelsWithinBlock(plan, block, columnRef);
     }

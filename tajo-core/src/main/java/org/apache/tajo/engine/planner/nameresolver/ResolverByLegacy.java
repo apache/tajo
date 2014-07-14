@@ -45,13 +45,13 @@ public class ResolverByLegacy extends NameResolver {
     }
   }
 
-  private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
+  private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                   ColumnReferenceExpr columnRef) throws PlanningException {
     final String qualifier;
     String canonicalName;
     final String qualifiedName;
 
-    Pair<String, String> normalized = normalizeQualifierAndCanonicalName(plan, block, columnRef);
+    Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
     qualifier = normalized.getFirst();
     canonicalName = normalized.getSecond();
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
@@ -85,7 +85,7 @@ public class ResolverByLegacy extends NameResolver {
       List<Column> candidates = TUtil.newList();
       if (block.getNamedExprsManager().isAliased(qualifiedName)) {
         String alias = block.getNamedExprsManager().getAlias(canonicalName);
-        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolveLevel.GLOBAL);
+        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolveLevel.LEGACY);
         if (found != null) {
           candidates.add(found);
         }
@@ -101,22 +101,22 @@ public class ResolverByLegacy extends NameResolver {
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                      ColumnReferenceExpr columnRef)throws PlanningException {
 
-    Column found = resolveUnqualifiedFromAllRelsInBlock(plan, block, columnRef);
+    Column found = resolveFromAllRelsInBlock(block, columnRef);
     if (found != null) {
       return found;
     }
 
-    found = resolveAliasedName(plan, block, columnRef);
+    found = resolveAliasedName(block, columnRef);
     if (found != null) {
       return found;
     }
 
-    found = resolveSubExprReferences(plan, block, columnRef);
+    found = resolveFromCurrentAndChildNode(block, columnRef);
     if (found != null) {
       return found;
     }
 
-    found = resolveFromAllRelsInAllBlocks(plan, block, columnRef);
+    found = resolveFromAllRelsInAllBlocks(plan, columnRef);
     if (found != null) {
       return found;
     }

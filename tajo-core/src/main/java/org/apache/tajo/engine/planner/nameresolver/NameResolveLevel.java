@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.planner.nameresolver;
 
 public enum NameResolveLevel {
-  RELS_ONLY, // finds from only relations
-  RELS_AND_SUBEXPRS, // finds from only relations and subexprs
-  SUBEXPRS_AND_RELS,
-  GLOBAL
+  RELS_ONLY,          // finding from only relations
+  RELS_AND_SUBEXPRS,  // finding from relations and subexprs in a place
+  SUBEXPRS_AND_RELS,  // finding from subexprs and relations in a place
+  LEGACY              // Finding in a legacy manner (globally)
 }

@@ -25,13 +25,14 @@ import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.LogicalRootNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
-import org.apache.tajo.engine.planner.nameresolver.ResolverByLegacy;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Constructor;
@@ -45,7 +46,6 @@ public class LogicalPlan {
   /** the prefix character for virtual tables */
   public static final char VIRTUAL_TABLE_PREFIX='#';
   public static final char NONAMED_COLUMN_PREFIX='?';
-  public static final char NONAMED_WINDOW_PREFIX='^';
 
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
@@ -54,7 +54,6 @@ public class LogicalPlan {
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
-  private Integer noNameWindowId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -263,7 +262,7 @@ public class LogicalPlan {
   }
 
   public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
-    return NameResolver.resolve(this, block, columnRef, NameResolveLevel.GLOBAL);
+    return NameResolver.resolve(this, block, columnRef, NameResolveLevel.LEGACY);
   }
 
   public String getQueryGraphAsString() {

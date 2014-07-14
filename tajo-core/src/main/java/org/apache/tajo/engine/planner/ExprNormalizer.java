@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
@@ -28,7 +27,6 @@ import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.Set;
 import java.util.Stack;
 
@@ -343,7 +341,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
         try {
           String normalized =
-              NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolveLevel.GLOBAL).getQualifiedName();
+              NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolveLevel.LEGACY).getQualifiedName();
           expr.setName(normalized);
         } catch (NoSuchColumnException nsc) {
         }

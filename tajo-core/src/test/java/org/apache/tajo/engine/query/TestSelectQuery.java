@@ -121,6 +121,14 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectColumnAliasExistingInRelation1() throws Exception {
+    // select (l_orderkey + l_orderkey) l_orderkey as col2 from lineitem where l_orderkey > 2;
+    ResultSet res = executeString("select (l_orderkey + l_orderkey) l_orderkey as col2 from lineitem where l_orderkey > 2");
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSelectSameConstantsWithDifferentAliases() throws Exception {
     // select l_orderkey, '20130819' as date1, '20130819' as date2 from lineitem where l_orderkey > -1;
     ResultSet res = executeQuery();

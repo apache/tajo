@@ -45,55 +45,66 @@ public abstract class NameResolver {
     resolverMap.put(NameResolveLevel.RELS_ONLY, new ResolverByRels());
     resolverMap.put(NameResolveLevel.RELS_AND_SUBEXPRS, new ResolverByRelsAndSubExprs());
     resolverMap.put(NameResolveLevel.SUBEXPRS_AND_RELS, new ResolverBySubExprsAndRels());
-    resolverMap.put(NameResolveLevel.GLOBAL, new ResolverByLegacy());
+    resolverMap.put(NameResolveLevel.LEGACY, new ResolverByLegacy());
+  }
+
+  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+  throws PlanningException;
+
+  /**
+   * Try to find the database name
+   *
+   * @param block the current block
+   * @param tableName The table name
+   * @return The found database name
+   * @throws PlanningException
+   */
+  public static String resolveDatabase(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+    List<String> found = new ArrayList<String>();
+    for (RelationNode relation : block.getRelations()) {
+      // check alias name or table name
+      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
+        // obtain the database name
+        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
+      }
+    }
+
+    if (found.size() == 0) {
+      return null;
+    } else if (found.size() > 1) {
+      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
+    }
+
+    return found.get(0);
   }
 
   public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
                         NameResolveLevel level) throws PlanningException {
     if (!resolverMap.containsKey(level)) {
-      throw new PlanningException("Unsupported name resolving level");
+      throw new PlanningException("Unsupported name resolving level: " + level.name());
     }
     return resolverMap.get(level).resolve(plan, block, column);
   }
 
-  public static Column ensureUniqueColumn(List<Column> candidates)
-      throws VerifyException {
-    if (candidates.size() == 1) {
-      return candidates.get(0);
-    } else if (candidates.size() > 2) {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (Column column : candidates) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
-        }
-        sb.append(column);
-      }
-      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
-    } else {
-      return null;
-    }
-  }
-
   /**
-   * It tries to resolve the variable name from relations within a given query block.
-   * If a variable name is qualified, it tries to resolve the name from the relation corresponding to the qualifier.
+   * Try to find a column from all relations within a given query block.
+   * If a given column reference is qualified, it tries to resolve the name
+   * from only the relation corresponding to the qualifier.
    *
-   * @param plan
-   * @param block
-   * @param columnRef
-   * @return
+   * @param plan The logical plan
+   * @param block The current query block
+   * @param columnRef The column reference to be found
+   * @return The found column
    * @throws PlanningException
    */
-  public static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
+  static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                   ColumnReferenceExpr columnRef) throws PlanningException {
     String qualifier;
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(plan, block, columnRef);
+      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 
@@ -119,13 +130,20 @@ public abstract class NameResolver {
 
       return column;
     } else {
-      return resolveUnqualifiedFromAllRelsInBlock(plan, block, columnRef);
+      return resolveFromAllRelsInBlock(block, columnRef);
     }
   }
 
-  public static Column resolveSubExprReferences(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                ColumnReferenceExpr columnRef) throws NoSuchColumnException {
-    // Trying to find the column within the current block
+  /**
+   * Try to find the column from the current node and child node. It can find subexprs generated from the optimizer.
+   *
+   * @param block The current query block
+   * @param columnRef The column reference to be found
+   * @return The found column
+   */
+  static Column resolveFromCurrentAndChildNode(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+      throws NoSuchColumnException {
+
     if (block.getCurrentNode() != null && block.getCurrentNode().getInSchema() != null) {
       Column found = block.getCurrentNode().getInSchema().getColumn(columnRef.getCanonicalName());
       if (found != null) {
@@ -140,13 +158,19 @@ public abstract class NameResolver {
     return null;
   }
 
-  public static Column resolveUnqualifiedFromAllRelsInBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                            ColumnReferenceExpr column) throws VerifyException {
+  /**
+   * It tries to find a full qualified column name from all relations in the current block.
+   *
+   * @param block The current query block
+   * @param columnRef The column reference to be found
+   * @return The found column
+   */
+  static Column resolveFromAllRelsInBlock(LogicalPlan.QueryBlock block,
+                                          ColumnReferenceExpr columnRef) throws VerifyException {
     List<Column> candidates = TUtil.newList();
 
-    // It tries to find a full qualified column name from all relations in the current block.
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getTableSchema().getColumn(column.getName());
+      Column found = rel.getTableSchema().getColumn(columnRef.getName());
       if (found != null) {
         candidates.add(found);
       }
@@ -159,11 +183,20 @@ public abstract class NameResolver {
     }
   }
 
-  public static Column resolveFromAllRelsInAllBlocks(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef) throws VerifyException {
+  /**
+   * Trying to find a column from all relations in other blocks
+   *
+   * @param plan The logical plan
+   * @param columnRef The column reference to be found
+   * @return The found column
+   */
+  static Column resolveFromAllRelsInAllBlocks(LogicalPlan plan, ColumnReferenceExpr columnRef) throws VerifyException {
+
     List<Column> candidates = Lists.newArrayList();
-    // Trying to find columns from other relations in other blocks
+
+    // from all relations of all query blocks
     for (LogicalPlan.QueryBlock eachBlock : plan.getQueryBlocks()) {
+
       for (RelationNode rel : eachBlock.getRelations()) {
         Column found = rel.getTableSchema().getColumn(columnRef.getName());
         if (found != null) {
@@ -179,10 +212,16 @@ public abstract class NameResolver {
     }
   }
 
-  public static Column resolveAliasedName(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                          ColumnReferenceExpr columnRef) throws VerifyException {
+  /**
+   * Try to find a column from the final schema of the current block.
+   *
+   * @param block The current query block
+   * @param columnRef The column reference to be found
+   * @return The found column
+   */
+  static Column resolveAliasedName(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef) throws VerifyException {
     List<Column> candidates = Lists.newArrayList();
-    // Trying to find columns from schema in current block.
+
     if (block.getSchema() != null) {
       Column found = block.getSchema().getColumn(columnRef.getName());
       if (found != null) {
@@ -197,28 +236,17 @@ public abstract class NameResolver {
     }
   }
 
-  public static String resolveDatabase(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
-    List<String> found = new ArrayList<String>();
-    for (RelationNode relation : block.getRelations()) {
-      // check alias name or table name
-      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
-          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
-        // obtain the database name
-        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
-      }
-    }
-
-    if (found.size() == 0) {
-      return null;
-    } else if (found.size() > 1) {
-      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
-    }
-
-    return found.get(0);
-  }
-
-  public static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                                        ColumnReferenceExpr columnRef)
+  /**
+   * It returns a pair of names, which the first value is ${database}.${table} and the second value
+   * is a simple column name.
+   *
+   * @param block The current block
+   * @param columnRef The column name
+   * @return A pair of normalized qualifier and column name
+   * @throws PlanningException
+   */
+  static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
+                                                                 ColumnReferenceExpr columnRef)
       throws PlanningException {
     String qualifier;
     String canonicalName;
@@ -238,6 +266,23 @@ public abstract class NameResolver {
     return new Pair<String, String>(qualifier, canonicalName);
   }
 
-  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException;
+  static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {
+    if (candidates.size() == 1) {
+      return candidates.get(0);
+    } else if (candidates.size() > 2) {
+      StringBuilder sb = new StringBuilder();
+      boolean first = true;
+      for (Column column : candidates) {
+        if (first) {
+          first = false;
+        } else {
+          sb.append(", ");
+        }
+        sb.append(column);
+      }
+      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
+    } else {
+      return null;
+    }
+  }
 }
