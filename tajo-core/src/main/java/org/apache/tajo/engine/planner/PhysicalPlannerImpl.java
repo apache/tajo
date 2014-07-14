@@ -909,8 +909,11 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
               fileFragments.addAll(TUtil.newList(sm.split(scanNode.getCanonicalName(), path)));
             }
 
-            return new PartitionMergeScanExec(ctx, sm, scanNode,
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()])));
+            FragmentProto[] fragments =
+                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
+
+            ctx.addFragments(scanNode.getCanonicalName(), fragments);
+            return new PartitionMergeScanExec(ctx, sm, scanNode, fragments);
           }
         }
       }

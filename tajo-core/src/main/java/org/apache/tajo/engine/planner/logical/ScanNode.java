@@ -231,4 +231,9 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
 
     return planStr;
   }
+
+  public static boolean isScanNode(LogicalNode node) {
+    return node.getType() == NodeType.SCAN ||
+        node.getType() == NodeType.PARTITIONS_SCAN;
+  }
 }

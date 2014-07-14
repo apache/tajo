@@ -240,12 +240,20 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
+    String expected = "N\n" +
+        "N\n" +
+        "N\n" +
+        "R\n" +
+        "R\n";
+
+    String tableData = getTableFileContents(desc.getPath());
+    assertEquals(expected, tableData);
+
     res = executeString("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
-
 
     for (int i = 0; i < 2; i++) {
       assertTrue(res.next());

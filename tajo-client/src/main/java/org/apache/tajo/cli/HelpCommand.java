@@ -18,11 +18,18 @@
 
 package org.apache.tajo.cli;
 
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.util.VersionInfo;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 
 public class HelpCommand extends TajoShellCommand {
+  private String targetDocVersion = "";
+
   public HelpCommand(TajoCli.TajoCliContext context) {
     super(context);
   }
@@ -34,7 +41,10 @@ public class HelpCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    String docVersion = getDocumentationVersion();
+    if(targetDocVersion.equalsIgnoreCase("")) {
+      targetDocVersion = getDocumentationVersion();
+    }
+
     PrintWriter sout = context.getOutput();
     sout.println();
 
@@ -71,21 +81,49 @@ public class HelpCommand extends TajoShellCommand {
     sout.println();
 
     sout.println("Documentations");
-    sout.println("  tsql guide        http://tajo.apache.org/docs/"+ docVersion +"/cli.html");
-    sout.println("  Query language    http://tajo.apache.org/docs/"+ docVersion +"/sql_language.html");
-    sout.println("  Functions         http://tajo.apache.org/docs/"+ docVersion +"/functions.html");
-    sout.println("  Backup & restore  http://tajo.apache.org/docs/"+ docVersion +"/backup_and_restore.html");
-    sout.println("  Configuration     http://tajo.apache.org/docs/"+ docVersion +"/configuration.html");
+    sout.println("  tsql guide        http://tajo.apache.org/docs/"+ targetDocVersion +"/cli.html");
+    sout.println("  Query language    http://tajo.apache.org/docs/"+ targetDocVersion +"/sql_language.html");
+    sout.println("  Functions         http://tajo.apache.org/docs/"+ targetDocVersion +"/functions.html");
+    sout.println("  Backup & restore  http://tajo.apache.org/docs/"+ targetDocVersion +"/backup_and_restore.html");
+    sout.println("  Configuration     http://tajo.apache.org/docs/"+ targetDocVersion +"/configuration.html");
     sout.println();
   }
 
   private String getDocumentationVersion() {
-    int delimiterIdx = TajoConstants.TAJO_VERSION.indexOf("-");
+    String tajoVersion = "", docVersion = "", docDefaultVersion = "current";
+    String tajoFullVersion = VersionInfo.getVersion();
+
+    int delimiterIdx = tajoFullVersion.indexOf("-");
     if (delimiterIdx > -1) {
-      return TajoConstants.TAJO_VERSION.substring(0, delimiterIdx);
+      tajoVersion =  tajoFullVersion.substring(0, delimiterIdx);
     } else {
-      return TajoConstants.TAJO_VERSION;
+      tajoVersion = tajoFullVersion;
     }
+
+    if(tajoVersion.equalsIgnoreCase("")) {
+      docVersion = docDefaultVersion;
+    } else {
+      try {
+        URL u = new URL("http://tajo.apache.org/docs/"+ tajoVersion + "/");
+        HttpURLConnection huc =  (HttpURLConnection) u.openConnection();
+        huc.setConnectTimeout(1000);
+        huc.setReadTimeout(1000);
+        huc.setRequestMethod("HEAD");
+        if(huc.getResponseCode() == HttpURLConnection.HTTP_OK) {
+          docVersion = tajoVersion;
+        } else {
+          docVersion = docDefaultVersion;
+        }
+      } catch (MalformedURLException e0) {
+        docVersion = docDefaultVersion;
+      } catch (ProtocolException e1) {
+        docVersion = docDefaultVersion;
+      } catch (IOException e2) {
+        docVersion = docDefaultVersion;
+      }
+    }
+
+    return docVersion;
   }
 
   @Override

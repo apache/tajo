@@ -23,7 +23,9 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.worker.TajoWorker;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,6 +40,11 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
   public TestQueryUnitStatusUpdate() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    conf.set(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
   }
 
   @Test
@@ -84,17 +91,24 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
     try {
       createColumnPartitionedTable();
 
+      /*
+      |-eb_1404143727281_0002_000005
+         |-eb_1404143727281_0002_000004        (order by)
+            |-eb_1404143727281_0002_000003     (join)
+               |-eb_1404143727281_0002_000002  (scan)
+               |-eb_1404143727281_0002_000001  (scan, filter)
+       */
       res = executeQuery();
 
       String actualResult = resultSetToString(res);
       System.out.println(actualResult);
 
-      // first stage's num rows = (left: 1 , right: 2 (filtered)) * 5 (tasks)
-      long[] expectedNumRows = new long[]{15, 2, 2, 2, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{45, 34, 34, 18, 109, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{45, 0, 34, 0, 109, 0, 34, 0};
+      // in/out * subquery(4)
+      long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
+      long[] expectedNumBytes = new long[]{8, 34, 20, 75, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{8, 0, 20, 0, 109, 0, 34, 0};
 
-      assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }
