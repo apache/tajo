@@ -39,6 +39,18 @@ import java.util.*;
 
 public class PlannerUtil {
 
+  public static boolean checkIfCreateIndexPlan(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    NodeType type = baseNode.getType();
+
+    return
+        baseNode.getType() == NodeType.CREATE_INDEX;
+  }
+
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
@@ -54,7 +66,9 @@ public class PlannerUtil {
             baseNode.getType() == NodeType.DROP_TABLE ||
             baseNode.getType() == NodeType.ALTER_TABLESPACE ||
             baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE;
+            baseNode.getType() == NodeType.TRUNCATE_TABLE ||
+            baseNode.getType() == NodeType.CREATE_INDEX ||
+            baseNode.getType() == NodeType.DROP_INDEX;
   }
 
   /**

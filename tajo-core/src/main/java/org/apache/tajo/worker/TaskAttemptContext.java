@@ -275,7 +275,7 @@ public class TaskAttemptContext {
     }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
-  
+
   public int hashCode() {
     return Objects.hashCode(queryId);
   }

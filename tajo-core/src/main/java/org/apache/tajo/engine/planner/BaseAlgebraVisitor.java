@@ -118,6 +118,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case AlterTable:
       current = visitAlterTable(ctx, stack, (AlterTable) expr);
       break;
+    case CreateIndex:
+      current = visitCreateIndex(ctx, stack, (CreateIndex) expr);
+      break;
+    case DropIndex:
+      current = visitDropIndex(ctx, stack, (DropIndex) expr);
+      break;
     case TruncateTable:
       current = visitTruncateTable(ctx, stack, (TruncateTable)expr);
       break;
@@ -470,6 +476,17 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     return null;
   }
 
+  @Override
+  public RESULT visitCreateIndex(CONTEXT ctx, Stack<Expr> stack, CreateIndex expr) throws PlanningException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT ctx, Stack<Expr> stack, DropIndex expr) throws PlanningException {
+    return null;
+  }
+
+  @Override
   public RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws PlanningException {
     return null;
   }

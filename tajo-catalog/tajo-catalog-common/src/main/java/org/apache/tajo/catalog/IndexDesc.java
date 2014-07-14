@@ -23,8 +23,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.TUtil;
+
+import java.util.List;
 
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private IndexDescProto.Builder builder;
@@ -32,35 +37,42 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private String indexName;            // required
   private String databaseName;         // required
   private String tableName;            // required
-  private Column column;               // required
   private IndexMethod indexMethod;     // required
+  private List<IndexKey> keys;
   private boolean isUnique = false;    // optional [default = false]
   private boolean isClustered = false; // optional [default = false]
-  private boolean isAscending = false; // optional [default = false]
+  private String predicate;            // optional
   
   public IndexDesc() {
     this.builder = IndexDescProto.newBuilder();
   }
   
-  public IndexDesc(String idxName, String databaseName, String tableName, Column column,
-                   IndexMethod type,  boolean isUnique, boolean isClustered, boolean isAscending) {
+  public IndexDesc(String idxName, String databaseName, String tableName, IndexMethod type,
+                   List<IndexKey> keys, boolean isUnique, boolean isClustered, String predicate) {
     this();
     this.indexName = idxName;
     this.databaseName = databaseName;
     this.tableName = tableName;
-    this.column = column;
     this.indexMethod = type;
+    this.keys = keys;
     this.isUnique = isUnique;
     this.isClustered = isClustered;
-    this.isAscending = isAscending;
+    this.predicate = predicate;
   }
   
   public IndexDesc(IndexDescProto proto) {
-    this(proto.getIndexName(),
-        proto.getTableIdentifier().getDatabaseName(),
-        proto.getTableIdentifier().getTableName(),
-        new Column(proto.getColumn()),
-        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(), proto.getIsAscending());
+    this();
+    this.indexName = proto.getIndexName();
+    this.databaseName = proto.getTableIdentifier().getDatabaseName();
+    this.tableName = proto.getTableIdentifier().getTableName();
+    this.indexMethod = proto.getMethod();
+    this.keys = TUtil.newList();
+    for (IndexKeyProto eachProto : proto.getKeysList()) {
+      this.keys.add(new IndexKey(eachProto));
+    }
+    this.isUnique = proto.getIsUnique();
+    this.isClustered = proto.getIsClustered();
+    this.predicate = proto.hasPredicate() ? proto.getPredicate() : null;
   }
   
   public String getIndexName() {
@@ -69,10 +81,6 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   
   public String getTableName() {
     return tableName;
-  }
-  
-  public Column getColumn() {
-    return column;
   }
   
   public IndexMethod getIndexMethod() {
@@ -87,14 +95,24 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return this.isUnique;
   }
   
-  public boolean isAscending() {
-    return this.isAscending;
+  public List<IndexKey> getKeys() {
+    return keys;
+  }
+
+  public String getPredicate() {
+    return predicate;
+  }
+
+  public boolean hasPredicate() {
+    return predicate != null;
   }
 
   @Override
   public IndexDescProto getProto() {
     if (builder == null) {
       builder = IndexDescProto.newBuilder();
+    } else {
+      builder.clear();
     }
 
     CatalogProtos.TableIdentifierProto.Builder tableIdentifierBuilder = CatalogProtos.TableIdentifierProto.newBuilder();
@@ -107,11 +125,15 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
 
     builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setIndexName(this.indexName);
-    builder.setColumn(this.column.getProto());
-    builder.setIndexMethod(indexMethod);
+    builder.setMethod(indexMethod);
     builder.setIsUnique(this.isUnique);
     builder.setIsClustered(this.isClustered);
-    builder.setIsAscending(this.isAscending);
+    for (IndexKey eachKey : keys) {
+      builder.addKeys(eachKey.getProto());
+    }
+    if (this.predicate != null) {
+      builder.setPredicate(this.predicate);
+    }
 
     return builder.build();
   }
@@ -121,35 +143,108 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
       IndexDesc other = (IndexDesc) obj;
       return getIndexName().equals(other.getIndexName())
           && getTableName().equals(other.getTableName())
-          && getColumn().equals(other.getColumn())
           && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
           && isClustered() == other.isClustered()
-          && isAscending() == other.isAscending();
+          && TUtil.checkEquals(getKeys(), other.getKeys())
+          && TUtil.checkEquals(getPredicate(), other.getPredicate());
     } else {
       return false;
     }
   }
   
   public int hashCode() {
-    return Objects.hashCode(getIndexName(), getTableName(), getColumn(),
-        getIndexMethod(), isUnique(), isClustered(), isAscending());
+    return Objects.hashCode(getIndexName(), getTableName(), getIndexMethod(),
+        isUnique(), isClustered(), getKeys(), getPredicate());
   }
 
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
     desc.indexName = indexName;
     desc.tableName = tableName;
-    desc.column = column;
     desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;
-    desc.isAscending = isAscending;
+    desc.keys = TUtil.newList();
+    for (IndexKey eachKey : keys) {
+      desc.keys.add((IndexKey) eachKey.clone());
+    }
+    desc.predicate = predicate;
     return desc;
   }
   
   public String toString() {
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     return gson.toJson(this);
+  }
+
+  public static class IndexKey implements ProtoObject<IndexKeyProto>, Cloneable {
+    private final IndexKeyProto.Builder builder;
+    private String keyJson;
+    private boolean ascending = true;
+    private boolean nullFirst = false;
+
+    public IndexKey() {
+      builder = IndexKeyProto.newBuilder();
+    }
+
+    public IndexKey(final String keyJson, final boolean ascending, final boolean nullFirst) {
+      this();
+      this.keyJson = keyJson;
+      this.ascending = ascending;
+      this.nullFirst = nullFirst;
+    }
+
+    public IndexKey(IndexKeyProto proto) {
+      this(proto.getKeyJson(), proto.getAscending(), proto.getNullFirst());
+    }
+
+    @Override
+    public IndexKeyProto getProto() {
+      if (builder != null) {
+        builder.clear();
+      }
+      builder.setKeyJson(keyJson);
+      builder.setAscending(ascending);
+      builder.setNullFirst(nullFirst);
+      return builder.build();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      IndexKey clone = (IndexKey) super.clone();
+      clone.keyJson = this.keyJson;
+      clone.ascending = this.ascending;
+      clone.nullFirst = this.nullFirst;
+      return clone;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof IndexKey) {
+        IndexKey other = (IndexKey) o;
+        return this.keyJson.equals(other.keyJson) &&
+            this.ascending == other.ascending &&
+            this.nullFirst == other.nullFirst;
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(keyJson, ascending, nullFirst);
+    }
+
+    public String getKeyJson() {
+      return keyJson;
+    }
+
+    public boolean isAscending() {
+      return ascending;
+    }
+
+    public boolean isNullFirst() {
+      return nullFirst;
+    }
   }
 }

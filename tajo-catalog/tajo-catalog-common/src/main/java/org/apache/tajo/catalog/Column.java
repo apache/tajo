@@ -145,5 +145,4 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	public String toJson() {
 		return CatalogGsonHelper.toJson(this, Column.class);
 	}
-
 }

@@ -106,13 +106,13 @@ public interface CatalogStore extends Closeable {
   
   IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException;
   
-  IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException;
+//  IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+//      throws CatalogException;
   
   boolean existIndexByName(String databaseName, String indexName) throws CatalogException;
   
-  boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException;
+//  boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+//      throws CatalogException;
 
   IndexDescProto [] getIndexes(String databaseName, String tableName) throws CatalogException;
 

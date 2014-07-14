@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.Stack;
@@ -127,6 +128,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         break;
       case ALTER_TABLE:
         current = visitAlterTable(context, plan, block, (AlterTableNode) node, stack);
+        break;
+      case CREATE_INDEX:
+        current = visitCreateIndex(context, plan, block, (CreateIndexNode) node, stack);
+        break;
+      case DROP_INDEX:
+        current = visitDropIndex(context, plan, block, (DropIndexNode) node, stack);
         break;
       case TRUNCATE_TABLE:
         current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
@@ -342,6 +349,22 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
                                  Stack<LogicalNode> stack) {
         return null;
     }
+
+  @Override
+  public RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, CreateIndexNode node,
+                                 Stack<LogicalNode> stack) throws PlanningException {
+    RESULT result = null;
+    stack.push(node);
+    result = visit(context, plan, block, node.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, DropIndexNode node,
+                        Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
 
   @Override
   public RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,

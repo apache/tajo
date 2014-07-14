@@ -382,12 +382,26 @@ public class QueryTestCaseBase {
   }
 
   /**
+   * Assert that the index exists.
+   *
+   * @param indexName The index name to be checked. This name is case sensitive.
+   * @throws ServiceException
+   */
+  public void assertIndexExists(String indexName) throws ServiceException {
+    assertTrue(client.existIndex(indexName));
+  }
+
+  /**
    * Assert that the table does not exist.
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
   public void assertTableNotExists(String tableName) throws ServiceException {
     assertTrue(!client.existTable(tableName));
+  }
+
+  public void assertIndexNotExists(String indexName) throws ServiceException {
+    assertFalse(client.existIndex(indexName));
   }
 
   public void assertColumnExists(String tableName,String columnName) throws ServiceException {
@@ -533,6 +547,9 @@ public class QueryTestCaseBase {
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }
+      } else if (expr.getType() == OpType.CreateIndex) {
+        // TODO: index existence check
+        client.executeQuery(compiled);
       } else {
         assertTrue(ddlFilePath + " is not a Create or Drop Table statement", false);
       }

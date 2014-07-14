@@ -505,6 +505,11 @@ public class ProjectionPushDownRule extends
           createTableNode.setChild(child);
           createTableNode.setInSchema(child.getOutSchema());
           break;
+        case CREATE_INDEX:
+          CreateIndexNode createIndexNode = (CreateIndexNode) parentNode;
+          createIndexNode.setChild(child);
+          createIndexNode.setInSchema(child.getOutSchema());
+          break;
         default:
           throw new PlanningException("Unexpected Parent Node: " + parentNode.getType());
         }

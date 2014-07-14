@@ -234,6 +234,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createIndexScanExec(ctx, indexScanNode);
         return leftExec;
 
+      case CREATE_INDEX:
+        CreateIndexNode createIndexNode = (CreateIndexNode) logicalNode;
+        stack.push(createIndexNode);
+        leftExec = createPlanRecursive(ctx, createIndexNode.getChild(), stack);
+        stack.pop();
+        return new StoreIndexExec(ctx, createIndexNode, leftExec);
+
       default:
         return null;
     }

@@ -762,6 +762,50 @@ public class TajoClient implements Closeable {
 
   }
 
+  /**
+   * Drop an index
+   *
+   * @param indexName The index name to be dropped. This name is case sensitive.
+   * @return True if the index is dropped successfully.
+   */
+  public boolean dropIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setValue(indexName);
+        return tajoMasterService.dropIndex(null, builder.build()).getValue();
+      }
+    }.withRetries();
+  }
+
+  /**
+   * Does the index exist?
+   *
+   * @param indexName The index name to be checked. This name is case sensitive.
+   * @return True if so.
+   */
+  public boolean existIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setValue(indexName);
+        return tajoMasterService.existIndex(null, builder.build()).getValue();
+      }
+    }.withRetries();
+  }
+
   public List<BriefQueryInfo> getRunningQueryList() throws ServiceException {
     return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
         TajoMasterClientProtocol.class, false, true) {

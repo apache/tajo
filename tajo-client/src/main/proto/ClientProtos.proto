@@ -224,3 +224,7 @@ message FunctionResponse {
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
+
+message CreateIndexRequest {
+  required IndexDescProto desc = 1;
+}
