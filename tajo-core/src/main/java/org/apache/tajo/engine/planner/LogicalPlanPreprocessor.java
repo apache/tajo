@@ -198,11 +198,12 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
       expr.setNamedExprs(rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]));
     }
 
+    // 1) Normalize field names into full qualified names
+    // 2) Register explicit column aliases to block
     NamedExpr[] projectTargetExprs = expr.getNamedExprs();
     NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
-
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
-      NamedExpr namedExpr = expr.getNamedExprs()[i];
+      NamedExpr namedExpr = projectTargetExprs[i];
       normalizer.visit(ctx, new Stack<Expr>(), namedExpr.getExpr());
 
       if (namedExpr.getExpr().getType() == OpType.Column && namedExpr.hasAlias()) {

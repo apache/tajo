@@ -1204,9 +1204,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Set<String> newlyEvaluatedExprsReferences = new LinkedHashSet<String>();
     for (Iterator<NamedExpr> iterator = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); iterator.hasNext();) {
       NamedExpr rawTarget = iterator.next();
-//      if (rawTarget.getExpr().getType() == OpType.Column) {
-//        continue;
-//      }
       try {
         EvalNode evalNode = exprAnnotator.createEvalNode(context.plan, context.queryBlock, rawTarget.getExpr(),
             NameResolveLevel.RELS_ONLY);
