@@ -304,6 +304,7 @@ public class TestExprCodeGenerator extends ExprTestBase {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);
-    testEval(schema, "table1", "  trim,  abc", "select ltrim(col1) || ltrim(col2) from table1", new String[]{"trimabc"});
+    testEval(schema, "table1", " trim, abc", "select ltrim(col1) || ltrim(col2) from table1",
+        new String[]{"trimabc"});
   }
 }

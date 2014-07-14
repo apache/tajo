@@ -698,7 +698,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
     return paramTypes;
   }
 
-  public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval func, Stack<EvalNode> stack) {
+  @Override
+  public EvalNode visitFuncCall(EvalCodeGenContext context, FunctionEval func, Stack<EvalNode> stack) {
     int paramNum = func.getArgs().length;
     context.push(paramNum);
     context.newArray(Datum.class); // new Datum[paramNum]
@@ -1021,7 +1022,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
         return constEval;
       }
 
-      public EvalNode visitFuncCall(EvalCodeGenContext context, GeneralFunctionEval function, Stack<EvalNode> stack) {
+      @Override
+      public EvalNode visitFuncCall(EvalCodeGenContext context, FunctionEval function, Stack<EvalNode> stack) {
         super.visitFuncCall(context, function, stack);
 
         if (!context.variableMap.containsKey(function)) {
