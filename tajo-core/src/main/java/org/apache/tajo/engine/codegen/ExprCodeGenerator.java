@@ -20,7 +20,6 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.apache.tajo.algebra.InPredicate;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
