@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.global;
 
+import junit.framework.TestCase;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
@@ -940,5 +941,88 @@ public class TestBroadcastJoinPlan {
     }
 
     assertEquals(3, index);
+  }
+
+  @Test
+  public final void testBroadcastCasebyCase1() throws IOException, PlanningException {
+    // large, small, large, small
+    String query = "select count(*) from large1 " +
+        "inner join small1 on large1_id = small1_id " +
+        "left outer join large2 on large1_id = large2_id " +
+        "left outer join small2 on large1_id = small2_id " ;
+
+    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    Expr expr = analyzer.parse(query);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+
+    optimizer.optimize(plan);
+
+    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+    QueryContext queryContext = new QueryContext();
+    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
+    globalPlanner.build(masterPlan);
+
+    // (((default.large1 ⋈θ default.small1) ⟕ default.large2) ⟕ default.small2)
+    /*
+    |-eb_1404871198908_0000_000007
+      |-eb_1404871198908_0000_000006
+        |-eb_1404871198908_0000_000005   (join eb3, eb3, broadcast small2)
+          |-eb_1404871198908_0000_000004 (scan large2)
+          |-eb_1404871198908_0000_000003 (scan large1, broadcast small1)
+    */
+
+    ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
+    int index = 0;
+    while (ebCursor.hasNext()) {
+      ExecutionBlock eb = ebCursor.nextBlock();
+      if(index == 0) {
+        LogicalNode node = eb.getPlan();
+        assertEquals(NodeType.JOIN, node.getType());
+        JoinNode joinNode = (JoinNode)node;
+
+        ScanNode scanNode1 = joinNode.getLeftChild();
+        ScanNode scanNode2 = joinNode.getRightChild();
+        assertEquals("default.large1", scanNode1.getCanonicalName());
+        assertEquals("default.small1", scanNode2.getCanonicalName());
+
+        Collection<String> broadcastTables = eb.getBroadcastTables();
+
+        assertEquals(1, broadcastTables.size());
+        assertTrue(broadcastTables.contains("default.small1"));
+      } else if(index == 1) {
+        LogicalNode node = eb.getPlan();
+        assertEquals(NodeType.SCAN, node.getType());
+        ScanNode scanNode = (ScanNode)node;
+
+        assertEquals("default.large2", scanNode.getCanonicalName());
+
+        Collection<String> broadcastTables = eb.getBroadcastTables();
+        TestCase.assertEquals(0, broadcastTables.size());
+      } else if(index == 2) {
+        LogicalNode node = eb.getPlan();
+        assertEquals(NodeType.GROUP_BY, node.getType());
+        JoinNode joinNode = ((GroupbyNode)node).getChild();
+
+        JoinNode joinNode2 = joinNode.getLeftChild();
+        ScanNode scanNode = joinNode.getRightChild();
+        assertEquals("default.small2", scanNode.getCanonicalName());
+
+        ScanNode scanNode2 = joinNode2.getLeftChild();
+        ScanNode scanNode3 = joinNode2.getRightChild();
+
+        assertTrue(scanNode2.getCanonicalName().indexOf("000003") >= 0);
+        assertTrue(scanNode3.getCanonicalName().indexOf("000004") >= 0);
+
+        Collection<String> broadcastTables = eb.getBroadcastTables();
+
+        TestCase.assertEquals(1, broadcastTables.size());
+        TestCase.assertTrue(broadcastTables.contains("default.small2"));
+      }
+      index++;
+    }
+
+    TestCase.assertEquals(5, index);
   }
 }

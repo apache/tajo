@@ -317,13 +317,17 @@ public class GlobalPlanner {
       }
 
       JoinNode blockJoinNode = null;
-      int numCandidateLargeTable = 0;
+      if (!leftBroadcast && !rightBroadcast) {
+        // In the case of large, large, small, small
+        // all small tables broadcast to right large table
+        numLargeTables = 1;
+      }
       for(LogicalNode eachNode: joinNode.getBroadcastCandidateTargets()) {
-        if (numCandidateLargeTable >= 2 || numLargeTables > 2) {
-          break;
-        }
         if (eachNode.getPID() == joinNode.getPID()) {
           continue;
+        }
+        if (numLargeTables >= 2) {
+          break;
         }
         JoinNode broadcastJoinNode = (JoinNode)eachNode;
         ScanNode scanNode = broadcastJoinNode.getRightChild();
@@ -334,7 +338,6 @@ public class GlobalPlanner {
               + getTableVolume(scanNode) + ") is marked a broadcasted table");
         } else {
           numLargeTables++;
-          numCandidateLargeTable++;
           if (numLargeTables < 2) {
             blockJoinNode = broadcastJoinNode;
           }
