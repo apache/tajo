@@ -60,7 +60,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
     // assume that there is only one fragment for each task
     String table = context.getInputTables().iterator().next();
     FileFragment fragment = FragmentConvertor.convert(FileFragment.class, context.getTable(table));
-    return new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), dbName + "/" + indexName + "/" +
+    return new Path(TajoConf.getWarehouseDir(conf), dbName + "/" + indexName + "/" +
         fragment.getStartKey() + "_" + fragment.getEndKey());
   }
 
