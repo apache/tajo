@@ -1,0 +1,1 @@
+select count(1) as unique_key, max(l_orderkey) as max_key from lineitem where l_orderkey = 1000;

@@ -348,9 +348,10 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
               Thread.sleep(100);
             }
           }
-
         } catch(InterruptedException ie) {
           LOG.error(ie);
+        } catch (Throwable t) {
+          LOG.error(t);
         }
       }
     }
@@ -530,7 +531,6 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
   @Override
   public void stopQueryMaster(QueryId queryId) {
-    WorkerResource resource = null;
     if(!rmContext.getQueryMasterContainer().containsKey(queryId)) {
       LOG.warn("No QueryMaster resource info for " + queryId);
       return;
@@ -538,7 +538,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
       ContainerIdProto containerId = rmContext.getQueryMasterContainer().remove(queryId);
       releaseWorkerResource(containerId);
       rmContext.getStoppedQueryIds().add(queryId);
-      LOG.info(String.format("Released QueryMaster (%s) resource:" + resource, queryId.toString()));
+      LOG.info(String.format("Released QueryMaster (%s) resource." , queryId.toString()));
     }
   }
 

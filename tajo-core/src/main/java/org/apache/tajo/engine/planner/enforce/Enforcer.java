@@ -169,6 +169,24 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
+  public void removeBroadcast(String tableName) {
+    List<EnforceProperty> enforces = properties.get(EnforceType.BROADCAST);
+    if (enforces == null) {
+      return;
+    }
+
+    EnforceProperty found = null;
+    for (EnforceProperty eachProperty: enforces) {
+      BroadcastEnforce enforce = eachProperty.getBroadcast();
+      if (enforce != null && tableName.equals(enforce.getTableName())) {
+        found = eachProperty;
+      }
+    }
+    if (found != null) {
+      enforces.remove(found);
+    }
+  }
+
   public void enforceColumnPartitionAlgorithm(int pid, ColumnPartitionAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     ColumnPartitionEnforcer.Builder enforce = ColumnPartitionEnforcer.newBuilder();
@@ -293,6 +311,8 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
       }
       break;
     case SORTED_INPUT:
+      SortedInputEnforce sortedInput = property.getSortedInput();
+      sb.append("sorted input=" + sortedInput.getTableName());
     }
 
     return sb.toString();

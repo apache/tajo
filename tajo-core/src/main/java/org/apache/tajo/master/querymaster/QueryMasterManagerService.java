@@ -217,7 +217,12 @@ public class QueryMasterManagerService extends CompositeService
                         RpcCallback<PrimitiveProtos.BoolProto> done) {
     QueryId queryId = new QueryId(request);
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
-    queryMasterTask.getQuery().handle(new QueryEvent(queryId, QueryEventType.KILL));
+    if (queryMasterTask != null) {
+      Query query = queryMasterTask.getQuery();
+      if (query != null) {
+        query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+      }
+    }
   }
 
   @Override

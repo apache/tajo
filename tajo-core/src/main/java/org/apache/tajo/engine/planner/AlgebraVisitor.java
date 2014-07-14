@@ -48,6 +48,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws PlanningException;
   RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws PlanningException;
   RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException;
+  RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws PlanningException;
 
     // Insert or Update
   RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException;
@@ -90,13 +91,14 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitSign(CONTEXT ctx, Stack<Expr> stack, SignedExpr expr) throws PlanningException;
   RESULT visitColumnReference(CONTEXT ctx, Stack<Expr> stack, ColumnReferenceExpr expr) throws PlanningException;
   RESULT visitTargetExpr(CONTEXT ctx, Stack<Expr> stack, NamedExpr expr) throws PlanningException;
-  RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException;
   RESULT visitQualifiedAsterisk(CONTEXT ctx, Stack<Expr> stack, QualifiedAsteriskExpr expr) throws PlanningException;
 
-  // set functions
-  RESULT visitCountRowsFunction(CONTEXT ctx, Stack<Expr> stack, CountRowsFunctionExpr expr) throws PlanningException;
+  // functions
+  RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException;
   RESULT visitGeneralSetFunction(CONTEXT ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
       throws PlanningException;
+  RESULT visitCountRowsFunction(CONTEXT ctx, Stack<Expr> stack, CountRowsFunctionExpr expr) throws PlanningException;
+  RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException;
 
   // Literal
   RESULT visitCastExpr(CONTEXT ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException;

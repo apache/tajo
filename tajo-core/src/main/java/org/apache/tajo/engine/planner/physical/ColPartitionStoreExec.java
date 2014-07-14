@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.InsertNode;
@@ -78,6 +79,12 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     // Find column index to name subpartition directory path
     keyNum = this.plan.getPartitionMethod().getExpressionSchema().size();
+
+    if (plan.getType() == NodeType.INSERT && keyNum > 0) {
+      Column[] removedPartitionColumns = new Column[this.outSchema.size() - keyNum];
+      System.arraycopy(this.outSchema.toArray(), 0, removedPartitionColumns, 0, removedPartitionColumns.length);
+      this.outSchema = new Schema(removedPartitionColumns);
+    }
 
     keyIds = new int[keyNum];
     keyNames = new String[keyNum];

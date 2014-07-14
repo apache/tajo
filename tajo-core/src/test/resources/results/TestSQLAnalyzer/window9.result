@@ -1,0 +1,56 @@
+{
+  "IsDistinct": false,
+  "Projections": [
+    {
+      "Expr": {
+        "ColumnName": "dt",
+        "OpType": "Column"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "ColumnName": "dt2",
+        "OpType": "Column"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "WindowSpec": {
+          "windowName": "window1"
+        },
+        "IsDistinct": false,
+        "Signature": "row_number",
+        "FuncParams": [],
+        "OpType": "WindowFunction"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "WindowSpec": {
+          "windowName": "window1"
+        },
+        "IsDistinct": false,
+        "Signature": "rank",
+        "FuncParams": [],
+        "OpType": "WindowFunction"
+      },
+      "OpType": "Target"
+    }
+  ],
+  "Expr": {
+    "Expr": {
+      "Relations": [
+        {
+          "TableName": "sum_example",
+          "OpType": "Relation"
+        }
+      ],
+      "OpType": "RelationList"
+    },
+    "OpType": "Window"
+  },
+  "OpType": "Projection"
+}

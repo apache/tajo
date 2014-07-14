@@ -125,6 +125,9 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       case AGG_FUNCTION:
         result = visitAggrFuncCall(context, (AggregationFunctionCallEval) evalNode, stack);
         break;
+      case WINDOW_FUNCTION:
+        result = visitWindowFunc(context, (WindowFunctionEval) evalNode, stack);
+      break;
 
       case SIGNED:
         result = visitSigned(context, (SignedEval) evalNode, stack);
@@ -322,6 +325,11 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   @Override
   public RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack) {
+    return visitDefaultFunctionEval(context, evalNode, stack);
+  }
+
+  @Override
+  public RESULT visitWindowFunc(CONTEXT context, WindowFunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, evalNode, stack);
   }
 

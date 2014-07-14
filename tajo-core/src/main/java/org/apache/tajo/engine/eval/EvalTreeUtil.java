@@ -248,13 +248,16 @@ public class EvalTreeUtil {
       }
 
       BinaryEval binaryEval = (BinaryEval) expr;
-      boolean isBothTermFields =
-          binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-          binaryEval.getRightExpr().getType() == EvalType.FIELD;
+      boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
+
       return joinComparator && isBothTermFields;
     } else {
       return false;
     }
+  }
+
+  static boolean isSingleColumn(EvalNode evalNode) {
+    return EvalTreeUtil.findUniqueColumns(evalNode).size() == 1;
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    
@@ -364,6 +367,12 @@ public class EvalTreeUtil {
     return (Collection<T>) finder.evalNodes;
   }
 
+  public static <T extends EvalNode> Collection<T> findOuterJoinSensitiveEvals(EvalNode evalNode) {
+    OuterJoinSensitiveEvalFinder finder = new OuterJoinSensitiveEvalFinder();
+    finder.visitChild(null, evalNode, new Stack<EvalNode>());
+    return (Collection<T>) finder.evalNodes;
+  }
+
   public static class EvalFinder extends BasicEvalNodeVisitor<Object, Object> {
     private EvalType targetType;
     List<EvalNode> evalNodes = TUtil.newList();
@@ -377,6 +386,28 @@ public class EvalTreeUtil {
       super.visitChild(context, evalNode, stack);
 
       if (evalNode.type == targetType) {
+        evalNodes.add(evalNode);
+      }
+
+      return evalNode;
+    }
+  }
+
+  public static class OuterJoinSensitiveEvalFinder extends BasicEvalNodeVisitor<Object, Object> {
+    private List<EvalNode> evalNodes = TUtil.newList();
+
+    @Override
+    public Object visitChild(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visitChild(context, evalNode, stack);
+
+      if (evalNode.type == EvalType.CASE) {
+        evalNodes.add(evalNode);
+      } else if (evalNode.type == EvalType.FUNCTION) {
+        FunctionEval functionEval = (FunctionEval)evalNode;
+        if ("coalesce".equals(functionEval.getName())) {
+          evalNodes.add(evalNode);
+        }
+      } else if (evalNode.type == EvalType.IS_NULL) {
         evalNodes.add(evalNode);
       }
 

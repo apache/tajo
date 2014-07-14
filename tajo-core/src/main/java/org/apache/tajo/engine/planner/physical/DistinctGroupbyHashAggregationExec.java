@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.function.FunctionContext;
@@ -113,6 +114,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     }
     if (first) {
       loadChildHashTable();
+
       progress = 0.5f;
       first = false;
     }
@@ -140,9 +142,12 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     //--------------------------------------------------------------------------------------
 
     List<List<Tuple>> tupleSlots = new ArrayList<List<Tuple>>();
+
+    // aggregation with single grouping key
     for (int i = 0; i < hashAggregators.length; i++) {
       if (!hashAggregators[i].iterator.hasNext()) {
         nullCount++;
+        tupleSlots.add(new ArrayList<Tuple>());
         continue;
       }
       Entry<Tuple, Map<Tuple, FunctionContext[]>> entry = hashAggregators[i].iterator.next();
@@ -156,7 +161,18 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     if (nullCount == hashAggregators.length) {
       finished = true;
       progress = 1.0f;
-      return null;
+
+      // If DistinctGroupbyHashAggregationExec does not have any rows,
+      // it should return NullDatum.
+      if (totalNumRows == 0 && groupbyNodeNum == 0) {
+        Tuple tuple = new VTuple(outputColumnNum);
+        for (int i = 0; i < tuple.size(); i++) {
+          tuple.put(i, DatumFactory.createNullDatum());
+        }
+        return tuple;
+      } else {
+        return null;
+      }
     }
 
 
@@ -187,9 +203,11 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
     */
 
+    // currentAggregatedTuples has tuples which has same group key.
     currentAggregatedTuples = new ArrayList<Tuple>();
     int listIndex = 0;
     while (true) {
+      // Each item in tuples is VTuple. So the tuples variable is two dimensions(tuple[aggregator][datum]).
       Tuple[] tuples = new Tuple[hashAggregators.length];
       for (int i = 0; i < hashAggregators.length; i++) {
         List<Tuple> aggregatedTuples = tupleSlots.get(i);
@@ -200,7 +218,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
       //merge
       Tuple mergedTuple = new VTuple(outputColumnNum);
-      int mergeTupleIndex = 0;
+      int resultColumnIdx = 0;
 
       boolean allNull = true;
       for (int i = 0; i < hashAggregators.length; i++) {
@@ -210,14 +228,22 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
         int tupleSize = hashAggregators[i].getTupleSize();
         for (int j = 0; j < tupleSize; j++) {
-          if (resultColumnIdIndexes[mergeTupleIndex] >= 0) {
-            if (tuples[i] != null) {
-              mergedTuple.put(resultColumnIdIndexes[mergeTupleIndex], tuples[i].get(j));
+          int mergeTupleIndex = resultColumnIdIndexes[resultColumnIdx];
+          if (mergeTupleIndex >= 0) {
+            if (mergeTupleIndex < distinctGroupingKey.size()) {
+              // set group key tuple
+              // Because each hashAggregator has different number of tuples,
+              // sometimes getting group key from each hashAggregator will be null value.
+              mergedTuple.put(mergeTupleIndex, distinctGroupingKey.get(mergeTupleIndex));
             } else {
-              mergedTuple.put(resultColumnIdIndexes[mergeTupleIndex], NullDatum.get());
+              if (tuples[i] != null) {
+                mergedTuple.put(mergeTupleIndex, tuples[i].get(j));
+              } else {
+                mergedTuple.put(mergeTupleIndex, NullDatum.get());
+              }
             }
           }
-          mergeTupleIndex++;
+          resultColumnIdx++;
         }
       }
 

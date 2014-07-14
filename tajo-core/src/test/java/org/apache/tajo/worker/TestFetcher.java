@@ -18,70 +18,87 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.fs.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.worker.dataserver.HttpDataServer;
-import org.apache.tajo.worker.dataserver.retriever.DataRetriever;
-import org.apache.tajo.worker.dataserver.retriever.DirectoryRetriever;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestFetcher {
   private String TEST_DATA = "target/test-data/TestFetcher";
   private String INPUT_DIR = TEST_DATA+"/in/";
   private String OUTPUT_DIR = TEST_DATA+"/out/";
+  private TajoConf conf = new TajoConf();
+  private TajoPullServerService pullServerService;
+  private ClientSocketChannelFactory channelFactory;
 
   @Before
   public void setUp() throws Exception {
     CommonTestingUtil.getTestDir(TEST_DATA);
     CommonTestingUtil.getTestDir(INPUT_DIR);
     CommonTestingUtil.getTestDir(OUTPUT_DIR);
+    conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, INPUT_DIR);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_TIMEOUT, 1);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE, 127);
+
+    pullServerService = new TajoPullServerService();
+    pullServerService.init(conf);
+    pullServerService.start();
+
+    channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
+  }
+
+  @After
+  public void tearDown(){
+    pullServerService.stop();
+    channelFactory.releaseExternalResources();
   }
 
   @Test
   public void testGet() throws IOException {
     Random rnd = new Random();
-    FileWriter writer = new FileWriter(INPUT_DIR + "data");
-    String data;
-    for (int i = 0; i < 100; i++) {
-      data = ""+rnd.nextInt();
-      writer.write(data);
-    }
-    writer.flush();
-    writer.close();
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
 
-    DataRetriever ret = new DirectoryRetriever(INPUT_DIR);
-    HttpDataServer server = new HttpDataServer(
-        NetUtils.createSocketAddr("127.0.0.1:0"), ret);
-    server.start();
-    InetSocketAddress addr = server.getBindAddress();
-    
-    URI uri = URI.create("http://127.0.0.1:"+addr.getPort() + "/data");
-    ClientSocketChannelFactory channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
-    Fetcher fetcher = new Fetcher(uri, new File(OUTPUT_DIR + "data"), channelFactory);
-    fetcher.get();
-    server.stop();
-    
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    Path inputPath = new Path(dataPath);
+    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(inputPath, true);
+    for (int i = 0; i < 100; i++) {
+      String data = ""+rnd.nextInt();
+      stream.write(data.getBytes());
+    }
+    stream.flush();
+    stream.close();
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertNotNull(fetcher.get());
+
     FileSystem fs = FileSystem.getLocal(new TajoConf());
-    FileStatus inStatus = fs.getFileStatus(new Path(INPUT_DIR, "data"));
+    FileStatus inStatus = fs.getFileStatus(inputPath);
     FileStatus outStatus = fs.getFileStatus(new Path(OUTPUT_DIR, "data"));
+
     assertEquals(inStatus.getLen(), outStatus.getLen());
+    assertEquals(TajoProtos.FetcherState.FETCH_FINISHED, fetcher.getState());
   }
 
   @Test
@@ -96,29 +113,86 @@ public class TestFetcher {
   @Test
   public void testStatus() throws Exception {
     Random rnd = new Random();
-    FileWriter writer = new FileWriter(INPUT_DIR + "data");
-    String data;
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
     for (int i = 0; i < 100; i++) {
-      data = ""+rnd.nextInt();
-      writer.write(data);
+      String data = ""+rnd.nextInt();
+      stream.write(data.getBytes());
     }
-    writer.flush();
-    writer.close();
+    stream.flush();
+    stream.close();
 
-    DataRetriever ret = new DirectoryRetriever(INPUT_DIR);
-    final HttpDataServer server = new HttpDataServer(
-        NetUtils.createSocketAddr("127.0.0.1:0"), ret);
-    server.start();
-    InetSocketAddress addr = server.getBindAddress();
-
-    URI uri = URI.create("http://127.0.0.1:"+addr.getPort() + "/data");
-    ClientSocketChannelFactory channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
-
-    final Fetcher fetcher = new Fetcher(uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
     assertEquals(TajoProtos.FetcherState.FETCH_FINISHED, fetcher.getState());
-    server.stop();
+  }
+
+  @Test
+  public void testNoContentFetch() throws Exception {
+
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    Path inputPath = new Path(dataPath);
+    if(LocalFileSystem.get(conf).exists(inputPath)){
+      LocalFileSystem.get(conf).delete(new Path(dataPath), true);
+    }
+
+    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath).getParent(), true);
+    stream.close();
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FINISHED, fetcher.getState());
+  }
+
+  @Test
+  public void testFailureStatus() throws Exception {
+    Random rnd = new Random();
+
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+
+    //TajoPullServerService will be throws BAD_REQUEST by Unknown shuffle type
+    String shuffleType = "x";
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, shuffleType, ta);
+
+    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+
+    for (int i = 0; i < 100; i++) {
+      String data = params + rnd.nextInt();
+      stream.write(data.getBytes());
+    }
+    stream.flush();
+    stream.close();
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
   }
 }

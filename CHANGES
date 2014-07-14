@@ -1,8 +1,16 @@
-Tajo Change Log
+Tajo Change Log 
 
 Release 0.9.0 - unreleased
 
-  NEW FEATURES
+  NEW FEATURES 
+
+    TAJO-774: Implement logical plan part and physical executor for window 
+    function. (hyunsik)
+
+    TAJO-847: Supporting MariaDB-based Store, which is compatible with MySQL.
+    (Jinhang Choi via jihoon)
+
+    TAJO-860: Implements TRUNCATE table. (Hyoungjun Kim via hyunsik)
 
     TAJO-849: Add Parquet storage to HCatalogStore. (jaehwa)
 
@@ -15,9 +23,27 @@ Release 0.9.0 - unreleased
 
     TAJO-791: Implements ADD_DAYS() function. (Hyoungjun Kim via hyunsik)
 
+    TAJO-762: Implements current date/time function (Hyoungjun Kim via hyunsik)
+
   IMPROVEMENT
 
-    TAJO-854: Supports INSERT INTO with UNION. (Hyoungjun Kim via jihoon)
+    TAJO-903: Some left outer join cases are not optimized as the broadcast 
+    join. (Hyoungjun Kim via hyunsik)
+
+    TAJO-911: Refactoring Mysql/Maria Catalog Store. (DaeMyung Kang via hyunsik)
+
+    TAJO-853: Refactoring FilterPushDown for OUTER JOIN.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-840: Improve query result print with counting empty table. (jaehwa)
+
+    TAJO-844: JDBC should be support getTime, getDate, and getTimestamp. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-843: implements COALESCE for BOOLEAN, DATE, TIME, TIMESTAMP. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-854: Supports INSERT INTO with UNION. (Hyoungjun Kim via jihoon) 
 
     TAJO-793: CLI should be able to exit when single query is failed.
     (Hyoungjun Kim via jinho)
@@ -56,6 +82,98 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-869: Sometimes, the unit test of testTaskRunnerHistory is failed.
+    (jinho)
+
+    TAJO-908: Fetcher does not retry, when pull server connection was closed.
+    (jinho)
+ 
+    TAJO-926: Join condition including column references of a row-preserving
+    table in left outer join causes incorrect result. (hyunsik)
+
+    TAJO-852: Integration test using HCatalog as a catalog store is failed.
+    (jinho)
+
+    TAJO-934: Multiple DISTINCT returns null grouping key value.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-929: Broadcast join with empty outer join table returns empty result.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-927: Broadcast Join with Large, Small, Large, Small tables
+    makes a wrong plan. (Hyoungjun Kim via hyunsik)
+
+    TAJO-913: Add some missed tests for constant value group-by keys. 
+    (hyunsik)
+
+    TAJO-909: {SortBased, Col}PartitionStoreExec should not write partition 
+    keys to files. (Hyoungjun Kim via hyunsik)
+
+    TAJO-912: Tsql prints wrong version. (Mai Hai Thanh via hyunsik)
+
+    TAJO-925: Child ExecutionBlock of JOIN node has different number of 
+    shuffle keys. (Hyoungjun Kim via hyunsik)
+
+    TAJO-902: Unicode delimiter does not work correctly. (jinho)
+
+    TAJO-905: When to_date() parses some date without day, the result will be 
+    wrong. (hyunsik)
+
+    TAJO-898: Left outer join with union returns empty result. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-897: PartitionedTableRewriter is repeated several times with same 
+    table. (Hyoungjun Kim via hyunsik)
+
+    TAJO-891: Complex join conditions with UNION or inline should be supported.
+    (hyunsik)
+    
+    TAJO-899: Nested now() has different value for each task. (Hyoungjun Kim 
+    via hyunsik)
+
+    TAJO-894: Left outer join with partitioned large table and small table 
+    returns empty result. (Hyoungjun Kim via hyunsik)
+
+    TAJO-867: OUTER JOIN with empty result subquery produces a wrong result.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-881: JOIN with union query occurs NPE. (Hyoungjun Kim via hyunsik)
+
+    TAJO-884: complex join conditions should be supported in ON clause.
+    (hyunsik)
+
+    TAJO-874: Sometimes InvalidOperationException occurs when aggregates
+    TableStat. (Hyoungjun Kim via hyunsik) 
+
+    TAJO-866: COUNT DISTINCT with other aggregation function throws
+    ClassCastException. (Hyoungjun Kim via hyunsik)
+
+    TAJO-882: CLI hangs when a error occurs in the GlobalPlanner.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-850: OUTER JOIN does not properly handle a NULL.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-879: Some data is missing in the case of BROADCAST JOIN and
+    multi-column partition. (Hyoungjun Kim via jaehwa)
+
+    TAJO-848: PreLogicalPlanVerifier::visitInsert need to find smaller
+    expressions than target columns for a partitioned table. (jaehwa)
+
+    TAJO-880: NULL in CASE clause occurs Exception. (Hyoungjun Kim via hyunsik)
+
+    TAJO-862: Restore failure of dumped relations. (jihoon)
+
+    TAJO-861: tajo-dump script are not executable. (jinho)
+
+    TAJO-839: If all tables participate in the BROADCAST JOIN, there is some 
+    missing data. (Hyoungjun Kim via jihoon)
+
+    TAJO-868: TestDateTimeFunctions unit test is occasionally failed. (hyunsik)
+
+    TAJO-863: Column order mismatched in the JOIN query with asterisk selection. 
+    (Hyoungjun Kim via hyunsik)
+
     TAJO-851: Timestamp type test of TestSQLExpression::testCastFromTable fails 
     in jenkins CI test. (Hyoungjun Kim via hyunsik)
 
@@ -90,7 +208,8 @@ Release 0.9.0 - unreleased
     TAJO-800: CLI's meta command should be aware "TABLE_NAME" style. 
     (Hyoungjun Kim via hyunsik)
 
-    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join. (jaehwa)
+    TAJO-795: PlannerUtil::joinJoinKeyForEachTable need to handle theta-join.
+    (jaehwa)
 
     TAJO-792: Insert table error with database name. 
     (Hyoungjun Kim via hyunsik)
@@ -110,6 +229,15 @@ Release 0.9.0 - unreleased
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   TASKS
+
+    TAJO-890: Redirect stdout of maven test to /dev/null in Travis CI 
+    script. (hyunsik)
+
+    TAJO-887: Eliminate HiveQL support feature. (hyunsik)
+
+    TAJO-886: Add IRC page to community section in site. (hyunsik)
+
+    TAJO-859: Update site for new committer Alvin Henrick. (hyunsik)
 
     TAJO-817: tajo-core should not skip deploy. (hyunsik)
 

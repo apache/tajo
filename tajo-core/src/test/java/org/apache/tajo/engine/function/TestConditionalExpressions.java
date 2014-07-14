@@ -79,4 +79,44 @@ public class TestConditionalExpressions extends ExprTestBase {
       //success
     }
   }
+
+  @Test
+  public void testCoalesceBoolean() throws Exception {
+    testSimpleEval("select coalesce(null, false);", new String[]{"f"});
+    testSimpleEval("select coalesce(null, null, true);", new String[]{"t"});
+    testSimpleEval("select coalesce(true, null, false);", new String[]{"t"});
+    testSimpleEval("select coalesce(null, true, false);", new String[]{"t"});
+ }
+
+  @Test
+  public void testCoalesceTimestamp() throws Exception {
+    testSimpleEval("select coalesce(null, timestamp '2014-01-01 00:00:00');",
+        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(null, null, timestamp '2014-01-01 00:00:00');",
+        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(timestamp '2014-01-01 00:00:00', null, timestamp '2014-01-02 00:00:00');",
+        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(null, timestamp '2014-01-01 00:00:00', timestamp '2014-02-01 00:00:00');",
+        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+  }
+
+  @Test
+  public void testCoalesceTime() throws Exception {
+    testSimpleEval("select coalesce(null, time '12:00:00');",
+        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(null, null, time '12:00:00');",
+        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(time '12:00:00', null, time '13:00:00');",
+        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select coalesce(null, time '12:00:00', time '13:00:00');",
+        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+  }
+
+  @Test
+  public void testCoalesceDate() throws Exception {
+    testSimpleEval("select coalesce(null, date '2014-01-01');", new String[]{"2014-01-01"});
+    testSimpleEval("select coalesce(null, null, date '2014-01-01');", new String[]{"2014-01-01"});
+    testSimpleEval("select coalesce(date '2014-01-01', null, date '2014-02-01');", new String[]{"2014-01-01"});
+    testSimpleEval("select coalesce(null, date '2014-01-01', date '2014-02-01');", new String[]{"2014-01-01"});
+  }
 }

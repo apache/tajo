@@ -35,6 +35,7 @@ public enum NodeType {
   SORT(SortNode.class),
   HAVING(HavingNode.class),
   GROUP_BY(GroupbyNode.class),
+  WINDOW_AGG(WindowAggNode.class),
   SELECTION(SelectionNode.class),
   JOIN(JoinNode.class),
   UNION(UnionNode.class),
@@ -53,7 +54,8 @@ public enum NodeType {
   CREATE_TABLE(CreateTableNode.class),
   DROP_TABLE(DropTableNode.class),
   ALTER_TABLESPACE (AlterTablespaceNode.class),
-  ALTER_TABLE (AlterTableNode.class);
+  ALTER_TABLE (AlterTableNode.class),
+  TRUNCATE_TABLE (TruncateTableNode.class);
 
   private final Class<? extends LogicalNode> baseClass;
 

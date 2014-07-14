@@ -62,7 +62,6 @@ public class RawFile {
     public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
       super(conf, schema, meta, null);
       this.path = path;
-      init();
     }
 
     @SuppressWarnings("unused")

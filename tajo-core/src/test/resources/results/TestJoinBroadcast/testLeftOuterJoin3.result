@@ -1,0 +1,174 @@
+c_custkey,c_name,c_nationkey,l_orderkey,o_orderdate,o_orderdate,n_name,p_name
+-------------------------------
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+1,Customer#000000001,10,1,1996-01-02,1996-01-02,ARGENTINA,goldenrod lavender spring chocolate lace
+2,Customer#000000002,7,2,1996-12-01,1996-12-01,BRAZIL,blush thistle blue yellow saddle
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+3,Customer#000000003,7,3,1993-10-14,1993-10-14,CANADA,spring green yellow purple cornsilk
+4,Customer#000000004,10,4,null,1996-01-02,EGYPT,null
+5,Customer#000000005,5,5,null,1996-12-01,ETHIOPIA,null
+5,Customer#000000005,5,5,null,1996-12-01,ETHIOPIA,null
+5,Customer#000000005,5,5,null,1996-12-01,ETHIOPIA,null
+6,Customer#000000006,17,6,null,1993-10-14,FRANCE,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+7,Customer#000000007,21,7,null,1996-01-02,GERMANY,null
+8,Customer#000000008,4,null,null,1996-12-01,INDIA,null
+9,Customer#000000009,16,null,null,1993-10-14,INDONESIA,null
+10,Customer#000000010,20,null,null,1996-01-02,IRAN,null
+11,Customer#000000011,19,null,null,1996-12-01,IRAQ,null
+12,Customer#000000012,16,null,null,1993-10-14,JAPAN,null
+13,Customer#000000013,9,null,null,1996-01-02,JORDAN,null
+14,Customer#000000014,22,null,null,1996-12-01,KENYA,null
+15,Customer#000000015,19,null,null,1993-10-14,MOROCCO,null
+16,Customer#000000016,17,null,null,1996-01-02,MOZAMBIQUE,null
+17,Customer#000000017,12,null,null,1996-12-01,PERU,null
+18,Customer#000000018,3,null,null,1993-10-14,CHINA,null
+19,Customer#000000019,10,null,null,1996-01-02,ROMANIA,null
+20,Customer#000000020,23,null,null,1996-12-01,SAUDI ARABIA,null
+21,Customer#000000021,19,null,null,1993-10-14,VIETNAM,null
+22,Customer#000000022,17,null,null,1996-01-02,RUSSIA,null
+23,Customer#000000023,15,null,null,1996-12-01,UNITED KINGDOM,null
+24,Customer#000000024,19,null,null,1993-10-14,UNITED STATES,null
+25,Customer#000000025,7,null,null,1996-01-02,null,null
+26,Customer#000000026,4,null,null,1996-12-01,null,null
+27,Customer#000000027,7,null,null,1993-10-14,null,null
+28,Customer#000000028,12,null,null,1996-01-02,null,null
+29,Customer#000000029,13,null,null,1996-12-01,null,null
+30,Customer#000000030,13,null,null,1993-10-14,null,null
+31,Customer#000000031,21,null,null,1996-01-02,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+32,Customer#000000032,15,32,null,1996-12-01,null,null
+33,Customer#000000033,4,33,null,1993-10-14,null,null
+33,Customer#000000033,4,33,null,1993-10-14,null,null
+33,Customer#000000033,4,33,null,1993-10-14,null,null
+33,Customer#000000033,4,33,null,1993-10-14,null,null
+34,Customer#000000034,11,34,null,1996-01-02,null,null
+34,Customer#000000034,11,34,null,1996-01-02,null,null
+34,Customer#000000034,11,34,null,1996-01-02,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+35,Customer#000000035,22,35,null,1996-12-01,null,null
+36,Customer#000000036,15,36,null,1993-10-14,null,null
+37,Customer#000000037,11,37,null,1996-01-02,null,null
+37,Customer#000000037,11,37,null,1996-01-02,null,null
+37,Customer#000000037,11,37,null,1996-01-02,null,null
+38,Customer#000000038,14,38,null,1996-12-01,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+39,Customer#000000039,3,39,null,1993-10-14,null,null
+40,Customer#000000040,1,null,null,1996-01-02,null,null
+41,Customer#000000041,0,null,null,1996-12-01,null,null
+42,Customer#000000042,12,null,null,1993-10-14,null,null
+43,Customer#000000043,1,null,null,1996-01-02,null,null
+44,Customer#000000044,2,null,null,1996-12-01,null,null
+45,Customer#000000045,2,null,null,1993-10-14,null,null
+46,Customer#000000046,3,null,null,1996-01-02,null,null
+47,Customer#000000047,18,null,null,1996-12-01,null,null
+48,Customer#000000048,15,null,null,1993-10-14,null,null
+49,Customer#000000049,0,null,null,1996-01-02,null,null
+50,Customer#000000050,18,null,null,1996-12-01,null,null
+51,Customer#000000051,14,null,null,1993-10-14,null,null
+52,Customer#000000052,9,null,null,1996-01-02,null,null
+53,Customer#000000053,10,null,null,1996-12-01,null,null
+54,Customer#000000054,4,null,null,1993-10-14,null,null
+55,Customer#000000055,12,null,null,1996-01-02,null,null
+56,Customer#000000056,19,null,null,1996-12-01,null,null
+57,Customer#000000057,13,null,null,1993-10-14,null,null
+58,Customer#000000058,9,null,null,1996-01-02,null,null
+59,Customer#000000059,9,null,null,1996-12-01,null,null
+60,Customer#000000060,1,null,null,1993-10-14,null,null
+61,Customer#000000061,13,null,null,1996-01-02,null,null
+62,Customer#000000062,18,null,null,1996-12-01,null,null
+63,Customer#000000063,20,null,null,1993-10-14,null,null
+64,Customer#000000064,15,64,null,1996-01-02,null,null
+65,Customer#000000065,10,65,null,1996-12-01,null,null
+65,Customer#000000065,10,65,null,1996-12-01,null,null
+65,Customer#000000065,10,65,null,1996-12-01,null,null
+66,Customer#000000066,1,66,null,1993-10-14,null,null
+66,Customer#000000066,1,66,null,1993-10-14,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+67,Customer#000000067,0,67,null,1996-01-02,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+68,Customer#000000068,3,68,null,1996-12-01,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+69,Customer#000000069,13,69,null,1993-10-14,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+70,Customer#000000070,3,70,null,1996-01-02,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+71,Customer#000000071,16,71,null,1996-12-01,null,null
+72,Customer#000000072,8,null,null,1993-10-14,null,null
+73,Customer#000000073,4,null,null,1996-01-02,null,null
+74,Customer#000000074,11,null,null,1996-12-01,null,null
+75,Customer#000000075,2,null,null,1993-10-14,null,null
+76,Customer#000000076,8,null,null,1996-01-02,null,null
+77,Customer#000000077,1,null,null,1996-12-01,null,null
+78,Customer#000000078,5,null,null,1993-10-14,null,null
+79,Customer#000000079,2,null,null,1996-01-02,null,null
+80,Customer#000000080,4,null,null,1996-12-01,null,null
+81,Customer#000000081,17,null,null,1993-10-14,null,null
+82,Customer#000000082,3,null,null,1996-01-02,null,null
+83,Customer#000000083,7,null,null,1996-12-01,null,null
+84,Customer#000000084,19,null,null,1993-10-14,null,null
+85,Customer#000000085,0,null,null,1996-01-02,null,null
+86,Customer#000000086,15,null,null,1996-12-01,null,null
+87,Customer#000000087,2,null,null,1993-10-14,null,null
+88,Customer#000000088,14,null,null,1996-01-02,null,null
+89,Customer#000000089,17,null,null,1996-12-01,null,null
+90,Customer#000000090,14,null,null,1993-10-14,null,null
+91,Customer#000000091,2,null,null,1996-01-02,null,null
+92,Customer#000000092,12,null,null,1996-12-01,null,null
+93,Customer#000000093,19,null,null,1993-10-14,null,null
+94,Customer#000000094,5,null,null,1996-01-02,null,null
+95,Customer#000000095,5,null,null,1996-12-01,null,null
+96,Customer#000000096,7,96,null,1993-10-14,null,null
+96,Customer#000000096,7,96,null,1993-10-14,null,null
+97,Customer#000000097,16,97,null,1996-01-02,null,null
+97,Customer#000000097,16,97,null,1996-01-02,null,null
+97,Customer#000000097,16,97,null,1996-01-02,null,null
+98,Customer#000000098,11,null,null,1996-12-01,null,null
+99,Customer#000000099,9,null,null,1993-10-14,null,null
+100,Customer#000000100,17,null,null,1996-01-02,null,null

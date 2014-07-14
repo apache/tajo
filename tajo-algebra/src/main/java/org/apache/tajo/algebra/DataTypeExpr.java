@@ -76,4 +76,13 @@ public class DataTypeExpr extends Expr {
         TUtil.checkEquals(lengthOrPrecision, another.lengthOrPrecision) &&
         TUtil.checkEquals(scale, another.scale);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DataTypeExpr dataType = (DataTypeExpr) super.clone();
+    dataType.typeName = typeName;
+    dataType.lengthOrPrecision = lengthOrPrecision;
+    dataType.scale = scale;
+    return dataType;
+  }
 }

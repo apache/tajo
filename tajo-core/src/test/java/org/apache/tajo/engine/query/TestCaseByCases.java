@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.sql.ResultSet;
 
+import static org.junit.Assert.assertEquals;
+
 public class TestCaseByCases extends QueryTestCaseBase {
 
   public TestCaseByCases() {
@@ -65,6 +67,70 @@ public class TestCaseByCases extends QueryTestCaseBase {
   public final void testTAJO739Case() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO880_1() throws Exception {
+    //TAJO-880: NULL in CASE clause occurs Exception.
+    ResultSet res = executeString(
+        "select case when l_returnflag != 'R' then l_orderkey else null end from lineitem"
+    );
+
+    String expected =
+        "?casewhen\n" +
+        "-------------------------------\n" +
+        "1\n" +
+        "1\n" +
+        "2\n" +
+        "null\n" +
+        "null\n";
+
+    assertEquals(expected, resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO880_2() throws Exception {
+    //TAJO-880: NULL in CASE clause occurs Exception.
+    ResultSet res = executeString(
+        "select case when l_returnflag != 'R' then null else l_orderkey end from lineitem"
+    );
+
+    String expected =
+        "?casewhen\n" +
+        "-------------------------------\n" +
+        "null\n" +
+        "null\n" +
+        "null\n" +
+        "3\n" +
+        "3\n";
+
+    assertEquals(expected, resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO880_3() throws Exception {
+    //TAJO-880: NULL in CASE clause occurs Exception.
+    ResultSet res = executeString(
+        "select case " +
+            "when l_orderkey = 1 then null " +
+            "when l_orderkey = 2 then l_orderkey " +
+            "else null end " +
+        "from lineitem"
+    );
+
+    String expected =
+        "?casewhen\n" +
+            "-------------------------------\n" +
+            "null\n" +
+            "null\n" +
+            "2\n" +
+            "null\n" +
+            "null\n";
+
+    assertEquals(expected, resultSetToString(res));
     cleanupQuery(res);
   }
 }

@@ -236,11 +236,20 @@ public class QueryTestCaseBase {
    * @return ResultSet of query execution.
    */
   public ResultSet executeQuery() throws Exception {
-    return executeFile(name.getMethodName() + ".sql");
+    return executeFile(getMethodName() + ".sql");
+  }
+
+  private String getMethodName() {
+    String methodName = name.getMethodName();
+    // In the case of parameter execution name's pattern is methodName[0]
+    if (methodName.endsWith("]")) {
+      methodName = methodName.substring(0, methodName.length() - 3);
+    }
+    return methodName;
   }
 
   public ResultSet executeJsonQuery() throws Exception {
-    return executeJsonFile(name.getMethodName() + ".json");
+    return executeJsonFile(getMethodName() + ".json");
   }
 
   /**
@@ -281,7 +290,7 @@ public class QueryTestCaseBase {
    * @param result Query result to be compared.
    */
   public final void assertResultSet(ResultSet result) throws IOException {
-    assertResultSet("Result Verification", result, name.getMethodName() + ".result");
+    assertResultSet("Result Verification", result, getMethodName() + ".result");
   }
 
   /**
@@ -314,7 +323,7 @@ public class QueryTestCaseBase {
   }
 
   public final void assertStrings(String actual) throws IOException {
-    assertStrings(actual, name.getMethodName() + ".result");
+    assertStrings(actual, getMethodName() + ".result");
   }
 
   public final void assertStrings(String actual, String resultFileName) throws IOException {

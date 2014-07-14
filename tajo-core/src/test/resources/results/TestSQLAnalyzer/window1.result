@@ -1,0 +1,37 @@
+{
+  "IsDistinct": false,
+  "Projections": [
+    {
+      "Expr": {
+        "ColumnName": "dt",
+        "OpType": "Column"
+      },
+      "OpType": "Target"
+    },
+    {
+      "Expr": {
+        "WindowSpec": {},
+        "IsDistinct": false,
+        "Signature": "sum",
+        "FuncParams": [
+          {
+            "ColumnName": "xy",
+            "OpType": "Column"
+          }
+        ],
+        "OpType": "WindowFunction"
+      },
+      "OpType": "Target"
+    }
+  ],
+  "Expr": {
+    "Relations": [
+      {
+        "TableName": "sum_example",
+        "OpType": "Relation"
+      }
+    ],
+    "OpType": "RelationList"
+  },
+  "OpType": "Projection"
+}

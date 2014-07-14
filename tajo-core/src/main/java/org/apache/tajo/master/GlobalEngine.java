@@ -45,7 +45,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.VerifyException;
-import org.apache.tajo.engine.parser.HiveQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
@@ -80,7 +79,6 @@ public class GlobalEngine extends AbstractService {
   private final AbstractStorageManager sm;
 
   private SQLAnalyzer analyzer;
-  private HiveQLAnalyzer converter;
   private CatalogService catalog;
   private PreLogicalPlanVerifier preVerifier;
   private LogicalPlanner planner;
@@ -98,7 +96,6 @@ public class GlobalEngine extends AbstractService {
   public void start() {
     try  {
       analyzer = new SQLAnalyzer();
-      converter = new HiveQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer(context.getConf());
@@ -172,17 +169,8 @@ public class GlobalEngine extends AbstractService {
 
   public Expr buildExpressionFromSql(QueryContext queryContext, String sql)
       throws InterruptedException, IOException, IllegalQueryStatusException {
-    final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
-    LOG.info("hive.query.mode:" + hiveQueryMode);
-
-    if (hiveQueryMode) {
-      context.getSystemMetrics().counter("Query", "numHiveMode").inc();
-      queryContext.setHiveQueryMode();
-    }
-
     context.getSystemMetrics().counter("Query", "totalQuery").inc();
-
-    return hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+    return analyzer.parse(sql);
   }
 
   private SubmitQueryResponse executeQueryInternal(QueryContext queryContext,
@@ -456,6 +444,10 @@ public class GlobalEngine extends AbstractService {
         AlterTableNode alterTable = (AlterTableNode) root;
         alterTable(session,alterTable);
         return true;
+      case TRUNCATE_TABLE:
+        TruncateTableNode truncateTable = (TruncateTableNode) root;
+        truncateTable(session, truncateTable);
+        return true;
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -479,7 +471,8 @@ public class GlobalEngine extends AbstractService {
       LOG.debug("Non Optimized Query: \n" + plan.toString());
       LOG.debug("=============================================");
     }
-    optimizer.optimize(plan);
+    LOG.info("Non Optimized Query: \n" + plan.toString());
+    optimizer.optimize(session, plan);
     LOG.info("=============================================");
     LOG.info("Optimized Query: \n" + plan.toString());
     LOG.info("=============================================");
@@ -589,6 +582,57 @@ public class GlobalEngine extends AbstractService {
         break;
       default:
         //TODO
+    }
+  }
+
+  /**
+   * Truncate table a given table
+   */
+  public void truncateTable(final Session session, final TruncateTableNode truncateTableNode) throws IOException {
+    List<String> tableNames = truncateTableNode.getTableNames();
+    final CatalogService catalog = context.getCatalog();
+
+    String databaseName;
+    String simpleTableName;
+
+    List<TableDesc> tableDescList = new ArrayList<TableDesc>();
+    for (String eachTableName: tableNames) {
+      if (CatalogUtil.isFQTableName(eachTableName)) {
+        String[] split = CatalogUtil.splitFQTableName(eachTableName);
+        databaseName = split[0];
+        simpleTableName = split[1];
+      } else {
+        databaseName = session.getCurrentDatabase();
+        simpleTableName = eachTableName;
+      }
+      final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+
+      if (!catalog.existsTable(databaseName, simpleTableName)) {
+        throw new NoSuchTableException(qualifiedName);
+      }
+
+      Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
+      TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
+      Path tablePath = tableDesc.getPath();
+      if (tablePath.getParent() == null ||
+          !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
+        throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
+            ", warehouse dir=" + warehousePath);
+      }
+      tableDescList.add(tableDesc);
+    }
+
+    for (TableDesc eachTable: tableDescList) {
+      Path path = eachTable.getPath();
+      LOG.info("Truncate table: " + eachTable.getName() + ", delete all data files in " + path);
+      FileSystem fs = path.getFileSystem(context.getConf());
+
+      FileStatus[] files = fs.listStatus(path);
+      if (files != null) {
+        for (FileStatus eachFile: files) {
+          fs.delete(eachFile.getPath(), true);
+        }
+      }
     }
   }
 

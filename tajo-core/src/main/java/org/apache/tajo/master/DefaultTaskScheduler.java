@@ -30,7 +30,6 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -146,6 +145,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
   private FileFragment[] fragmentsForNonLeafTask;
+  private FileFragment[] broadcastFragmentsForNonLeafTask;
 
   LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
@@ -190,14 +190,20 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           scheduledObjectNum++;
           if (castEvent.hasRightFragments()) {
             task.addFragments(castEvent.getRightFragments());
-            //scheduledObjectNum += castEvent.getRightFragments().size();
           }
           subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
           if (castEvent.hasRightFragments()) {
-            fragmentsForNonLeafTask[1] = castEvent.getRightFragments().toArray(new FileFragment[]{})[0];
+            FileFragment[] rightFragments = castEvent.getRightFragments().toArray(new FileFragment[]{});
+            fragmentsForNonLeafTask[1] = rightFragments[0];
+            if (rightFragments.length > 1) {
+              broadcastFragmentsForNonLeafTask = new FileFragment[rightFragments.length - 1];
+              System.arraycopy(rightFragments, 1, broadcastFragmentsForNonLeafTask, 0, broadcastFragmentsForNonLeafTask.length);
+            } else {
+              broadcastFragmentsForNonLeafTask = null;
+            }
           }
         }
       } else if (event instanceof FetchScheduleEvent) {
@@ -212,6 +218,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (fragmentsForNonLeafTask[1] != null) {
             task.addFragment(fragmentsForNonLeafTask[1], true);
           }
+        }
+        if (broadcastFragmentsForNonLeafTask != null && broadcastFragmentsForNonLeafTask.length > 0) {
+          task.addFragments(Arrays.asList(broadcastFragmentsForNonLeafTask));
         }
         subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
       } else if (event instanceof QueryUnitAttemptScheduleEvent) {
@@ -821,7 +830,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               host, container.getTaskPort()));
           assignedRequest.add(attemptId);
 
-          scheduledObjectNum -= task.getAllFragments().size();
+          scheduledObjectNum--;
           taskRequest.getCallback().run(taskAssign.getProto());
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
@@ -873,11 +882,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
             taskAssign.setInterQuery();
           }
-          for (ScanNode scan : task.getScanNodes()) {
-            Collection<FetchImpl> fetches = task.getFetch(scan);
+          for(Map.Entry<String, Set<FetchImpl>> entry: task.getFetchMap().entrySet()) {
+            Collection<FetchImpl> fetches = entry.getValue();
             if (fetches != null) {
               for (FetchImpl fetch : fetches) {
-                taskAssign.addFetch(scan.getTableName(), fetch);
+                taskAssign.addFetch(entry.getKey(), fetch);
               }
             }
           }

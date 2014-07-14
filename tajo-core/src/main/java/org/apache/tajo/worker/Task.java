@@ -39,15 +39,13 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.planner.logical.SortNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
@@ -87,7 +85,6 @@ public class Task {
   private boolean interQuery;
   private boolean killed = false;
   private boolean aborted = false;
-  private boolean stopped = false;
   private final Reporter reporter;
   private Path inputTableBaseDir;
 
@@ -162,9 +159,19 @@ public class Task {
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
-    for (LogicalNode node : scanNode) {
-      ScanNode scan = (ScanNode)node;
-      descs.put(scan.getCanonicalName(), scan.getTableDesc());
+    if (scanNode != null) {
+      for (LogicalNode node : scanNode) {
+        ScanNode scan = (ScanNode) node;
+        descs.put(scan.getCanonicalName(), scan.getTableDesc());
+      }
+    }
+
+    LogicalNode [] partitionScanNode = PlannerUtil.findAllNodes(plan, NodeType.PARTITIONS_SCAN);
+    if (partitionScanNode != null) {
+      for (LogicalNode node : partitionScanNode) {
+        PartitionedTableScanNode scan = (PartitionedTableScanNode) node;
+        descs.put(scan.getCanonicalName(), scan.getTableDesc());
+      }
     }
 
     interQuery = request.getProto().getInterQuery();
@@ -364,7 +371,21 @@ public class Task {
     context.getFetchLatch().await();
     LOG.info(context.getTaskId() + " All fetches are done!");
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
+
+    // Get all broadcasted tables
+    Set<String> broadcastTableNames = new HashSet<String>();
+    List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
+    if (broadcasts != null) {
+      for (EnforceProperty eachBroadcast : broadcasts) {
+        broadcastTableNames.add(eachBroadcast.getBroadcast().getTableName());
+      }
+    }
+
+    // localize the fetched data and skip the broadcast table
     for (String inputTable: inputs) {
+      if (broadcastTableNames.contains(inputTable)) {
+        continue;
+      }
       File tableDir = new File(context.getFetchIn(), inputTable);
       FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.updateAssignedFragments(inputTable, frags);
@@ -386,24 +407,21 @@ public class Task {
         context.setProgress(FETCHER_PROGRESS);
       }
 
-      if (context.getFragmentSize() > 0) {
-        this.executor = taskRunnerContext.getTQueryEngine().
-            createPlan(context, plan);
-        this.executor.init();
+      this.executor = taskRunnerContext.getTQueryEngine().
+          createPlan(context, plan);
+      this.executor.init();
 
-        while(!killed && executor.next() != null) {
-        }
-        this.executor.close();
-        reloadInputStats();
-        this.executor = null;
+      while(!killed && executor.next() != null) {
       }
+      this.executor.close();
+      reloadInputStats();
+      this.executor = null;
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
       context.setProgress(1.0f);
-      stopped = true;
       taskRunnerContext.completedTasksNum.incrementAndGet();
 
       if (killed || aborted) {
@@ -458,7 +476,7 @@ public class Task {
       finishTime = System.currentTimeMillis();
       LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
           ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
-          + ", killed: " + taskRunnerContext.killedTasksNum.incrementAndGet()
+          + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
           + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
       cleanupTask();
     }
@@ -568,23 +586,25 @@ public class Task {
   private class FetchRunner implements Runnable {
     private final TaskAttemptContext ctx;
     private final Fetcher fetcher;
+    private int maxRetryNum;
 
     public FetchRunner(TaskAttemptContext ctx, Fetcher fetcher) {
       this.ctx = ctx;
       this.fetcher = fetcher;
+      this.maxRetryNum = systemConf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_RETRY_MAX_NUM);
     }
 
     @Override
     public void run() {
       int retryNum = 0;
-      int maxRetryNum = 5;
-      int retryWaitTime = 1000;
+      int retryWaitTime = 1000; //sec
 
       try { // for releasing fetch latch
         while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);
+              retryWaitTime = Math.min(10 * 1000, retryWaitTime * 2);  // max 10 seconds
             } catch (InterruptedException e) {
               LOG.error(e);
             }
@@ -592,7 +612,7 @@ public class Task {
           }
           try {
             File fetched = fetcher.get();
-            if (fetched != null) {
+            if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
               break;
             }
           } catch (IOException e) {
@@ -601,11 +621,15 @@ public class Task {
           retryNum++;
         }
       } finally {
-        fetcherFinished(ctx);
-      }
-
-      if (retryNum == maxRetryNum) {
-        LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+        if(fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED){
+          fetcherFinished(ctx);
+        } else {
+          if (retryNum == maxRetryNum) {
+            LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+          }
+          aborted = true; // retry queryUnit
+          ctx.getFetchLatch().countDown();
+        }
       }
     }
   }
@@ -666,7 +690,7 @@ public class Task {
             storeDir.mkdirs();
           }
           storeFile = new File(storeDir, "in_" + i);
-          Fetcher fetcher = new Fetcher(uri, storeFile, channelFactory);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
           runnerList.add(fetcher);
           i++;
         }
@@ -697,7 +721,7 @@ public class Task {
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {
-          while (!stop.get() && !stopped) {
+          while (!stop.get() && !context.isStopped()) {
             try {
               if(executor != null && context.getProgress() < 1.0f) {
                 float progress = executor.getProgress();
@@ -722,7 +746,7 @@ public class Task {
                 throw new RuntimeException(t);
               }
             } finally {
-              if (remainingRetries > 0) {
+              if (!context.isStopped() && remainingRetries > 0) {
                 synchronized (pingThread) {
                   try {
                     pingThread.wait(PROGRESS_INTERVAL);

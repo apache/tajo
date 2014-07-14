@@ -217,6 +217,9 @@ public class TajoConf extends Configuration {
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
     SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num", 2),
+    SHUFFLE_FETCHER_CHUNK_MAX_SIZE("tajo.shuffle.fetcher.chunk.max-size",  8192 * 8),
+    SHUFFLE_FETCHER_READ_TIMEOUT("tajo.shuffle.fetcher.read.timeout-sec", 5),
+    SHUFFLE_FETCHER_READ_RETRY_MAX_NUM("tajo.shuffle.fetcher.read.retry.max-num", 5),
 
     //////////////////////////////////
     // Storage Configuration
@@ -299,11 +302,6 @@ public class TajoConf extends Configuration {
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     //////////////////////////////////
-    // Hive Configuration
-    //////////////////////////////////
-    HIVE_QUERY_MODE("tajo.hive.query.mode", false),
-
-    //////////////////////////////////
     // Task Configuration
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
@@ -337,8 +335,14 @@ public class TajoConf extends Configuration {
     // FILE FORMAT
     CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
+    //OPTIMIZER
+    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
+
     // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false)
+    TAJO_DEBUG("tajo.debug", false),
+
+    // ONLY FOR TESTCASE
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
     ;
 
     public final String varname;

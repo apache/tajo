@@ -1,0 +1,1 @@
+select * from table20 t3 join table21 t4 on t3.id = t4.id;

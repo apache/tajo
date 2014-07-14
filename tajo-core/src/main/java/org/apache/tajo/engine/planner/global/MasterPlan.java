@@ -212,6 +212,17 @@ public class MasterPlan {
     sb.append(execBlockGraph.toStringGraph(getRoot().getId()));
     sb.append("-------------------------------------------------------------------------------\n");
 
+    ExecutionBlockCursor executionOrderCursor = new ExecutionBlockCursor(this, true);
+    sb.append("Order of Execution\n");
+    sb.append("-------------------------------------------------------------------------------");
+    int order = 1;
+    while (executionOrderCursor.hasNext()) {
+      ExecutionBlock currentEB = executionOrderCursor.nextBlock();
+      sb.append("\n").append(order).append(": ").append(currentEB.getId());
+      order++;
+    }
+    sb.append("\n-------------------------------------------------------------------------------\n");
+
     while(cursor.hasNext()) {
       ExecutionBlock block = cursor.nextBlock();
 
@@ -238,7 +249,11 @@ public class MasterPlan {
       if (!isLeaf(block)) {
         sb.append("\n[Incoming]\n");
         for (DataChannel channel : getIncomingChannels(block.getId())) {
-          sb.append(channel).append("\n");
+          sb.append(channel);
+          if (block.getUnionScanMap().containsKey(channel.getSrcId())) {
+            sb.append(", union delegated scan: ").append(block.getUnionScanMap().get(channel.getSrcId()));
+          }
+          sb.append("\n");
         }
       }
 
@@ -249,6 +264,7 @@ public class MasterPlan {
           sb.append("\n");
         }
       }
+
 
       if (block.getEnforcer().getProperties().size() > 0) {
         sb.append("\n[Enforcers]\n");

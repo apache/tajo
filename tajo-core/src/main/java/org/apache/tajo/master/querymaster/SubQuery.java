@@ -721,8 +721,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
       }
 
-      // Is this subquery the first step of join?
-      if (parent != null && parent.getScanNodes().length == 2) {
+      // We assume this execution block the first stage of join if two or more tables are included in this block,
+      if (parent != null && parent.getScanNodes().length >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer
@@ -746,31 +746,37 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         int totalMem = getClusterTotalMemory(subQuery);
         LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
         int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
-        LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
+
+        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+          LOG.warn("!!!!! TESTCASE MODE !!!!!");
+        }
 
         // The shuffle output numbers of join may be inconsistent by execution block order.
         // Thus, we need to compare the number with DataChannel output numbers.
         // If the number is right, the number and DataChannel output numbers will be consistent.
-        int outerShuffleOutptNum = 0, innerShuffleOutputNum = 0;
+        int outerShuffleOutputNum = 0, innerShuffleOutputNum = 0;
         for (DataChannel eachChannel : masterPlan.getOutgoingChannels(outer.getId())) {
-          outerShuffleOutptNum = Math.max(outerShuffleOutptNum, eachChannel.getShuffleOutputNum());
+          outerShuffleOutputNum = Math.max(outerShuffleOutputNum, eachChannel.getShuffleOutputNum());
         }
-
         for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
           innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
         }
-
-        if (outerShuffleOutptNum != innerShuffleOutputNum
-            && taskNum != outerShuffleOutptNum
+        if (outerShuffleOutputNum != innerShuffleOutputNum
+            && taskNum != outerShuffleOutputNum
             && taskNum != innerShuffleOutputNum) {
-          taskNum = Math.max(outerShuffleOutptNum, innerShuffleOutputNum);
+          LOG.info(subQuery.getId() + ", Change determined number of join partitions cause difference of outputNum" +
+                  ", originTaskNum=" + taskNum + ", changedTaskNum=" + Math.max(outerShuffleOutputNum, innerShuffleOutputNum) +
+                  ", outerShuffleOutptNum=" + outerShuffleOutputNum +
+                  ", innerShuffleOutputNum=" + innerShuffleOutputNum);
+          taskNum = Math.max(outerShuffleOutputNum, innerShuffleOutputNum);
         }
 
-        return taskNum;
+        LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
 
+        return taskNum;
         // Is this subquery the first step of group-by?
       } else if (grpNode != null) {
 
@@ -907,6 +913,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // Otherwise, it creates at least one fragments for a table, which may
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        // After calling this method, partition paths are removed from the physical plan.
         fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
       } else {
         Path inputPath = table.getPath();

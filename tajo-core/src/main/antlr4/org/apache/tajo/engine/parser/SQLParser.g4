@@ -64,6 +64,7 @@ schema_statement
   | drop_table_statement
   | alter_tablespace_statement
   | alter_table_statement
+  | truncate_table_statement
   ;
 
 index_statement
@@ -186,6 +187,10 @@ partition_name
   : identifier
   ;
 
+truncate_table_statement
+  : TRUNCATE (TABLE)? table_name (COMMA table_name)*
+  ;
+
 /*
 ===============================================================================
   11.21 <data types>
@@ -223,20 +228,25 @@ nonreserved_keywords
   | COLUMN
   | COUNT
   | CUBE
+  | CUME_DIST
+  | CURRENT
   | DAY
   | DEC
   | DECADE
+  | DENSE_RANK
   | DOW
   | DOY
   | DROP
   | EPOCH
   | EVERY
   | EXISTS
+  | EXCLUDE
   | EXPLAIN
   | EXTERNAL
   | EXTRACT
   | FILTER
   | FIRST
+  | FOLLOWING
   | FORMAT
   | FUSION
   | GROUPING
@@ -259,18 +269,26 @@ nonreserved_keywords
   | MINUTE
   | MONTH
   | NATIONAL
+  | NO
   | NULLIF
   | OVERWRITE
+  | OTHERS
   | PARTITION
   | PARTITIONS
+  | PERCENT_RANK
+  | PRECEDING
   | PRECISION
   | PURGE
   | QUARTER
   | RANGE
+  | RANK
   | REGEXP
   | RENAME
   | RLIKE
   | ROLLUP
+  | ROW
+  | ROWS
+  | ROW_NUMBER
   | SECOND
   | SET
   | SIMILAR
@@ -280,11 +298,13 @@ nonreserved_keywords
   | SUM
   | TABLESPACE
   | THAN
+  | TIES
   | TIMEZONE
   | TIMEZONE_HOUR
   | TIMEZONE_MINUTE
   | TRIM
   | TO
+  | UNBOUNDED
   | UNKNOWN
   | VALUES
   | VAR_POP
@@ -508,6 +528,7 @@ nonparenthesized_value_expression_primary
   : unsigned_value_specification
   | column_reference
   | set_function_specification
+  | window_function
   | scalar_subquery
   | case_expression
   | cast_specification
@@ -577,6 +598,32 @@ filter_clause
 
 grouping_operation
   : GROUPING LEFT_PAREN column_reference_list RIGHT_PAREN
+  ;
+
+/*
+===============================================================================
+  6.10 window function
+===============================================================================
+*/
+
+window_function
+  : window_function_type OVER window_name_or_specification
+  ;
+
+window_function_type
+  : rank_function_type LEFT_PAREN RIGHT_PAREN
+  | ROW_NUMBER LEFT_PAREN RIGHT_PAREN
+  | aggregate_function
+  ;
+
+rank_function_type
+  : RANK | DENSE_RANK | PERCENT_RANK | CUME_DIST
+  ;
+
+
+window_name_or_specification
+  : window_name
+  | window_specification
   ;
 
 /*
@@ -653,6 +700,7 @@ value_expression
 common_value_expression
   : numeric_value_expression
   | string_value_expression
+  | datetime_value_expression
   | NULL
   ;
 
@@ -714,8 +762,7 @@ time_zone_field
   ;
 
 extract_source
-  : column_reference
-  | datetime_literal
+  : datetime_value_expression
   ;
 
 /*
@@ -762,6 +809,53 @@ trim_operands
 
 trim_specification
   : LEADING | TRAILING | BOTH
+  ;
+
+/*
+===============================================================================
+  6.30 <datetime_value_expression>
+===============================================================================
+*/
+datetime_value_expression
+  : datetime_term
+  ;
+datetime_term
+  : datetime_factor
+  ;
+
+datetime_factor
+  : datetime_primary
+  ;
+
+datetime_primary
+  : value_expression_primary
+  | datetime_value_function
+  ;
+
+/*
+===============================================================================
+  6.31 <datetime_value_function>
+===============================================================================
+*/
+
+datetime_value_function
+  : current_date_value_function
+  | current_time_value_function
+  | current_timestamp_value_function
+  ;
+
+current_date_value_function
+  : CURRENT_DATE
+  | CURRENT_DATE LEFT_PAREN RIGHT_PAREN
+  ;
+
+current_time_value_function
+  : CURRENT_TIME
+  | CURRENT_TIME LEFT_PAREN RIGHT_PAREN
+  ;
+
+current_timestamp_value_function
+  : CURRENT_TIMESTAMP
   ;
 
 /*
@@ -854,6 +948,7 @@ table_expression
     groupby_clause?
     having_clause?
     orderby_clause?
+    window_clause?
     limit_clause?
   ;
 
@@ -1016,6 +1111,84 @@ having_clause
 
 row_value_predicand_list
   : row_value_predicand (COMMA row_value_predicand)*
+  ;
+
+
+ /*
+ ===============================================================================
+   7.11 <window clause> (p331)
+ ===============================================================================
+ */
+
+window_clause
+  : WINDOW window_definition_list;
+
+window_definition_list
+  : window_definition (COMMA window_definition)*
+  ;
+
+window_definition
+  : window_name AS window_specification
+  ;
+
+window_name
+  : identifier
+  ;
+
+window_specification
+  : LEFT_PAREN window_specification_details RIGHT_PAREN
+  ;
+
+window_specification_details
+  : (existing_window_name)? (window_partition_clause)? (window_order_clause)? (window_frame_clause)?
+  ;
+
+existing_window_name
+  : window_name
+  ;
+
+window_partition_clause
+  : PARTITION BY row_value_predicand_list
+  ;
+
+window_order_clause
+  : orderby_clause
+  ;
+
+window_frame_clause
+  : window_frame_units window_frame_extent (window_frame_exclusion)?
+  ;
+
+window_frame_units
+  : ROWS | RANGE
+  ;
+
+window_frame_extent
+  : window_frame_start_bound
+  | window_frame_between
+  ;
+
+window_frame_start_bound
+  : UNBOUNDED PRECEDING
+  | unsigned_value_specification PRECEDING // window_frame_preceding
+  | CURRENT ROW
+  ;
+
+window_frame_between
+  : BETWEEN bound1=window_frame_start_bound AND bound2=window_frame_end_bound
+  ;
+
+window_frame_end_bound
+  : UNBOUNDED FOLLOWING
+  | unsigned_value_specification FOLLOWING // window_frame_following FOLLOWING
+  | CURRENT ROW
+  ;
+
+window_frame_exclusion
+  : EXCLUDE CURRENT ROW
+  | EXCLUDE GROUP
+  | EXCLUDE TIES
+  | EXCLUDE NO OTHERS
   ;
 
 /*

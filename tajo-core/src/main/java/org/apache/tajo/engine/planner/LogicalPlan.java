@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
@@ -26,6 +27,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.exception.AmbiguousFieldException;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
@@ -47,6 +49,8 @@ public class LogicalPlan {
   /** the prefix character for virtual tables */
   public static final char VIRTUAL_TABLE_PREFIX='#';
   public static final char NONAMED_COLUMN_PREFIX='?';
+  public static final char NONAMED_WINDOW_PREFIX='^';
+
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "QB_";
@@ -54,6 +58,7 @@ public class LogicalPlan {
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
+  private Integer noNameWindowId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -131,6 +136,10 @@ public class LogicalPlan {
 
   public QueryBlock newQueryBlock() {
     return newAndGetBlock(NONAME_BLOCK_PREFIX + (noNameBlockId++));
+  }
+
+  public void resetGeneratedId() {
+    noNameColumnId = 0;
   }
 
   /**
@@ -384,6 +393,21 @@ public class LogicalPlan {
 
   private Column resolveColumnWithoutQualifier(QueryBlock block,
                                                ColumnReferenceExpr columnRef)throws PlanningException {
+
+    List<Column> candidates = TUtil.newList();
+
+    // It tries to find a full qualified column name from all relations in the current block.
+    for (RelationNode rel : block.getRelations()) {
+      Column found = rel.getTableSchema().getColumn(columnRef.getName());
+      if (found != null) {
+        candidates.add(found);
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return ensureUniqueColumn(candidates);
+    }
+
     // Trying to find the column within the current block
     if (block.currentNode != null && block.currentNode.getInSchema() != null) {
       Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
@@ -399,7 +423,7 @@ public class LogicalPlan {
       }
     }
 
-    List<Column> candidates = TUtil.newList();
+
     // Trying to find columns from aliased references.
     if (block.namedExprsMgr.isAliased(columnRef.getCanonicalName())) {
       String originalName = block.namedExprsMgr.getAlias(columnRef.getCanonicalName());
@@ -412,22 +436,10 @@ public class LogicalPlan {
       return ensureUniqueColumn(candidates);
     }
 
-    // Trying to find columns from other relations in the current block
-    for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getTableSchema().getColumn(columnRef.getName());
-      if (found != null) {
-        candidates.add(found);
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
     // This is an exception case. It means that there are some bugs in other parts.
     LogicalNode blockRootNode = block.getRoot();
     if (blockRootNode != null && blockRootNode.getOutSchema().getColumn(columnRef.getCanonicalName()) != null) {
-      throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+      throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
     }
 
     // Trying to find columns from other relations in other blocks
@@ -456,7 +468,7 @@ public class LogicalPlan {
       return ensureUniqueColumn(candidates);
     }
 
-    throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+    throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
   }
 
   private static Column ensureUniqueColumn(List<Column> candidates)
@@ -474,7 +486,7 @@ public class LogicalPlan {
         }
         sb.append(column);
       }
-      throw new VerifyException("Ambiguous Column Name: " + sb.toString());
+      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
     } else {
       return null;
     }
@@ -489,14 +501,20 @@ public class LogicalPlan {
     sb.append(queryBlockGraph.toStringGraph(getRootBlock().getName()));
     sb.append("-----------------------------\n");
     sb.append("Optimization Log:\n");
+    if (!planingHistory.isEmpty()) {
+      sb.append("[LogicalPlan]\n");
+      for (String eachHistory: planingHistory) {
+        sb.append("\t> ").append(eachHistory).append("\n");
+      }
+    }
     DirectedGraphCursor<String, BlockEdge> cursor =
         new DirectedGraphCursor<String, BlockEdge>(queryBlockGraph, getRootBlock().getName());
     while(cursor.hasNext()) {
       QueryBlock block = getBlock(cursor.nextBlock());
       if (block.getPlanHistory().size() > 0) {
-        sb.append("\n[").append(block.getName()).append("]\n");
+        sb.append("[").append(block.getName()).append("]\n");
         for (String log : block.getPlanHistory()) {
-          sb.append("> ").append(log).append("\n");
+          sb.append("\t> ").append(log).append("\n");
         }
       }
     }
@@ -585,6 +603,9 @@ public class LogicalPlan {
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
     private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
+    private final List<RelationNode> relationList = TUtil.newList();
+    private boolean hasWindowFunction = false;
+
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */
@@ -668,10 +689,11 @@ public class LogicalPlan {
         TUtil.putToNestedList(aliasMap, relation.getTableName(), relation.getCanonicalName());
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationList.add(relation);
     }
 
     public Collection<RelationNode> getRelations() {
-      return this.canonicalNameToRelationMap.values();
+      return Collections.unmodifiableList(relationList);
     }
 
     public boolean hasTableExpression() {
@@ -765,6 +787,14 @@ public class LogicalPlan {
 
     public <T extends LogicalNode> T getNodeFromExpr(Expr expr) {
       return (T) exprToNodeMap.get(ObjectUtils.identityToString(expr));
+    }
+
+    public void setHasWindowFunction() {
+      hasWindowFunction = true;
+    }
+
+    public boolean hasWindowSpecs() {
+      return hasWindowFunction;
     }
 
     /**
