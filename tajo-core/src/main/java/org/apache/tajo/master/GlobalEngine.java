@@ -190,10 +190,12 @@ public class GlobalEngine extends AbstractService {
 
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      boolean success = updateQuery(session, rootNode.getChild());
-      if (success && PlannerUtil.checkIfCreateIndexPlan(rootNode)) {
-        return executeInCluster(queryContext, plan, session, sql, jsonExpr, responseBuilder);
+
+      if (PlannerUtil.checkIfCreateIndexPlan(rootNode)) {
+        return createIndex(session, (CreateIndexNode)rootNode.getChild(), queryContext,
+            plan, sql, jsonExpr, responseBuilder);
       } else {
+        updateQuery(session, rootNode.getChild());
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
 
@@ -468,15 +470,6 @@ public class GlobalEngine extends AbstractService {
         TruncateTableNode truncateTable = (TruncateTableNode) root;
         truncateTable(session, truncateTable);
         return true;
-      case CREATE_INDEX:
-        CreateIndexNode createIndexNode = (CreateIndexNode) root;
-        try {
-          createIndex(session, createIndexNode);
-          return true;
-        } catch (CatalogException e) {
-          LOG.error(e.getMessage(), e);
-          return false;
-        }
       case DROP_INDEX:
         DropIndexNode dropIndexNode = (DropIndexNode) root;
         dropIndex(session, dropIndexNode);
@@ -675,7 +668,11 @@ public class GlobalEngine extends AbstractService {
    * @param session user session
    * @param createIndexNode the root of logical plan
    */
-  private void createIndex(final Session session, final CreateIndexNode createIndexNode) {
+  private SubmitQueryResponse createIndex(final Session session, final CreateIndexNode createIndexNode,
+                           QueryContext queryContext, LogicalPlan plan,
+                           String sql, String jsonExpr,
+                           SubmitQueryResponse.Builder responseBuilder) throws Exception {
+    SubmitQueryResponse response = null;
     final CatalogService catalog = context.getCatalog();
     final String dbName = session.getCurrentDatabase();
     String indexName = createIndexNode.getIndexName();
@@ -691,25 +688,33 @@ public class GlobalEngine extends AbstractService {
         throw new AlreadyExistsIndexException(createIndexNode.getIndexName());
       }
     } else {
-      // get the table name and predicate from scan
-      ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
-      String tableName;
-      if (CatalogUtil.isFQTableName(scanNode.getTableName())) {
-        tableName = CatalogUtil.splitFQTableName(scanNode.getTableName())[1];
-      } else {
-        tableName = scanNode.getTableName();
-      }
-      String predicate = scanNode.hasQual() ? scanNode.getQual().toJson() : null;
-      // extract index keys
-      List<IndexKey> indexKeys = TUtil.newList();
-      for (SortSpec eachKey : createIndexNode.getSortSpecs()) {
-        indexKeys.add(new IndexKey(eachKey.getSortKey().toJson(), eachKey.isAscending(), eachKey.isNullFirst()));
-      }
+      response = executeInCluster(queryContext, plan, session, sql, jsonExpr, responseBuilder);
 
-      IndexDesc indexDesc = new IndexDesc(indexName, dbName, tableName, createIndexNode.getIndexType(),
-          indexKeys, createIndexNode.isUnique(), createIndexNode.isClustered(), predicate);
-      catalog.createIndex(indexDesc);
+      // get the table name and predicate from scan
+      try {
+        ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+        String tableName;
+        if (CatalogUtil.isFQTableName(scanNode.getTableName())) {
+          tableName = CatalogUtil.splitFQTableName(scanNode.getTableName())[1];
+        } else {
+          tableName = scanNode.getTableName();
+        }
+        String predicate = scanNode.hasQual() ? scanNode.getQual().toJson() : null;
+        // extract index keys
+        List<IndexKey> indexKeys = TUtil.newList();
+        for (SortSpec eachKey : createIndexNode.getSortSpecs()) {
+          indexKeys.add(new IndexKey(eachKey.getSortKey().toJson(), eachKey.isAscending(), eachKey.isNullFirst()));
+        }
+
+        IndexDesc indexDesc = new IndexDesc(indexName, dbName, tableName, createIndexNode.getIndexType(),
+            indexKeys, createIndexNode.isUnique(), createIndexNode.isClustered(), predicate);
+        catalog.createIndex(indexDesc);
+      } catch (Exception e) {
+        // delete index
+        deleteIndexFiles(dbName, indexName);
+      }
     }
+    return response;
   }
 
   /**
@@ -730,15 +735,19 @@ public class GlobalEngine extends AbstractService {
         throw new NoSuchIndexException(indexName);
       }
     } else {
-      Path indexPath = new Path(context.getConf().getVar(ConfVars.WAREHOUSE_DIR), dbName + "/" + indexName);
-      try {
-        FileSystem fs = indexPath.getFileSystem(context.getConf());
-        fs.delete(indexPath, true);
-      } catch (IOException e) {
-        throw new InternalError(e.getMessage());
-      }
+      deleteIndexFiles(dbName, indexName);
 
       catalog.dropIndex(dbName, indexName);
+    }
+  }
+
+  private void deleteIndexFiles(String dbName, String indexName) {
+    Path indexPath = new Path(context.getConf().getVar(ConfVars.WAREHOUSE_DIR), dbName + "/" + indexName);
+    try {
+      FileSystem fs = indexPath.getFileSystem(context.getConf());
+      fs.delete(indexPath, true);
+    } catch (IOException e) {
+      throw new InternalError(e.getMessage());
     }
   }
 
