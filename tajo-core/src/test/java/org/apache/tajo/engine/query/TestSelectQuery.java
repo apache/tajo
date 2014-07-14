@@ -122,11 +122,22 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSelectColumnAliasExistingInRelation1() throws Exception {
-    // select (l_orderkey + l_orderkey) l_orderkey as col2 from lineitem where l_orderkey > 2;
-    ResultSet res = executeString("select (l_orderkey + l_orderkey) l_orderkey as col2 from lineitem where l_orderkey > 2");
-    System.out.println(resultSetToString(res));
+    // We intend that 'l_orderkey' in where clause points to "default.lineitem.l_orderkey"
+    // select (l_orderkey + l_orderkey) l_orderkey from lineitem where l_orderkey > 2;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testSelectColumnAliasExistingInRelation2() throws Exception {
+    // We intend that 'l_orderkey' in orderby clause points to (-l_orderkey).
+    // select (-l_orderkey) as l_orderkey from lineitem order by l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
 
   @Test
   public final void testSelectSameConstantsWithDifferentAliases() throws Exception {
