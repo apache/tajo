@@ -574,14 +574,24 @@ public class QueryTestCaseBase {
   public String getTableFileContents(Path path) throws Exception {
     FileSystem fs = path.getFileSystem(conf);
 
-    StringBuilder sb = new StringBuilder();
+    FileStatus[] files = fs.listStatus(path);
 
-    List<Path> paths = listFiles(fs, path);
-    for (Path eachPath: paths) {
-      InputStream in = fs.open(eachPath);
+    if (files == null || files.length == 0) {
+      return "";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    byte[] buf = new byte[1024];
+
+    for (FileStatus file: files) {
+      if (file.isDirectory()) {
+        sb.append(getTableFileContents(file.getPath()));
+        continue;
+      }
+
+      InputStream in = fs.open(file.getPath());
       try {
         while (true) {
-          byte[] buf = new byte[1024];
           int readBytes = in.read(buf);
           if (readBytes <= 0) {
             break;
@@ -593,6 +603,7 @@ public class QueryTestCaseBase {
         in.close();
       }
     }
+
     return sb.toString();
   }
 
@@ -610,6 +621,18 @@ public class QueryTestCaseBase {
 
     Path path = tableDesc.getPath();
     return getTableFileContents(path);
+  }
+
+  public List<Path> listTableFiles(String tableName) throws Exception {
+    TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
+    if (tableDesc == null) {
+      return null;
+    }
+
+    Path path = tableDesc.getPath();
+    FileSystem fs = path.getFileSystem(conf);
+
+    return listFiles(fs, path);
   }
 
   private List<Path> listFiles(FileSystem fs, Path path) throws Exception {
