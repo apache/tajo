@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.nameresolver;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -32,6 +33,7 @@ import org.apache.tajo.engine.planner.logical.RelationNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +45,7 @@ public abstract class NameResolver {
     resolverMap.put(NameResolveLevel.RELS_ONLY, new ResolverByRels());
     resolverMap.put(NameResolveLevel.RELS_AND_SUBEXPRS, new ResolverByRelsAndSubExprs());
     resolverMap.put(NameResolveLevel.SUBEXPRS_AND_RELS, new ResolverBySubExprsAndRels());
+    resolverMap.put(NameResolveLevel.GLOBAL, new ResolverByLegacy());
   }
 
   public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
@@ -90,7 +93,7 @@ public abstract class NameResolver {
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = plan.normalizeQualifierAndCanonicalName(block, columnRef);
+      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(plan, block, columnRef);
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 
@@ -116,21 +119,7 @@ public abstract class NameResolver {
 
       return column;
     } else {
-      List<Column> candidates = TUtil.newList();
-
-      // It tries to find a full qualified column name from all relations in the current block.
-      for (RelationNode rel : block.getRelations()) {
-        Column found = rel.getTableSchema().getColumn(columnRef.getName());
-        if (found != null) {
-          candidates.add(found);
-        }
-      }
-
-      if (!candidates.isEmpty()) {
-        return ensureUniqueColumn(candidates);
-      } else {
-        return null;
-      }
+      return resolveUnqualifiedFromAllRelsInBlock(plan, block, columnRef);
     }
   }
 
@@ -149,6 +138,104 @@ public abstract class NameResolver {
       }
     }
     return null;
+  }
+
+  public static Column resolveUnqualifiedFromAllRelsInBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                            ColumnReferenceExpr column) throws VerifyException {
+    List<Column> candidates = TUtil.newList();
+
+    // It tries to find a full qualified column name from all relations in the current block.
+    for (RelationNode rel : block.getRelations()) {
+      Column found = rel.getTableSchema().getColumn(column.getName());
+      if (found != null) {
+        candidates.add(found);
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return ensureUniqueColumn(candidates);
+    } else {
+      return null;
+    }
+  }
+
+  public static Column resolveFromAllRelsInAllBlocks(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                     ColumnReferenceExpr columnRef) throws VerifyException {
+    List<Column> candidates = Lists.newArrayList();
+    // Trying to find columns from other relations in other blocks
+    for (LogicalPlan.QueryBlock eachBlock : plan.getQueryBlocks()) {
+      for (RelationNode rel : eachBlock.getRelations()) {
+        Column found = rel.getTableSchema().getColumn(columnRef.getName());
+        if (found != null) {
+          candidates.add(found);
+        }
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return NameResolver.ensureUniqueColumn(candidates);
+    } else {
+      return null;
+    }
+  }
+
+  public static Column resolveAliasedName(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          ColumnReferenceExpr columnRef) throws VerifyException {
+    List<Column> candidates = Lists.newArrayList();
+    // Trying to find columns from schema in current block.
+    if (block.getSchema() != null) {
+      Column found = block.getSchema().getColumn(columnRef.getName());
+      if (found != null) {
+        candidates.add(found);
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return NameResolver.ensureUniqueColumn(candidates);
+    } else {
+      return null;
+    }
+  }
+
+  public static String resolveDatabase(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+    List<String> found = new ArrayList<String>();
+    for (RelationNode relation : block.getRelations()) {
+      // check alias name or table name
+      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
+        // obtain the database name
+        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
+      }
+    }
+
+    if (found.size() == 0) {
+      return null;
+    } else if (found.size() > 1) {
+      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
+    }
+
+    return found.get(0);
+  }
+
+  public static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                                        ColumnReferenceExpr columnRef)
+      throws PlanningException {
+    String qualifier;
+    String canonicalName;
+
+    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
+      qualifier = columnRef.getQualifier();
+      canonicalName = columnRef.getCanonicalName();
+    } else {
+      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
+      if (resolvedDatabaseName == null) {
+        throw new NoSuchColumnException(columnRef.getQualifier());
+      }
+      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
+      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+    }
+
+    return new Pair<String, String>(qualifier, canonicalName);
   }
 
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)

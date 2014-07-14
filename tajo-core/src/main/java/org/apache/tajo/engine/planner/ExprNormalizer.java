@@ -23,6 +23,8 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
+import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -340,7 +342,8 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     if (!(expr.hasQualifier() && CatalogUtil.isFQTableName(expr.getQualifier()))) {
       if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
         try {
-          String normalized = ctx.plan.getNormalizedColumnName(ctx.block, expr);
+          String normalized =
+              NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolveLevel.GLOBAL).getQualifiedName();
           expr.setName(normalized);
         } catch (NoSuchColumnException nsc) {
         }
