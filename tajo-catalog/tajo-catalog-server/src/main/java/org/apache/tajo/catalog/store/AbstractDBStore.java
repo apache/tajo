@@ -1664,25 +1664,39 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public void dropIndex(String databaseName, final String indexName) throws CatalogException {
-    Connection conn;
-    PreparedStatement pstmt = null;
+    Connection conn = null;
 
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+      dropIndexInternal(conn, databaseName, indexName);
+      conn.commit();
+    } catch (SQLException se) {
+      try {
+        conn.rollback();
+      } catch (SQLException e) {
+        LOG.error(e);
+      }
+    } finally {
+      CatalogUtil.closeQuietly(conn);
+    }
+  }
+
+  private void dropIndexInternal(Connection conn, final String databaseName, final String indexName)
+      throws SQLException {
+    PreparedStatement pstmt = null;
     try {
       int databaseId = getDatabaseId(databaseName);
       String sql = "DELETE FROM " + TB_INDEXES +
           " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
-
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
 
-      conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setString(2, indexName);
       pstmt.executeUpdate();
-    } catch (SQLException se) {
-      throw new CatalogException(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
