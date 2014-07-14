@@ -444,7 +444,8 @@ public class Query implements EventHandler<QueryEvent> {
                   moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++);
                 }
               }
-              // checking all file moved
+              // checking all file moved and remove empty dir
+              verifyAllFileMoved(fs, stagingResultDir);
               FileStatus[] files = fs.listStatus(stagingResultDir);
               if (files != null && files.length != 0) {
                 for (FileStatus eachFile: files) {
@@ -467,6 +468,25 @@ public class Query implements EventHandler<QueryEvent> {
       return finalOutputDir;
     }
 
+    private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {
+      FileStatus[] files = fs.listStatus(stagingPath);
+      if (files != null && files.length != 0) {
+        for (FileStatus eachFile: files) {
+          if (eachFile.isFile()) {
+            LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
+            return false;
+          } else {
+            if (verifyAllFileMoved(fs, eachFile.getPath())) {
+              fs.delete(eachFile.getPath(), false);
+            } else {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }
     private String replaceFileNameSeq(Path path, int seq, NumberFormat nf) throws IOException {
       String[] tokens = path.getName().split("-");
       if (tokens.length != 4) {
