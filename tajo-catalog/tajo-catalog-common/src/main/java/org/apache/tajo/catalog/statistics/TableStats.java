@@ -36,8 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, GsonObject {
-  private TableStatsProto.Builder builder = TableStatsProto.newBuilder();
-
   @Expose private Long numRows = null; // required
   @Expose private Long numBytes = null; // required
   @Expose private Integer numBlocks = null; // optional
@@ -178,7 +176,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
   public Object clone() throws CloneNotSupportedException {
     TableStats stat = (TableStats) super.clone();
-    stat.builder = CatalogProtos.TableStatsProto.newBuilder();
     stat.numRows = numRows != null ? numRows : null;
     stat.numBytes = numBytes != null ? numBytes : null;
     stat.numBlocks = numBlocks != null ? numBlocks : null;
@@ -241,11 +238,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
   @Override
   public TableStatsProto getProto() {
-    if (builder == null) {
-      builder = CatalogProtos.TableStatsProto.newBuilder();
-    } else {
-      builder.clear();
-    }
+    TableStatsProto.Builder builder = CatalogProtos.TableStatsProto.newBuilder();
 
     builder.setNumRows(this.numRows);
     builder.setNumBytes(this.numBytes);
