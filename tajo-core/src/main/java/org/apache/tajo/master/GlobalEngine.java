@@ -728,6 +728,7 @@ public class GlobalEngine extends AbstractService {
     final String dbName = session.getCurrentDatabase();
 
     boolean exists = catalog.existIndexByName(dbName, indexName);
+    LOG.info("index name exist: " + exists);
     if (!exists) {
       if (ifExists) {
         LOG.info("index \"" + indexName + "\" does not exist." );
@@ -735,9 +736,8 @@ public class GlobalEngine extends AbstractService {
         throw new NoSuchIndexException(indexName);
       }
     } else {
-      deleteIndexFiles(dbName, indexName);
-
       catalog.dropIndex(dbName, indexName);
+      deleteIndexFiles(dbName, indexName);
     }
   }
 

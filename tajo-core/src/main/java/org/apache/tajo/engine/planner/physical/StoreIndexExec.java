@@ -25,6 +25,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -33,6 +34,8 @@ import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -53,6 +56,14 @@ public class StoreIndexExec extends UnaryPhysicalExec {
     this.logicalPlan = logicalPlan;
   }
 
+  private Path getIndexPath(TajoConf conf, String dbName, String indexName) {
+    // assume that there is only one fragment for each task
+    String table = context.getInputTables().iterator().next();
+    FileFragment fragment = FragmentConvertor.convert(FileFragment.class, context.getTable(table));
+    return new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), dbName + "/" + indexName + "/" +
+        fragment.getStartKey() + "_" + fragment.getEndKey());
+  }
+
   @Override
   public void init() throws IOException {
     super.init();
@@ -69,10 +80,8 @@ public class StoreIndexExec extends UnaryPhysicalExec {
 
     TajoConf conf = context.getConf();
 
-    // assume that this exec builds an index for only one fragment
     String[] splits = logicalPlan.getIndexName().split("\\.");
-    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), splits[0] + "/" + splits[1] + "/" +
-        context.getUniqueKeyFromFragments());
+    Path indexPath = getIndexPath(conf, splits[0], splits[1]);
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
     this.comparator = new TupleComparator(keySchema, sortSpecs);
