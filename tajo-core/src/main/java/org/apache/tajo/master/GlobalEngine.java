@@ -190,8 +190,8 @@ public class GlobalEngine extends AbstractService {
 
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      updateQuery(session, rootNode.getChild());
-      if (PlannerUtil.checkIfCreateIndexPlan(rootNode)) {
+      boolean success = updateQuery(session, rootNode.getChild());
+      if (success && PlannerUtil.checkIfCreateIndexPlan(rootNode)) {
         return executeInCluster(queryContext, plan, session, sql, jsonExpr, responseBuilder);
       } else {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
@@ -199,7 +199,6 @@ public class GlobalEngine extends AbstractService {
 
         return responseBuilder.build();
       }
-
     } else if (plan.isExplain()) { // explain query
       String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
       Schema schema = new Schema();
@@ -471,8 +470,13 @@ public class GlobalEngine extends AbstractService {
         return true;
       case CREATE_INDEX:
         CreateIndexNode createIndexNode = (CreateIndexNode) root;
-        createIndex(session, createIndexNode);
-        return true;
+        try {
+          createIndex(session, createIndexNode);
+          return true;
+        } catch (CatalogException e) {
+          LOG.error(e.getMessage(), e);
+          return false;
+        }
       case DROP_INDEX:
         DropIndexNode dropIndexNode = (DropIndexNode) root;
         dropIndex(session, dropIndexNode);
@@ -674,18 +678,27 @@ public class GlobalEngine extends AbstractService {
   private void createIndex(final Session session, final CreateIndexNode createIndexNode) {
     final CatalogService catalog = context.getCatalog();
     final String dbName = session.getCurrentDatabase();
+    String indexName = createIndexNode.getIndexName();
+    if (CatalogUtil.isFQTableName(indexName)) {
+      indexName = CatalogUtil.splitFQTableName(indexName)[1];
+    }
 
-    boolean exists = catalog.existIndexByName(dbName, createIndexNode.getIndexName());
+    boolean exists = catalog.existIndexByName(dbName, indexName);
     if (exists) {
       if (createIndexNode.isIfNotExists()) {
-        LOG.info("index \"" + createIndexNode.getIndexName() + "\" already exists." );
+        LOG.info("index \"" + indexName + "\" already exists." );
       } else {
         throw new AlreadyExistsIndexException(createIndexNode.getIndexName());
       }
     } else {
       // get the table name and predicate from scan
       ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
-      String tableName = scanNode.getTableName();
+      String tableName;
+      if (CatalogUtil.isFQTableName(scanNode.getTableName())) {
+        tableName = CatalogUtil.splitFQTableName(scanNode.getTableName())[1];
+      } else {
+        tableName = scanNode.getTableName();
+      }
       String predicate = scanNode.hasQual() ? scanNode.getQual().toJson() : null;
       // extract index keys
       List<IndexKey> indexKeys = TUtil.newList();
@@ -693,7 +706,7 @@ public class GlobalEngine extends AbstractService {
         indexKeys.add(new IndexKey(eachKey.getSortKey().toJson(), eachKey.isAscending(), eachKey.isNullFirst()));
       }
 
-      IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), dbName, tableName, createIndexNode.getIndexType(),
+      IndexDesc indexDesc = new IndexDesc(indexName, dbName, tableName, createIndexNode.getIndexType(),
           indexKeys, createIndexNode.isUnique(), createIndexNode.isClustered(), predicate);
       catalog.createIndex(indexDesc);
     }

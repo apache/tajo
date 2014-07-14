@@ -430,25 +430,25 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
   }
 
-  @Override
-  public boolean existIndexByColumn(final String databaseName, final String tableName, final String columnName) {
-    try {
-      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
-        public Boolean call(NettyClientBase client) throws ServiceException {
-
-          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
-          builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(columnName);
-
-          CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.existIndexByColumn(null, builder.build()).getValue();
-        }
-      }.withRetries();
-    } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return false;
-    }
-  }
+//  @Override
+//  public boolean existIndexByColumn(final String databaseName, final String tableName, final String columnName) {
+//    try {
+//      return new ServerCallable<Boolean>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
+//        public Boolean call(NettyClientBase client) throws ServiceException {
+//
+//          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
+//          builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+//          builder.setColumnName(columnName);
+//
+//          CatalogProtocolService.BlockingInterface stub = getStub(client);
+//          return stub.existIndexByColumn(null, builder.build()).getValue();
+//        }
+//      }.withRetries();
+//    } catch (ServiceException e) {
+//      LOG.error(e.getMessage(), e);
+//      return false;
+//    }
+//  }
 
   @Override
   public final IndexDesc getIndexByName(final String databaseName, final String indexName) {
@@ -470,27 +470,27 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
   }
 
-  @Override
-  public final IndexDesc getIndexByColumn(final String databaseName,
-                                          final String tableName,
-                                          final String columnName) {
-    try {
-      return new ServerCallable<IndexDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
-        public IndexDesc call(NettyClientBase client) throws ServiceException {
-
-          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
-          builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(columnName);
-
-          CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return new IndexDesc(stub.getIndexByColumn(null, builder.build()));
-        }
-      }.withRetries();
-    } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return null;
-    }
-  }
+//  @Override
+//  public final IndexDesc getIndexByColumn(final String databaseName,
+//                                          final String tableName,
+//                                          final String columnName) {
+//    try {
+//      return new ServerCallable<IndexDesc>(this.pool, catalogServerAddr, CatalogProtocol.class, false) {
+//        public IndexDesc call(NettyClientBase client) throws ServiceException {
+//
+//          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
+//          builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+//          builder.setColumnName(columnName);
+//
+//          CatalogProtocolService.BlockingInterface stub = getStub(client);
+//          return new IndexDesc(stub.getIndexByColumn(null, builder.build()));
+//        }
+//      }.withRetries();
+//    } catch (ServiceException e) {
+//      LOG.error(e.getMessage(), e);
+//      return null;
+//    }
+//  }
 
   @Override
   public boolean dropIndex(final String databaseName,

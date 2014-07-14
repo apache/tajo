@@ -155,11 +155,11 @@ public interface CatalogService {
 
   boolean existIndexByName(String databaseName, String indexName);
 
-  boolean existIndexByColumn(String databaseName, String tableName, String columnName);
+//  boolean existIndexByColumn(String databaseName, String tableName, String columnName);
 
   IndexDesc getIndexByName(String databaseName, String indexName);
 
-  IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
+//  IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
 
   boolean dropIndex(String databaseName, String indexName);
 

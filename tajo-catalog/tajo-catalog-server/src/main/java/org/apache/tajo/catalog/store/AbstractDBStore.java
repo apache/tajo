@@ -693,8 +693,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 //
 //      int tableId = res.getInt("TID");
       int tableId = getTableId(dbid, databaseName, tableName);
-      res.close();
-      pstmt.close();
+//      res.close();
+//      pstmt.close();
 
       String colSql =
           "INSERT INTO " + TB_COLUMNS + " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?) ";
@@ -1707,8 +1707,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   final static String GET_INDEXES_SQL =
-      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, " +
-          "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
+      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, EXPRS, METHOD, IS_UNIQUE, " +
+          "IS_CLUSTERED FROM " + TB_INDEXES;
 
 
   @Override
@@ -1750,45 +1750,45 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return proto;
   }
 
-  @Override
-  public IndexDescProto getIndexByColumn(final String databaseName,
-                                         final String tableName,
-                                         final String columnName) throws CatalogException {
-    Connection conn = null;
-    ResultSet res = null;
-    PreparedStatement pstmt = null;
-    IndexDescProto proto = null;
-
-    try {
-      int databaseId = getDatabaseId(databaseName);
-
-      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
-      }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, databaseId);
-      ;
-      pstmt.setString(2, columnName);
-      res = pstmt.executeQuery();
-      if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + columnName);
-      }
-      IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-      resultToIndexDescProtoBuilder(builder, res);
-      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-      proto = builder.build();
-    } catch (SQLException se) {
-      throw new CatalogException(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-
-    return proto;
-  }
+//  @Override
+//  public IndexDescProto getIndexByColumn(final String databaseName,
+//                                         final String tableName,
+//                                         final String columnName) throws CatalogException {
+//    Connection conn = null;
+//    ResultSet res = null;
+//    PreparedStatement pstmt = null;
+//    IndexDescProto proto = null;
+//
+//    try {
+//      int databaseId = getDatabaseId(databaseName);
+//
+//      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+//
+//      if (LOG.isDebugEnabled()) {
+//        LOG.debug(sql);
+//      }
+//
+//      conn = getConnection();
+//      pstmt = conn.prepareStatement(sql);
+//      pstmt.setInt(1, databaseId);
+//      ;
+//      pstmt.setString(2, columnName);
+//      res = pstmt.executeQuery();
+//      if (!res.next()) {
+//        throw new CatalogException("ERROR: there is no index matched to " + columnName);
+//      }
+//      IndexDescProto.Builder builder = IndexDescProto.newBuilder();
+//      resultToIndexDescProtoBuilder(builder, res);
+//      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+//      proto = builder.build();
+//    } catch (SQLException se) {
+//      throw new CatalogException(se);
+//    } finally {
+//      CatalogUtil.closeQuietly(pstmt, res);
+//    }
+//
+//    return proto;
+//  }
 
   @Override
   public boolean existIndexByName(String databaseName, final String indexName) throws CatalogException {
@@ -1823,38 +1823,38 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return exist;
   }
 
-  @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-    Connection conn = null;
-    ResultSet res = null;
-    PreparedStatement pstmt = null;
-
-    boolean exist = false;
-
-    try {
-      int databaseId = getDatabaseId(databaseName);
-
-      String sql =
-          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
-      }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, databaseId);
-      pstmt.setString(2, columnName);
-      res = pstmt.executeQuery();
-      exist = res.next();
-    } catch (SQLException se) {
-      throw new CatalogException(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-    return exist;
-  }
+//  @Override
+//  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+//      throws CatalogException {
+//    Connection conn = null;
+//    ResultSet res = null;
+//    PreparedStatement pstmt = null;
+//
+//    boolean exist = false;
+//
+//    try {
+//      int databaseId = getDatabaseId(databaseName);
+//
+//      String sql =
+//          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+//
+//      if (LOG.isDebugEnabled()) {
+//        LOG.debug(sql);
+//      }
+//
+//      conn = getConnection();
+//      pstmt = conn.prepareStatement(sql);
+//      pstmt.setInt(1, databaseId);
+//      pstmt.setString(2, columnName);
+//      res = pstmt.executeQuery();
+//      exist = res.next();
+//    } catch (SQLException se) {
+//      throw new CatalogException(se);
+//    } finally {
+//      CatalogUtil.closeQuietly(pstmt, res);
+//    }
+//    return exist;
+//  }
 
   @Override
   public IndexDescProto[] getIndexes(String databaseName, final String tableName)
@@ -1901,8 +1901,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setIndexName(res.getString("index_name"));
-//    builder.setColumn(indexResultToColumnProto(res));
-//    builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
+//    builder.setkeys(indexResultToColumnProto(res));
+    builder.setMethod(getIndexMethod(res.getString("method").trim()));
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
   }
