@@ -249,6 +249,9 @@ public class TajoConf extends Configuration {
     DIST_QUERY_SORT_PARTITION_VOLUME("tajo.dist-query.sort.partition-volume-mb", 256),
     DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
 
+    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb",
+        256 * 1024 * 1024),
+
     //////////////////////////////////
     // Physical Executors
     //////////////////////////////////
