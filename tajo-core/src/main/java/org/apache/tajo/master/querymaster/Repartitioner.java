@@ -572,7 +572,7 @@ public class Repartitioner {
     if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0 ) {
       return;
     }
-    TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats());
+    TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
     RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
     BigDecimal card = partitioner.getTotalCardinality();
 
@@ -580,16 +580,29 @@ public class Repartitioner {
     // we set the the number of tasks to the number of range cardinality.
     int determinedTaskNum;
     if (card.compareTo(new BigDecimal(maxNum)) < 0) {
-      LOG.info("The range cardinality (" + card
+      LOG.info(subQuery.getId() + ", The range cardinality (" + card
           + ") is less then the desired number of tasks (" + maxNum + ")");
       determinedTaskNum = card.intValue();
     } else {
       determinedTaskNum = maxNum;
     }
 
-    LOG.info("Try to divide " + mergedRange + " into " + determinedTaskNum +
+    // for LOG
+    TupleRange mergedRangeForPrint = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), true);
+    LOG.info(subQuery.getId() + ", Try to divide " + mergedRangeForPrint + " into " + determinedTaskNum +
         " sub ranges (total units: " + determinedTaskNum + ")");
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
+    if (ranges == null || ranges.length == 0) {
+      LOG.warn(subQuery.getId() + " no range infos.");
+    }
+    TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
+    if (LOG.isDebugEnabled()) {
+      if (ranges != null) {
+        for (TupleRange eachRange : ranges) {
+          LOG.debug(subQuery.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
+        }
+      }
+    }
 
     FileFragment dummyFragment = new FileFragment(scan.getTableName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
     SubQuery.scheduleFragment(subQuery, dummyFragment);

@@ -342,10 +342,10 @@ public class Task {
       builder.setResultStats(new TableStats().getProto());
     }
 
-    Iterator<Entry<Integer,String>> it = context.getShuffleFileOutputs();
+    Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
     if (it.hasNext()) {
       do {
-        Entry<Integer,String> entry = it.next();
+        Entry<Integer, String> entry = it.next();
         ShuffleFileOutput.Builder part = ShuffleFileOutput.newBuilder();
         part.setPartId(entry.getKey());
 

@@ -40,6 +40,7 @@ public class TableStatistics {
   private long numRows = 0;
   private long numBytes = 0;
 
+  private boolean [] maxValueNulls;
 
   private boolean [] comparable;
 
@@ -49,6 +50,7 @@ public class TableStatistics {
     maxValues = new VTuple(schema.size());
 
     numNulls = new long[schema.size()];
+    maxValueNulls = new boolean[schema.size()];
     comparable = new boolean[schema.size()];
 
     DataType type;
@@ -85,6 +87,7 @@ public class TableStatistics {
   public void analyzeField(int idx, Datum datum) {
     if (datum instanceof NullDatum) {
       numNulls[idx]++;
+      maxValueNulls[idx] = true;
       return;
     }
 
@@ -113,12 +116,13 @@ public class TableStatistics {
         LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
             ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
       }
-      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
+      if (maxValues.get(i) == null || schema.getColumn(i).getDataType().getType() == maxValues.get(i).type()) {
         columnStats.setMaxValue(maxValues.get(i));
       } else {
-        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
+        LOG.warn("Wrong statistics column type (" + maxValues.get(i).type() +
             ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
       }
+      columnStats.setMaxValueNull(maxValueNulls[i]);
       stat.addColumnStat(columnStats);
     }
 

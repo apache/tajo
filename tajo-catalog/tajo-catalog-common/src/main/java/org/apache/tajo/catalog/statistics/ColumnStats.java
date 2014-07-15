@@ -24,13 +24,13 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>, Cloneable, GsonObject {
@@ -41,6 +41,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
   @Expose private Long numNulls = null; // optional
   @Expose private Datum minValue = null; // optional
   @Expose private Datum maxValue = null; // optional
+  @Expose private boolean maxValueNull = false; //optional
 
   public ColumnStats(Column column) {
     this.column = column;
@@ -62,6 +63,9 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     }
     if (proto.hasMaxValue()) {
       this.maxValue = DatumFactory.createFromBytes(getColumn().getDataType(), proto.getMaxValue().toByteArray());
+    }
+    if (proto.hasMaxValueNull()) {
+      this.maxValueNull = proto.getMaxValueNull();
     }
   }
 
@@ -109,6 +113,14 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     this.numNulls = numNulls;
   }
 
+  public boolean isMaxValueNull() {
+    return maxValueNull;
+  }
+
+  public void setMaxValueNull(boolean maxValueNull) {
+    this.maxValueNull = maxValueNull;
+  }
+
   public boolean equals(Object obj) {
     if (obj instanceof ColumnStats) {
       ColumnStats other = (ColumnStats) obj;
@@ -134,6 +146,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     stat.numNulls = numNulls;
     stat.minValue = minValue;
     stat.maxValue = maxValue;
+    stat.maxValueNull = maxValueNull;
 
     return stat;
   }
@@ -168,6 +181,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     if (this.maxValue != null) {
       builder.setMaxValue(ByteString.copyFrom(this.maxValue.asByteArray()));
     }
+    builder.setMaxValueNull(maxValueNull);
 
     return builder.build();
   }

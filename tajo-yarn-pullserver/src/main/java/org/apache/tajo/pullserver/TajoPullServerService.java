@@ -597,7 +597,7 @@ public class TajoPullServerService extends AbstractService {
 
     if (comparator.compare(end, idxReader.getFirstKey()) < 0 ||
         comparator.compare(idxReader.getLastKey(), start) < 0) {
-      LOG.info("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
+      LOG.warn("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
           "], but request start:" + start + ", end: " + end);
       return null;
     }

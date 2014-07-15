@@ -205,6 +205,8 @@ message ColumnStatsProto {
   optional int64 numNulls = 3;
   optional bytes minValue = 4;
   optional bytes maxValue = 5;
+  optional bool maxValueNull = 6;
+
 }
 
 enum StatType {
