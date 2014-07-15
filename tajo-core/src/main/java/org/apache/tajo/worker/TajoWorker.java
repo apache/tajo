@@ -42,10 +42,7 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -248,8 +245,8 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      tajoMasterAddress = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
-      workerResourceTrackerAddr = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
+      tajoMasterAddress = HAUtil.getMasterUmbilicalAddress(systemConf);
+      workerResourceTrackerAddr = NetUtils.createSocketAddr(HAUtil.getResourceTrackerName(systemConf));
       connectToCatalog();
     }
 
@@ -449,11 +446,11 @@ public class TajoWorker extends CompositeService {
     }
 
     public InetSocketAddress getTajoMasterAddress() {
-      return tajoMasterAddress;
+      return HAUtil.getMasterUmbilicalAddress(systemConf);
     }
 
     public InetSocketAddress getResourceTrackerAddress() {
-      return workerResourceTrackerAddr;
+      return HAUtil.getResourceTrackerAddress(systemConf);
     }
 
     public int getPeerRpcPort() {

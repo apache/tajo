@@ -30,6 +30,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.Test;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -55,8 +56,6 @@ public class TestHAManagerWithHDFS  {
 
     conf = cluster.getConfiguration();
     client = new TajoClient(conf);
-
-    startBackupMasters();
 
     FileSystem fs = cluster.getDefaultFileSystem();
     startBackupMasters();
@@ -127,5 +126,8 @@ public class TestHAManagerWithHDFS  {
 
     backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
     assertTrue(fs.exists(backupPath));
+
+    assertEquals(1, fs.listStatus(activePath).length);
+    assertEquals(2, fs.listStatus(backupPath).length);
   }
 }

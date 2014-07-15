@@ -426,6 +426,14 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void stop() {
+    if (haManager != null) {
+      try {
+        haManager.delete();
+      } catch (Exception e) {
+        LOG.error(e);
+      }
+    }
+
     if (webServer != null) {
       try {
         webServer.stop();
