@@ -265,14 +265,22 @@ public class Fetcher {
         LOG.error("Fetch failed :", e.getCause());
       }
 
-      if(ctx.getChannel().isConnected()){
-        ctx.getChannel().close().setFailure(e.getCause());
-      }
-
       // this fetching will be retry
       IOUtils.cleanup(LOG, fc, raf);
+      ctx.getChannel().close();
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
+    }
+
+    @Override
+    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+      super.channelDisconnected(ctx, e);
+
+      if(getState() != TajoProtos.FetcherState.FETCH_FINISHED){
+        //channel is closed, but cannot complete fetcher
+        finishTime = System.currentTimeMillis();
+        state = TajoProtos.FetcherState.FETCH_FAILED;
+      }
     }
   }
 
