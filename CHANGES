@@ -27,6 +27,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-933: Fork some classes of Parquet as builtin third-party classes.
+    (hyunsik)
+
     TAJO-932: Upgrade Parquet to 1.5.0. (hyunsik)
 
     TAJO-903: Some left outer join cases are not optimized as the broadcast 
@@ -83,6 +86,12 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-904: ORDER BY Null first support. (Hyoungjun Kim via hyunsik)
+
+    TAJO-936: TestStorages::testSplitable is failed occasionally. (jinho)
+
+    TAJO-673: Assign proper number of tasks when inserting into partitioned table. (jaehwa)
 
     TAJO-916: SubQuery::computeStatFromTasks occasionally fail.
     (Hyoungjun Kim via hyunsik)

@@ -1380,6 +1380,7 @@ public class RCFile {
 
       in.readFully(sync); // read sync bytes
       headerEnd = in.getPos();
+      lastSeenSyncPos = headerEnd; //initial sync position
       readBytes += headerEnd;
     }
 
