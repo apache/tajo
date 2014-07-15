@@ -280,7 +280,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       PullHost host = new PullHost(getHost(), getPullServerPort());
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
-            getId().getId(), p.getPartId(), host);
+            getId().getId(), p.getPartId(), host, p.getVolume());
         partitions.add(entry);
       }
     }

@@ -424,8 +424,8 @@ public class PullServerAuxService extends AuxiliaryService {
           chunks.add(chunk);
         }
 
-        // if a subquery requires a hash repartition
-      } else if (repartitionType.equals("h")) {
+        // if a subquery requires a hash repartition  or a scattered hash repartition
+      } else if (repartitionType.equals("h") || repartitionType.equals("s")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
               lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" +

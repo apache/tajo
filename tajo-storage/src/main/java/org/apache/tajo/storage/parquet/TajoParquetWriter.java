@@ -21,7 +21,7 @@ package org.apache.tajo.storage.parquet;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.Tuple;
-import parquet.hadoop.ParquetWriter;
+import org.apache.tajo.storage.thirdparty.parquet.ParquetWriter;
 import parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;

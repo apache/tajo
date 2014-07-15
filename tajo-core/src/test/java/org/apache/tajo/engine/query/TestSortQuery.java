@@ -21,12 +21,20 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.TimeZone;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
@@ -168,5 +176,46 @@ public class TestSortQuery extends QueryTestCaseBase {
     ResultSet res = executeJsonQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSortNullColumn() throws Exception {
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.INT4);
+      schema.addColumn("name", Type.TEXT);
+      String[] data = new String[]{
+          "1|BRAZIL",
+          "2|ALGERIA",
+          "3|ARGENTINA",
+          "4|CANADA"
+      };
+      TajoTestingCluster.createTable("nullsort", schema, tableOptions, data, 2);
+
+      ResultSet res = executeString(
+          "select * from (" +
+              "select case when id > 2 then null else id end as col1, name as col2 from nullsort) a " +
+          "order by col1, col2"
+      );
+
+      String expected = "col1,col2\n" +
+          "-------------------------------\n" +
+          "1,BRAZIL\n" +
+          "2,ALGERIA\n" +
+          "null,ARGENTINA\n" +
+          "null,CANADA\n";
+
+      assertEquals(expected, resultSetToString(res));
+
+      cleanupQuery(res);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "0");
+      executeString("DROP TABLE nullsort PURGE;").close();
+    }
   }
 }
