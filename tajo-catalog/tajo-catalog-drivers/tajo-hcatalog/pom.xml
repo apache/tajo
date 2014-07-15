@@ -138,8 +138,8 @@
       </activation>
       <properties>
         <hive.version>0.12.0</hive.version>
-        <parquet.version>1.4.2</parquet.version>
-        <parquet.format.version>2.0.0</parquet.format.version>
+        <parquet.version>1.5.0</parquet.version>
+        <parquet.format.version>2.1.0</parquet.format.version>
       </properties>
       <dependencies>
         <dependency>
