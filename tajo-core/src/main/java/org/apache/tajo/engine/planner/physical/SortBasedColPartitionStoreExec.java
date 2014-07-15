@@ -64,6 +64,12 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     if (context.getQueryContext().get(QueryContext.OUTPUT_PER_FILE_SIZE) != null) {
       maxPerFileSize = Long.valueOf(context.getQueryContext().get(QueryContext.OUTPUT_PER_FILE_SIZE));
     }
+
+    if (plan instanceof InsertNode) {
+      String nullChar = context.getQueryContext().get(TajoConf.ConfVars.CSVFILE_NULL.varname,
+          TajoConf.ConfVars.CSVFILE_NULL.defaultVal);
+      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+    }
   }
 
   public void init() throws IOException {
@@ -101,17 +107,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    if (plan instanceof InsertNode) {
-      InsertNode createTableNode = (InsertNode) plan;
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-          createTableNode.getTableSchema(), actualFilePath);
-    } else {
-      String nullChar = context.getQueryContext().get(TajoConf.ConfVars.CSVFILE_NULL.varname,
-          TajoConf.ConfVars.CSVFILE_NULL.defaultVal);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
-          actualFilePath);
-    }
+    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
+        outSchema, actualFilePath);
 
     appender.enableStats();
     appender.init();

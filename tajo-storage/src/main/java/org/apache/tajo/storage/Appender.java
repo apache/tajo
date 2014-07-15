@@ -30,6 +30,8 @@ public interface Appender extends Closeable {
   void addTuple(Tuple t) throws IOException;
   
   void flush() throws IOException;
+
+  long getEstimatedOutputSize() throws IOException;
   
   void close() throws IOException;
 

@@ -74,6 +74,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case GROUP_BY:
         current = visitGroupBy(context, plan, block, (GroupbyNode) node, stack);
         break;
+      case WINDOW_AGG:
+        current = visitWindowAgg(context, plan, block, (WindowAggNode) node, stack);
+        break;
       case DISTINCT_GROUP_BY:
         current = visitDistinct(context, plan, block, (DistinctGroupbyNode) node, stack);
         break;
@@ -191,6 +194,14 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   @Override
+  public RESULT visitWindowAgg(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
+                               Stack<LogicalNode> stack) throws PlanningException {
+    stack.push(node);
+    RESULT result = visit(context, plan, block, node.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
   public RESULT visitDistinct(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DistinctGroupbyNode node,
                              Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);

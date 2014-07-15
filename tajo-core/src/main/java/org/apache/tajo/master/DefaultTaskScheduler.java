@@ -145,6 +145,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
   private FileFragment[] fragmentsForNonLeafTask;
+  private FileFragment[] broadcastFragmentsForNonLeafTask;
 
   LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
@@ -195,7 +196,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
           if (castEvent.hasRightFragments()) {
-            fragmentsForNonLeafTask[1] = castEvent.getRightFragments().toArray(new FileFragment[]{})[0];
+            FileFragment[] rightFragments = castEvent.getRightFragments().toArray(new FileFragment[]{});
+            fragmentsForNonLeafTask[1] = rightFragments[0];
+            if (rightFragments.length > 1) {
+              broadcastFragmentsForNonLeafTask = new FileFragment[rightFragments.length - 1];
+              System.arraycopy(rightFragments, 1, broadcastFragmentsForNonLeafTask, 0, broadcastFragmentsForNonLeafTask.length);
+            } else {
+              broadcastFragmentsForNonLeafTask = null;
+            }
           }
         }
       } else if (event instanceof FetchScheduleEvent) {
@@ -210,6 +218,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (fragmentsForNonLeafTask[1] != null) {
             task.addFragment(fragmentsForNonLeafTask[1], true);
           }
+        }
+        if (broadcastFragmentsForNonLeafTask != null && broadcastFragmentsForNonLeafTask.length > 0) {
+          task.addFragments(Arrays.asList(broadcastFragmentsForNonLeafTask));
         }
         subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
       } else if (event instanceof QueryUnitAttemptScheduleEvent) {

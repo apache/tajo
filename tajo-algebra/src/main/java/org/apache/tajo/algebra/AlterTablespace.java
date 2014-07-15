@@ -68,4 +68,13 @@ public class AlterTablespace extends Expr {
         TUtil.checkEquals(setType, another.setType) &&
         TUtil.checkEquals(uri, another.uri);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    AlterTablespace alter = (AlterTablespace) super.clone();
+    alter.setType = setType;
+    alter.tablespaceName = tablespaceName;
+    alter.uri = uri;
+    return alter;
+  }
 }

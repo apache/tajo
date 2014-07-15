@@ -63,4 +63,14 @@ public class TablePrimarySubQuery extends Relation {
   public String toJson() {
     return JsonHelper.toJson(this);
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    TablePrimarySubQuery subQuery = (TablePrimarySubQuery) super.clone();
+    subQuery.subquery = (Expr) subquery.clone();
+    if (columnNames != null) {
+      subQuery.columnNames = columnNames.clone();
+    }
+    return subQuery;
+  }
 }

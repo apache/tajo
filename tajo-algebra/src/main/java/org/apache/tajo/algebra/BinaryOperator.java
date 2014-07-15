@@ -67,4 +67,12 @@ public class BinaryOperator extends Expr {
   public String toString() {
     return left.toString() + " " + opType.toString() + " " + right.toString();
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    BinaryOperator binaryOperator = (BinaryOperator) super.clone();
+    binaryOperator.left = (Expr) left.clone();
+    binaryOperator.right = (Expr) right.clone();
+    return binaryOperator;
+  }
 }

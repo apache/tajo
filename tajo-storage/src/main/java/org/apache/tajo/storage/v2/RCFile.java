@@ -1457,11 +1457,6 @@ public class RCFile {
       currentKeyLength = sin.readInt();
       compressedKeyLen = sin.readInt();
       
-//      System.out.println(">>>currentRecordLength=" + currentRecordLength + 
-//    		  ",currentKeyLength=" + currentKeyLength + 
-//    		  ",compressedKeyLen=" + compressedKeyLen + 
-//    		  ",decompress=" + decompress);
-      
       if (decompress) {
         keyTempBuffer.reset();
         keyTempBuffer.write(sin, compressedKeyLen);

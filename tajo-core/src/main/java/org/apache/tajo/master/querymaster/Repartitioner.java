@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -37,7 +38,6 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -119,13 +119,18 @@ public class Repartitioner {
       }
     }
 
-    // If one of inner join tables has no input data, it should return zero rows.
+    // If one of inner join tables has no input data, it means that this execution block has no result row.
     JoinNode joinNode = PlannerUtil.findMostBottomNode(execBlock.getPlan(), NodeType.JOIN);
     if (joinNode != null) {
       if ( (joinNode.getJoinType() == JoinType.INNER)) {
+        LogicalNode leftNode = joinNode.getLeftChild();
+        LogicalNode rightNode = joinNode.getRightChild();
         for (int i = 0; i < stats.length; i++) {
-          if (stats[i] == 0) {
-            return;
+          if (scans[i].getPID() == leftNode.getPID() || scans[i].getPID() == rightNode.getPID()) {
+            if (stats[i] == 0) {
+              LOG.info(scans[i] + " 's input data is zero. Inner join's result is empty.");
+              return;
+            }
           }
         }
       }
@@ -176,129 +181,226 @@ public class Repartitioner {
 
     // Assigning either fragments or fetch urls to query units
     boolean isAllBroadcastTable = true;
-    int baseScanIdx = -1;
-    long maxStats = Long.MIN_VALUE;
-    int maxStatsScanIdx = -1;
     for (int i = 0; i < scans.length; i++) {
       if (!execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
         isAllBroadcastTable = false;
-        baseScanIdx = i;
-      }
-      // finding largest table.
-      if (stats[i] > maxStats) {
-        maxStats = stats[i];
-        maxStatsScanIdx = i;
+        break;
       }
     }
 
 
-    if (isAllBroadcastTable) {
+    if (isAllBroadcastTable) { // if all relations of this EB are broadcasted
       // set largest table to normal mode
-      baseScanIdx = maxStatsScanIdx;
+      long maxStats = Long.MIN_VALUE;
+      int maxStatsScanIdx = -1;
+      for (int i = 0; i < scans.length; i++) {
+        // finding largest table.
+        // If stats == 0, can't be base table.
+        if (stats[i] > 0 && stats[i] > maxStats) {
+          maxStats = stats[i];
+          maxStatsScanIdx = i;
+        }
+      }
+      if (maxStatsScanIdx == -1) {
+        maxStatsScanIdx = 0;
+      }
+      int baseScanIdx = maxStatsScanIdx;
       scans[baseScanIdx].setBroadcastTable(false);
       execBlock.removeBroadcastTable(scans[baseScanIdx].getCanonicalName());
       LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join with all tables, base_table=%s, base_volume=%d",
           scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
       scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments);
-    } else if (!execBlock.getBroadcastTables().isEmpty()) {
-      LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, base_table=%s, base_volume=%d",
-          scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
-      scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments);
-    } else {
-      LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
-      // The hash map is modeling as follows:
-      // <Part Id, <EbId, Intermediate Data>>
-      Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
-          new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
-      // Grouping IntermediateData by a partition key and a table name
-      List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
 
-      // In the case of join with union, there is one ScanNode for union.
-      Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = execBlock.getUnionScanMap();
-      for (ExecutionBlock childBlock : childBlocks) {
-        ExecutionBlockId scanEbId = unionScanMap.get(childBlock.getId());
-        if (scanEbId == null) {
-          scanEbId = childBlock.getId();
+    } else if (!execBlock.getBroadcastTables().isEmpty()) { // If some relations of this EB are broadcasted
+      boolean hasNonLeafNode = false;
+      List<Integer> largeScanIndexList = new ArrayList<Integer>();
+      List<Integer> broadcastIndexList = new ArrayList<Integer>();
+      String nonLeafScanNames = "";
+      String namePrefix = "";
+      long maxStats = Long.MIN_VALUE;
+      int maxStatsScanIdx = -1;
+      for (int i = 0; i < scans.length; i++) {
+        if (scans[i].getTableDesc().getMeta().getStoreType() == StoreType.RAW) {
+          // Intermediate data scan
+          hasNonLeafNode = true;
+          largeScanIndexList.add(i);
+          nonLeafScanNames += namePrefix + scans[i].getCanonicalName();
+          namePrefix = ",";
         }
-        SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-        for (QueryUnit task : childExecSM.getQueryUnits()) {
-          if (task.getIntermediateData() != null && !task.getIntermediateData().isEmpty()) {
-            for (IntermediateEntry intermEntry : task.getIntermediateData()) {
-              intermEntry.setEbId(childBlock.getId());
-              if (hashEntries.containsKey(intermEntry.getPartId())) {
-                Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                    hashEntries.get(intermEntry.getPartId());
-
-                if (tbNameToInterm.containsKey(scanEbId)) {
-                  tbNameToInterm.get(scanEbId).add(intermEntry);
-                } else {
-                  tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-                }
-              } else {
-                Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                    new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
-                tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-                hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
-              }
-            }
-          } else {
-            //if no intermidatedata(empty table), make empty entry
-            int emptyPartitionId = 0;
-            if (hashEntries.containsKey(emptyPartitionId)) {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
-              if (tbNameToInterm.containsKey(scanEbId))
-                tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
-              else
-                tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
-            } else {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                  new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
-              tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
-              hashEntries.put(emptyPartitionId, tbNameToInterm);
-            }
+        if (execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
+          broadcastIndexList.add(i);
+        } else {
+          // finding largest table.
+          if (stats[i] > 0 && stats[i] > maxStats) {
+            maxStats = stats[i];
+            maxStatsScanIdx = i;
           }
         }
       }
-
-      // hashEntries can be zero if there are no input data.
-      // In the case, it will cause the zero divided exception.
-      // it avoids this problem.
-      int [] avgSize = new int[2];
-      avgSize[0] = hashEntries.size() == 0 ? 0 : (int) (stats[0] / hashEntries.size());
-      avgSize[1] = hashEntries.size() == 0 ? 0 : (int) (stats[1] / hashEntries.size());
-      int bothFetchSize = avgSize[0] + avgSize[1];
-
-      // Getting the desire number of join tasks according to the volumn
-      // of a larger table
-      int largerIdx = stats[0] >= stats[1] ? 0 : 1;
-      int desireJoinTaskVolumn =
-          QueryContext.getIntVar(subQuery.getContext().getQueryContext(), subQuery.getContext().getConf(),
-              ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
-
-      // calculate the number of tasks according to the data size
-      int mb = (int) Math.ceil((double)stats[largerIdx] / 1048576);
-      LOG.info("Larger intermediate data is approximately " + mb + " MB");
-      // determine the number of task per 64MB
-      int maxTaskNum = (int) Math.ceil((double)mb / desireJoinTaskVolumn);
-      LOG.info("The calculated number of tasks is " + maxTaskNum);
-      LOG.info("The number of total shuffle keys is " + hashEntries.size());
-      // the number of join tasks cannot be larger than the number of
-      // distinct partition ids.
-      int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
-      LOG.info("The determined number of join tasks is " + joinTaskNum);
-
-      SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(new FileFragment[]{fragments[1]}));
-
-      // Assign partitions to tasks in a round robin manner.
-      for (Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry
-          : hashEntries.entrySet()) {
-        addJoinShuffle(subQuery, entry.getKey(), entry.getValue());
+      if (maxStatsScanIdx == -1) {
+        maxStatsScanIdx = 0;
       }
 
-      schedulerContext.setTaskSize((int) Math.ceil((double) bothFetchSize / joinTaskNum));
-      schedulerContext.setEstimatedTaskNum(joinTaskNum);
+      if (!hasNonLeafNode) {
+        if (largeScanIndexList.size() > 1) {
+          String largeTableNames = "";
+          for (Integer eachId : largeScanIndexList) {
+            largeTableNames += scans[eachId].getTableName() + ",";
+          }
+          throw new IOException("Broadcase join with leaf node should have only one large table, " +
+              "but " + largeScanIndexList.size() + ", tables=" + largeTableNames);
+        }
+        int baseScanIdx = largeScanIndexList.isEmpty() ? maxStatsScanIdx : largeScanIndexList.get(0);
+        LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, base_table=%s, base_volume=%d",
+            scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
+        scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments);
+      } else {
+        if (largeScanIndexList.size() > 2) {
+          throw new IOException("Symmetric Repartition Join should have two scan node, but " + nonLeafScanNames);
+        }
+
+        //select intermediate scan and stats
+        ScanNode[] intermediateScans = new ScanNode[largeScanIndexList.size()];
+        long[] intermediateScanStats = new long[largeScanIndexList.size()];
+        FileFragment[] intermediateFragments = new FileFragment[largeScanIndexList.size()];
+        int index = 0;
+        for (Integer eachIdx : largeScanIndexList) {
+          intermediateScans[index] = scans[eachIdx];
+          intermediateScanStats[index] = stats[eachIdx];
+          intermediateFragments[index++] = fragments[eachIdx];
+        }
+        FileFragment[] broadcastFragments = new FileFragment[broadcastIndexList.size()];
+        index = 0;
+        for (Integer eachIdx : broadcastIndexList) {
+          scans[eachIdx].setBroadcastTable(true);
+          broadcastFragments[index++] = fragments[eachIdx];
+        }
+        LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, join_node=%s", nonLeafScanNames));
+        scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery,
+            intermediateScans, intermediateScanStats, intermediateFragments, broadcastFragments);
+      }
+    } else {
+      LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
+      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null);
     }
+  }
+
+  /**
+   * Scheduling in tech case of Symmetric Repartition Join
+   * @param masterContext
+   * @param schedulerContext
+   * @param subQuery
+   * @param scans
+   * @param stats
+   * @param fragments
+   * @throws IOException
+   */
+  private static void scheduleSymmetricRepartitionJoin(QueryMasterTask.QueryMasterTaskContext masterContext,
+                                                       TaskSchedulerContext schedulerContext,
+                                                       SubQuery subQuery,
+                                                       ScanNode[] scans,
+                                                       long[] stats,
+                                                       FileFragment[] fragments,
+                                                       FileFragment[] broadcastFragments) throws IOException {
+    MasterPlan masterPlan = subQuery.getMasterPlan();
+    ExecutionBlock execBlock = subQuery.getBlock();
+    // The hash map is modeling as follows:
+    // <Part Id, <EbId, Intermediate Data>>
+    Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
+        new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
+
+    // Grouping IntermediateData by a partition key and a table name
+    List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
+
+    // In the case of join with union, there is one ScanNode for union.
+    Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = execBlock.getUnionScanMap();
+    for (ExecutionBlock childBlock : childBlocks) {
+      ExecutionBlockId scanEbId = unionScanMap.get(childBlock.getId());
+      if (scanEbId == null) {
+        scanEbId = childBlock.getId();
+      }
+      SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
+      for (QueryUnit task : childExecSM.getQueryUnits()) {
+        if (task.getIntermediateData() != null && !task.getIntermediateData().isEmpty()) {
+          for (IntermediateEntry intermEntry : task.getIntermediateData()) {
+            intermEntry.setEbId(childBlock.getId());
+            if (hashEntries.containsKey(intermEntry.getPartId())) {
+              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                  hashEntries.get(intermEntry.getPartId());
+
+              if (tbNameToInterm.containsKey(scanEbId)) {
+                tbNameToInterm.get(scanEbId).add(intermEntry);
+              } else {
+                tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
+              }
+            } else {
+              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                  new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+              tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
+              hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
+            }
+          }
+        } else {
+          //if no intermidatedata(empty table), make empty entry
+          int emptyPartitionId = 0;
+          if (hashEntries.containsKey(emptyPartitionId)) {
+            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
+            if (tbNameToInterm.containsKey(scanEbId))
+              tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
+            else
+              tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+          } else {
+            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+            hashEntries.put(emptyPartitionId, tbNameToInterm);
+          }
+        }
+      }
+    }
+
+    // hashEntries can be zero if there are no input data.
+    // In the case, it will cause the zero divided exception.
+    // it avoids this problem.
+    int[] avgSize = new int[2];
+    avgSize[0] = hashEntries.size() == 0 ? 0 : (int) (stats[0] / hashEntries.size());
+    avgSize[1] = hashEntries.size() == 0 ? 0 : (int) (stats[1] / hashEntries.size());
+    int bothFetchSize = avgSize[0] + avgSize[1];
+
+    // Getting the desire number of join tasks according to the volumn
+    // of a larger table
+    int largerIdx = stats[0] >= stats[1] ? 0 : 1;
+    int desireJoinTaskVolumn = subQuery.getContext().getConf().
+        getIntVar(ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
+
+    // calculate the number of tasks according to the data size
+    int mb = (int) Math.ceil((double) stats[largerIdx] / 1048576);
+    LOG.info("Larger intermediate data is approximately " + mb + " MB");
+    // determine the number of task per 64MB
+    int maxTaskNum = (int) Math.ceil((double) mb / desireJoinTaskVolumn);
+    LOG.info("The calculated number of tasks is " + maxTaskNum);
+    LOG.info("The number of total shuffle keys is " + hashEntries.size());
+    // the number of join tasks cannot be larger than the number of
+    // distinct partition ids.
+    int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
+    LOG.info("The determined number of join tasks is " + joinTaskNum);
+
+    FileFragment[] rightFragments = new FileFragment[1 + (broadcastFragments == null ? 0 : broadcastFragments.length)];
+    rightFragments[0] = fragments[1];
+    if (broadcastFragments != null) {
+      System.arraycopy(broadcastFragments, 0, rightFragments, 1, broadcastFragments.length);
+    }
+    SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(rightFragments));
+
+    // Assign partitions to tasks in a round robin manner.
+    for (Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry
+        : hashEntries.entrySet()) {
+      addJoinShuffle(subQuery, entry.getKey(), entry.getValue());
+    }
+
+    schedulerContext.setTaskSize((int) Math.ceil((double) bothFetchSize / joinTaskNum));
+    schedulerContext.setEstimatedTaskNum(joinTaskNum);
   }
 
   /**
