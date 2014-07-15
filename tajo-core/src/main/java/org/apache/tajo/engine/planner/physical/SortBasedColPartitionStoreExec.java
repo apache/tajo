@@ -163,9 +163,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       }
 
       appender.addTuple(tuple);
-      writtenTupleSize += MemoryUtil.calculateMemorySize(tuple);
 
-      if (writtenTupleSize > maxPerFileSize) {
+      if (maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
         writtenFileNum++;
         StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());

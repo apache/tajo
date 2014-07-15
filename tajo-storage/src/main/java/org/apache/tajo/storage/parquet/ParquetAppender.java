@@ -130,7 +130,7 @@ public class ParquetAppender extends FileAppender {
   }
 
   public long getEstimatedOutputSize() throws IOException {
-    return writer.
+    return writer.getEstimatedWrittenSize();
   }
 
   /**

@@ -70,6 +70,12 @@ public class StoreTableExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
+    if (!(plan instanceof InsertNode)) {
+      String nullChar = context.getQueryContext().get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+    }
+
+
     openNewFile(writtenFileNum);
   }
 
@@ -84,8 +90,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
           createTableNode.getTableSchema(), lastFileName);
     } else {
-      String nullChar = context.getQueryContext().get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
           lastFileName);
     }
@@ -102,7 +106,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     while((tuple = child.next()) != null) {
       appender.addTuple(tuple);
 
-      if (maxPerFileSize > 0 && appender.getEstimatedOutputSize() > maxPerFileSize) {
+      if (maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
         writtenFileNum++;
 
