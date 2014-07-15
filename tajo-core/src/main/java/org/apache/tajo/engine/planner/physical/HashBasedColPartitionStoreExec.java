@@ -20,9 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -68,25 +65,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     Appender appender = appenderMap.get(partition);
 
     if (appender == null) {
-      Path dataFile = getDataFile(partition);
-      FileSystem fs = dataFile.getFileSystem(context.getConf());
-
-      if (fs.exists(dataFile.getParent())) {
-        LOG.info("Path " + dataFile.getParent() + " already exists!");
-      } else {
-        fs.mkdirs(dataFile.getParent());
-        LOG.info("Add subpartition path directory :" + dataFile.getParent());
-      }
-
-      if (fs.exists(dataFile)) {
-        LOG.info("File " + dataFile + " already exists!");
-        FileStatus status = fs.getFileStatus(dataFile);
-        LOG.info("File size: " + status.getLen());
-      }
-
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
-      appender.enableStats();
-      appender.init();
+      appender = makeAppender(partition);
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);

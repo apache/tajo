@@ -51,7 +51,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
   private long maxPerFileSize = Long.MAX_VALUE;
   private int writtenFileNum = 0;
   private Path lastFileName;
-  private long writtenTupleSize = 0;
 
   public StoreTableExec(TaskAttemptContext context, PersistentStoreNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
@@ -102,9 +101,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
   public Tuple next() throws IOException {
     while((tuple = child.next()) != null) {
       appender.addTuple(tuple);
-      writtenTupleSize += MemoryUtil.calculateMemorySize(tuple);
 
-      if (writtenTupleSize > maxPerFileSize) {
+      if (maxPerFileSize > 0 && appender.getEstimatedOutputSize() > maxPerFileSize) {
         appender.close();
         writtenFileNum++;
 
@@ -114,7 +112,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
           StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
         }
         openNewFile(writtenFileNum);
-        writtenTupleSize = 0;
       }
     }
         
