@@ -25,21 +25,33 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
 
+import static junit.framework.TestCase.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.*;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 public class TestTablePartitions extends QueryTestCaseBase {
 
@@ -62,6 +74,77 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
             "l_quantity from lineitem");
+
+    MasterPlan plan = getQueryPlan(res);
+    ExecutionBlock rootEB = plan.getRoot();
+
+    /*
+    -------------------------------------------------------------------------------
+    |-eb_1405354886454_0001_000003
+       |-eb_1405354886454_0001_000002
+          |-eb_1405354886454_0001_000001
+     */
+    assertEquals(1, plan.getChildCount(rootEB.getId()));
+
+    ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
+    assertNotNull(insertEB);
+    assertEquals(NodeType.INSERT, insertEB.getPlan().getType());
+    assertEquals(1, plan.getChildCount(insertEB.getId()));
+
+    ExecutionBlock scanEB = plan.getChild(insertEB.getId(), 0);
+
+    List<DataChannel> list = plan.getOutgoingChannels(scanEB.getId());
+    assertEquals(1, list.size());
+    DataChannel channel = list.get(0);
+    assertNotNull(channel);
+    assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
+    assertEquals(1, channel.getShuffleKeys().length);
+
+    res.close();
+  }
+
+  @Test
+  public final void testCreateColumnPartitionedTableWithJoin() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithJoin");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+    assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+    res = testBase.execute(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+            "l_quantity from lineitem join orders on l_orderkey = o_orderkey");
+
+    MasterPlan plan = getQueryPlan(res);
+    ExecutionBlock rootEB = plan.getRoot();
+
+    /*
+    -------------------------------------------------------------------------------
+    |-eb_1405356074433_0001_000005
+       |-eb_1405356074433_0001_000004
+          |-eb_1405356074433_0001_000003
+             |-eb_1405356074433_0001_000002
+             |-eb_1405356074433_0001_000001
+     */
+    assertEquals(1, plan.getChildCount(rootEB.getId()));
+
+    ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
+    assertNotNull(insertEB);
+    assertEquals(NodeType.INSERT, insertEB.getPlan().getType());
+    assertEquals(1, plan.getChildCount(insertEB.getId()));
+
+    ExecutionBlock scanEB = plan.getChild(insertEB.getId(), 0);
+
+    List<DataChannel> list = plan.getOutgoingChannels(scanEB.getId());
+    assertEquals(1, list.size());
+    DataChannel channel = list.get(0);
+    assertNotNull(channel);
+    assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
+    assertEquals(1, channel.getShuffleKeys().length);
+
     res.close();
   }
 
@@ -240,20 +323,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
-    String expected = "N\n" +
-        "N\n" +
-        "N\n" +
-        "R\n" +
-        "R\n";
-
-    String tableData = getTableFileContents(desc.getPath());
-    assertEquals(expected, tableData);
-
     res = executeString("select * from " + tableName + " where col2 = 2");
 
     Map<Double, int []> resultRows1 = Maps.newHashMap();
     resultRows1.put(45.0d, new int[]{3, 2});
     resultRows1.put(38.0d, new int[]{2, 2});
+
 
     for (int i = 0; i < 2; i++) {
       assertTrue(res.next());
@@ -574,5 +649,18 @@ public class TestTablePartitions extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+  }
+
+  private MasterPlan getQueryPlan(ResultSet res) {
+    QueryId queryId = ((TajoResultSet)res).getQueryId();
+    for (TajoWorker eachWorker: testingCluster.getTajoWorkers()) {
+      QueryMasterTask queryMasterTask = eachWorker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
+      if (queryMasterTask != null) {
+        return queryMasterTask.getQuery().getPlan();
+      }
+    }
+
+    fail("Can't find query from workers" + queryId);
+    return null;
   }
 }

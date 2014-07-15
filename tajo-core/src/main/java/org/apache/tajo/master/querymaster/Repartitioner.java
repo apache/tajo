@@ -19,6 +19,7 @@
 package org.apache.tajo.master.querymaster;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -60,6 +61,7 @@ import java.util.Map.Entry;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -529,7 +531,8 @@ public class Repartitioner {
                                                       MasterPlan masterPlan, SubQuery subQuery, int maxNum)
       throws IOException {
     DataChannel channel = masterPlan.getIncomingChannels(subQuery.getBlock().getId()).get(0);
-    if (channel.getShuffleType() == HASH_SHUFFLE) {
+    if (channel.getShuffleType() == HASH_SHUFFLE
+        || channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
       scheduleHashShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
       scheduleRangeShuffledFetches(schedulerContext, masterPlan, subQuery, channel, maxNum);
@@ -668,12 +671,23 @@ public class Repartitioner {
 
     Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost;
     Map<Integer, Collection<FetchImpl>> finalFetches = new HashMap<Integer, Collection<FetchImpl>>();
+    Map<ExecutionBlockId, List<IntermediateEntry>> intermediates = new HashMap<ExecutionBlockId,
+        List<IntermediateEntry>>();
 
     for (ExecutionBlock block : masterPlan.getChilds(execBlock)) {
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
       for (QueryUnit tasks : subQuery.getContext().getSubQuery(block.getId()).getQueryUnits()) {
         if (tasks.getIntermediateData() != null) {
           partitions.addAll(tasks.getIntermediateData());
+
+          // In scattered hash shuffle, Collecting each IntermediateEntry
+          if (channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
+            if (intermediates.containsKey(block.getId())) {
+              intermediates.get(block.getId()).addAll(tasks.getIntermediateData());
+            } else {
+              intermediates.put(block.getId(), tasks.getIntermediateData());
+            }
+          }
         }
       }
       Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
@@ -709,12 +723,99 @@ public class Repartitioner {
     }
 
     // set the proper number of tasks to the estimated task num
-    schedulerContext.setEstimatedTaskNum(determinedTaskNum);
-    // divide fetch uris into the the proper number of tasks in a round robin manner.
-    scheduleFetchesByRoundRobin(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
-    LOG.info(subQuery.getId() + ", DeterminedTaskNum : " + determinedTaskNum);
+    if (channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
+      scheduleScatteredHashShuffleFetches(schedulerContext, subQuery, intermediates,
+          scan.getTableName());
+    } else {
+      schedulerContext.setEstimatedTaskNum(determinedTaskNum);
+      // divide fetch uris into the the proper number of tasks in a round robin manner.
+      scheduleFetchesByRoundRobin(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
+      LOG.info(subQuery.getId() + ", DeterminedTaskNum : " + determinedTaskNum);
+    }
   }
 
+  // Scattered hash shuffle hashes the key columns and groups the hash keys associated with
+  // the same hash key. Then, if the volume of a group is larger
+  // than DIST_QUERY_TABLE_PARTITION_VOLUME, it divides the group into more than two sub groups
+  // according to DIST_QUERY_TABLE_PARTITION_VOLUME (default size = 256MB).
+  // As a result, each group size always becomes the less than or equal
+  // to DIST_QUERY_TABLE_PARTITION_VOLUME. Finally, each subgroup is assigned to a query unit.
+  // It is usually used for writing partitioned tables.
+  public static void scheduleScatteredHashShuffleFetches(TaskSchedulerContext schedulerContext,
+       SubQuery subQuery, Map<ExecutionBlockId, List<IntermediateEntry>> intermediates,
+       String tableName) {
+    int i = 0;
+    int splitVolume =   subQuery.getContext().getConf().
+        getIntVar(ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME);
+
+    long sumNumBytes = 0L;
+    Map<Integer, List<FetchImpl>> fetches = new HashMap<Integer, List<FetchImpl>>();
+
+    // Step 1 : divide fetch uris into the the proper number of tasks by
+    // SCATTERED_HASH_SHUFFLE_SPLIT_VOLUME
+    for (Entry<ExecutionBlockId, List<IntermediateEntry>> listEntry : intermediates.entrySet()) {
+
+      // Step 2: Sort IntermediateEntry by partition id. After first sort,
+      // we need to sort again by PullHost address because of data locality.
+      Collections.sort(listEntry.getValue(), new IntermediateEntryComparator());
+      for (IntermediateEntry interm : listEntry.getValue()) {
+        FetchImpl fetch = new FetchImpl(interm.getPullHost(), SCATTERED_HASH_SHUFFLE,
+            listEntry.getKey(), interm.getPartId(), TUtil.newList(interm));
+        if (fetches.size() == 0) {
+          fetches.put(i, TUtil.newList(fetch));
+        } else {
+
+          // Step 3: Compare current partition id with previous partition id because One task just
+          // can include one partitionId.
+          if (fetches.get(i).get(0).getPartitionId() != interm.getPartId()) {
+            i++;
+            fetches.put(i, TUtil.newList(fetch));
+            sumNumBytes = 0L;
+          } else {
+            if ((sumNumBytes + interm.getVolume()) < splitVolume) {
+              fetches.get(i).add(fetch);
+            } else {
+              i++;
+              fetches.put(i, TUtil.newList(fetch));
+              sumNumBytes = 0L;
+            }
+          }
+        }
+        sumNumBytes += interm.getVolume();
+      }
+    }
+
+    // Step 4 : Set the proper number of tasks to the estimated task num
+    schedulerContext.setEstimatedTaskNum(fetches.size());
+
+    // Step 5 : Apply divided fetches
+    i = 0;
+    Map<String, List<FetchImpl>>[] fetchesArray = new Map[fetches.size()];
+    for(Entry<Integer, List<FetchImpl>> entry : fetches.entrySet()) {
+      fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
+      fetchesArray[i].put(tableName, entry.getValue());
+
+      SubQuery.scheduleFetches(subQuery, fetchesArray[i]);
+      i++;
+    }
+
+    LOG.info(subQuery.getId()
+        + ", ShuffleType:" + SCATTERED_HASH_SHUFFLE.name()
+        + ", DeterminedTaskNum : " + fetches.size());
+  }
+
+  static class IntermediateEntryComparator implements Comparator<IntermediateEntry> {
+
+    @Override
+    public int compare(IntermediateEntry o1, IntermediateEntry o2) {
+      int cmp = Ints.compare(o1.getPartId(), o2.getPartId());
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      return o1.getPullHost().getHost().compareTo(o2.getPullHost().getHost());
+    }
+  }
 
   public static List<URI> createFetchURL(FetchImpl fetch, boolean includeParts) {
     String scheme = "http://";
@@ -729,6 +830,8 @@ public class Repartitioner {
       urlPrefix.append("h");
     } else if (fetch.getType() == RANGE_SHUFFLE) {
       urlPrefix.append("r").append("&").append(fetch.getRangeParams());
+    } else if (fetch.getType() == SCATTERED_HASH_SHUFFLE) {
+      urlPrefix.append("s");
     }
 
     List<URI> fetchURLs = new ArrayList<URI>();

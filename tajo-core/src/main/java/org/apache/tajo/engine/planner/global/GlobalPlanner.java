@@ -1149,10 +1149,11 @@ public class GlobalPlanner {
         shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
       }
       channel.setShuffleKeys(shuffleKeys);
+      channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
     } else {
       channel.setShuffleKeys(partitionMethod.getExpressionSchema().toArray());
+      channel.setShuffleType(HASH_SHUFFLE);
     }
-    channel.setShuffleType(HASH_SHUFFLE);
     channel.setShuffleOutputNum(32);
   }
 
