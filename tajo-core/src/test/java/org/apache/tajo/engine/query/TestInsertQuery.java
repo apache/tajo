@@ -35,8 +35,10 @@ import org.junit.experimental.categories.Category;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
+import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestInsertQuery extends QueryTestCaseBase {
@@ -58,6 +60,231 @@ public class TestInsertQuery extends QueryTestCaseBase {
     }
 
     executeString("DROP TABLE table1 PURGE");
+  }
+
+  @Test
+  public final void testInsertInto() throws Exception {
+    // create table and upload test data
+    ResultSet res = executeFile("table1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "table1"));
+
+    res = executeFile("testInsertOverwrite.sql");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeFile("testInsertInto.sql");
+    res.close();
+
+    List<Path> dataFiles = listTableFiles("table1");
+    assertEquals(2, dataFiles.size());
+
+    for (int i = 0; i < dataFiles.size(); i++) {
+      String name = dataFiles.get(i).getName();
+      assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+      String[] tokens = name.split("-");
+      assertEquals(4, tokens.length);
+      assertEquals(i, Integer.parseInt(tokens[3]));
+    }
+
+    String tableDatas = getTableFileContents("table1");
+
+    String expected = "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n" +
+        "1|1|17.0\n" +
+        "1|1|36.0\n" +
+        "2|2|38.0\n" +
+        "3|2|45.0\n" +
+        "3|3|49.0\n";
+
+    assertNotNull(tableDatas);
+    assertEquals(expected, tableDatas);
+
+    executeString("DROP TABLE table1 PURGE");
+  }
+
+  @Test
+  public final void testInsertIntoLocation() throws Exception {
+    FileSystem fs = null;
+    Path path = new Path("/tajo-data/testInsertIntoLocation");
+    try {
+      executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
+
+      String resultFileData = getTableFileContents(path);
+      String expected = "1|1|1\n" +
+          "1|1|2\n" +
+          "2|2|1\n" +
+          "3|2|1\n" +
+          "3|3|2\n";
+
+      assertEquals(expected, resultFileData);
+
+      fs = path.getFileSystem(testingCluster.getConfiguration());
+
+      FileStatus[] files = fs.listStatus(path);
+      assertNotNull(files);
+      assertEquals(1, files.length);
+
+      for (FileStatus eachFileStatus : files) {
+        String name = eachFileStatus.getPath().getName();
+        assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+      }
+
+      executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
+      resultFileData = getTableFileContents(path);
+      expected = "1|1|1\n" +
+          "1|1|2\n" +
+          "2|2|1\n" +
+          "3|2|1\n" +
+          "3|3|2\n";
+
+      assertEquals(expected + expected, resultFileData);
+
+      files = fs.listStatus(path);
+      assertNotNull(files);
+      assertEquals(2, files.length);
+
+      for (FileStatus eachFileStatus : files) {
+        String name = eachFileStatus.getPath().getName();
+        assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+      }
+    } finally {
+      if (fs != null) {
+        fs.delete(path, true);
+      }
+    }
+  }
+
+  @Test
+  public final void testInsertIntoPartitionedTable() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testInsertIntoPartitionedTable");
+    executeString("create table " + tableName + " (n_name TEXT, n_regionkey INT4)" +
+        "USING csv PARTITION by column(n_nationkey INT4)" ).close();
+
+    try {
+      executeString("insert into " + tableName + " select n_name, n_regionkey, n_nationkey from default.nation").close();
+
+      ResultSet res = executeString("select * from " + tableName);
+
+      String expected = "n_name,n_regionkey,n_nationkey\n" +
+          "-------------------------------\n" +
+          "ALGERIA,0,0\n" +
+          "ARGENTINA,1,1\n" +
+          "IRAN,4,10\n" +
+          "IRAQ,4,11\n" +
+          "JAPAN,2,12\n" +
+          "JORDAN,4,13\n" +
+          "KENYA,0,14\n" +
+          "MOROCCO,0,15\n" +
+          "MOZAMBIQUE,0,16\n" +
+          "PERU,1,17\n" +
+          "CHINA,2,18\n" +
+          "ROMANIA,3,19\n" +
+          "BRAZIL,1,2\n" +
+          "SAUDI ARABIA,4,20\n" +
+          "VIETNAM,2,21\n" +
+          "RUSSIA,3,22\n" +
+          "UNITED KINGDOM,3,23\n" +
+          "UNITED STATES,1,24\n" +
+          "CANADA,1,3\n" +
+          "EGYPT,4,4\n" +
+          "ETHIOPIA,0,5\n" +
+          "FRANCE,3,6\n" +
+          "GERMANY,3,7\n" +
+          "INDIA,2,8\n" +
+          "INDONESIA,2,9\n";
+
+      assertEquals(expected, resultSetToString(res));
+      res.close();
+
+      executeString("insert into " + tableName + " select n_name, n_regionkey, n_nationkey from default.nation").close();
+      res = executeString("select * from " + tableName);
+      expected = "n_name,n_regionkey,n_nationkey\n" +
+          "-------------------------------\n" +
+          "ALGERIA,0,0\n" +
+          "ALGERIA,0,0\n" +
+          "ARGENTINA,1,1\n" +
+          "ARGENTINA,1,1\n" +
+          "IRAN,4,10\n" +
+          "IRAN,4,10\n" +
+          "IRAQ,4,11\n" +
+          "IRAQ,4,11\n" +
+          "JAPAN,2,12\n" +
+          "JAPAN,2,12\n" +
+          "JORDAN,4,13\n" +
+          "JORDAN,4,13\n" +
+          "KENYA,0,14\n" +
+          "KENYA,0,14\n" +
+          "MOROCCO,0,15\n" +
+          "MOROCCO,0,15\n" +
+          "MOZAMBIQUE,0,16\n" +
+          "MOZAMBIQUE,0,16\n" +
+          "PERU,1,17\n" +
+          "PERU,1,17\n" +
+          "CHINA,2,18\n" +
+          "CHINA,2,18\n" +
+          "ROMANIA,3,19\n" +
+          "ROMANIA,3,19\n" +
+          "BRAZIL,1,2\n" +
+          "BRAZIL,1,2\n" +
+          "SAUDI ARABIA,4,20\n" +
+          "SAUDI ARABIA,4,20\n" +
+          "VIETNAM,2,21\n" +
+          "VIETNAM,2,21\n" +
+          "RUSSIA,3,22\n" +
+          "RUSSIA,3,22\n" +
+          "UNITED KINGDOM,3,23\n" +
+          "UNITED KINGDOM,3,23\n" +
+          "UNITED STATES,1,24\n" +
+          "UNITED STATES,1,24\n" +
+          "CANADA,1,3\n" +
+          "CANADA,1,3\n" +
+          "EGYPT,4,4\n" +
+          "EGYPT,4,4\n" +
+          "ETHIOPIA,0,5\n" +
+          "ETHIOPIA,0,5\n" +
+          "FRANCE,3,6\n" +
+          "FRANCE,3,6\n" +
+          "GERMANY,3,7\n" +
+          "GERMANY,3,7\n" +
+          "INDIA,2,8\n" +
+          "INDIA,2,8\n" +
+          "INDONESIA,2,9\n" +
+          "INDONESIA,2,9\n";
+
+      assertEquals(expected, resultSetToString(res));
+
+      TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
+      assertNotNull(tableDesc);
+
+      Path path = tableDesc.getPath();
+      FileSystem fs = path.getFileSystem(testingCluster.getConfiguration());
+
+      FileStatus[] files = fs.listStatus(path);
+      assertNotNull(files);
+      assertEquals(25, files.length);
+
+      for (FileStatus eachFileStatus: files) {
+        assertTrue(eachFileStatus.getPath().getName().indexOf("n_nationkey=") == 0);
+        FileStatus[] dataFiles = fs.listStatus(eachFileStatus.getPath());
+        assertEquals(2, dataFiles.length);
+        for (FileStatus eachDataFileStatus: dataFiles) {
+          String name = eachDataFileStatus.getPath().getName();
+          assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+        }
+      }
+    } finally {
+      executeString("DROP TABLE " + tableName + " PURGE");
+    }
   }
 
   @Test
