@@ -45,6 +45,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.master.ha.HAManager;
+import org.apache.tajo.master.ha.HAManagerWithHDFS;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -129,6 +131,8 @@ public class TajoMaster extends CompositeService {
   private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
   private TajoSystemMetrics systemMetrics;
+
+  private HAManager haManager;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -218,6 +222,20 @@ public class TajoMaster extends CompositeService {
       webServer.start();
     }
   }
+
+
+  private void initHAManger() throws Exception {
+    // If tajo provides HAManager based on ZooKeeper, following codes need to update.
+    if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      haManager = new HAManagerWithHDFS(context, getMasterName());
+      haManager.register();
+    }
+  }
+
+  public boolean isActiveMaster() {
+    return (haManager != null ? haManager.isActiveStatus() : true);
+  }
+
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
@@ -362,6 +380,12 @@ public class TajoMaster extends CompositeService {
     }
 
     initSystemMetrics();
+
+    try {
+      initHAManger();
+    } catch (IOException e) {
+      LOG.error(e.getMessage(), e);
+    }
   }
 
   private void writeSystemConf() throws IOException {
