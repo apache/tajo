@@ -45,8 +45,8 @@ import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;

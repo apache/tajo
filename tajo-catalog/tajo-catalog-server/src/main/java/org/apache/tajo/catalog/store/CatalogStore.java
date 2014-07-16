@@ -19,12 +19,11 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 
 import java.io.Closeable;
-import org.apache.tajo.catalog.exception.CatalogException;
-
 import java.util.Collection;
 import java.util.List;
 

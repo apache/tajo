@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
 
 import java.util.List;

@@ -61,7 +61,6 @@ public class TestCreateIndex extends QueryTestCaseBase {
     executeQuery();
     checkIndexExist("l_orderkey_idx");
     executeString("drop index l_orderkey_idx");
-    assertFalse(client.existIndex("l_orderkey_idx"));
     checkIndexNotExist("l_orderkey_idx");
   }
 

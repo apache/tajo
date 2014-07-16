@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.catalog.IndexDesc.IndexKey;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

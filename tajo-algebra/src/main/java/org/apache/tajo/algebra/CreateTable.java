@@ -24,9 +24,9 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 

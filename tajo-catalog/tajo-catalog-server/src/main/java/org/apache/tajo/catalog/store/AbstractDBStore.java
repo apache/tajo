@@ -35,7 +35,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
@@ -1764,46 +1763,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return proto;
   }
 
-//  @Override
-//  public IndexDescProto getIndexByColumn(final String databaseName,
-//                                         final String tableName,
-//                                         final String columnName) throws CatalogException {
-//    Connection conn = null;
-//    ResultSet res = null;
-//    PreparedStatement pstmt = null;
-//    IndexDescProto proto = null;
-//
-//    try {
-//      int databaseId = getDatabaseId(databaseName);
-//
-//      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
-//
-//      if (LOG.isDebugEnabled()) {
-//        LOG.debug(sql);
-//      }
-//
-//      conn = getConnection();
-//      pstmt = conn.prepareStatement(sql);
-//      pstmt.setInt(1, databaseId);
-//      ;
-//      pstmt.setString(2, columnName);
-//      res = pstmt.executeQuery();
-//      if (!res.next()) {
-//        throw new CatalogException("ERROR: there is no index matched to " + columnName);
-//      }
-//      IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-//      resultToIndexDescProtoBuilder(builder, res);
-//      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-//      proto = builder.build();
-//    } catch (SQLException se) {
-//      throw new CatalogException(se);
-//    } finally {
-//      CatalogUtil.closeQuietly(pstmt, res);
-//    }
-//
-//    return proto;
-//  }
-
   @Override
   public boolean existIndexByName(String databaseName, final String indexName) throws CatalogException {
     Connection conn = null;
@@ -1836,39 +1795,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     return exist;
   }
-
-//  @Override
-//  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-//      throws CatalogException {
-//    Connection conn = null;
-//    ResultSet res = null;
-//    PreparedStatement pstmt = null;
-//
-//    boolean exist = false;
-//
-//    try {
-//      int databaseId = getDatabaseId(databaseName);
-//
-//      String sql =
-//          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
-//
-//      if (LOG.isDebugEnabled()) {
-//        LOG.debug(sql);
-//      }
-//
-//      conn = getConnection();
-//      pstmt = conn.prepareStatement(sql);
-//      pstmt.setInt(1, databaseId);
-//      pstmt.setString(2, columnName);
-//      res = pstmt.executeQuery();
-//      exist = res.next();
-//    } catch (SQLException se) {
-//      throw new CatalogException(se);
-//    } finally {
-//      CatalogUtil.closeQuietly(pstmt, res);
-//    }
-//    return exist;
-//  }
 
   @Override
   public IndexDescProto[] getIndexes(String databaseName, final String tableName)

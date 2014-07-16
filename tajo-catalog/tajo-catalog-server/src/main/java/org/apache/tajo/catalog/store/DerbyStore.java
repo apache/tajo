@@ -204,12 +204,6 @@ public class DerbyStore extends AbstractDBStore {
         }
         stmt.addBatch(sql);
 
-//        sql = "CREATE INDEX idx_indexes_columns ON " + TB_INDEXES + "(" + COL_DATABASES_PK + ",column_name)";
-//
-//        if (LOG.isDebugEnabled()) {
-//          LOG.debug(sql);
-//        }
-//        stmt.addBatch(sql);
         stmt.executeBatch();
         LOG.info("Table '" + TB_INDEXES + "' is created.");
         baseTableMaps.put(TB_INDEXES, true);
