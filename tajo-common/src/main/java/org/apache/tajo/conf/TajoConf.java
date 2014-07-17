@@ -448,8 +448,12 @@ public class TajoConf extends Configuration {
   }
 
   public static long getLongVar(Configuration conf, ConfVars var) {
-    assert (var.valClass == Long.class);
-    return conf.getLong(var.varname, var.defaultLongVal);
+    assert (var.valClass == Long.class || var.valClass == Integer.class);
+    if (var.valClass == Integer.class) {
+      return conf.getInt(var.varname, var.defaultIntVal);
+    } else {
+      return conf.getLong(var.varname, var.defaultLongVal);
+    }
   }
 
   public static long getLongVar(Configuration conf, ConfVars var, long defaultVal) {

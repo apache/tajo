@@ -256,7 +256,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       throws IOException {
     String [] lineage = PlannerUtil.getRelationLineage(node);
     long volume = estimateSizeRecursive(context, lineage);
-    boolean inMemoryInnerJoinFlag = volume <= QueryContext.getLongVar(context.getQueryContext(), conf, ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD);
+    boolean inMemoryInnerJoinFlag = volume <= QueryContext.getLongVar(context.getQueryContext(), conf,
+        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD);
     LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
         context.getTaskId().toString(),
         (left ? "Left" : "Right"),
@@ -469,7 +470,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
 
-    if (rightTableVolume <  QueryContext.getLongVar(context.getQueryContext(), conf, ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
+    if (rightTableVolume <  QueryContext.getLongVar(context.getQueryContext(), conf,
+        ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -487,7 +489,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     // blocking, but merge join is blocking as well)
     String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getLeftChild());
     long outerSize = estimateSizeRecursive(context, outerLineage4);
-    if (outerSize < QueryContext.getLongVar(context.getQueryContext(), conf, ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
+    if (outerSize < QueryContext.getLongVar(context.getQueryContext(), conf,
+        ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {
@@ -969,7 +972,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     String [] outerLineage = PlannerUtil.getRelationLineage(groupbyNode.getChild());
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = QueryContext.getLongVar(context.getQueryContext(), conf, ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
+    final long threshold = QueryContext.getLongVar(context.getQueryContext(), conf,
+        ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.
