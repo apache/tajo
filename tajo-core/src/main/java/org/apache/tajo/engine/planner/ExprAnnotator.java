@@ -32,8 +32,8 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
-import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -68,9 +68,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   static class Context {
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
-    NameResolveLevel columnRsvLevel;
+    NameResolvingMode columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, NameResolveLevel colRsvLevel) {
+    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, NameResolvingMode colRsvLevel) {
       this.plan = plan;
       this.currentBlock = block;
       this.columnRsvLevel = colRsvLevel;
@@ -78,7 +78,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr,
-                                 NameResolveLevel colRsvLevel)
+                                 NameResolvingMode colRsvLevel)
       throws PlanningException {
     Context context = new Context(plan, block, colRsvLevel);
     return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));

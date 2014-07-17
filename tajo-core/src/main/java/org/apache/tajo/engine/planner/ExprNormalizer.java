@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
-import org.apache.tajo.engine.planner.nameresolver.NameResolveLevel;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 
 import java.util.ArrayList;
@@ -341,7 +341,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
         try {
           String normalized =
-              NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolveLevel.LEGACY).getQualifiedName();
+              NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolvingMode.LEGACY).getQualifiedName();
           expr.setName(normalized);
         } catch (NoSuchColumnException nsc) {
         }
