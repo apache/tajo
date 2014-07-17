@@ -45,6 +45,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
@@ -131,7 +132,7 @@ public class TajoMaster extends CompositeService {
 
   private TajoSystemMetrics systemMetrics;
 
-  private HAServiceHDFSImpl haService;
+  private HAService haService;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
