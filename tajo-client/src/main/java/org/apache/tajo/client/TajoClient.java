@@ -49,7 +49,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
-import org.apache.tajo.util.HAUtil;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 
@@ -138,7 +138,7 @@ public class TajoClient implements Closeable {
     if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       return tajoMasterAddr;
     } else {
-      return HAUtil.getMasterClientAddress(conf);
+      return HAServiceUtil.getMasterClientAddress(conf);
     }
   }
 

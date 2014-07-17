@@ -245,8 +245,8 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      tajoMasterAddress = HAUtil.getMasterUmbilicalAddress(systemConf);
-      workerResourceTrackerAddr = NetUtils.createSocketAddr(HAUtil.getResourceTrackerName(systemConf));
+      tajoMasterAddress = HAServiceUtil.getMasterUmbilicalAddress(systemConf);
+      workerResourceTrackerAddr = NetUtils.createSocketAddr(HAServiceUtil.getResourceTrackerName(systemConf));
       connectToCatalog();
     }
 
@@ -446,11 +446,11 @@ public class TajoWorker extends CompositeService {
     }
 
     public InetSocketAddress getTajoMasterAddress() {
-      return HAUtil.getMasterUmbilicalAddress(systemConf);
+      return HAServiceUtil.getMasterUmbilicalAddress(systemConf);
     }
 
     public InetSocketAddress getResourceTrackerAddress() {
-      return HAUtil.getResourceTrackerAddress(systemConf);
+      return HAServiceUtil.getResourceTrackerAddress(systemConf);
     }
 
     public int getPeerRpcPort() {

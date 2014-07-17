@@ -27,7 +27,7 @@ import org.apache.tajo.conf.TajoConf;
 
 import java.net.InetSocketAddress;
 
-public class HAUtil {
+public class HAServiceUtil {
 
   private final static int MASTER_UMBILICAL_RPC_ADDRESS = 1;
   private final static int MASTER_CLIENT_RPC_ADDRESS = 2;

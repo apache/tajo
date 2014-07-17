@@ -33,7 +33,7 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
-import org.apache.tajo.util.HAUtil;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.net.InetSocketAddress;
@@ -66,7 +66,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
         return catalogServerAddr;
       } else {
-        return HAUtil.getCatalogAddress(conf);
+        return HAServiceUtil.getCatalogAddress(conf);
       }
     }
   }
