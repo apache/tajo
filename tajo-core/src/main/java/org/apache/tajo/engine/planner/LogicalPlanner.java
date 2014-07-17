@@ -263,7 +263,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (int i = 0; i < projection.getNamedExprs().length; i++) {
       NamedExpr namedExpr = projection.getNamedExprs()[i];
       EvalNode evalNode = exprAnnotator.createEvalNode(plan, block, namedExpr.getExpr(),
-          NameResolveLevel.SUBEXPRS_AND_RELS);
+          NameResolveLevel.RELS_AND_SUBEXPRS);
       rawTargets[i] = new Target(evalNode, referenceNames[i]);
     }
     // it's for debugging or unit testing
