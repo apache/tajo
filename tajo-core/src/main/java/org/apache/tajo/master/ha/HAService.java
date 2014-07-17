@@ -21,11 +21,11 @@ package org.apache.tajo.master.ha;
 import java.io.IOException;
 
 /**
- * The HAMananger is responsible for setting active TajoMaster on startup or when the
+ * The HAService is responsible for setting active TajoMaster on startup or when the
  * current active is changing (eg due to failure), monitoring the health of TajoMaster.
  *
  */
-public interface HAManager {
+public interface HAService {
 
   /**
    * Add master name to shared storage.

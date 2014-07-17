@@ -34,11 +34,11 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
- * This implements HAManager utilizing HDFS cluster. This saves master status to HDFS cluster.
+ * This implements HAService utilizing HDFS cluster. This saves master status to HDFS cluster.
  *
  */
-public class HAManagerWithHDFS implements HAManager {
-  private static Log LOG = LogFactory.getLog(HAManagerWithHDFS.class);
+public class HAServiceHDFSImpl implements HAService {
+  private static Log LOG = LogFactory.getLog(HAServiceHDFSImpl.class);
 
   private MasterContext context;
   private TajoConf conf;
@@ -65,7 +65,7 @@ public class HAManagerWithHDFS implements HAManager {
 
   private int monitorInterval;
 
-  public HAManagerWithHDFS(MasterContext context, String masterName) throws IOException {
+  public HAServiceHDFSImpl(MasterContext context, String masterName) throws IOException {
     this.context = context;
 
     this.conf = context.getConf();
@@ -224,7 +224,7 @@ public class HAManagerWithHDFS implements HAManager {
     @Override
     public void run() {
       while (!stopped && !Thread.currentThread().isInterrupted()) {
-        synchronized (HAManagerWithHDFS.this) {
+        synchronized (HAServiceHDFSImpl.this) {
           try {
             FileStatus[] files = fs.listStatus(activePath);
 
@@ -233,7 +233,9 @@ public class HAManagerWithHDFS implements HAManager {
 
               String currentActiveMaster = activePath.getName().replaceAll("_", ":");
               boolean isAlive = isMasterAlive(currentActiveMaster);
-              LOG.info("master:" + currentActiveMaster + ", isAlive:" + isAlive);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("master:" + currentActiveMaster + ", isAlive:" + isAlive);
+              }
 
               // If active master is dead, this master should be active master instead of
               // previous active master.

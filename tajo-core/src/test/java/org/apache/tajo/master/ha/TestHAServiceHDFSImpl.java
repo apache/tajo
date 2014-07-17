@@ -35,8 +35,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestHAManagerWithHDFS  {
-  private static Log LOG = LogFactory.getLog(TestHAManagerWithHDFS.class);
+public class TestHAServiceHDFSImpl  {
+  private static Log LOG = LogFactory.getLog(TestHAServiceHDFSImpl.class);
 
   private TajoTestingCluster cluster;
   private TajoMaster backupMaster1, backupMaster2;

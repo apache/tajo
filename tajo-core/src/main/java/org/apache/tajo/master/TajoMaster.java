@@ -45,8 +45,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.master.ha.HAManager;
-import org.apache.tajo.master.ha.HAManagerWithHDFS;
+import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -132,7 +131,7 @@ public class TajoMaster extends CompositeService {
 
   private TajoSystemMetrics systemMetrics;
 
-  private HAManager haManager;
+  private HAServiceHDFSImpl haService;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -225,15 +224,15 @@ public class TajoMaster extends CompositeService {
 
 
   private void initHAManger() throws Exception {
-    // If tajo provides HAManager based on ZooKeeper, following codes need to update.
+    // If tajo provides haService based on ZooKeeper, following codes need to update.
     if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      haManager = new HAManagerWithHDFS(context, getMasterName());
-      haManager.register();
+      haService = new HAServiceHDFSImpl(context, getMasterName());
+      haService.register();
     }
   }
 
   public boolean isActiveMaster() {
-    return (haManager != null ? haManager.isActiveStatus() : true);
+    return (haService != null ? haService.isActiveStatus() : true);
   }
 
 
@@ -426,9 +425,9 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void stop() {
-    if (haManager != null) {
+    if (haService != null) {
       try {
-        haManager.delete();
+        haService.delete();
       } catch (Exception e) {
         LOG.error(e);
       }
