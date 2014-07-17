@@ -19,10 +19,12 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.master.rm.*" %>
+<%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.ha.HAService" %>
+<%@ page import="org.apache.tajo.master.ha.TajoMasterInfo" %>
+<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
@@ -70,6 +72,23 @@
 
   String deadWorkersHtml = deadWorkers.isEmpty() ? "0": "<font color='red'>" + deadWorkers.size() + "</font>";
   String deadQueryMastersHtml = deadQueryMasters.isEmpty() ? "0": "<font color='red'>" + deadQueryMasters.size() + "</font>";
+
+  HAService haService = master.getContext().getHAService();
+  List<TajoMasterInfo> masters = haService != null ? haService.getMasters() : null;
+
+  int numLiveMasters = 0;
+  int numDeadMasters = 0;
+
+  for(TajoMasterInfo eachMaster : masters) {
+    if (eachMaster.isAvailable()) {
+      numLiveMasters++;
+    } else {
+      numDeadMasters++;
+    }
+  }
+
+  String deadMasterHtml = numDeadMasters == 0 ? "0": "<font color='red'>" + numDeadMasters +"</font>";
+
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -83,6 +102,47 @@
 <%@ include file="header.jsp"%>
 <div class='contents'>
   <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <div>Live:<%=numLiveMasters%>, Dead: <%=deadMasterHtml%>, Total: <%=masters.size()%></div>
+<%
+  if (masters != null) {
+    out.write("<h3>Live TajoMasters</h3>\n");
+    if(numLiveMasters == 0) {
+      out.write("No TajoMasters\n");
+    } else {
+%>
+  <table width="100%" class="border_table" border="1">
+    <tr><th>No</th><th>TajoMaster</th><th>Rpc Server</th><th>Rpc Client</th><th>ResourceTracker</th>
+      <th>Catalog</th><th>Active/Backup</th><th>Status</th></tr>
+    <%
+      int no = 1;
+
+      for(TajoMasterInfo eachMaster : masters) {
+      String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress() + "/index.jsp";
+      String activeLabel = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
+      String statusLabel = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
+    %>
+    <tr>
+      <td width='30' align='right'><%=no++%></td>
+      <td><a href='<%=tajoMasterHttp%>'><%=eachMaster.getWebServerAddress()%></a></td>
+      <td width='200' align='right'><%=eachMaster.getRpcServerAddress()%></td>
+      <td width='200' align='right'><%=eachMaster.getRpcClientAddress()%></td>
+      <td width='200' align='right'><%=eachMaster.getResourceTrackerAddress()%></td>
+      <td width='200' align='right'><%=eachMaster.getCatalogAddress()%></td>
+      <td width='200' align='right'><%=activeLabel%></td>
+      <td width='100' align='center'><%=statusLabel%></td>
+    </tr>
+    <%
+      } //end fo for
+    %>
+  </table>
+  <%
+    } //end of if
+  %>
+  <p/>
+<%
+  } //end of if
+%>
+
   <hr/>
   <h2>Query Master</h2>
   <div>Live:<%=liveQueryMasters.size()%>, Dead: <%=deadQueryMastersHtml%>, QueryMaster Tasks: <%=runningQueryMasterTasks%></div>

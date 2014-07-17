@@ -33,6 +33,7 @@ public class HAServiceUtil {
   private final static int MASTER_CLIENT_RPC_ADDRESS = 2;
   private final static int RESOURCE_TRACKER_RPC_ADDRESS = 3;
   private final static int CATALOG_ADDRESS = 4;
+  private final static int MASTER_INFO_ADDRESS = 5;
 
   public static InetSocketAddress getMasterUmbilicalAddress(TajoConf conf) {
     return getMasterAddress(conf, MASTER_UMBILICAL_RPC_ADDRESS);
@@ -64,6 +65,14 @@ public class HAServiceUtil {
 
   public static String getCatalogName(TajoConf conf) {
     return NetUtils.normalizeInetSocketAddress(getCatalogAddress(conf));
+  }
+
+  public static InetSocketAddress getMasterInfoAddress(TajoConf conf) {
+    return getMasterAddress(conf, MASTER_INFO_ADDRESS);
+  }
+
+  public static String getMasterInfoName(TajoConf conf) {
+    return NetUtils.normalizeInetSocketAddress(getMasterInfoAddress(conf));
   }
 
   public static InetSocketAddress getMasterAddress(TajoConf conf, int type) {
@@ -106,6 +115,9 @@ public class HAServiceUtil {
               case 4:
                 masterAddress = NetUtils.createSocketAddr(addresses[2]);
                 break;
+              case 5:
+                masterAddress = NetUtils.createSocketAddr(addresses[3]);
+                break;
               default:
                 break;
             }
@@ -134,6 +146,10 @@ public class HAServiceUtil {
         case 4:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .CATALOG_ADDRESS));
+          break;
+        case 5:
+          masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
+              .TAJO_MASTER_INFO_ADDRESS));
           break;
         default:
           break;

@@ -23,11 +23,14 @@
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
 <%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.ha.HAService" %>
+<%@ page import="org.apache.tajo.master.ha.TajoMasterInfo" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="java.util.List" %>
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.Map" %>
@@ -111,6 +114,30 @@
   if(finishedQueries.size() > 0) {
     avgQueryTime = (int)(totalTime / (long)finishedQueries.size());
   }
+
+  HAService haService = master.getContext().getHAService();
+  String activeLabel;
+  if (haService == null) {
+    activeLabel = "";
+  } else {
+    if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
+    }
+  }
+
+  int numLiveMasters = 0;
+  int numDeadMasters = 0;
+
+  List<TajoMasterInfo> masters = haService.getMasters();
+  for(TajoMasterInfo eachMaster : masters) {
+    if (eachMaster.isAvailable()) {
+      numLiveMasters++;
+    } else {
+      numDeadMasters++;
+    }
+  }
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -123,7 +150,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Master Status</h3>
   <table border='0'>
@@ -164,6 +191,21 @@
       <td align='center'><%=clusterResourceSummary.getTotalMemoryMB() - clusterResourceSummary.getTotalAvailableMemoryMB()%>/<%=clusterResourceSummary.getTotalMemoryMB()%></td>
       <td align='center'><%=clusterResourceSummary.getTotalDiskSlots() - clusterResourceSummary.getTotalAvailableDiskSlots()%>/<%=clusterResourceSummary.getTotalDiskSlots()%></td>
     </tr>
+<%
+    if (haService != null) {
+%>
+    <tr>
+      <td><a href='cluster.jsp'>Masters</a></td>
+      <td align='right'><%=haService.getMasters().size()%></td>
+      <td align='right'><%=numLiveMasters%></td>
+      <td align='right'><%=numDeadMasters%></td>
+      <td align='right'>-</td>
+      <td align='center'>-</td>
+      <td align='center'>-</td>
+    </tr>
+<%
+    }
+%>
   </table>
   <p/>
   <hr/>

@@ -27,11 +27,13 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.util.TUtil;
 
 import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.List;
 
 /**
  * This implements HAService utilizing HDFS cluster. This saves master status to HDFS cluster.
@@ -156,6 +158,7 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   private void createMasterFile(boolean isActive) throws IOException {
+    String hostName = masterName.split(":")[0];
     String fileName = masterName.replaceAll(":", "_");
     Path path = null;
 
@@ -166,11 +169,16 @@ public class HAServiceHDFSImpl implements HAService {
     }
 
     StringBuilder sb = new StringBuilder();
-    sb.append(context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname));
+    sb.append(context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname,
+        hostName + ":26002"));
     sb.append("_");
-    sb.append(context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname));
+    sb.append(context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname,
+        hostName + ":26003"));
     sb.append("_");
-    sb.append(context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname));
+    sb.append(context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname, hostName + ":26005"));
+    sb.append("_");
+    sb.append(context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS.varname,
+        hostName + ":26080"));
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
@@ -189,6 +197,7 @@ public class HAServiceHDFSImpl implements HAService {
     startPingChecker();
   }
 
+
   @Override
   public void delete() throws IOException {
     String fileName = masterName.replaceAll(":", "_");
@@ -202,7 +211,7 @@ public class HAServiceHDFSImpl implements HAService {
     if (fs.exists(backupFile)) {
       fs.delete(backupFile, true);
     }
-
+    fs.close();
     if (isActiveStatus) {
       isActiveStatus = false;
     }
@@ -217,6 +226,52 @@ public class HAServiceHDFSImpl implements HAService {
   @Override
   public boolean isActiveStatus() {
     return isActiveStatus;
+  }
+
+  @Override
+  public List<TajoMasterInfo> getMasters() throws IOException {
+    List<TajoMasterInfo> list = TUtil.newList();
+    boolean isAlive = false;
+    TajoMasterInfo info = null;
+    String hostAddress = null;
+    Path path = null;
+
+    FileStatus[] files = fs.listStatus(activePath);
+    if (files.length == 1) {
+      path = files[0].getPath();
+      list.add(createTajoMasterInfo(path, true));
+    }
+
+    files = fs.listStatus(backupPath);
+    for (FileStatus status : files) {
+      path = status.getPath();
+      list.add(createTajoMasterInfo(path, false));
+    }
+
+    return list;
+  }
+
+  private TajoMasterInfo createTajoMasterInfo(Path path, boolean isActive) throws IOException {
+    String rpcServerAddress = path.getName().replaceAll("_", ":");
+    boolean isAlive = isMasterAlive(rpcServerAddress);
+
+    FSDataInputStream stream = fs.open(path);
+    String data = stream.readUTF();
+    stream.close();
+
+    String[] addresses = data.split("_");
+    TajoMasterInfo info = new TajoMasterInfo();
+
+    info.setRpcServerAddress(rpcServerAddress);
+    info.setRpcClientAddress(addresses[0]);
+    info.setResourceTrackerAddress(addresses[1]);
+    info.setCatalogAddress(addresses[2]);
+    info.setWebServerAddress(addresses[3]);
+
+    info.setAvailable(isAlive);
+    info.setActive(isActive);
+
+    return info;
   }
 
   private class PingChecker implements Runnable {

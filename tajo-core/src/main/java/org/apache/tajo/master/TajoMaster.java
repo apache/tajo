@@ -524,6 +524,10 @@ public class TajoMaster extends CompositeService {
     public TajoSystemMetrics getSystemMetrics() {
       return systemMetrics;
     }
+
+    public HAService getHAService() {
+      return haService;
+    }
   }
 
   String getThreadTaskName(long id, String name) {

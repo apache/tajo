@@ -19,6 +19,7 @@
 package org.apache.tajo.master.ha;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * The HAService is responsible for setting active TajoMaster on startup or when the
@@ -50,5 +51,12 @@ public interface HAService {
    * @return True if current master is an active master.
    */
   public boolean isActiveStatus();
+
+  /**
+   *
+   * @return return all master list
+   * @throws IOException
+   */
+  public List<TajoMasterInfo> getMasters() throws IOException;
 
 }
