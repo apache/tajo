@@ -41,4 +41,11 @@ public class InPredicate extends BinaryOperator {
   public Expr getInValue() {
     return right;
   }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    InPredicate inPredicate = (InPredicate) super.clone();
+    inPredicate.not = not;
+    return inPredicate;
+  }
 }

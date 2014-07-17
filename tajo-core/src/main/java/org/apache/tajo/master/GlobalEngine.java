@@ -471,6 +471,7 @@ public class GlobalEngine extends AbstractService {
       LOG.debug("Non Optimized Query: \n" + plan.toString());
       LOG.debug("=============================================");
     }
+    LOG.info("Non Optimized Query: \n" + plan.toString());
     optimizer.optimize(session, plan);
     LOG.info("=============================================");
     LOG.info("Optimized Query: \n" + plan.toString());
@@ -903,6 +904,9 @@ public class GlobalEngine extends AbstractService {
       if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
         queryContext.setOutputTable(insertNode.getTableName());
         queryContext.setOutputPath(insertNode.getPath());
+        if (insertNode.hasPartition()) {
+          queryContext.setPartitionMethod(insertNode.getPartitionMethod());
+        }
       } else { // INSERT INTO LOCATION ...
         // When INSERT INTO LOCATION, must not set output table.
         outputPath = insertNode.getPath();

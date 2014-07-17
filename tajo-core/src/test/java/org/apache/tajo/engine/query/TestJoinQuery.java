@@ -35,8 +35,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -1050,5 +1052,59 @@ public class TestJoinQuery extends QueryTestCaseBase {
     } finally {
       cleanupQuery(res);
     }
+  }
+
+  @Test
+  public void testJoinWithDifferentShuffleKey() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+
+    List<String> data = new ArrayList<String>();
+
+    int bytes = 0;
+    for (int i = 0; i < 1000000; i++) {
+      String row = i + "|" + i + "name012345678901234567890123456789012345678901234567890";
+      bytes += row.getBytes().length;
+      data.add(row);
+      if (bytes > 2 * 1024 * 1024) {
+        break;
+      }
+    }
+    TajoTestingCluster.createTable("large_table", schema, tableOptions, data.toArray(new String[]{}));
+
+    int originConfValue = conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "1");
+    ResultSet res = executeString(
+       "select count(b.id) " +
+           "from (select id, count(*) as cnt from large_table group by id) a " +
+           "left outer join (select id, count(*) as cnt from large_table where id < 200 group by id) b " +
+           "on a.id = b.id"
+    );
+
+    try {
+      String expected =
+          "?count\n" +
+              "-------------------------------\n" +
+              "200\n";
+
+      assertEquals(expected, resultSetToString(res));
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "" + originConfValue);
+      cleanupQuery(res);
+      executeString("DROP TABLE large_table PURGE").close();
+    }
+  }
+
+  @Test
+  public final void testJoinFilterOfRowPreservedTable1() throws Exception {
+    // this test is for join filter of a row preserved table.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

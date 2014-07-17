@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class TimestampLiteral extends Expr {
+public class TimestampLiteral extends Expr implements Cloneable {
   @Expose @SerializedName("Date")
   private DateValue date;
   @Expose @SerializedName("Time")
@@ -57,5 +57,13 @@ public class TimestampLiteral extends Expr {
       return date.equals(another.date) && time.equals(another.time);
     }
     return false;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    TimestampLiteral timestampLiteral = (TimestampLiteral) super.clone();
+    timestampLiteral.date = date;
+    timestampLiteral.time = time;
+    return timestampLiteral;
   }
 }

@@ -56,7 +56,17 @@ public class Sort extends UnaryOperator {
     return JsonHelper.toJson(this);
   }
 
-  public static class SortSpec {
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Sort sort = (Sort) super.clone();
+    sort.sortSpecs = new SortSpec[sortSpecs.length];
+    for (int i = 0; i < sortSpecs.length; i++) {
+      sort.sortSpecs[i] = (SortSpec) sortSpecs[i].clone();
+    }
+    return sort;
+  }
+
+  public static class SortSpec implements Cloneable {
     @Expose @SerializedName("SortKey")
     private Expr key;
     @Expose @SerializedName("IsAsc")
@@ -98,6 +108,10 @@ public class Sort extends UnaryOperator {
       this.nullFirst = true;
     }
 
+    public void setKey(Expr expr) {
+      this.key = expr;
+    }
+
     public final Expr getKey() {
       return this.key;
     }
@@ -121,6 +135,15 @@ public class Sort extends UnaryOperator {
     @Override
     public String toString() {
       return key + " " + (asc ? "asc" : "desc") + " " + (nullFirst ? "null first" :"");
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      SortSpec sortSpec = (SortSpec) super.clone();
+      sortSpec.key = (Expr) key.clone();
+      sortSpec.asc = asc;
+      sortSpec.nullFirst = nullFirst;
+      return sortSpec;
     }
   }
 }

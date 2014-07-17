@@ -71,6 +71,9 @@ public class TaskAttemptContext {
   private Enforcer enforcer;
   private QueryContext queryContext;
 
+  /** a output volume for each partition */
+  private Map<Integer, Long> partitionOutputVolume;
+
   public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
@@ -94,6 +97,8 @@ public class TaskAttemptContext {
     this.shuffleFileOutputs = Maps.newHashMap();
 
     state = TaskAttemptState.TA_PENDING;
+
+    this.partitionOutputVolume = Maps.newHashMap();
   }
 
   @VisibleForTesting
@@ -193,6 +198,19 @@ public class TaskAttemptContext {
     return shuffleFileOutputs.entrySet().iterator();
   }
   
+  public void addPartitionOutputVolume(int partId, long volume) {
+    if (partitionOutputVolume.containsKey(partId)) {
+      long sum = partitionOutputVolume.get(partId);
+      partitionOutputVolume.put(partId, sum + volume);
+    } else {
+      partitionOutputVolume.put(partId, volume);
+    }
+  }
+
+  public Map<Integer, Long> getPartitionOutputVolume() {
+    return partitionOutputVolume;
+  }
+
   public void updateAssignedFragments(String tableId, Fragment[] fragments) {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
@@ -205,7 +223,23 @@ public class TaskAttemptContext {
       }
     }
   }
-  
+
+  public void addFragments(String tableId, FragmentProto[] fragments) {
+    if (fragments == null || fragments.length == 0) {
+      return;
+    }
+    List<FragmentProto> tableFragments = fragmentMap.get(tableId);
+
+    if (tableFragments == null) {
+      tableFragments = new ArrayList<FragmentProto>();
+    }
+
+    for (FragmentProto eachFragment: fragments) {
+      tableFragments.add(eachFragment);
+    }
+    fragmentMap.put(tableId, tableFragments);
+  }
+
   public Path getWorkDir() {
     return this.workDir;
   }

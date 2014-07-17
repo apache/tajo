@@ -225,9 +225,6 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
 
   public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws PlanningException {
     Expr child = super.visitInsert(context, stack, expr);
-    if (!expr.isOverwrite()) {
-      context.state.addVerification("INSERT INTO statement is not supported yet.");
-    }
 
     if (expr.hasTableName()) {
       assertRelationExistence(context, expr.getTableName());

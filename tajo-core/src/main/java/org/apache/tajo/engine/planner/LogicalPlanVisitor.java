@@ -40,7 +40,8 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitGroupBy(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
                       Stack<LogicalNode> stack) throws PlanningException;
-
+  RESULT visitWindowAgg(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
+                      Stack<LogicalNode> stack) throws PlanningException;
   RESULT visitDistinct(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DistinctGroupbyNode node,
                                 Stack<LogicalNode> stack) throws PlanningException;
 

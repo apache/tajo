@@ -69,11 +69,22 @@ public class CaseWhenPredicate extends Expr {
   }
 
   @Override
+  public Object clone() throws CloneNotSupportedException {
+    CaseWhenPredicate caseWhen = (CaseWhenPredicate) super.clone();
+    caseWhen.whens = new ArrayList<WhenExpr>();
+    for (int i = 0; i < whens.size(); i++) {
+      caseWhen.whens.add((WhenExpr) whens.get(i).clone());
+    }
+    caseWhen.elseResult = elseResult != null ? (Expr) elseResult.clone() : null;
+    return caseWhen;
+  }
+
+  @Override
   public String toJson() {
     return JsonHelper.toJson(this);
   }
 
-  public static class WhenExpr {
+  public static class WhenExpr implements Cloneable {
     @Expose @SerializedName("Condition")
     Expr condition;
     @Expose @SerializedName("Result")
@@ -111,6 +122,14 @@ public class CaseWhenPredicate extends Expr {
       }
 
       return false;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      WhenExpr when = (WhenExpr) super.clone();
+      when.condition = (Expr) condition.clone();
+      when.result = (Expr) result.clone();
+      return when;
     }
   }
 }

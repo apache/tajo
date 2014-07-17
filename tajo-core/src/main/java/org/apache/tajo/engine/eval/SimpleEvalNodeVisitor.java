@@ -66,10 +66,13 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
 
       // Functions
       case FUNCTION:
-        result = visitFuncCall(context, (GeneralFunctionEval) evalNode, stack);
+        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
         break;
       case AGG_FUNCTION:
-        result = visitAggrFuncCall(context, (AggregationFunctionCallEval) evalNode, stack);
+        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
+        break;
+      case WINDOW_FUNCTION:
+        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
         break;
 
       default:
@@ -163,11 +166,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
   // Functions
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  public EvalNode visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
-    return visitDefaultFunctionEval(context, stack, evalNode);
-  }
-
-  public EvalNode visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack) {
+  public EvalNode visitFuncCall(CONTEXT context, FunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
   }
 }

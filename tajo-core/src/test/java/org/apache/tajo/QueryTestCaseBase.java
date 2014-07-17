@@ -577,7 +577,7 @@ public class QueryTestCaseBase {
     FileStatus[] files = fs.listStatus(path);
 
     if (files == null || files.length == 0) {
-      return null;
+      return "";
     }
 
     StringBuilder sb = new StringBuilder();
@@ -585,6 +585,7 @@ public class QueryTestCaseBase {
 
     for (FileStatus file: files) {
       if (file.isDirectory()) {
+        sb.append(getTableFileContents(file.getPath()));
         continue;
       }
 
@@ -620,5 +621,34 @@ public class QueryTestCaseBase {
 
     Path path = tableDesc.getPath();
     return getTableFileContents(path);
+  }
+
+  public List<Path> listTableFiles(String tableName) throws Exception {
+    TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
+    if (tableDesc == null) {
+      return null;
+    }
+
+    Path path = tableDesc.getPath();
+    FileSystem fs = path.getFileSystem(conf);
+
+    return listFiles(fs, path);
+  }
+
+  private List<Path> listFiles(FileSystem fs, Path path) throws Exception {
+    List<Path> result = new ArrayList<Path>();
+    FileStatus[] files = fs.listStatus(path);
+    if (files == null || files.length == 0) {
+      return result;
+    }
+
+    for (FileStatus eachFile: files) {
+      if (eachFile.isDirectory()) {
+        result.addAll(listFiles(fs, eachFile.getPath()));
+      } else {
+        result.add(eachFile.getPath());
+      }
+    }
+    return result;
   }
 }

@@ -135,15 +135,21 @@ public class TestAsyncRpc {
     assertTrue(future.isDone());
   }
 
-  @Test(expected = TimeoutException.class)
+  @Test
   public void testCallFutureTimeout() throws Exception {
-    EchoMessage echoMessage = EchoMessage.newBuilder()
-        .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
-    stub.deley(null, echoMessage, future);
+    boolean timeout = false;
+    try {
+      EchoMessage echoMessage = EchoMessage.newBuilder()
+          .setMessage(MESSAGE).build();
+      CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+      stub.deley(null, echoMessage, future);
 
-    assertFalse(future.isDone());
-    assertEquals(future.get(1, TimeUnit.SECONDS), echoMessage);
+      assertFalse(future.isDone());
+      future.get(1, TimeUnit.SECONDS);
+    } catch (TimeoutException te) {
+      timeout = true;
+    }
+    assertTrue(timeout);
   }
 
   @Test
