@@ -27,12 +27,10 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.TUtil;
 
-import javax.net.SocketFactory;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.List;
 
 /**
@@ -53,12 +51,6 @@ public class HAServiceHDFSImpl implements HAService {
   private Path activePath;
   private Path backupPath;
 
-  // how to create sockets
-  private SocketFactory socketFactory;
-  // connected socket
-  private Socket socket = null;
-  private int connectionTimeout;
-
   private boolean isActiveStatus = false;
 
   //thread which runs periodically to see the last time since a heartbeat is received.
@@ -72,11 +64,6 @@ public class HAServiceHDFSImpl implements HAService {
 
     this.conf = context.getConf();
     initSystemDirectory();
-
-    socketFactory = NetUtils.getDefaultSocketFactory(conf);
-
-    connectionTimeout = conf.getInt(CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_KEY,
-        CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_DEFAULT);
 
     this.masterName = masterName;
 
@@ -132,7 +119,7 @@ public class HAServiceHDFSImpl implements HAService {
       String currentActiveMaster = activePath.getName().replaceAll("_", ":");
 
       // Phase 3: If current active master is dead, this master should be active master.
-      if (!isMasterAlive(currentActiveMaster)) {
+      if (!HAServiceUtil.isMasterAlive(currentActiveMaster, conf)) {
         fs.delete(activePath, true);
         createMasterFile(true);
         LOG.info(String.format("This is added to active master (%s)", masterName));
@@ -142,19 +129,6 @@ public class HAServiceHDFSImpl implements HAService {
         LOG.info(String.format("This is added to backup masters (%s)", masterName));
       }
     }
-  }
-
-  private boolean isMasterAlive(String masterName) {
-    boolean isAlive = true;
-
-    try {
-      InetSocketAddress server = NetUtils.createSocketAddr(masterName);
-      socket = socketFactory.createSocket();
-      NetUtils.connect(socket, server, connectionTimeout);
-    } catch (Exception e) {
-      isAlive = false;
-    }
-    return isAlive;
   }
 
   private void createMasterFile(boolean isActive) throws IOException {
@@ -211,7 +185,6 @@ public class HAServiceHDFSImpl implements HAService {
     if (fs.exists(backupFile)) {
       fs.delete(backupFile, true);
     }
-    fs.close();
     if (isActiveStatus) {
       isActiveStatus = false;
     }
@@ -252,8 +225,8 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   private TajoMasterInfo createTajoMasterInfo(Path path, boolean isActive) throws IOException {
-    String rpcServerAddress = path.getName().replaceAll("_", ":");
-    boolean isAlive = isMasterAlive(rpcServerAddress);
+    String masterAddress = path.getName().replaceAll("_", ":");
+    boolean isAlive = HAServiceUtil.isMasterAlive(masterAddress, conf);
 
     FSDataInputStream stream = fs.open(path);
     String data = stream.readUTF();
@@ -262,11 +235,11 @@ public class HAServiceHDFSImpl implements HAService {
     String[] addresses = data.split("_");
     TajoMasterInfo info = new TajoMasterInfo();
 
-    info.setRpcServerAddress(rpcServerAddress);
-    info.setRpcClientAddress(addresses[0]);
-    info.setResourceTrackerAddress(addresses[1]);
-    info.setCatalogAddress(addresses[2]);
-    info.setWebServerAddress(addresses[3]);
+    info.setTajoMasterAddress(NetUtils.createSocketAddr(masterAddress));
+    info.setTajoClientAddress(NetUtils.createSocketAddr(addresses[0]));
+    info.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(addresses[1]));
+    info.setCatalogAddress(NetUtils.createSocketAddr(addresses[2]));
+    info.setWebServerAddress(NetUtils.createSocketAddr(addresses[3]));
 
     info.setAvailable(isAlive);
     info.setActive(isActive);
@@ -287,7 +260,7 @@ public class HAServiceHDFSImpl implements HAService {
               Path activePath = files[0].getPath();
 
               String currentActiveMaster = activePath.getName().replaceAll("_", ":");
-              boolean isAlive = isMasterAlive(currentActiveMaster);
+              boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
               if (LOG.isDebugEnabled()) {
                 LOG.debug("master:" + currentActiveMaster + ", isAlive:" + isAlive);
               }
@@ -299,6 +272,7 @@ public class HAServiceHDFSImpl implements HAService {
                 register();
               }
             } else {
+              delete();
               register();
             }
           } catch (Exception e) {

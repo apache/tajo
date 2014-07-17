@@ -67,8 +67,6 @@ public class TajoCli {
 
   private boolean wasError = false;
 
-  private String baseDatabase = null;
-
   private static final Class [] registeredCommands = {
       DescTableCommand.class,
       DescFunctionCommand.class,
@@ -150,6 +148,7 @@ public class TajoCli {
 
     String hostName = null;
     Integer port = null;
+    String baseDatabase = null;
     if (cmd.hasOption("h")) {
       hostName = cmd.getOptionValue("h");
     }
@@ -352,6 +351,7 @@ public class TajoCli {
   }
 
   public int executeMetaCommand(String line) throws Exception {
+    checkMasterStatus();
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
       String arguments [] = metaCommand.split(" ");
@@ -386,8 +386,8 @@ public class TajoCli {
   }
 
   private void executeJsonQuery(String json) throws ServiceException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
-    checkMasterChanged();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       outputFormatter.printErrorMessage(sout, "response is null");
@@ -413,8 +413,8 @@ public class TajoCli {
   }
 
   private void executeQuery(String statement) throws ServiceException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
-    checkMasterChanged();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
       outputFormatter.printErrorMessage(sout, "response is null");
@@ -562,18 +562,28 @@ public class TajoCli {
     }
   }
 
-  public void checkMasterChanged() {
+  // In TajoMaster HA mode, if TajoCli can't connect existing active master,
+  // this should try to connect new active master.
+  private void checkMasterStatus() {
     try {
-      boolean ret = true;
       if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-        if (!conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname).
-            equals(HAServiceUtil.getMasterClientName(conf))) {
-          ret = false;
+        if (!HAServiceUtil.isMasterAlive(conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
+            .varname), conf)) {
+          String baseDatabase = client.getBaseDatabase();
+          conf.set(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname,
+              HAServiceUtil.getMasterClientName(conf));
+
+          client.close();
+          commands.clear();
+
           client = new TajoClient(conf, baseDatabase);
+          context.setCurrentDatabase(client.getCurrentDatabase());
+
+          initHistory();
+          initCommands();
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 

@@ -120,6 +120,7 @@
       out.write("No TajoMasters\n");
     } else {
 %>
+  <p/>
   <table width="100%" class="border_table" border="1">
     <tr><th>No</th><th>TajoMaster</th><th>Rpc Server</th><th>Rpc Client</th><th>ResourceTracker</th>
       <th>Catalog</th><th>Active/Backup</th><th>Status</th></tr>
@@ -127,17 +128,23 @@
       int no = 1;
 
       for(TajoMasterInfo eachMaster : masters) {
-      String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress() + "/index.jsp";
+      String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress().getHostName() + ":" +
+          eachMaster.getWebServerAddress().getPort() + "/index.jsp";
       String isActive = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
       String isAvailable = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
     %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><a href='<%=tajoMasterHttp%>'><%=eachMaster.getWebServerAddress()%></a></td>
-      <td width='200' align='right'><%=eachMaster.getRpcServerAddress()%></td>
-      <td width='200' align='right'><%=eachMaster.getRpcClientAddress()%></td>
-      <td width='200' align='right'><%=eachMaster.getResourceTrackerAddress()%></td>
-      <td width='200' align='right'><%=eachMaster.getCatalogAddress()%></td>
+      <td><a href='<%=tajoMasterHttp%>'><%=eachMaster.getWebServerAddress().getHostName() + ":" +
+          eachMaster.getWebServerAddress().getPort()%></a></td>
+      <td width='200' align='right'><%=eachMaster.getTajoMasterAddress().getHostName() + ":" +
+          eachMaster.getTajoMasterAddress().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getTajoClientAddress().getHostName() + ":" +
+          eachMaster.getTajoClientAddress().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getWorkerResourceTrackerAddr().getHostName() + ":" +
+          eachMaster.getWorkerResourceTrackerAddr().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getCatalogAddress().getHostName() + ":" +
+          eachMaster.getCatalogAddress().getPort()%></td>
       <td width='200' align='right'><%=isActive%></td>
       <td width='100' align='center'><%=isAvailable%></td>
     </tr>

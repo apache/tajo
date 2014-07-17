@@ -18,54 +18,56 @@
 
 package org.apache.tajo.master.ha;
 
+import java.net.InetSocketAddress;
+
 public class TajoMasterInfo {
 
   private boolean available;
   private boolean isActive;
 
-  private String rpcServerAddress;
-  private String rpcClientAddress;
-  private String resourceTrackerAddress;
-  private String catalogAddress;
-  private String webServerAddress;
+  private InetSocketAddress tajoMasterAddress;
+  private InetSocketAddress tajoClientAddress;
+  private InetSocketAddress workerResourceTrackerAddr;
+  private InetSocketAddress catalogAddress;
+  private InetSocketAddress webServerAddress;
 
-  public String getRpcServerAddress() {
-    return rpcServerAddress;
+  public InetSocketAddress getTajoMasterAddress() {
+    return tajoMasterAddress;
   }
 
-  public void setRpcServerAddress(String rpcServerAddress) {
-    this.rpcServerAddress = rpcServerAddress;
+  public void setTajoMasterAddress(InetSocketAddress tajoMasterAddress) {
+    this.tajoMasterAddress = tajoMasterAddress;
   }
 
-  public String getRpcClientAddress() {
-    return rpcClientAddress;
+  public InetSocketAddress getTajoClientAddress() {
+    return tajoClientAddress;
   }
 
-  public void setRpcClientAddress(String rpcClientAddress) {
-    this.rpcClientAddress = rpcClientAddress;
+  public void setTajoClientAddress(InetSocketAddress tajoClientAddress) {
+    this.tajoClientAddress = tajoClientAddress;
   }
 
-  public String getResourceTrackerAddress() {
-    return resourceTrackerAddress;
+  public InetSocketAddress getWorkerResourceTrackerAddr() {
+    return workerResourceTrackerAddr;
   }
 
-  public void setResourceTrackerAddress(String resourceTrackerAddress) {
-    this.resourceTrackerAddress = resourceTrackerAddress;
+  public void setWorkerResourceTrackerAddr(InetSocketAddress workerResourceTrackerAddr) {
+    this.workerResourceTrackerAddr = workerResourceTrackerAddr;
   }
 
-  public String getCatalogAddress() {
+  public InetSocketAddress getCatalogAddress() {
     return catalogAddress;
   }
 
-  public void setCatalogAddress(String catalogAddress) {
+  public void setCatalogAddress(InetSocketAddress catalogAddress) {
     this.catalogAddress = catalogAddress;
   }
 
-  public String getWebServerAddress() {
+  public InetSocketAddress getWebServerAddress() {
     return webServerAddress;
   }
 
-  public void setWebServerAddress(String webServerAddress) {
+  public void setWebServerAddress(InetSocketAddress webServerAddress) {
     this.webServerAddress = webServerAddress;
   }
 

@@ -18,14 +18,13 @@
 
 package org.apache.tajo.util;
 
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 
+import javax.net.SocketFactory;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class HAServiceUtil {
 
@@ -157,5 +156,30 @@ public class HAServiceUtil {
     }
 
     return masterAddress;
+  }
+
+  public static boolean isMasterAlive(InetSocketAddress masterAddress, TajoConf conf) {
+    return isMasterAlive(NetUtils.normalizeInetSocketAddress(masterAddress), conf);
+  }
+
+  public static boolean isMasterAlive(String masterName, TajoConf conf) {
+    boolean isAlive = true;
+
+    try {
+      // how to create sockets
+      SocketFactory socketFactory = org.apache.hadoop.net.NetUtils.getDefaultSocketFactory(conf);
+
+      int connectionTimeout = conf.getInt(CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_KEY,
+          CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_DEFAULT);
+
+      InetSocketAddress server = org.apache.hadoop.net.NetUtils.createSocketAddr(masterName);
+
+      // connected socket
+      Socket socket = socketFactory.createSocket();
+      org.apache.hadoop.net.NetUtils.connect(socket, server, connectionTimeout);
+    } catch (Exception e) {
+      isAlive = false;
+    }
+    return isAlive;
   }
 }

@@ -102,13 +102,7 @@ public class TajoClient implements Closeable {
   public TajoClient(TajoConf conf, InetSocketAddress addr, @Nullable String baseDatabase) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
-
-    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      this.tajoMasterAddr = addr;
-    } else {
-      this.tajoMasterAddr = HAServiceUtil.getMasterClientAddress(conf);
-    }
-
+    this.tajoMasterAddr = addr;
     int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
     // Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
@@ -144,8 +138,16 @@ public class TajoClient implements Closeable {
     if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       return tajoMasterAddr;
     } else {
-      return HAServiceUtil.getMasterClientAddress(conf);
+      if (!HAServiceUtil.isMasterAlive(tajoMasterAddr, conf)) {
+        return HAServiceUtil.getMasterClientAddress(conf);
+      } else {
+        return tajoMasterAddr;
+      }
     }
+  }
+
+  public String getBaseDatabase() {
+    return baseDatabase;
   }
 
   @Override
@@ -156,7 +158,6 @@ public class TajoClient implements Closeable {
       TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
       tajoMaster.removeSession(null, sessionId);
     } catch (Exception e) {
-      LOG.error(e);
     }
 
     if(connPool != null) {
@@ -858,8 +859,7 @@ public class TajoClient implements Closeable {
    * @return Table description
    */
   public TableDesc getTableDesc(final String tableName) throws ServiceException {
-    return new ServerCallable<TableDesc>(connPool, getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<TableDesc>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
         checkSessionAndGet(client);
 

@@ -268,9 +268,12 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       startTime = System.currentTimeMillis();
       try {
-        if (tajoClient.getConf().getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-          if (!tajoClient.getConf().get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS
-              .varname).equals(HAServiceUtil.getMasterUmbilicalName(tajoClient.getConf()))) {
+        // In TajoMaster HA mode, if this servlet can't connect existing active master,
+        // this should try to connect new active master.
+        TajoConf conf = tajoClient.getConf();
+        if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+          if (!HAServiceUtil.isMasterAlive(conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
+              .varname), conf)) {
             tajoClient.close();
             tajoClient = new TajoClient(new TajoConf());
           }
