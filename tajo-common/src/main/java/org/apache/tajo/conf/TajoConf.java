@@ -153,11 +153,11 @@ public class TajoConf extends Configuration {
     // Tajo Master Service Addresses
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
-    TAJO_MASTER_INFO_ADDRESS("xtajo.master.info-http.address", "0.0.0.0:26080"),
+    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
 
     // Tajo Master HA Configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false),
-    TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 10 * 1000),
+    TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
 
     // Resource tracker service
     RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003"),

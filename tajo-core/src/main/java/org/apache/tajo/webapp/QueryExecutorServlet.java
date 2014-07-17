@@ -12,6 +12,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.JSPUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -74,7 +75,6 @@ public class QueryExecutorServlet extends HttpServlet {
 
     try {
       tajoClient = new TajoClient(new TajoConf());
-
       queryRunnerCleaner = new QueryRunnerCleaner();
       queryRunnerCleaner.start();
     } catch (IOException e) {
@@ -268,6 +268,14 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       startTime = System.currentTimeMillis();
       try {
+        if (tajoClient.getConf().getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+          if (!tajoClient.getConf().get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS
+              .varname).equals(HAServiceUtil.getMasterUmbilicalName(tajoClient.getConf()))) {
+            tajoClient.close();
+            tajoClient = new TajoClient(new TajoConf());
+          }
+        }
+
         queryRespons = tajoClient.executeQuery(query);
         if (queryRespons.getResultCode() == ClientProtos.ResultCode.OK) {
           QueryId queryId = null;

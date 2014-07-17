@@ -89,6 +89,17 @@
 
   String deadMasterHtml = numDeadMasters == 0 ? "0": "<font color='red'>" + numDeadMasters +"</font>";
 
+  String activeLabel;
+  if (haService == null) {
+    activeLabel = "";
+  } else {
+    if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
+    }
+  }
+
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -101,11 +112,10 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <div>Live:<%=numLiveMasters%>, Dead: <%=deadMasterHtml%>, Total: <%=masters.size()%></div>
 <%
   if (masters != null) {
-    out.write("<h3>Live TajoMasters</h3>\n");
     if(numLiveMasters == 0) {
       out.write("No TajoMasters\n");
     } else {
@@ -118,8 +128,8 @@
 
       for(TajoMasterInfo eachMaster : masters) {
       String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress() + "/index.jsp";
-      String activeLabel = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
-      String statusLabel = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
+      String isActive = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
+      String isAvailable = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
     %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
@@ -128,8 +138,8 @@
       <td width='200' align='right'><%=eachMaster.getRpcClientAddress()%></td>
       <td width='200' align='right'><%=eachMaster.getResourceTrackerAddress()%></td>
       <td width='200' align='right'><%=eachMaster.getCatalogAddress()%></td>
-      <td width='200' align='right'><%=activeLabel%></td>
-      <td width='100' align='center'><%=statusLabel%></td>
+      <td width='200' align='right'><%=isActive%></td>
+      <td width='100' align='center'><%=isAvailable%></td>
     </tr>
     <%
       } //end fo for

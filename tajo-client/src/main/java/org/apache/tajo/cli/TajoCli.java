@@ -31,6 +31,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -65,6 +66,8 @@ public class TajoCli {
   private TajoCliOutputFormatter outputFormatter;
 
   private boolean wasError = false;
+
+  private String baseDatabase = null;
 
   private static final Class [] registeredCommands = {
       DescTableCommand.class,
@@ -154,7 +157,6 @@ public class TajoCli {
       port = Integer.parseInt(cmd.getOptionValue("p"));
     }
 
-    String baseDatabase = null;
     if (cmd.getArgList().size() > 0) {
       baseDatabase = (String) cmd.getArgList().get(0);
     }
@@ -385,6 +387,7 @@ public class TajoCli {
 
   private void executeJsonQuery(String json) throws ServiceException {
     long startTime = System.currentTimeMillis();
+    checkMasterChanged();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       outputFormatter.printErrorMessage(sout, "response is null");
@@ -411,6 +414,7 @@ public class TajoCli {
 
   private void executeQuery(String statement) throws ServiceException {
     long startTime = System.currentTimeMillis();
+    checkMasterChanged();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
       outputFormatter.printErrorMessage(sout, "response is null");
@@ -555,6 +559,21 @@ public class TajoCli {
     //for testcase
     if (client != null) {
       client.close();
+    }
+  }
+
+  public void checkMasterChanged() {
+    try {
+      boolean ret = true;
+      if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        if (!conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname).
+            equals(HAServiceUtil.getMasterClientName(conf))) {
+          ret = false;
+          client = new TajoClient(conf, baseDatabase);
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 

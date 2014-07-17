@@ -102,7 +102,13 @@ public class TajoClient implements Closeable {
   public TajoClient(TajoConf conf, InetSocketAddress addr, @Nullable String baseDatabase) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
-    this.tajoMasterAddr = addr;
+
+    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      this.tajoMasterAddr = addr;
+    } else {
+      this.tajoMasterAddr = HAServiceUtil.getMasterClientAddress(conf);
+    }
+
     int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
     // Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
