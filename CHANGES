@@ -29,6 +29,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-953: RawFile should release a DirectBuffer immediately. (jinho)
+
     TAJO-933: Fork some classes of Parquet as builtin third-party classes.
     (hyunsik)
 

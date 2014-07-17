@@ -23,17 +23,21 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StorageUtil extends StorageConstants{
+public class StorageUtil extends StorageConstants {
   public static int getRowByteSize(Schema schema) {
     int sum = 0;
     for(Column col : schema.getColumns()) {
@@ -183,6 +187,16 @@ public class StorageUtil extends StorageConstants{
       return Integer.parseInt(pathTokens[3]);
     } else {
       return -1;
+    }
+  }
+
+  public static void closeBuffer(ByteBuffer buffer) {
+    if (buffer != null) {
+      if (buffer.isDirect()) {
+        ((DirectBuffer) buffer).cleaner().clean();
+      } else {
+        buffer.clear();
+      }
     }
   }
 }
