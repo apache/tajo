@@ -181,6 +181,7 @@ public class RowStoreUtil {
       for (int i = 0; i < schema.size(); i++) {
         if (tuple.isNull(i)) {
           nullFlags.set(i);
+          continue;
         }
 
         col = schema.getColumn(i);

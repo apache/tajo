@@ -24,13 +24,13 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>, Cloneable, GsonObject {
@@ -107,6 +107,10 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
 
   public void setNumNulls(long numNulls) {
     this.numNulls = numNulls;
+  }
+
+  public boolean hasNullValue() {
+    return numNulls > 0;
   }
 
   public boolean equals(Object obj) {

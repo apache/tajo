@@ -25,20 +25,30 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
 import static org.junit.Assert.*;
 
 public class TestTablePartitions extends QueryTestCaseBase {
@@ -62,6 +72,77 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = testBase.execute(
         "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
             "l_quantity from lineitem");
+
+    MasterPlan plan = getQueryPlan(res);
+    ExecutionBlock rootEB = plan.getRoot();
+
+    /*
+    -------------------------------------------------------------------------------
+    |-eb_1405354886454_0001_000003
+       |-eb_1405354886454_0001_000002
+          |-eb_1405354886454_0001_000001
+     */
+    assertEquals(1, plan.getChildCount(rootEB.getId()));
+
+    ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
+    assertNotNull(insertEB);
+    assertEquals(NodeType.INSERT, insertEB.getPlan().getType());
+    assertEquals(1, plan.getChildCount(insertEB.getId()));
+
+    ExecutionBlock scanEB = plan.getChild(insertEB.getId(), 0);
+
+    List<DataChannel> list = plan.getOutgoingChannels(scanEB.getId());
+    assertEquals(1, list.size());
+    DataChannel channel = list.get(0);
+    assertNotNull(channel);
+    assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
+    assertEquals(1, channel.getShuffleKeys().length);
+
+    res.close();
+  }
+
+  @Test
+  public final void testCreateColumnPartitionedTableWithJoin() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithJoin");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+    assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+    res = testBase.execute(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+            "l_quantity from lineitem join orders on l_orderkey = o_orderkey");
+
+    MasterPlan plan = getQueryPlan(res);
+    ExecutionBlock rootEB = plan.getRoot();
+
+    /*
+    -------------------------------------------------------------------------------
+    |-eb_1405356074433_0001_000005
+       |-eb_1405356074433_0001_000004
+          |-eb_1405356074433_0001_000003
+             |-eb_1405356074433_0001_000002
+             |-eb_1405356074433_0001_000001
+     */
+    assertEquals(1, plan.getChildCount(rootEB.getId()));
+
+    ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
+    assertNotNull(insertEB);
+    assertEquals(NodeType.INSERT, insertEB.getPlan().getType());
+    assertEquals(1, plan.getChildCount(insertEB.getId()));
+
+    ExecutionBlock scanEB = plan.getChild(insertEB.getId(), 0);
+
+    List<DataChannel> list = plan.getOutgoingChannels(scanEB.getId());
+    assertEquals(1, list.size());
+    DataChannel channel = list.get(0);
+    assertNotNull(channel);
+    assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
+    assertEquals(1, channel.getShuffleKeys().length);
+
     res.close();
   }
 
@@ -240,14 +321,69 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
-    String expected = "N\n" +
-        "N\n" +
-        "N\n" +
-        "R\n" +
-        "R\n";
+    res = executeString("select * from " + tableName + " where col2 = 2");
 
-    String tableData = getTableFileContents(desc.getPath());
-    assertEquals(expected, tableData);
+    Map<Double, int []> resultRows1 = Maps.newHashMap();
+    resultRows1.put(45.0d, new int[]{3, 2});
+    resultRows1.put(38.0d, new int[]{2, 2});
+
+
+    for (int i = 0; i < 2; i++) {
+      assertTrue(res.next());
+      assertEquals(resultRows1.get(res.getDouble(4))[0], res.getInt(2));
+      assertEquals(resultRows1.get(res.getDouble(4))[1], res.getInt(3));
+    }
+    res.close();
+
+
+    Map<Double, int []> resultRows2 = Maps.newHashMap();
+    resultRows2.put(49.0d, new int[]{3, 3});
+    resultRows2.put(45.0d, new int[]{3, 2});
+    resultRows2.put(38.0d, new int[]{2, 2});
+
+    res = executeString("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+
+    for (int i = 0; i < 3; i++) {
+      assertTrue(res.next());
+      assertEquals(resultRows2.get(res.getDouble(4))[0], res.getInt(2));
+      assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
+    }
+    res.close();
+  }
+
+  @Test
+  public final void testInsertIntoColumnPartitionedTableByThreeColumns() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testInsertIntoColumnPartitionedTableByThreeColumns");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    Path path = desc.getPath();
+
+    FileSystem fs = FileSystem.get(conf);
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
 
     res = executeString("select * from " + tableName + " where col2 = 2");
 
@@ -276,6 +412,68 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
     }
     res.close();
+
+    // insert into already exists partitioned table
+    res = executeString("insert into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    path = desc.getPath();
+
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
+
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+    String expected = "N\n" +
+        "N\n" +
+        "N\n" +
+        "N\n" +
+        "N\n" +
+        "N\n" +
+        "R\n" +
+        "R\n" +
+        "R\n" +
+        "R\n";
+
+    String tableData = getTableFileContents(desc.getPath());
+    assertEquals(expected, tableData);
+
+    res = executeString("select * from " + tableName + " where col2 = 2");
+    String resultSetData = resultSetToString(res);
+    res.close();
+    expected = "col4,col1,col2,col3\n" +
+        "-------------------------------\n" +
+        "N,2,2,38.0\n" +
+        "N,2,2,38.0\n" +
+        "R,3,2,45.0\n" +
+        "R,3,2,45.0\n";
+    assertEquals(expected, resultSetData);
+
+    res = executeString("select * from " + tableName + " where (col1 = 2 or col1 = 3) and col2 >= 2");
+    resultSetData = resultSetToString(res);
+    res.close();
+    expected = "col4,col1,col2,col3\n" +
+        "-------------------------------\n" +
+        "N,2,2,38.0\n" +
+        "N,2,2,38.0\n" +
+        "R,3,2,45.0\n" +
+        "R,3,2,45.0\n" +
+        "R,3,3,49.0\n" +
+        "R,3,3,49.0\n";
+    assertEquals(expected, resultSetData);
   }
 
   @Test
@@ -574,5 +772,18 @@ public class TestTablePartitions extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+  }
+
+  private MasterPlan getQueryPlan(ResultSet res) {
+    QueryId queryId = ((TajoResultSet)res).getQueryId();
+    for (TajoWorker eachWorker: testingCluster.getTajoWorkers()) {
+      QueryMasterTask queryMasterTask = eachWorker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
+      if (queryMasterTask != null) {
+        return queryMasterTask.getQuery().getPlan();
+      }
+    }
+
+    fail("Can't find query from workers" + queryId);
+    return null;
   }
 }

@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.*;
@@ -29,6 +30,8 @@ import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class StorageUtil extends StorageConstants{
   public static int getRowByteSize(Schema schema) {
@@ -119,5 +122,67 @@ public class StorageUtil extends StorageConstants{
     }
 
     return options;
+  }
+
+  static final String fileNamePatternV08 = "part-[0-9]*-[0-9]*";
+  static final String fileNamePatternV09 = "part-[0-9]*-[0-9]*-[0-9]*";
+
+  /**
+   * Written files can be one of two forms: "part-[0-9]*-[0-9]*" or "part-[0-9]*-[0-9]*-[0-9]*".
+   *
+   * This method finds the maximum sequence number from existing data files through the above patterns.
+   * If it cannot find any matched file or the maximum number, it will return -1.
+   *
+   * @param fs
+   * @param path
+   * @param recursive
+   * @return The maximum sequence number
+   * @throws IOException
+   */
+  public static int getMaxFileSequence(FileSystem fs, Path path, boolean recursive) throws IOException {
+    if (!fs.isDirectory(path)) {
+      return -1;
+    }
+
+    FileStatus[] files = fs.listStatus(path);
+
+    if (files == null || files.length == 0) {
+      return -1;
+    }
+
+    int maxValue = -1;
+    List<Path> fileNamePatternMatchedList = new ArrayList<Path>();
+
+    for (FileStatus eachFile: files) {
+      // In the case of partition table, return largest value within all partition dirs.
+      if (eachFile.isDirectory() && recursive) {
+        int value = getMaxFileSequence(fs, eachFile.getPath(), recursive);
+        if (value > maxValue) {
+          maxValue = value;
+        }
+      } else {
+        if (eachFile.getPath().getName().matches(fileNamePatternV08) ||
+            eachFile.getPath().getName().matches(fileNamePatternV09)) {
+          fileNamePatternMatchedList.add(eachFile.getPath());
+        }
+      }
+    }
+
+    if (fileNamePatternMatchedList.isEmpty()) {
+      return maxValue;
+    }
+    Path lastFile = fileNamePatternMatchedList.get(fileNamePatternMatchedList.size() - 1);
+    String pathName = lastFile.getName();
+
+    // 0.8: pathName = part-<ExecutionBlockId.seq>-<QueryUnitId.seq>
+    // 0.9: pathName = part-<ExecutionBlockId.seq>-<QueryUnitId.seq>-<Sequence>
+    String[] pathTokens = pathName.split("-");
+    if (pathTokens.length == 3) {
+      return -1;
+    } else if(pathTokens.length == 4) {
+      return Integer.parseInt(pathTokens[3]);
+    } else {
+      return -1;
+    }
   }
 }
