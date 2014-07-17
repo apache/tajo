@@ -33,7 +33,6 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -381,11 +380,7 @@ public class RawFile {
         tableStats.setNumRows(recordCount);
       }
 
-      if(buffer.isDirect()){
-        ((DirectBuffer) buffer).cleaner().clean();
-      } else {
-        buffer.clear();
-      }
+      StorageUtil.closeBuffer(buffer);
       IOUtils.cleanup(LOG, channel, fis);
     }
 
@@ -727,11 +722,7 @@ public class RawFile {
         LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
       }
 
-      if(buffer.isDirect()){
-        ((DirectBuffer) buffer).cleaner().clean();
-      } else {
-        buffer.clear();
-      }
+      StorageUtil.closeBuffer(buffer);
       IOUtils.cleanup(LOG, channel, randomAccessFile);
     }
 
