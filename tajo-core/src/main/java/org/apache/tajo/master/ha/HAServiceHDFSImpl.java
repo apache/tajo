@@ -168,10 +168,6 @@ public class HAServiceHDFSImpl implements HAService {
       isActiveStatus = false;
     }
 
-    FSDataInputStream input = fs.open(path);
-    String data = input.readUTF();
-    input.close();
-
     startPingChecker();
   }
 
