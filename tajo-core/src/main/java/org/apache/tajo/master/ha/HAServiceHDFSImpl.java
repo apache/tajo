@@ -59,6 +59,8 @@ public class HAServiceHDFSImpl implements HAService {
 
   private int monitorInterval;
 
+  private String currentActiveMaster;
+
   public HAServiceHDFSImpl(MasterContext context, String masterName) throws IOException {
     this.context = context;
 
@@ -112,16 +114,18 @@ public class HAServiceHDFSImpl implements HAService {
     // Phase 1: If there is not another active master, this try to become active master.
     if (files.length == 0) {
       createMasterFile(true);
+      currentActiveMaster = masterName;
       LOG.info(String.format("This is added to active master (%s)", masterName));
     } else {
       // Phase 2: If there is active master information, we need to check its status.
       Path activePath = files[0].getPath();
-      String currentActiveMaster = activePath.getName().replaceAll("_", ":");
+      currentActiveMaster = activePath.getName().replaceAll("_", ":");
 
       // Phase 3: If current active master is dead, this master should be active master.
       if (!HAServiceUtil.isMasterAlive(currentActiveMaster, conf)) {
         fs.delete(activePath, true);
         createMasterFile(true);
+        currentActiveMaster = masterName;
         LOG.info(String.format("This is added to active master (%s)", masterName));
       } else {
         // Phase 4: If current active master is alive, this master need to be backup master.
@@ -248,32 +252,24 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   private class PingChecker implements Runnable {
-
     @Override
     public void run() {
       while (!stopped && !Thread.currentThread().isInterrupted()) {
         synchronized (HAServiceHDFSImpl.this) {
           try {
-            FileStatus[] files = fs.listStatus(activePath);
+            boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("master:" + currentActiveMaster + ", isAlive:" + isAlive);
+            }
 
-            if (files.length == 1) {
-              Path activePath = files[0].getPath();
-
-              String currentActiveMaster = activePath.getName().replaceAll("_", ":");
-              boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("master:" + currentActiveMaster + ", isAlive:" + isAlive);
-              }
-
-              // If active master is dead, this master should be active master instead of
-              // previous active master.
-              if (!isAlive) {
+            // If active master is dead, this master should be active master instead of
+            // previous active master.
+            if (!isAlive) {
+              FileStatus[] files = fs.listStatus(activePath);
+              if (files.length == 0) {
                 delete();
                 register();
               }
-            } else {
-              delete();
-              register();
             }
           } catch (Exception e) {
             e.printStackTrace();
