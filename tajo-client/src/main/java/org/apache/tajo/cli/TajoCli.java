@@ -327,9 +327,9 @@ public class TajoCli {
           for (ParsedResult parsed : parsedResults) {
             history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
           }
-          executeParsedResults(parsedResults);
-          currentPrompt = updatePrompt(parser.getState());
         }
+        executeParsedResults(parsedResults);
+        currentPrompt = updatePrompt(parser.getState());
       }
     }
     return code;
