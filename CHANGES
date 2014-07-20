@@ -29,6 +29,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-955: Add database selection submit button in catalogview.jsp for text 
+    based browse. (Hyoungjun Kim via jihoon)
+
     TAJO-956: CONCAT should be support multiple params and null param.
     (Hyoungjun Kim via hyunsik)
 
