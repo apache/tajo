@@ -13,7 +13,7 @@ If you want to customize the catalog service, copy ``$TAJO_HOME/conf/catalog-sit
 | tajo.catalog.store.DerbyStore     | this storage class uses Apache Derby.          |
 +-----------------------------------+------------------------------------------------+
 | tajo.catalog.store.MySQLStore     | this storage class uses MySQL.                 |
-++-----------------------------------+------------------------------------------------+
++-----------------------------------+------------------------------------------------+
 | tajo.catalog.store.MariaDBStore   | this storage class uses MariaDB.               |
 +-----------------------------------+------------------------------------------------+
 | tajo.catalog.store.MemStore       | this is the in-memory storage. It is only used |
