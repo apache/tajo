@@ -48,9 +48,9 @@ package org.apache.tajo.engine.planner.nameresolver;
  * <h2>The relationship between resolving modes and operators</h3>
  *
  * <ul>
- *   <li>fields in select list are resolved in the REL_ONLY mode.</li>
+ *   <li>fields in select list and LIMIT are resolved in the REL_ONLY mode.</li>
  *   <li>fields in WHERE clause are resolved in the RELS_AND_SUBEXPRS mode.</li>
- *   <li>fields in GROUP BY, HAVING, ORDER BY, and LIMIT are resolved in the SUBEXPRS_AND_RELS mode.</li>
+ *   <li>fields in GROUP BY, HAVING, and ORDER BY are resolved in the SUBEXPRS_AND_RELS mode.</li>
  * </ul>
  *
  * <h2>Example</h2>
