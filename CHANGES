@@ -97,6 +97,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-961: TajoCli should exit when at least one query faces error while
+    executing a SQL script. (hyunsik)
+
     TAJO-960: TajoCli's problem does not show the current status. (hyunsik)
 
     TAJO-945: Connecting to Tajo by JDBC driver failed with SQL Exception 
