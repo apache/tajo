@@ -84,17 +84,20 @@
       <td width="20%" valign="top">
         <div>
           <b>Database:</b>
-          <select width="190" style="width: 190px" onchange="document.location.href='catalogview.jsp?database=' + this.value">
+          <form action='catalogview.jsp' method='GET'>
+            <select name="database" width="190" style="width: 190px" onchange="document.location.href='catalogview.jsp?database=' + this.value">
             <%
-              for (String databaseName : catalog.getAllDatabaseNames()) {
-                if (selectedDatabase.equals(databaseName)) { %>
-                  <option value="<%=databaseName%>" selected><%=databaseName%>
-                <%} else {%>
+            for (String databaseName : catalog.getAllDatabaseNames()) {
+              if (selectedDatabase.equals(databaseName)) { %>
+                <option value="<%=databaseName%>" selected><%=databaseName%>
+            <%} else {%>
                 <option value="<%=databaseName%>"><%=databaseName%></option>
-                <%}
-              }
+            <%}
+            }
             %>
-          </select>
+            </select>
+            <input type="submit" value="Select"/>
+          </form>
         </div>
         <!-- table list -->
         <div style='margin-top:5px'>

@@ -24,6 +24,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -32,7 +33,7 @@ import org.apache.tajo.storage.Tuple;
 /**
  * Function definition
  *
- * text concat(str "any" [, str "any" [, ...] ])
+ * text concat_ws(sep text, str "any" [, str "any" [, ...] ])
  */
 @Description(
     functionName = "concat_ws",
@@ -41,7 +42,7 @@ import org.apache.tajo.storage.Tuple;
     example = "> concat_ws(',', 'abcde', 2);\n"
         + "abcde,2",
     returnType = TajoDataTypes.Type.TEXT,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT_ARRAY})}
 )
 public class Concat_ws extends GeneralFunction {
   @Expose private boolean hasMoreCharacters;
@@ -57,21 +58,23 @@ public class Concat_ws extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum sepDatum = params.get(0);
-    Datum datum = params.get(1);
 
-
-    if(datum instanceof NullDatum) return NullDatum.get();
     if(sepDatum instanceof NullDatum) return NullDatum.get();
 
-    StringBuilder result = new StringBuilder(datum.asChars());
+    String seperator = ((TextDatum)sepDatum).asChars();
 
+    String opSperator = "";
+    StringBuilder result = new StringBuilder();
 
-    for(int i = 2 ; i < params.size() ; i++) {
-      Datum tmpDatum = params.get(i);
-      if(tmpDatum instanceof NullDatum)
+    int paramSize = params.size();
+    for(int i = 1; i < paramSize; i++) {
+      Datum datum = params.get(i);
+      if(datum instanceof NullDatum) {
         continue;
-      result.append(sepDatum.asChars());
-      result.append(tmpDatum.asChars());
+      } else {
+        result.append(opSperator).append(datum.asChars());
+      }
+      opSperator = seperator;
     }
     return DatumFactory.createText(result.toString());
   }
