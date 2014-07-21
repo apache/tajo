@@ -148,7 +148,6 @@ public class TajoCli {
 
     String hostName = null;
     Integer port = null;
-    String baseDatabase = null;
     if (cmd.hasOption("h")) {
       hostName = cmd.getOptionValue("h");
     }
@@ -156,6 +155,7 @@ public class TajoCli {
       port = Integer.parseInt(cmd.getOptionValue("p"));
     }
 
+    String baseDatabase = null;
     if (cmd.getArgList().size() > 0) {
       baseDatabase = (String) cmd.getArgList().get(0);
     }
@@ -203,9 +203,9 @@ public class TajoCli {
 
     if (cmd.hasOption("c")) {
       outputFormatter.setScirptMode();
-      executeScript(cmd.getOptionValue("c"));
+      int exitCode = executeScript(cmd.getOptionValue("c"));
       sout.flush();
-      System.exit(0);
+      System.exit(exitCode);
     }
     if (cmd.hasOption("f")) {
       outputFormatter.setScirptMode();
@@ -214,9 +214,9 @@ public class TajoCli {
       if (sqlFile.exists()) {
         String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
         script = replaceParam(script, cmd.getOptionValues("param"));
-        executeScript(script);
+        int exitCode = executeScript(script);
         sout.flush();
-        System.exit(0);
+        System.exit(exitCode);
       } else {
         System.err.println(ERROR_PREFIX + "No such a file \"" + cmd.getOptionValue("f") + "\"");
         System.exit(-1);
@@ -309,7 +309,7 @@ public class TajoCli {
   public int runShell() throws Exception {
     String line;
     String currentPrompt = context.getCurrentDatabase();
-    int code = 0;
+    int exitCode = 0;
 
     sout.write("Try \\? for help.\n");
 
@@ -328,26 +328,33 @@ public class TajoCli {
           for (ParsedResult parsed : parsedResults) {
             history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
           }
-          executeParsedResults(parsedResults);
-          currentPrompt = updatePrompt(parser.getState());
+        }
+        exitCode = executeParsedResults(parsedResults);
+        currentPrompt = updatePrompt(parser.getState());
+
+        if (exitCode != 0 && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
+          return exitCode;
         }
       }
     }
-    return code;
+    return exitCode;
   }
 
-  private void executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+  private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+    int exitCode = 0;
     for (ParsedResult parsedResult : parsedResults) {
       if (parsedResult.getType() == META) {
-        executeMetaCommand(parsedResult.getStatement());
+        exitCode = executeMetaCommand(parsedResult.getStatement());
       } else {
-        executeQuery(parsedResult.getStatement());
+        exitCode = executeQuery(parsedResult.getStatement());
       }
 
-      if (wasError && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
-        break;
+      if (exitCode != 0) {
+        return exitCode;
       }
     }
+
+    return exitCode;
   }
 
   public int executeMetaCommand(String line) throws Exception {
@@ -412,7 +419,7 @@ public class TajoCli {
     }
   }
 
-  private void executeQuery(String statement) throws ServiceException {
+  private int executeQuery(String statement) throws ServiceException {
     checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
@@ -436,6 +443,8 @@ public class TajoCli {
         wasError = true;
       }
     }
+
+    return wasError ? -1 : 0;
   }
 
   private void localQueryCompleted(ClientProtos.SubmitQueryResponse response, long startTime) {
@@ -542,8 +551,7 @@ public class TajoCli {
   public int executeScript(String script) throws Exception {
     wasError = false;
     List<ParsedResult> results = SimpleParser.parseScript(script);
-    executeParsedResults(results);
-    return 0;
+    return executeParsedResults(results);
   }
 
   private void printUsage() {
@@ -591,7 +599,6 @@ public class TajoCli {
     TajoConf conf = new TajoConf();
     TajoCli shell = new TajoCli(conf, args, System.in, System.out);
     System.out.println();
-    int status = shell.runShell();
-    System.exit(status);
+    System.exit(shell.runShell());
   }
 }
