@@ -132,6 +132,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case CREATE_INDEX:
         current = visitCreateIndex(context, plan, block, (CreateIndexNode) node, stack);
         break;
+      case DROP_INDEX:
+        current = visitDropIndex(context, plan, block, (DropIndexNode) node, stack);
+        break;
       case TRUNCATE_TABLE:
         current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
         break;
@@ -355,6 +358,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, DropIndexNode node,
+                        Stack<LogicalNode> stack) throws PlanningException {
+    return null;
   }
 
   @Override

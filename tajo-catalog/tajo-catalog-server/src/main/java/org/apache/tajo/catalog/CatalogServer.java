@@ -739,27 +739,6 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public BoolProto existIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
-        throws ServiceException {
-
-      TableIdentifierProto identifier = request.getTableIdentifier();
-      String databaseName = identifier.getDatabaseName();
-      String tableName = identifier.getTableName();
-      String columnName = request.getColumnName();
-
-      rlock.lock();
-      try {
-        return store.existIndexByColumn(databaseName, tableName, columnName) ?
-            ProtoUtil.TRUE : ProtoUtil.FALSE;
-      } catch (Exception e) {
-        LOG.error(e);
-        return BoolProto.newBuilder().setValue(false).build();
-      } finally {
-        rlock.unlock();
-      }
-    }
-
-    @Override
     public IndexDescProto getIndexByName(RpcController controller, IndexNameProto request)
         throws ServiceException {
 
@@ -774,29 +753,6 @@ public class CatalogServer extends AbstractService {
         return store.getIndexByName(databaseName, indexName);
       } catch (Exception e) {
         LOG.error("ERROR : cannot get index " + indexName, e);
-        return null;
-      } finally {
-        rlock.unlock();
-      }
-    }
-
-    @Override
-    public IndexDescProto getIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
-        throws ServiceException {
-
-      TableIdentifierProto identifier = request.getTableIdentifier();
-      String databaseName = identifier.getDatabaseName();
-      String tableName = identifier.getTableName();
-      String columnName = request.getColumnName();
-
-      rlock.lock();
-      try {
-        if (!store.existIndexByColumn(databaseName, tableName, columnName)) {
-          throw new NoSuchIndexException(databaseName, columnName);
-        }
-        return store.getIndexByColumn(databaseName, tableName, columnName);
-      } catch (Exception e) {
-        LOG.error("ERROR : cannot get index for " + tableName + "." + columnName, e);
         return null;
       } finally {
         rlock.unlock();

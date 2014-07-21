@@ -29,7 +29,10 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
@@ -760,6 +763,50 @@ public class TajoClient implements Closeable {
       }
     }.withRetries();
 
+  }
+
+  /**
+   * Drop an index
+   *
+   * @param indexName The index name to be dropped. This name is case sensitive.
+   * @return True if the index is dropped successfully.
+   */
+  public boolean dropIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setValue(indexName);
+        return tajoMasterService.dropIndex(null, builder.build()).getValue();
+      }
+    }.withRetries();
+  }
+
+  /**
+   * Does the index exist?
+   *
+   * @param indexName The index name to be checked. This name is case sensitive.
+   * @return True if so.
+   */
+  public boolean existIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+        TajoMasterClientProtocol.class, false, true) {
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+
+        SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setValue(indexName);
+        return tajoMasterService.existIndex(null, builder.build()).getValue();
+      }
+    }.withRetries();
   }
 
   public List<BriefQueryInfo> getRunningQueryList() throws ServiceException {

@@ -27,7 +27,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -747,6 +750,43 @@ public class TajoMasterClientService extends AbstractService {
             .setResultCode(ResultCode.OK)
             .addAllFunctions(functionProtos)
             .build();
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public BoolProto existIndex(RpcController controller, SessionedStringProto request) throws ServiceException {
+      try {
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String databaseName;
+        String indexName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+
+        if (catalog.existIndexByName(databaseName, indexName)) {
+          return BOOL_TRUE;
+        } else {
+          return BOOL_FALSE;
+        }
+      } catch (Throwable e) {
+        throw new ServiceException(e);
+      }
+    }
+
+    @Override
+    public BoolProto dropIndex(RpcController controller, SessionedStringProto request) throws ServiceException {
+      try {
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        context.getGlobalEngine().dropIndex(session, request.getValue(), true);
+        return BOOL_TRUE;
       } catch (Throwable t) {
         throw new ServiceException(t);
       }

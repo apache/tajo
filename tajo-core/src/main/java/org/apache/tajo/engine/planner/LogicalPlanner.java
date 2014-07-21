@@ -45,8 +45,8 @@ import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -1873,8 +1873,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createIndexNode.setOptions(keyValueSet);
     }
 
+    createIndexNode.setInSchema(child.getOutSchema());
     createIndexNode.setChild(child);
     return createIndexNode;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(PlanContext context, Stack<Expr> stack, DropIndex dropIndex) {
+    DropIndexNode dropIndexNode = context.queryBlock.getNodeFromExpr(dropIndex);
+    dropIndexNode.init(dropIndex.getIndexName(), dropIndex.isIfExists());
+    return dropIndexNode;
   }
 
   @Override
