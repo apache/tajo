@@ -679,21 +679,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.close();
       }
 
-//      String tidSql =
-//          "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
-//      pstmt = conn.prepareStatement(tidSql);
-//      pstmt.setInt(1, dbid);
-//      pstmt.setString(2, tableName);
-//      res = pstmt.executeQuery();
-//
-//      if (!res.next()) {
-//        throw new CatalogException("ERROR: there is no TID matched to " + table.getTableName());
-//      }
-//
-//      int tableId = res.getInt("TID");
       int tableId = getTableId(dbid, databaseName, tableName);
-//      res.close();
-//      pstmt.close();
 
       String colSql =
           "INSERT INTO " + TB_COLUMNS + " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?) ";
@@ -1841,7 +1827,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setIndexName(res.getString("index_name"));
-//    builder.setkeys(indexResultToColumnProto(res));
     builder.setMethod(getIndexMethod(res.getString("method").trim()));
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
