@@ -441,71 +441,139 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testCreateTableLike1() throws Exception {
-    // Basic create table with default database
-    executeString("CREATE TABLE table1 (c1 int, c2 varchar);").close();
-    executeString("CREATE TABLE table2 LIKE table1");
-    String testMsg = "testCreateTableLike1: Basic create table with default db";
-    assertTrue(testMsg,isClonedTable("table1","table2"));
-    executeString("DROP TABLE table1");
-    executeString("DROP TABLE table2");
+    // Hcatalog does not support varchar type in hive-0.12.0
+    if (testingCluster.isHCatalogStoreRunning()) {
+      // Basic create table with default database
+      executeString("CREATE TABLE table1 (c1 int, c2 text);").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      String testMsg = "testCreateTableLike1: Basic create table with default db";
+      assertTrue(testMsg,isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
 
-    // Basic create table with database
-    executeString("CREATE DATABASE d1").close();
-    executeString("CREATE TABLE d1.table1 (c1 int, c2 varchar);").close();
-    executeString("CREATE TABLE d1.table2 LIKE d1.table1");
-    testMsg = "testCreateTableLike1: Basic create table with db test failed";
-    assertTrue(testMsg, isClonedTable("d1.table1","d1.table2"));
-    executeString("DROP TABLE d1.table1");
-    executeString("DROP TABLE d1.table2");
+      // Basic create table with database
+      executeString("CREATE DATABASE d1").close();
+      executeString("CREATE TABLE d1.table1 (c1 int, c2 text);").close();
+      executeString("CREATE TABLE d1.table2 LIKE d1.table1");
+      testMsg = "testCreateTableLike1: Basic create table with db test failed";
+      assertTrue(testMsg, isClonedTable("d1.table1","d1.table2"));
+      executeString("DROP TABLE d1.table1");
+      executeString("DROP TABLE d1.table2");
 
-    // Table with non-default store type
-    executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING rcfile;").close();
-    executeString("CREATE TABLE table2 LIKE table1");
-    testMsg = "testCreateTableLike1: Table with non-default store type test failed";
-    assertTrue(testMsg, isClonedTable("table1","table2"));
-    executeString("DROP TABLE table1");
-    executeString("DROP TABLE table2");
+      // Table with non-default store type
+      executeString("CREATE TABLE table1 (c1 int, c2 text) USING rcfile;").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with non-default store type test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
 
-    // Table with non-default meta options
-    executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
-    executeString("CREATE TABLE table2 LIKE table1");
-    testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
-    assertTrue(testMsg, isClonedTable("table1","table2"));
-    executeString("DROP TABLE table1");
-    executeString("DROP TABLE table2");
-
-
-    // Table with partitions (default partition type)
-    executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int, c4 float, c5 text);").close();
-    executeString("CREATE TABLE table2 LIKE table1");
-    testMsg = "testCreateTableLike1: Table with partitions test failed";
-    assertTrue(testMsg, isClonedTable("table1","table2"));
-    executeString("DROP TABLE table1");
-    executeString("DROP TABLE table2");
+      // Table with non-default meta options
+      executeString("CREATE TABLE table1 (c1 int, c2 text) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
 
 
-    // Table with external flag
-    // Use existing file as input for creating external table
-    String className = getClass().getSimpleName();
-    Path currentDatasetPath = new Path(datasetBasePath, className);
-    Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
-    executeString("CREATE EXTERNAL TABLE table3 (c1 int, c2 varchar) USING rcfile LOCATION '" + filePath.toUri() + "'").close();
-    executeString("CREATE TABLE table2 LIKE table3");
-    testMsg = "testCreateTableLike1: Table with external table flag test failed";
-    assertTrue(testMsg, isClonedTable("table3","table2"));
-    executeString("DROP TABLE table3");
-    executeString("DROP TABLE table2");
+      // Table with partitions (default partition type)
+      executeString("CREATE TABLE table1 (c1 int, c2 text) PARTITION BY COLUMN (c3 int, c4 float, c5 text);").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with partitions test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
 
 
-    // Table created using CTAS
-    executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
-    executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2 as c2_a,c3 from table3;").close();
-    executeString("CREATE TABLE table2 LIKE table4");
-    testMsg = "testCreateTableLike1: Table using CTAS test failed";
-    assertTrue(testMsg, isClonedTable("table4","table2"));
-    executeString("DROP TABLE table3");
-    executeString("DROP TABLE table4");
-    executeString("DROP TABLE table2");
+      // Table with external flag
+      // Use existing file as input for creating external table
+      String className = getClass().getSimpleName();
+      Path currentDatasetPath = new Path(datasetBasePath, className);
+      Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
+      executeString("CREATE EXTERNAL TABLE table3 (c1 int, c2 text) USING rcfile LOCATION '" + filePath.toUri() + "'").close();
+      executeString("CREATE TABLE table2 LIKE table3");
+      testMsg = "testCreateTableLike1: Table with external table flag test failed";
+      assertTrue(testMsg, isClonedTable("table3","table2"));
+      executeString("DROP TABLE table3");
+      executeString("DROP TABLE table2");
+
+
+      // Table created using CTAS
+      executeString("CREATE TABLE table3 (c1 int, c2 text) PARTITION BY COLUMN (c3 int);").close();
+      executeString("CREATE TABLE table4 AS SELECT c1 * c1 as m_c1, c2, c2 as c2_a,c3 from table3;").close();
+      executeString("CREATE TABLE table2 LIKE table4");
+      testMsg = "testCreateTableLike1: Table using CTAS test failed";
+      assertTrue(testMsg, isClonedTable("table4","table2"));
+      executeString("DROP TABLE table3");
+      executeString("DROP TABLE table4");
+      executeString("DROP TABLE table2");
+    } else {
+      // Basic create table with default database
+      executeString("CREATE TABLE table1 (c1 int, c2 varchar);").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      String testMsg = "testCreateTableLike1: Basic create table with default db";
+      assertTrue(testMsg,isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+
+      // Basic create table with database
+      executeString("CREATE DATABASE d1").close();
+      executeString("CREATE TABLE d1.table1 (c1 int, c2 varchar);").close();
+      executeString("CREATE TABLE d1.table2 LIKE d1.table1");
+      testMsg = "testCreateTableLike1: Basic create table with db test failed";
+      assertTrue(testMsg, isClonedTable("d1.table1","d1.table2"));
+      executeString("DROP TABLE d1.table1");
+      executeString("DROP TABLE d1.table2");
+
+      // Table with non-default store type
+      executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING rcfile;").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with non-default store type test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+
+      // Table with non-default meta options
+      executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+
+
+      // Table with partitions (default partition type)
+      executeString("CREATE TABLE table1 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int, c4 float, c5 text);").close();
+      executeString("CREATE TABLE table2 LIKE table1");
+      testMsg = "testCreateTableLike1: Table with partitions test failed";
+      assertTrue(testMsg, isClonedTable("table1","table2"));
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+
+
+      // Table with external flag
+      // Use existing file as input for creating external table
+      String className = getClass().getSimpleName();
+      Path currentDatasetPath = new Path(datasetBasePath, className);
+      Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
+      executeString("CREATE EXTERNAL TABLE table3 (c1 int, c2 varchar) USING rcfile LOCATION '" + filePath.toUri() + "'").close();
+      executeString("CREATE TABLE table2 LIKE table3");
+      testMsg = "testCreateTableLike1: Table with external table flag test failed";
+      assertTrue(testMsg, isClonedTable("table3","table2"));
+      executeString("DROP TABLE table3");
+      executeString("DROP TABLE table2");
+
+
+      // Table created using CTAS
+      executeString("CREATE TABLE table3 (c1 int, c2 varchar) PARTITION BY COLUMN (c3 int);").close();
+      executeString("CREATE TABLE table4 AS SELECT c1*c1, c2, c2 as c2_a,c3 from table3;").close();
+      executeString("CREATE TABLE table2 LIKE table4");
+      testMsg = "testCreateTableLike1: Table using CTAS test failed";
+      assertTrue(testMsg, isClonedTable("table4","table2"));
+      executeString("DROP TABLE table3");
+      executeString("DROP TABLE table4");
+      executeString("DROP TABLE table2");
 
 
     /* Enable when view is supported
@@ -529,5 +597,6 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("DROP TABLE table1");
     executeString("DROP TABLE table2");
     */
+    }
   }
 }

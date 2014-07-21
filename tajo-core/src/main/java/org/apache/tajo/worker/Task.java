@@ -85,7 +85,6 @@ public class Task {
   private boolean interQuery;
   private boolean killed = false;
   private boolean aborted = false;
-  private boolean stopped = false;
   private final Reporter reporter;
   private Path inputTableBaseDir;
 
@@ -118,6 +117,17 @@ public class Task {
           NumberFormat fmt = NumberFormat.getInstance();
           fmt.setGroupingUsed(false);
           fmt.setMinimumIntegerDigits(6);
+          return fmt;
+        }
+      };
+
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SEQ =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(3);
           return fmt;
         }
       };
@@ -180,7 +190,8 @@ public class Task {
       Path outFilePath = StorageUtil.concatPath(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME,
           OUTPUT_FILE_PREFIX +
           OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
-          OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()));
+          OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()) + "-" +
+          OUTPUT_FILE_FORMAT_SEQ.get().format(0));
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }
@@ -343,12 +354,23 @@ public class Task {
       builder.setResultStats(new TableStats().getProto());
     }
 
-    Iterator<Entry<Integer,String>> it = context.getShuffleFileOutputs();
+    Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
     if (it.hasNext()) {
       do {
-        Entry<Integer,String> entry = it.next();
+        Entry<Integer, String> entry = it.next();
         ShuffleFileOutput.Builder part = ShuffleFileOutput.newBuilder();
         part.setPartId(entry.getKey());
+
+        // Set output volume
+        if (context.getPartitionOutputVolume() != null) {
+          for (Entry<Integer, Long> e : context.getPartitionOutputVolume().entrySet()) {
+            if (entry.getKey().equals(e.getKey())) {
+              part.setVolume(e.getValue().longValue());
+              break;
+            }
+          }
+        }
+
         builder.addShuffleFileOutputs(part.build());
       } while (it.hasNext());
     }
@@ -411,7 +433,6 @@ public class Task {
       aborted = true;
     } finally {
       context.setProgress(1.0f);
-      stopped = true;
       taskRunnerContext.completedTasksNum.incrementAndGet();
 
       if (killed || aborted) {
@@ -466,7 +487,7 @@ public class Task {
       finishTime = System.currentTimeMillis();
       LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
           ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
-          + ", killed: " + taskRunnerContext.killedTasksNum.incrementAndGet()
+          + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
           + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
       cleanupTask();
     }
@@ -576,23 +597,25 @@ public class Task {
   private class FetchRunner implements Runnable {
     private final TaskAttemptContext ctx;
     private final Fetcher fetcher;
+    private int maxRetryNum;
 
     public FetchRunner(TaskAttemptContext ctx, Fetcher fetcher) {
       this.ctx = ctx;
       this.fetcher = fetcher;
+      this.maxRetryNum = systemConf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_RETRY_MAX_NUM);
     }
 
     @Override
     public void run() {
       int retryNum = 0;
-      int maxRetryNum = 5;
-      int retryWaitTime = 1000;
+      int retryWaitTime = 1000; //sec
 
       try { // for releasing fetch latch
         while(!killed && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);
+              retryWaitTime = Math.min(10 * 1000, retryWaitTime * 2);  // max 10 seconds
             } catch (InterruptedException e) {
               LOG.error(e);
             }
@@ -600,7 +623,7 @@ public class Task {
           }
           try {
             File fetched = fetcher.get();
-            if (fetched != null) {
+            if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
               break;
             }
           } catch (IOException e) {
@@ -609,11 +632,15 @@ public class Task {
           retryNum++;
         }
       } finally {
-        fetcherFinished(ctx);
-      }
-
-      if (retryNum == maxRetryNum) {
-        LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+        if(fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED){
+          fetcherFinished(ctx);
+        } else {
+          if (retryNum == maxRetryNum) {
+            LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+          }
+          aborted = true; // retry queryUnit
+          ctx.getFetchLatch().countDown();
+        }
       }
     }
   }
@@ -674,7 +701,7 @@ public class Task {
             storeDir.mkdirs();
           }
           storeFile = new File(storeDir, "in_" + i);
-          Fetcher fetcher = new Fetcher(uri, storeFile, channelFactory);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
           runnerList.add(fetcher);
           i++;
         }
@@ -705,7 +732,7 @@ public class Task {
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {
-          while (!stop.get() && !stopped) {
+          while (!stop.get() && !context.isStopped()) {
             try {
               if(executor != null && context.getProgress() < 1.0f) {
                 float progress = executor.getProgress();
@@ -730,7 +757,7 @@ public class Task {
                 throw new RuntimeException(t);
               }
             } finally {
-              if (remainingRetries > 0) {
+              if (!context.isStopped() && remainingRetries > 0) {
                 synchronized (pingThread) {
                   try {
                     pingThread.wait(PROGRESS_INTERVAL);

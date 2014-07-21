@@ -40,7 +40,6 @@ public class TableStatistics {
   private long numRows = 0;
   private long numBytes = 0;
 
-
   private boolean [] comparable;
 
   public TableStatistics(Schema schema) {
@@ -113,10 +112,10 @@ public class TableStatistics {
         LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
             ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
       }
-      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
+      if (maxValues.get(i) == null || schema.getColumn(i).getDataType().getType() == maxValues.get(i).type()) {
         columnStats.setMaxValue(maxValues.get(i));
       } else {
-        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
+        LOG.warn("Wrong statistics column type (" + maxValues.get(i).type() +
             ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
       }
       stat.addColumnStat(columnStats);

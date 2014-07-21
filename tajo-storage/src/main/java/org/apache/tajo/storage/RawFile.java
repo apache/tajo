@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -92,7 +93,7 @@ public class RawFile {
         LOG.debug("RawFileScanner open:" + path + "," + channel.position() + ", size :" + channel.size());
       }
 
-      buffer = ByteBuffer.allocateDirect(128 * 1024);
+      buffer = ByteBuffer.allocateDirect(64 * 1024);
 
       columnTypes = new DataType[schema.size()];
       for (int i = 0; i < schema.size(); i++) {
@@ -378,9 +379,9 @@ public class RawFile {
         tableStats.setReadBytes(fileSize);
         tableStats.setNumRows(recordCount);
       }
-      buffer.clear();
-      channel.close();
-      fis.close();
+
+      StorageUtil.closeBuffer(buffer);
+      IOUtils.cleanup(LOG, channel, fis);
     }
 
     @Override
@@ -706,7 +707,9 @@ public class RawFile {
 
     @Override
     public void flush() throws IOException {
-      flushBuffer();
+      if(buffer != null){
+        flushBuffer();
+      }
     }
 
     @Override
@@ -718,8 +721,9 @@ public class RawFile {
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
       }
-      channel.close();
-      randomAccessFile.close();
+
+      StorageUtil.closeBuffer(buffer);
+      IOUtils.cleanup(LOG, channel, randomAccessFile);
     }
 
     @Override

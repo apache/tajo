@@ -1,0 +1,15 @@
+r_name,r_regionkey,n_name,n_regionkey
+-------------------------------
+AFRICA,0,null,null
+AMERICA,1,ARGENTINA,1
+AMERICA,1,BRAZIL,1
+AMERICA,1,CANADA,1
+AMERICA,1,PERU,1
+AMERICA,1,UNITED STATES,1
+ASIA,2,INDIA,2
+ASIA,2,INDONESIA,2
+ASIA,2,JAPAN,2
+ASIA,2,CHINA,2
+ASIA,2,VIETNAM,2
+EUROPE,3,null,null
+MIDDLE EAST,4,null,null

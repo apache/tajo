@@ -129,6 +129,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       statSet.add(app.getStats());
       if (app.getStats().getNumRows() > 0) {
         context.addShuffleFileOutput(partNum, getDataFile(partNum).getName());
+        context.addPartitionOutputVolume(partNum, app.getStats().getNumBytes());
       }
     }
     
