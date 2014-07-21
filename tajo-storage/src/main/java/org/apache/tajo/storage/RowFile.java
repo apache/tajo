@@ -35,7 +35,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
-import org.apache.tajo.util.Bytes;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -121,7 +120,7 @@ public class RowFile {
 
     private void readHeader() throws IOException {
       SYNC_INTERVAL = in.readInt();
-      Bytes.readFully(in, this.sync, 0, SYNC_HASH_SIZE);
+      StorageUtil.readFully(in, this.sync, 0, SYNC_HASH_SIZE);
     }
 
     /**

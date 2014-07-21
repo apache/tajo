@@ -21,23 +21,31 @@ package org.apache.tajo.util;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 import sun.misc.Unsafe;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.*;
 
 /**
  * Utility class that handles byte arrays, conversions to/from other types,
@@ -45,6 +53,16 @@ import java.util.List;
  * HashSets, etc.
  */
 public class Bytes {
+  //HConstants.UTF8_ENCODING should be updated if this changed
+  /** When we encode strings, we always specify UTF8 encoding */
+  private static final String UTF8_ENCODING = "UTF-8";
+
+  //HConstants.UTF8_CHARSET should be updated if this changed
+  /** When we encode strings, we always specify UTF8 encoding */
+  private static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
+
+  //HConstants.EMPTY_BYTE_ARRAY should be updated if this changed
+  private static final byte [] EMPTY_BYTE_ARRAY = new byte [0];
 
   private static final Log LOG = LogFactory.getLog(Bytes.class);
 
@@ -88,7 +106,6 @@ public class Bytes {
    */
   public static final int SIZEOF_SHORT = Short.SIZE / Byte.SIZE;
 
-
   /**
    * Estimate of size cost to pay beyond payload in jvm for instance of byte [].
    * Estimate based on study of jhat and jprofiler numbers.
@@ -98,8 +115,20 @@ public class Bytes {
   public static final int ESTIMATED_HEAP_TAX = 16;
 
   /**
+   * Returns length of the byte array, returning 0 if the array is null.
+   * Useful for calculating sizes.
+   * @param b byte array, which can be null
+   * @return 0 if b is null, otherwise returns length
+   */
+  final public static int len(byte[] b) {
+    return b == null ? 0 : b.length;
+  }
+
+  /**
    * Byte array comparator class.
    */
+  @InterfaceAudience.Public
+  @InterfaceStability.Stable
   public static class ByteArrayComparator implements RawComparator<byte []> {
     /**
      * Constructor
@@ -107,35 +136,65 @@ public class Bytes {
     public ByteArrayComparator() {
       super();
     }
+    @Override
     public int compare(byte [] left, byte [] right) {
       return compareTo(left, right);
     }
+    @Override
     public int compare(byte [] b1, int s1, int l1, byte [] b2, int s2, int l2) {
       return LexicographicalComparerHolder.BEST_COMPARER.
-        compareTo(b1, s1, l1, b2, s2, l2);
+          compareTo(b1, s1, l1, b2, s2, l2);
+    }
+  }
+
+  /**
+   * A {@link ByteArrayComparator} that treats the empty array as the largest value.
+   * This is useful for comparing row end keys for regions.
+   */
+  // TODO: unfortunately, HBase uses byte[0] as both start and end keys for region
+  // boundaries. Thus semantically, we should treat empty byte array as the smallest value
+  // while comparing row keys, start keys etc; but as the largest value for comparing
+  // region boundaries for endKeys.
+  @InterfaceAudience.Public
+  @InterfaceStability.Stable
+  public static class RowEndKeyComparator extends ByteArrayComparator {
+    @Override
+    public int compare(byte[] left, byte[] right) {
+      return compare(left, 0, left.length, right, 0, right.length);
+    }
+    @Override
+    public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+      if (b1 == b2 && s1 == s2 && l1 == l2) {
+        return 0;
+      }
+      if (l1 == 0) {
+        return l2; //0 or positive
+      }
+      if (l2 == 0) {
+        return -1;
+      }
+      return super.compare(b1, s1, l1, b2, s2, l2);
     }
   }
 
   /**
    * Pass this to TreeMaps where byte [] are keys.
    */
-  public static Comparator<byte []> BYTES_COMPARATOR =
-    new ByteArrayComparator();
+  public final static Comparator<byte []> BYTES_COMPARATOR = new ByteArrayComparator();
 
   /**
    * Use comparing byte arrays, byte-by-byte
    */
-  public static RawComparator<byte []> BYTES_RAWCOMPARATOR =
-    new ByteArrayComparator();
+  public final static RawComparator<byte []> BYTES_RAWCOMPARATOR = new ByteArrayComparator();
 
   /**
    * Read byte-array written with a WritableableUtils.vint prefix.
    * @param in Input to read from.
    * @return byte array read off <code>in</code>
-   * @throws java.io.IOException e
+   * @throws IOException e
    */
   public static byte [] readByteArray(final DataInput in)
-  throws IOException {
+      throws IOException {
     int len = WritableUtils.readVInt(in);
     if (len < 0) {
       throw new NegativeArraySizeException(Integer.toString(len));
@@ -163,10 +222,10 @@ public class Bytes {
    * Write byte-array with a WritableableUtils.vint prefix.
    * @param out output stream to be written to
    * @param b array to write
-   * @throws java.io.IOException e
+   * @throws IOException e
    */
   public static void writeByteArray(final DataOutput out, final byte [] b)
-  throws IOException {
+      throws IOException {
     if(b == null) {
       WritableUtils.writeVInt(out, 0);
     } else {
@@ -180,11 +239,11 @@ public class Bytes {
    * @param b array
    * @param offset offset into array
    * @param length length past offset
-   * @throws java.io.IOException e
+   * @throws IOException e
    */
   public static void writeByteArray(final DataOutput out, final byte [] b,
-      final int offset, final int length)
-  throws IOException {
+                                    final int offset, final int length)
+      throws IOException {
     WritableUtils.writeVInt(out, length);
     out.write(b, offset, length);
   }
@@ -199,17 +258,12 @@ public class Bytes {
    * @return New offset in src array.
    */
   public static int writeByteArray(final byte [] tgt, final int tgtOffset,
-      final byte [] src, final int srcOffset, final int srcLength) {
+                                   final byte [] src, final int srcOffset, final int srcLength) {
     byte [] vint = vintToBytes(srcLength);
     System.arraycopy(vint, 0, tgt, tgtOffset, vint.length);
     int offset = tgtOffset + vint.length;
     System.arraycopy(src, srcOffset, tgt, offset, srcLength);
     return offset + srcLength;
-  }
-
-  public static void writeVLong(ByteArrayOutputStream byteStream, long l) {
-    byte[] vLongBytes = Bytes.vlongToBytes(l);
-    byteStream.write(vLongBytes, 0, vLongBytes.length);
   }
 
   /**
@@ -222,7 +276,7 @@ public class Bytes {
    * @return incremented offset
    */
   public static int putBytes(byte[] tgtBytes, int tgtOffset, byte[] srcBytes,
-      int srcOffset, int srcLength) {
+                             int srcOffset, int srcLength) {
     System.arraycopy(srcBytes, srcOffset, tgtBytes, tgtOffset, srcLength);
     return tgtOffset + srcLength;
   }
@@ -240,14 +294,37 @@ public class Bytes {
   }
 
   /**
-   * Returns a new byte array, copied from the passed ByteBuffer.
-   * @param bb A ByteBuffer
-   * @return the byte array
+   * Add the whole content of the ByteBuffer to the bytes arrays. The ByteBuffer is modified.
+   * @param bytes the byte array
+   * @param offset position in the array
+   * @param buf ByteBuffer to write out
+   * @return incremented offset
    */
-  public static byte[] toBytes(ByteBuffer bb) {
-    int length = bb.limit();
-    byte [] result = new byte[length];
-    System.arraycopy(bb.array(), bb.arrayOffset(), result, 0, length);
+  public static int putByteBuffer(byte[] bytes, int offset, ByteBuffer buf) {
+    int len = buf.remaining();
+    buf.get(bytes, offset, len);
+    return offset + len;
+  }
+
+  /**
+   * Returns a new byte array, copied from the given {@code buf},
+   * from the index 0 (inclusive) to the limit (exclusive),
+   * regardless of the current position.
+   * The position and the other index parameters are not changed.
+   *
+   * @param buf a byte buffer
+   * @return the byte array
+   * @see #getBytes(ByteBuffer)
+   */
+  public static byte[] toBytes(ByteBuffer buf) {
+    ByteBuffer dup = buf.duplicate();
+    dup.position(0);
+    return readBytes(dup);
+  }
+
+  private static byte[] readBytes(ByteBuffer buf) {
+    byte [] result = new byte[buf.remaining()];
+    buf.get(result);
     return result;
   }
 
@@ -276,8 +353,7 @@ public class Bytes {
 
   /**
    * This method will convert utf8 encoded bytes into a string. If
-   * an UnsupportedEncodingException occurs, this method will eat it
-   * and return null instead.
+   * the given byte array is null, this method will return null.
    *
    * @param b Presumed UTF-8 encoded byte array.
    * @param off offset into array
@@ -291,12 +367,7 @@ public class Bytes {
     if (len == 0) {
       return "";
     }
-    try {
-      return new String(b, off, len, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      LOG.error("UTF-8 not supported?", e);
-      return null;
-    }
+    return new String(b, off, len, UTF8_CHARSET);
   }
 
   /**
@@ -311,18 +382,25 @@ public class Bytes {
       return "null";
     return toStringBinary(b, 0, b.length);
   }
-  
+
   /**
-   * Converts the given byte buffer, from its array offset to its limit, to
-   * a string. The position and the mark are ignored.
+   * Converts the given byte buffer to a printable representation,
+   * from the index 0 (inclusive) to the limit (exclusive),
+   * regardless of the current position.
+   * The position and the other index parameters are not changed.
    *
    * @param buf a byte buffer
    * @return a string representation of the buffer's binary contents
+   * @see #toBytes(ByteBuffer)
+   * @see #getBytes(ByteBuffer)
    */
   public static String toStringBinary(ByteBuffer buf) {
     if (buf == null)
       return "null";
-    return toStringBinary(buf.array(), buf.arrayOffset(), buf.limit());
+    if (buf.hasArray()) {
+      return toStringBinary(buf.array(), buf.arrayOffset(), buf.limit());
+    }
+    return toStringBinary(toBytes(buf));
   }
 
   /**
@@ -337,21 +415,19 @@ public class Bytes {
    */
   public static String toStringBinary(final byte [] b, int off, int len) {
     StringBuilder result = new StringBuilder();
-    try {
-      String first = new String(b, off, len, "ISO-8859-1");
-      for (int i = 0; i < first.length() ; ++i ) {
-        int ch = first.charAt(i) & 0xFF;
-        if ( (ch >= '0' && ch <= '9')
-            || (ch >= 'A' && ch <= 'Z')
-            || (ch >= 'a' && ch <= 'z')
-            || " `~!@#$%^&*()-_=+[]{}\\|;:'\",.<>/?".indexOf(ch) >= 0 ) {
-          result.append(first.charAt(i));
-        } else {
-          result.append(String.format("\\x%02X", ch));
-        }
+    // Just in case we are passed a 'len' that is > buffer length...
+    if (off >= b.length) return result.toString();
+    if (off + len > b.length) len = b.length - off;
+    for (int i = off; i < off + len ; ++i ) {
+      int ch = b[i] & 0xFF;
+      if ( (ch >= '0' && ch <= '9')
+          || (ch >= 'A' && ch <= 'Z')
+          || (ch >= 'a' && ch <= 'z')
+          || " `~!@#$%^&*()-_=+[]{}|;:'\",.<>/?".indexOf(ch) >= 0 ) {
+        result.append((char)ch);
+      } else {
+        result.append(String.format("\\x%02X", ch));
       }
-    } catch (UnsupportedEncodingException e) {
-      LOG.error("ISO-8859-1 not supported?", e);
     }
     return result.toString();
   }
@@ -359,7 +435,7 @@ public class Bytes {
   private static boolean isHexDigit(char c) {
     return
         (c >= 'A' && c <= 'F') ||
-        (c >= '0' && c <= '9');
+            (c >= '0' && c <= '9');
   }
 
   /**
@@ -376,19 +452,12 @@ public class Bytes {
   }
 
   public static byte [] toBytesBinary(String in) {
-    // this may be bigger than we need, but lets be safe.
+    // this may be bigger than we need, but let's be safe.
     byte [] b = new byte[in.length()];
     int size = 0;
     for (int i = 0; i < in.length(); ++i) {
       char ch = in.charAt(i);
-      if (ch == '\\') {
-        // begin hex escape:
-        char next = in.charAt(i+1);
-        if (next != 'x') {
-          // invalid escape sequence, ignore this one.
-          b[size++] = (byte)ch;
-          continue;
-        }
+      if (ch == '\\' && in.length() > i+1 && in.charAt(i+1) == 'x') {
         // ok, take next 2 hex digits.
         char hd1 = in.charAt(i+2);
         char hd2 = in.charAt(i+3);
@@ -420,26 +489,7 @@ public class Bytes {
    * @return the byte array
    */
   public static byte[] toBytes(String s) {
-    try {
-      return s.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      LOG.error("UTF-8 not supported?", e);
-      return null;
-    }
-  }
-
-  /**
-   * Converts a char array to a ascii byte array.
-   *
-   * @param chars string
-   * @return the byte array
-   */
-  public static byte[] toASCIIBytes(char[] chars) {
-    byte[] buffer = new byte[chars.length];
-    for (int i = 0; i < chars.length; i++) {
-      buffer[i] = (byte) chars[i];
-    }
-    return buffer;
+    return s.getBytes(UTF8_CHARSET);
   }
 
   /**
@@ -526,16 +576,16 @@ public class Bytes {
   }
 
   private static IllegalArgumentException
-    explainWrongLengthOrOffset(final byte[] bytes,
-                               final int offset,
-                               final int length,
-                               final int expectedLength) {
+  explainWrongLengthOrOffset(final byte[] bytes,
+                             final int offset,
+                             final int length,
+                             final int expectedLength) {
     String reason;
     if (length != expectedLength) {
       reason = "Wrong length: " + length + ", expected " + expectedLength;
     } else {
-     reason = "offset (" + offset + ") + length (" + length + ") exceed the"
-        + " capacity of the array: " + bytes.length;
+      reason = "offset (" + offset + ") + length (" + length + ") exceed the"
+          + " capacity of the array: " + bytes.length;
     }
     return new IllegalArgumentException(reason);
   }
@@ -640,7 +690,9 @@ public class Bytes {
   }
 
   /**
-   * Convert an int value to a byte array
+   * Convert an int value to a byte array.  Big-endian.  Same as what DataOutputStream.writeInt
+   * does.
+   *
    * @param val value
    * @return the byte array
    */
@@ -685,6 +737,28 @@ public class Bytes {
   public static int toInt(byte[] bytes, int offset, final int length) {
     if (length != SIZEOF_INT || offset + length > bytes.length) {
       throw explainWrongLengthOrOffset(bytes, offset, length, SIZEOF_INT);
+    }
+    int n = 0;
+    for(int i = offset; i < (offset + length); i++) {
+      n <<= 8;
+      n ^= bytes[i] & 0xFF;
+    }
+    return n;
+  }
+
+  /**
+   * Converts a byte array to an int value
+   * @param bytes byte array
+   * @param offset offset into array
+   * @param length how many bytes should be considered for creating int
+   * @return the int value
+   * @throws IllegalArgumentException if there's not enough room in the array at the offset
+   * indicated.
+   */
+  public static int readAsInt(byte[] bytes, int offset, final int length) {
+    if (offset + length > bytes.length) {
+      throw new IllegalArgumentException("offset (" + offset + ") + length (" + length
+          + ") exceed the" + " capacity of the array: " + bytes.length);
     }
     int n = 0;
     for(int i = offset; i < (offset + length); i++) {
@@ -769,17 +843,16 @@ public class Bytes {
   }
 
   /**
-   * This method will get a sequence of bytes from pos -> limit,
-   * but will restore pos after.
-   * @param buf
-   * @return
+   * Returns a new byte array, copied from the given {@code buf},
+   * from the position (inclusive) to the limit (exclusive).
+   * The position and the other index parameters are not changed.
+   *
+   * @param buf a byte buffer
+   * @return the byte array
+   * @see #toBytes(ByteBuffer)
    */
   public static byte[] getBytes(ByteBuffer buf) {
-    int savedPos = buf.position();
-    byte [] newBytes = new byte[buf.remaining()];
-    buf.get(newBytes);
-    buf.position(savedPos);
-    return newBytes;
+    return readBytes(buf.duplicate());
   }
 
   /**
@@ -792,6 +865,29 @@ public class Bytes {
    * enough room at the offset specified.
    */
   public static int putShort(byte[] bytes, int offset, short val) {
+    if (bytes.length - offset < SIZEOF_SHORT) {
+      throw new IllegalArgumentException("Not enough room to put a short at"
+          + " offset " + offset + " in a " + bytes.length + " byte array");
+    }
+    bytes[offset+1] = (byte) val;
+    val >>= 8;
+    bytes[offset] = (byte) val;
+    return offset + SIZEOF_SHORT;
+  }
+
+  /**
+   * Put an int value as short out to the specified byte array position. Only the lower 2 bytes of
+   * the short will be put into the array. The caller of the API need to make sure they will not
+   * loose the value by doing so. This is useful to store an unsigned short which is represented as
+   * int in other parts.
+   * @param bytes the byte array
+   * @param offset position in the array
+   * @param val value to write out
+   * @return incremented offset
+   * @throws IllegalArgumentException if the byte array given doesn't have
+   * enough room at the offset specified.
+   */
+  public static int putAsShort(byte[] bytes, int offset, int val) {
     if (bytes.length - offset < SIZEOF_SHORT) {
       throw new IllegalArgumentException("Not enough room to put a short at"
           + " offset " + offset + " in a " + bytes.length + " byte array");
@@ -832,29 +928,18 @@ public class Bytes {
    *
    * @param bytes
    * @param offset
-   * @return the char value
-   */
-  public static BigDecimal toBigDecimal(byte[] bytes, int offset) {
-    return toBigDecimal(bytes, offset, bytes.length);
-  }
-
-  /**
-   * Converts a byte array to a BigDecimal value
-   *
-   * @param bytes
-   * @param offset
    * @param length
    * @return the char value
    */
   public static BigDecimal toBigDecimal(byte[] bytes, int offset, final int length) {
     if (bytes == null || length < SIZEOF_INT + 1 ||
-      (offset + length > bytes.length)) {
+        (offset + length > bytes.length)) {
       return null;
     }
 
-    int scale = toInt(bytes, 0);
+    int scale = toInt(bytes, offset);
     byte[] tcBytes = new byte[length - SIZEOF_INT];
-    System.arraycopy(bytes, SIZEOF_INT, tcBytes, 0, length - SIZEOF_INT);
+    System.arraycopy(bytes, offset + SIZEOF_INT, tcBytes, 0, length - SIZEOF_INT);
     return new BigDecimal(new BigInteger(tcBytes), scale);
   }
 
@@ -876,7 +961,7 @@ public class Bytes {
     offset = putInt(result, offset, val.scale());
     return putBytes(result, offset, valueBytes, 0, valueBytes.length);
   }
-  
+
   /**
    * @param vint Integer to make a vint of.
    * @return Vint as bytes array.
@@ -916,45 +1001,6 @@ public class Bytes {
   }
 
   /**
-   * @param n Long to make a VLong of.
-   * @return VLong as bytes array.
-   */
-  public static byte[] vlongToBytes(long n) {
-    byte [] result;
-    int offset = 0;
-    if (n >= -112 && n <= 127) {
-      result = new byte[1];
-      result[offset] = (byte) n;
-      return result;
-    }
-
-    int len = -112;
-    if (n < 0) {
-      n ^= -1L; // take one's complement'
-      len = -120;
-    }
-
-    long tmp = n;
-    while (tmp != 0) {
-      tmp = tmp >> 8;
-      len--;
-    }
-
-    int size = WritableUtils.decodeVIntSize((byte)len);
-
-    result = new byte[size];
-    result[offset++] = (byte) len;
-    len = (len < -120) ? -(len + 120) : -(len + 112);
-
-    for (int idx = len; idx != 0; idx--) {
-      int shiftbits = (idx - 1) * 8;
-      long mask = 0xFFL << shiftbits;
-      result[offset++] = (byte)((n & mask) >> shiftbits);
-    }
-    return result;
-  }
-
-  /**
    * @param buffer buffer to convert
    * @return vint bytes as an integer.
    */
@@ -982,47 +1028,19 @@ public class Bytes {
    * @return deserialized long from stream.
    */
   public static long readVLong(final byte [] buffer, final int offset)
-  throws IOException {
+      throws IOException {
     byte firstByte = buffer[offset];
-    int length = (byte) WritableUtils.decodeVIntSize(firstByte);
-    if (length == 1) {
+    int len = WritableUtils.decodeVIntSize(firstByte);
+    if (len == 1) {
       return firstByte;
     }
     long i = 0;
-    for (int idx = 0; idx < length - 1; idx++) {
+    for (int idx = 0; idx < len-1; idx++) {
       byte b = buffer[offset + 1 + idx];
       i = i << 8;
       i = i | (b & 0xFF);
     }
-    return (WritableUtils.isNegativeVInt(firstByte) ? (i ^ -1L) : i);
-  }
-
-  /**
-   * Reads a zero-compressed encoded int from input stream and returns it.
-   * @param buffer Binary array
-   * @param offset Offset into array at which vint begins.
-   * @throws java.io.IOException e
-   * @return deserialized long from stream.
-   */
-  public static int readVInt(final byte [] buffer, final int offset)
-      throws IOException {
-    byte firstByte = buffer[offset];
-    int length = (byte) WritableUtils.decodeVIntSize(firstByte);
-    if (length == 1) {
-      return firstByte;
-    }
-    int i = 0;
-    for (int idx = 0; idx < length - 1; idx++) {
-      byte b = buffer[offset + 1 + idx];
-      i = i << 8;
-      i = i | (b & 0xFF);
-    }
-    return (WritableUtils.isNegativeVInt(firstByte) ? (i ^ -1) : i);
-  }
-
-  public static byte getVIntSize(byte[] bytes, int offset) {
-    byte firstByte = bytes[offset];
-    return (byte) WritableUtils.decodeVIntSize(firstByte);
+    return (WritableUtils.isNegativeVInt(firstByte) ? ~i : i);
   }
 
   /**
@@ -1032,7 +1050,7 @@ public class Bytes {
    */
   public static int compareTo(final byte [] left, final byte [] right) {
     return LexicographicalComparerHolder.BEST_COMPARER.
-      compareTo(left, 0, left.length, right, 0, right.length);
+        compareTo(left, 0, left.length, right, 0, right.length);
   }
 
   /**
@@ -1047,20 +1065,15 @@ public class Bytes {
    * @return 0 if equal, < 0 if left is less than right, etc.
    */
   public static int compareTo(byte[] buffer1, int offset1, int length1,
-      byte[] buffer2, int offset2, int length2) {
+                              byte[] buffer2, int offset2, int length2) {
     return LexicographicalComparerHolder.BEST_COMPARER.
-      compareTo(buffer1, offset1, length1, buffer2, offset2, length2);
+        compareTo(buffer1, offset1, length1, buffer2, offset2, length2);
   }
-  
-  /**
-   * The number of bytes required to represent a primitive {@code long}
-   * value.
-   */
-  public static final int LONG_BYTES = Long.SIZE / Byte.SIZE;
- 
+
   interface Comparer<T> {
-    abstract public int compareTo(T buffer1, int offset1, int length1,
-                                  T buffer2, int offset2, int length2);
+    int compareTo(
+        T buffer1, int offset1, int length1, T buffer2, int offset2, int length2
+    );
   }
 
   @VisibleForTesting
@@ -1070,7 +1083,7 @@ public class Bytes {
 
   /**
    * Provides a lexicographical comparer implementation; either a Java
-   * implementation or a faster implementation based on {@link sun.misc.Unsafe}.
+   * implementation or a faster implementation based on {@link Unsafe}.
    *
    * <p>Uses reflection to gracefully fall back to the Java implementation if
    * {@code Unsafe} isn't available.
@@ -1079,7 +1092,7 @@ public class Bytes {
   static class LexicographicalComparerHolder {
     static final String UNSAFE_COMPARER_NAME =
         LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
-    
+
     static final Comparer<byte[]> BEST_COMPARER = getBestComparer();
     /**
      * Returns the Unsafe-using Comparer, or falls back to the pure-Java
@@ -1092,19 +1105,19 @@ public class Bytes {
         // yes, UnsafeComparer does implement Comparer<byte[]>
         @SuppressWarnings("unchecked")
         Comparer<byte[]> comparer =
-          (Comparer<byte[]>) theClass.getEnumConstants()[0];
+            (Comparer<byte[]>) theClass.getEnumConstants()[0];
         return comparer;
       } catch (Throwable t) { // ensure we really catch *everything*
         return lexicographicalComparerJavaImpl();
       }
     }
-    
+
     enum PureJavaComparer implements Comparer<byte[]> {
       INSTANCE;
 
       @Override
       public int compareTo(byte[] buffer1, int offset1, int length1,
-          byte[] buffer2, int offset2, int length2) {
+                           byte[] buffer2, int offset2, int length2) {
         // Short circuit equal case
         if (buffer1 == buffer2 &&
             offset1 == offset2 &&
@@ -1162,7 +1175,7 @@ public class Bytes {
       }
 
       static final boolean littleEndian =
-        ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
+          ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
 
       /**
        * Returns true if x1 is less than x2, when both values are treated as
@@ -1185,7 +1198,7 @@ public class Bytes {
        */
       @Override
       public int compareTo(byte[] buffer1, int offset1, int length1,
-          byte[] buffer2, int offset2, int length2) {
+                           byte[] buffer2, int offset2, int length2) {
         // Short circuit equal case
         if (buffer1 == buffer2 &&
             offset1 == offset2 &&
@@ -1193,7 +1206,7 @@ public class Bytes {
           return 0;
         }
         int minLength = Math.min(length1, length2);
-        int minWords = minLength / LONG_BYTES;
+        int minWords = minLength / SIZEOF_LONG;
         int offset1Adj = offset1 + BYTE_ARRAY_BASE_OFFSET;
         int offset2Adj = offset2 + BYTE_ARRAY_BASE_OFFSET;
 
@@ -1202,7 +1215,7 @@ public class Bytes {
          * time is no slower than comparing 4 bytes at a time even on 32-bit.
          * On the other hand, it is substantially faster on 64-bit.
          */
-        for (int i = 0; i < minWords * LONG_BYTES; i += LONG_BYTES) {
+        for (int i = 0; i < minWords * SIZEOF_LONG; i += SIZEOF_LONG) {
           long lw = theUnsafe.getLong(buffer1, offset1Adj + (long) i);
           long rw = theUnsafe.getLong(buffer2, offset2Adj + (long) i);
           long diff = lw ^ rw;
@@ -1237,7 +1250,7 @@ public class Bytes {
         }
 
         // The epilogue to cover the last (minLength % 8) elements.
-        for (int i = minWords * LONG_BYTES; i < minLength; i++) {
+        for (int i = minWords * SIZEOF_LONG; i < minLength; i++) {
           int a = (buffer1[offset1 + i] & 0xff);
           int b = (buffer2[offset2 + i] & 0xff);
           if (a != b) {
@@ -1261,7 +1274,7 @@ public class Bytes {
     if (left == null || right == null) return false;
     if (left.length != right.length) return false;
     if (left.length == 0) return true;
-    
+
     // Since we're often comparing adjacent sorted data,
     // it's usual to have equal arrays except for the very last byte
     // so check that first
@@ -1269,7 +1282,7 @@ public class Bytes {
 
     return compareTo(left, right) == 0;
   }
-  
+
   public static boolean equals(final byte[] left, int leftOffset, int leftLen,
                                final byte[] right, int rightOffset, int rightLen) {
     // short circuit case
@@ -1285,16 +1298,37 @@ public class Bytes {
     if (leftLen == 0) {
       return true;
     }
-    
+
     // Since we're often comparing adjacent sorted data,
     // it's usual to have equal arrays except for the very last byte
     // so check that first
     if (left[leftOffset + leftLen - 1] != right[rightOffset + rightLen - 1]) return false;
 
     return LexicographicalComparerHolder.BEST_COMPARER.
-      compareTo(left, leftOffset, leftLen, right, rightOffset, rightLen) == 0;
+        compareTo(left, leftOffset, leftLen, right, rightOffset, rightLen) == 0;
   }
-  
+
+
+  /**
+   * @param a left operand
+   * @param buf right operand
+   * @return True if equal
+   */
+  public static boolean equals(byte[] a, ByteBuffer buf) {
+    if (a == null) return buf == null;
+    if (buf == null) return false;
+    if (a.length != buf.remaining()) return false;
+
+    // Thou shalt not modify the original byte buffer in what should be read only operations.
+    ByteBuffer b = buf.duplicate();
+    for (byte anA : a) {
+      if (anA != b.get()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 
   /**
    * Return true if the byte array on the right is a prefix of the byte
@@ -1302,15 +1336,16 @@ public class Bytes {
    */
   public static boolean startsWith(byte[] bytes, byte[] prefix) {
     return bytes != null && prefix != null &&
-      bytes.length >= prefix.length &&
-      LexicographicalComparerHolder.BEST_COMPARER.
-        compareTo(bytes, 0, prefix.length, prefix, 0, prefix.length) == 0;      
+        bytes.length >= prefix.length &&
+        LexicographicalComparerHolder.BEST_COMPARER.
+            compareTo(bytes, 0, prefix.length, prefix, 0, prefix.length) == 0;
   }
 
   /**
    * @param b bytes to hash
-   * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
+   * @return Runs {@link WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
+   * {@link ImmutableBytesWritable} use calculating hash code.
    */
   public static int hashCode(final byte [] b) {
     return hashCode(b, b.length);
@@ -1319,8 +1354,9 @@ public class Bytes {
   /**
    * @param b value
    * @param length length of the value
-   * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
+   * @return Runs {@link WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
+   * {@link ImmutableBytesWritable} use calculating hash code.
    */
   public static int hashCode(final byte [] b, final int length) {
     return WritableComparator.hashBytes(b, length);
@@ -1351,7 +1387,7 @@ public class Bytes {
    * @return New array that has a in lower half and b in upper half.
    */
   public static byte [] add(final byte [] a, final byte [] b) {
-    return add(a, b, new byte [0]);
+    return add(a, b, EMPTY_BYTE_ARRAY);
   }
 
   /**
@@ -1432,114 +1468,49 @@ public class Bytes {
    * @return Array of dividing values
    */
   public static byte [][] split(final byte [] a, final byte [] b, final int num) {
-    byte[][] ret = new byte[num+2][];
+    return split(a, b, false, num);
+  }
+
+  /**
+   * Split passed range.  Expensive operation relatively.  Uses BigInteger math.
+   * Useful splitting ranges for MapReduce jobs.
+   * @param a Beginning of range
+   * @param b End of range
+   * @param inclusive Whether the end of range is prefix-inclusive or is
+   * considered an exclusive boundary.  Automatic splits are generally exclusive
+   * and manual splits with an explicit range utilize an inclusive end of range.
+   * @param num Number of times to split range.  Pass 1 if you want to split
+   * the range in two; i.e. one split.
+   * @return Array of dividing values
+   */
+  public static byte[][] split(final byte[] a, final byte[] b,
+                               boolean inclusive, final int num) {
+    byte[][] ret = new byte[num + 2][];
     int i = 0;
-    Iterable<byte[]> iter = iterateOnSplits(a, b, num);
-    if (iter == null) return null;
+    Iterable<byte[]> iter = iterateOnSplits(a, b, inclusive, num);
+    if (iter == null)
+      return null;
     for (byte[] elem : iter) {
       ret[i++] = elem;
     }
     return ret;
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int[] target) {
-    return splitWorker(str, 0, -1, separatorChar, true, target);
-  }
-
-  public static byte[][] splitPreserveAllTokens(byte[] str, int offset, int length, char separatorChar, int[] target) {
-    return splitWorker(str, offset, length, separatorChar, true, target);
-  }
-
-  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar) {
-    return splitWorker(str, 0, -1, separatorChar, true, null);
-  }
-
-  public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar) {
-    return splitWorker(str, 0, length, separatorChar, true, null);
-  }
-
   /**
-   * Performs the logic for the <code>split</code> and
-   * <code>splitPreserveAllTokens</code> methods that do not return a
-   * maximum array length.
-   *
-   * @param str  the String to parse, may be <code>null</code>
-   * @param length amount of bytes to str
-   * @param separatorChar the ascii separate character
-   * @param preserveAllTokens if <code>true</code>, adjacent separators are
-   * @param target the projection target
-   * treated as empty token separators; if <code>false</code>, adjacent
-   * separators are treated as one separator.
-   * @return an array of parsed Strings, <code>null</code> if null String input
+   * Iterate over keys within the passed range, splitting at an [a,b) boundary.
    */
-  private static byte[][] splitWorker(byte[] str, int offset, int length, char separatorChar, boolean preserveAllTokens, int[] target) {
-    // Performance tuned for 2.0 (JDK1.4)
-
-    if (str == null) {
-      return null;
-    }
-    int len = length;
-    if (len == 0) {
-      return new byte[1][0];
-    }else if(len < 0){
-      len = str.length - offset;
-    }
-
-    List list = new ArrayList();
-    int i = 0, start = 0;
-    boolean match = false;
-    boolean lastMatch = false;
-    int currentTarget = 0;
-    int currentIndex = 0;
-    while (i < len) {
-      if (str[i + offset] == separatorChar) {
-        if (match || preserveAllTokens) {
-          if (target == null) {
-            byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-            list.add(bytes);
-          } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
-            byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-            list.add(bytes);
-            currentTarget++;
-          } else {
-            list.add(null);
-          }
-          currentIndex++;
-          match = false;
-          lastMatch = true;
-        }
-        start = ++i;
-        continue;
-      }
-      lastMatch = false;
-      match = true;
-      i++;
-    }
-    if (match || (preserveAllTokens && lastMatch)) {
-      if (target == null) {
-        byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-        list.add(bytes);
-      } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
-        byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-        list.add(bytes); //str.substring(start, i));
-        currentTarget++;
-      } else {
-        list.add(null);
-      }
-      currentIndex++;
-    }
-    return (byte[][]) list.toArray(new byte[list.size()][]);
+  public static Iterable<byte[]> iterateOnSplits(final byte[] a,
+                                                 final byte[] b, final int num)
+  {
+    return iterateOnSplits(a, b, false, num);
   }
+
   /**
-   * Iterate over keys within the passed inclusive range.
+   * Iterate over keys within the passed range.
    */
   public static Iterable<byte[]> iterateOnSplits(
-      final byte[] a, final byte[]b, final int num)
-  {  
+      final byte[] a, final byte[]b, boolean inclusive, final int num)
+  {
     byte [] aPadded;
     byte [] bPadded;
     if (a.length < b.length) {
@@ -1556,12 +1527,15 @@ public class Bytes {
       throw new IllegalArgumentException("b <= a");
     }
     if (num <= 0) {
-      throw new IllegalArgumentException("num cannot be < 0");
+      throw new IllegalArgumentException("num cannot be <= 0");
     }
     byte [] prependHeader = {1, 0};
     final BigInteger startBI = new BigInteger(add(prependHeader, aPadded));
     final BigInteger stopBI = new BigInteger(add(prependHeader, bPadded));
-    final BigInteger diffBI = stopBI.subtract(startBI);
+    BigInteger diffBI = stopBI.subtract(startBI);
+    if (inclusive) {
+      diffBI = diffBI.add(BigInteger.ONE);
+    }
     final BigInteger splitsBI = BigInteger.valueOf(num + 1);
     if(diffBI.compareTo(splitsBI) < 0) {
       return null;
@@ -1576,7 +1550,7 @@ public class Bytes {
 
     final Iterator<byte[]> iterator = new Iterator<byte[]>() {
       private int i = -1;
-      
+
       @Override
       public boolean hasNext() {
         return i < num+1;
@@ -1587,7 +1561,7 @@ public class Bytes {
         i++;
         if (i == 0) return a;
         if (i == num + 1) return b;
-        
+
         BigInteger curBI = startBI.add(intervalBI.multiply(BigInteger.valueOf(i)));
         byte [] padded = curBI.toByteArray();
         if (padded[1] == 0)
@@ -1601,15 +1575,27 @@ public class Bytes {
       public void remove() {
         throw new UnsupportedOperationException();
       }
-      
+
     };
-    
+
     return new Iterable<byte[]>() {
       @Override
       public Iterator<byte[]> iterator() {
         return iterator;
       }
     };
+  }
+
+  /**
+   * @param bytes array to hash
+   * @param offset offset to start from
+   * @param length length to hash
+   * */
+  public static int hashCode(byte[] bytes, int offset, int length) {
+    int hash = 1;
+    for (int i = offset; i < offset + length; i++)
+      hash = (31 * hash) + (int) bytes[i];
+    return hash;
   }
 
   /**
@@ -1660,7 +1646,7 @@ public class Bytes {
    *         ranging from -(N + 1) to N - 1.
    */
   public static int binarySearch(byte [][]arr, byte []key, int offset,
-      int length, RawComparator<byte []> comparator) {
+                                 int length, RawComparator<?> comparator) {
     int low = 0;
     int high = arr.length - 1;
 
@@ -1673,10 +1659,10 @@ public class Bytes {
       // key lives above the midpoint
       if (cmp > 0)
         low = mid + 1;
-      // key lives below the midpoint
+        // key lives below the midpoint
       else if (cmp < 0)
         high = mid - 1;
-      // BAM. how often does this really happen?
+        // BAM. how often does this really happen?
       else
         return mid;
     }
@@ -1703,11 +1689,11 @@ public class Bytes {
         newvalue = new byte[SIZEOF_LONG];
       }
       System.arraycopy(val, 0, newvalue, newvalue.length - val.length,
-        val.length);
+          val.length);
       val = newvalue;
     } else if (val.length > SIZEOF_LONG) {
       throw new IllegalArgumentException("Increment Bytes - value too big: " +
-        val.length);
+          val.length);
     }
     if(amount == 0) return val;
     if(val[0] < 0){
@@ -1770,7 +1756,7 @@ public class Bytes {
    * Writes a string as a fixed-size field, padded with zeros.
    */
   public static void writeStringFixedSize(final DataOutput out, String s,
-      int size) throws IOException {
+                                          int size) throws IOException {
     byte[] b = toBytes(s);
     if (b.length > size) {
       throw new IOException("Trying to write " + b.length + " bytes (" +
@@ -1785,7 +1771,7 @@ public class Bytes {
   /**
    * Reads a fixed-size field and interprets it as a string padded with zeros.
    */
-  public static String readStringFixedSize(final DataInput in, int size) 
+  public static String readStringFixedSize(final DataInput in, int size)
       throws IOException {
     byte[] b = new byte[size];
     in.readFully(b);
@@ -1796,377 +1782,279 @@ public class Bytes {
     return toString(b, 0, n);
   }
 
-  public static int readFully(InputStream is, byte[] buffer, int offset, int length)
-      throws IOException {
-    int nread = 0;
-    while (nread < length) {
-      int nbytes = is.read(buffer, offset + nread, length - nread);
-      if (nbytes < 0) {
-        return nread > 0 ? nread : nbytes;
-      }
-      nread += nbytes;
-    }
-    return nread;
-  }
-
   /**
-   * Similar to readFully(). Skips bytes in a loop.
-   * @param in The DataInput to skip bytes from
-   * @param len number of bytes to skip.
-   * @throws IOException if it could not skip requested number of bytes
-   * for any reason (including EOF)
+   * Copy the byte array given in parameter and return an instance
+   * of a new byte array with the same length and the same content.
+   * @param bytes the byte array to duplicate
+   * @return a copy of the given byte array
    */
-  public static void skipFully(DataInput in, int len) throws IOException {
-    int amt = len;
-    while (amt > 0) {
-      long ret = in.skipBytes(amt);
-      if (ret == 0) {
-        // skip may return 0 even if we're not at EOF.  Luckily, we can
-        // use the read() method to figure out if we're at the end.
-        int b = in.readByte();
-        if (b == -1) {
-          throw new EOFException( "Premature EOF from inputStream after " +
-              "skipping " + (len - amt) + " byte(s).");
-        }
-        ret = 1;
-      }
-      amt -= ret;
-    }
+  public static byte [] copy(byte [] bytes) {
+    if (bytes == null) return null;
+    byte [] result = new byte[bytes.length];
+    System.arraycopy(bytes, 0, result, 0, bytes.length);
+    return result;
   }
 
   /**
-   * Parses the byte array argument as if it was an int value and returns the
-   * result. Throws NumberFormatException if the byte array does not represent an
-   * int quantity.
-   *
-   * @return int the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as an int quantity.
-   */
-  public static int parseInt(byte[] bytes, int start, int length) {
-    return parseInt(bytes, start, length, 10);
-  }
-
-  /**
-   * Parses the byte array argument as if it was an int value and returns the
-   * result. Throws NumberFormatException if the byte array does not represent an
-   * int quantity. The second argument specifies the radix to use when parsing
-   * the value.
-   *
-   * @param radix  the base to use for conversion.
-   * @return the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as an int quantity.
-   */
-  public static int parseInt(byte[] bytes, int start, int length, int radix) {
-    if (bytes == null) {
-      throw new NumberFormatException("String is null");
-    }
-    if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
-      throw new NumberFormatException("Invalid radix: " + radix);
-    }
-    if (length == 0) {
-      throw new NumberFormatException("Empty byte array!");
-    }
-    int offset = start;
-    boolean negative = bytes[start] == '-';
-    if (negative || bytes[start] == '+') {
-      offset++;
-      if (length == 1) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
-    }
-
-    return parse(bytes, start, length, offset, radix, negative);
-  }
-
-  /**
-   * @param bytes
-   * @param start
+   * Copy the byte array given in parameter and return an instance
+   * of a new byte array with the same length and the same content.
+   * @param bytes the byte array to copy from
+   * @return a copy of the given designated byte array
+   * @param offset
    * @param length
-   * @param radix    the base to use for conversion.
-   * @param offset   the starting position after the sign (if exists)
-   * @param radix    the base to use for conversion.
-   * @param negative whether the number is negative.
-   * @return the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
-  private static int parse(byte[] bytes, int start, int length, int offset,
-                           int radix, boolean negative) {
-    byte separator = '.';
-    int max = Integer.MIN_VALUE / radix;
-    int result = 0, end = start + length;
-    while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
-      if (digit == -1) {
-        if (bytes[offset - 1] == separator) {
-          // We allow decimals and will return a truncated integer in that case.
-          // Therefore we won't throw an exception here (checking the fractional
-          // part happens below.)
-          break;
+  public static byte [] copy(byte [] bytes, final int offset, final int length) {
+    if (bytes == null) return null;
+    byte [] result = new byte[length];
+    System.arraycopy(bytes, offset, result, 0, length);
+    return result;
+  }
+
+  /**
+   * Search sorted array "a" for byte "key". I can't remember if I wrote this or copied it from
+   * somewhere. (mcorgan)
+   * @param a Array to search. Entries must be sorted and unique.
+   * @param fromIndex First index inclusive of "a" to include in the search.
+   * @param toIndex Last index exclusive of "a" to include in the search.
+   * @param key The byte to search for.
+   * @return The index of key if found. If not found, return -(index + 1), where negative indicates
+   *         "not found" and the "index + 1" handles the "-0" case.
+   */
+  public static int unsignedBinarySearch(byte[] a, int fromIndex, int toIndex, byte key) {
+    int unsignedKey = key & 0xff;
+    int low = fromIndex;
+    int high = toIndex - 1;
+
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      int midVal = a[mid] & 0xff;
+
+      if (midVal < unsignedKey) {
+        low = mid + 1;
+      } else if (midVal > unsignedKey) {
+        high = mid - 1;
+      } else {
+        return mid; // key found
+      }
+    }
+    return -(low + 1); // key not found.
+  }
+
+  /**
+   * Treat the byte[] as an unsigned series of bytes, most significant bits first.  Start by adding
+   * 1 to the rightmost bit/byte and carry over all overflows to the more significant bits/bytes.
+   *
+   * @param input The byte[] to increment.
+   * @return The incremented copy of "in".  May be same length or 1 byte longer.
+   */
+  public static byte[] unsignedCopyAndIncrement(final byte[] input) {
+    byte[] copy = copy(input);
+    if (copy == null) {
+      throw new IllegalArgumentException("cannot increment null array");
+    }
+    for (int i = copy.length - 1; i >= 0; --i) {
+      if (copy[i] == -1) {// -1 is all 1-bits, which is the unsigned maximum
+        copy[i] = 0;
+      } else {
+        ++copy[i];
+        return copy;
+      }
+    }
+    // we maxed out the array
+    byte[] out = new byte[copy.length + 1];
+    out[0] = 1;
+    System.arraycopy(copy, 0, out, 1, copy.length);
+    return out;
+  }
+
+  public static boolean equals(List<byte[]> a, List<byte[]> b) {
+    if (a == null) {
+      if (b == null) {
+        return true;
+      }
+      return false;
+    }
+    if (b == null) {
+      return false;
+    }
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (int i = 0; i < a.size(); ++i) {
+      if (!Bytes.equals(a.get(i), b.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Returns the index of the first appearance of the value {@code target} in
+   * {@code array}.
+   *
+   * @param array an array of {@code byte} values, possibly empty
+   * @param target a primitive {@code byte} value
+   * @return the least index {@code i} for which {@code array[i] == target}, or
+   *     {@code -1} if no such index exists.
+   */
+  public static int indexOf(byte[] array, byte target) {
+    for (int i = 0; i < array.length; i++) {
+      if (array[i] == target) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Returns the start position of the first occurrence of the specified {@code
+   * target} within {@code array}, or {@code -1} if there is no such occurrence.
+   *
+   * <p>More formally, returns the lowest index {@code i} such that {@code
+   * java.util.Arrays.copyOfRange(array, i, i + target.length)} contains exactly
+   * the same elements as {@code target}.
+   *
+   * @param array the array to search for the sequence {@code target}
+   * @param target the array to search for as a sub-sequence of {@code array}
+   */
+  public static int indexOf(byte[] array, byte[] target) {
+    checkNotNull(array, "array");
+    checkNotNull(target, "target");
+    if (target.length == 0) {
+      return 0;
+    }
+
+    outer:
+    for (int i = 0; i < array.length - target.length + 1; i++) {
+      for (int j = 0; j < target.length; j++) {
+        if (array[i + j] != target[j]) {
+          continue outer;
         }
-        throw new NumberFormatException(new String(bytes, start,
-            length));
       }
-      if (max > result) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
-      int next = result * radix - digit;
-      if (next > result) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
-      result = next;
+      return i;
     }
+    return -1;
+  }
 
-    // This is the case when we've encountered a decimal separator. The fractional
-    // part will not change the number, but we will verify that the fractional part
-    // is well formed.
-    while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
-      if (digit == -1) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
+  /**
+   * @param array an array of {@code byte} values, possibly empty
+   * @param target a primitive {@code byte} value
+   * @return {@code true} if {@code target} is present as an element anywhere in {@code array}.
+   */
+  public static boolean contains(byte[] array, byte target) {
+    return indexOf(array, target) > -1;
+  }
+
+  /**
+   * @param array an array of {@code byte} values, possibly empty
+   * @param target an array of {@code byte}
+   * @return {@code true} if {@code target} is present anywhere in {@code array}
+   */
+  public static boolean contains(byte[] array, byte[] target) {
+    return indexOf(array, target) > -1;
+  }
+
+  /**
+   * Fill given array with zeros.
+   * @param b array which needs to be filled with zeros
+   */
+  public static void zero(byte[] b) {
+    zero(b, 0, b.length);
+  }
+
+  /**
+   * Fill given array with zeros at the specified position.
+   * @param b
+   * @param offset
+   * @param length
+   */
+  public static void zero(byte[] b, int offset, int length) {
+    checkPositionIndex(offset, b.length, "offset");
+    checkArgument(length > 0, "length must be greater than 0");
+    checkPositionIndex(offset + length, b.length, "offset + length");
+    Arrays.fill(b, offset, offset + length, (byte) 0);
+  }
+
+  private static final SecureRandom RNG = new SecureRandom();
+
+  /**
+   * Fill given array with random bytes.
+   * @param b array which needs to be filled with random bytes
+   */
+  public static void random(byte[] b) {
+    RNG.nextBytes(b);
+  }
+
+  /**
+   * Fill given array with random bytes at the specified position.
+   * @param b
+   * @param offset
+   * @param length
+   */
+  public static void random(byte[] b, int offset, int length) {
+    checkPositionIndex(offset, b.length, "offset");
+    checkArgument(length > 0, "length must be greater than 0");
+    checkPositionIndex(offset + length, b.length, "offset + length");
+    byte[] buf = new byte[length];
+    RNG.nextBytes(buf);
+    System.arraycopy(buf, 0, b, offset, length);
+  }
+
+  /**
+   * Create a max byte array with the specified max byte count
+   * @param maxByteCount the length of returned byte array
+   * @return the created max byte array
+   */
+  public static byte[] createMaxByteArray(int maxByteCount) {
+    byte[] maxByteArray = new byte[maxByteCount];
+    for (int i = 0; i < maxByteArray.length; i++) {
+      maxByteArray[i] = (byte) 0xff;
     }
+    return maxByteArray;
+  }
 
-    if (!negative) {
-      result = -result;
-      if (result < 0) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
+  /**
+   * Create a byte array which is multiple given bytes
+   * @param srcBytes
+   * @param multiNum
+   * @return byte array
+   */
+  public static byte[] multiple(byte[] srcBytes, int multiNum) {
+    if (multiNum <= 0) {
+      return new byte[0];
+    }
+    byte[] result = new byte[srcBytes.length * multiNum];
+    for (int i = 0; i < multiNum; i++) {
+      System.arraycopy(srcBytes, 0, result, i * srcBytes.length,
+          srcBytes.length);
     }
     return result;
   }
 
-
   /**
-   * Returns the digit represented by character b.
-   *
-   * @param b     The ascii code of the character
-   * @param radix The radix
-   * @return -1 if it's invalid
+   * Convert a byte array into a hex string
+   * @param b
    */
-  private static int digit(int b, int radix) {
-    int r = -1;
-    if (b >= '0' && b <= '9') {
-      r = b - '0';
-    } else if (b >= 'A' && b <= 'Z') {
-      r = b - 'A' + 10;
-    } else if (b >= 'a' && b <= 'z') {
-      r = b - 'a' + 10;
-    }
-    if (r >= radix) {
-      r = -1;
-    }
-    return r;
+  public static String toHex(byte[] b) {
+    checkArgument(b.length > 0, "length must be greater than 0");
+    return String.format("%x", new BigInteger(1, b));
   }
 
   /**
-   * Returns the digit represented by character b, radix is 10
-   *
-   * @param b The ascii code of the character
-   * @return -1 if it's invalid
+   * Create a byte array from a string of hash digits. The length of the
+   * string must be a multiple of 2
+   * @param hex
    */
-  private static boolean isDigit(int b) {
-    return (b >= '0' && b <= '9');
+  public static byte[] fromHex(String hex) {
+    checkArgument(hex.length() > 0, "length must be greater than 0");
+    checkArgument(hex.length() % 2 == 0, "length must be a multiple of 2");
+    // Make sure letters are upper case
+    hex = hex.toUpperCase();
+    byte[] b = new byte[hex.length() / 2];
+    for (int i = 0; i < b.length; i++) {
+      b[i] = (byte)((toBinaryFromHex((byte)hex.charAt(2 * i)) << 4) +
+          toBinaryFromHex((byte)hex.charAt((2 * i + 1))));
+    }
+    return b;
   }
-
-  private static final int maxExponent = 511;	/* Largest possible base 10 exponent.  Any
-                                               * exponent larger than this will already
-                                               * produce underflow or overflow, so there's
-                                               * no need to worry about additional digits.
-                                               */
-  public static final double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
-      10.,		 	                              /* is 10^2^i.  Used to convert decimal */
-      100.,		 	                              /* exponents into floating-point numbers. */
-      1.0e4,
-      1.0e8,
-      1.0e16,
-      1.0e32,
-      1.0e64,
-      1.0e128,
-      1.0e256
-  };
-
-  /**
-   * Parses the byte array argument as if it was a double value and returns the
-   * result. Throws NumberFormatException if the byte array does not represent a
-   * double value.
-   *
-   * @return double, the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as a double
-   */
-  public static double parseDouble(byte[] bytes, int start, int length) {
-    if (bytes == null) {
-      throw new NumberFormatException("String is null");
-    }
-    if (length == 0) {
-      throw new NumberFormatException("Empty byte array!");
-    }
-
-    /*
-     * Strip off leading blanks
-     */
-    int offset = start;
-    int end = start + length;
-
-    while (offset < end && bytes[offset] == ' ') {
-      offset++;
-    }
-    if (offset == end) {
-      throw new NumberFormatException("blank byte array!");
-    }
-
-    /*
-     * check for a sign.
-     */
-    boolean sign = false;
-    if (bytes[offset] == '-') {
-      sign = true;
-      offset++;
-    } else if (bytes[offset] == '+') {
-      offset++;
-    }
-    if (offset == end) {
-      throw new NumberFormatException("the byte array only has a sign!");
-    }
-
-    /*
-     * Count the number of digits in the mantissa (including the decimal
-     * point), and also locate the decimal point.
-     */
-    int mantSize = 0;		      /* Number of digits in mantissa. */
-    int decicalOffset = -1;   /* Number of mantissa digits BEFORE decimal point. */
-    for (; offset < end; offset++) {
-      if (!isDigit(bytes[offset])) {
-        if ((bytes[offset] != '.') || (decicalOffset >= 0)) {
-          break;
-        }
-        decicalOffset = mantSize;
-      }
-      mantSize++;
-    }
-
-    int exponentOffset = offset; /* Temporarily holds location of exponent in bytes. */
-
-    /*
-     * Now suck up the digits in the mantissa.  Use two integers to
-     * collect 9 digits each (this is faster than using floating-point).
-     * If the mantissa has more than 18 digits, ignore the extras, since
-     * they can't affect the value anyway.
-     */
-    offset -= mantSize;
-    if (decicalOffset < 0) {
-      decicalOffset = mantSize;
-    } else {
-      mantSize -= 1;			       /* One of the digits was the decimal point. */
-    }
-    int fracExponent;            /* Exponent that derives from the fractional
-                                  * part.  Under normal circumstatnces, it is
-				                          * the negative of the number of digits in F.
-				                          * However, if I is very long, the last digits
-				                          * of I get dropped (otherwise a long I with a
-				                          * large negative exponent could cause an
-				                          * unnecessary overflow on I alone).  In this
-				                          * case, fracExp is incremented one for each
-				                          * dropped digit. */
-    if (mantSize > 18) {
-      fracExponent = decicalOffset - 18;
-      mantSize = 18;
-    } else {
-      fracExponent = decicalOffset - mantSize;
-    }
-
-    if (mantSize == 0) {
-      return 0.0;
-    }
-
-    int frac1 = 0;
-    for (; mantSize > 9; mantSize--) {
-      int b = bytes[offset];
-      offset++;
-      if (b == '.') {
-        b = bytes[offset];
-        offset++;
-      }
-      frac1 = 10 * frac1 + (b - '0');
-    }
-    int frac2 = 0;
-    for (; mantSize > 0; mantSize--) {
-      int b = bytes[offset];
-      offset++;
-      if (b == '.') {
-        b = bytes[offset];
-        offset++;
-      }
-      frac2 = 10 * frac2 + (b - '0');
-    }
-    double fraction = (1.0e9 * frac1) + frac2;
-
-    /*
-     * Skim off the exponent.
-     */
-    int exponent = 0;            /* Exponent read from "EX" field. */
-    offset = exponentOffset;
-    boolean expSign = false;
-
-    if (offset < end) {
-      if ((bytes[offset] != 'E') && (bytes[offset] != 'e')) {
-        throw new NumberFormatException(new String(bytes, start,
-            length));
-      }
-
-      // (bytes[offset] == 'E') || (bytes[offset] == 'e')
-      offset++;
-
-      if (bytes[offset] == '-') {
-        expSign = true;
-        offset++;
-      } else if (bytes[offset] == '+') {
-        offset++;
-      }
-
-      for (; offset < end; offset++) {
-        if (isDigit(bytes[offset])) {
-          exponent = exponent * 10 + (bytes[offset] - '0');
-        } else {
-          throw new NumberFormatException(new String(bytes, start,
-              length));
-        }
-      }
-    }
-
-    exponent = expSign ? (fracExponent - exponent) : (fracExponent + exponent);
-
-    /*
-     * Generate a floating-point number that represents the exponent.
-     * Do this by processing the exponent one bit at a time to combine
-     * many powers of 2 of 10. Then combine the exponent with the
-     * fraction.
-     */
-    if (exponent < 0) {
-      expSign = true;
-      exponent = -exponent;
-    } else {
-      expSign = false;
-    }
-    if (exponent > maxExponent) {
-      throw new NumberFormatException(new String(bytes, start,
-          length));
-    }
-
-    double dblExp = 1.0;
-    for (int i = 0; exponent != 0; exponent >>= 1, i++) {
-      if ((exponent & 01) == 01) {
-        dblExp *= powersOf10[i];
-      }
-    }
-
-    fraction = (expSign) ? (fraction / dblExp) : (fraction * dblExp);
-
-    return sign ? (-fraction) : fraction;
-  }
-
 }
