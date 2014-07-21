@@ -29,6 +29,14 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-955: Add database selection submit button in catalogview.jsp for text 
+    based browse. (Hyoungjun Kim via jihoon)
+
+    TAJO-956: CONCAT should be support multiple params and null param.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-953: RawFile should release a DirectBuffer immediately. (jinho)
+
     TAJO-933: Fork some classes of Parquet as builtin third-party classes.
     (hyunsik)
 
@@ -88,6 +96,11 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-961: TajoCli should exit when at least one query faces error while
+    executing a SQL script. (hyunsik)
+
+    TAJO-960: TajoCli's problem does not show the current status. (hyunsik)
 
     TAJO-945: Connecting to Tajo by JDBC driver failed with SQL Exception 
     "Invalid JDBC URI". (Mai Hai Thanh via jihoon)
