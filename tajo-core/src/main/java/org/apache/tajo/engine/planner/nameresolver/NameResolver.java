@@ -37,15 +37,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * NameResolver utility
+ */
 public abstract class NameResolver {
 
-  public static Map<NameResolveLevel, NameResolver> resolverMap = Maps.newHashMap();
+  public static Map<NameResolvingMode, NameResolver> resolverMap = Maps.newHashMap();
 
   static {
-    resolverMap.put(NameResolveLevel.RELS_ONLY, new ResolverByRels());
-    resolverMap.put(NameResolveLevel.RELS_AND_SUBEXPRS, new ResolverByRelsAndSubExprs());
-    resolverMap.put(NameResolveLevel.SUBEXPRS_AND_RELS, new ResolverBySubExprsAndRels());
-    resolverMap.put(NameResolveLevel.LEGACY, new ResolverByLegacy());
+    resolverMap.put(NameResolvingMode.RELS_ONLY, new ResolverByRels());
+    resolverMap.put(NameResolvingMode.RELS_AND_SUBEXPRS, new ResolverByRelsAndSubExprs());
+    resolverMap.put(NameResolvingMode.SUBEXPRS_AND_RELS, new ResolverBySubExprsAndRels());
+    resolverMap.put(NameResolvingMode.LEGACY, new ResolverByLegacy());
   }
 
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
@@ -80,11 +83,11 @@ public abstract class NameResolver {
   }
 
   public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
-                        NameResolveLevel level) throws PlanningException {
-    if (!resolverMap.containsKey(level)) {
-      throw new PlanningException("Unsupported name resolving level: " + level.name());
+                        NameResolvingMode mode) throws PlanningException {
+    if (!resolverMap.containsKey(mode)) {
+      throw new PlanningException("Unsupported name resolving level: " + mode.name());
     }
-    return resolverMap.get(level).resolve(plan, block, column);
+    return resolverMap.get(mode).resolve(plan, block, column);
   }
 
   /**

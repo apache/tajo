@@ -23,15 +23,11 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -64,26 +60,7 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   }
 
   private Appender getAppender(String partition) throws IOException {
-    Path dataFile = getDataFile(partition);
-    FileSystem fs = dataFile.getFileSystem(context.getConf());
-
-    if (fs.exists(dataFile.getParent())) {
-      LOG.info("Path " + dataFile.getParent() + " already exists!");
-    } else {
-      fs.mkdirs(dataFile.getParent());
-      LOG.info("Add subpartition path directory :" + dataFile.getParent());
-    }
-
-    if (fs.exists(dataFile)) {
-      LOG.info("File " + dataFile + " already exists!");
-      FileStatus status = fs.getFileStatus(dataFile);
-      LOG.info("File size: " + status.getLen());
-    }
-
-    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
-    appender.enableStats();
-    appender.init();
-
+    this.appender = makeAppender(partition);
     return appender;
   }
 
