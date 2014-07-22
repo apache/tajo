@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.junit.Test;
