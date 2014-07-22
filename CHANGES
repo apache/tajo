@@ -97,6 +97,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-666: java.nio.BufferOverflowException occurs when the query includes an order by 
+    clause on a TEXT column. (Mai Hai Thanh via jihoon)
+
     TAJO-939: Refactoring the column resolver in LogicalPlan. (hyunsik)
 
     TAJO-965: Upgrade Bytes class and move some methods to others. (hyunsik)
