@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.primitives.UnsignedBytes;
+import com.google.common.primitives.UnsignedInts;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -26,6 +28,9 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -357,6 +362,36 @@ public class TestUniformRangePartition {
     TupleRange [] ranges = partitioner.partition(1);
 
     assertEquals(expected, ranges[0]);
+  }
+
+  @Test
+  public void testPartitionForMultipleChars() {
+    Schema schema = new Schema()
+        .addColumn("KEY1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("AAA"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("ZZZ"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+        new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(48);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+    }
+    assertEquals(48, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[47].getEnd().equals(e));
   }
 
   @Test

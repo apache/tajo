@@ -179,4 +179,21 @@ public class BytesUtils {
     }
     return (byte[][]) list.toArray(new byte[list.size()][]);
   }
+
+  public static Pair<byte [], byte []> padBytes(byte [] a, byte [] b) {
+    byte [] aPadded;
+    byte [] bPadded;
+
+    if (a.length < b.length) {
+      aPadded = Bytes.padTail(a, b.length - a.length);
+      bPadded = b;
+    } else if (b.length < a.length) {
+      aPadded = a;
+      bPadded = Bytes.padTail(b, a.length - b.length);
+    } else {
+      aPadded = a;
+      bPadded = b;
+    }
+    return new Pair<byte[], byte[]>(aPadded, bPadded);
+  }
 }

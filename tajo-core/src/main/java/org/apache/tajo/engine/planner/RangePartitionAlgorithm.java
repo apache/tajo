@@ -26,6 +26,8 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
+import org.apache.tajo.util.Pair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -33,7 +35,7 @@ import java.math.BigInteger;
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;
   protected TupleRange range;
-  protected final BigDecimal totalCard;
+  protected final BigInteger totalCard;
   /** true if the end of the range is inclusive. Otherwise, it should be false. */
   protected final boolean inclusive;
 
@@ -58,61 +60,63 @@ public abstract class RangePartitionAlgorithm {
    * @param end
    * @return
    */
-  public static BigDecimal computeCardinality(DataType dataType, Datum start, Datum end,
+  public static BigInteger computeCardinality(DataType dataType, Datum start, Datum end,
                                               boolean inclusive, boolean isAscending) {
-    BigDecimal columnCard;
+    BigInteger columnCard;
 
     switch (dataType.getType()) {
       case BOOLEAN:
-        columnCard = new BigDecimal(2);
+        columnCard = BigInteger.valueOf(2);
         break;
       case CHAR:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asChar() - start.asChar());
+          columnCard = BigInteger.valueOf((int)end.asChar() - (int)start.asChar());
         } else {
-          columnCard = new BigDecimal(start.asChar() - end.asChar());
+          columnCard = BigInteger.valueOf(start.asChar() - end.asChar());
         }
         break;
       case BIT:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asByte() - start.asByte());
+          columnCard = BigInteger.valueOf(end.asByte() - start.asByte());
         } else {
-          columnCard = new BigDecimal(start.asByte() - end.asByte());
+          columnCard = BigInteger.valueOf(start.asByte() - end.asByte());
         }
         break;
       case INT2:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt2() - start.asInt2());
+          columnCard = BigInteger.valueOf(end.asInt2() - start.asInt2());
         } else {
-          columnCard = new BigDecimal(start.asInt2() - end.asInt2());
+          columnCard = BigInteger.valueOf(start.asInt2() - end.asInt2());
         }
         break;
       case INT4:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
         } else {
-          columnCard = new BigDecimal(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
         }
         break;
-      case INT8:
+    case INT8:
+    case TIME:
+    case TIMESTAMP:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt8() - start.asInt8());
+          columnCard = BigInteger.valueOf(end.asInt8() - start.asInt8());
         } else {
-          columnCard = new BigDecimal(start.asInt8() - end.asInt8());
+          columnCard = BigInteger.valueOf(start.asInt8() - end.asInt8());
         }
         break;
       case FLOAT4:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
         } else {
-          columnCard = new BigDecimal(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
         }
         break;
       case FLOAT8:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt8() - start.asInt8());
+          columnCard = BigInteger.valueOf(end.asInt8() - start.asInt8());
         } else {
-          columnCard = new BigDecimal(start.asInt8() - end.asInt8());
+          columnCard = BigInteger.valueOf(start.asInt8() - end.asInt8());
         }
         break;
       case TEXT: {
@@ -128,83 +132,53 @@ public abstract class RangePartitionAlgorithm {
           a = end.asByteArray();
         }
 
-        if (start.asByteArray().length < b.length) {
-          aPadded = Bytes.padTail(a, b.length - a.length);
-          bPadded = b;
-        } else if (b.length < a.length) {
-          aPadded = a;
-          bPadded = Bytes.padTail(b, a.length - b.length);
-        } else {
-          aPadded = a;
-          bPadded = b;
-        }
+        Pair<byte [], byte []> paddedPair = BytesUtils.padBytes(a, b);
+        aPadded = paddedPair.getFirst();
+        bPadded = paddedPair.getSecond();
 
-//        if (Bytes.compareTo(aPadded, bPadded) >= 0) {
-//          throw new IllegalArgumentException("end <= begin");
-//        }
         byte [] prependHeader = {1, 0};
         final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, aPadded));
         final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, bPadded));
         BigInteger diffBI = stopBI.subtract(startBI);
-        if (inclusive) {
-          diffBI = diffBI.add(BigInteger.ONE);
-        }
-        columnCard = new BigDecimal(diffBI);
-
-//        final char textStart =  (start instanceof NullDatum || start.size() == 0) ? '0' : start.asChars().charAt(0);
-//        final char textEnd = (end instanceof NullDatum || end.size() == 0) ? '0' : end.asChars().charAt(0);
-//        if (isAscending) {
-//          columnCard = new BigDecimal(textEnd - textStart);
-//        } else {
-//          columnCard = new BigDecimal(textStart - textEnd);
-//        }
+        columnCard = diffBI;
         break;
       }
       case DATE:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
         } else {
-          columnCard = new BigDecimal(start.asInt4() - end.asInt4());
-        }
-        break;
-      case TIME:
-      case TIMESTAMP:
-        if (isAscending) {
-          columnCard = new BigDecimal(end.asInt8() - start.asInt8());
-        } else {
-          columnCard = new BigDecimal(start.asInt8() - end.asInt8());
+          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
         }
         break;
       case INET4:
         if (isAscending) {
-          columnCard = new BigDecimal(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
         } else {
-          columnCard = new BigDecimal(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
         }
         break;
       default:
         throw new UnsupportedOperationException(dataType + " is not supported yet");
     }
 
-    return inclusive ? columnCard.add(new BigDecimal(1)).abs() : columnCard.abs();
+    return inclusive ? columnCard.add(BigInteger.valueOf(1)).abs() : columnCard.abs();
   }
 
   /**
    * It computes the value cardinality of a tuple range.
    * @return
    */
-  public static BigDecimal computeCardinalityForAllColumns(SortSpec[] sortSpecs, TupleRange range, boolean inclusive) {
+  public static BigInteger computeCardinalityForAllColumns(SortSpec[] sortSpecs, TupleRange range, boolean inclusive) {
     Tuple start = range.getStart();
     Tuple end = range.getEnd();
-    Column col;
 
-    BigDecimal cardinality = new BigDecimal(1);
-    BigDecimal columnCard;
+    BigInteger cardinality = BigInteger.ONE;
+    BigInteger columnCard;
     for (int i = 0; i < sortSpecs.length; i++) {
       columnCard = computeCardinality(sortSpecs[i].getSortKey().getDataType(), start.get(i), end.get(i), inclusive,
           sortSpecs[i].isAscending());
 
-      if (new BigDecimal(0).compareTo(columnCard) < 0) {
+      if (BigInteger.ZERO.compareTo(columnCard) < 0) {
         cardinality = cardinality.multiply(columnCard);
       }
     }
@@ -212,7 +186,7 @@ public abstract class RangePartitionAlgorithm {
     return cardinality;
   }
 
-  public BigDecimal getTotalCardinality() {
+  public BigInteger getTotalCardinality() {
     return totalCard;
   }
 
