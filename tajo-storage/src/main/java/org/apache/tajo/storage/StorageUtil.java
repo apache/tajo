@@ -32,7 +32,10 @@ import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
 import sun.nio.ch.DirectBuffer;
 
+import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -197,6 +200,44 @@ public class StorageUtil extends StorageConstants {
       } else {
         buffer.clear();
       }
+    }
+  }
+
+  public static int readFully(InputStream is, byte[] buffer, int offset, int length)
+      throws IOException {
+    int nread = 0;
+    while (nread < length) {
+      int nbytes = is.read(buffer, offset + nread, length - nread);
+      if (nbytes < 0) {
+        return nread > 0 ? nread : nbytes;
+      }
+      nread += nbytes;
+    }
+    return nread;
+  }
+
+  /**
+   * Similar to readFully(). Skips bytes in a loop.
+   * @param in The DataInput to skip bytes from
+   * @param len number of bytes to skip.
+   * @throws java.io.IOException if it could not skip requested number of bytes
+   * for any reason (including EOF)
+   */
+  public static void skipFully(DataInput in, int len) throws IOException {
+    int amt = len;
+    while (amt > 0) {
+      long ret = in.skipBytes(amt);
+      if (ret == 0) {
+        // skip may return 0 even if we're not at EOF.  Luckily, we can
+        // use the read() method to figure out if we're at the end.
+        int b = in.readByte();
+        if (b == -1) {
+          throw new EOFException( "Premature EOF from inputStream after " +
+              "skipping " + (len - amt) + " byte(s).");
+        }
+        ret = 1;
+      }
+      amt -= ret;
     }
   }
 }
