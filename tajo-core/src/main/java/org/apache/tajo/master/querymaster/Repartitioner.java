@@ -55,6 +55,7 @@ import org.apache.tajo.worker.FetchImpl;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
@@ -567,6 +568,7 @@ public class Repartitioner {
 
     // calculate the number of maximum query ranges
     TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
+    System.out.println(totalStat);
 
     // If there is an empty table in inner join, it should return zero rows.
     if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0 ) {
@@ -574,12 +576,12 @@ public class Repartitioner {
     }
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
     RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
-    BigDecimal card = partitioner.getTotalCardinality();
+    BigInteger card = partitioner.getTotalCardinality();
 
     // if the number of the range cardinality is less than the desired number of tasks,
     // we set the the number of tasks to the number of range cardinality.
     int determinedTaskNum;
-    if (card.compareTo(new BigDecimal(maxNum)) < 0) {
+    if (card.compareTo(BigInteger.valueOf(maxNum)) < 0) {
       LOG.info(subQuery.getId() + ", The range cardinality (" + card
           + ") is less then the desired number of tasks (" + maxNum + ")");
       determinedTaskNum = card.intValue();
@@ -636,8 +638,9 @@ public class Repartitioner {
         for (FetchImpl fetch: fetches) {
           String rangeParam =
               TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
-          fetch.setRangeParams(rangeParam);
-          fetchSet.add(fetch);
+          FetchImpl copy = new FetchImpl(fetch.getProto());
+          copy.setRangeParams(rangeParam);
+          fetchSet.add(copy);
         }
         map.put(ranges[i], fetchSet);
       }

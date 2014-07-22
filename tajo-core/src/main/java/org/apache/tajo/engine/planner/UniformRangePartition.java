@@ -207,12 +207,9 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         byte [] lastBytes = last.asByteArray();
         byte [] endBytes = range.getEnd().getBytes(colId);
 
-        Pair<byte [], byte []> paddedPair = BytesUtils.padBytes(lastBytes, endBytes);
-        lastBytesPadded = paddedPair.getFirst();
-        endBytesPadded = paddedPair.getSecond();
-
-        UnsignedInteger lastUInt = UnsignedInteger.valueOf(new BigInteger(lastBytesPadded));
-        UnsignedInteger endUInt = UnsignedInteger.valueOf(new BigInteger(endBytesPadded));
+        byte [][] padded = BytesUtils.padBytes(lastBytes, endBytes);
+        lastBytesPadded = padded[0];
+        endBytesPadded = padded[1];
 
         if (sortSpecs[colId].isAscending()) {
           candidate = incDecimal.add(new BigDecimal(new BigInteger(lastBytesPadded)));
@@ -290,9 +287,16 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         break;
       }
       case TEXT: {
-        char candidate = ((char)(last.asChars().charAt(0) + inc));
-        char end = range.getEnd().get(colId).asChars().charAt(0);
-        reminder = (char) (candidate - end);
+        byte [] lastBytes = last.asByteArray();
+        byte [] endBytes = range.getEnd().get(colId).asByteArray();
+
+        byte [][] padded = BytesUtils.padBytes(lastBytes, endBytes);
+        BigInteger lastBInt = new BigInteger(padded[0]);
+        BigInteger endBInt = new BigInteger(padded[1]);
+        BigInteger incBInt = BigInteger.valueOf(inc);
+
+        BigInteger candidate = lastBInt.add(incBInt);
+        reminder = candidate.subtract(endBInt).longValue();
         break;
       }
     }
@@ -421,15 +425,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createText(((char) (range.getStart().get(i).asChars().charAt(0)
                 + incs[i].longValue())) + ""));
           } else {
-            byte [] incBytes = incs[i].toByteArray();
-            byte [] lastBytes = last.getBytes(i);
-
-            Pair<byte [], byte []> paddedPair = BytesUtils.padBytes(incBytes, lastBytes);
-
-            UnsignedInteger incBigInt = UnsignedInteger.valueOf(new BigInteger(paddedPair.getFirst()));
-            UnsignedInteger lastBigInt = UnsignedInteger.valueOf(new BigInteger(paddedPair.getSecond()));
-
-            end.put(i, DatumFactory.createText(incBigInt.add(lastBigInt).bigIntegerValue().toByteArray()));
+            UnsignedInteger lastBigInt = UnsignedInteger.valueOf(new BigInteger(last.get(i).asByteArray()));
+            end.put(i, DatumFactory.createText(lastBigInt.add(UnsignedInteger.valueOf(inc)).bigIntegerValue().toByteArray()));
           }
           break;
         case DATE:

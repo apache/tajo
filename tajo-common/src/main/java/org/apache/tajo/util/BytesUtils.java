@@ -180,20 +180,26 @@ public class BytesUtils {
     return (byte[][]) list.toArray(new byte[list.size()][]);
   }
 
-  public static Pair<byte [], byte []> padBytes(byte [] a, byte [] b) {
-    byte [] aPadded;
-    byte [] bPadded;
+  public static byte[][] padBytes(byte []...bytes) {
+    byte [][] padded = new byte[bytes.length][];
 
-    if (a.length < b.length) {
-      aPadded = Bytes.padTail(a, b.length - a.length);
-      bPadded = b;
-    } else if (b.length < a.length) {
-      aPadded = a;
-      bPadded = Bytes.padTail(b, a.length - b.length);
-    } else {
-      aPadded = a;
-      bPadded = b;
+    int maxLen = Integer.MIN_VALUE;
+
+    for (int i = 0; i < bytes.length; i++) {
+      maxLen = Math.max(maxLen, bytes[i].length);
     }
-    return new Pair<byte[], byte[]>(aPadded, bPadded);
+
+    for (int i = 0; i < bytes.length; i++) {
+      int padLen = maxLen - bytes[i].length;
+      if (padLen == 0) {
+        padded[i] = bytes[i];
+      } else if (padLen > 0) {
+        padded[i] = Bytes.padTail(bytes[i], padLen);
+      } else {
+        throw new RuntimeException("maximum length: " + maxLen + ", bytes[" + i + "].length:" + bytes[i].length);
+      }
+    }
+
+    return padded;
   }
 }

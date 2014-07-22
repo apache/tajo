@@ -132,9 +132,9 @@ public abstract class RangePartitionAlgorithm {
           a = end.asByteArray();
         }
 
-        Pair<byte [], byte []> paddedPair = BytesUtils.padBytes(a, b);
-        aPadded = paddedPair.getFirst();
-        bPadded = paddedPair.getSecond();
+        byte [][] padded = BytesUtils.padBytes(a, b);
+        aPadded = padded[0];
+        bPadded = padded[1];
 
         byte [] prependHeader = {1, 0};
         final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, aPadded));

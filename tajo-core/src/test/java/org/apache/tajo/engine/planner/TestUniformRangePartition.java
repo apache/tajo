@@ -395,6 +395,38 @@ public class TestUniformRangePartition {
   }
 
   @Test
+  public void testPartitionForMultipleCharsWithSameFirstChar() {
+    Schema schema = new Schema()
+        .addColumn("KEY1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("AAA"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("AAZ"));
+
+    final int partNum = 4;
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+        new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
   public void testPartitionForOnePartNumWithBothValueNull() {
     Schema schema = new Schema()
         .addColumn("l_returnflag", Type.TEXT)
