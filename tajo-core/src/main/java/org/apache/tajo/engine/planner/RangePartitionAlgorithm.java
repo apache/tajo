@@ -25,10 +25,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
-import org.apache.tajo.util.Bytes;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;
@@ -115,51 +113,15 @@ public abstract class RangePartitionAlgorithm {
           columnCard = new BigDecimal(start.asInt8() - end.asInt8());
         }
         break;
-      case TEXT: {
-        byte [] aPadded;
-        byte [] bPadded;
-        byte [] a;
-        byte [] b;
+      case TEXT:
+        final char textStart =  (start instanceof NullDatum || start.size() == 0) ? '0' : start.asChars().charAt(0);
+        final char textEnd = (end instanceof NullDatum || end.size() == 0) ? '0' : end.asChars().charAt(0);
         if (isAscending) {
-          a = start.asByteArray();
-          b = end.asByteArray();
+          columnCard = new BigDecimal(textEnd - textStart);
         } else {
-          b = start.asByteArray();
-          a = end.asByteArray();
+          columnCard = new BigDecimal(textStart - textEnd);
         }
-
-        if (start.asByteArray().length < b.length) {
-          aPadded = Bytes.padTail(a, b.length - a.length);
-          bPadded = b;
-        } else if (b.length < a.length) {
-          aPadded = a;
-          bPadded = Bytes.padTail(b, a.length - b.length);
-        } else {
-          aPadded = a;
-          bPadded = b;
-        }
-
-//        if (Bytes.compareTo(aPadded, bPadded) >= 0) {
-//          throw new IllegalArgumentException("end <= begin");
-//        }
-        byte [] prependHeader = {1, 0};
-        final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, aPadded));
-        final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, bPadded));
-        BigInteger diffBI = stopBI.subtract(startBI);
-        if (inclusive) {
-          diffBI = diffBI.add(BigInteger.ONE);
-        }
-        columnCard = new BigDecimal(diffBI);
-
-//        final char textStart =  (start instanceof NullDatum || start.size() == 0) ? '0' : start.asChars().charAt(0);
-//        final char textEnd = (end instanceof NullDatum || end.size() == 0) ? '0' : end.asChars().charAt(0);
-//        if (isAscending) {
-//          columnCard = new BigDecimal(textEnd - textStart);
-//        } else {
-//          columnCard = new BigDecimal(textStart - textEnd);
-//        }
         break;
-      }
       case DATE:
         if (isAscending) {
           columnCard = new BigDecimal(end.asInt4() - start.asInt4());
