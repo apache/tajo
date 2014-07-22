@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedInteger;
+import com.google.common.primitives.UnsignedLong;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
@@ -425,8 +426,9 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createText(((char) (range.getStart().get(i).asChars().charAt(0)
                 + incs[i].longValue())) + ""));
           } else {
-            UnsignedInteger lastBigInt = UnsignedInteger.valueOf(new BigInteger(last.get(i).asByteArray()));
-            end.put(i, DatumFactory.createText(lastBigInt.add(UnsignedInteger.valueOf(inc)).bigIntegerValue().toByteArray()));
+            BigInteger lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
+            BigInteger incBigInt = UnsignedLong.asUnsigned(inc).bigIntegerValue();
+            end.put(i, DatumFactory.createText(lastBigInt.add(incBigInt).toByteArray()));
           }
           break;
         case DATE:

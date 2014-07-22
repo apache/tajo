@@ -568,7 +568,6 @@ public class Repartitioner {
 
     // calculate the number of maximum query ranges
     TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
-    System.out.println(totalStat);
 
     // If there is an empty table in inner join, it should return zero rows.
     if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0 ) {
@@ -638,7 +637,12 @@ public class Repartitioner {
         for (FetchImpl fetch: fetches) {
           String rangeParam =
               TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
-          FetchImpl copy = new FetchImpl(fetch.getProto());
+          FetchImpl copy = null;
+          try {
+            copy = fetch.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+          }
           copy.setRangeParams(rangeParam);
           fetchSet.add(copy);
         }

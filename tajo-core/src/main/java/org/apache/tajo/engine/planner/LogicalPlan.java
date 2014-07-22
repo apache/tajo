@@ -19,23 +19,20 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.exception.AmbiguousFieldException;
-import org.apache.tajo.engine.exception.NoSuchColumnException;
-import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.RelationNode;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Constructor;
@@ -49,7 +46,6 @@ public class LogicalPlan {
   /** the prefix character for virtual tables */
   public static final char VIRTUAL_TABLE_PREFIX='#';
   public static final char NONAMED_COLUMN_PREFIX='?';
-  public static final char NONAMED_WINDOW_PREFIX='^';
 
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
@@ -58,7 +54,6 @@ public class LogicalPlan {
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
-  private Integer noNameWindowId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -266,230 +261,8 @@ public class LogicalPlan {
     return queryBlockGraph;
   }
 
-  public String getNormalizedColumnName(QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
-    Column found = resolveColumn(block, columnRef);
-    if (found == null) {
-      throw new NoSuchColumnException(columnRef.getCanonicalName());
-    }
-    return found.getQualifiedName();
-  }
-
-  public String resolveDatabase(QueryBlock block, String tableName) throws PlanningException {
-    List<String> found = new ArrayList<String>();
-    for (RelationNode relation : block.getRelations()) {
-      // check alias name or table name
-      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
-          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
-        // obtain the database name
-        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
-      }
-    }
-
-    if (found.size() == 0) {
-      return null;
-    } else if (found.size() > 1) {
-      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
-    }
-
-    return found.get(0);
-  }
-
-  /**
-   * It resolves a column.
-   */
   public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
-    if (columnRef.hasQualifier()) {
-      return resolveColumnWithQualifier(block, columnRef);
-    } else {
-      return resolveColumnWithoutQualifier(block, columnRef);
-    }
-  }
-
-  private Column resolveColumnWithQualifier(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
-    String qualifier;
-    String canonicalName;
-    String qualifiedName;
-
-    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
-      qualifier = columnRef.getQualifier();
-      canonicalName = columnRef.getCanonicalName();
-    } else {
-      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
-      if (resolvedDatabaseName == null) {
-        throw new NoSuchColumnException(columnRef.getQualifier());
-      }
-      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
-      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
-    }
-    qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
-
-    RelationNode relationOp = block.getRelation(qualifier);
-
-    // if a column name is outside of this query block
-    if (relationOp == null) {
-      // TODO - nested query can only refer outer query block? or not?
-      for (QueryBlock eachBlock : queryBlocks.values()) {
-        if (eachBlock.existsRelation(qualifier)) {
-          relationOp = eachBlock.getRelation(qualifier);
-        }
-      }
-    }
-
-    // If we cannot find any relation against a qualified column name
-    if (relationOp == null) {
-      throw new NoSuchColumnException(canonicalName);
-    }
-
-    if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
-      String changedName = CatalogUtil.buildFQName(
-          relationOp.getCanonicalName(),
-          CatalogUtil.extractSimpleName(canonicalName));
-      canonicalName = changedName;
-    }
-
-    Schema schema = relationOp.getTableSchema();
-    Column column = schema.getColumn(canonicalName);
-    if (column == null) {
-      throw new NoSuchColumnException(canonicalName);
-    }
-
-    // If code reach here, a column is found.
-    // But, it may be aliased from bottom logical node.
-    // If the column is aliased, the found name may not be used in upper node.
-
-    // Here, we try to check if column reference is already aliased.
-    // If so, it replaces the name with aliased name.
-    LogicalNode currentNode = block.getCurrentNode();
-
-    // The condition (currentNode.getInSchema().contains(column)) means
-    // the column can be used at the current node. So, we don't need to find aliase name.
-    Schema currentNodeSchema = null;
-    if (currentNode != null) {
-      if (currentNode instanceof RelationNode) {
-        currentNodeSchema = ((RelationNode) currentNode).getTableSchema();
-      } else {
-        currentNodeSchema = currentNode.getInSchema();
-      }
-    }
-
-    if (currentNode != null && !currentNodeSchema.contains(column)
-        && currentNode.getType() != NodeType.TABLE_SUBQUERY) {
-      List<Column> candidates = TUtil.newList();
-      if (block.namedExprsMgr.isAliased(qualifiedName)) {
-        String alias = block.namedExprsMgr.getAlias(canonicalName);
-        Column found = resolveColumn(block, new ColumnReferenceExpr(alias));
-        if (found != null) {
-          candidates.add(found);
-        }
-      }
-      if (!candidates.isEmpty()) {
-        return ensureUniqueColumn(candidates);
-      }
-    }
-
-    return column;
-  }
-
-  private Column resolveColumnWithoutQualifier(QueryBlock block,
-                                               ColumnReferenceExpr columnRef)throws PlanningException {
-
-    List<Column> candidates = TUtil.newList();
-
-    // It tries to find a full qualified column name from all relations in the current block.
-    for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getTableSchema().getColumn(columnRef.getName());
-      if (found != null) {
-        candidates.add(found);
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
-    // Trying to find the column within the current block
-    if (block.currentNode != null && block.currentNode.getInSchema() != null) {
-      Column found = block.currentNode.getInSchema().getColumn(columnRef.getCanonicalName());
-      if (found != null) {
-        return found;
-      }
-    }
-
-    if (block.getLatestNode() != null) {
-      Column found = block.getLatestNode().getOutSchema().getColumn(columnRef.getName());
-      if (found != null) {
-        return found;
-      }
-    }
-
-
-    // Trying to find columns from aliased references.
-    if (block.namedExprsMgr.isAliased(columnRef.getCanonicalName())) {
-      String originalName = block.namedExprsMgr.getAlias(columnRef.getCanonicalName());
-      Column found = resolveColumn(block, new ColumnReferenceExpr(originalName));
-      if (found != null) {
-        candidates.add(found);
-      }
-    }
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
-    // This is an exception case. It means that there are some bugs in other parts.
-    LogicalNode blockRootNode = block.getRoot();
-    if (blockRootNode != null && blockRootNode.getOutSchema().getColumn(columnRef.getCanonicalName()) != null) {
-      throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
-    }
-
-    // Trying to find columns from other relations in other blocks
-    for (QueryBlock eachBlock : queryBlocks.values()) {
-      for (RelationNode rel : eachBlock.getRelations()) {
-        Column found = rel.getTableSchema().getColumn(columnRef.getName());
-        if (found != null) {
-          candidates.add(found);
-        }
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
-    // Trying to find columns from schema in current block.
-    if (block.getSchema() != null) {
-      Column found = block.getSchema().getColumn(columnRef.getName());
-      if (found != null) {
-        candidates.add(found);
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return ensureUniqueColumn(candidates);
-    }
-
-    throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
-  }
-
-  private static Column ensureUniqueColumn(List<Column> candidates)
-      throws VerifyException {
-    if (candidates.size() == 1) {
-      return candidates.get(0);
-    } else if (candidates.size() > 2) {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (Column column : candidates) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
-        }
-        sb.append(column);
-      }
-      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
-    } else {
-      return null;
-    }
+    return NameResolver.resolve(this, block, columnRef, NameResolvingMode.LEGACY);
   }
 
   public String getQueryGraphAsString() {
@@ -601,7 +374,8 @@ public class LogicalPlan {
 
     // transient states
     private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
-    private final Map<String, List<String>> aliasMap = TUtil.newHashMap();
+    private final Map<String, List<String>> relationAliasMap = TUtil.newHashMap();
+    private final Map<String, String> columnAliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
     private boolean hasWindowFunction = false;
@@ -669,7 +443,7 @@ public class LogicalPlan {
     }
 
     public boolean isAlreadyRenamedTableName(String name) {
-      return aliasMap.containsKey(name);
+      return relationAliasMap.containsKey(name);
     }
 
     public RelationNode getRelation(String name) {
@@ -677,8 +451,8 @@ public class LogicalPlan {
         return canonicalNameToRelationMap.get(name);
       }
 
-      if (aliasMap.containsKey(name)) {
-        return canonicalNameToRelationMap.get(aliasMap.get(name).get(0));
+      if (relationAliasMap.containsKey(name)) {
+        return canonicalNameToRelationMap.get(relationAliasMap.get(name).get(0));
       }
 
       return null;
@@ -686,7 +460,7 @@ public class LogicalPlan {
 
     public void addRelation(RelationNode relation) {
       if (relation.hasAlias()) {
-        TUtil.putToNestedList(aliasMap, relation.getTableName(), relation.getCanonicalName());
+        TUtil.putToNestedList(relationAliasMap, relation.getTableName(), relation.getCanonicalName());
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
       relationList.add(relation);
@@ -698,6 +472,18 @@ public class LogicalPlan {
 
     public boolean hasTableExpression() {
       return this.canonicalNameToRelationMap.size() > 0;
+    }
+
+    public void addColumnAlias(String original, String alias) {
+      columnAliasMap.put(alias, original);
+    }
+
+    public boolean isAliasedName(String alias) {
+      return columnAliasMap.containsKey(alias);
+    }
+
+    public String getOriginalName(String alias) {
+      return columnAliasMap.get(alias);
     }
 
     public void setSchema(Schema schema) {
