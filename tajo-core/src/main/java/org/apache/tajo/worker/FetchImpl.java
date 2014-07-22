@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * <code>FetchImpl</code> information to indicate the locations of intermediate data.
  */
-public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
+public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cloneable {
   private TajoWorkerProtocol.FetchProto.Builder builder = null;
 
   private QueryUnit.PullHost host;             // The pull server host information
@@ -110,6 +111,7 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
     builder.setPartitionId(partitionId);
     builder.setHasNext(hasNext);
     builder.setName(name);
+
     if (rangeParams != null && !rangeParams.isEmpty()) {
       builder.setRangeParams(rangeParams);
     }
@@ -197,5 +199,25 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
 
   public List<Integer> getAttemptIds() {
     return attemptIds;
+  }
+
+  public FetchImpl clone() throws CloneNotSupportedException {
+    FetchImpl newFetchImpl = (FetchImpl) super.clone();
+
+    newFetchImpl.builder = TajoWorkerProtocol.FetchProto.newBuilder();
+    newFetchImpl.host = host.clone();
+    newFetchImpl.type = type;
+    newFetchImpl.executionBlockId = executionBlockId;
+    newFetchImpl.partitionId = partitionId;
+    newFetchImpl.name = name;
+    newFetchImpl.rangeParams = rangeParams;
+    newFetchImpl.hasNext = hasNext;
+    if (taskIds != null) {
+      newFetchImpl.taskIds = Lists.newArrayList(taskIds);
+    }
+    if (attemptIds != null) {
+      newFetchImpl.attemptIds = Lists.newArrayList(attemptIds);
+    }
+    return newFetchImpl;
   }
 }
