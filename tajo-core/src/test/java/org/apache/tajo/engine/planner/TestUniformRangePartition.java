@@ -73,11 +73,11 @@ public class TestUniformRangePartition {
     result[10] = "DB";
     result[11] = "DC";
 
-    Tuple end = partitioner.increment(s, 1, 1);
+    Tuple end = partitioner.increment(s, BigInteger.valueOf(1), 1);
     assertEquals("A", end.get(0).asChars());
     assertEquals("B", end.get(1).asChars());
     for (int i = 2; i < 11; i++ ) {
-      end = partitioner.increment(end, 1, 1);
+      end = partitioner.increment(end, BigInteger.valueOf(1), 1);
       assertEquals(result[i].charAt(0), end.get(0).asChars().charAt(0));
       assertEquals(result[i].charAt(1), end.get(1).asChars().charAt(0));
     }
@@ -120,10 +120,10 @@ public class TestUniformRangePartition {
     result[10] = "DB";
     result[11] = "DC";
 
-    Tuple end = partitioner.increment(s, 6, 1);
+    Tuple end = partitioner.increment(s, BigInteger.valueOf(6), 1);
     assertEquals("C", end.get(0).asChars());
     assertEquals("A", end.get(1).asChars());
-    end = partitioner.increment(end, 5, 1);
+    end = partitioner.increment(end, BigInteger.valueOf(5), 1);
     assertEquals("D", end.get(0).asChars());
     assertEquals("C", end.get(1).asChars());
   }
@@ -154,11 +154,11 @@ public class TestUniformRangePartition {
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().intValue());
 
-    Tuple overflowBefore = partitioner.increment(s, 5, 2);
+    Tuple overflowBefore = partitioner.increment(s, BigInteger.valueOf(5), 2);
     assertEquals("A", overflowBefore.get(0).asChars());
     assertEquals("B", overflowBefore.get(1).asChars());
     assertEquals("C", overflowBefore.get(2).asChars());
-    Tuple overflowed = partitioner.increment(overflowBefore, 1, 2);
+    Tuple overflowed = partitioner.increment(overflowBefore, BigInteger.valueOf(1), 2);
     assertEquals("B", overflowed.get(0).asChars());
     assertEquals("A", overflowed.get(1).asChars());
     assertEquals("A", overflowed.get(2).asChars());
@@ -184,10 +184,10 @@ public class TestUniformRangePartition {
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(200, partitioner.getTotalCardinality().longValue());
 
-    Tuple range2 = partitioner.increment(s, 100, 1);
+    Tuple range2 = partitioner.increment(s, BigInteger.valueOf(100), 1);
     assertEquals(15, range2.get(0).asInt4());
     assertEquals(20, range2.get(1).asInt4());
-    Tuple range3 = partitioner.increment(range2, 99, 1);
+    Tuple range3 = partitioner.increment(range2, BigInteger.valueOf(99), 1);
     assertEquals(19, range3.get(0).asInt4());
     assertEquals(39, range3.get(1).asInt4());
   }
@@ -214,11 +214,11 @@ public class TestUniformRangePartition {
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
-    Tuple beforeOverflow = partitioner.increment(s, 5, 2);
+    Tuple beforeOverflow = partitioner.increment(s, BigInteger.valueOf(5), 2);
     assertEquals(1, beforeOverflow.get(0).asInt8());
     assertEquals(2, beforeOverflow.get(1).asInt8());
     assertEquals(3, beforeOverflow.get(2).asInt8());
-    Tuple overflow = partitioner.increment(beforeOverflow, 1, 2);
+    Tuple overflow = partitioner.increment(beforeOverflow, BigInteger.valueOf(1), 2);
     assertEquals(2, overflow.get(0).asInt8());
     assertEquals(1, overflow.get(1).asInt8());
     assertEquals(1, overflow.get(2).asInt8());
@@ -247,11 +247,11 @@ public class TestUniformRangePartition {
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
-    Tuple beforeOverflow = partitioner.increment(s, 5, 2);
+    Tuple beforeOverflow = partitioner.increment(s, BigInteger.valueOf(5), 2);
     assertTrue(1.1d == beforeOverflow.get(0).asFloat8());
     assertTrue(2.1d == beforeOverflow.get(1).asFloat8());
     assertTrue(3.1d == beforeOverflow.get(2).asFloat8());
-    Tuple overflow = partitioner.increment(beforeOverflow, 1, 2);
+    Tuple overflow = partitioner.increment(beforeOverflow, BigInteger.valueOf(1), 2);
     assertTrue(2.1d == overflow.get(0).asFloat8());
     assertTrue(1.1d == overflow.get(1).asFloat8());
     assertTrue(1.1d == overflow.get(2).asFloat8());
@@ -280,11 +280,11 @@ public class TestUniformRangePartition {
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
-    Tuple beforeOverflow = partitioner.increment(s, 5, 2);
+    Tuple beforeOverflow = partitioner.increment(s, BigInteger.valueOf(5), 2);
     assertTrue("127.0.1.1".equals(beforeOverflow.get(0).asChars()));
     assertTrue("127.0.0.2".equals(beforeOverflow.get(1).asChars()));
     assertTrue("128.0.0.255".equals(beforeOverflow.get(2).asChars()));
-    Tuple overflow = partitioner.increment(beforeOverflow, 1, 2);
+    Tuple overflow = partitioner.increment(beforeOverflow, BigInteger.valueOf(1), 2);
     assertTrue("127.0.1.2".equals(overflow.get(0).asChars()));
     assertTrue("127.0.0.1".equals(overflow.get(1).asChars()));
     assertTrue("128.0.0.253".equals(overflow.get(2).asChars()));
@@ -392,6 +392,38 @@ public class TestUniformRangePartition {
     assertEquals(48, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
     assertTrue(ranges[47].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForMultipleChars2() {
+    Schema schema = new Schema()
+        .addColumn("KEY1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("A1"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("A999975"));
+
+    final int partNum = 2;
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+        new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
   }
 
   @Test

@@ -24,6 +24,7 @@ import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.exception.RangeOverflowException;
@@ -51,9 +52,21 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
    * @param sortSpecs The description of sort keys
    * @param inclusive true if the end of the range is inclusive
    */
-  public UniformRangePartition(TupleRange totalRange, SortSpec[] sortSpecs, boolean inclusive) {
+  public UniformRangePartition(final TupleRange totalRange, final SortSpec[] sortSpecs, boolean inclusive) {
     super(sortSpecs, totalRange, inclusive);
     colCards = new BigInteger[sortSpecs.length];
+
+    int [] maxLens = new int[sortSpecs.length];
+    for (int i = 0; i < sortSpecs.length; i++) {
+      maxLens[i] = Integer.MIN_VALUE;
+    }
+
+    for (int i = 0; i < sortSpecs.length; i++) {
+      if (sortSpecs[i].getSortKey().getDataType().getType() == TajoDataTypes.Type.TEXT) {
+        maxLens[i] = Math.max(maxLens[i], totalRange.getStart().get(i).asByteArray().length);
+      }
+    }
+
     for (int i = 0; i < sortSpecs.length; i++) {
       colCards[i] = computeCardinality(sortSpecs[i].getSortKey().getDataType(), totalRange.getStart().get(i),
           totalRange.getEnd().get(i), inclusive, sortSpecs[i].isAscending());
@@ -108,7 +121,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       if (reminder.compareTo(term) <= 0) { // final one is inclusive
         ranges.add(new TupleRange(sortSpecs, last, range.getEnd()));
       } else {
-        Tuple next = increment(last, term.longValue(), variableId);
+        Tuple next = increment(last, term, variableId);
         ranges.add(new TupleRange(sortSpecs, last, next));
       }
       last = ranges.get(ranges.size() - 1).getEnd();
@@ -309,14 +322,14 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   /**
    *
    * @param last
-   * @param inc
+   * @param interval
    * @return
    */
-  public Tuple increment(final Tuple last, final long inc, final int baseDigit) {
+  public Tuple increment(final Tuple last, BigInteger interval, final int baseDigit) {
     BigInteger [] incs = new BigInteger[last.size()];
     boolean [] overflowFlag = new boolean[last.size()];
     BigInteger [] result;
-    BigInteger value = BigInteger.valueOf(inc);
+    BigInteger value = interval;
 
     BigInteger [] reverseCardsForDigit = new BigInteger[baseDigit + 1];
     for (int i = baseDigit; i >= 0; i--) {
@@ -427,7 +440,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 + incs[i].longValue())) + ""));
           } else {
             BigInteger lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
-            BigInteger incBigInt = UnsignedLong.asUnsigned(inc).bigIntegerValue();
+            BigInteger incBigInt = interval;
             end.put(i, DatumFactory.createText(lastBigInt.add(incBigInt).toByteArray()));
           }
           break;
