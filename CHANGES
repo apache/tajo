@@ -97,6 +97,15 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-914: join queries with constant values can cause schema mismatch in
+    logical plan. (hyunsik)
+
+    TAJO-969: Distributed sort on a large data set may result in incorrect
+    results. (hyunsik)
+
+    TAJO-972: Broadcast join with left outer join returns duplicated rows.
+    (Hyoungjun Kim via jaehwa)
+
     TAJO-666: java.nio.BufferOverflowException occurs when the query includes an order by 
     clause on a TEXT column. (Mai Hai Thanh via jihoon)
 

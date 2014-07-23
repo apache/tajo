@@ -495,11 +495,13 @@ public class TestBroadcastJoinPlan {
 
     // ((((default.small1 ⟕ default.small2) ⟕ default.small3) ⟕ default.large1) ⟕ default.large2)
     /*
-    |-eb_1402495213549_0000_000007
-       |-eb_1402495213549_0000_000006       (GROUP BY)
-          |-eb_1402495213549_0000_000005    (JOIN)
-             |-eb_1402495213549_0000_000004 (LEAF, large2)
-             |-eb_1402495213549_0000_000003 (LEAF, broadcast JOIN small1, small2, small3, large1)
+    |-eb_1406022243130_0000_000009
+       |-eb_1406022243130_0000_000008
+          |-eb_1406022243130_0000_000007       (join)
+             |-eb_1406022243130_0000_000006    (scan large2)
+             |-eb_1406022243130_0000_000005    (join)
+                |-eb_1406022243130_0000_000004 (scan large1)
+                |-eb_1406022243130_0000_000003 (scan small1, broadcast join small2, small3)
      */
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
@@ -508,9 +510,9 @@ public class TestBroadcastJoinPlan {
       ExecutionBlock eb = ebCursor.nextBlock();
       if(index == 0) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
-        assertEquals(3, broadcastTables.size());
+        assertEquals(2, broadcastTables.size());
 
-        assertTrue(broadcastTables.contains("default.small1"));
+        assertTrue(!broadcastTables.contains("default.small1"));
         assertTrue(broadcastTables.contains("default.small2"));
         assertTrue(broadcastTables.contains("default.small3"));
       } else if(index == 1 || index == 2 || index == 3) {
@@ -520,7 +522,7 @@ public class TestBroadcastJoinPlan {
       index++;
     }
 
-    assertEquals(5, index);
+    assertEquals(7, index);
   }
 
   @Test
@@ -712,9 +714,9 @@ public class TestBroadcastJoinPlan {
     globalPlanner.build(masterPlan);
 
     /*
-    |-eb_1402500846700_0000_000007
-       |-eb_1402500846700_0000_000006
-          |-eb_1402500846700_0000_000005 (LEAF, broadcast join small1, small2, small3)
+    |-eb_1406022971444_0000_000005
+       |-eb_1406022971444_0000_000004     (group by)
+          |-eb_1406022971444_0000_000003  (scan small1, broadcast join small2, small3)
     */
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
@@ -735,7 +737,10 @@ public class TestBroadcastJoinPlan {
         assertEquals("default.small2", scanNode.getCanonicalName());
 
         Collection<String> broadcastTables = eb.getBroadcastTables();
-        assertEquals(3, broadcastTables.size());
+        assertEquals(2, broadcastTables.size());
+
+        assertTrue(broadcastTables.contains("default.small2"));
+        assertTrue(broadcastTables.contains("default.small3"));
       } else if(index == 1) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(0, broadcastTables.size());
@@ -769,9 +774,11 @@ public class TestBroadcastJoinPlan {
 
     //(((default.small1 ⟕ default.small2) ⟕ default.large1) ⟕ default.small3)
     /*
-     |-eb_1402642709028_0000_000005
-       |-eb_1402642709028_0000_000004    (GROUP BY)
-          |-eb_1402642709028_0000_000003 (LEAF, broadcast JOIN small1, small2, small3, large1)
+    |-eb_1406023347983_0000_000007
+       |-eb_1406023347983_0000_000006
+          |-eb_1406023347983_0000_000005    (join, broadcast small3)
+             |-eb_1406023347983_0000_000004 (scan large1)
+             |-eb_1406023347983_0000_000003 (scan small1, broadcast join small2)
      */
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
@@ -780,19 +787,20 @@ public class TestBroadcastJoinPlan {
       ExecutionBlock eb = ebCursor.nextBlock();
       if(index == 0) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
-        assertEquals(3, broadcastTables.size());
-
-        assertTrue(broadcastTables.contains("default.small1"));
+        assertEquals(1, broadcastTables.size());
         assertTrue(broadcastTables.contains("default.small2"));
+      } else if (index == 2) {
+        Collection<String> broadcastTables = eb.getBroadcastTables();
+        assertEquals(1, broadcastTables.size());
         assertTrue(broadcastTables.contains("default.small3"));
-      } else if(index == 1 || index == 2 || index == 3) {
+      } else if(index == 1 || index == 3) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(0, broadcastTables.size());
       }
       index++;
     }
 
-    assertEquals(3, index);
+    assertEquals(5, index);
   }
 
   @Test
@@ -820,11 +828,13 @@ public class TestBroadcastJoinPlan {
     // ((((default.small1 ⟕ default.small2) ⟕ default.large1) ⟕ default.large2) ⟕ default.small3)
 
     /*
-    |-eb_1404125948432_0000_000007
-       |-eb_1404125948432_0000_000006
-          |-eb_1404125948432_0000_000005     (JOIN broadcast small3)
-             |-eb_1404125948432_0000_000004  (LEAF, scan large2)
-             |-eb_1404125948432_0000_000003  (LEAF, scan large1, broadcast small1, small2)
+    |-eb_1406023537578_0000_000009
+       |-eb_1406023537578_0000_000008
+          |-eb_1406023537578_0000_000007        (join, broadcast small3)
+             |-eb_1406023537578_0000_000006     (scan large2)
+             |-eb_1406023537578_0000_000005     (join)
+                |-eb_1406023537578_0000_000004  (scan large1)
+                |-eb_1406023537578_0000_000003  (scan small1, broadcast join small2)
     */
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
@@ -835,26 +845,34 @@ public class TestBroadcastJoinPlan {
         assertEquals(NodeType.JOIN, node.getType());
         JoinNode joinNode = (JoinNode)node;
 
-        JoinNode joinNode2 = joinNode.getLeftChild();
+        ScanNode scanNode1 = joinNode.getLeftChild();
         ScanNode scanNode2 = joinNode.getRightChild();
-        assertEquals("default.large1", scanNode2.getCanonicalName());
-
-        ScanNode scanNode3 = joinNode2.getLeftChild();
-        ScanNode scanNode4 = joinNode2.getRightChild();
-        assertEquals("default.small1", scanNode3.getCanonicalName());
-        assertEquals("default.small2", scanNode4.getCanonicalName());
+        assertEquals("default.small1", scanNode1.getCanonicalName());
+        assertEquals("default.small2", scanNode2.getCanonicalName());
 
         Collection<String> broadcastTables = eb.getBroadcastTables();
-        assertEquals(2, broadcastTables.size());
+        assertEquals(1, broadcastTables.size());
+        assertTrue(broadcastTables.contains("default.small2"));
       } else if (index == 1) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.SCAN, node.getType());
-        ScanNode scanNode = (ScanNode)node;
+        ScanNode scanNode = (ScanNode) node;
+        assertEquals("default.large1", scanNode.getCanonicalName());
+
+        Collection<String> broadcastTables = eb.getBroadcastTables();
+        assertEquals(0, broadcastTables.size());
+      } else if (index == 2) {
+        LogicalNode node = eb.getPlan();
+        assertEquals(NodeType.JOIN, node.getType());
+      } else if (index == 3) {
+        LogicalNode node = eb.getPlan();
+        assertEquals(NodeType.SCAN, node.getType());
+        ScanNode scanNode = (ScanNode) node;
         assertEquals("default.large2", scanNode.getCanonicalName());
 
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(0, broadcastTables.size());
-      } else if(index == 2) {
+      } else if(index == 4) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.GROUP_BY, node.getType());
 
@@ -866,8 +884,8 @@ public class TestBroadcastJoinPlan {
 
         ScanNode scanNode2 = joinNode1.getLeftChild();
         ScanNode scanNode3 = joinNode1.getRightChild();
-        assertTrue(scanNode2.getCanonicalName().indexOf("0000_000003") > 0);
-        assertTrue(scanNode3.getCanonicalName().indexOf("0000_000004") > 0);
+        assertTrue(scanNode2.getCanonicalName().indexOf("0000_000005") > 0);
+        assertTrue(scanNode3.getCanonicalName().indexOf("0000_000006") > 0);
 
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(1, broadcastTables.size());
@@ -875,7 +893,7 @@ public class TestBroadcastJoinPlan {
       index++;
     }
 
-    assertEquals(5, index);
+    assertEquals(7, index);
   }
 
   @Test
