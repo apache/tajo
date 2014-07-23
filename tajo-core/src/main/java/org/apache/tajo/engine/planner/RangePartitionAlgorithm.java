@@ -18,23 +18,18 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.BytesUtils;
-import org.apache.tajo.util.Pair;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;
-  protected TupleRange range;
+  protected TupleRange mergedRange;
   protected final BigInteger totalCard;
   /** true if the end of the range is inclusive. Otherwise, it should be false. */
   protected final boolean inclusive;
@@ -47,7 +42,7 @@ public abstract class RangePartitionAlgorithm {
    */
   public RangePartitionAlgorithm(SortSpec [] sortSpecs, TupleRange totalRange, boolean inclusive) {
     this.sortSpecs = sortSpecs;
-    this.range = totalRange;
+    this.mergedRange = totalRange;
     this.inclusive = inclusive;
     this.totalCard = computeCardinalityForAllColumns(sortSpecs, totalRange, inclusive);
   }
@@ -120,8 +115,6 @@ public abstract class RangePartitionAlgorithm {
         }
         break;
       case TEXT: {
-        byte [] aPadded;
-        byte [] bPadded;
         byte [] a;
         byte [] b;
         if (isAscending) {
@@ -132,13 +125,9 @@ public abstract class RangePartitionAlgorithm {
           a = end.asByteArray();
         }
 
-        byte [][] padded = BytesUtils.padBytes(a, b);
-        aPadded = padded[0];
-        bPadded = padded[1];
-
         byte [] prependHeader = {1, 0};
-        final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, aPadded));
-        final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, bPadded));
+        final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, a));
+        final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, b));
         BigInteger diffBI = stopBI.subtract(startBI);
         columnCard = diffBI;
         break;

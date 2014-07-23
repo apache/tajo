@@ -203,4 +203,8 @@ public class BytesUtils {
 
     return padded;
   }
+
+  public static byte [] trimBytes(byte [] bytes) {
+    return new String(bytes).trim().getBytes();
+  }
 }

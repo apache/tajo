@@ -427,6 +427,39 @@ public class TestUniformRangePartition {
   }
 
   @Test
+  public void testPartitionForMultipleChars2Desc() {
+    Schema schema = new Schema()
+        .addColumn("KEY1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("A999975"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("A1"));
+
+    final int partNum = 48;
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+    RangePartitionAlgorithm partitioner =
+        new UniformRangePartition(expected, sortSpecs, true);
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) > 0);
+      }
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
   public void testPartitionForMultipleCharsWithSameFirstChar() {
     Schema schema = new Schema()
         .addColumn("KEY1", Type.TEXT);
@@ -505,7 +538,7 @@ public class TestUniformRangePartition {
       if (prev == null) {
         prev = r;
       } else {
-        assertTrue(prev.compareTo(r) > 0);
+        assertTrue(prev.compareTo(r) < 0);
       }
     }
   }
