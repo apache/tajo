@@ -19,7 +19,6 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
@@ -155,11 +154,7 @@ public interface CatalogService {
 
   boolean existIndexByName(String databaseName, String indexName);
 
-  boolean existIndexByColumn(String databaseName, String tableName, String columnName);
-
   IndexDesc getIndexByName(String databaseName, String indexName);
-
-  IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
 
   boolean dropIndex(String databaseName, String indexName);
 

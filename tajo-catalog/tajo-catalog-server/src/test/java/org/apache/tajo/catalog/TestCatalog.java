@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.IndexDesc.IndexKey;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.function.Function;
@@ -30,8 +31,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.store.DerbyStore;
-import org.apache.tajo.catalog.store.MySQLStore;
 import org.apache.tajo.catalog.store.MariaDBStore;
+import org.apache.tajo.catalog.store.MySQLStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -51,7 +52,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestCatalog {
 	static final String FieldName1="f1";
@@ -373,17 +373,20 @@ public class TestCatalog {
   static IndexDesc desc3;
 
   static {
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+    List<IndexKey> indexKeys = new ArrayList<IndexKey>();
+    indexKeys.add(new IndexKey(new Column("id", Type.INT4).toJson(), true, true));
+    desc1 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed", IndexMethod.TWO_LEVEL_BIN_TREE,
+        indexKeys, true, true, null);
 
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
+    indexKeys = new ArrayList<IndexKey>();
+    indexKeys.add(new IndexKey(new Column("score", Type.FLOAT8).toJson(), false, false));
+    desc2 = new IndexDesc("idx_test2", DEFAULT_DATABASE_NAME, "indexed", IndexMethod.TWO_LEVEL_BIN_TREE,
+        indexKeys, false, false, null);
 
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+    indexKeys = new ArrayList<IndexKey>();
+    indexKeys.add(new IndexKey(new Column("id", Type.INT4).toJson(), true, true));
+    desc3 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed", IndexMethod.TWO_LEVEL_BIN_TREE,
+        indexKeys, true, true, null);
   }
 
   public static TableDesc prepareTable() throws IOException {
@@ -439,18 +442,14 @@ public class TestCatalog {
 	  assertTrue(catalog.createTable(desc));
 	  
 	  assertFalse(catalog.existIndexByName("db1", desc1.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
 	  catalog.createIndex(desc1);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
 
 
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
 	  catalog.createIndex(desc2);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
-	  
+
 	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getIndexName());
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
 	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getIndexName());

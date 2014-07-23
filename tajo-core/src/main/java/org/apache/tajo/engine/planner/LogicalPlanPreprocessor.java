@@ -460,6 +460,13 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     return createIndex;
   }
 
+  @Override
+  public LogicalNode visitDropIndex(PreprocessContext ctx, Stack<Expr> stack, DropIndex expr)
+      throws PlanningException {
+    DropIndexNode dropIndexNode = ctx.plan.createNode(DropIndexNode.class);
+    return dropIndexNode;
+  }
+
   public LogicalNode visitTruncateTable(PreprocessContext ctx, Stack<Expr> stack, TruncateTable expr)
       throws PlanningException {
     TruncateTableNode truncateTableNode = ctx.plan.createNode(TruncateTableNode.class);

@@ -4,6 +4,10 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES 
 
+    TAJO-837: Register index meta information at Catalog. (jihoon)
+
+    TAJO-836: create index support. (jihoon)
+
     TAJO-20: INSERT INTO ... SELECT. (Hyoungjun Kim via hyunsik)
 
     TAJO-774: Implement logical plan part and physical executor for window 

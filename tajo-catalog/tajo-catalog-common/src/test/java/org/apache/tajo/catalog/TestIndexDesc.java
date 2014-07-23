@@ -18,34 +18,55 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.IndexDesc.IndexKey;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.*;
 
 public class TestIndexDesc {
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;
-  
+  static List<IndexKey> keys1;
+  static List<IndexKey> keys2;
+  static List<IndexKey> keys3;
+  static String pred2;
+
   static {
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-    
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
-    
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+    keys1 = TUtil.newList();
+    keys1.add(new IndexKey("{\"name\":\"id\",\"dataType\":{\"type\":\"INT4\"}}", true, true));
+    desc1 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed",
+        IndexMethod.TWO_LEVEL_BIN_TREE, keys1, true, true, null);
+
+    keys2 = TUtil.newList();
+    keys2.add(new IndexKey("{\"name\":\"score\",\"dataType\":{\"type\":\"FLOAT8\"}}", false, false));
+    pred2 = "{\n" +
+        "  \"LeftExpr\": {\n" +
+        "    \"ColumnName\": \"score\",\n" +
+        "    \"OpType\": \"Column\"\n" +
+        "  },\n" +
+        "  \"RightExpr\": {\n" +
+        "    \"Value\": \"10\",\n" +
+        "    \"ValueType\": \"Unsigned_Integer\",\n" +
+        "    \"OpType\": \"Literal\"\n" +
+        "  },\n" +
+        "  \"OpType\": \"Equals\"\n" +
+        "}";
+    desc2 = new IndexDesc("idx_test2", DEFAULT_DATABASE_NAME, "indexed",
+        IndexMethod.TWO_LEVEL_BIN_TREE, keys2, false, false, pred2);
+
+    keys3 = TUtil.newList();
+    keys3.add(new IndexKey("{\"name\":\"id\",\"dataType\":{\"type\":\"INT4\"}}", true, true));
+    desc3 = new IndexDesc("idx_test", DEFAULT_DATABASE_NAME, "indexed",
+        IndexMethod.TWO_LEVEL_BIN_TREE, keys3, true, true, null);
   }
 
   @BeforeClass
@@ -67,19 +88,19 @@ public class TestIndexDesc {
   public void testGetFields() {
     assertEquals("idx_test", desc1.getIndexName());
     assertEquals("indexed", desc1.getTableName());
-    assertEquals(new Column("id", Type.INT4), desc1.getColumn());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
+    assertTrue(keys1.equals(desc1.getKeys()));
     assertEquals(true, desc1.isUnique());
     assertEquals(true, desc1.isClustered());
-    assertEquals(true, desc1.isAscending());
+    assertNull(desc1.getPredicate());
     
     assertEquals("idx_test2", desc2.getIndexName());
     assertEquals("indexed", desc2.getTableName());
-    assertEquals(new Column("score", Type.FLOAT8), desc2.getColumn());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
+    assertTrue(keys2.equals(desc2.getKeys()));
     assertEquals(false, desc2.isUnique());
     assertEquals(false, desc2.isClustered());
-    assertEquals(false, desc2.isAscending());
+    assertEquals(pred2, desc2.getPredicate());
   }
 
   @Test

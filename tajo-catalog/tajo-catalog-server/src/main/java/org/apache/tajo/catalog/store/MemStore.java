@@ -120,6 +120,8 @@ public class MemStore implements CatalogStore {
     }
 
     databases.put(databaseName, new HashMap<String, CatalogProtos.TableDescProto>());
+    indexes.put(databaseName, new HashMap<String, IndexDescProto>());
+    indexesByColumn.put(databaseName, new HashMap<String, IndexDescProto>());
   }
 
   @Override
@@ -368,9 +370,11 @@ public class MemStore implements CatalogStore {
       throw new AlreadyExistsIndexException(proto.getIndexName());
     }
 
-    index.put(proto.getIndexName(), proto);
-    indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
-        + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
+    String indexName = proto.getIndexName();
+    if (CatalogUtil.isFQTableName(indexName)) {
+      indexName = CatalogUtil.splitFQTableName(indexName)[1];
+    }
+    index.put(indexName, proto);
   }
 
   /* (non-Javadoc)
@@ -398,32 +402,10 @@ public class MemStore implements CatalogStore {
     return index.get(indexName);
   }
 
-  /* (non-Javadoc)
-   * @see CatalogStore#getIndexByName(java.lang.String, java.lang.String)
-   */
-  @Override
-  public IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-
-    Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    if (!indexByColumn.containsKey(columnName)) {
-      throw new NoSuchIndexException(columnName);
-    }
-
-    return indexByColumn.get(columnName);
-  }
-
   @Override
   public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     return index.containsKey(indexName);
-  }
-
-  @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-    Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    return indexByColumn.containsKey(columnName);
   }
 
   @Override

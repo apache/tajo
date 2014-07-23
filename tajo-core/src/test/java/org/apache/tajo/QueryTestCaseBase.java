@@ -36,7 +36,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import java.io.File;
@@ -46,7 +48,10 @@ import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -382,12 +387,26 @@ public class QueryTestCaseBase {
   }
 
   /**
+   * Assert that the index exists.
+   *
+   * @param indexName The index name to be checked. This name is case sensitive.
+   * @throws ServiceException
+   */
+  public void assertIndexExists(String indexName) throws ServiceException {
+    assertTrue(client.existIndex(indexName));
+  }
+
+  /**
    * Assert that the table does not exist.
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
   public void assertTableNotExists(String tableName) throws ServiceException {
     assertTrue(!client.existTable(tableName));
+  }
+
+  public void assertIndexNotExists(String indexName) throws ServiceException {
+    assertFalse(client.existIndex(indexName));
   }
 
   public void assertColumnExists(String tableName,String columnName) throws ServiceException {

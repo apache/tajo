@@ -54,7 +54,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestLogicalPlanner {
   private static TajoTestingCluster util;
