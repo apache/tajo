@@ -22,8 +22,7 @@ import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class TestStringUtil {
 
@@ -88,5 +87,42 @@ public class TestStringUtil {
     String spaceDelimiter = " ";
     assertEquals("\\u0020", StringUtils.unicodeEscapedDelimiter(spaceDelimiter));
     assertEquals(spaceDelimiter, StringEscapeUtils.unescapeJava(StringUtils.unicodeEscapedDelimiter(spaceDelimiter)));
+  }
+
+  @Test
+  public void testAsciiBytes() {
+    String asciiText = "abcde 12345 ABCDE";
+    assertArrayEquals(asciiText.getBytes(), BytesUtils.toASCIIBytes(asciiText.toCharArray()));
+  }
+
+  @Test
+  public void testSplitBytes() {
+    String text = "abcde|12345|ABCDE";
+    char separatorChar = '|';
+
+    String[] textArray = org.apache.commons.lang.StringUtils.splitPreserveAllTokens(text, separatorChar);
+    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar);
+
+    assertEquals(textArray.length, bytesArray.length);
+    for (int i = 0; i < textArray.length; i++){
+      assertArrayEquals(textArray[i].getBytes(), bytesArray[i]);
+    }
+  }
+
+  @Test
+  public void testSplitProjectionBytes() {
+    String text = "abcde|12345|ABCDE";
+    int[] target = new int[]{ 1 };
+    char separatorChar = '|';
+
+    String[] textArray = org.apache.commons.lang.StringUtils.splitPreserveAllTokens(text, separatorChar);
+    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar, target);
+
+    assertEquals(textArray.length, bytesArray.length);
+
+    assertNull(bytesArray[0]);
+    assertNotNull(bytesArray[1]);
+    assertArrayEquals(textArray[1].getBytes(), bytesArray[1]);
+    assertNull(bytesArray[2]);
   }
 }

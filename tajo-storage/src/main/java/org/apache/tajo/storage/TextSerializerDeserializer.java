@@ -26,6 +26,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -132,11 +133,11 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case INT1:
       case INT2:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt2((short) Bytes.parseInt(bytes, offset, length));
+            : DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, offset, length));
         break;
       case INT4:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt4(Bytes.parseInt(bytes, offset, length));
+            : DatumFactory.createInt4(NumberUtil.parseInt(bytes, offset, length));
         break;
       case INT8:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
@@ -148,7 +149,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case FLOAT8:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createFloat8(Bytes.parseDouble(bytes, offset, length));
+            : DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, offset, length));
         break;
       case TEXT: {
         byte[] chars = new byte[length];

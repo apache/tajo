@@ -133,4 +133,11 @@ public class TestCaseByCases extends QueryTestCaseBase {
     assertEquals(expected, resultSetToString(res));
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testTAJO917Case1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

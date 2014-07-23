@@ -26,6 +26,8 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
@@ -196,7 +198,19 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
       expr.setNamedExprs(rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]));
     }
 
+    // 1) Normalize field names into full qualified names
+    // 2) Register explicit column aliases to block
     NamedExpr[] projectTargetExprs = expr.getNamedExprs();
+    NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
+    for (int i = 0; i < expr.getNamedExprs().length; i++) {
+      NamedExpr namedExpr = projectTargetExprs[i];
+      normalizer.visit(ctx, new Stack<Expr>(), namedExpr.getExpr());
+
+      if (namedExpr.getExpr().getType() == OpType.Column && namedExpr.hasAlias()) {
+        ctx.currentBlock.addColumnAlias(((ColumnReferenceExpr)namedExpr.getExpr()).getCanonicalName(),
+            namedExpr.getAlias());
+      }
+    }
 
     Target [] targets;
     targets = new Target[projectTargetExprs.length];
@@ -217,6 +231,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     ProjectionNode projectionNode = ctx.plan.createNode(ProjectionNode.class);
     projectionNode.setInSchema(child.getOutSchema());
     projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
+
+    ctx.currentBlock.setSchema(projectionNode.getOutSchema());
     return projectionNode;
   }
 
@@ -267,7 +283,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
 
     for (int i = 0; i < finalTargetNum; i++) {
       NamedExpr namedExpr = projection.getNamedExprs()[i];
-      EvalNode evalNode = annotator.createEvalNode(ctx.plan, ctx.currentBlock, namedExpr.getExpr());
+      EvalNode evalNode = annotator.createEvalNode(ctx.plan, ctx.currentBlock, namedExpr.getExpr(),
+          NameResolvingMode.SUBEXPRS_AND_RELS);
 
       if (namedExpr.hasAlias()) {
         targets[i] = new Target(evalNode, namedExpr.getAlias());
@@ -460,5 +477,18 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     insertNode.setInSchema(child.getOutSchema());
     insertNode.setOutSchema(child.getOutSchema());
     return insertNode;
+  }
+
+  class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PreprocessContext, Object> {
+    @Override
+    public Expr visitColumnReference(PreprocessContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
+        throws PlanningException {
+
+      String normalized = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr,
+      NameResolvingMode.RELS_ONLY).getQualifiedName();
+      expr.setName(normalized);
+
+      return expr;
+    }
   }
 }
