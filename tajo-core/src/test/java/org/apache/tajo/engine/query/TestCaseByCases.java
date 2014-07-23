@@ -71,7 +71,7 @@ public class TestCaseByCases extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testTAJO880_1() throws Exception {
+  public final void testTAJO880Case1() throws Exception {
     //TAJO-880: NULL in CASE clause occurs Exception.
     ResultSet res = executeString(
         "select case when l_returnflag != 'R' then l_orderkey else null end from lineitem"
@@ -91,7 +91,7 @@ public class TestCaseByCases extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testTAJO880_2() throws Exception {
+  public final void testTAJO880Case2() throws Exception {
     //TAJO-880: NULL in CASE clause occurs Exception.
     ResultSet res = executeString(
         "select case when l_returnflag != 'R' then null else l_orderkey end from lineitem"
@@ -111,7 +111,7 @@ public class TestCaseByCases extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testTAJO880_3() throws Exception {
+  public final void testTAJO880Case3() throws Exception {
     //TAJO-880: NULL in CASE clause occurs Exception.
     ResultSet res = executeString(
         "select case " +
@@ -131,6 +131,38 @@ public class TestCaseByCases extends QueryTestCaseBase {
             "null\n";
 
     assertEquals(expected, resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO914Case1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO914Case2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO914Case3() throws Exception {
+    executeString("CREATE TABLE T3 (l_orderkey bigint, col1 text);").close();
+    ResultSet res = executeQuery();
+    res.close();
+
+    res = executeString("select * from T3;");
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testTAJO914Case4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
