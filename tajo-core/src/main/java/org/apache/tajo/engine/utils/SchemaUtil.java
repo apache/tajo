@@ -23,6 +23,16 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 
 public class SchemaUtil {
+  // See TAJO-914 bug.
+  //
+  // Its essential problem is that constant value is evaluated multiple times at each scan.
+  // As a result, join nodes can take the child nodes which have the same named fields.
+  // Because current schema does not allow the same name and ignore the duplicated schema,
+  // it finally causes the in-out schema mismatch between the parent and child nodes.
+  //
+  // tmpColumnSeq is a hack to avoid the above problem by keeping duplicated constant values as different name fields.
+  // The essential solution would be https://issues.apache.org/jira/browse/TAJO-895.
+  static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
     Schema merged = new Schema();
     for(Column col : left.getColumns()) {
@@ -31,11 +41,16 @@ public class SchemaUtil {
       }
     }
     for(Column col : right.getColumns()) {
-      if (!merged.containsByQualifiedName(col.getQualifiedName())) {
+      if (merged.containsByQualifiedName(col.getQualifiedName())) {
+        merged.addColumn("?fake" + (tmpColumnSeq++), col.getDataType());
+      } else {
         merged.addColumn(col);
       }
     }
-    
+
+    if (tmpColumnSeq > Integer.MAX_VALUE) {
+      tmpColumnSeq = 0;
+    }
     return merged;
   }
 
