@@ -43,7 +43,7 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -177,16 +177,16 @@ public class SequenceFileAppender extends FileAppender {
 
             switch (schema.getColumn(j).getDataType().getType()) {
               case TEXT:
-                Bytes.writeVLong(os, datum.asTextBytes().length);
+                BytesUtils.writeVLong(os, datum.asTextBytes().length);
                 break;
               case PROTOBUF:
                 ProtobufDatum protobufDatum = (ProtobufDatum) datum;
-                Bytes.writeVLong(os, protobufDatum.asByteArray().length);
+                BytesUtils.writeVLong(os, protobufDatum.asByteArray().length);
                 break;
               case CHAR:
               case INET4:
               case BLOB:
-                Bytes.writeVLong(os, datum.asByteArray().length);
+                BytesUtils.writeVLong(os, datum.asByteArray().length);
                 break;
               default:
             }

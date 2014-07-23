@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -69,7 +69,7 @@ public class TestLazyTuple {
     sb.append(DatumFactory.createInet4("192.168.0.1")).append('|');
     sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
-    textRow = Bytes.splitPreserveAllTokens(sb.toString().getBytes(), '|');
+    textRow = BytesUtils.splitPreserveAllTokens(sb.toString().getBytes(), '|');
     serde = new TextSerializerDeserializer();
   }
 
@@ -220,7 +220,7 @@ public class TestLazyTuple {
 
   @Test
   public void testInvalidNumber() {
-    byte[][] bytes = Bytes.splitPreserveAllTokens(" 1| |2 ||".getBytes(), '|');
+    byte[][] bytes = BytesUtils.splitPreserveAllTokens(" 1| |2 ||".getBytes(), '|');
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);

@@ -600,11 +600,17 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testConcat() throws IOException {
     testSimpleEval("select concat('333', '22') ", new String[]{"33322"});
     testSimpleEval("select concat('한글', '22') ", new String[]{"한글22"});
+    testSimpleEval("select concat(null, '22') ", new String[]{"22"});
+    testSimpleEval("select concat('22',null) ", new String[]{"22"});
+    testSimpleEval("select concat('22',null, '33', null, '44') ", new String[]{"223344"});
   }
 
   @Test
   public void testConcat_ws() throws IOException {
     testSimpleEval("select concat_ws(',', '333', '22') ", new String[]{"333,22"});
     testSimpleEval("select concat_ws(',', '한글', '22') ", new String[]{"한글,22"});
+    testSimpleEval("select concat_ws(',', '22', null) ", new String[]{"22"});
+    testSimpleEval("select concat_ws(',', '22', '33', '33') ", new String[]{"22,33,33"});
+    testSimpleEval("select concat_ws(',', null, '22') ", new String[]{"22"});
   }
 }
