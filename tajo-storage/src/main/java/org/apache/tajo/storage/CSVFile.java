@@ -40,7 +40,7 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -466,8 +466,8 @@ public class CSVFile {
           offset = fileOffsets.get(currentIdx);
         }
 
-        byte[][] cells = Bytes.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
-            rowLengthList.get(currentIdx),  delimiter, targetColumnIndexes);
+        byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
+            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes);
         currentIdx++;
         return new LazyTuple(schema, cells, offset, nullChars, serde);
       } catch (Throwable t) {

@@ -32,6 +32,8 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -66,16 +68,19 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   static class Context {
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
+    NameResolvingMode columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block) {
+    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, NameResolvingMode colRsvLevel) {
       this.plan = plan;
       this.currentBlock = block;
+      this.columnRsvLevel = colRsvLevel;
     }
   }
 
-  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr)
+  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr,
+                                 NameResolvingMode colRsvLevel)
       throws PlanningException {
-    Context context = new Context(plan, block);
+    Context context = new Context(plan, block, colRsvLevel);
     return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
   }
 
@@ -540,7 +545,20 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitColumnReference(Context ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
-    Column column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+    Column column;
+
+    switch (ctx.columnRsvLevel) {
+    case LEGACY:
+      column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+      break;
+    case RELS_ONLY:
+    case RELS_AND_SUBEXPRS:
+    case SUBEXPRS_AND_RELS:
+      column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel);
+      break;
+    default:
+      throw new PlanningException("Unsupported column resolving level: " + ctx.columnRsvLevel.name());
+    }
     return new FieldEval(column);
   }
 

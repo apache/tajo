@@ -1,0 +1,1 @@
+select l_orderkey, l_partkey from lineitem;
