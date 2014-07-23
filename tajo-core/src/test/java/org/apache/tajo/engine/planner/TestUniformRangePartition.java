@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.google.common.primitives.UnsignedInts;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;

@@ -127,6 +127,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     return ranges.toArray(new TupleRange[ranges.size()]);
   }
 
+  /**
+   * It normalizes the start and end keys to have the same length bytes if they are texts or bytes.
+   *
+   * @param sortSpecs The sort specs
+   * @param range Tuple range to be normalize
+   */
   public static void normalize(final SortSpec [] sortSpecs, TupleRange range) {
     // normalize text fields to have same bytes length
     for (int i = 0; i < sortSpecs.length; i++) {
@@ -152,6 +158,13 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     }
   }
 
+  /**
+   * Normalized keys have padding values, but it will cause the key mismatch in pull server.
+   * So, it denormalize the normalized keys again.
+   *
+   * @param sortSpecs The sort specs
+   * @param range Tuple range to be denormalized
+   */
   public static void denormalize(SortSpec [] sortSpecs, TupleRange range) {
     for (int i = 0; i < sortSpecs.length; i++) {
       if (sortSpecs[i].getSortKey().getDataType().getType() == TajoDataTypes.Type.TEXT) {

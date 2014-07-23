@@ -180,7 +180,14 @@ public class BytesUtils {
     return (byte[][]) list.toArray(new byte[list.size()][]);
   }
 
-
+  /**
+   * It gets the maximum length among all given the array of bytes.
+   * Then, it adds padding (i.e., \0) to byte arrays which are shorter
+   * than the maximum length.
+   *
+   * @param bytes Byte arrays to be padded
+   * @return The array of padded bytes
+   */
   public static byte[][] padBytes(byte []...bytes) {
     byte [][] padded = new byte[bytes.length][];
 
