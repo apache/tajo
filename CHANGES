@@ -97,6 +97,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-968: Self-Join query (including partitioned table) doesn't run unexpectedly 
+    using auto broadcast join. (jaewha)
+
     TAJO-666: java.nio.BufferOverflowException occurs when the query includes an order by 
     clause on a TEXT column. (Mai Hai Thanh via jihoon)
 
