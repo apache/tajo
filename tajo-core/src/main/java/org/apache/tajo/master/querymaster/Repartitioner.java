@@ -636,8 +636,14 @@ public class Repartitioner {
         for (FetchImpl fetch: fetches) {
           String rangeParam =
               TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
-          fetch.setRangeParams(rangeParam);
-          fetchSet.add(fetch);
+          FetchImpl copy = null;
+          try {
+            copy = fetch.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+          }
+          copy.setRangeParams(rangeParam);
+          fetchSet.add(copy);
         }
         map.put(ranges[i], fetchSet);
       }
