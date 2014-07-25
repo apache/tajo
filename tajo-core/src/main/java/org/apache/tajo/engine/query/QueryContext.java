@@ -20,37 +20,64 @@ package org.apache.tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.InstantConfig;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.util.KeyValueSet;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public class QueryContext extends KeyValueSet {
+
+  public static enum QueryVars implements InstantConfig {
+    COMMAND_TYPE,
+    STAGING_DIR(),
+    OUTPUT_TABLE_NAME(),
+    OUTPUT_TABLE_PATH(),
+    OUTPUT_PARTITIONS(),
+    OUTPUT_OVERWRITE(),
+    OUTPUT_AS_DIRECTORY(),
+    OUTPUT_PER_FILE_SIZE(),
+    ;
+
+    QueryVars() {
+    }
+
+    public String key() {
+      return PREFIX + name();
+    }
+  }
+
   private static final Log LOG = LogFactory.getLog(QueryContext.class);
-
-  public static final String COMMAND_TYPE = "tajo.query.command";
-
-  public static final String STAGING_DIR = "tajo.query.staging_dir";
-
-  public static final String USER_NAME = "tajo.query.username";
-
-  public static final String OUTPUT_TABLE_NAME = "tajo.query.output.table";
-  public static final String OUTPUT_TABLE_PATH = "tajo.query.output.path";
-  public static final String OUTPUT_PARTITIONS = "tajo.query.output.partitions";
-  public static final String OUTPUT_OVERWRITE = "tajo.query.output.overwrite";
-  public static final String OUTPUT_AS_DIRECTORY = "tajo.query.output.asdirectory";
-  public static final String OUTPUT_PER_FILE_SIZE = "tajo.query.output.perfile-size-bytes";
 
   public static final String TRUE_VALUE = "true";
   public static final String FALSE_VALUE = "false";
 
-  public QueryContext() {}
+  private final TajoConf conf;
 
-  public QueryContext(KeyValueSetProto proto) {
+  public QueryContext() {
+    this(new TajoConf());
+  }
+
+  public QueryContext(final TajoConf conf) {
+    this.conf = conf;
+  }
+
+  public QueryContext(final TajoConf conf, KeyValueSetProto proto) {
     super(proto);
+    this.conf = conf;
+  }
+
+  public TajoConf getConf() {
+    return conf;
+  }
+
+  public void put(QueryVars key, String val) {
+    put(key.key(), val);
   }
 
   public void put(TajoConf.ConfVars key, String value) {
@@ -61,12 +88,29 @@ public class QueryContext extends KeyValueSet {
     return get(key.varname);
   }
 
+  public String get(SessionVars key) {
+    return get(key.name());
+  }
+
+  public String get(QueryVars key) {
+    return get(key.key());
+  }
+
   public String get(String key) {
     return super.get(key);
   }
 
+  public void setBool(QueryVars key, boolean val) {
+    put(key.key(), val ? TRUE_VALUE : FALSE_VALUE);
+  }
+
   public void setBool(String key, boolean val) {
     put(key, val ? TRUE_VALUE : FALSE_VALUE);
+  }
+
+  public boolean getBool(QueryVars key) {
+    String strVal = get(key);
+    return strVal != null ? strVal.equalsIgnoreCase(TRUE_VALUE) : false;
   }
 
   public boolean getBool(String key) {
@@ -75,19 +119,19 @@ public class QueryContext extends KeyValueSet {
   }
 
   public void setUser(String username) {
-    put(USER_NAME, username);
+    put(SessionVars.USER_NAME.getConfVars(), username);
   }
 
   public String getUser() {
-    return get(USER_NAME);
+    return get(SessionVars.USER_NAME);
   }
 
   public void setStagingDir(Path path) {
-    put(STAGING_DIR, path.toUri().toString());
+    put(QueryVars.STAGING_DIR, path.toUri().toString());
   }
 
   public Path getStagingDir() {
-    String strVal = get(STAGING_DIR);
+    String strVal = get(QueryVars.STAGING_DIR);
     return strVal != null ? new Path(strVal) : null;
   }
 
@@ -97,7 +141,7 @@ public class QueryContext extends KeyValueSet {
    * This config is not set if a query has INSERT (OVERWRITE) INTO LOCATION '/path/..'.
    */
   public boolean hasOutputTable() {
-    return get(OUTPUT_TABLE_NAME) != null;
+    return get(QueryVars.OUTPUT_TABLE_NAME) != null;
   }
 
   /**
@@ -106,11 +150,11 @@ public class QueryContext extends KeyValueSet {
    * @param tableName The target table name
    */
   public void setOutputTable(String tableName) {
-    put(OUTPUT_TABLE_NAME, tableName);
+    put(QueryVars.OUTPUT_TABLE_NAME, tableName);
   }
 
   public String getOutputTable() {
-    String strVal = get(OUTPUT_TABLE_NAME);
+    String strVal = get(QueryVars.OUTPUT_TABLE_NAME);
     return strVal != null ? strVal : null;
   }
 
@@ -121,52 +165,48 @@ public class QueryContext extends KeyValueSet {
    * @return
    */
   public boolean hasOutputPath() {
-    return get(OUTPUT_TABLE_PATH) != null;
+    return get(QueryVars.OUTPUT_TABLE_PATH) != null;
   }
 
   public void setOutputPath(Path path) {
-    put(OUTPUT_TABLE_PATH, path.toUri().toString());
+    put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
   }
 
   public Path getOutputPath() {
-    String strVal = get(OUTPUT_TABLE_PATH);
+    String strVal = get(QueryVars.OUTPUT_TABLE_PATH);
     return strVal != null ? new Path(strVal) : null;
   }
 
   public boolean hasPartition() {
-    return get(OUTPUT_PARTITIONS) != null;
+    return get(QueryVars.OUTPUT_PARTITIONS) != null;
   }
 
   public void setPartitionMethod(PartitionMethodDesc partitionMethodDesc) {
-    put(OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
+    put(QueryVars.OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
   }
 
   public PartitionMethodDesc getPartitionMethod() {
-    return PartitionMethodDesc.fromJson(get(OUTPUT_PARTITIONS));
+    return PartitionMethodDesc.fromJson(get(QueryVars.OUTPUT_PARTITIONS));
   }
 
   public void setOutputOverwrite() {
-    setBool(OUTPUT_OVERWRITE, true);
+    setBool(QueryVars.OUTPUT_OVERWRITE, true);
   }
 
   public boolean isOutputOverwrite() {
-    return getBool(OUTPUT_OVERWRITE);
+    return getBool(QueryVars.OUTPUT_OVERWRITE);
   }
 
   public void setFileOutput() {
-    setBool(OUTPUT_AS_DIRECTORY, true);
-  }
-
-  public boolean isFileOutput() {
-    return getBool(OUTPUT_AS_DIRECTORY);
+    setBool(QueryVars.OUTPUT_AS_DIRECTORY, true);
   }
 
   public void setCommandType(NodeType nodeType) {
-    put(COMMAND_TYPE, nodeType.name());
+    put(QueryVars.COMMAND_TYPE, nodeType.name());
   }
 
   public NodeType getCommandType() {
-    String strVal = get(COMMAND_TYPE);
+    String strVal = get(QueryVars.COMMAND_TYPE);
     return strVal != null ? NodeType.valueOf(strVal) : null;
   }
 
@@ -184,14 +224,6 @@ public class QueryContext extends KeyValueSet {
 
   public boolean isInsert() {
     return getCommandType() == NodeType.INSERT;
-  }
-
-  public void setHiveQueryMode() {
-    setBool("hive.query.mode", true);
-  }
-
-  public boolean isHiveQueryMode() {
-    return getBool("hive.query.mode");
   }
 
   public static boolean getBoolVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {

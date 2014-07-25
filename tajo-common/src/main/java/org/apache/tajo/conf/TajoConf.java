@@ -81,7 +81,7 @@ public class TajoConf extends Configuration {
     try {
       if (CURRENT_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.TAJO_TIMEZONE));
+        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.TIMEZONE));
       }
       return CURRENT_TIMEZONE;
     } finally {
@@ -105,7 +105,7 @@ public class TajoConf extends Configuration {
     try {
       if (DATE_ORDER < 0) {
         TajoConf tajoConf = new TajoConf();
-        String dateOrder = tajoConf.getVar(ConfVars.TAJO_DATE_ORDER);
+        String dateOrder = tajoConf.getVar(ConfVars.DATE_ORDER);
         if ("YMD".equals(dateOrder)) {
           DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
         } else if ("DMY".equals(dateOrder)) {
@@ -329,8 +329,8 @@ public class TajoConf extends Configuration {
     CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     //TIME & DATE
-    TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
-    TAJO_DATE_ORDER("tajo.date.order", "YMD"),
+    TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
+    DATE_ORDER("tajo.date.order", "YMD"),
 
     //PLANNER
     PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),

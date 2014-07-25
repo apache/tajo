@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -193,7 +195,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (!p.hasQueryContext()) {
       return null;
     }
-    this.queryContext = new QueryContext(p.getQueryContext());
+    this.queryContext = new QueryContext(new TajoConf(), p.getQueryContext());
     return this.queryContext;
   }
 
