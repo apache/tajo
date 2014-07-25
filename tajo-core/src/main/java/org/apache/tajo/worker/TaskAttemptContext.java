@@ -31,8 +31,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.TUtil;
 
 import java.io.File;
 import java.util.*;
@@ -238,10 +240,30 @@ public class TaskAttemptContext {
       tableFragments = new ArrayList<FragmentProto>();
     }
 
+    List<Path> paths = fragmentToPath(tableFragments);
+
     for (FragmentProto eachFragment: fragments) {
-      tableFragments.add(eachFragment);
+      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
+      // If current attempt already has same path, we don't need to add it to fragments.
+      if (!paths.contains(fileFragment.getPath())) {
+        tableFragments.add(eachFragment);
+      }
     }
-    fragmentMap.put(tableId, tableFragments);
+
+    if (tableFragments.size() > 0) {
+      fragmentMap.put(tableId, tableFragments);
+    }
+  }
+
+  private List<Path> fragmentToPath(List<FragmentProto> tableFragments) {
+    List<Path> list = TUtil.newList();
+
+    for (FragmentProto proto : tableFragments) {
+      FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
+      list.add(fragment.getPath());
+    }
+
+    return list;
   }
 
   public Path getWorkDir() {

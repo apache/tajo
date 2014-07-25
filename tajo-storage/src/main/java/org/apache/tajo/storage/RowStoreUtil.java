@@ -174,7 +174,7 @@ public class RowStoreUtil {
     }
     public byte [] toBytes(Tuple tuple) {
       nullFlags.clear();
-      int size = 4096; // 4kb
+      int size = estimateTupleDataSize(tuple);
       ByteBuffer bb = ByteBuffer.allocate(size + headerSize);
       bb.position(headerSize);
       Column col;
@@ -234,6 +234,44 @@ public class RowStoreUtil {
       byte [] buf = new byte [bb.limit()];
       bb.get(buf);
       return buf;
+    }
+
+    // Note that, NULL values are treated separately
+    private int estimateTupleDataSize(Tuple tuple) {
+      int size = 0;
+      Column col;
+
+      for (int i = 0; i < schema.size(); i++) {
+        if (tuple.isNull(i)) {
+          continue;
+        }
+
+        col = schema.getColumn(i);
+        switch (col.getDataType().getType()) {
+          case BOOLEAN:
+          case BIT:
+          case CHAR: size += 1; break;
+          case INT2: size += 2; break;
+          case DATE:
+          case INT4:
+          case FLOAT4: size += 4; break;
+          case TIME:
+          case TIMESTAMP:
+          case INT8:
+          case FLOAT8: size += 8; break;
+          case INTERVAL: size += 12; break;
+          case TEXT:
+          case BLOB: size += (4 + tuple.get(i).asByteArray().length); break;
+          case INET4:
+          case INET6: size += tuple.get(i).asByteArray().length; break;
+          default:
+            size += 4;
+        }
+      }
+
+      size += 100; // optimistic reservation
+
+      return size;
     }
 
     public Schema getSchema() {
