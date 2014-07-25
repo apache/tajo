@@ -23,17 +23,10 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -54,25 +47,9 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   private Appender appender;
   private TableStats aggregated;
 
-  // for file rotating
-  private long maxPerFileSize = Long.MAX_VALUE;
-  private int writtenFileNum = 0;
-  private Path lastFileName;
-  private long writtenTupleSize = 0;
-
   public SortBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
     super(context, plan, child);
-
-    if (context.getQueryContext().get(QueryContext.OUTPUT_PER_FILE_SIZE) != null) {
-      maxPerFileSize = Long.valueOf(context.getQueryContext().get(QueryContext.OUTPUT_PER_FILE_SIZE));
-    }
-
-    if (plan instanceof InsertNode) {
-      String nullChar = context.getQueryContext().get(TajoConf.ConfVars.CSVFILE_NULL.varname,
-          TajoConf.ConfVars.CSVFILE_NULL.defaultVal);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-    }
   }
 
   public void init() throws IOException {
@@ -82,39 +59,9 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     aggregated = new TableStats();
   }
 
-  private Appender getAppenderForNewPartition(String partition) throws IOException {
-    lastFileName = getDataFile(partition);
-    FileSystem fs = lastFileName.getFileSystem(context.getConf());
-
-    if (fs.exists(lastFileName.getParent())) {
-      LOG.info("Path " + lastFileName.getParent() + " already exists!");
-    } else {
-      fs.mkdirs(lastFileName.getParent());
-      LOG.info("Add subpartition path directory :" + lastFileName.getParent());
-    }
-
-    if (fs.exists(lastFileName)) {
-      LOG.info("File " + lastFileName + " already exists!");
-      FileStatus status = fs.getFileStatus(lastFileName);
-      LOG.info("File size: " + status.getLen());
-    }
-
-    openNewFile(0);
-
+  private Appender getAppender(String partition) throws IOException {
+    this.appender = makeAppender(partition);
     return appender;
-  }
-
-  public void openNewFile(int suffixId) throws IOException {
-    Path actualFilePath = lastFileName;
-    if (suffixId > 0) {
-      actualFilePath = new Path(lastFileName + "_" + suffixId);
-    }
-
-    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-        outSchema, actualFilePath);
-
-    appender.enableStats();
-    appender.init();
   }
 
   private void fillKeyTuple(Tuple inTuple, Tuple keyTuple) {
@@ -145,33 +92,19 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       fillKeyTuple(tuple, currentKey);
 
       if (prevKey == null) {
-        appender = getAppenderForNewPartition(getSubdirectory(currentKey));
+        appender = getAppender(getSubdirectory(currentKey));
         prevKey = new VTuple(currentKey);
       } else {
-
-        if (!prevKey.equals(currentKey)) { // new partition
+        if (!prevKey.equals(currentKey)) {
           appender.close();
           StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
 
-          appender = getAppenderForNewPartition(getSubdirectory(currentKey));
+          appender = getAppender(getSubdirectory(currentKey));
           prevKey = new VTuple(currentKey);
-
-          // reset all states for file rotating
-          writtenTupleSize = 0;
-          writtenFileNum = 0;
         }
       }
 
       appender.addTuple(tuple);
-
-      if (maxPerFileSize <= appender.getEstimatedOutputSize()) {
-        appender.close();
-        writtenFileNum++;
-        StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
-
-        openNewFile(writtenFileNum);
-        writtenTupleSize = 0;
-      }
     }
 
     return null;

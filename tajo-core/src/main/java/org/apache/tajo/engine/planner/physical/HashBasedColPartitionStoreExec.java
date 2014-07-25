@@ -22,13 +22,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -52,12 +48,6 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
   }
 
   public void init() throws IOException {
-    if (plan instanceof InsertNode) {
-      String nullChar = context.getQueryContext().get(TajoConf.ConfVars.CSVFILE_NULL.varname,
-          TajoConf.ConfVars.CSVFILE_NULL.defaultVal);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-    }
-
     super.init();
   }
 
