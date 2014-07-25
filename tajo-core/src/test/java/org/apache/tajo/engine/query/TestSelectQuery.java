@@ -470,4 +470,40 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table11 PURGE");
     }
   }
+
+  @Test
+  public void testCaseWhenRound() throws Exception {
+    ResultSet res = executeString(
+        "select * from (select n_nationkey as key, " +
+            "case when n_nationkey > 6 then round((n_nationkey * 100 / 2.123) / (n_regionkey * 50 / 2.123), 2) else 100.0 end as val " +
+            "from nation where n_regionkey > 0 and n_nationkey > 0) a " +
+            "order by a.key"
+    );
+
+    String expected = "key,val\n" +
+        "-------------------------------\n" +
+        "1,100.0\n" +
+        "2,100.0\n" +
+        "3,100.0\n" +
+        "4,100.0\n" +
+        "6,100.0\n" +
+        "7,4.67\n" +
+        "8,8.0\n" +
+        "9,9.0\n" +
+        "10,5.0\n" +
+        "11,5.5\n" +
+        "12,12.0\n" +
+        "13,6.5\n" +
+        "17,34.0\n" +
+        "18,18.0\n" +
+        "19,12.67\n" +
+        "20,10.0\n" +
+        "21,21.0\n" +
+        "22,14.67\n" +
+        "23,15.33\n" +
+        "24,48.0\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+  }
 }

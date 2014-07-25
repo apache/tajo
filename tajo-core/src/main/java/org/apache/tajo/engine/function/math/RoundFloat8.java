@@ -23,13 +23,14 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
-import java.text.NumberFormat;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Function definition
@@ -46,19 +47,11 @@ import java.text.NumberFormat;
         @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4})}
 )
 public class RoundFloat8 extends GeneralFunction {
-  private NumberFormat numberFormat;
-  private boolean formatConstant;
-
   public RoundFloat8() {
     super(new Column[] {
         new Column("value", TajoDataTypes.Type.FLOAT8),
         new Column("roundPoint", TajoDataTypes.Type.INT4)
     });
-  }
-
-  @Override
-  public void init(FunctionEval.ParamType [] paramTypes) {
-    formatConstant = paramTypes[1] == FunctionEval.ParamType.CONSTANT;
   }
 
   @Override
@@ -70,23 +63,21 @@ public class RoundFloat8 extends GeneralFunction {
       return NullDatum.get();
     }
 
-    if (numberFormat == null || !formatConstant) {
-      numberFormat = NumberFormat.getInstance();
-      numberFormat.setGroupingUsed(false);
-      numberFormat.setMaximumFractionDigits(roundDatum.asInt4());
-    }
-
     double value = valueDatum.asFloat8();
-    int roundPnt = roundDatum.asInt4();
-    double roundNum;
+    int rountPoint = roundDatum.asInt4();
 
-    if (value > 0) {
-      roundNum = (long)(value * Math.pow(10, roundPnt) + 0.5d) / Math.pow(10, roundPnt);
-    }
-    else {
-      roundNum = (long)(value * Math.pow(10, roundPnt) - 0.5d) / Math.pow(10, roundPnt);
+    if (Double.isNaN(value)) {
+      throw new InvalidOperationException("value is not a number");
     }
 
-    return DatumFactory.createText(numberFormat.format(roundNum));
+    if (Double.isInfinite(value)) {
+      throw new InvalidOperationException("/ by zero");
+    }
+
+    try {
+      return DatumFactory.createFloat8(BigDecimal.valueOf(value).setScale(rountPoint, RoundingMode.HALF_UP).doubleValue());
+    } catch (Exception e) {
+      throw new InvalidOperationException("RoundFloat8 eval error cause " + e.getMessage() + ", value=" + value + ", round point=" + rountPoint);
+    }
   }
 }
