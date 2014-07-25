@@ -63,6 +63,10 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public int size() {
     return keyVals.size();
   }
+
+  public boolean containsKey(String key) {
+    return this.keyVals.containsKey(key);
+  }
 	
 	public void put(String key, String val) {
 		this.keyVals.put(key, val);

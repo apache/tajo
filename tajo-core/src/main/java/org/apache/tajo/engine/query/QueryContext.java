@@ -76,7 +76,7 @@ public class QueryContext extends KeyValueSet {
     return conf;
   }
 
-  public void put(QueryVars key, String val) {
+  public void put(InstantConfig key, String val) {
     put(key.key(), val);
   }
 
@@ -84,31 +84,30 @@ public class QueryContext extends KeyValueSet {
     put(key.varname, value);
   }
 
+  public String get(InstantConfig key) {
+    if (containsKey(key.key())) {
+      return get(key.key());
+    } else if (key instanceof SessionVars) {
+        SessionVars sessionVar = SessionVars.get(key.key());
+        return conf.getVar(sessionVar.getConfVars());
+    } else {
+      throw new IllegalArgumentException("No Such a config key: "  + key.key());
+    }
+  }
+
   public String get(TajoConf.ConfVars key) {
-    return get(key.varname);
+    return conf.getVar(key);
   }
 
-  public String get(SessionVars key) {
-    return get(key.name());
-  }
 
-  public String get(QueryVars key) {
-    return get(key.key());
-  }
-
-  public String get(String key) {
-    return super.get(key);
-  }
-
-  public void setBool(QueryVars key, boolean val) {
+  public void setBool(InstantConfig key, boolean val) {
     put(key.key(), val ? TRUE_VALUE : FALSE_VALUE);
   }
 
-  public void setBool(String key, boolean val) {
-    put(key, val ? TRUE_VALUE : FALSE_VALUE);
-  }
-
-  public boolean getBool(QueryVars key) {
+  public boolean getBool(InstantConfig key) {
+    if (containsKey(key.key())) {
+      return get(key.key())
+    }
     String strVal = get(key);
     return strVal != null ? strVal.equalsIgnoreCase(TRUE_VALUE) : false;
   }

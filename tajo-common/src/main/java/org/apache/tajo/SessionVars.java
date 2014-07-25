@@ -18,7 +18,10 @@
 
 package org.apache.tajo;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.annotation.Nullable;
+
+import java.util.Map;
 
 import static org.apache.tajo.SessionVars.VariableMode.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
@@ -58,6 +61,15 @@ public enum SessionVars implements InstantConfig {
   OUTPUT_PER_FILE_SIZE(null, "", DEFAULT)
   ;
 
+
+  private static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
+
+  static {
+    for (SessionVars var : SessionVars.values()) {
+      SESSION_VARS.put(var.key(), var);
+    }
+  }
+
   private final ConfVars key;
   private final String description;
   private final VariableMode mode;
@@ -68,8 +80,16 @@ public enum SessionVars implements InstantConfig {
     FROM_SHELL_ENV
   }
 
+  public static boolean exists(String name) {
+    return SESSION_VARS.containsKey(name.toUpperCase());
+  }
+
   public static SessionVars get(String name) {
-    return Enum.valueOf(SessionVars.class, name.toUpperCase());
+    if (exists(name)) {
+      return SESSION_VARS.get(name.toUpperCase());
+    } else {
+      return null;
+    }
   }
 
   SessionVars(@Nullable ConfVars key, String description, VariableMode mode) {
