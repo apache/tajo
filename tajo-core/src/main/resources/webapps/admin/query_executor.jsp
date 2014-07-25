@@ -26,11 +26,9 @@
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
   HAService haService = master.getContext().getHAService();
-  String activeLabel;
-  if (haService == null) {
-    activeLabel = "";
-  } else {
-    if (haService.isActiveStatus()) {
+  String activeLabel = "";
+  if (haService != null) {
+      if (haService.isActiveStatus()) {
       activeLabel = "<font color='#1e90ff'>(active)</font>";
     } else {
       activeLabel = "<font color='#1e90ff'>(backup)</font>";

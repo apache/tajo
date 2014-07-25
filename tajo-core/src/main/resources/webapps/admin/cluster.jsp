@@ -28,6 +28,7 @@
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -74,7 +75,18 @@
   String deadQueryMastersHtml = deadQueryMasters.isEmpty() ? "0": "<font color='red'>" + deadQueryMasters.size() + "</font>";
 
   HAService haService = master.getContext().getHAService();
-  List<TajoMasterInfo> masters = haService != null ? haService.getMasters() : null;
+  List<TajoMasterInfo> masters = TUtil.newList();
+
+  String activeLabel = "";
+  if (haService != null) {
+    if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
+    }
+
+    masters.addAll(haService.getMasters());
+  }
 
   int numLiveMasters = 0;
   int numDeadMasters = 0;
@@ -86,19 +98,7 @@
       numDeadMasters++;
     }
   }
-
   String deadMasterHtml = numDeadMasters == 0 ? "0": "<font color='red'>" + numDeadMasters +"</font>";
-
-  String activeLabel;
-  if (haService == null) {
-    activeLabel = "";
-  } else {
-    if (haService.isActiveStatus()) {
-      activeLabel = "<font color='#1e90ff'>(active)</font>";
-    } else {
-      activeLabel = "<font color='#1e90ff'>(backup)</font>";
-    }
-  }
 
 %>
 

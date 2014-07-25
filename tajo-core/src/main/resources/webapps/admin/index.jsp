@@ -29,6 +29,7 @@
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Collection" %>
@@ -115,22 +116,24 @@
     avgQueryTime = (int)(totalTime / (long)finishedQueries.size());
   }
 
+
   HAService haService = master.getContext().getHAService();
-  String activeLabel;
-  if (haService == null) {
-    activeLabel = "";
-  } else {
+  List<TajoMasterInfo> masters = TUtil.newList();
+
+  String activeLabel = "";
+  if (haService != null) {
     if (haService.isActiveStatus()) {
       activeLabel = "<font color='#1e90ff'>(active)</font>";
     } else {
       activeLabel = "<font color='#1e90ff'>(backup)</font>";
     }
+
+    masters.addAll(haService.getMasters());
   }
 
   int numLiveMasters = 0;
   int numDeadMasters = 0;
 
-  List<TajoMasterInfo> masters = haService.getMasters();
   for(TajoMasterInfo eachMaster : masters) {
     if (eachMaster.isAvailable()) {
       numLiveMasters++;

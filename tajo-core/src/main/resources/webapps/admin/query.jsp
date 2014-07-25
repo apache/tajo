@@ -58,10 +58,8 @@
   }
 
   HAService haService = master.getContext().getHAService();
-  String activeLabel;
-  if (haService == null) {
-    activeLabel = "";
-  } else {
+  String activeLabel = "";
+  if (haService != null) {
     if (haService.isActiveStatus()) {
       activeLabel = "<font color='#1e90ff'>(active)</font>";
     } else {
