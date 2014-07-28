@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -102,7 +103,7 @@ public class Int4Datum extends NumericDatum {
 
   @Override
   public int hashCode() {
-    return val;
+    return MurmurHash.hash(val);
   }
 
   public boolean equals(Object obj) {
