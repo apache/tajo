@@ -98,7 +98,7 @@ Release 0.9.0 - unreleased
   BUG FIXES
 
     TAJO-974: Eliminate unexpected case condition in SubQuery. (Hyoungjun Kim 
-    via hyunsik)
+    via hyunsik) 
 
     TAJO-977: INSERT into a partitioned table as SELECT statement uses a wrong 
     schema. (Hyoungjun Kim via hyunsik)
