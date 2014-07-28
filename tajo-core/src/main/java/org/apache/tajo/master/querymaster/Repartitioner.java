@@ -726,12 +726,21 @@ public class Repartitioner {
       }
     }
 
+    int groupingColumns = 0;
     GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
+    if (groupby != null) {
+      groupingColumns = groupby.getGroupingColumns().length;
+    } else {
+      DistinctGroupbyNode dGroupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+      if (dGroupby != null) {
+        groupingColumns = dGroupby.getGroupingColumns().length;
+      }
+    }
     // get a proper number of tasks
     int determinedTaskNum = Math.min(maxNum, finalFetches.size());
     LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetches.size());
 
-    if (groupby != null && groupby.getGroupingColumns().length == 0) {
+    if (groupingColumns == 0) {
       determinedTaskNum = 1;
       LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
     } else {

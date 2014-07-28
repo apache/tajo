@@ -97,6 +97,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-974: Eliminate unexpected case condition in SubQuery. (Hyoungjun Kim 
+    via hyunsik)
+
     TAJO-977: INSERT into a partitioned table as SELECT statement uses a wrong 
     schema. (Hyoungjun Kim via hyunsik)
 
@@ -112,8 +115,8 @@ Release 0.9.0 - unreleased
     TAJO-972: Broadcast join with left outer join returns duplicated rows.
     (Hyoungjun Kim via jaehwa)
 
-    TAJO-666: java.nio.BufferOverflowException occurs when the query includes an order by 
-    clause on a TEXT column. (Mai Hai Thanh via jihoon)
+    TAJO-666: java.nio.BufferOverflowException occurs when the query includes 
+    an order by clause on a TEXT column. (Mai Hai Thanh via jihoon)
 
     TAJO-939: Refactoring the column resolver in LogicalPlan. (hyunsik)
 
