@@ -315,7 +315,7 @@ public class TestRightOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuterMergeJoin0");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -352,7 +352,7 @@ public class TestRightOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuterMergeJoin1");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -388,7 +388,7 @@ public class TestRightOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuterMergeJoin2");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -424,7 +424,7 @@ public class TestRightOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, dep4Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuter_MergeJoin3");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -462,7 +462,7 @@ public class TestRightOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, phone3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuter_MergeJoin4");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -499,7 +499,7 @@ public class TestRightOuterMergeJoinExec {
 
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testRightOuterMergeJoin5");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 

@@ -143,7 +143,7 @@ public class TestRangeRetrieverHandler {
 
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());
@@ -267,7 +267,7 @@ public class TestRangeRetrieverHandler {
     FileFragment[] frags = sm.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
 
     TaskAttemptContext
-        ctx = new TaskAttemptContext(conf, new QueryContext(conf),
+        ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());

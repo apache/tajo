@@ -50,7 +50,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
-  private final TajoConf conf;
   private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
   private TaskAttemptState state;
@@ -76,12 +75,10 @@ public class TaskAttemptContext {
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
 
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
-    this.conf = conf;
     this.queryContext = queryContext;
-    this.queryContext.setConf(conf);
     this.queryId = queryId;
 
     if (fragments != null) {
@@ -105,13 +102,13 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
-    return this.conf;
+    return queryContext.getConf();
   }
 
   public TaskAttemptState getState() {
