@@ -143,7 +143,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithSameConstantKeys1() throws Exception {
-    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c;
+    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c order by a;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -408,7 +408,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testHavingWithNamedTarget() throws Exception {
     // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
-    // having total >= 2 or num = 3;
+    // having total >= 2 or num = 3 order by l_orderkey, total;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
