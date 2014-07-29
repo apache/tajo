@@ -478,7 +478,7 @@ public class QueryMasterTask extends CompositeService {
         return QueryState.QUERY_NOT_ASSIGNED;
       }
     } else {
-      return query.getState();
+      return query.getState(true);
     }
   }
 

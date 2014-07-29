@@ -487,7 +487,7 @@ public class TajoCli {
       while (true) {
         // TODO - configurable
         status = client.getQueryStatus(queryId);
-        if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
+        if(status.getState() == QueryState.QUERY_NEW || status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
           Thread.sleep(Math.min(20 * initRetries, 1000));
           initRetries++;
           continue;

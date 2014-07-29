@@ -89,6 +89,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
   private final List<String> diagnostics = new ArrayList<String>();
+  private SubQueryState subQueryState;
 
   private long startTime;
   private long finishTime;
@@ -263,6 +264,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     stateMachine = stateMachineFactory.make(this);
+    subQueryState = stateMachine.getCurrentState();
   }
 
   public static boolean isRunningState(SubQueryState state) {
@@ -310,7 +312,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   public float getTaskProgress() {
     readLock.lock();
     try {
-      if (getState() == SubQueryState.NEW) {
+      if (getState(true) == SubQueryState.NEW) {
         return 0;
       } else {
         return (float)(succeededObjectCount) / (float)totalScheduledObjectsCount;
@@ -324,7 +326,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     List<QueryUnit> tempTasks = null;
     readLock.lock();
     try {
-      if (getState() == SubQueryState.NEW) {
+      if (getState(true) == SubQueryState.NEW) {
         return 0;
       } else {
         tempTasks = new ArrayList<QueryUnit>(tasks.values());
@@ -340,7 +342,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    return totalProgress/(float)tempTasks.size();
+    return totalProgress / (float) tempTasks.size();
   }
 
   public int getSucceededObjectCount() {
@@ -468,13 +470,22 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return getId().compareTo(other.getId());
   }
 
-  public SubQueryState getState() {
-    readLock.lock();
-    try {
-      return stateMachine.getCurrentState();
-    } finally {
-      readLock.unlock();
+  public SubQueryState getState(boolean async) {
+    if(async){
+      /* non-blocking call for client API */
+      return subQueryState;
+    } else {
+      readLock.lock();
+      try {
+        return stateMachine.getCurrentState();
+      } finally {
+        readLock.unlock();
+      }
     }
+  }
+
+  public SubQueryState getState() {
+    return getState(false);
   }
 
   public static TableStats[] computeStatFromUnionBlock(SubQuery subQuery) {
@@ -594,6 +605,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       SubQueryState oldState = getState();
       try {
         getStateMachine().doTransition(event.getType(), event);
+        subQueryState = getState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", eventType:" + event.getType().name()
@@ -635,6 +647,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.finalizeStats();
           state = SubQueryState.SUCCEEDED;
         } else {
+          //TODO change to async execution
           ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
           DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
           setShuffleIfNecessary(subQuery, channel);
@@ -1004,7 +1017,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
         subQuery.eventHandler.handle(
             new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
-                subQuery.getId(), allocationEvent.getAllocatedContainer()));
+                subQuery.getId(), allocationEvent.getAllocatedContainer())
+        );
 
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
       } catch (Throwable t) {

@@ -94,6 +94,7 @@ public class Query implements EventHandler<QueryEvent> {
 
   // State Machine
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
+  private QueryState queryState;
 
   // Transition Handler
   private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
@@ -231,10 +232,11 @@ public class Query implements EventHandler<QueryEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
+    queryState = stateMachine.getCurrentState();
   }
 
   public float getProgress() {
-    QueryState state = getStateMachine().getCurrentState();
+    QueryState state = getState(true);
     if (state == QueryState.QUERY_SUCCEEDED) {
       return 1.0f;
     } else {
@@ -246,9 +248,9 @@ public class Query implements EventHandler<QueryEvent> {
       float [] subProgresses = new float[tempSubQueries.size()];
       boolean finished = true;
       for (SubQuery subquery: tempSubQueries) {
-        if (subquery.getState() != SubQueryState.NEW) {
+        if (subquery.getState(true) != SubQueryState.NEW) {
           subProgresses[idx] = subquery.getProgress();
-          if (finished && subquery.getState() != SubQueryState.SUCCEEDED) {
+          if (finished && subquery.getState(true) != SubQueryState.SUCCEEDED) {
             finished = false;
           }
         } else {
@@ -337,13 +339,22 @@ public class Query implements EventHandler<QueryEvent> {
     return this.subqueries.values();
   }
 
-  public QueryState getState() {
-    readLock.lock();
-    try {
-      return stateMachine.getCurrentState();
-    } finally {
-      readLock.unlock();
+  protected QueryState getState(boolean async) {
+    if(async){
+      /* non-blocking call for client API */
+      return queryState;
+    } else {
+      readLock.lock();
+      try {
+        return stateMachine.getCurrentState();
+      } finally {
+        readLock.unlock();
+      }
     }
+  }
+
+  protected QueryState getState() {
+    return getState(false);
   }
 
   public ExecutionBlockCursor getExecutionBlockCursor() {
@@ -845,6 +856,7 @@ public class Query implements EventHandler<QueryEvent> {
       QueryState oldState = getState();
       try {
         getStateMachine().doTransition(event.getType(), event);
+        queryState = getState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", type:" + event
