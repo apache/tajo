@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
@@ -81,7 +82,7 @@ public class TajoConf extends Configuration {
     try {
       if (CURRENT_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.TIMEZONE));
+        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
       return CURRENT_TIMEZONE;
     } finally {
@@ -105,7 +106,7 @@ public class TajoConf extends Configuration {
     try {
       if (DATE_ORDER < 0) {
         TajoConf tajoConf = new TajoConf();
-        String dateOrder = tajoConf.getVar(ConfVars.DATE_ORDER);
+        String dateOrder = tajoConf.getVar(ConfVars.$DATE_ORDER);
         if ("YMD".equals(dateOrder)) {
           DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
         } else if ("DMY".equals(dateOrder)) {
@@ -133,7 +134,7 @@ public class TajoConf extends Configuration {
     }
   }
 
-  public static enum ConfVars {
+  public static enum ConfVars implements ConfigKey {
 
     //////////////////////////////////
     // Tajo System Configuration
@@ -249,8 +250,7 @@ public class TajoConf extends Configuration {
     DIST_QUERY_SORT_PARTITION_VOLUME("tajo.dist-query.sort.partition-volume-mb", 256),
     DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
 
-    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb",
-        256 * 1024 * 1024),
+    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
 
     //////////////////////////////////
     // Physical Executors
@@ -311,41 +311,46 @@ public class TajoConf extends Configuration {
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
     //////////////////////////////////
 
-    //////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
-    //////////////////////////////////
-    CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
+    //
+    // All session variables begin with dollor($) sign. They are default configs
+    // for session variables. Do not directly use the following configs. Instead,
+    // please use QueryContext in order to access session variables.
+    /////////////////////////////////////////////////////////////////////////////////
+
+    $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
 
     // Metrics
-    METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
+    $METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
     //CLI
-    CLI_MAX_COLUMN("tajo.cli.max_columns", 120),
-    CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
-    CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
-    CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
-    CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
-    CLI_NULL_CHAR("tajo.cli.nullchar", ""),
-    CLI_ERROR_STOP("tajo.cli.error.stop", false),
+    $CLI_MAX_COLUMN("tajo.cli.max_columns", 120),
+    $CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
+    $CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
+    $CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
+    $CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
+    $CLI_NULL_CHAR("tajo.cli.nullchar", ""),
+    $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
-    //TIME & DATE
-    TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
-    DATE_ORDER("tajo.date.order", "YMD"),
+    // TIME & DATE
+    $TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
+    $DATE_ORDER("tajo.date.order", "YMD"),
 
     //PLANNER
-    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
+    $PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
 
     // FILE FORMAT
-    CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+    $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
     //OPTIMIZER
-    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
+    $OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
 
     // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false),
+    $TAJO_DEBUG("tajo.debug", false),
 
     // ONLY FOR TESTCASE
-    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
+    $TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
     ;
 
     public final String varname;
@@ -426,6 +431,16 @@ public class TajoConf extends Configuration {
       }
       String typeString() { return name().toUpperCase();}
       abstract void checkType(String value) throws Exception;
+    }
+
+    @Override
+    public String keyname() {
+      return varname;
+    }
+
+    @Override
+    public ConfigType type() {
+      return ConfigType.SYSTEM;
     }
   }
 

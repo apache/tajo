@@ -451,7 +451,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     res = executeString(
         "select distinct a.col3 from " + tableName + " as a " +
             "left outer join lineitem_large b " +
-            "on a.col1 = b.l_orderkey"
+            "on a.col1 = b.l_orderkey order by a.col3"
     );
 
     assertResultSet(res);
@@ -575,8 +575,8 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testLeftOuterJoinLeftSideSmallTable() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);

@@ -32,7 +32,7 @@ public abstract class TajoShellCommand {
   protected int maxColumn;
 
   public TajoShellCommand(TajoCli.TajoCliContext context) {
-    maxColumn = context.getTajoClient().getConf().getIntVar(TajoConf.ConfVars.CLI_MAX_COLUMN);
+    maxColumn = context.getTajoClient().getConf().getIntVar(TajoConf.ConfVars.$CLI_MAX_COLUMN);
     this.context = context;
     client = context.getTajoClient();
   }

@@ -78,7 +78,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 
   public void putOption(String key, String val) {
     maybeInitBuilder();
-    options.put(key, val);
+    options.set(key, val);
   }
 
   public String getOption(String key) {

@@ -18,8 +18,17 @@
 
 package org.apache.tajo;
 
-public interface InstantConfig {
-  public static final String PREFIX = "%";
+public interface ConfigKey {
+  public static final String SESSION_PREFIX = "$";
+  public static final String QUERY_CONF_PREFIX = "%";
 
-  public String key();
+  public static enum ConfigType {
+    SYSTEM,
+    SESSION,
+    QUERY
+  }
+
+  public String keyname();
+
+  public ConfigType type();
 }

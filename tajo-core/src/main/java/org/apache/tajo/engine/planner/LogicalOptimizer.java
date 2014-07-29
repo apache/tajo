@@ -57,7 +57,7 @@ public class LogicalOptimizer {
 
   public LogicalOptimizer(TajoConf systemConf) {
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
-    if (systemConf.getBoolVar(ConfVars.PLANNER_USE_FILTER_PUSHDOWN)) {
+    if (systemConf.getBoolVar(ConfVars.$PLANNER_USE_FILTER_PUSHDOWN)) {
       rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
     }
 
@@ -90,7 +90,7 @@ public class LogicalOptimizer {
     DirectedGraphCursor<String, BlockEdge> blockCursor =
         new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
 
-    if (session == null || "true".equals(session.getVariable(ConfVars.OPTIMIZER_JOIN_ENABLE.varname, "true"))) {
+    if (session == null || "true".equals(session.getVariable(ConfVars.$OPTIMIZER_JOIN_ENABLE.varname, "true"))) {
       // default is true
       while (blockCursor.hasNext()) {
         optimizeJoinOrder(plan, blockCursor.nextBlock());

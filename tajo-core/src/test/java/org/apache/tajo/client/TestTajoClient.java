@@ -690,7 +690,7 @@ public class TestTajoClient {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(ConfVars.CSVFILE_NULL.varname, "\\\\T");
+    variables.put(ConfVars.$CSVFILE_NULL.varname, "\\\\T");
     client.updateSessionVariables(variables);
 
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);

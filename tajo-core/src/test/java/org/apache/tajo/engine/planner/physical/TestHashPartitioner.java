@@ -18,15 +18,21 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHashPartitioner {
 
@@ -80,5 +86,32 @@ public class TestHashPartitioner {
     
     int part2 = p.getPartition(tuple4);
     assertEquals(part2, p.getPartition(tuple5));    
+  }
+
+  @Test
+  public final void testGetPartition2() {
+    // https://issues.apache.org/jira/browse/TAJO-976
+    Random rand = new Random();
+    String[][] data = new String[1000][];
+
+    for (int i = 0; i < 1000; i++) {
+      data[i] = new String[]{ String.valueOf(rand.nextInt(1000)), String.valueOf(rand.nextInt(1000)), String.valueOf(rand.nextInt(1000))};
+    }
+
+    int[] testNumPartitions = new int[]{31, 62, 124, 32, 63, 125};
+    for (int index = 0; index <  testNumPartitions.length; index++) {
+      Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartitions[index]);
+
+      Set<Integer> ids = new TreeSet<Integer>();
+      for (int i = 0; i < data.length; i++) {
+        Tuple tuple = new VTuple(
+            new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});
+
+        ids.add(p.getPartition(tuple));
+      }
+
+      // The number of partitions isn't exactly matched.
+      assertTrue(ids.size() + 5 >= testNumPartitions[index]);
+    }
   }
 }

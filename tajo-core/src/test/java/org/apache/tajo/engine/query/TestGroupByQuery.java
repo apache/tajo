@@ -18,23 +18,34 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
+import org.apache.tajo.master.querymaster.Query;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestGroupByQuery extends QueryTestCaseBase {
+  private static final Log LOG = LogFactory.getLog(TestGroupByQuery.class);
 
   public TestGroupByQuery() throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
@@ -132,7 +143,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithSameConstantKeys1() throws Exception {
-    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c;
+    // select l_partkey as a, '##' as b, '##' as c, count(*) d from lineitem group by a, b, c order by a;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -280,8 +291,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // case9
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -334,8 +345,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCasebyCase2() throws Exception {
     // first distinct is smaller than second distinct.
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -397,7 +408,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testHavingWithNamedTarget() throws Exception {
     // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
-    // having total >= 2 or num = 3;
+    // having total >= 2 or num = 3 order by l_orderkey, total;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -528,5 +539,97 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testNumShufflePartition() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.TEXT);
+    schema.addColumn("col2", Type.TEXT);
+
+    List<String> data = new ArrayList<String>();
+    int totalBytes = 0;
+    Random rand = new Random(System.currentTimeMillis());
+    String col1Prefix = "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1" +
+        "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1" +
+        "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1";
+
+    Set<Integer> uniqKeys = new HashSet<Integer>();
+    while(true) {
+      int col1RandomValue = rand.nextInt(1000000);
+      uniqKeys.add(col1RandomValue);
+      String str = (col1Prefix + "-" + col1RandomValue) + "|col2-" + rand.nextInt(1000000);
+      data.add(str);
+
+      totalBytes += str.getBytes().length;
+
+      if (totalBytes > 3 * 1024 * 1024) {
+        break;
+      }
+    }
+    TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
+
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
+      ResultSet res = executeString(
+          "select col1 \n" +
+              ",count(distinct col2) as cnt1\n" +
+              "from testnumshufflepartition \n" +
+              "group by col1"
+      );
+
+      int numRows = 0;
+      while (res.next()) {
+        numRows++;
+      }
+      assertEquals(uniqKeys.size(), numRows);
+
+      // find last QueryMasterTask
+      List<QueryMasterTask> qmTasks = new ArrayList<QueryMasterTask>();
+
+      for(TajoWorker worker: testingCluster.getTajoWorkers()) {
+        qmTasks.addAll(worker.getWorkerContext().getQueryMaster().getFinishedQueryMasterTasks());
+      }
+
+      assertTrue(!qmTasks.isEmpty());
+
+      Collections.sort(qmTasks, new Comparator<QueryMasterTask>() {
+        @Override
+        public int compare(QueryMasterTask o1, QueryMasterTask o2) {
+          long l1 = o1.getQuerySubmitTime();
+          long l2 = o2.getQuerySubmitTime();
+          return l1 < l2 ? - 1 : (l1 > l2 ? 1 : 0);
+        }
+      });
+
+      // Getting the number of partitions. It should be 2.
+      Set<Integer> partitionIds = new HashSet<Integer>();
+
+      Query query = qmTasks.get(qmTasks.size() - 1).getQuery();
+      Collection<SubQuery> subQueries = query.getSubQueries();
+      assertNotNull(subQueries);
+      assertTrue(!subQueries.isEmpty());
+      for (SubQuery subQuery: subQueries) {
+        if (subQuery.getId().toStringNoPrefix().endsWith("_000001")) {
+          QueryUnit[] queryUnits = subQuery.getQueryUnits();
+          assertNotNull(queryUnits);
+          for (QueryUnit eachQueryUnit: queryUnits) {
+            for (ShuffleFileOutput output: eachQueryUnit.getShuffleFileOutputs()) {
+              partitionIds.add(output.getPartId());
+            }
+          }
+        }
+      }
+
+      assertEquals(2, partitionIds.size());
+      executeString("DROP TABLE testnumshufflepartition PURGE").close();
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
+          ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
+    }
   }
 }

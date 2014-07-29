@@ -131,7 +131,7 @@ public class TestTajoCli {
   public void testLocalQueryWithoutFrom() throws Exception {
     String sql = "select 'abc', '123'; select substr('123456', 1,3);";
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
     tajoCli.executeScript(sql);
@@ -151,7 +151,7 @@ public class TestTajoCli {
     }
     String sql = "create database \"" + databaseName + "\";";
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
@@ -179,7 +179,7 @@ public class TestTajoCli {
     String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4);";
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
@@ -211,9 +211,9 @@ public class TestTajoCli {
             "  orders.o_orderkey;\n";
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
-    tajoConf.setVar(ConfVars.CLI_NULL_CHAR, "");
+    tajoConf.setVar(ConfVars.$CLI_NULL_CHAR, "");
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
@@ -237,9 +237,9 @@ public class TestTajoCli {
         "  orders.o_orderkey;\n";
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
-    tajoConf.setVar(ConfVars.CLI_NULL_CHAR, "testnull");
+    tajoConf.setVar(ConfVars.$CLI_NULL_CHAR, "testnull");
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
@@ -278,7 +278,7 @@ public class TestTajoCli {
   @Test
   public void testStopWhenError() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    tajoConf.setVar(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoConf.setVar(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);

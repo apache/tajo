@@ -226,7 +226,7 @@ public class TajoCli {
   }
 
   private void initFormatter() throws Exception {
-    Class formatterClass = conf.getClass(ConfVars.CLI_OUTPUT_FORMATTER_CLASS.varname,
+    Class formatterClass = conf.getClass(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS.varname,
         DefaultTajoCliOutputFormatter.class);
     if (outputFormatter == null || !outputFormatter.getClass().equals(formatterClass)) {
       outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
@@ -331,7 +331,7 @@ public class TajoCli {
         exitCode = executeParsedResults(parsedResults);
         currentPrompt = updatePrompt(parser.getState());
 
-        if (exitCode != 0 && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
+        if (exitCode != 0 && context.getConf().getBoolVar(ConfVars.$CLI_ERROR_STOP)) {
           return exitCode;
         }
       }
@@ -382,7 +382,7 @@ public class TajoCli {
         context.getOutput().flush();
       }
 
-      if (wasError && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
+      if (wasError && context.getConf().getBoolVar(ConfVars.$CLI_ERROR_STOP)) {
         break;
       }
     }

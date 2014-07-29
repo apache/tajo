@@ -26,26 +26,34 @@ import java.util.Map;
 import static org.apache.tajo.SessionVars.VariableMode.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
-public enum SessionVars implements InstantConfig {
+public enum SessionVars implements ConfigKey {
 
+  //-------------------------------------------------------------------------------
+  // Server Side Only Variables
+  //-------------------------------------------------------------------------------
   USER_NAME(ConfVars.USERNAME, "user name", SERVER_SIDE_VAR),
 
+
+  //-------------------------------------------------------------------------------
+  // Client Side Variables
+  //-------------------------------------------------------------------------------
+
   // Client Connection
-  CLIENT_SESSION_EXPIRY_TIME(ConfVars.CLIENT_SESSION_EXPIRY_TIME, "", DEFAULT),
+  CLIENT_SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, "", DEFAULT),
 
   // Command line interface
-  CLI_MAX_COLUMN(ConfVars.CLI_MAX_COLUMN, "", DEFAULT),
-  CLI_PRINT_PAUSE_NUM_RECORDS(ConfVars.CLI_PRINT_PAUSE_NUM_RECORDS, "", DEFAULT),
-  CLI_PRINT_PAUSE(ConfVars.CLI_PRINT_PAUSE, "", DEFAULT),
-  CLI_PRINT_ERROR_TRACE(ConfVars.CLI_PRINT_ERROR_TRACE, "", DEFAULT),
-  CLI_OUTPUT_FORMATTER_CLASS(ConfVars.CLI_OUTPUT_FORMATTER_CLASS, "", DEFAULT),
-  CLI_NULL_CHAR(ConfVars.CLI_NULL_CHAR, "", DEFAULT),
+  CLI_MAX_COLUMN(ConfVars.$CLI_MAX_COLUMN, "", DEFAULT),
+  CLI_PRINT_PAUSE_NUM_RECORDS(ConfVars.$CLI_PRINT_PAUSE_NUM_RECORDS, "", DEFAULT),
+  CLI_PRINT_PAUSE(ConfVars.$CLI_PRINT_PAUSE, "", DEFAULT),
+  CLI_PRINT_ERROR_TRACE(ConfVars.$CLI_PRINT_ERROR_TRACE, "", DEFAULT),
+  CLI_OUTPUT_FORMATTER_CLASS(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, "", DEFAULT),
+  CLI_NULL_CHAR(ConfVars.$CLI_NULL_CHAR, "", DEFAULT),
 
-  ON_ERROR_STOP(ConfVars.CLI_ERROR_STOP, "tsql will exist if an error occurs.", DEFAULT),
+  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", DEFAULT),
 
   // Timezone & Date
-  TZ(ConfVars.TIMEZONE, "Timezone", FROM_SHELL_ENV),
-  DATE_ORDER(ConfVars.DATE_ORDER, "YMD", FROM_SHELL_ENV),
+  TZ(ConfVars.$TIMEZONE, "Timezone", FROM_SHELL_ENV),
+  DATE_ORDER(ConfVars.$DATE_ORDER, "YMD", FROM_SHELL_ENV),
 
   // Locales and Character set (reserved variables, which are currently not used.
   LANG(null, "Language", FROM_SHELL_ENV),
@@ -59,14 +67,19 @@ public enum SessionVars implements InstantConfig {
 
   // Query and Optimization
   OUTPUT_PER_FILE_SIZE(null, "", DEFAULT)
-  ;
 
+
+  //-------------------------------------------------------------------------------
+  // Only for Unit Testing
+  //-------------------------------------------------------------------------------
+
+  ;
 
   private static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
 
   static {
     for (SessionVars var : SessionVars.values()) {
-      SESSION_VARS.put(var.key(), var);
+      SESSION_VARS.put(var.keyname(), var);
     }
   }
 
@@ -84,9 +97,9 @@ public enum SessionVars implements InstantConfig {
     return SESSION_VARS.containsKey(name.toUpperCase());
   }
 
-  public static SessionVars get(String name) {
-    if (exists(name)) {
-      return SESSION_VARS.get(name.toUpperCase());
+  public static SessionVars get(String keyname) {
+    if (exists(keyname)) {
+      return SESSION_VARS.get(keyname.toUpperCase());
     } else {
       return null;
     }
@@ -98,8 +111,12 @@ public enum SessionVars implements InstantConfig {
     this.mode = mode;
   }
 
-  public String key() {
-    return PREFIX + key.name();
+  public String keyname() {
+    return SESSION_PREFIX + key.name();
+  }
+
+  public ConfigType type() {
+    return ConfigType.SESSION;
   }
 
   public ConfVars getConfVars() {

@@ -20,9 +20,8 @@ package org.apache.tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.InstantConfig;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
@@ -31,9 +30,28 @@ import org.apache.tajo.util.KeyValueSet;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
+/**
+ * QueryContext provides a consolidated config system for a query instant.
+ *
+ * In Tajo, there are three configurable layers:
+ * <ul>
+ *   <li>
+ *    <ul>System Config - it comes from Hadoop's Configuration class. by tajo-site, catalog-site,
+ *    catalog-default and TajoConf.</ul>
+ *    <ul>Session variables - they are instantly configured by users.
+ *    Each client session has it own set of session variables.</ul>
+ *    <ul>Query config - it is internally used for meta information of a query instance.</ul>
+ *   </li>
+ * </ul>
+ *
+ * System configs and session variables can set the same config in the same time. System configs are usually used to set
+ * default configs, and session variables is user-specified configs. So, session variables can override system configs.
+ *
+ * QueryContent provides a query with a uniform way to access various configs without considering their priorities.
+ */
 public class QueryContext extends KeyValueSet {
 
-  public static enum QueryVars implements InstantConfig {
+  public static enum QueryVars implements ConfigKey {
     COMMAND_TYPE,
     STAGING_DIR(),
     OUTPUT_TABLE_NAME(),
@@ -47,15 +65,18 @@ public class QueryContext extends KeyValueSet {
     QueryVars() {
     }
 
-    public String key() {
-      return PREFIX + name();
+    @Override
+    public String keyname() {
+      return SESSION_PREFIX + name();
+    }
+
+    @Override
+    public ConfigType type() {
+      return ConfigType.QUERY;
     }
   }
 
   private static final Log LOG = LogFactory.getLog(QueryContext.class);
-
-  public static final String TRUE_VALUE = "true";
-  public static final String FALSE_VALUE = "false";
 
   private final TajoConf conf;
 
@@ -76,46 +97,102 @@ public class QueryContext extends KeyValueSet {
     return conf;
   }
 
-  public void put(InstantConfig key, String val) {
-    put(key.key(), val);
+  public void setBool(ConfigKey key, boolean val) {
+    setBool(key.keyname(), val);
   }
 
-  public void put(TajoConf.ConfVars key, String value) {
-    put(key.varname, value);
-  }
-
-  public String get(InstantConfig key) {
-    if (containsKey(key.key())) {
-      return get(key.key());
-    } else if (key instanceof SessionVars) {
-        SessionVars sessionVar = SessionVars.get(key.key());
-        return conf.getVar(sessionVar.getConfVars());
-    } else {
-      throw new IllegalArgumentException("No Such a config key: "  + key.key());
+  public boolean getBool(ConfigKey key, Boolean defaultVal) {
+    switch (key.type()) {
+    case QUERY:
+      return getBool(key.keyname());
+    case SESSION:
+      return getBool(key.keyname(), conf.getBoolVar(((SessionVars) key).getConfVars()));
+    case SYSTEM:
+      return conf.getBoolVar((TajoConf.ConfVars) key);
+    default:
+      return getBool(key.keyname(), defaultVal);
     }
   }
 
-  public String get(TajoConf.ConfVars key) {
-    return conf.getVar(key);
+  public boolean getBool(ConfigKey key) {
+    return getBool(key, null);
   }
 
-
-  public void setBool(InstantConfig key, boolean val) {
-    put(key.key(), val ? TRUE_VALUE : FALSE_VALUE);
-  }
-
-  public boolean getBool(InstantConfig key) {
-    if (containsKey(key.key())) {
-      return get(key.key())
+  public int getInt(ConfigKey key, Integer defaultVal) {
+    switch (key.type()) {
+    case QUERY:
+      return getInt(key.keyname());
+    case SESSION:
+      return getInt(key.keyname(), conf.getIntVar(((SessionVars) key).getConfVars()));
+    case SYSTEM:
+      return conf.getIntVar((TajoConf.ConfVars) key);
+    default:
+      return getInt(key.keyname(), defaultVal);
     }
-    String strVal = get(key);
-    return strVal != null ? strVal.equalsIgnoreCase(TRUE_VALUE) : false;
   }
 
-  public boolean getBool(String key) {
-    String strVal = get(key);
-    return strVal != null ? strVal.equalsIgnoreCase(TRUE_VALUE) : false;
+  public int getInt(ConfigKey key) {
+    return getInt(key, null);
   }
+
+  public long getLong(ConfigKey key, Long defaultVal) {
+    switch (key.type()) {
+    case QUERY:
+      return getLong(key.keyname());
+    case SESSION:
+      return getLong(key.keyname(), conf.getLongVar(((SessionVars) key).getConfVars()));
+    case SYSTEM:
+      return conf.getLongVar((TajoConf.ConfVars) key);
+    default:
+      return getLong(key.keyname(), defaultVal);
+    }
+  }
+
+  public long getLong(ConfigKey key) {
+    return getLong(key, null);
+  }
+
+  public float getFloat(ConfigKey key, Float defaultVal) {
+    switch (key.type()) {
+    case QUERY:
+      return getFloat(key.keyname());
+    case SESSION:
+      return getFloat(key.keyname(), conf.getFloatVar(((SessionVars) key).getConfVars()));
+    case SYSTEM:
+      return conf.getFloatVar((TajoConf.ConfVars) key);
+    default:
+      return getFloat(key.keyname(), defaultVal);
+    }
+  }
+
+  public float getFloat(ConfigKey key) {
+    return getLong(key, null);
+  }
+
+  public void put(ConfigKey key, String val) {
+    set(key.keyname(), val);
+  }
+
+  public String get(ConfigKey key, String defaultVal) {
+    switch (key.type()) {
+    case QUERY:
+      return get(key.keyname());
+    case SESSION:
+      return get(key.keyname(), conf.getVar(((SessionVars)key).getConfVars()));
+    case SYSTEM:
+      return conf.getVar((TajoConf.ConfVars) key);
+    default:
+      return get(key.keyname(), defaultVal);
+    }
+  }
+
+  public String get(ConfigKey key) {
+    return get(key, null);
+  }
+
+  //-----------------------------------------------------------------------------------------------
+  // Query Config Specified Section
+  //-----------------------------------------------------------------------------------------------
 
   public void setUser(String username) {
     put(SessionVars.USER_NAME.getConfVars(), username);

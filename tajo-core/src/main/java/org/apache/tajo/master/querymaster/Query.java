@@ -636,7 +636,7 @@ public class Query implements EventHandler<QueryEvent> {
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
 
-        String nullChar = queryContext.get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+        String nullChar = queryContext.get(ConfVars.$CSVFILE_NULL.varname, ConfVars.$CSVFILE_NULL.defaultVal);
         meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
 
         TableStats stats = lastStage.getResultStats();

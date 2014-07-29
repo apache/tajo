@@ -24,23 +24,35 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestKeyValueSet {
+
 	@Test
-	public final void testPutAndGet() {
+	public final void testPutAndGetString() {
 		KeyValueSet opts = new KeyValueSet();
-		opts.put("name", "abc");
-		opts.put("delimiter", ",");
+		opts.set("key1", "val1");
+		opts.set("key2", "val2");
 		
-		assertEquals(",", opts.get("delimiter"));
-		assertEquals("abc", opts.get("name"));
+		assertEquals("v2", opts.get("k2"));
+		assertEquals("v1", opts.get("v1"));
 	}
+
+  @Test
+  public final void testPutAndGetBool() {
+    KeyValueSet opts = new KeyValueSet();
+    opts.setBool("k1", true);
+    opts.setBool("k2", false);
+
+    assertEquals(false, opts.get("k1"));
+    assertEquals(true, opts.get("k2"));
+  }
 
 	@Test
 	public final void testGetProto() {		
 		KeyValueSet opts = new KeyValueSet();
-		opts.put("name", "abc");
-		opts.put("delimiter", ",");
+		opts.set("name", "abc");
+		opts.set("delimiter", ",");
 		
 		PrimitiveProtos.KeyValueSetProto proto = opts.getProto();
 		KeyValueSet opts2 = new KeyValueSet(proto);
@@ -49,16 +61,26 @@ public class TestKeyValueSet {
 	}
 	
 	@Test
-	public final void testDelete() {
+	public final void testRemove() {
 		KeyValueSet opts = new KeyValueSet();
-		opts.put("name", "abc");
-		opts.put("delimiter", ",");
+		opts.set("name", "abc");
+		opts.set("delimiter", ",");
 		
 		assertEquals("abc", opts.get("name"));
-		assertEquals("abc", opts.delete("name"));
-		assertNull(opts.get("name"));
+		assertEquals("abc", opts.remove("name"));
+    try {
+		  opts.get("name");
+      assertTrue(false);
+    } catch (IllegalArgumentException iae) {
+      assertTrue(true);
+    }
 		
 		KeyValueSet opts2 = new KeyValueSet(opts.getProto());
-		assertNull(opts2.get("name"));
+    try {
+      opts2.get("name");
+      assertTrue(false);
+    } catch (IllegalArgumentException iae) {
+      assertTrue(true);
+    }
 	}
 }

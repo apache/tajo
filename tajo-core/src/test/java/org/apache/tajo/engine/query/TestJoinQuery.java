@@ -392,8 +392,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public final void testLeftOuterJoinWithEmptySubquery1() throws Exception {
     // Empty Null Supplying table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -405,7 +405,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from table11 a " +
           "left outer join (" +
@@ -423,8 +423,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname,
+          ConfVars.$TESTCASE_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE").close();
       executeString("DROP TABLE table12 PURGE").close();
     }
@@ -434,8 +434,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public final void testLeftOuterJoinWithEmptySubquery2() throws Exception {
     //Empty Preserved Row table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -447,7 +447,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from " +
           "(select table12.id, table12.name, lineitem.l_shipdate " +
@@ -461,8 +461,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname,
+          ConfVars.$TESTCASE_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE");
       executeString("DROP TABLE table12 PURGE");
     }
@@ -923,8 +923,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   private void createOuterJoinTestTable() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -1057,8 +1057,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public void testJoinWithDifferentShuffleKey() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
