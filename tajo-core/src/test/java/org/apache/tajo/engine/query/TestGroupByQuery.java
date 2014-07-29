@@ -600,7 +600,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       Collections.sort(qmTasks, new Comparator<QueryMasterTask>() {
         @Override
         public int compare(QueryMasterTask o1, QueryMasterTask o2) {
-          return Long.compare(o1.getQuerySubmitTime(), o2.getQuerySubmitTime());
+          long l1 = o1.getQuerySubmitTime();
+          long l2 = o2.getQuerySubmitTime();
+          return l1 < l2 ? - 1 : (l1 > l2 ? 1 : 0);
         }
       });
 
