@@ -110,14 +110,14 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     set(key, val ? TRUE_STR : FALSE_STR);
   }
 
-  public Boolean getBool(String key, Boolean defaultVal) {
+  public boolean getBool(String key, Boolean defaultVal) {
     if (containsKey(key)) {
       String strVal = get(key, null);
       return strVal != null ? strVal.equalsIgnoreCase(TRUE_STR) : false;
     } else if (defaultVal != null) {
       return defaultVal;
     } else {
-      throw new IllegalArgumentException("No such a config key: "  + key);
+      return false;
     }
   }
 
@@ -180,7 +180,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
         throw new IllegalArgumentException("No such a config key: "  + key);
       }
     } else if (defaultVal != null) {
-      return defaultVal;
+      return defaultVal.floatValue();
     } else {
       throw new IllegalArgumentException("No such a config key: "  + key);
     }

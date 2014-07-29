@@ -121,10 +121,8 @@ public class GlobalPlanner {
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
 
-    boolean autoBroadcast = QueryContext.getBoolVar(masterPlan.getContext(), conf,
-        TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    boolean autoBroadcast = masterPlan.getContext().getBool(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
     if (autoBroadcast) {
-
       // pre-visit the master plan in order to find tables to be broadcasted
       // this visiting does not make any execution block and change plan.
       BroadcastJoinMarkCandidateVisitor markCandidateVisitor = new BroadcastJoinMarkCandidateVisitor();
@@ -270,10 +268,8 @@ public class GlobalPlanner {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
-    boolean autoBroadcast = QueryContext.getBoolVar(context.getPlan().getContext(), conf,
-        TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
-    long broadcastThreshold = QueryContext.getLongVar(context.getPlan().getContext(), conf,
-        TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
+    boolean autoBroadcast = context.getPlan().getContext().getBool(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
+    long broadcastThreshold = context.getPlan().getContext().getLong(ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
     // to check when the tajo.dist-query.join.broadcast.auto property is true
     if (autoBroadcast && joinNode.isCandidateBroadcast()) {

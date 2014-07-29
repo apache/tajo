@@ -188,7 +188,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -249,7 +249,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -313,7 +313,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -341,7 +341,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -391,7 +391,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -432,7 +432,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -488,7 +488,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -542,7 +542,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -625,7 +625,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -708,7 +708,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -767,7 +767,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -820,7 +820,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -912,7 +912,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -977,7 +977,7 @@ public class TestBroadcastJoinPlan {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);

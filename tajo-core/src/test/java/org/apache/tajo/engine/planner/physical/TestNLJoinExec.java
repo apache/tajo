@@ -152,7 +152,7 @@ public class TestNLJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLCrossJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[0]);
@@ -181,7 +181,7 @@ public class TestNLJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLInnerJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr context =  analyzer.parse(QUERIES[1]);

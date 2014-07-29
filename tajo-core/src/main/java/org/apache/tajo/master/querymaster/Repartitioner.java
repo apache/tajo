@@ -49,6 +49,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -374,8 +375,7 @@ public class Repartitioner {
     // Getting the desire number of join tasks according to the volumn
     // of a larger table
     int largerIdx = stats[0] >= stats[1] ? 0 : 1;
-    int desireJoinTaskVolumn = QueryContext.getIntVar(subQuery.getMasterPlan().getContext(),
-        subQuery.getContext().getConf(), ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
+    int desireJoinTaskVolumn = subQuery.getMasterPlan().getContext().getInt(ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
 
     // calculate the number of tasks according to the data size
     int mb = (int) Math.ceil((double) stats[largerIdx] / 1048576);
@@ -774,8 +774,8 @@ public class Repartitioner {
        SubQuery subQuery, Map<ExecutionBlockId, List<IntermediateEntry>> intermediates,
        String tableName) {
     int i = 0;
-    long splitVolume = ((long) 1048576) * QueryContext.getIntVar(subQuery.getMasterPlan().getContext(),
-        subQuery.getContext().getConf(), ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME);
+    long splitVolume = StorageUnit.MB *
+        subQuery.getMasterPlan().getContext().getLong(ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME);
 
     long sumNumBytes = 0L;
     Map<Integer, List<FetchImpl>> fetches = new HashMap<Integer, List<FetchImpl>>();

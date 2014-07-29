@@ -114,7 +114,7 @@ public class TestGlobalPlanner {
     Expr expr = sqlAnalyzer.parse(sql);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
     optimizer.optimize(plan);
-    QueryContext context = new QueryContext();
+    QueryContext context = new QueryContext(util.getConfiguration());
     MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);
     globalPlanner.build(masterPlan);
     return masterPlan;

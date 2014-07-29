@@ -109,7 +109,7 @@ public class TestExecutionBlockCursor {
             "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15");
     LogicalPlan logicalPlan = logicalPlanner.createPlan(LocalTajoTestingUtility.createDummySession(), context);
     optimizer.optimize(logicalPlan);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), queryContext, logicalPlan);
     planner.build(plan);
 

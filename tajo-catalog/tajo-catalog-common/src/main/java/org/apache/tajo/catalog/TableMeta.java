@@ -81,6 +81,18 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     options.set(key, val);
   }
 
+  public boolean containsOption(String key) {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (options != null) {
+      return this.options.containsKey(key);
+    }
+    if (!p.hasParams()) {
+      return false;
+    }
+    this.options = new KeyValueSet(p.getParams());
+    return options.containsKey(key);
+  }
+
   public String getOption(String key) {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (options != null) {

@@ -67,7 +67,7 @@ public class QueryContext extends KeyValueSet {
 
     @Override
     public String keyname() {
-      return SESSION_PREFIX + name();
+      return QUERY_CONF_PREFIX + name();
     }
 
     @Override
@@ -78,11 +78,7 @@ public class QueryContext extends KeyValueSet {
 
   private static final Log LOG = LogFactory.getLog(QueryContext.class);
 
-  private final TajoConf conf;
-
-  public QueryContext() {
-    this(new TajoConf());
-  }
+  private TajoConf conf;
 
   public QueryContext(final TajoConf conf) {
     this.conf = conf;
@@ -90,6 +86,10 @@ public class QueryContext extends KeyValueSet {
 
   public QueryContext(final TajoConf conf, KeyValueSetProto proto) {
     super(proto);
+    this.conf = conf;
+  }
+
+  public void setConf(TajoConf conf) {
     this.conf = conf;
   }
 
@@ -173,12 +173,20 @@ public class QueryContext extends KeyValueSet {
     set(key.keyname(), val);
   }
 
+  public static String getSessionKey(String key) {
+    return ConfigKey.SESSION_PREFIX + key;
+  }
+
+  public static String getQueryKey(String key) {
+    return ConfigKey.QUERY_CONF_PREFIX + key;
+  }
+
   public String get(ConfigKey key, String defaultVal) {
     switch (key.type()) {
     case QUERY:
       return get(key.keyname());
     case SESSION:
-      return get(key.keyname(), conf.getVar(((SessionVars)key).getConfVars()));
+      return get(key.keyname(), conf.getVar(((SessionVars) key).getConfVars()));
     case SYSTEM:
       return conf.getVar((TajoConf.ConfVars) key);
     default:
@@ -241,7 +249,7 @@ public class QueryContext extends KeyValueSet {
    * @return
    */
   public boolean hasOutputPath() {
-    return get(QueryVars.OUTPUT_TABLE_PATH) != null;
+    return containsKey(QueryVars.OUTPUT_TABLE_PATH);
   }
 
   public void setOutputPath(Path path) {
@@ -254,7 +262,7 @@ public class QueryContext extends KeyValueSet {
   }
 
   public boolean hasPartition() {
-    return get(QueryVars.OUTPUT_PARTITIONS) != null;
+    return containsKey(QueryVars.OUTPUT_PARTITIONS);
   }
 
   public void setPartitionMethod(PartitionMethodDesc partitionMethodDesc) {
@@ -277,6 +285,22 @@ public class QueryContext extends KeyValueSet {
     setBool(QueryVars.OUTPUT_AS_DIRECTORY, true);
   }
 
+  public boolean containsKey(ConfigKey key) {
+    return containsKey(key.keyname());
+  }
+
+  public boolean equalKey(ConfigKey key, String another) {
+    if (containsKey(key)) {
+      return get(key).equals(another);
+    } else {
+      return false;
+    }
+  }
+
+  public boolean assertCommandType(NodeType commandType) {
+    return equalKey(QueryVars.COMMAND_TYPE, commandType.name());
+  }
+
   public void setCommandType(NodeType nodeType) {
     put(QueryVars.COMMAND_TYPE, nodeType.name());
   }
@@ -291,7 +315,7 @@ public class QueryContext extends KeyValueSet {
   }
 
   public boolean isCreateTable() {
-    return getCommandType() == NodeType.CREATE_TABLE;
+    return assertCommandType(NodeType.CREATE_TABLE);
   }
 
   public void setInsert() {
@@ -299,29 +323,7 @@ public class QueryContext extends KeyValueSet {
   }
 
   public boolean isInsert() {
-    return getCommandType() == NodeType.INSERT;
-  }
-
-  public static boolean getBoolVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
-    if (context.get(key.varname) != null) {
-      return context.getBool(key.varname);
-    } else {
-      return conf.getBoolVar(key);
-    }
-  }
-
-  public static Integer getIntVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
-    if (context.get(key.varname) != null) {
-      String val = context.get(key.varname);
-      try {
-        return Integer.valueOf(val);
-      } catch (NumberFormatException nfe) {
-        LOG.warn(nfe.getMessage());
-        return conf.getIntVar(key);
-      }
-    } else {
-      return conf.getIntVar(key);
-    }
+    return assertCommandType(NodeType.INSERT);
   }
 
   public static Long getLongVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {

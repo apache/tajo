@@ -116,7 +116,7 @@ public class GlobalEngine extends AbstractService {
 
   public SubmitQueryResponse executeQuery(Session session, String query, boolean isJson) {
     LOG.info("Query: " + query);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(context.getConf());
     queryContext.putAll(session.getAllVariables());
     Expr planningContext;
 

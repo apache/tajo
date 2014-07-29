@@ -99,7 +99,8 @@ public class SequenceFileAppender extends FileAppender {
     this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
     this.columnNum = schema.size();
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL));
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+        NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
@@ -110,8 +111,8 @@ public class SequenceFileAppender extends FileAppender {
       throw new FileNotFoundException(path.toString());
     }
 
-    String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
-    if(!StringUtils.isEmpty(codecName)){
+    if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
+      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
       codecFactory = new CompressionCodecFactory(conf);
       codec = codecFactory.getCodecByClassName(codecName);
     } else {
@@ -121,7 +122,8 @@ public class SequenceFileAppender extends FileAppender {
     }
 
     try {
-      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE,
+          TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

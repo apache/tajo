@@ -81,6 +81,7 @@ public class TaskAttemptContext {
                             final Path workDir) {
     this.conf = conf;
     this.queryContext = queryContext;
+    this.queryContext.setConf(conf);
     this.queryId = queryId;
 
     if (fragments != null) {

@@ -31,11 +31,12 @@ public class TestKeyValueSet {
 	@Test
 	public final void testPutAndGetString() {
 		KeyValueSet opts = new KeyValueSet();
-		opts.set("key1", "val1");
-		opts.set("key2", "val2");
+		opts.set("k1", "v1");
+		opts.set("k2", "v2");
 		
+		assertEquals("v1", opts.get("k1"));
 		assertEquals("v2", opts.get("k2"));
-		assertEquals("v1", opts.get("v1"));
+    assertEquals("default", opts.get("k3", "default"));
 	}
 
   @Test
@@ -44,8 +45,42 @@ public class TestKeyValueSet {
     opts.setBool("k1", true);
     opts.setBool("k2", false);
 
-    assertEquals(false, opts.get("k1"));
-    assertEquals(true, opts.get("k2"));
+    assertEquals(true, opts.getBool("k1"));
+    assertEquals(false, opts.getBool("k2"));
+    assertEquals(true, opts.getBool("k3", true));
+  }
+
+  @Test
+  public final void testPutAndGetInt() {
+    KeyValueSet opts = new KeyValueSet();
+    opts.setInt("k1", 1980);
+    opts.setInt("k2", 401);
+
+    assertEquals(1980, opts.getInt("k1"));
+    assertEquals(401, opts.getInt("k2"));
+    assertEquals(2020, opts.getInt("k3", 2020));
+  }
+
+  @Test
+  public final void testPutAndGetLong() {
+    KeyValueSet opts = new KeyValueSet();
+    opts.setLong("k1", 1980);
+    opts.setLong("k2", 401);
+
+    assertEquals(1980, opts.getLong("k1"));
+    assertEquals(401, opts.getLong("k2"));
+    assertEquals(2020, opts.getLong("k3", 2020l));
+  }
+
+  @Test
+  public final void testPutAndGetFloat() {
+    KeyValueSet opts = new KeyValueSet();
+    opts.setFloat("k1", 1980.4f);
+    opts.setFloat("k2", 401.150f);
+
+    assertTrue(1980.4f == opts.getFloat("k1"));
+    assertTrue(401.150f == opts.getFloat("k2"));
+    assertTrue(3.14f == opts.getFloat("k3", 3.14f));
   }
 
 	@Test
