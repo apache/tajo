@@ -574,7 +574,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
       ResultSet res = executeString(
           "select col1 \n" +
               ",count(distinct col2) as cnt1\n" +
@@ -628,8 +628,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       assertEquals(2, partitionIds.size());
       executeString("DROP TABLE testnumshufflepartition PURGE").close();
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
-          ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
+          ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
   }
 }

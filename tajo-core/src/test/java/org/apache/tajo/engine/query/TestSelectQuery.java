@@ -433,7 +433,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
 
@@ -465,8 +465,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
       }
       assertEquals(5, numRecords);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.$TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname,
+          ConfVars.$TEST_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE");
     }
   }

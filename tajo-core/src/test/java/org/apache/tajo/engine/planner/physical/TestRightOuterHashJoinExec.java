@@ -62,7 +62,7 @@ public class TestRightOuterHashJoinExec {
   private LogicalPlanner planner;
   private AbstractStorageManager sm;
   private Path testDir;
-  private static Session session = LocalTajoTestingUtility.createDummySession();
+  private QueryContext defaultContext;
 
   private TableDesc dep3;
   private TableDesc job3;
@@ -214,6 +214,7 @@ public class TestRightOuterHashJoinExec {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
   @After
@@ -241,7 +242,7 @@ public class TestRightOuterHashJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -282,7 +283,7 @@ public class TestRightOuterHashJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -323,7 +324,7 @@ public class TestRightOuterHashJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[2]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

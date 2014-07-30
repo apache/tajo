@@ -26,6 +26,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.KeyValueSet;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
@@ -82,6 +83,11 @@ public class QueryContext extends KeyValueSet {
 
   public QueryContext(final TajoConf conf) {
     this.conf = conf;
+  }
+
+  public QueryContext(final TajoConf conf, Session session) {
+    this.conf = conf;
+    putAll(session.getAllVariables());
   }
 
   public QueryContext(final TajoConf conf, KeyValueSetProto proto) {
@@ -202,12 +208,16 @@ public class QueryContext extends KeyValueSet {
   // Query Config Specified Section
   //-----------------------------------------------------------------------------------------------
 
+  public String getCurrentDatabase() {
+    return get(SessionVars.CURRENT_DATABASE);
+  }
+
   public void setUser(String username) {
-    put(SessionVars.USER_NAME.getConfVars(), username);
+    put(SessionVars.USERNAME, username);
   }
 
   public String getUser() {
-    return get(SessionVars.USER_NAME);
+    return get(SessionVars.USERNAME);
   }
 
   public void setStagingDir(Path path) {
@@ -220,26 +230,12 @@ public class QueryContext extends KeyValueSet {
   }
 
   /**
-   * The fact that QueryContext has an output table means this query has a target table.
-   * In other words, this query is 'CREATE TABLE' or 'INSERT (OVERWRITE) INTO <table name>' statement.
-   * This config is not set if a query has INSERT (OVERWRITE) INTO LOCATION '/path/..'.
-   */
-  public boolean hasOutputTable() {
-    return get(QueryVars.OUTPUT_TABLE_NAME) != null;
-  }
-
-  /**
    * Set a target table name
    *
    * @param tableName The target table name
    */
   public void setOutputTable(String tableName) {
     put(QueryVars.OUTPUT_TABLE_NAME, tableName);
-  }
-
-  public String getOutputTable() {
-    String strVal = get(QueryVars.OUTPUT_TABLE_NAME);
-    return strVal != null ? strVal : null;
   }
 
   /**
@@ -297,7 +293,7 @@ public class QueryContext extends KeyValueSet {
     }
   }
 
-  public boolean assertCommandType(NodeType commandType) {
+  public boolean isCommandType(NodeType commandType) {
     return equalKey(QueryVars.COMMAND_TYPE, commandType.name());
   }
 
@@ -315,7 +311,7 @@ public class QueryContext extends KeyValueSet {
   }
 
   public boolean isCreateTable() {
-    return assertCommandType(NodeType.CREATE_TABLE);
+    return isCommandType(NodeType.CREATE_TABLE);
   }
 
   public void setInsert() {
@@ -323,20 +319,6 @@ public class QueryContext extends KeyValueSet {
   }
 
   public boolean isInsert() {
-    return assertCommandType(NodeType.INSERT);
-  }
-
-  public static Long getLongVar(QueryContext context, TajoConf conf, TajoConf.ConfVars key) {
-    if (context.get(key.varname) != null) {
-      String val = context.get(key.varname);
-      try {
-        return Long.valueOf(val);
-      } catch (NumberFormatException nfe) {
-        LOG.warn(nfe.getMessage());
-        return conf.getLongVar(key);
-      }
-    } else {
-      return conf.getLongVar(key);
-    }
+    return isCommandType(NodeType.INSERT);
   }
 }

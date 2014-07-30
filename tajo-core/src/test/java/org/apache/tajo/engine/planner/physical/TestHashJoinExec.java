@@ -61,7 +61,7 @@ public class TestHashJoinExec {
   private LogicalPlanner planner;
   private AbstractStorageManager sm;
   private Path testDir;
-  private final Session session = LocalTajoTestingUtility.createDummySession();
+  private QueryContext defaultContext;
 
   private TableDesc employee;
   private TableDesc people;
@@ -126,6 +126,7 @@ public class TestHashJoinExec {
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
   @After
@@ -140,8 +141,9 @@ public class TestHashJoinExec {
 
   @Test
   public final void testHashInnerJoin() throws IOException, PlanningException {
+
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
@@ -182,7 +184,7 @@ public class TestHashJoinExec {
   @Test
   public final void testCheckIfInMemoryInnerJoinIsPossible() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
@@ -200,7 +202,7 @@ public class TestHashJoinExec {
     ctx.setEnforcer(enforcer);
 
     TajoConf localConf = new TajoConf(conf);
-    localConf.setLongVar(TajoConf.ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD, 100l);
+    localConf.setLongVar(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, 100l);
     ctx.getQueryContext().setConf(localConf);
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(localConf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

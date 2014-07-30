@@ -537,7 +537,7 @@ public class Task {
         FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
           // TODO store the fetcher histories
-          if (systemConf.getBoolVar(TajoConf.ConfVars.$TAJO_DEBUG)) {
+          if (systemConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
             builder.setStartTime(fetcher.getStartTime());
             builder.setFinishTime(fetcher.getFinishTime());
             builder.setFileLength(fetcher.getFileLen());

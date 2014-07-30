@@ -148,7 +148,7 @@ public class TestRangeRetrieverHandler {
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(SORT_QUERY[0]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -272,7 +272,7 @@ public class TestRangeRetrieverHandler {
         new FileFragment[] {frags[0]}, testDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(SORT_QUERY[1]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);

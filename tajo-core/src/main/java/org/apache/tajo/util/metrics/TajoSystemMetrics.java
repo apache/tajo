@@ -55,7 +55,7 @@ public class TajoSystemMetrics extends TajoMetrics {
 
     this.hostAndPort = hostAndPort;
     try {
-      this.metricsPropertyFileName = tajoConf.getVar(TajoConf.ConfVars.$METRICS_PROPERTY_FILENAME);
+      this.metricsPropertyFileName = tajoConf.getVar(TajoConf.ConfVars.METRICS_PROPERTY_FILENAME);
       this.metricsProps = new PropertiesConfiguration(metricsPropertyFileName);
       this.metricsProps.addConfigurationListener(new MetricsReloadListener());
       FileChangedReloadingStrategy reloadingStrategy = new FileChangedReloadingStrategy();

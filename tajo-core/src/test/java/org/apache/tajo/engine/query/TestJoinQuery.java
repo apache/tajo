@@ -49,39 +49,39 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public TestJoinQuery(String joinOption) {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname,
-        ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-        ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
 
     testingCluster.setAllTajoDaemonConfValue(
-        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.defaultVal);
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
 
     if (joinOption.indexOf("NoBroadcast") >= 0) {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
     }
 
     if (joinOption.indexOf("Hash") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname, String.valueOf(256 * 1048576));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(256 * 1048576));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
           String.valueOf(256 * 1048576));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
           String.valueOf(256 * 1048576));
     }
     if (joinOption.indexOf("Sort") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname, String.valueOf(1));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
           String.valueOf(1));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
           String.valueOf(1));
     }
   }
@@ -98,19 +98,19 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   @AfterClass
   public static void classTearDown() {
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname,
-        ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-        ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
 
     testingCluster.setAllTajoDaemonConfValue(
-        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD.defaultVal);
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
   }
 
   @Test
@@ -405,7 +405,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from table11 a " +
           "left outer join (" +
@@ -423,8 +423,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.$TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname,
+          ConfVars.$TEST_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE").close();
       executeString("DROP TABLE table12 PURGE").close();
     }
@@ -447,7 +447,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select a.id, b.id from " +
           "(select table12.id, table12.name, lineitem.l_shipdate " +
@@ -461,8 +461,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.$TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname,
+          ConfVars.$TEST_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE");
       executeString("DROP TABLE table12 PURGE");
     }
@@ -1077,8 +1077,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
     TajoTestingCluster.createTable("large_table", schema, tableOptions, data.toArray(new String[]{}));
 
-    int originConfValue = conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "1");
+    int originConfValue = conf.getIntVar(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "1");
     ResultSet res = executeString(
        "select count(b.id) " +
            "from (select id, count(*) as cnt from large_table group by id) a " +
@@ -1094,7 +1094,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
       assertEquals(expected, resultSetToString(res));
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "" + originConfValue);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "" + originConfValue);
       cleanupQuery(res);
       executeString("DROP TABLE large_table PURGE").close();
     }

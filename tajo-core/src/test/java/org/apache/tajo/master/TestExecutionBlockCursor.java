@@ -61,7 +61,7 @@ public class TestExecutionBlockCursor {
     util.startCatalogCluster();
 
     conf = util.getConfiguration();
-    conf.set(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
+    conf.set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
 
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:!234/warehouse");
@@ -107,7 +107,7 @@ public class TestExecutionBlockCursor {
             "join supplier on s_nationkey = n_nationkey " +
             "join partsupp on s_suppkey = ps_suppkey " +
             "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15");
-    LogicalPlan logicalPlan = logicalPlanner.createPlan(LocalTajoTestingUtility.createDummySession(), context);
+    LogicalPlan logicalPlan = logicalPlanner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), context);
     optimizer.optimize(logicalPlan);
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), queryContext, logicalPlan);

@@ -181,7 +181,7 @@ public class TestSortQuery extends QueryTestCaseBase {
   @Test
   public final void testSortNullColumn() throws Exception {
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
       KeyValueSet tableOptions = new KeyValueSet();
       tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
@@ -214,7 +214,7 @@ public class TestSortQuery extends QueryTestCaseBase {
 
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TESTCASE_MIN_TASK_NUM.varname, "0");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
       executeString("DROP TABLE nullsort PURGE;").close();
     }
   }

@@ -29,6 +29,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -48,7 +49,7 @@ public class TestLogicalOptimizer {
   private static SQLAnalyzer sqlAnalyzer;
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
-  private static Session session = LocalTajoTestingUtility.createDummySession();
+  private static QueryContext defaultContext;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -101,6 +102,8 @@ public class TestLogicalOptimizer {
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(util.getConfiguration());
+
+    defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
   }
 
   @AfterClass
@@ -121,7 +124,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPushWithNaturalJoin() throws PlanningException, CloneNotSupportedException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -148,7 +151,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPushWithInnerJoin() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(newPlan);
   }
   
@@ -156,7 +159,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPush() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[2]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(NodeType.ROOT, plan.getType());
@@ -178,7 +181,7 @@ public class TestLogicalOptimizer {
   @Test
   public final void testOptimizeWithGroupBy() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[3]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
         
     assertEquals(NodeType.ROOT, plan.getType());
@@ -205,7 +208,7 @@ public class TestLogicalOptimizer {
   public final void testPushable() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(NodeType.ROOT, plan.getType());
@@ -236,7 +239,7 @@ public class TestLogicalOptimizer {
     
     // Scan Pushable Test
     expr = sqlAnalyzer.parse(QUERIES[1]);
-    newPlan = planner.createPlan(session, expr);
+    newPlan = planner.createPlan(defaultContext, expr);
     plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(NodeType.ROOT, plan.getType());
@@ -258,7 +261,7 @@ public class TestLogicalOptimizer {
   @Test
   public final void testInsertInto() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(TestLogicalPlanner.insertStatements[0]);
-    LogicalPlan newPlan = planner.createPlan(session, expr);
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(newPlan);
   }
 }

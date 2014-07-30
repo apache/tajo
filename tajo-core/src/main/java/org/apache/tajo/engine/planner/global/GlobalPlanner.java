@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -38,7 +39,6 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -121,8 +121,8 @@ public class GlobalPlanner {
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
 
-    boolean autoBroadcast = masterPlan.getContext().getBool(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
-    if (autoBroadcast) {
+    boolean broadcastEnabled = masterPlan.getContext().getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
+    if (broadcastEnabled) {
       // pre-visit the master plan in order to find tables to be broadcasted
       // this visiting does not make any execution block and change plan.
       BroadcastJoinMarkCandidateVisitor markCandidateVisitor = new BroadcastJoinMarkCandidateVisitor();
@@ -268,11 +268,11 @@ public class GlobalPlanner {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
-    boolean autoBroadcast = context.getPlan().getContext().getBool(ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO);
-    long broadcastThreshold = context.getPlan().getContext().getLong(ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
+    boolean broadcastEnabled = context.getPlan().getContext().getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
+    long broadcastTableSizeLimit = context.getPlan().getContext().getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
 
     // to check when the tajo.dist-query.join.broadcast.auto property is true
-    if (autoBroadcast && joinNode.isCandidateBroadcast()) {
+    if (broadcastEnabled && joinNode.isCandidateBroadcast()) {
       LogicalNode leftNode = joinNode.getLeftChild();
       LogicalNode rightNode = joinNode.getRightChild();
 
@@ -293,7 +293,7 @@ public class GlobalPlanner {
       // Checking Left Side of Join
       if (ScanNode.isScanNode(leftNode)) {
         ScanNode scanNode = (ScanNode)leftNode;
-        if (joinNode.getJoinType() == JoinType.LEFT_OUTER || getTableVolume(scanNode) >= broadcastThreshold) {
+        if (joinNode.getJoinType() == JoinType.LEFT_OUTER || getTableVolume(scanNode) >= broadcastTableSizeLimit) {
           numLargeTables++;
         } else {
           leftBroadcast = true;
@@ -306,7 +306,7 @@ public class GlobalPlanner {
       // Checking Right Side OF Join
       if (ScanNode.isScanNode(rightNode)) {
         ScanNode scanNode = (ScanNode)rightNode;
-        if (joinNode.getJoinType() == JoinType.RIGHT_OUTER || getTableVolume(scanNode) >= broadcastThreshold) {
+        if (joinNode.getJoinType() == JoinType.RIGHT_OUTER || getTableVolume(scanNode) >= broadcastTableSizeLimit) {
           numLargeTables++;
         } else {
           rightBroadcast = true;
@@ -331,7 +331,7 @@ public class GlobalPlanner {
         }
         JoinNode broadcastJoinNode = (JoinNode)eachNode;
         ScanNode scanNode = broadcastJoinNode.getRightChild();
-        if (getTableVolume(scanNode) < broadcastThreshold) {
+        if (getTableVolume(scanNode) < broadcastTableSizeLimit) {
           broadcastTargetScanNodes.add(scanNode);
           blockJoinNode = broadcastJoinNode;
           LOG.info("The table " + scanNode.getCanonicalName() + " ("

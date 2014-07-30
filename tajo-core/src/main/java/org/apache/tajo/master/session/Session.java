@@ -19,6 +19,7 @@
 package org.apache.tajo.master.session;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.common.ProtoObject;
 
@@ -30,17 +31,21 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.SessionProto;
 public class Session implements SessionConstants, ProtoObject<SessionProto> {
   private final String sessionId;
   private final String userName;
+  private String currentDatabase;
   private final Map<String, String> sessionVariables;
 
   // transient status
   private volatile long lastAccessTime;
-  private volatile String currentDatabase;
 
   public Session(String sessionId, String userName, String databaseName) {
     this.sessionId = sessionId;
     this.userName = userName;
+    this.currentDatabase = databaseName;
     this.lastAccessTime = System.currentTimeMillis();
+
     this.sessionVariables = new HashMap<String, String>();
+    sessionVariables.put(SessionVars.SESSION_ID.keyname(), sessionId);
+    sessionVariables.put(SessionVars.USERNAME.keyname(), userName);
     selectDatabase(databaseName);
   }
 
@@ -85,16 +90,6 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
     }
   }
 
-  public String getVariable(String name, String defaultValue) {
-    synchronized (sessionVariables) {
-      if (sessionVariables.containsKey(name)) {
-        return sessionVariables.get(name);
-      } else {
-        return defaultValue;
-      }
-    }
-  }
-
   public void removeVariable(String name) {
     synchronized (sessionVariables) {
       sessionVariables.remove(name);
@@ -103,32 +98,39 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
 
   public synchronized Map<String, String> getAllVariables() {
     synchronized (sessionVariables) {
+      sessionVariables.put(SessionVars.SESSION_ID.keyname(), sessionId);
+      sessionVariables.put(SessionVars.USERNAME.keyname(), userName);
+      sessionVariables.put(SessionVars.SESSION_LAST_ACCESS_TIME.keyname(), String.valueOf(lastAccessTime));
+      sessionVariables.put(SessionVars.CURRENT_DATABASE.keyname(), currentDatabase);
       return ImmutableMap.copyOf(sessionVariables);
     }
   }
 
-  public void selectDatabase(String databaseName) {
+  public synchronized void selectDatabase(String databaseName) {
     this.currentDatabase = databaseName;
   }
 
-  public String getCurrentDatabase() {
-    return this.currentDatabase;
+  public synchronized String getCurrentDatabase() {
+    return currentDatabase;
   }
 
   @Override
   public SessionProto getProto() {
     SessionProto.Builder builder = SessionProto.newBuilder();
-    builder.setSessionId(sessionId);
-    builder.setUsername(userName);
-    builder.setCurrentDatabase(currentDatabase);
+    builder.setSessionId(getSessionId());
+    builder.setUsername(getUserName());
+    builder.setCurrentDatabase(getCurrentDatabase());
     builder.setLastAccessTime(lastAccessTime);
     KeyValueSet variables = new KeyValueSet();
-    variables.putAll(this.sessionVariables);
-    builder.setVariables(variables.getProto());
-    return builder.build();
+
+    synchronized (sessionVariables) {
+      variables.putAll(this.sessionVariables);
+      builder.setVariables(variables.getProto());
+      return builder.build();
+    }
   }
 
   public String toString() {
-    return "user=" + userName + ",id=" + sessionId;
+    return "user=" + getUserName() + ",id=" + getSessionId() +",last_atime=" + getLastAccessTime();
   }
 }
