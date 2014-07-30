@@ -255,6 +255,7 @@ public class Query implements EventHandler<QueryEvent> {
           }
         } else {
           subProgresses[idx] = 0.0f;
+          finished = false;
         }
         idx++;
       }

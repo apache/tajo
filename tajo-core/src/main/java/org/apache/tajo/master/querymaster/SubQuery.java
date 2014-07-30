@@ -327,7 +327,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     readLock.lock();
     try {
       if (getState(true) == SubQueryState.NEW) {
-        return 0;
+        return 0.0f;
       } else {
         tempTasks = new ArrayList<QueryUnit>(tasks.values());
       }
@@ -342,7 +342,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    return totalProgress / (float) tempTasks.size();
+    return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 100.0f) / 100.0f;
   }
 
   public int getSucceededObjectCount() {
