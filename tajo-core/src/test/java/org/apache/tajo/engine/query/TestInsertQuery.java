@@ -507,6 +507,76 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testInsertOverwriteIntoParquet() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      executeString("create table parquet_table " +
+          "(l_orderkey int4, l_shipdate text, l_shipdate_function text) using parquet").close();
+
+      CatalogService catalog = testingCluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(getCurrentDatabase(), "parquet_table"));
+
+      executeString(
+          "insert overwrite into parquet_table  " +
+              "select l_orderkey, l_shipdate, substr(l_shipdate, 1, 10) from default.lineitem").close();
+
+      TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        assertEquals(5, desc.getStats().getNumRows().intValue());
+      }
+
+      ResultSet res = executeString("select l_orderkey, l_shipdate, l_shipdate_function " +
+          "from parquet_table ");
+
+      String expected = "l_orderkey,l_shipdate,l_shipdate_function\n" +
+          "-------------------------------\n" +
+          "1,1996-03-13,1996-03-13\n" +
+          "1,1996-04-12,1996-04-12\n" +
+          "2,1997-01-28,1997-01-28\n" +
+          "3,1994-02-02,1994-02-02\n" +
+          "3,1993-11-09,1993-11-09\n";
+
+      assertEquals(expected, resultSetToString(res));
+
+      executeString("DROP TABLE parquet_table PURGE");
+    }
+  }
+
+  @Test
+  public final void testInsertOverwriteIntoPartitionedParquet() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      executeString("create table parquet_table " +
+          "(l_orderkey int4, l_shipdate_function text) using parquet partition by column (l_shipdate text)").close();
+
+      CatalogService catalog = testingCluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(getCurrentDatabase(), "parquet_table"));
+
+      executeString(
+          "insert overwrite into parquet_table  " +
+              "select l_orderkey, substr(l_shipdate, 1, 10), l_shipdate from default.lineitem").close();
+
+      TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        assertEquals(5, desc.getStats().getNumRows().intValue());
+      }
+
+      ResultSet res = executeString("select l_orderkey, l_shipdate, l_shipdate_function " +
+          "from parquet_table ");
+
+      String expected = "l_orderkey,l_shipdate,l_shipdate_function\n" +
+          "-------------------------------\n" +
+          "3,1993-11-09,1993-11-09\n" +
+          "3,1994-02-02,1994-02-02\n" +
+          "1,1996-03-13,1996-03-13\n" +
+          "1,1996-04-12,1996-04-12\n" +
+          "2,1997-01-28,1997-01-28\n";
+
+      assertEquals(expected, resultSetToString(res));
+
+      executeString("DROP TABLE parquet_table PURGE");
+    }
+  }
+
+  @Test
   public final void testInsertOverwriteWithDatabase() throws Exception {
     ResultSet res = executeFile("table1_ddl.sql");
     res.close();

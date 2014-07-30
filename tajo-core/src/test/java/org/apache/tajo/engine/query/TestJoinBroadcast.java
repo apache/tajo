@@ -451,7 +451,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     res = executeString(
         "select distinct a.col3 from " + tableName + " as a " +
             "left outer join lineitem_large b " +
-            "on a.col1 = b.l_orderkey"
+            "on a.col1 = b.l_orderkey order by a.col3"
     );
 
     assertResultSet(res);

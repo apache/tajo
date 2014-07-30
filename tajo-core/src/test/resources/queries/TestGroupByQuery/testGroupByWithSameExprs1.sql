@@ -3,4 +3,6 @@ select
 from
   lineitem
 group by
+  l_orderkey + l_partkey
+order by
   l_orderkey + l_partkey;
