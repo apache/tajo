@@ -187,7 +187,7 @@
 
   <script type='text/javascript'>
     var e = document.getElementById("<%=curIdStr%>");
-    var state = "<%=eachSubQueryInfo.subQuery != null ? eachSubQueryInfo.subQuery.getState().name(): ""%>";
+    var state = "<%=eachSubQueryInfo.subQuery != null ? eachSubQueryInfo.subQuery.getState(true).name(): ""%>";
     switch (state) {
       case 'NEW':
         e.style.borderColor = "black";

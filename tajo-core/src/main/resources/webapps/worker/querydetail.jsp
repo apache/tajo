@@ -81,7 +81,7 @@ for(SubQuery eachSubQuery: subQueries) {
 %>
   <tr>
     <td><a href='<%=detailLink%>'><%=eachSubQuery.getId()%></a></td>
-    <td><%=eachSubQuery.getState()%></td>
+    <td><%=eachSubQuery.getState(true)%></td>
     <td><%=df.format(eachSubQuery.getStartTime())%></td>
     <td><%=eachSubQuery.getFinishTime() == 0 ? "-" : df.format(eachSubQuery.getFinishTime())%></td>
     <td><%=JSPUtil.getElapsedTime(eachSubQuery.getStartTime(), eachSubQuery.getFinishTime())%></td>
