@@ -67,11 +67,11 @@ public class RoundFloat8 extends GeneralFunction {
     int rountPoint = roundDatum.asInt4();
 
     if (Double.isNaN(value)) {
-      throw new InvalidOperationException("value is not a number");
+      throw new InvalidOperationException("value is not a number.");
     }
 
     if (Double.isInfinite(value)) {
-      throw new InvalidOperationException("/ by zero");
+      throw new InvalidOperationException("value is infinite.");
     }
 
     try {

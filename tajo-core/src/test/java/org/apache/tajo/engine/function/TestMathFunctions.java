@@ -450,7 +450,6 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select round(1.2345678901234567,13) ", new String[]{"1.2345678901235"});
     testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1.234567890123E9"});
     testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1.23456789012346E9"});
-//testSimpleEval("select round(1234567890.1234567890,7) ", new String[]{"1234567890.1234568"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT8);
