@@ -36,7 +36,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.IOException;
 
@@ -164,7 +164,7 @@ public class SequenceFileScanner extends FileScanner {
       } else {
         Text text = new Text();
         reader.getCurrentValue(text);
-        cells = Bytes.splitPreserveAllTokens(text.getBytes(), delimiter, projectionMap);
+        cells = BytesUtils.splitPreserveAllTokens(text.getBytes(), delimiter, projectionMap);
         totalBytes += (long)text.getBytes().length;
         tuple = new LazyTuple(schema, cells, 0, nullChars, serde);
       }

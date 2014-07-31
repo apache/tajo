@@ -38,10 +38,10 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -170,7 +170,7 @@ public class ExprTestBase {
       }
 
       lazyTuple =
-          new LazyTuple(inputSchema, Bytes.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
+          new LazyTuple(inputSchema, BytesUtils.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
       vtuple = new VTuple(inputSchema.size());
       for (int i = 0; i < inputSchema.size(); i++) {
         // If null value occurs, null datum is manually inserted to an input tuple.

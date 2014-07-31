@@ -39,7 +39,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Bytes;
 
 import java.io.Closeable;
 import java.io.*;
@@ -489,7 +488,7 @@ public class RCFile {
         }
 
         if (skipTotal != 0) {
-          Bytes.skipFully(in, skipTotal);
+          StorageUtil.skipFully(in, skipTotal);
           skipTotal = 0;
         }
 
@@ -528,7 +527,7 @@ public class RCFile {
       }
 
       if (skipTotal != 0) {
-        Bytes.skipFully(in, skipTotal);
+        StorageUtil.skipFully(in, skipTotal);
       }
     }
 

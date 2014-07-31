@@ -18,11 +18,10 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
@@ -32,11 +31,9 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -44,13 +41,11 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.sql.ResultSet;
 
-import static junit.framework.TestCase.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestJoinBroadcast extends QueryTestCaseBase {
-  private static final Log LOG = LogFactory.getLog(TestJoinBroadcast.class);
   public TestJoinBroadcast() throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "true");
@@ -456,7 +451,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     res = executeString(
         "select distinct a.col3 from " + tableName + " as a " +
             "left outer join lineitem_large b " +
-            "on a.col1 = b.l_orderkey"
+            "on a.col1 = b.l_orderkey order by a.col3"
     );
 
     assertResultSet(res);
@@ -576,4 +571,80 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     appender.flush();
     appender.close();
   }
+
+  @Test
+  public final void testLeftOuterJoinLeftSideSmallTable() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1000000|a", "1000001|b", "2|c", "3|d", "4|e" };
+    TajoTestingCluster.createTable("table1", schema, tableOptions, data, 1);
+
+    data = new String[10000];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
+    }
+    TajoTestingCluster.createTable("table_large", schema, tableOptions, data, 2);
+
+    try {
+      ResultSet res = executeString(
+          "select a.id, b.name from table1 a left outer join table_large b on a.id = b.id order by a.id"
+      );
+
+      String expected = "id,name\n" +
+          "-------------------------------\n" +
+          "2,this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable2\n" +
+          "3,this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable3\n" +
+          "4,this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable4\n" +
+          "1000000,null\n" +
+          "1000001,null\n";
+
+      assertEquals(expected, resultSetToString(res));
+
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table1 PURGE").close();
+      executeString("DROP TABLE table_large PURGE").close();
+    }
+  }
+
+
+  @Test
+  public final void testSelfJoin() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("paritioned_nation");
+    ResultSet res = executeString(
+        "create table " + tableName + " (n_name text,"
+            + "  n_comment text, n_regionkey int8) USING csv "
+            + "WITH ('csvfile.delimiter'='|')"
+            + "PARTITION BY column(n_nationkey int8)");
+    res.close();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString(
+        "insert overwrite into " + tableName
+            + " select n_name, n_comment, n_regionkey, n_nationkey from nation");
+    res.close();
+
+    res = executeString(
+      "select a.n_nationkey, a.n_name from nation a join nation b on a.n_nationkey = b.n_nationkey"
+      + " where a.n_nationkey in (1)");
+    String expected = resultSetToString(res);
+    res.close();
+
+    res = executeString(
+      "select a.n_nationkey, a.n_name from " + tableName + " a join "+tableName +
+      " b on a.n_nationkey = b.n_nationkey "
+      + " where a.n_nationkey in (1)");
+    String resultSetData = resultSetToString(res);
+    res.close();
+
+    assertEquals(expected, resultSetData);
+
+  }
+
+
 }
