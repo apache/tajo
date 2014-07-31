@@ -544,7 +544,9 @@ public class TajoPullServerService extends AbstractService {
         throws Exception {
       LOG.error(e.getCause().getMessage(), e.getCause());
       //if channel.close() is not called, never closed files in this request
-      e.getChannel().close();
+      if (ctx.getChannel().isConnected()){
+        ctx.getChannel().close();
+      }
     }
   }
 

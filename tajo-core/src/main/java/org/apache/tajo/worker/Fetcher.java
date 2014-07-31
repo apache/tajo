@@ -267,7 +267,9 @@ public class Fetcher {
 
       // this fetching will be retry
       IOUtils.cleanup(LOG, fc, raf);
-      ctx.getChannel().close();
+      if(ctx.getChannel().isConnected()){
+        ctx.getChannel().close();
+      }
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
     }
