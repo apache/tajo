@@ -23,8 +23,10 @@ import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.sql.ResultSet;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestMathFunctions extends ExprTestBase {
   @Test
@@ -44,6 +46,16 @@ public class TestMathFunctions extends ExprTestBase {
 
     testEval(schema, "table1", "1.0, 0.2, 0.4", "select round(col1 + col2 + col3) from table1",
         new String[]{"2"});
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", INT4);
+    schema2.addColumn("col2", INT8);
+    schema2.addColumn("col3", FLOAT4);
+    schema2.addColumn("col4", FLOAT8);
+
+    testEval(schema2, "table1", "9,9,9.5,9.5",
+        "select round(col1), round (col2), round(col3), round(col4) from table1",
+        new String [] {"9", "9", "10", "10"});
   }
 
   @Test
