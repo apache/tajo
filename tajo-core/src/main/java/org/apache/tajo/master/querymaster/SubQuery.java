@@ -636,7 +636,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       SubQueryEvent, SubQueryState> {
 
     @Override
-    public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
+    public SubQueryState transition(final SubQuery subQuery, SubQueryEvent subQueryEvent) {
       subQuery.setStartTime();
       ExecutionBlock execBlock = subQuery.getBlock();
       SubQueryState state;
@@ -647,25 +647,39 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.finalizeStats();
           state = SubQueryState.SUCCEEDED;
         } else {
-          //TODO change to async execution
-          ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
-          DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
-          setShuffleIfNecessary(subQuery, channel);
-          initTaskScheduler(subQuery);
-          schedule(subQuery);
-          subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
-          LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
+          // execute pre-processing asyncronously
+          subQuery.getContext().getQueryMasterContext().getEventExecutor()
+              .submit(new Runnable() {
+                        @Override
+                        public void run() {
+                          try {
+                            ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
+                            DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
+                            setShuffleIfNecessary(subQuery, channel);
+                            initTaskScheduler(subQuery);
+                            schedule(subQuery);
+                            subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
+                            LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
 
-          if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-            subQuery.stopScheduler();
-            subQuery.finalizeStats();
-            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
-            return SubQueryState.SUCCEEDED;
-          } else {
-            subQuery.taskScheduler.start();
-            allocateContainers(subQuery);
-            return SubQueryState.INITED;
-          }
+                            if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+                              subQuery.stopScheduler();
+                              subQuery.finalizeStats();
+                              subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
+                            } else {
+                              subQuery.taskScheduler.start();
+                              allocateContainers(subQuery);
+
+                            }
+                          } catch (Exception e) {
+                            LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
+                            subQuery.setFinishTime();
+                            subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
+                            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.ERROR));
+                          }
+                        }
+                      }
+              );
+          state = SubQueryState.INITED;
         }
       } catch (Exception e) {
         LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
