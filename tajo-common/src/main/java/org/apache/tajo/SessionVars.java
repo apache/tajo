@@ -105,6 +105,10 @@ public enum SessionVars implements ConfigKey {
 
   NULL_CHAR(ConfVars.$CSVFILE_NULL, "null char of text files", DEFAULT),
 
+  // Behavior Control ---------------------------------------------------------
+  ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,
+      "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
+
   //-------------------------------------------------------------------------------
   // Only for Unit Testing
   //-------------------------------------------------------------------------------
