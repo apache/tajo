@@ -344,7 +344,10 @@ public class TajoConf extends Configuration {
     TAJO_DEBUG("tajo.debug", false),
 
     // ONLY FOR TESTCASE
-    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1),
+
+    // behavior control
+    BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
     ;
 
     public final String varname;

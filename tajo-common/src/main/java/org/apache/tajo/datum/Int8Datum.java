@@ -280,20 +280,40 @@ public class Int8Datum extends NumericDatum {
   @Override
   public Datum divide(Datum datum) {
     switch (datum.type()) {
-    case INT2:
-      return DatumFactory.createInt8(val / datum.asInt2());
-    case INT4:
-      return DatumFactory.createInt8(val / datum.asInt4());
-    case INT8:
-      return DatumFactory.createInt8(val / datum.asInt8());
-    case FLOAT4:
-      return DatumFactory.createFloat8(val / datum.asFloat4());
-    case FLOAT8:
-      return DatumFactory.createFloat8(val / datum.asFloat8());
-    case NULL_TYPE:
-      return datum;
-    default:
-      throw new InvalidOperationException(datum.type());
+      case INT2:
+        short paramValueI2 = datum.asInt2();
+        if (!validateDivideZero(paramValueI2)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val / paramValueI2);
+      case INT4:
+        int paramValueI4 = datum.asInt4();
+        if (!validateDivideZero(paramValueI4)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val / paramValueI4);
+      case INT8:
+        long paramValueI8 = datum.asInt8();
+        if (!validateDivideZero(paramValueI8)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val / paramValueI8);
+      case FLOAT4:
+        float paramValueF4 = datum.asFloat4();
+        if (!validateDivideZero(paramValueF4)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createFloat8(val / paramValueF4);
+      case FLOAT8:
+        double paramValueF8 = datum.asFloat8();
+        if (!validateDivideZero(paramValueF8)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createFloat8(val / paramValueF8);
+      case NULL_TYPE:
+        return datum;
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -301,15 +321,35 @@ public class Int8Datum extends NumericDatum {
   public Datum modular(Datum datum) {
     switch (datum.type()) {
       case INT2:
-        return DatumFactory.createInt8(val % datum.asInt2());
+        short paramValueI2 = datum.asInt2();
+        if (!validateDivideZero(paramValueI2)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val % paramValueI2);
       case INT4:
-        return DatumFactory.createInt8(val % datum.asInt4());
+        int paramValueI4 = datum.asInt4();
+        if (!validateDivideZero(paramValueI4)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val % paramValueI4);
       case INT8:
-        return DatumFactory.createInt8(val % datum.asInt8());
+        long paramValueI8 = datum.asInt8();
+        if (!validateDivideZero(paramValueI8)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createInt8(val % paramValueI8);
       case FLOAT4:
-        return DatumFactory.createFloat8(val % datum.asFloat4());
+        float paramValueF4 = datum.asFloat4();
+        if (!validateDivideZero(paramValueF4)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createFloat8(val % paramValueF4);
       case FLOAT8:
-        return DatumFactory.createFloat8(val % datum.asFloat8());
+        double paramValueF8 = datum.asFloat8();
+        if (!validateDivideZero(paramValueF8)) {
+          return NullDatum.get();
+        }
+        return DatumFactory.createFloat8(val % paramValueF8);
       case NULL_TYPE:
         return datum;
       default:
