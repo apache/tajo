@@ -751,7 +751,6 @@ public class Repartitioner {
           }
 
           if (finalFetches.containsKey(interm.getKey())) {
-
             finalFetches.get(interm.getKey()).addFetche(fetch).increaseVolume(volumeSum);
           } else {
             finalFetches.put(interm.getKey(), new FetchGroupMeta(volumeSum, fetch));
@@ -808,13 +807,11 @@ public class Repartitioner {
       }
     });
 
-
     // Initialize containers
-    int i;
     Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];
     Long [] assignedVolumes = new Long[num];
     // initialization
-    for (i = 0; i < num; i++) {
+    for (int i = 0; i < num; i++) {
       fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
       assignedVolumes[i] = 0l;
     }
@@ -824,24 +821,30 @@ public class Repartitioner {
     // In terms of this point, it will show reasonable performance and results. even though it is not an optimal
     // algorithm.
     Iterator<FetchGroupMeta> iterator = fetchGroupMetaList.iterator();
-    while(iterator.hasNext()) {
-      for (int j = 0; j < num && iterator.hasNext(); j++) {
-        FetchGroupMeta fetchGroupMeta = iterator.next();
-        assignedVolumes[j] += fetchGroupMeta.getVolume();
 
-        TUtil.putCollectionToNestedList(fetchesArray[j], tableName, fetchGroupMeta.fetchUrls);
+    int p = 0;
+    while(iterator.hasNext()) {
+      while (p < num && iterator.hasNext()) {
+        FetchGroupMeta fetchGroupMeta = iterator.next();
+        assignedVolumes[p] += fetchGroupMeta.getVolume();
+
+        TUtil.putCollectionToNestedList(fetchesArray[p], tableName, fetchGroupMeta.fetchUrls);
+        p++;
       }
 
-      for (int j = num - 1; j >= 0 && iterator.hasNext(); j--) {
+      p = num - 1;
+      while (p > 0 && iterator.hasNext()) {
         FetchGroupMeta fetchGroupMeta = iterator.next();
-        assignedVolumes[j] += fetchGroupMeta.getVolume();
+        assignedVolumes[p] += fetchGroupMeta.getVolume();
 
         // While the current one is smaller than next one, it adds additional fetches to current one.
-        while(j > 0 && iterator.hasNext() && assignedVolumes[j - 1] > assignedVolumes[j]) {
+        while(iterator.hasNext() && assignedVolumes[p - 1] > assignedVolumes[p]) {
           FetchGroupMeta additionalFetchGroup = iterator.next();
-          assignedVolumes[j] += additionalFetchGroup.getVolume();
-          TUtil.putCollectionToNestedList(fetchesArray[j], tableName, additionalFetchGroup.fetchUrls);
+          assignedVolumes[p] += additionalFetchGroup.getVolume();
+          TUtil.putCollectionToNestedList(fetchesArray[p], tableName, additionalFetchGroup.fetchUrls);
         }
+
+        p--;
       }
     }
 
