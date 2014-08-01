@@ -19,6 +19,7 @@
 package org.apache.tajo.master.querymaster;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -675,6 +676,30 @@ public class Repartitioner {
     }
   }
 
+  static class FetchGroupMeta {
+    long totalVolume;
+    List<FetchImpl> fetchUrls;
+
+    public FetchGroupMeta(long volume, FetchImpl fetchUrls) {
+      this.totalVolume = volume;
+      this.fetchUrls = Lists.newArrayList(fetchUrls);
+    }
+
+    public FetchGroupMeta addFetche(FetchImpl fetches) {
+      this.fetchUrls.add(fetches);
+      return this;
+    }
+
+    public void increaseVolume(long volume) {
+      this.totalVolume += volume;
+    }
+
+    public long getVolume() {
+      return totalVolume;
+    }
+
+  }
+
   public static void scheduleHashShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
                                                  SubQuery subQuery, DataChannel channel,
                                                  int maxNum) {
@@ -689,7 +714,7 @@ public class Repartitioner {
     SubQuery.scheduleFragments(subQuery, fragments);
 
     Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost;
-    Map<Integer, Collection<FetchImpl>> finalFetches = new HashMap<Integer, Collection<FetchImpl>>();
+    Map<Integer, FetchGroupMeta> finalFetches = new HashMap<Integer, FetchGroupMeta>();
     Map<ExecutionBlockId, List<IntermediateEntry>> intermediates = new HashMap<ExecutionBlockId,
         List<IntermediateEntry>>();
 
@@ -717,10 +742,16 @@ public class Repartitioner {
           FetchImpl fetch = new FetchImpl(e.getKey(), channel.getShuffleType(),
               block.getId(), interm.getKey(), e.getValue());
 
+          long volumeSum = 0;
+          for (IntermediateEntry ie : e.getValue()) {
+            volumeSum += ie.getVolume();
+          }
+
           if (finalFetches.containsKey(interm.getKey())) {
-            finalFetches.get(interm.getKey()).add(fetch);
+
+            finalFetches.get(interm.getKey()).addFetche(fetch).increaseVolume(volumeSum);
           } else {
-            finalFetches.put(interm.getKey(), TUtil.newList(fetch));
+            finalFetches.put(interm.getKey(), new FetchGroupMeta(volumeSum, fetch));
           }
         }
       }
@@ -756,9 +787,50 @@ public class Repartitioner {
           scan.getTableName());
     } else {
       schedulerContext.setEstimatedTaskNum(determinedTaskNum);
-      // divide fetch uris into the the proper number of tasks in a round robin manner.
-      scheduleFetchesByRoundRobin(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
+      // divide fetch uris into the the proper number of tasks according to volumes
+      scheduleFetchesByEvenDistributedVolumes(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
       LOG.info(subQuery.getId() + ", DeterminedTaskNum : " + determinedTaskNum);
+    }
+  }
+
+  public static void scheduleFetchesByEvenDistributedVolumes(SubQuery subQuery, Map<Integer, FetchGroupMeta> partitions,
+                                                             String tableName, int num) {
+
+    // Sort fetchGroupMeta in a descending order of data volumes.
+    List<FetchGroupMeta> fetchGroupMetaList = Lists.newArrayList(partitions.values());
+    Collections.sort(fetchGroupMetaList, new Comparator<FetchGroupMeta>() {
+      @Override
+      public int compare(FetchGroupMeta o1, FetchGroupMeta o2) {
+        return o1.getVolume() < o2.getVolume() ? -1 : (o1.getVolume() > o2.getVolume() ? 1 : 0);
+      }
+    });
+
+
+    // Initialize containers
+    int i;
+    Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];
+    for (i = 0; i < num; i++) {
+      fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
+    }
+
+    // This algorithm assignes bigger first manner by using a sorted iterator. It is a kind of greedy manner.
+    // Its complexity is O(n). Since FetchGroup can be more than tens of thousands, we should consider its complexity.
+    // In terms of this point, it will show reasonable performance and results. even though it is not an optimal
+    // algorithm.
+    Iterator<FetchGroupMeta> iterator = fetchGroupMetaList.iterator();
+    while(iterator.hasNext()) {
+      for (int j = 0; j < num && iterator.hasNext(); j++) {
+        TUtil.putCollectionToNestedList(fetchesArray[j++], tableName, iterator.next().fetchUrls);
+      }
+
+      for (int j = num - 1; j >= 0 && iterator.hasNext(); j--) {
+        TUtil.putCollectionToNestedList(fetchesArray[j++], tableName, iterator.next().fetchUrls);
+      }
+    }
+
+    // Schedule them
+    for (Map<String, List<FetchImpl>> eachFetches : fetchesArray) {
+      SubQuery.scheduleFetches(subQuery, eachFetches);
     }
   }
 
