@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -49,6 +50,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -676,7 +678,8 @@ public class Repartitioner {
     }
   }
 
-  static class FetchGroupMeta {
+  @VisibleForTesting
+  public static class FetchGroupMeta {
     long totalVolume;
     List<FetchImpl> fetchUrls;
 
@@ -793,15 +796,15 @@ public class Repartitioner {
     }
   }
 
-  public static void scheduleFetchesByEvenDistributedVolumes(SubQuery subQuery, Map<Integer, FetchGroupMeta> partitions,
-                                                             String tableName, int num) {
+  public static Pair<Long [], Map<String, List<FetchImpl>>[]> makeEvenDistributedFetchImpl(
+      Map<Integer, FetchGroupMeta> partitions, String tableName, int num) {
 
     // Sort fetchGroupMeta in a descending order of data volumes.
     List<FetchGroupMeta> fetchGroupMetaList = Lists.newArrayList(partitions.values());
     Collections.sort(fetchGroupMetaList, new Comparator<FetchGroupMeta>() {
       @Override
       public int compare(FetchGroupMeta o1, FetchGroupMeta o2) {
-        return o1.getVolume() < o2.getVolume() ? -1 : (o1.getVolume() > o2.getVolume() ? 1 : 0);
+        return o1.getVolume() < o2.getVolume() ? 1 : (o1.getVolume() > o2.getVolume() ? -1 : 0);
       }
     });
 
@@ -809,8 +812,11 @@ public class Repartitioner {
     // Initialize containers
     int i;
     Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];
+    Long [] assignedVolumes = new Long[num];
+    // initialization
     for (i = 0; i < num; i++) {
       fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
+      assignedVolumes[i] = 0l;
     }
 
     // This algorithm assignes bigger first manner by using a sorted iterator. It is a kind of greedy manner.
@@ -820,16 +826,33 @@ public class Repartitioner {
     Iterator<FetchGroupMeta> iterator = fetchGroupMetaList.iterator();
     while(iterator.hasNext()) {
       for (int j = 0; j < num && iterator.hasNext(); j++) {
-        TUtil.putCollectionToNestedList(fetchesArray[j++], tableName, iterator.next().fetchUrls);
+        FetchGroupMeta fetchGroupMeta = iterator.next();
+        assignedVolumes[j] += fetchGroupMeta.getVolume();
+
+        TUtil.putCollectionToNestedList(fetchesArray[j], tableName, fetchGroupMeta.fetchUrls);
       }
 
       for (int j = num - 1; j >= 0 && iterator.hasNext(); j--) {
-        TUtil.putCollectionToNestedList(fetchesArray[j++], tableName, iterator.next().fetchUrls);
+        FetchGroupMeta fetchGroupMeta = iterator.next();
+        assignedVolumes[j] += fetchGroupMeta.getVolume();
+
+        // While the current one is smaller than next one, it adds additional fetches to current one.
+        while(j > 0 && iterator.hasNext() && assignedVolumes[j - 1] > assignedVolumes[j]) {
+          FetchGroupMeta additionalFetchGroup = iterator.next();
+          assignedVolumes[j] += additionalFetchGroup.getVolume();
+          TUtil.putCollectionToNestedList(fetchesArray[j], tableName, additionalFetchGroup.fetchUrls);
+        }
       }
     }
 
-    // Schedule them
-    for (Map<String, List<FetchImpl>> eachFetches : fetchesArray) {
+    return new Pair<Long[], Map<String, List<FetchImpl>>[]>(assignedVolumes, fetchesArray);
+  }
+
+  public static void scheduleFetchesByEvenDistributedVolumes(SubQuery subQuery, Map<Integer, FetchGroupMeta> partitions,
+                                                             String tableName, int num) {
+    Map<String, List<FetchImpl>>[] fetchsArray = makeEvenDistributedFetchImpl(partitions, tableName, num).getSecond();
+    // Schedule FetchImpls
+    for (Map<String, List<FetchImpl>> eachFetches : fetchsArray) {
       SubQuery.scheduleFetches(subQuery, eachFetches);
     }
   }
