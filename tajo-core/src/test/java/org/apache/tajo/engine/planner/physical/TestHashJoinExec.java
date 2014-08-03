@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -201,10 +202,8 @@ public class TestHashJoinExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    TajoConf localConf = new TajoConf(conf);
-    localConf.setLongVar(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, 100l);
-    ctx.getQueryContext().setConf(localConf);
-    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(localConf, sm);
+    ctx.getQueryContext().setLong(SessionVars.HASH_JOIN_SIZE_LIMIT.keyname(), 100l);
+    PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;

@@ -23,9 +23,17 @@ import org.apache.tajo.conf.TajoConf;
 
 public abstract class TajoShellCommand {
   public abstract String getCommand();
+  public String [] getAliases() {
+    return new String[] {};
+  }
   public abstract void invoke(String [] command) throws Exception;
   public abstract String getUsage();
   public abstract String getDescription();
+  public void printHelp() {
+    context.getOutput().print(getCommand());
+    context.getOutput().print(" - ");
+    context.getOutput().println(getDescription());
+  }
 
   protected TajoCli.TajoCliContext context;
   protected TajoClient client;

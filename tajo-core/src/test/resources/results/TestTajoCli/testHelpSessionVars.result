@@ -1,0 +1,36 @@
+Available Session Variables:
+
+\set SESSION_EXPIRY_TIME [int value] - session expiry time (secs)
+\set CLI_COLUMNS [int value] - Sets the width for the wrapped format
+\set CLI_FORMATTER_CLASS [text value] - Sets the output format class to display results
+\set CLI_NULL_CHAR [text value] - Sets the string to be printed in place of a null value.
+\set CLI_PAGE_ROWS [int value] - Sets the number of rows for paging
+\set CLI_PAGING_ENABLED [true or false] - Enable paging of result display
+\set CLI_DISPLAY_ERROR_TRACE [true or false] - Enable display of error trace
+\set ON_ERROR_STOP [true or false] - tsql will exist if an error occurs.
+\set TZ [text value] - Sets timezone
+\set DATE_ORDER [text value] - date order (default is YMD)
+\set LANG [text value] - Language
+\set LC_ALL [text value] - String sort order
+\set LC_COLLATE [text value] - String sort order
+\set LC_CTYPE [text value] - Character classification (What is a letter? Its upper-case equivalent?)
+\set LC_MESSAGES [text value] - Language of messages
+\set LC_MONETARY [text value] - Formatting of currency amounts
+\set LC_NUMERIC [text value] - Formatting of numbers
+\set LC_TIME [text value] - Formatting of dates and times
+\set BROADCAST_TABLE_SIZE_LIMIT [long value] - limited size (bytes) of broadcast table
+\set JOIN_TASK_INPUT_SIZE [int value] - join task input size (mb) 
+\set SORT_TASK_INPUT_SIZE [int value] - sort task input size (mb)
+\set GROUPBY_TASK_INPUT_SIZE [int value] - group by task input size (mb)
+\set JOIN_PER_SHUFFLE_SIZE [int value] - shuffle output size for join (mb)
+\set GROUPBY_PER_SHUFFLE_SIZE [int value] - shuffle output size for sort (mb)
+\set TABLE_PARTITION_PER_SHUFFLE_SIZE [int value] - shuffle output size for partition table write (mb)
+\set EXTSORT_BUFFER_SIZE [long value] - sort buffer size for external sort (mb)
+\set HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash join (mb)
+\set INNER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash inner join (mb)
+\set OUTER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash outer join (mb)
+\set HASH_GROUPBY_SIZE_LIMIT [long value] - limited size for hash groupby (mb)
+\set MAX_OUTPUT_FILE_SIZE [int value] - Maximum per-output file size (mb). 0 means infinite.
+\set NULL_CHAR [text value] - null char of text file output
+\set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
+\set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

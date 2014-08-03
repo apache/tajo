@@ -27,10 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -197,7 +194,8 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto existSessionVariable(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public BoolProto existSessionVariable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
       try {
         String value = context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue());
         if (value != null) {

@@ -19,13 +19,31 @@
 package org.apache.tajo;
 
 public interface ConfigKey {
-  public static final String SESSION_PREFIX = "$";
-  public static final String QUERY_CONF_PREFIX = "%";
+
+  // Client can set or change variables of this mode.
+  public static final int DEFAULT_MODE = 0;
+  // This is similar to DEFAULT mode. In addition, it tries to get values from shell env. variables.
+  public static final int FROM_SHELL_ENV_MODE = 1;
+  // only TajoMaster is able to set and change variables of this mode.
+  public static final int SERVER_SIDE_VAR_MODE = 2;
+  // This type variable will be used only in cli side.
+  public static final int CLI_SIDE_VAR_MODE = 3;
 
   public static enum ConfigType {
-    SYSTEM,
-    SESSION,
-    QUERY
+    SYSTEM(""),
+    SESSION("$"),
+    QUERY("@"),
+    CLI("+");
+
+    private String prefix;
+
+    ConfigType(String prefix) {
+      this.prefix = prefix;
+    }
+
+    public String getPrefix() {
+      return prefix;
+    }
   }
 
   public String keyname();

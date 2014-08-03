@@ -772,7 +772,7 @@ public class Repartitioner {
        String tableName) {
     int i = 0;
     long splitVolume = StorageUnit.MB *
-        subQuery.getMasterPlan().getContext().getLong(SessionVars.TABLE_PARTITION_WRITE_PER_SHUFFLE_SIZE);
+        subQuery.getMasterPlan().getContext().getLong(SessionVars.TABLE_PARTITION_PER_SHUFFLE_SIZE);
 
     long sumNumBytes = 0L;
     Map<Integer, List<FetchImpl>> fetches = new HashMap<Integer, List<FetchImpl>>();

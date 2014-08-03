@@ -20,11 +20,10 @@ package org.apache.tajo.cli;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -33,20 +32,17 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 
 public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
-  private TajoConf tajoConf;
   private int printPauseRecords;
   private boolean printPause;
   private boolean printErrorTrace;
   private String nullChar;
 
   @Override
-  public void init(TajoConf tajoConf) {
-    this.tajoConf = tajoConf;
-
-    this.printPause = tajoConf.getBoolVar(TajoConf.ConfVars.$CLI_PRINT_PAUSE);
-    this.printPauseRecords = tajoConf.getIntVar(TajoConf.ConfVars.$CLI_PRINT_PAUSE_NUM_RECORDS);
-    this.printErrorTrace = tajoConf.getBoolVar(TajoConf.ConfVars.$CLI_PRINT_ERROR_TRACE);
-    this.nullChar = tajoConf.getVar(ConfVars.$CLI_NULL_CHAR);
+  public void init(TajoCli.TajoCliContext context) {
+    this.printPause = context.getBool(SessionVars.CLI_PAGING_ENABLED);
+    this.printPauseRecords = context.getInt(SessionVars.CLI_PAGE_ROWS);
+    this.printErrorTrace = context.getBool(SessionVars.CLI_DISPLAY_ERROR_TRACE);
+    this.nullChar = context.get(SessionVars.CLI_NULL_CHAR);
   }
 
   @Override

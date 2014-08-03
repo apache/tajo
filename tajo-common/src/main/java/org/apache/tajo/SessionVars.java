@@ -53,23 +53,23 @@ public enum SessionVars implements ConfigKey {
   //-------------------------------------------------------------------------------
 
   // Client --------------------------------------------------------
-  SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, "", DEFAULT),
+  SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, "session expiry time (secs)", DEFAULT),
 
   // Command line interface and its behavior --------------------------------
-  // TODO - they should be replaced by '\pset' meta command
-  DISPLAY_WIDTH(ConfVars.$CLI_MAX_COLUMN, "", DEFAULT),
-  DISPLAY_FORMATTER_CLASS(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, "", DEFAULT),
-  DISPLAY_NULL_CHAR(ConfVars.$CLI_NULL_CHAR, "", DEFAULT),
+  CLI_COLUMNS(ConfVars.$CLI_MAX_COLUMN, "Sets the width for the wrapped format", CLI_SIDE_VAR),
+  CLI_FORMATTER_CLASS(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, "Sets the output format class to display results",
+      CLI_SIDE_VAR),
+  CLI_NULL_CHAR(ConfVars.$CLI_NULL_CHAR, "Sets the string to be printed in place of a null value.", CLI_SIDE_VAR),
 
-  CLI_PRINT_PAUSE_NUM_RECORDS(ConfVars.$CLI_PRINT_PAUSE_NUM_RECORDS, "", DEFAULT),
-  CLI_PRINT_PAUSE(ConfVars.$CLI_PRINT_PAUSE, "", DEFAULT),
-  CLI_PRINT_ERROR_TRACE(ConfVars.$CLI_PRINT_ERROR_TRACE, "", DEFAULT),
+  CLI_PAGE_ROWS(ConfVars.$CLI_PRINT_PAUSE_NUM_RECORDS, "Sets the number of rows for paging", CLI_SIDE_VAR),
+  CLI_PAGING_ENABLED(ConfVars.$CLI_PRINT_PAUSE, "Enable paging of result display", CLI_SIDE_VAR),
+  CLI_DISPLAY_ERROR_TRACE(ConfVars.$CLI_PRINT_ERROR_TRACE, "Enable display of error trace", CLI_SIDE_VAR),
 
-  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", DEFAULT),
+  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", CLI_SIDE_VAR),
 
   // Timezone & Date ----------------------------------------------------------
-  TZ(ConfVars.$TIMEZONE, "Timezone", FROM_SHELL_ENV),
-  DATE_ORDER(ConfVars.$DATE_ORDER, "YMD", FROM_SHELL_ENV),
+  TZ(ConfVars.$TIMEZONE, "Sets timezone", FROM_SHELL_ENV),
+  DATE_ORDER(ConfVars.$DATE_ORDER, "date order (default is YMD)", FROM_SHELL_ENV),
 
   // Locales and Character set ------------------------------------------------
   // TODO - they are reserved variables, and we should support them.
@@ -86,24 +86,30 @@ public enum SessionVars implements ConfigKey {
   // Query and Optimization ---------------------------------------------------
 
   // for distributed query strategies
-  BROADCAST_TABLE_SIZE_LIMIT(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD, "", DEFAULT),
+  BROADCAST_TABLE_SIZE_LIMIT(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD, "limited size (bytes) of broadcast table",
+      DEFAULT),
 
-  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size", DEFAULT),
-  SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size", DEFAULT),
-  GROUPBY_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_GROUPBY_TASK_VOLUME, "group by task input size", DEFAULT),
+  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT),
+  SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size (mb)", DEFAULT),
+  GROUPBY_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_GROUPBY_TASK_VOLUME, "group by task input size (mb)", DEFAULT),
 
-  JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, "shuffle output size for join", DEFAULT),
-  GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, "shuffle output size for sort", DEFAULT),
-  TABLE_PARTITION_WRITE_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME, // TODO - rename
-      "shuffle output size for partition table write", DEFAULT),
+  JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, "shuffle output size for join (mb)", DEFAULT),
+  GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, "shuffle output size for sort (mb)", DEFAULT),
+  TABLE_PARTITION_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME,
+      "shuffle output size for partition table write (mb)", DEFAULT),
 
   // for physical Executors
-  EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort", DEFAULT),
-  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "hash join size limit", DEFAULT),
-  HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, "hash groupby size limit", DEFAULT),
-  MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size", DEFAULT),
+  EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT),
+  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT),
+  INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,
+      "limited size for hash inner join (mb)", DEFAULT),
+  OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash outer join (mb)",
+      DEFAULT),
+  HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, "limited size for hash groupby (mb)",
+      DEFAULT),
+  MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT),
 
-  NULL_CHAR(ConfVars.$CSVFILE_NULL, "null char of text files", DEFAULT),
+  NULL_CHAR(ConfVars.$CSVFILE_NULL, "null char of text file output", DEFAULT),
 
   // Behavior Control ---------------------------------------------------------
   ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,
@@ -113,17 +119,19 @@ public enum SessionVars implements ConfigKey {
   // Only for Unit Testing
   //-------------------------------------------------------------------------------
   DEBUG_ENABLED(ConfVars.$DEBUG_ENABLED, "(debug only) debug mode enabled", DEFAULT),
-  TEST_BROADCAST_JOIN_ENABLED(ConfVars.$TEST_BROADCAST_JOIN_ENABLED, "(test only) broadcast enabled", DEFAULT),
-  TEST_JOIN_OPT_ENABLED(ConfVars.$TEST_JOIN_OPT_ENABLED, "(test only) join optimization enabled", DEFAULT),
-  TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", DEFAULT),
-  TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", DEFAULT),
+  TEST_BROADCAST_JOIN_ENABLED(ConfVars.$TEST_BROADCAST_JOIN_ENABLED, "(test only) broadcast enabled", TEST_VAR),
+  TEST_JOIN_OPT_ENABLED(ConfVars.$TEST_JOIN_OPT_ENABLED, "(test only) join optimization enabled", TEST_VAR),
+  TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", TEST_VAR),
+  TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   ;
 
   private static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
+  private static Map<String, SessionVars> DEPRECATED_SESSION_VARS = Maps.newHashMap();
 
   static {
     for (SessionVars var : SessionVars.values()) {
       SESSION_VARS.put(var.keyname(), var);
+      DEPRECATED_SESSION_VARS.put(var.getConfVars().keyname(), var);
     }
   }
 
@@ -135,6 +143,8 @@ public enum SessionVars implements ConfigKey {
     DEFAULT,         // Client can set or change variables of this mode..
     FROM_SHELL_ENV,  // This is similar to DEFAULT mode. In addition, it tries to get values from shell env. variables.
     SERVER_SIDE_VAR, // only TajoMaster is able to set and change variables of this mode.
+    CLI_SIDE_VAR,    // This type variable is used in CLI.
+    TEST_VAR         // Only used for unit tests
   }
 
   SessionVars(ConfVars key, String description, VariableMode mode) {
@@ -144,7 +154,7 @@ public enum SessionVars implements ConfigKey {
   }
 
   public String keyname() {
-    return SESSION_PREFIX + name();
+    return name();
   }
 
   public ConfigType type() {
@@ -167,13 +177,19 @@ public enum SessionVars implements ConfigKey {
     return mode;
   }
 
-  public static boolean exists(String name) {
-    return SESSION_VARS.containsKey(name.toUpperCase());
+  public static boolean exists(String keyname) {
+    return SESSION_VARS.containsKey(keyname) || DEPRECATED_SESSION_VARS.containsKey(keyname);
+  }
+
+  public static boolean isDeprecated(String keyname) {
+    return DEPRECATED_SESSION_VARS.containsKey(keyname);
   }
 
   public static SessionVars get(String keyname) {
-    if (exists(keyname)) {
-      return SESSION_VARS.get(keyname.toUpperCase());
+    if (SESSION_VARS.containsKey(keyname)) {
+      return SESSION_VARS.get(keyname);
+    } else if (DEPRECATED_SESSION_VARS.containsKey(keyname)) {
+      return DEPRECATED_SESSION_VARS.get(keyname);
     } else {
       return null;
     }

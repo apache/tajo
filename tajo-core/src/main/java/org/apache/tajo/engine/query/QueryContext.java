@@ -22,13 +22,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.KeyValueSet;
 
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 /**
@@ -50,17 +53,16 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
  *
  * QueryContent provides a query with a uniform way to access various configs without considering their priorities.
  */
-public class QueryContext extends KeyValueSet {
-
+public class QueryContext extends OverridableConf {
   public static enum QueryVars implements ConfigKey {
     COMMAND_TYPE,
-    STAGING_DIR(),
-    OUTPUT_TABLE_NAME(),
-    OUTPUT_TABLE_PATH(),
-    OUTPUT_PARTITIONS(),
-    OUTPUT_OVERWRITE(),
-    OUTPUT_AS_DIRECTORY(),
-    OUTPUT_PER_FILE_SIZE(),
+    STAGING_DIR,
+    OUTPUT_TABLE_NAME,
+    OUTPUT_TABLE_PATH,
+    OUTPUT_PARTITIONS,
+    OUTPUT_OVERWRITE,
+    OUTPUT_AS_DIRECTORY,
+    OUTPUT_PER_FILE_SIZE,
     ;
 
     QueryVars() {
@@ -68,7 +70,7 @@ public class QueryContext extends KeyValueSet {
 
     @Override
     public String keyname() {
-      return QUERY_CONF_PREFIX + name();
+      return name().toLowerCase();
     }
 
     @Override
@@ -77,131 +79,17 @@ public class QueryContext extends KeyValueSet {
     }
   }
 
-  private static final Log LOG = LogFactory.getLog(QueryContext.class);
-
-  private TajoConf conf;
-
-  public QueryContext(final TajoConf conf) {
-    this.conf = conf;
+  public QueryContext(TajoConf conf) {
+    super(conf, ConfigKey.ConfigType.QUERY);
   }
 
-  public QueryContext(final TajoConf conf, Session session) {
-    this.conf = conf;
+  public QueryContext(TajoConf conf, Session session) {
+    super(conf);
     putAll(session.getAllVariables());
   }
 
-  public QueryContext(final TajoConf conf, KeyValueSetProto proto) {
-    super(proto);
-    this.conf = conf;
-  }
-
-  public void setConf(TajoConf conf) {
-    this.conf = conf;
-  }
-
-  public TajoConf getConf() {
-    return conf;
-  }
-
-  public void setBool(ConfigKey key, boolean val) {
-    setBool(key.keyname(), val);
-  }
-
-  public boolean getBool(ConfigKey key, Boolean defaultVal) {
-    switch (key.type()) {
-    case QUERY:
-      return getBool(key.keyname());
-    case SESSION:
-      return getBool(key.keyname(), conf.getBoolVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getBoolVar((TajoConf.ConfVars) key);
-    default:
-      return getBool(key.keyname(), defaultVal);
-    }
-  }
-
-  public boolean getBool(ConfigKey key) {
-    return getBool(key, null);
-  }
-
-  public int getInt(ConfigKey key, Integer defaultVal) {
-    switch (key.type()) {
-    case QUERY:
-      return getInt(key.keyname());
-    case SESSION:
-      return getInt(key.keyname(), conf.getIntVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getIntVar((TajoConf.ConfVars) key);
-    default:
-      return getInt(key.keyname(), defaultVal);
-    }
-  }
-
-  public int getInt(ConfigKey key) {
-    return getInt(key, null);
-  }
-
-  public long getLong(ConfigKey key, Long defaultVal) {
-    switch (key.type()) {
-    case QUERY:
-      return getLong(key.keyname());
-    case SESSION:
-      return getLong(key.keyname(), conf.getLongVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getLongVar((TajoConf.ConfVars) key);
-    default:
-      return getLong(key.keyname(), defaultVal);
-    }
-  }
-
-  public long getLong(ConfigKey key) {
-    return getLong(key, null);
-  }
-
-  public float getFloat(ConfigKey key, Float defaultVal) {
-    switch (key.type()) {
-    case QUERY:
-      return getFloat(key.keyname());
-    case SESSION:
-      return getFloat(key.keyname(), conf.getFloatVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getFloatVar((TajoConf.ConfVars) key);
-    default:
-      return getFloat(key.keyname(), defaultVal);
-    }
-  }
-
-  public float getFloat(ConfigKey key) {
-    return getLong(key, null);
-  }
-
-  public void put(ConfigKey key, String val) {
-    set(key.keyname(), val);
-  }
-
-  public static String getSessionKey(String key) {
-    return ConfigKey.SESSION_PREFIX + key;
-  }
-
-  public static String getQueryKey(String key) {
-    return ConfigKey.QUERY_CONF_PREFIX + key;
-  }
-
-  public String get(ConfigKey key, String defaultVal) {
-    switch (key.type()) {
-    case QUERY:
-      return get(key.keyname());
-    case SESSION:
-      return get(key.keyname(), conf.getVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getVar((TajoConf.ConfVars) key);
-    default:
-      return get(key.keyname(), defaultVal);
-    }
-  }
-
-  public String get(ConfigKey key) {
-    return get(key, null);
+  public QueryContext(TajoConf conf, KeyValueSetProto proto) {
+    super(conf, proto, ConfigKey.ConfigType.QUERY);
   }
 
   //-----------------------------------------------------------------------------------------------
