@@ -23,7 +23,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
@@ -85,8 +84,6 @@ public class TaskRunner extends AbstractService {
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<QueryUnitAttemptId, Task>();
 
-  private LocalDirAllocator lDirAllocator;
-
   // A thread to receive each assigned query unit and execute the query unit
   private Thread taskLauncher;
 
@@ -95,9 +92,8 @@ public class TaskRunner extends AbstractService {
   // for the doAs block
   private UserGroupInformation taskOwner;
 
-  // for the local temporal dir
-  private String baseDir;
-  private Path baseDirPath;
+  // for the local temporal Path
+  private String basePath;
 
   private TaskRunnerManager taskRunnerManager;
 
@@ -182,13 +178,9 @@ public class TaskRunner extends AbstractService {
       localFS = FileSystem.getLocal(conf);
 
       // the base dir for an output dir
-      baseDir = queryId.toString() + "/output" + "/" + executionBlockId.getId();
+      basePath = queryId.toString() + "/output" + "/" + executionBlockId.getId();
 
-      // initialize LocalDirAllocator
-      lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
-
-      baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(baseDir, conf));
-      LOG.info("TaskRunner basedir is created (" + baseDir +")");
+      LOG.info("TaskRunner basedir is created (" + basePath +")");
 
       // Setup QueryEngine according to the query plan
       // Here, we can setup row-based query engine or columnar query engine.
@@ -271,7 +263,7 @@ public class TaskRunner extends AbstractService {
     }
 
     public LocalDirAllocator getLocalDirAllocator() {
-      return lDirAllocator;
+      return taskRunnerManager.getLocalDirAllocator();
     }
 
     public TajoQueryEngine getTQueryEngine() {
@@ -290,8 +282,8 @@ public class TaskRunner extends AbstractService {
       return fetchLauncher;
     }
 
-    public Path getBaseDir() {
-      return baseDirPath;
+    public String getLocalWorkPath() {
+      return basePath;
     }
 
     public ExecutionBlockId getExecutionBlockId() {
