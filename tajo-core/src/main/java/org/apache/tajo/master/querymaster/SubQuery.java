@@ -35,6 +35,7 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -363,7 +364,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
    * It finalizes this subquery. It is only invoked when the subquery is succeeded.
    */
   public void complete() {
-    cleanup();
+    cleanup(getId());
     finalizeStats();
     setFinishTime();
     eventHandler.handle(new SubQueryCompletedEvent(getId(), SubQueryState.SUCCEEDED));
@@ -381,7 +382,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     // - record SubQuery Finish Time
     // - CleanUp Tasks
     // - Record History
-    cleanup();
+    cleanup(getId());
     setFinishTime();
     eventHandler.handle(new SubQueryCompletedEvent(getId(), finalState));
   }
@@ -1004,7 +1005,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
         subQuery.eventHandler.handle(
             new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
-                subQuery.getId(), allocationEvent.getAllocatedContainer()));
+                subQuery.getId(), allocationEvent.getAllocatedContainer())
+        );
 
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
       } catch (Throwable t) {
@@ -1104,9 +1106,23 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  private void cleanup() {
+  private void cleanup(ExecutionBlockId executionBlockId) {
     stopScheduler();
     releaseContainers();
+
+    if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+      List<ExecutionBlock> childs = getMasterPlan().getChilds(executionBlockId);
+      List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
+      for (ExecutionBlock executionBlock :  childs){
+        ebIds.add(executionBlock.getId().getProto());
+      }
+
+      try {
+        getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
+      } catch (Throwable e) {
+        LOG.error(e);
+      }
+    }
   }
 
   private static class SubQueryCompleteTransition
