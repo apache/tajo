@@ -75,7 +75,7 @@ public class Task {
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
-  private final Path taskDir;
+  private final Path taskPath;
   private final QueryUnitRequest request;
   private TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
@@ -145,11 +145,11 @@ public class Task {
     this.masterProxy = masterProxy;
     this.localFS = worker.getLocalFS();
     this.lDirAllocator = worker.getLocalDirAllocator();
-    this.taskDir = StorageUtil.concatPath(taskRunnerContext.getLocalWorkPath(),
+    this.taskPath = StorageUtil.concatPath(taskRunnerContext.getLocalWorkPath(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
     this.context = new TaskAttemptContext(systemConf, queryContext, taskId,
-        request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), lDirAllocator, taskDir);
+        request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), lDirAllocator, taskPath);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.inputStats = new TableStats();
@@ -207,7 +207,7 @@ public class Task {
     for (FetchImpl f : request.getFetches()) {
       LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
     }
-    LOG.info("* Local task dir: " + taskDir);
+    LOG.info("* Local task Path: " + taskPath);
     if(LOG.isDebugEnabled()) {
       LOG.debug("* plan:\n");
       LOG.debug(plan.toString());

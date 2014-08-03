@@ -89,6 +89,7 @@ public class TaskAttemptContext {
     this.queryContext = queryContext;
     this.queryId = queryId;
     this.workPath = workPath;
+    this.localDirAllocator = new LocalDirAllocator(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.varname);
     init(fragments);
   }
 
@@ -126,7 +127,8 @@ public class TaskAttemptContext {
   @VisibleForTesting
   public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) throws IOException {
-    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments),
+        new LocalDirAllocator(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.varname), workDir);
   }
 
   public TajoConf getConf() {

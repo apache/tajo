@@ -75,7 +75,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
-    localFS = new RawLocalFileSystem();
+    this.localFS = new RawLocalFileSystem();
   }
 
   @Override
