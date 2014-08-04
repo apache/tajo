@@ -44,6 +44,16 @@ public class TestMathFunctions extends ExprTestBase {
 
     testEval(schema, "table1", "1.0, 0.2, 0.4", "select round(col1 + col2 + col3) from table1",
         new String[]{"2"});
+
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", INT4);
+    schema2.addColumn("col2", INT8);
+    schema2.addColumn("col3", FLOAT4);
+    schema2.addColumn("col4", FLOAT8);
+
+    testEval(schema2, "table1", "9,9,9.5,9.5",
+        "select round(col1), round (col2), round(col3), round(col4) from table1",
+        new String [] {"9", "9", "10", "10"});
   }
 
   @Test
@@ -428,19 +438,27 @@ public class TestMathFunctions extends ExprTestBase {
 
   @Test
   public void testRoundWithSpecifiedPrecision() throws IOException {
+    // TODO - in order to make this test possible, testSimpleEval should take session variables. Now, we disable it.
+    // divide zero
+//    try {
+//      testSimpleEval("select round(10.0/0.0,2) ", new String[]{""});
+//      fail("10.0/0 should throw InvalidOperationException");
+//    } catch (InvalidOperationException e) {
+//      //success
+//    }
+
     testSimpleEval("select round(42.4382,2) ", new String[]{"42.44"});
     testSimpleEval("select round(-42.4382,2) ", new String[]{"-42.44"});
-    testSimpleEval("select round(-425,2) ", new String[]{"-425"});
-    testSimpleEval("select round(425,2) ", new String[]{"425"});
+    testSimpleEval("select round(-425,2) ", new String[]{"-425.0"});
+    testSimpleEval("select round(425,2) ", new String[]{"425.0"});
 
-    testSimpleEval("select round(1234567890,0) ", new String[]{"1234567890"});
-    testSimpleEval("select round(1234567890,1) ", new String[]{"1234567890"});
-    testSimpleEval("select round(1234567890,2) ", new String[]{"1234567890"});
+    testSimpleEval("select round(1234567890,0) ", new String[]{"1.23456789E9"});
+    testSimpleEval("select round(1234567890,1) ", new String[]{"1.23456789E9"});
+    testSimpleEval("select round(1234567890,2) ", new String[]{"1.23456789E9"});
 
     testSimpleEval("select round(1.2345678901234567,13) ", new String[]{"1.2345678901235"});
-    testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1234567890.123"});
-    testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1234567890.12346"});
-    //testSimpleEval("select round(1234567890.1234567890,7) ", new String[]{"1234567890.1234568"});
+    testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1.234567890123E9"});
+    testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1.23456789012346E9"});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT8);
