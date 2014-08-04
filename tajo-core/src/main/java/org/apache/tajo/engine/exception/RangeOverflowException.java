@@ -22,7 +22,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 
 public class RangeOverflowException extends RuntimeException {
-  public RangeOverflowException(TupleRange range, Tuple overflowValue, long inc) {
-    super("Overflow Error: tried to increase " + inc + " to " + overflowValue + ", but the range " + range);
+  public RangeOverflowException(TupleRange range, Tuple overflowValue, long inc, boolean ascending) {
+    super("Overflow Error: tried to " + (ascending ? "increase " : "decrease ") + inc + " to " + overflowValue
+        + ", but the range " + range);
   }
 }
