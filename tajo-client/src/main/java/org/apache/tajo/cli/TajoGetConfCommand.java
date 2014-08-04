@@ -36,10 +36,10 @@ public class TajoGetConfCommand extends TajoShellCommand {
   @Override
   public void invoke(String[] command) throws Exception {
     try {
-      String[] dfsCommands = new String[command.length - 1];
-      System.arraycopy(command, 1, dfsCommands, 0, dfsCommands.length);
+      String[] getConfCommands = new String[command.length - 1];
+      System.arraycopy(command, 1, getConfCommands, 0, getConfCommands.length);
 
-      getconf.runCommand(dfsCommands);
+      getconf.runCommand(getConfCommands);
     } catch (Exception e) {
       context.getOutput().println("ERROR: " + e.getMessage());
     }
