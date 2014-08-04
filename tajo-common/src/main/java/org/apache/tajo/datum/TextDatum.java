@@ -23,8 +23,8 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.MurmurHash;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
@@ -140,7 +140,7 @@ public class TextDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(bytes);
+    return MurmurHash.hash(bytes);
   }
 
   @Override

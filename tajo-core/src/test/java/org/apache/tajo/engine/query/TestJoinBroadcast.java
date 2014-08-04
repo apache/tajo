@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
@@ -43,13 +41,11 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.sql.ResultSet;
 
-import static junit.framework.TestCase.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestJoinBroadcast extends QueryTestCaseBase {
-  private static final Log LOG = LogFactory.getLog(TestJoinBroadcast.class);
   public TestJoinBroadcast() throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "true");
@@ -455,7 +451,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     res = executeString(
         "select distinct a.col3 from " + tableName + " as a " +
             "left outer join lineitem_large b " +
-            "on a.col1 = b.l_orderkey"
+            "on a.col1 = b.l_orderkey order by a.col3"
     );
 
     assertResultSet(res);
@@ -615,4 +611,40 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
       executeString("DROP TABLE table_large PURGE").close();
     }
   }
+
+
+  @Test
+  public final void testSelfJoin() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("paritioned_nation");
+    ResultSet res = executeString(
+        "create table " + tableName + " (n_name text,"
+            + "  n_comment text, n_regionkey int8) USING csv "
+            + "WITH ('csvfile.delimiter'='|')"
+            + "PARTITION BY column(n_nationkey int8)");
+    res.close();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString(
+        "insert overwrite into " + tableName
+            + " select n_name, n_comment, n_regionkey, n_nationkey from nation");
+    res.close();
+
+    res = executeString(
+      "select a.n_nationkey, a.n_name from nation a join nation b on a.n_nationkey = b.n_nationkey"
+      + " where a.n_nationkey in (1)");
+    String expected = resultSetToString(res);
+    res.close();
+
+    res = executeString(
+      "select a.n_nationkey, a.n_name from " + tableName + " a join "+tableName +
+      " b on a.n_nationkey = b.n_nationkey "
+      + " where a.n_nationkey in (1)");
+    String resultSetData = resultSetToString(res);
+    res.close();
+
+    assertEquals(expected, resultSetData);
+
+  }
+
+
 }
