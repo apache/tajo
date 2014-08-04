@@ -29,6 +29,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-966: Range partition should support split of multiple characters.
+    (hyunsik)
+
     TAJO-987: Hash shuffle should be balanced according to intermediate
     volumes. (hyunsik)
 
