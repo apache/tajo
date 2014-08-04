@@ -152,7 +152,7 @@ public class TajoGetConf {
     if (value != null) {
       writer.write(value);
     } else {
-      writer.write("Configuration a is missing.");
+      writer.write("Configuration " + param + " is missing.");
     }
 
     writer.write("\n");
