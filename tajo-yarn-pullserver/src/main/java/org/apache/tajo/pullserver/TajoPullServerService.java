@@ -246,7 +246,8 @@ public class TajoPullServerService extends AbstractService {
       if (pullServerPortFile.exists()) {
         pullServerPortFile.delete();
       }
-
+      pullServerPortFile.getParentFile().mkdirs();
+      LOG.info("Write PullServerPort to " + pullServerPortFile);
       try {
         FileOutputStream out = new FileOutputStream(pullServerPortFile);
         out.write(("" + port).getBytes());
@@ -286,9 +287,7 @@ public class TajoPullServerService extends AbstractService {
     FileInputStream in = null;
     try {
       File pullServerPortFile = getPullServerPortFile();
-      if (pullServerPortFile.exists()) {
-        pullServerPortFile.delete();
-      }
+
       if (!pullServerPortFile.exists() || pullServerPortFile.isDirectory()) {
         return -1;
       }
