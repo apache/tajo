@@ -38,7 +38,6 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
@@ -57,6 +56,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     if (plan.getType() == NodeType.CREATE_TABLE) {
       this.outSchema = ((CreateTableNode)plan).getTableSchema();
+    } else if (plan.getType() == NodeType.INSERT) {
+      this.outSchema = ((InsertNode)plan).getTableSchema();
     }
 
     // set table meta

@@ -253,8 +253,7 @@ public class TajoConf extends Configuration {
     DIST_QUERY_SORT_PARTITION_VOLUME("tajo.dist-query.sort.partition-volume-mb", 256),
     DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
 
-    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb",
-        256 * 1024 * 1024),
+    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
 
     //////////////////////////////////
     // Physical Executors
@@ -349,7 +348,10 @@ public class TajoConf extends Configuration {
     TAJO_DEBUG("tajo.debug", false),
 
     // ONLY FOR TESTCASE
-    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1)
+    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1),
+
+    // behavior control
+    BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
     ;
 
     public final String varname;
