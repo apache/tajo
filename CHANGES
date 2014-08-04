@@ -103,7 +103,10 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
     
-    TAJO-979: Dividing float value by zero should throw "Divide by zero 
+    TAJO-975: alias name which is the same to existing column name may cause
+    NPE during PPD. (hyunsik)
+
+    TAJO-979: Dividing float value by zero should throw "Divide by zero
     Exception" (Hyoungjun Kim via hyunsik)
 
     TAJO-978: RoundFloat8 should return Float8Datum type. (Hyoungjun Kim via 
