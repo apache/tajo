@@ -68,6 +68,7 @@ if [ $# = 0 ]; then
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
   echo "  admin                run the tajo admin util"
+  echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
   echo " or"
