@@ -289,16 +289,22 @@ public class IntervalDatum extends Datum {
 
   @Override
   public Datum divide(Datum datum) {
-    switch(datum.type()) {
+    switch (datum.type()) {
       case INT2:
       case INT4:
       case INT8:
-        long int8Val = datum.asInt8();
-        return createIntervalDatum((double)months / int8Val, (double) millieconds / int8Val);
+        long paramValueI8 = datum.asInt8();
+        if (!validateDivideZero(paramValueI8)) {
+          return NullDatum.get();
+        }
+        return createIntervalDatum((double) months / paramValueI8, (double) millieconds / paramValueI8);
       case FLOAT4:
       case FLOAT8:
-        double float8Val = datum.asFloat8();
-        return createIntervalDatum((double)months / float8Val, (double) millieconds / float8Val);
+        double paramValueF8 = datum.asFloat8();
+        if (!validateDivideZero(paramValueF8)) {
+          return NullDatum.get();
+        }
+        return createIntervalDatum((double) months / paramValueF8, (double) millieconds / paramValueF8);
       default:
         throw new InvalidOperationException(datum.type());
     }
