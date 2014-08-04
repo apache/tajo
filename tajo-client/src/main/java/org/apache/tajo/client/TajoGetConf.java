@@ -139,7 +139,7 @@ public class TajoGetConf {
 
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    String confMasterServiceAddr = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+    String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
     writer.write(masterAddress.getHostName());
     writer.write("\n");
@@ -147,7 +147,17 @@ public class TajoGetConf {
 
   private void processConfKey(Writer writer, String param) throws ParseException, IOException,
       ServiceException, SQLException {
-    String value = tajoConf.get(param);
+    String value = tajoClient.getConf().getTrimmed(param);
+
+    // If there is no value in the configuration file, we need to find all ConfVars.
+    if (value == null) {
+      for(TajoConf.ConfVars vars : TajoConf.ConfVars.values()) {
+        if (vars.varname.equalsIgnoreCase(param)) {
+          value = tajoClient.getConf().getVar(vars);
+          break;
+        }
+      }
+    }
 
     if (value != null) {
       writer.write(value);
