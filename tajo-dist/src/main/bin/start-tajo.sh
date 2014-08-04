@@ -32,6 +32,9 @@ if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
 fi
 
 if [ "$TAJO_WORKER_STANDBY_MODE" = "true" ]; then
+  if [ "$TAJO_PULLSERVER_MODE" = "dedicated" ]; then
+    "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start pullserver
+  fi
   "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker
   if [ -f "${TAJO_CONF_DIR}/querymasters" ]; then
     "$bin/tajo-daemons.sh" --hosts querymasters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start querymaster

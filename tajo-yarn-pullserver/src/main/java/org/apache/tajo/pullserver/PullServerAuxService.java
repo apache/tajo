@@ -493,7 +493,7 @@ public class PullServerAuxService extends AuxiliaryService {
             file.startOffset, file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
         writeFuture = ch.write(partition);
-        writeFuture.addListener(new FileCloseListener(partition));
+        writeFuture.addListener(new FileCloseListener(partition, null, 0, null));
       } else {
         // HTTPS cannot be done with zero copy.
         final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
