@@ -658,7 +658,7 @@ public class TestTajoClient {
 
       QueryStatus queryStatus = client.getQueryStatus(queryId);
       assertNotNull(queryStatus);
-      assertTrue(!TajoClient.isQueryRunnning(queryStatus.getState()));
+      assertTrue(TajoClient.isInCompleteState(queryStatus.getState()));
 
       TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
       assertNotNull(resultSet);
