@@ -800,7 +800,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
           LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
           int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-          int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
+          int maxSlots = (int)(slots * conf.getFloatVar(ConfVars.DIST_QUERY_CLUSTER_SLOT_MAX_RATIO));
+
+          // determine the number of task
+          int taskNum = Math.min(taskNumBySize, maxSlots);
+
           LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }
@@ -1054,25 +1058,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.completedTaskCount++;
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
-//          if (task.isLeafTask()) {
-//            subQuery.succeededObjectCount += task.getTotalFragmentNum();
-//          } else {
-//            subQuery.succeededObjectCount++;
-//          }
           subQuery.succeededObjectCount++;
         } else if (task.getState() == TaskState.KILLED) {
-//          if (task.isLeafTask()) {
-//            subQuery.killedObjectCount += task.getTotalFragmentNum();
-//          } else {
-//            subQuery.killedObjectCount++;
-//          }
           subQuery.killedObjectCount++;
         } else if (task.getState() == TaskState.FAILED) {
-//          if (task.isLeafTask()) {
-//            subQuery.failedObjectCount+= task.getTotalFragmentNum();
-//          } else {
-//            subQuery.failedObjectCount++;
-//          }
           subQuery.failedObjectCount++;
           // if at least one task is failed, try to kill all tasks.
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));

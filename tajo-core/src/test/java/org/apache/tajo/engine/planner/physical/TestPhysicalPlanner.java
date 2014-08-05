@@ -25,15 +25,13 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -64,6 +62,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -532,9 +531,9 @@ public class TestPhysicalPlanner {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
-        id, new FileFragment[] { frags[0] }, workDir);
+        id, new FileFragment[] { frags[0] },
+        CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan"));
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(session, context);
@@ -551,27 +550,36 @@ public class TestPhysicalPlanner {
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
     FileSystem fs = sm.getFileSystem();
+    QueryId queryId = id.getQueryUnitId().getExecutionBlockId().getQueryId();
+    ExecutionBlockId ebId = id.getQueryUnitId().getExecutionBlockId();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
+    ctx.getHashShuffleAppenderManager().close(ebId);
 
-    Path path = new Path(workDir, "output");
-    FileStatus [] list = fs.listStatus(path);
-    assertEquals(numPartitions, list.length);
+    String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
+    Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
+    FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    FileFragment[] fragments = new FileFragment[list.length];
-    int i = 0;
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
     for (FileStatus status : list) {
-      fragments[i++] = new FileFragment("partition", status.getPath(), 0, status.getLen());
+      assertTrue(status.isDirectory());
+      FileStatus [] files = fs.listStatus(status.getPath());
+      for (FileStatus eachFile: files) {
+        fragments.add(new FileFragment("partition", eachFile.getPath(), 0, eachFile.getLen()));
+      }
     }
+//    CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan")
+
+    assertEquals(numPartitions, fragments.size());
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
 
     Tuple tuple;
-    i = 0;
+    int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(6, tuple.get(2).asInt4()); // sum
       assertEquals(3, tuple.get(3).asInt4()); // max

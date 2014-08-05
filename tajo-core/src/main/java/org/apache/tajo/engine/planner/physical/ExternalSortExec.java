@@ -701,6 +701,9 @@ public class ExternalSortExec extends SortExec {
         return mergerInputStats;
       }
       TableStats leftInputStats = leftScan.getInputStats();
+      if (mergerInputStats == null) {
+        mergerInputStats = new TableStats();
+      }
       mergerInputStats.setNumBytes(0);
       mergerInputStats.setReadBytes(0);
       mergerInputStats.setNumRows(0);

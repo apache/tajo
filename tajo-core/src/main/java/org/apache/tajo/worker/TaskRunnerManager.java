@@ -23,11 +23,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskRunnerManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
@@ -88,7 +90,20 @@ public class TaskRunnerManager extends CompositeService {
   public void stopTask(String id) {
     LOG.info("Stop Task:" + id);
     synchronized(taskRunnerMap) {
-      taskRunnerMap.remove(id);
+      TaskRunner taskRunner = taskRunnerMap.remove(id);
+      if (taskRunner != null) {
+        synchronized(taskRunnerCompleteCounter) {
+          ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
+          AtomicInteger counter = taskRunnerCompleteCounter.get(ebId);
+          if (counter != null) {
+            if (counter.decrementAndGet() <= 0) {
+              LOG.info(ebId + "'s all tasks are completed.");
+              workerContext.getHashShuffleAppenderManager().close(ebId);
+              taskRunnerCompleteCounter.remove(ebId);
+            }
+          }
+        }
+      }
     }
     if(workerContext.isYarnContainerMode()) {
       stop();
@@ -146,6 +161,7 @@ public class TaskRunnerManager extends CompositeService {
     }
   }
 
+  Map<ExecutionBlockId, AtomicInteger> taskRunnerCompleteCounter = new HashMap<ExecutionBlockId, AtomicInteger>();
   public void startTask(final String[] params) {
     //TODO change to use event dispatcher
     Thread t = new Thread() {
@@ -162,6 +178,16 @@ public class TaskRunnerManager extends CompositeService {
             taskRunnerHistoryMap.put(taskRunner.getId(), taskRunner.getContext().getExcutionBlockHistory());
           }
 
+          synchronized(taskRunnerCompleteCounter) {
+            ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
+            AtomicInteger counter = taskRunnerCompleteCounter.get(ebId);
+            if (counter == null) {
+              counter = new AtomicInteger(0);
+              taskRunnerCompleteCounter.put(ebId, counter);
+            }
+            counter.incrementAndGet();
+
+          }
           taskRunner.init(systemConf);
           taskRunner.start();
         } catch (Exception e) {

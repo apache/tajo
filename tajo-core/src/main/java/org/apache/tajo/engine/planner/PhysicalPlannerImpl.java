@@ -975,6 +975,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.
+    LOG.info("Aggregation:estimatedSize=" + estimatedSize + ", threshold=" + threshold);
     if (estimatedSize <= threshold) {
       LOG.info("The planner chooses [Hash Aggregation]");
       return createInMemoryHashAggregation(context, groupbyNode, subOp);

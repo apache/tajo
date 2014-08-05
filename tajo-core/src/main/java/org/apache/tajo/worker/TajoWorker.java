@@ -42,6 +42,7 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
@@ -120,6 +121,8 @@ public class TajoWorker extends CompositeService {
   private DeletionService deletionService;
 
   private TajoSystemMetrics workerSystemMetrics;
+
+  private HashShuffleAppenderManager hashShuffleAppenderManager;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -256,6 +259,13 @@ public class TajoWorker extends CompositeService {
     workerHeartbeatThread = new WorkerHeartbeatService(workerContext);
     workerHeartbeatThread.init(conf);
     addIfService(workerHeartbeatThread);
+
+    try {
+      hashShuffleAppenderManager = new HashShuffleAppenderManager(systemConf);
+    } catch (IOException e) {
+      LOG.fatal(e.getMessage(), e);
+      System.exit(-1);
+    }
   }
 
   private void initWorkerMetrics() {
@@ -470,6 +480,10 @@ public class TajoWorker extends CompositeService {
 
     public TajoSystemMetrics getWorkerSystemMetrics() {
       return workerSystemMetrics;
+    }
+
+    public HashShuffleAppenderManager getHashShuffleAppenderManager() {
+      return hashShuffleAppenderManager;
     }
   }
 

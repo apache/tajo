@@ -133,22 +133,22 @@ public class Task {
       };
 
   public Task(QueryUnitAttemptId taskId,
-              final TaskRunner.TaskRunnerContext worker,
+              final TaskRunner.TaskRunnerContext runnerContext,
               final QueryMasterProtocolService.Interface masterProxy,
               final QueryUnitRequest request) throws IOException {
     this.request = request;
     this.taskId = taskId;
 
-    this.systemConf = worker.getConf();
+    this.systemConf = runnerContext.getConf();
     this.queryContext = request.getQueryContext();
-    this.taskRunnerContext = worker;
+    this.taskRunnerContext = runnerContext;
     this.masterProxy = masterProxy;
-    this.localFS = worker.getLocalFS();
-    this.lDirAllocator = worker.getLocalDirAllocator();
+    this.localFS = runnerContext.getLocalFS();
+    this.lDirAllocator = runnerContext.getLocalDirAllocator();
     this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(systemConf, queryContext, taskId,
+    this.context = new TaskAttemptContext(systemConf, queryContext, runnerContext.getWorkerContext(), taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
@@ -200,12 +200,14 @@ public class Task {
     LOG.info("==================================");
     LOG.info("* Subquery " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.shuffleType + " shuffle":""));
+        + (interQuery ? ", Use " + this.shuffleType + " shuffle":"") +
+        ", Fragments (num: " + request.getFragments().size() + ")" +
+        ", Fetches (total:" + request.getFetches().size() + ") :");
 
-    LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
-    LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
-    for (FetchImpl f : request.getFetches()) {
-      LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+    if(LOG.isDebugEnabled()) {
+      for (FetchImpl f : request.getFetches()) {
+        LOG.debug("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+      }
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {
@@ -485,7 +487,8 @@ public class Task {
       }
 
       finishTime = System.currentTimeMillis();
-      LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
+      LOG.info(context.getTaskId() + " completed. " +
+          "Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
           ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
           + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
           + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
