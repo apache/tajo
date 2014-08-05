@@ -364,7 +364,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
    * It finalizes this subquery. It is only invoked when the subquery is succeeded.
    */
   public void complete() {
-    cleanup(getId());
+    cleanup();
     finalizeStats();
     setFinishTime();
     eventHandler.handle(new SubQueryCompletedEvent(getId(), SubQueryState.SUCCEEDED));
@@ -382,7 +382,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     // - record SubQuery Finish Time
     // - CleanUp Tasks
     // - Record History
-    cleanup(getId());
+    cleanup();
     setFinishTime();
     eventHandler.handle(new SubQueryCompletedEvent(getId(), finalState));
   }
@@ -1106,12 +1106,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  private void cleanup(ExecutionBlockId executionBlockId) {
+  private void cleanup() {
     stopScheduler();
     releaseContainers();
 
     if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
-      List<ExecutionBlock> childs = getMasterPlan().getChilds(executionBlockId);
+      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
       List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
       for (ExecutionBlock executionBlock :  childs){
         ebIds.add(executionBlock.getId().getProto());
@@ -1130,7 +1130,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      // TODO - Commit subQuery & do cleanup
+      // TODO - Commit subQuery
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
       try {
