@@ -179,6 +179,10 @@ message RunExecutionBlockRequestProto {
     optional string queryOutputPath = 6;
 }
 
+message ExecutionBlockListProto {
+    repeated ExecutionBlockIdProto executionBlockId = 1;
+}
+
 service TajoWorkerProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
 
@@ -186,6 +190,7 @@ service TajoWorkerProtocolService {
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
+  rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
 
 message EnforceProperty {

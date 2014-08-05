@@ -35,6 +35,7 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -1135,6 +1136,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private void cleanup() {
     stopScheduler();
     releaseContainers();
+
+    if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
+      List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
+      for (ExecutionBlock executionBlock :  childs){
+        ebIds.add(executionBlock.getId().getProto());
+      }
+
+      try {
+        getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
+      } catch (Throwable e) {
+        LOG.error(e);
+      }
+    }
   }
 
   private static class SubQueryCompleteTransition
@@ -1142,7 +1157,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      // TODO - Commit subQuery & do cleanup
+      // TODO - Commit subQuery
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
       try {

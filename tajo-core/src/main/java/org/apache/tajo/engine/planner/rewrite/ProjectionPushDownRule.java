@@ -191,6 +191,7 @@ public class ProjectionPushDownRule extends
       // if a name already exists, it only just keeps an actual
       // expression instead of a column reference.
       if (nameToIdBiMap.containsKey(specifiedName)) {
+
         int refId = nameToIdBiMap.get(specifiedName);
         EvalNode found = idToEvalBiMap.get(refId);
         if (found != null) {
@@ -204,7 +205,16 @@ public class ProjectionPushDownRule extends
             }
 
             if (found.getType() == EvalType.FIELD) {
+              Integer daggling = idToEvalBiMap.inverse().get(evalNode);
               idToEvalBiMap.forcePut(refId, evalNode);
+              if (daggling != null) {
+                String name = getPrimaryName(daggling);
+                idToNamesMap.remove(daggling);
+                nameToIdBiMap.put(name, refId);
+                if (!idToNamesMap.get(refId).contains(name)) {
+                  TUtil.putToNestedList(idToNamesMap, refId, name);
+                }
+              }
             }
           }
         }
