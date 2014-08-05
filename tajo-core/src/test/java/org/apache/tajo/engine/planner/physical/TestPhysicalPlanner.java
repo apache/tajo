@@ -172,6 +172,9 @@ public class TestPhysicalPlanner {
 
   @AfterClass
   public static void tearDown() throws Exception {
+    Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR));
+    FileSystem fs = queryLocalTmpDir.getFileSystem(conf);
+    fs.delete(queryLocalTmpDir, true);
     util.shutdownCatalogCluster();
   }
 
@@ -572,7 +575,6 @@ public class TestPhysicalPlanner {
         fragments.add(new FileFragment("partition", eachFile.getPath(), 0, eachFile.getLen()));
       }
     }
-//    CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan")
 
     assertEquals(numPartitions, fragments.size());
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
@@ -591,6 +593,8 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(10, ctx.getResultStats().getNumRows().longValue());
+
+    fs.delete(queryLocalTmpDir, true);
   }
 
   @Test
@@ -617,27 +621,36 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
+    FileSystem fs = sm.getFileSystem();
+    QueryId queryId = id.getQueryUnitId().getExecutionBlockId().getQueryId();
+    ExecutionBlockId ebId = id.getQueryUnitId().getExecutionBlockId();
+
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
+    ctx.getHashShuffleAppenderManager().close(ebId);
 
-    Path path = new Path(workDir, "output");
-    FileSystem fs = sm.getFileSystem();
+    String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
+    Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
+    FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    FileStatus [] list = fs.listStatus(path);
-    assertEquals(numPartitions, list.length);
-
-    FileFragment[] fragments = new FileFragment[list.length];
-    int i = 0;
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
     for (FileStatus status : list) {
-      fragments[i++] = new FileFragment("partition", status.getPath(), 0, status.getLen());
+      assertTrue(status.isDirectory());
+      FileStatus [] files = fs.listStatus(status.getPath());
+      for (FileStatus eachFile: files) {
+        fragments.add(new FileFragment("partition", eachFile.getPath(), 0, eachFile.getLen()));
+      }
     }
+
+    assertEquals(numPartitions, fragments.size());
+
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
     Tuple tuple;
-    i = 0;
+    int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(60, tuple.get(0).asInt4()); // sum
       assertEquals(3, tuple.get(1).asInt4()); // max
@@ -649,6 +662,7 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(1, ctx.getResultStats().getNumRows().longValue());
+    fs.delete(queryLocalTmpDir, true);
   }
 
   @Test

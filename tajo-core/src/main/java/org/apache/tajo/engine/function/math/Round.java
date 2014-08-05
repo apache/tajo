@@ -42,7 +42,7 @@ import org.apache.tajo.storage.Tuple;
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4}),
         @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8}),
         @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4}),
-        @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8}),
+        @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8})
     }
 )
 public class Round extends GeneralFunction {

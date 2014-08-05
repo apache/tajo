@@ -23,8 +23,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.junit.After;
@@ -36,8 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class TestFetcher {
   private String TEST_DATA = "target/test-data/TestFetcher";
@@ -74,11 +75,13 @@ public class TestFetcher {
     Random rnd = new Random();
     QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
     String sid = "1";
-    String ta = "1_0";
     String partId = "1";
 
-    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
-    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+    int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), conf);
+    String dataPath = conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) +
+       queryId.toString() + "/output/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s", queryId, sid, partId, "h");
 
     Path inputPath = new Path(dataPath);
     FSDataOutputStream stream =  LocalFileSystem.get(conf).create(inputPath, true);
@@ -193,6 +196,32 @@ public class TestFetcher {
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
+  }
+
+  @Test
+  public void testServerFailure() throws Exception {
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    pullServerService.stop();
+
+    boolean failure = false;
+    try{
+      fetcher.get();
+    } catch (Throwable e){
+      failure = true;
+    }
+    assertTrue(failure);
     assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
   }
 }

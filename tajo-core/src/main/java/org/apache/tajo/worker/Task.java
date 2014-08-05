@@ -629,7 +629,7 @@ public class Task {
             if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
               break;
             }
-          } catch (IOException e) {
+          } catch (Throwable e) {
             LOG.error("Fetch failed: " + fetcher.getURI(), e);
           }
           retryNum++;
@@ -797,12 +797,10 @@ public class Task {
       }
     }
   }
+
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
-        StorageUtil.concatPath(
-            quid.getQueryUnitId().getExecutionBlockId().getQueryId().toString(),
-            "in",
-            quid.getQueryUnitId().getExecutionBlockId().toString(),
+        StorageUtil.concatPath(TaskRunner.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;

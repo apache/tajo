@@ -116,9 +116,9 @@ public class Fetcher {
   public File get() throws IOException {
     this.startTime = System.currentTimeMillis();
     this.state = TajoProtos.FetcherState.FETCH_FETCHING;
-
+    ChannelFuture future = null;
     try {
-      ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
+      future = bootstrap.connect(new InetSocketAddress(host, port));
 
       // Wait until the connection attempt succeeds or fails.
       Channel channel = future.awaitUninterruptibly().getChannel();
@@ -145,53 +145,19 @@ public class Fetcher {
 
       channelFuture.addListener(ChannelFutureListener.CLOSE);
 
-      // Close the channel to exit.
-      future.getChannel().close();
       return file;
     } finally {
+      if(future != null){
+        // Close the channel to exit.
+        future.getChannel().close();
+      }
+
       this.finishTime = System.currentTimeMillis();
       LOG.info("Status: " + getState() + ", URI:" + uri);
       if (timer != null) {
         timer.stop();
       }
     }
-
-//    URL url = new URL(uri.toString());
-//    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//    conn.connect();
-//    int length = conn.getContentLength();
-//    byte[] byteArr = new byte[1024 * 1024];
-//    InputStream in = null;
-//    BufferedOutputStream out = null;
-//    try {
-//      out = new BufferedOutputStream(new FileOutputStream(file));
-//      in = conn.getInputStream();
-//      int readBytes = 0;
-//      int totalReadBytes = 0;
-//      while ((readBytes = in.read(byteArr)) > 0) {
-//        out.write(byteArr, 0, readBytes);
-//        totalReadBytes += readBytes;
-//        if (totalReadBytes >= length) {
-//          break;
-//        }
-//      }
-//      state = TajoProtos.FetcherState.FETCH_FINISHED;
-//    } catch (Exception e) {
-//      state = FetcherState.FETCH_FAILED;
-//    } finally {
-//      if (in != null) {
-//        in.close();
-//      }
-//      if (conn != null) {
-//        conn.disconnect();
-//      }
-//      if (out != null) {
-//        out.close();
-//      }
-//      this.finishTime = System.currentTimeMillis();
-//      LOG.fatal("Fetcher finished: " + (this.finishTime - this.startTime) + " ms, len=" + length);
-//    }
-//    return file;
   }
 
   public URI getURI() {
@@ -212,6 +178,7 @@ public class Fetcher {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
+
       messageReceiveCount++;
       try {
         if (!readingChunks && e.getMessage() instanceof HttpResponse) {
@@ -299,14 +266,25 @@ public class Fetcher {
         LOG.error("Fetch failed :", e.getCause());
       }
 
-      if(ctx.getChannel().isConnected()){
-        ctx.getChannel().close().setFailure(e.getCause());
-      }
-
       // this fetching will be retry
       IOUtils.cleanup(LOG, fc, raf);
+      if(ctx.getChannel().isConnected()){
+        ctx.getChannel().close();
+      }
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
+    }
+
+    @Override
+    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+      super.channelDisconnected(ctx, e);
+
+      if(getState() != TajoProtos.FetcherState.FETCH_FINISHED){
+        //channel is closed, but cannot complete fetcher
+        finishTime = System.currentTimeMillis();
+        state = TajoProtos.FetcherState.FETCH_FAILED;
+      }
+      IOUtils.cleanup(LOG, fc, raf);
     }
   }
 
