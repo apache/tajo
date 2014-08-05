@@ -23,6 +23,9 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -37,6 +40,7 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
@@ -56,7 +60,7 @@ public class TaskAttemptContext {
   private TaskAttemptState state;
   private TableStats resultStats;
   private QueryUnitAttemptId queryId;
-  private final Path workDir;
+  private final Path workPath;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
   private float progress = 0.0f;
@@ -72,17 +76,36 @@ public class TaskAttemptContext {
   private DataChannel dataChannel;
   private Enforcer enforcer;
   private QueryContext queryContext;
+  private LocalDirAllocator localDirAllocator;
+  private LocalFileSystem localFS;
 
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
 
   public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
-                            final Path workDir) {
+                            final Path workPath) throws IOException {
     this.conf = conf;
     this.queryContext = queryContext;
     this.queryId = queryId;
+    this.workPath = workPath;
+    this.localDirAllocator = new LocalDirAllocator(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.varname);
+    init(fragments);
+  }
 
+  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+                            final FragmentProto[] fragments,
+                            final LocalDirAllocator localDirAllocator,
+                            final Path workerPath) throws IOException {
+    this.conf = conf;
+    this.queryContext = queryContext;
+    this.queryId = queryId;
+    this.localDirAllocator = localDirAllocator;
+    this.workPath = workerPath;
+    init(fragments);
+  }
+
+  private void init(final FragmentProto[] fragments) throws IOException {
     if (fragments != null) {
       for (FragmentProto t : fragments) {
         if (fragmentMap.containsKey(t.getId())) {
@@ -95,18 +118,17 @@ public class TaskAttemptContext {
       }
     }
 
-    this.workDir = workDir;
     this.shuffleFileOutputs = Maps.newHashMap();
-
-    state = TaskAttemptState.TA_PENDING;
-
+    this.state = TaskAttemptState.TA_PENDING;
     this.partitionOutputVolume = Maps.newHashMap();
+    this.localFS = FileSystem.getLocal(conf);
   }
 
   @VisibleForTesting
   public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
-                            final Fragment [] fragments,  final Path workDir) {
-    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+                            final Fragment [] fragments,  final Path workDir) throws IOException {
+    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments),
+        new LocalDirAllocator(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.varname), workDir);
   }
 
   public TajoConf getConf() {
@@ -262,8 +284,12 @@ public class TaskAttemptContext {
     return list;
   }
 
-  public Path getWorkDir() {
-    return this.workDir;
+  public Path getWorkDir() throws IOException {
+    return localFS.makeQualified(localDirAllocator.getLocalPathForWrite(workPath.toString(), conf));
+  }
+
+  public Path getWorkPath() throws IOException {
+    return workPath;
   }
   
   public QueryUnitAttemptId getTaskId() {

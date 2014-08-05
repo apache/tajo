@@ -19,12 +19,13 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
@@ -49,8 +50,9 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private ShuffleFileWriteNode plan;
   private final TableMeta meta;
   private Partitioner partitioner;
-  private final Path storeTablePath;
   private Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
+  private Map<Integer, Path> storePathMap = Maps.newHashMap();
+  private RawLocalFileSystem localFS;
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
   
@@ -73,31 +75,32 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
-    storeTablePath = new Path(context.getWorkDir(), "output");
+    this.localFS = new RawLocalFileSystem();
   }
 
   @Override
   public void init() throws IOException {
     super.init();
-    FileSystem fs = new RawLocalFileSystem();
-    fs.mkdirs(storeTablePath);
   }
   
   private Appender getAppender(int partId) throws IOException {
     Appender appender = appenderMap.get(partId);
 
     if (appender == null) {
-      Path dataFile = getDataFile(partId);
-      FileSystem fs = dataFile.getFileSystem(context.getConf());
-      if (fs.exists(dataFile)) {
+      Path storeTablePath = new Path(context.getWorkDir(), "output");
+      localFS.mkdirs(storeTablePath);
+
+      Path dataFile = getDataFile(storeTablePath, partId);
+      if (localFS.exists(dataFile)) {
         LOG.info("File " + dataFile + " already exists!");
-        FileStatus status = fs.getFileStatus(dataFile);
+        FileStatus status = localFS.getFileStatus(dataFile);
         LOG.info("File size: " + status.getLen());
       }
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
       appender.enableStats();
       appender.init();
       appenderMap.put(partId, appender);
+      storePathMap.put(partId, dataFile);
     } else {
       appender = appenderMap.get(partId);
     }
@@ -105,7 +108,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     return appender;
   }
 
-  private Path getDataFile(int partId) {
+  private Path getDataFile(Path storeTablePath, int partId) {
     return StorageUtil.concatPath(storeTablePath, ""+partId);
   }
 
@@ -128,7 +131,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       app.close();
       statSet.add(app.getStats());
       if (app.getStats().getNumRows() > 0) {
-        context.addShuffleFileOutput(partNum, getDataFile(partNum).getName());
+        context.addShuffleFileOutput(partNum, storePathMap.get(partNum).getName());
         context.addPartitionOutputVolume(partNum, app.getStats().getNumBytes());
       }
     }
@@ -152,6 +155,13 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       appenderMap.clear();
       appenderMap = null;
     }
+
+    if(storePathMap != null){
+      storePathMap.clear();
+      storePathMap = null;
+    }
+
+    IOUtils.cleanup(null, localFS);
 
     partitioner = null;
     plan = null;

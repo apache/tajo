@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
@@ -38,6 +39,7 @@ public class TaskRunnerManager extends CompositeService {
   private TajoConf tajoConf;
   private AtomicBoolean stop = new AtomicBoolean(false);
   private FinishedTaskCleanThread finishedTaskCleanThread;
+  private LocalDirAllocator lDirAllocator;
 
   public TaskRunnerManager(TajoWorker.WorkerContext workerContext) {
     super(TaskRunnerManager.class.getName());
@@ -52,6 +54,9 @@ public class TaskRunnerManager extends CompositeService {
   @Override
   public void init(Configuration conf) {
     tajoConf = (TajoConf)conf;
+
+    // initialize LocalDirAllocator
+    lDirAllocator = new LocalDirAllocator(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.varname);
     super.init(tajoConf);
   }
 
@@ -93,6 +98,10 @@ public class TaskRunnerManager extends CompositeService {
     if(workerContext.isYarnContainerMode()) {
       stop();
     }
+  }
+
+  public LocalDirAllocator getLocalDirAllocator(){
+    return lDirAllocator;
   }
 
   public Collection<TaskRunner> getTaskRunners() {
