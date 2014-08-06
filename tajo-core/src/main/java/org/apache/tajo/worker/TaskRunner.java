@@ -45,6 +45,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetSocketAddress;
@@ -172,6 +173,24 @@ public class TaskRunner extends AbstractService {
     return executionBlockId + "," + containerId;
   }
 
+  public static Path getBaseOutputDir(ExecutionBlockId executionBlockId){
+    Path workDir =
+        StorageUtil.concatPath(
+            executionBlockId.getQueryId().toString(),
+            "output",
+            String.valueOf(executionBlockId.getId()));
+    return workDir;
+  }
+
+  public static Path getBaseInputDir(ExecutionBlockId executionBlockId) {
+    Path workDir =
+        StorageUtil.concatPath(
+            executionBlockId.getQueryId().toString(),
+            "in",
+            executionBlockId.toString());
+    return workDir;
+  }
+
   @Override
   public void init(Configuration conf) {
     this.systemConf = (TajoConf)conf;
@@ -182,7 +201,7 @@ public class TaskRunner extends AbstractService {
       localFS = FileSystem.getLocal(conf);
 
       // the base dir for an output dir
-      baseDir = queryId.toString() + "/output" + "/" + executionBlockId.getId();
+      baseDir = getBaseOutputDir(executionBlockId).toString();
 
       // initialize LocalDirAllocator
       lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);

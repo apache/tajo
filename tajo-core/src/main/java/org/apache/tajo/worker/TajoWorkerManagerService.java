@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
@@ -149,6 +150,18 @@ public class TajoWorkerManagerService extends CompositeService
   public void cleanup(RpcController controller, TajoIdProtos.QueryIdProto request,
                       RpcCallback<PrimitiveProtos.BoolProto> done) {
     workerContext.cleanup(new QueryId(request).toString());
+    done.run(TajoWorker.TRUE_PROTO);
+  }
+
+  @Override
+  public void cleanupExecutionBlocks(RpcController controller, TajoWorkerProtocol.ExecutionBlockListProto request,
+                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
+    for (TajoIdProtos.ExecutionBlockIdProto executionBlockIdProto : request.getExecutionBlockIdList()) {
+      String inputDir = TaskRunner.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      workerContext.cleanup(inputDir);
+      String outputDir = TaskRunner.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      workerContext.cleanup(outputDir);
+    }
     done.run(TajoWorker.TRUE_PROTO);
   }
 }

@@ -138,6 +138,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  @Test
+  public final void testSelectColumnAliasExistingInRelation3() throws Exception {
+    // This is a reproduction code and validator of TAJO-975 Bug
+    // Please see TAJO-975 in order to know this test in detail.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
 
   @Test
   public final void testSelectSameConstantsWithDifferentAliases() throws Exception {

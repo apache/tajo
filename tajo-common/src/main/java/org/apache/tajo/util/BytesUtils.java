@@ -179,4 +179,39 @@ public class BytesUtils {
     }
     return (byte[][]) list.toArray(new byte[list.size()][]);
   }
+
+  /**
+   * It gets the maximum length among all given the array of bytes.
+   * Then, it adds padding (i.e., \0) to byte arrays which are shorter
+   * than the maximum length.
+   *
+   * @param bytes Byte arrays to be padded
+   * @return The array of padded bytes
+   */
+  public static byte[][] padBytes(byte []...bytes) {
+    byte [][] padded = new byte[bytes.length][];
+
+    int maxLen = Integer.MIN_VALUE;
+
+    for (int i = 0; i < bytes.length; i++) {
+      maxLen = Math.max(maxLen, bytes[i].length);
+    }
+
+    for (int i = 0; i < bytes.length; i++) {
+      int padLen = maxLen - bytes[i].length;
+      if (padLen == 0) {
+        padded[i] = bytes[i];
+      } else if (padLen > 0) {
+        padded[i] = Bytes.padTail(bytes[i], padLen);
+      } else {
+        throw new RuntimeException("maximum length: " + maxLen + ", bytes[" + i + "].length:" + bytes[i].length);
+      }
+    }
+
+    return padded;
+  }
+
+  public static byte [] trimBytes(byte [] bytes) {
+    return new String(bytes).trim().getBytes();
+  }
 }
