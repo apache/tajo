@@ -761,7 +761,6 @@ public class Repartitioner {
     fragments.add(frag);
     SubQuery.scheduleFragments(subQuery, fragments);
 
-    Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost;
     Map<Integer, FetchGroupMeta> finalFetches = new HashMap<Integer, FetchGroupMeta>();
     Map<ExecutionBlockId, List<IntermediateEntry>> intermediates = new HashMap<ExecutionBlockId,
         List<IntermediateEntry>>();
@@ -782,6 +781,7 @@ public class Repartitioner {
           }
         }
       }
+
       // merge intermediate data by partId, pullHost
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
       for (List<IntermediateEntry> eachList: intermediatesByPartAndHost.values()) {
@@ -808,9 +808,10 @@ public class Repartitioner {
         }
       }
 
+      // make FetchImpl per PullServer, PartId
       Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
       for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
-        hashedByHost = hashByHost(interm.getValue());
+        Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost = hashByHost(interm.getValue());
         for (Entry<QueryUnit.PullHost, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
 
           FetchImpl fetch = new FetchImpl(e.getKey(), channel.getShuffleType(),

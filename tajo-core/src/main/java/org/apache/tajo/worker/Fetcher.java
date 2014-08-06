@@ -232,8 +232,16 @@ public class Fetcher {
           HttpChunk chunk = (HttpChunk) e.getMessage();
           if (chunk.isLast()) {
             readingChunks = false;
+            long fileLength = file.length();
+            if (fileLength == length) {
+              LOG.info("Data fetch is done (total received bytes: " + fileLength
+                  + ")");
+            } else {
+              LOG.info("Data fetch is done, but cannot get all data "
+                  + "(received/total: " + fileLength + "/" + length + ")");
+            }
           } else {
-            if(fc != null) {
+            if(fc != null){
               fc.write(chunk.getContent().toByteBuffer());
             }
           }
@@ -242,17 +250,11 @@ public class Fetcher {
         if(raf != null) {
           fileLen = file.length();
         }
-        if (!readingChunks) {
-          if (fileLen == length) {
-            LOG.info("Data fetch is done (total received bytes: " + fileLen
-                + ", number of received message: " + messageReceiveCount + "), file=" + file);
-            IOUtils.cleanup(LOG, fc, raf);
-            finishTime = System.currentTimeMillis();
-            state = TajoProtos.FetcherState.FETCH_FINISHED;
-          } else {
-            LOG.info("Data fetch is done, but cannot get all data "
-                + "(received/total: " + fileLen + "/" + length + ")");
-          }
+
+        if(fileLen == length){
+          IOUtils.cleanup(LOG, fc, raf);
+          finishTime = System.currentTimeMillis();
+          state = TajoProtos.FetcherState.FETCH_FINISHED;
         }
       }
     }
