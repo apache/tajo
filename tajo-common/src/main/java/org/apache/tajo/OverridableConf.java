@@ -32,31 +32,29 @@ import static org.apache.tajo.ConfigKey.ConfigType;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 /**
- * QueryContext provides a consolidated config system for a query instant.
+ * OverridableConf provides a consolidated config system. Tajo basically uses TajoConf, which is a extended class of
+ * Hadoop's Configuration system, However, TajoConf is only used for sharing static system configs, such as binding
+ * address of master and workers, system directories, other system parameters.
  *
- * In Tajo, there are three configurable layers:
+ * For modifiable or instant configs, we use OverridableConf, which is a set of key-value pairs.
+ * OverridableConf provides more strong-typed way to set configs and its behavior is more clear than Configuration
+ * system.
+ *
+ * By default, OverridableConf recognizes following config types.
+ *
  * <ul>
- *   <li>
- *    <ul>System Config - it comes from Hadoop's Configuration class. by tajo-site, catalog-site,
- *    catalog-default and TajoConf.</ul>
- *    <ul>Session variables - they are instantly configured by users.
- *    Each client session has it own set of session variables.</ul>
- *    <ul>Query config - it is internally used for meta information of a query instance.</ul>
- *   </li>
+ *    <li>System Config - it comes from Hadoop's Configuration class. by tajo-site, catalog-site,
+ *    catalog-default and TajoConf.</li>
+ *    <li>Session variables - they are instantly configured by users.
+ *    Each client session has it own set of session variables.</li>
  * </ul>
  *
  * System configs and session variables can set the same config in the same time. System configs are usually used to set
  * default configs, and session variables is user-specified configs. So, session variables can override system configs.
- *
- * QueryContent provides a query with a uniform way to access various configs without considering their priorities.
  */
 public class OverridableConf extends KeyValueSet {
   private static final Log LOG = LogFactory.getLog(OverridableConf.class);
   private ConfigType [] configTypes;
-
-  private static final Map<ClassLoader, Map<String, WeakReference<Class<?>>>>
-      CACHE_CLASSES = new WeakHashMap<ClassLoader, Map<String, WeakReference<Class<?>>>>();
-
   private TajoConf conf;
 
   public OverridableConf(final TajoConf conf, ConfigType...configTypes) {
@@ -85,15 +83,19 @@ public class OverridableConf extends KeyValueSet {
   public boolean getBool(ConfigKey key, Boolean defaultVal) {
     assertRegisteredEnum(key);
 
-    switch (key.type()) {
-    case QUERY:
-      return getBool(key.keyname());
-    case SESSION:
-      return getBool(key.keyname(), conf.getBoolVar(((SessionVars) key).getConfVars()));
-    case SYSTEM:
-      return conf.getBoolVar((TajoConf.ConfVars) key);
-    default:
+    if (key.type() != ConfigType.SESSION && key.type() != ConfigType.SYSTEM) {
       return getBool(key.keyname(), defaultVal);
+    } else {
+      switch (key.type()) {
+      case QUERY:
+        return getBool(key.keyname());
+      case SESSION:
+        return getBool(key.keyname(), conf.getBoolVar(((SessionVars) key).getConfVars()));
+      case SYSTEM:
+        return conf.getBoolVar((TajoConf.ConfVars) key);
+      default:
+        throw new IllegalStateException("key does not belong to Session and System config sets");
+      }
     }
   }
 
@@ -105,7 +107,7 @@ public class OverridableConf extends KeyValueSet {
     assertRegisteredEnum(key);
 
     if (key.type() != ConfigType.SESSION && key.type() != ConfigType.SYSTEM) {
-      return getInt(key.keyname());
+      return getInt(key.keyname(), defaultVal);
     } else {
       switch (key.type()) {
       case SESSION:
@@ -126,7 +128,7 @@ public class OverridableConf extends KeyValueSet {
     assertRegisteredEnum(key);
 
     if (key.type() != ConfigType.SESSION && key.type() != ConfigType.SYSTEM) {
-      return getLong(key.keyname());
+      return getLong(key.keyname(), defaultVal);
     } else {
       switch (key.type()) {
       case SESSION:
@@ -147,7 +149,7 @@ public class OverridableConf extends KeyValueSet {
     assertRegisteredEnum(key);
 
     if (key.type() != ConfigType.SESSION && key.type() != ConfigType.SYSTEM) {
-      return getFloat(key.keyname());
+      return getFloat(key.keyname(), defaultVal);
     } else {
       switch (key.type()) {
       case SESSION:
@@ -203,16 +205,14 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public Class<?> getClass(ConfigKey key) {
-//    if (containsKey(key)) {
-      String className = getTrimmed(key);
-      try {
-        return Class.forName(className);
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException(e);
-      }
-//    } else {
-//      throw new IllegalArgumentException("No such a config key: "  + key);
-//    }
+    assertRegisteredEnum(key);
+
+    String className = getTrimmed(key);
+    try {
+      return Class.forName(className);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public String getTrimmed(ConfigKey key) {

@@ -97,7 +97,7 @@ public class SetCommand extends TajoShellCommand {
 
   @Override
   public void printHelp() {
-    context.getOutput().println("Available Session Variables:\n");
+    context.getOutput().println("\nAvailable Session Variables:\n");
     for (SessionVars var : SessionVars.values()) {
 
       if (var.getMode() == VariableMode.DEFAULT ||

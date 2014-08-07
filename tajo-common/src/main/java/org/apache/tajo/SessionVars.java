@@ -125,8 +125,8 @@ public enum SessionVars implements ConfigKey {
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   ;
 
-  private static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
-  private static Map<String, SessionVars> DEPRECATED_SESSION_VARS = Maps.newHashMap();
+  public static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
+  public static Map<String, SessionVars> DEPRECATED_SESSION_VARS = Maps.newHashMap();
 
   static {
     for (SessionVars var : SessionVars.values()) {
@@ -185,6 +185,10 @@ public enum SessionVars implements ConfigKey {
     return DEPRECATED_SESSION_VARS.containsKey(keyname);
   }
 
+  public static boolean isPublic(SessionVars var) {
+    return var.getMode() != SERVER_SIDE_VAR;
+  }
+
   public static SessionVars get(String keyname) {
     if (SESSION_VARS.containsKey(keyname)) {
       return SESSION_VARS.get(keyname);
@@ -193,5 +197,15 @@ public enum SessionVars implements ConfigKey {
     } else {
       return null;
     }
+  }
+
+  /**
+   * rename deprecated name to current name if the name is deprecated.
+   *
+   * @param keyname session variable name
+   * @return The current session variable name
+   */
+  public static String handleDeprecatedName(String keyname) {
+    return SessionVars.exists(keyname) ? SessionVars.get(keyname).keyname() : keyname;
   }
 }

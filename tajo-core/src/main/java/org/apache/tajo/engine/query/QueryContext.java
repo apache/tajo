@@ -35,23 +35,7 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 /**
- * QueryContext provides a consolidated config system for a query instant.
- *
- * In Tajo, there are three configurable layers:
- * <ul>
- *   <li>
- *    <ul>System Config - it comes from Hadoop's Configuration class. by tajo-site, catalog-site,
- *    catalog-default and TajoConf.</ul>
- *    <ul>Session variables - they are instantly configured by users.
- *    Each client session has it own set of session variables.</ul>
- *    <ul>Query config - it is internally used for meta information of a query instance.</ul>
- *   </li>
- * </ul>
- *
- * System configs and session variables can set the same config in the same time. System configs are usually used to set
- * default configs, and session variables is user-specified configs. So, session variables can override system configs.
- *
- * QueryContent provides a query with a uniform way to access various configs without considering their priorities.
+ * QueryContent is a overridable config, and it provides a set of various configs for a query instance.
  */
 public class QueryContext extends OverridableConf {
   public static enum QueryVars implements ConfigKey {

@@ -76,14 +76,14 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
 
   public void setVariable(String name, String value) {
     synchronized (sessionVariables) {
-      sessionVariables.put(name, value);
+      sessionVariables.put(SessionVars.handleDeprecatedName(name), value);
     }
   }
 
   public String getVariable(String name) throws NoSuchSessionVariableException {
     synchronized (sessionVariables) {
       if (sessionVariables.containsKey(name)) {
-        return sessionVariables.get(name);
+        return sessionVariables.get(SessionVars.handleDeprecatedName(name));
       } else {
         throw new NoSuchSessionVariableException(name);
       }
@@ -92,7 +92,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
 
   public void removeVariable(String name) {
     synchronized (sessionVariables) {
-      sessionVariables.remove(name);
+      sessionVariables.remove(SessionVars.handleDeprecatedName(name));
     }
   }
 
