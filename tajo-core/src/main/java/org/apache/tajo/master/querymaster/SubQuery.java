@@ -343,7 +343,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 100.0f) / 100.0f;
+    if (totalProgress > 0.0f) {
+      return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 1000.0f) / 1000.0f;
+    } else {
+      return 0.0f;
+    }
   }
 
   public int getSucceededObjectCount() {
