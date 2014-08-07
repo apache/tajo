@@ -46,13 +46,14 @@ public class TajoGetConf {
     options = new Options();
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
-    options.addOption("masters", null, false, "gets list of tajomasters in the cluster");
-    options.addOption("confKey", null, true, "gets a specific key from the configuration");
   }
 
   private TajoConf tajoConf;
   private TajoClient tajoClient;
   private Writer writer;
+
+  public final static String defaultLeftPad = " ";
+  public final static String defaultDescPad = "   ";
 
   public TajoGetConf(TajoConf tajoConf, Writer writer) {
     this(tajoConf, writer, null);
@@ -64,17 +65,27 @@ public class TajoGetConf {
     this.tajoClient = tajoClient;
   }
 
-  private void printUsage() {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp( "getconf [options]", options );
+  private void printUsage(boolean tsqlMode) {
+    if (!tsqlMode) {
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp( "getconf <key> [options]", options );
+    }
+    System.out.println(defaultLeftPad + "key" + defaultDescPad + "gets a specific key from the configuration");
   }
 
   public void runCommand(String[] args) throws Exception {
-    CommandLineParser parser = new PosixParser();
-    CommandLine cmd = parser.parse(options, args);
+    runCommand(args, true);
+  }
 
-    String param = "";
-    int cmdType = 0;
+  public void runCommand(String[] args, boolean tsqlMode) throws Exception {
+    CommandLineParser parser = new PosixParser();
+
+    if (args.length == 0) {
+      printUsage(tsqlMode);
+      return;
+    }
+
+    CommandLine cmd = parser.parse(options, args);
 
     String hostName = null;
     Integer port = null;
@@ -85,11 +96,12 @@ public class TajoGetConf {
       port = Integer.parseInt(cmd.getOptionValue("p"));
     }
 
-    if (cmd.hasOption("masters")) {
-      cmdType = 1;
-    } else if (cmd.hasOption("confKey")) {
-      cmdType = 2;
-      param = cmd.getOptionValue("confKey");
+    String param;
+    if (cmd.getArgs().length > 1) {
+      printUsage(tsqlMode);
+      return;
+    } else {
+      param = cmd.getArgs()[0];
     }
 
     // if there is no "-h" option,
@@ -108,11 +120,6 @@ public class TajoGetConf {
       }
     }
 
-    if (cmdType == 0) {
-      printUsage();
-      return;
-    }
-
     if ((hostName == null) ^ (port == null)) {
       return;
     } else if (hostName != null && port != null) {
@@ -122,27 +129,8 @@ public class TajoGetConf {
       tajoClient = new TajoClient(tajoConf);
     }
 
-    switch (cmdType) {
-      case 1:
-        processMasters(writer);
-        break;
-      case 2:
-        processConfKey(writer, param);
-        break;
-      default:
-        printUsage();
-        break;
-    }
-
+    processConfKey(writer, param);
     writer.flush();
-  }
-
-  private void processMasters(Writer writer) throws ParseException, IOException,
-      ServiceException, SQLException {
-    String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
-    writer.write(masterAddress.getHostName());
-    writer.write("\n");
   }
 
   private void processConfKey(Writer writer, String param) throws ParseException, IOException,
@@ -171,10 +159,10 @@ public class TajoGetConf {
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
 
-    Writer writer = new PrintWriter(System.out);
-    try {
+    Writer writer = new PrintWriter(System.out);    try {
+      System.out.println("### 1000 ###");
       TajoGetConf admin = new TajoGetConf(conf, writer);
-      admin.runCommand(args);
+      admin.runCommand(args, false);
     } finally {
       writer.close();
       System.exit(0);
