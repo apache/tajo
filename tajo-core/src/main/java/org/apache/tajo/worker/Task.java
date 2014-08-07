@@ -626,7 +626,7 @@ public class Task {
             if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
               break;
             }
-          } catch (IOException e) {
+          } catch (Throwable e) {
             LOG.error("Fetch failed: " + fetcher.getURI(), e);
           }
           retryNum++;

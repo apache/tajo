@@ -36,8 +36,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class TestFetcher {
   private String TEST_DATA = "target/test-data/TestFetcher";
@@ -193,6 +192,32 @@ public class TestFetcher {
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
+  }
+
+  @Test
+  public void testServerFailure() throws Exception {
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    pullServerService.stop();
+
+    boolean failure = false;
+    try{
+      fetcher.get();
+    } catch (Throwable e){
+      failure = true;
+    }
+    assertTrue(failure);
     assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
   }
 }
