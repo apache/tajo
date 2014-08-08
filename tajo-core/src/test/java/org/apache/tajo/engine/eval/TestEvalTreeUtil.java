@@ -32,6 +32,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.optimizer.eval.EvalTreeOptimizer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -146,6 +147,7 @@ public class TestEvalTreeUtil {
   }
 
   public static EvalNode getRootSelection(String query) throws PlanningException {
+
     Expr block = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
@@ -154,8 +156,11 @@ public class TestEvalTreeUtil {
       e.printStackTrace();
     }
 
+    LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(session, plan, plan.getRootBlock(),
+        new EvalTreeOptimizer(), true);
+
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
-    return planner.getExprAnnotator().createEvalNode(plan, plan.getRootBlock(), selection.getQual(),
+    return planner.getExprAnnotator().createEvalNode(context, selection.getQual(),
         NameResolvingMode.RELS_AND_SUBEXPRS);
   }
 

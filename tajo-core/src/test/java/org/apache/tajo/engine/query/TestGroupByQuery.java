@@ -167,6 +167,22 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupByWithConstantKeys3() throws Exception {
+    // select
+    //   l_partkey as a,
+    //   timestamp '2014-07-07 04:28:31.561' as b,
+    //   '##' as c,
+    //   count(*) d
+    // from
+    //   lineitem
+    // group by
+    //  b, c;         <- b and c all are constant values.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testDistinctAggregation1() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;

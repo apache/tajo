@@ -24,6 +24,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.graph.DirectedGraphCursor;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
@@ -191,6 +192,35 @@ public class LogicalPlan {
     case Function:
       FunctionExpr function = (FunctionExpr) expr;
       prefix = function.getSignature();
+      break;
+    case Literal:
+      LiteralValue literal = (LiteralValue) expr;
+      switch (literal.getValueType()) {
+      case Boolean:
+        prefix = "bool";
+        break;
+      case String:
+        prefix = "text";
+        break;
+      case Unsigned_Integer:
+      case Unsigned_Large_Integer:
+        prefix = "number";
+        break;
+      case Unsigned_Float:
+        prefix = "real";
+        break;
+      default:
+        throw new IllegalStateException(literal.getValueType() + " is not implemented");
+      }
+      break;
+    case DateLiteral:
+      prefix = "date";
+      break;
+    case TimeLiteral:
+      prefix = "time";
+      break;
+    case TimestampLiteral:
+      prefix = "timestamp";
       break;
     default:
       prefix = expr.getType().name();
@@ -379,6 +409,7 @@ public class LogicalPlan {
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
     private boolean hasWindowFunction = false;
+    private final Map<String, ConstEval> constReferencesMap = TUtil.newHashMap();
 
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
@@ -472,6 +503,18 @@ public class LogicalPlan {
 
     public boolean hasTableExpression() {
       return this.canonicalNameToRelationMap.size() > 0;
+    }
+
+    public void addConstReference(String refName, ConstEval value) {
+      constReferencesMap.put(refName, value);
+    }
+
+    public boolean isConstReference(String refName) {
+      return constReferencesMap.containsKey(refName);
+    }
+
+    public ConstEval getConstByReference(String refName) {
+      return constReferencesMap.get(refName);
     }
 
     public void addColumnAlias(String original, String alias) {

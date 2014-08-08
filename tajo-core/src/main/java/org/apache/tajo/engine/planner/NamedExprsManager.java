@@ -155,6 +155,10 @@ public class NamedExprsManager {
    */
   public String addExpr(Expr expr, String alias) throws PlanningException {
 
+    if (OpType.isLiteralType(expr.getType())) {
+      return alias;
+    }
+
     // if this name already exists, just returns the name.
     if (nameToIdMap.containsKey(alias)) {
       return alias;

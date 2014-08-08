@@ -218,4 +218,21 @@ public class TestSortQuery extends QueryTestCaseBase {
       executeString("DROP TABLE nullsort PURGE;").close();
     }
   }
+
+  @Test
+  public final void testSortWithConstKeys() throws Exception {
+    // select
+    //   l_orderkey,
+    //   l_linenumber,
+    //   1 as key1,
+    //   2 as key2
+    // from
+    //   lineitem
+    // order by
+    //   key1,
+    //  key2;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

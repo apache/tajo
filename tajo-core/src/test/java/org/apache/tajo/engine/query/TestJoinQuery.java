@@ -239,6 +239,34 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeftOuterJoinWithConstantExpr4() throws Exception {
+    // outer join with constant projections
+    //
+    // select
+    //   c_custkey,
+    //   orders.o_orderkey,
+    //   1 as key1
+    // from customer left outer join orders on c_custkey = o_orderkey and key1 = 1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithConstantExpr5() throws Exception {
+    // outer join with constant projections
+    //
+    // select
+    //   c_custkey,
+    //   orders.o_orderkey,
+    //   1 as key1
+    // from customer left outer join orders on c_custkey = o_orderkey and key1 = 1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testRightOuterJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

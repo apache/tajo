@@ -272,7 +272,7 @@ public class TestTajoCli {
         }
       }
     }
-    assertEquals(expectedResult, actual);
+    assertEquals(expectedResult.trim(), actual.trim());
   }
 
   @Test
