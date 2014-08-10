@@ -90,6 +90,7 @@
     <module>tajo-storage</module>
     <module>tajo-yarn-pullserver</module>
     <module>tajo-dist</module>
+    <module>tajo-jitvec-tests</module>
   </modules>
 
   <build>
