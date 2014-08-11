@@ -158,7 +158,7 @@ public class TestEvalTreeUtil {
       e.printStackTrace();
     }
 
-    LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(session, plan, plan.getRootBlock(),
+    LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(defaultContext, plan, plan.getRootBlock(),
         new EvalTreeOptimizer(), true);
 
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
