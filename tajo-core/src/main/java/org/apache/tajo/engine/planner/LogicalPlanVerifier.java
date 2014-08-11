@@ -24,7 +24,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.master.session.Session;
+import org.apache.tajo.engine.query.QueryContext;
 
 import java.util.Stack;
 
@@ -38,17 +38,17 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   }
 
   public static class Context {
-    Session session;
+    QueryContext queryContext;
     VerificationState state;
 
-    public Context(Session session, VerificationState state) {
-      this.session = session;
+    public Context(QueryContext queryContext, VerificationState state) {
+      this.queryContext = this.queryContext;
       this.state = state;
     }
   }
 
-  public VerificationState verify(Session session, VerificationState state, LogicalPlan plan) throws PlanningException {
-    Context context = new Context(session, state);
+  public VerificationState verify(QueryContext queryContext, VerificationState state, LogicalPlan plan) throws PlanningException {
+    Context context = new Context(queryContext, state);
     visit(context, plan, plan.getRootBlock());
     return context.state;
   }

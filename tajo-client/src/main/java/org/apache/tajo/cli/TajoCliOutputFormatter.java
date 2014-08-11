@@ -30,9 +30,9 @@ import java.sql.ResultSet;
 public interface TajoCliOutputFormatter {
   /**
    * Initialize formatter
-   * @param tajoConf
+   * @param context
    */
-  public void init(TajoConf tajoConf);
+  public void init(TajoCli.TajoCliContext context);
 
   /**
    * print query result to console

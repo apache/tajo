@@ -18,6 +18,9 @@
 
 package org.apache.tajo.cli;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -27,18 +30,56 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.jdbc.MetaDataTuple;
 import org.apache.tajo.jdbc.TajoMetaDataResultSet;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.mockito.Mockito.*;
+
 import static org.junit.Assert.assertEquals;
 
 public class TestDefaultCliOutputFormatter {
+  protected static final TpchTestBase testBase;
+  protected static final TajoTestingCluster cluster;
+
+  /** the base path of result directories */
+  protected static final Path resultBasePath;
+  static {
+    testBase = TpchTestBase.getInstance();
+    cluster = testBase.getTestingCluster();
+    URL resultBaseURL = ClassLoader.getSystemResource("results");
+    resultBasePath = new Path(resultBaseURL.toString());
+  }
+
+  private TajoConf conf;
+  private TajoCli tajoCli;
+  private TajoCli.TajoCliContext cliContext;
+
+  @Before
+  public void setUp() throws Exception {
+    conf = cluster.getConfiguration();
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(conf, new String[]{}, System.in, out);
+    cliContext = tajoCli.getContext();
+  }
+
+  @After
+  public void tearDown() {
+    if (tajoCli != null) {
+      tajoCli.close();
+    }
+  }
+
+
   @Test
   public void testParseErrorMessage() {
     String message = "java.sql.SQLException: ERROR: no such a table: table1";
@@ -65,9 +106,10 @@ public class TestDefaultCliOutputFormatter {
 
   @Test
   public void testPrintResultInsertStatement() throws Exception {
-    TajoConf tajoConf = new TajoConf();
+
+
     DefaultTajoCliOutputFormatter outputFormatter = new DefaultTajoCliOutputFormatter();
-    outputFormatter.init(tajoConf);
+    outputFormatter.init(cliContext);
 
     float responseTime = 10.1f;
     long numBytes = 102;
@@ -89,9 +131,8 @@ public class TestDefaultCliOutputFormatter {
 
   @Test
   public void testPrintResultSelectStatement() throws Exception {
-    TajoConf tajoConf = new TajoConf();
     DefaultTajoCliOutputFormatter outputFormatter = new DefaultTajoCliOutputFormatter();
-    outputFormatter.init(tajoConf);
+    outputFormatter.init(cliContext);
 
     float responseTime = 10.1f;
     long numBytes = 102;

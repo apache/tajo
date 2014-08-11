@@ -176,7 +176,8 @@ public class TestTajoClient {
       String key = prefixName + i;
       String val = prefixValue + i;
 
-      assertEquals(i, client.getAllSessionVariables().size());
+      // Basically,
+      assertEquals(i + 4, client.getAllSessionVariables().size());
       assertFalse(client.getAllSessionVariables().containsKey(key));
       assertFalse(client.existSessionVariable(key));
 
@@ -184,7 +185,7 @@ public class TestTajoClient {
       map.put(key, val);
       client.updateSessionVariables(map);
 
-      assertEquals(i + 1, client.getAllSessionVariables().size());
+      assertEquals(i + 5, client.getAllSessionVariables().size());
       assertTrue(client.getAllSessionVariables().containsKey(key));
       assertTrue(client.existSessionVariable(key));
     }
@@ -690,7 +691,7 @@ public class TestTajoClient {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(ConfVars.CSVFILE_NULL.varname, "\\\\T");
+    variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
 
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);

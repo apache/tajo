@@ -62,7 +62,7 @@ public class TestRightOuterHashJoinExec {
   private LogicalPlanner planner;
   private AbstractStorageManager sm;
   private Path testDir;
-  private static Session session = LocalTajoTestingUtility.createDummySession();
+  private QueryContext defaultContext;
 
   private TableDesc dep3;
   private TableDesc job3;
@@ -214,6 +214,7 @@ public class TestRightOuterHashJoinExec {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
   @After
@@ -237,11 +238,11 @@ public class TestRightOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec0");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -278,11 +279,11 @@ public class TestRightOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, job3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec1");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -319,11 +320,11 @@ public class TestRightOuterHashJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec2");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[2]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

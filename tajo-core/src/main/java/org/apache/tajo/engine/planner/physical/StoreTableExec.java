@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -59,7 +60,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
-      String nullChar = context.getQueryContext().get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+      String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
       meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
           context.getOutputPath());
@@ -77,7 +78,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     while((tuple = child.next()) != null) {
       appender.addTuple(tuple);
     }
-        
+
     return null;
   }
 

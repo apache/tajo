@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.master.querymaster.SubQuery;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.util.Map;
 

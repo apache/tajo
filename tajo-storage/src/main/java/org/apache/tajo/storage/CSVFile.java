@@ -84,7 +84,9 @@ public class CSVFile {
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
           StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
       this.columnNum = schema.size();
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL));
+
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -107,8 +109,8 @@ public class CSVFile {
         isShuffle = false;
       }
 
-      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
-      if(!StringUtils.isEmpty(codecName)){
+      if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
+        String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         codecFactory = new CompressionCodecFactory(conf);
         codec = codecFactory.getCodecByClassName(codecName);
         compressor =  CodecPool.getCompressor(codec);
@@ -262,7 +264,8 @@ public class CSVFile {
       String delim  = meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {

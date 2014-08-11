@@ -86,7 +86,8 @@ public class SequenceFileScanner extends FileScanner {
 
     reader = new SequenceFile.Reader(fs, fragment.getPath(), conf);
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL));
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+        NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {

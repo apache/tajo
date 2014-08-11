@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -35,6 +36,7 @@ import org.apache.tajo.engine.planner.logical.join.GreedyHeuristicJoinOrderAlgor
 import org.apache.tajo.engine.planner.logical.join.JoinGraph;
 import org.apache.tajo.engine.planner.logical.join.JoinOrderAlgorithm;
 import org.apache.tajo.engine.planner.rewrite.*;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
 
 import java.util.LinkedHashSet;
@@ -57,7 +59,7 @@ public class LogicalOptimizer {
 
   public LogicalOptimizer(TajoConf systemConf) {
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
-    if (systemConf.getBoolVar(ConfVars.PLANNER_USE_FILTER_PUSHDOWN)) {
+    if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
       rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
     }
 
@@ -84,13 +86,13 @@ public class LogicalOptimizer {
     return optimize(null, plan);
   }
 
-  public LogicalNode optimize(Session session, LogicalPlan plan) throws PlanningException {
+  public LogicalNode optimize(QueryContext context, LogicalPlan plan) throws PlanningException {
     rulesBeforeJoinOpt.rewrite(plan);
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
         new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
 
-    if (session == null || "true".equals(session.getVariable(ConfVars.OPTIMIZER_JOIN_ENABLE.varname, "true"))) {
+    if (context == null || context.getBool(SessionVars.TEST_JOIN_OPT_ENABLED)) {
       // default is true
       while (blockCursor.hasNext()) {
         optimizeJoinOrder(plan, blockCursor.nextBlock());

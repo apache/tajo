@@ -291,8 +291,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // case9
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -345,8 +345,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCaseByCase3() throws Exception {
     // first distinct is smaller than second distinct.
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -562,8 +562,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testNumShufflePartition() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -592,7 +592,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
       ResultSet res = executeString(
           "select col1 \n" +
               ",count(distinct col2) as cnt1\n" +
@@ -646,8 +646,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       assertEquals(2, partitionIds.size());
       executeString("DROP TABLE testnumshufflepartition PURGE").close();
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
-          ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
+          ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
   }
 }

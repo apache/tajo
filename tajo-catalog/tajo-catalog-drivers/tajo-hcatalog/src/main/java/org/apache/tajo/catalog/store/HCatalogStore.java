@@ -166,7 +166,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       stats = new TableStats();
       options = new KeyValueSet();
       options.putAll(table.getParameters());
-      options.delete("EXTERNAL");
+      options.remove("EXTERNAL");
 
       Properties properties = table.getMetadata();
       if (properties != null) {
@@ -186,31 +186,31 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         } else {
           nullFormat = "\\N";
         }
-        options.delete(serdeConstants.SERIALIZATION_NULL_FORMAT);
+        options.remove(serdeConstants.SERIALIZATION_NULL_FORMAT);
 
         // set file output format
         String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
 
         if (storeType.equals(CatalogProtos.StoreType.CSV)) {
-          options.put(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
-          options.put(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          options.set(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.set(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
         } else if (storeType.equals(CatalogProtos.StoreType.RCFILE)) {
-          options.put(StorageConstants.RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          options.set(StorageConstants.RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
           if (LazyBinaryColumnarSerDe.class.getName().equals(serde)) {
-            options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
+            options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
           } else if (ColumnarSerDe.class.getName().equals(serde)) {
-            options.put(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
+            options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
           }
         } else if (storeType.equals(CatalogProtos.StoreType.SEQUENCEFILE) ) {
-          options.put(StorageConstants.SEQUENCEFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
-          options.put(StorageConstants.SEQUENCEFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.set(StorageConstants.SEQUENCEFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
           if (LazyBinarySerDe.class.getName().equals(serde)) {
-            options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
+            options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
           } else if (LazySimpleSerDe.class.getName().equals(serde)) {
-            options.put(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
+            options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
           }
         }
 
@@ -504,7 +504,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
             StringEscapeUtils.unescapeJava(fieldDelimiter));
         table.getParameters().remove(StorageConstants.CSVFILE_DELIMITER);
 
-        if (tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL) != null) {
+        if (tableDesc.getMeta().containsOption(StorageConstants.CSVFILE_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL)));
           table.getParameters().remove(StorageConstants.CSVFILE_NULL);
@@ -534,7 +534,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe.class.getName());
         }
 
-        if (tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL) != null) {
+        if (tableDesc.getMeta().containsOption(StorageConstants.SEQUENCEFILE_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL)));
           table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
