@@ -255,14 +255,16 @@ public class HAServiceHDFSImpl implements HAService {
           try {
             boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
             if (LOG.isDebugEnabled()) {
-              LOG.debug("master:" + currentActiveMaster + ", isAlive:" + isAlive);
+              LOG.debug("currentActiveMaster:" + currentActiveMaster + ", thisMasterName:" + masterName
+                  + ", isAlive:" + isAlive);
             }
 
             // If active master is dead, this master should be active master instead of
             // previous active master.
             if (!isAlive) {
               FileStatus[] files = fs.listStatus(activePath);
-              if (files.length == 0) {
+              if (files.length == 0 || (files.length ==  1
+                && currentActiveMaster.equals(files[0].getPath().getName().replaceAll("_", ":")))) {
                 delete();
                 register();
               }
