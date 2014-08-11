@@ -32,9 +32,7 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -48,10 +46,7 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
@@ -716,9 +711,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       MasterPlan masterPlan = subQuery.getMasterPlan();
       ExecutionBlock parent = masterPlan.getParent(subQuery.getBlock());
 
-      GroupbyNode grpNode = null;
+      LogicalNode grpNode = null;
       if (parent != null) {
         grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
+        if (grpNode == null) {
+          grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.DISTINCT_GROUP_BY);
+        }
       }
 
       // We assume this execution block the first stage of join if two or more tables are included in this block,
@@ -741,7 +739,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb /
-            conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
+            conf.getIntVar(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME));
 
         int totalMem = getClusterTotalMemory(subQuery);
         LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
@@ -749,8 +747,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
 
-        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
-          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+        if (conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM);
           LOG.warn("!!!!! TESTCASE MODE !!!!!");
         }
 
@@ -779,8 +777,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         return taskNum;
         // Is this subquery the first step of group-by?
       } else if (grpNode != null) {
-
-        if (grpNode.getGroupingColumns().length == 0) {
+        boolean hasGroupColumns = true;
+        if (grpNode.getType() == NodeType.GROUP_BY) {
+          hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
+        } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+          hasGroupColumns = ((DistinctGroupbyNode)grpNode).getGroupingColumns().length > 0;
+        }
+        if (!hasGroupColumns) {
           return 1;
         } else {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
@@ -789,7 +792,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
           // determine the number of task
           int taskNumBySize = (int) Math.ceil((double) mb /
-              conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
+              conf.getIntVar(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME));
 
           int totalMem = getClusterTotalMemory(subQuery);
 
@@ -836,10 +839,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       long volume = getInputVolume(subQuery.getMasterPlan(), subQuery.context, subQuery.getBlock());
 
       int mb = (int) Math.ceil((double)volume / 1048576);
-      LOG.info("Table's volume is approximately " + mb + " MB");
+      LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
       // determine the number of task per 64MB
       int maxTaskNum = Math.max(1, (int) Math.ceil((double)mb / 64));
-      LOG.info("The determined number of non-leaf tasks is " + maxTaskNum);
+      LOG.info(subQuery.getId() + ", The determined number of non-leaf tasks is " + maxTaskNum);
       return maxTaskNum;
     }
 
@@ -999,7 +1002,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
         subQuery.eventHandler.handle(
             new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
-                subQuery.getId(), allocationEvent.getAllocatedContainer()));
+                subQuery.getId(), allocationEvent.getAllocatedContainer())
+        );
 
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
       } catch (Throwable t) {
@@ -1102,6 +1106,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private void cleanup() {
     stopScheduler();
     releaseContainers();
+
+    if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
+      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
+      List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
+      for (ExecutionBlock executionBlock :  childs){
+        ebIds.add(executionBlock.getId().getProto());
+      }
+
+      try {
+        getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
+      } catch (Throwable e) {
+        LOG.error(e);
+      }
+    }
   }
 
   private static class SubQueryCompleteTransition
@@ -1109,7 +1127,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      // TODO - Commit subQuery & do cleanup
+      // TODO - Commit subQuery
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
       try {

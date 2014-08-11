@@ -19,6 +19,9 @@
 package org.apache.tajo.engine.planner.physical;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -29,12 +32,16 @@ import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
+  private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
+
   protected final TableMeta meta;
   protected final StoreTableNode plan;
   protected Path storeTablePath;
@@ -49,6 +56,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     if (plan.getType() == NodeType.CREATE_TABLE) {
       this.outSchema = ((CreateTableNode)plan).getTableSchema();
+    } else if (plan.getType() == NodeType.INSERT) {
+      this.outSchema = ((InsertNode)plan).getTableSchema();
     }
 
     // set table meta
@@ -100,8 +109,31 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     }
   }
 
-
   protected Path getDataFile(String partition) {
     return StorageUtil.concatPath(storeTablePath.getParent(), partition, storeTablePath.getName());
+  }
+
+  protected Appender makeAppender(String partition) throws IOException {
+    Path dataFile = getDataFile(partition);
+    FileSystem fs = dataFile.getFileSystem(context.getConf());
+
+    if (fs.exists(dataFile.getParent())) {
+      LOG.info("Path " + dataFile.getParent() + " already exists!");
+    } else {
+      fs.mkdirs(dataFile.getParent());
+      LOG.info("Add subpartition path directory :" + dataFile.getParent());
+    }
+
+    if (fs.exists(dataFile)) {
+      LOG.info("File " + dataFile + " already exists!");
+      FileStatus status = fs.getFileStatus(dataFile);
+      LOG.info("File size: " + status.getLen());
+    }
+
+    Appender appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
+    appender.enableStats();
+    appender.init();
+
+    return appender;
   }
 }

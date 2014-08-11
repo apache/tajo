@@ -24,10 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.SequenceFile;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -36,7 +33,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.IOException;
 
@@ -72,7 +69,7 @@ public class SequenceFileScanner extends FileScanner {
 
   private int elementOffset, elementSize;
 
-  private static final BytesWritable EMPTY_KEY = new BytesWritable();
+  private Writable EMPTY_KEY;
 
   public SequenceFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
     super(conf, schema, meta, fragment);
@@ -87,7 +84,8 @@ public class SequenceFileScanner extends FileScanner {
 
     reader = new SequenceFile.Reader(fs, fragment.getPath(), conf);
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL));
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+        NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
@@ -120,13 +118,22 @@ public class SequenceFileScanner extends FileScanner {
       String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
 
-      if (serde instanceof BinarySerializerDeserializer)
+      if (serde instanceof BinarySerializerDeserializer) {
         hasBinarySerDe = true;
+      }
+
+      Class<? extends Writable> keyClass = (Class<? extends Writable>)Class.forName(reader.getKeyClassName());
+      EMPTY_KEY = keyClass.newInstance();
+
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
     }
     super.init();
+  }
+
+  public Writable getKey() {
+    return EMPTY_KEY;
   }
 
   private void prepareProjection(Column [] targets) {
@@ -164,7 +171,7 @@ public class SequenceFileScanner extends FileScanner {
       } else {
         Text text = new Text();
         reader.getCurrentValue(text);
-        cells = Bytes.splitPreserveAllTokens(text.getBytes(), delimiter, projectionMap);
+        cells = BytesUtils.splitPreserveAllTokens(text.getBytes(), delimiter, projectionMap);
         totalBytes += (long)text.getBytes().length;
         tuple = new LazyTuple(schema, cells, 0, nullChars, serde);
       }

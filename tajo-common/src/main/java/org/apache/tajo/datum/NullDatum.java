@@ -25,6 +25,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class NullDatum extends Datum {
   private static NullDatum instance;
+  public static final String DEFAULT_TEXT = "";
   private static final byte [] EMPTY_BYTES = new byte[0];
   private static final DataType NULL_DATA_TYPE;
 

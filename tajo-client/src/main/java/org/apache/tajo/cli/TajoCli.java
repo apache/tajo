@@ -18,11 +18,12 @@
 
 package org.apache.tajo.cli;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
@@ -62,7 +63,7 @@ public class TajoCli {
   // Current States
   private String currentDatabase;
 
-  private TajoCliOutputFormatter outputFormatter;
+  private TajoCliOutputFormatter displayFormatter;
 
   private boolean wasError = false;
 
@@ -79,7 +80,8 @@ public class TajoCli {
       UnsetCommand.class,
       ExecExternalShellCommand.class,
       HdfsCommand.class,
-      TajoAdminCommand.class
+      TajoAdminCommand.class,
+      TajoGetConfCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -98,7 +100,10 @@ public class TajoCli {
     options.addOption("help", "help", false, "help");
   }
 
-  public class TajoCliContext {
+  public class TajoCliContext extends OverridableConf {
+    public TajoCliContext(TajoConf conf) {
+      super(conf, ConfigKey.ConfigType.SESSION);
+    }
 
     public TajoClient getTajoClient() {
       return client;
@@ -120,18 +125,50 @@ public class TajoCli {
       return conf;
     }
 
-    public void setVariable(String key, String value) {
-      conf.set(key, value);
-      try {
-        initFormatter();
-      } catch (Exception e) {
-        System.err.println(ERROR_PREFIX + e.getMessage());
+    @VisibleForTesting
+    public String getCliSideVar(String key) {
+      if (SessionVars.exists(key)) {
+        ConfigKey configKey = SessionVars.get(key);
+        return get(configKey);
+      } else {
+        return get(key);
       }
+    }
+
+    public void setCliSideVar(String key, String value) {
+      Preconditions.checkNotNull(key);
+      Preconditions.checkNotNull(value);
+
+      boolean shouldReloadFormatter = false;
+
+      if (SessionVars.exists(key)) {
+        SessionVars configKey = SessionVars.get(key);
+        put(configKey, value);
+        shouldReloadFormatter = configKey.getMode() == SessionVars.VariableMode.CLI_SIDE_VAR;
+      } else {
+        set(key, value);
+
+        // It is hard to recognize it is a client side variable. So, we always reload formatter.
+        shouldReloadFormatter = true;
+      }
+
+      if (shouldReloadFormatter) {
+        try {
+          initFormatter();
+        } catch (Exception e) {
+          System.err.println(ERROR_PREFIX + e.getMessage());
+        }
+      }
+    }
+
+    public Map<String, TajoShellCommand> getCommands() {
+      return commands;
     }
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
     this.conf = new TajoConf(c);
+    context = new TajoCliContext(conf);
     this.sin = in;
     this.reader = new ConsoleReader(sin, out);
     this.reader.setExpandEvents(false);
@@ -160,13 +197,7 @@ public class TajoCli {
     }
 
     if (cmd.getOptionValues("conf") != null) {
-      for (String eachParam: cmd.getOptionValues("conf")) {
-        String[] tokens = eachParam.split("=");
-        if (tokens.length != 2) {
-          continue;
-        }
-        conf.set(tokens[0], tokens[1]);
-      }
+      processConfVarCommand(cmd.getOptionValues("conf"));
     }
 
     // if there is no "-h" option,
@@ -195,27 +226,30 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
-    context = new TajoCliContext();
     context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();
     initCommands();
 
+    if (cmd.getOptionValues("conf") != null) {
+      processSessionVarCommand(cmd.getOptionValues("conf"));
+    }
+
     if (cmd.hasOption("c")) {
-      outputFormatter.setScirptMode();
-      executeScript(cmd.getOptionValue("c"));
+      displayFormatter.setScirptMode();
+      int exitCode = executeScript(cmd.getOptionValue("c"));
       sout.flush();
-      System.exit(0);
+      System.exit(exitCode);
     }
     if (cmd.hasOption("f")) {
-      outputFormatter.setScirptMode();
+      displayFormatter.setScirptMode();
       cmd.getOptionValues("");
       File sqlFile = new File(cmd.getOptionValue("f"));
       if (sqlFile.exists()) {
         String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
         script = replaceParam(script, cmd.getOptionValues("param"));
-        executeScript(script);
+        int exitCode = executeScript(script);
         sout.flush();
-        System.exit(0);
+        System.exit(exitCode);
       } else {
         System.err.println(ERROR_PREFIX + "No such a file \"" + cmd.getOptionValue("f") + "\"");
         System.exit(-1);
@@ -225,13 +259,38 @@ public class TajoCli {
     addShutdownHook();
   }
 
-  private void initFormatter() throws Exception {
-    Class formatterClass = conf.getClass(ConfVars.CLI_OUTPUT_FORMATTER_CLASS.varname,
-        DefaultTajoCliOutputFormatter.class);
-    if (outputFormatter == null || !outputFormatter.getClass().equals(formatterClass)) {
-      outputFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
+  private void processConfVarCommand(String[] confCommands) throws ServiceException {
+    for (String eachParam: confCommands) {
+      String[] tokens = eachParam.split("=");
+      if (tokens.length != 2) {
+        continue;
+      }
+
+      if (!SessionVars.exists(tokens[0])) {
+        conf.set(tokens[0], tokens[1]);
+      }
     }
-    outputFormatter.init(conf);
+  }
+
+  private void processSessionVarCommand(String[] confCommands) throws ServiceException {
+    for (String eachParam: confCommands) {
+      String[] tokens = eachParam.split("=");
+      if (tokens.length != 2) {
+        continue;
+      }
+
+      if (SessionVars.exists(tokens[0])) {
+        ((SetCommand)commands.get("\\set")).set(tokens[0], tokens[1]);
+      }
+    }
+  }
+
+  private void initFormatter() throws Exception {
+    Class formatterClass = context.getClass(SessionVars.CLI_FORMATTER_CLASS);
+    if (displayFormatter == null || !displayFormatter.getClass().equals(formatterClass)) {
+      displayFormatter = (TajoCliOutputFormatter)formatterClass.newInstance();
+    }
+    displayFormatter.init(context);
   }
 
   public TajoCliContext getContext() {
@@ -279,6 +338,9 @@ public class TajoCli {
         throw new RuntimeException(e.getMessage());
       }
       commands.put(cmd.getCommand(), cmd);
+      for (String alias : cmd.getAliases()) {
+        commands.put(alias, cmd);
+      }
     }
   }
 
@@ -308,7 +370,7 @@ public class TajoCli {
   public int runShell() throws Exception {
     String line;
     String currentPrompt = context.getCurrentDatabase();
-    int code = 0;
+    int exitCode = 0;
 
     sout.write("Try \\? for help.\n");
 
@@ -327,26 +389,33 @@ public class TajoCli {
           for (ParsedResult parsed : parsedResults) {
             history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
           }
-          executeParsedResults(parsedResults);
-          currentPrompt = updatePrompt(parser.getState());
+        }
+        exitCode = executeParsedResults(parsedResults);
+        currentPrompt = updatePrompt(parser.getState());
+
+        if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
+          return exitCode;
         }
       }
     }
-    return code;
+    return exitCode;
   }
 
-  private void executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+  private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+    int exitCode = 0;
     for (ParsedResult parsedResult : parsedResults) {
       if (parsedResult.getType() == META) {
-        executeMetaCommand(parsedResult.getStatement());
+        exitCode = executeMetaCommand(parsedResult.getStatement());
       } else {
-        executeQuery(parsedResult.getStatement());
+        exitCode = executeQuery(parsedResult.getStatement());
       }
 
-      if (wasError && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
-        break;
+      if (exitCode != 0) {
+        return exitCode;
       }
     }
+
+    return exitCode;
   }
 
   public int executeMetaCommand(String line) throws Exception {
@@ -364,18 +433,18 @@ public class TajoCli {
       try {
         invoked.invoke(arguments);
       } catch (IllegalArgumentException ige) {
-        outputFormatter.printErrorMessage(sout, ige);
+        displayFormatter.printErrorMessage(sout, ige);
         wasError = true;
         return -1;
       } catch (Exception e) {
-        outputFormatter.printErrorMessage(sout, e);
+        displayFormatter.printErrorMessage(sout, e);
         wasError = true;
         return -1;
       } finally {
         context.getOutput().flush();
       }
 
-      if (wasError && context.getConf().getBoolVar(ConfVars.CLI_ERROR_STOP)) {
+      if (wasError && context.getBool(SessionVars.ON_ERROR_STOP)) {
         break;
       }
     }
@@ -387,7 +456,7 @@ public class TajoCli {
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
-      outputFormatter.printErrorMessage(sout, "response is null");
+      displayFormatter.printErrorMessage(sout, "response is null");
       wasError = true;
     } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
       if (response.getIsForwarded()) {
@@ -395,7 +464,7 @@ public class TajoCli {
         waitForQueryCompleted(queryId);
       } else {
         if (!response.hasTableDesc() && !response.hasResultSet()) {
-          outputFormatter.printMessage(sout, "OK");
+          displayFormatter.printMessage(sout, "OK");
           wasError = true;
         } else {
           localQueryCompleted(response, startTime);
@@ -403,17 +472,17 @@ public class TajoCli {
       }
     } else {
       if (response.hasErrorMessage()) {
-        outputFormatter.printErrorMessage(sout, response.getErrorMessage());
+        displayFormatter.printErrorMessage(sout, response.getErrorMessage());
         wasError = true;
       }
     }
   }
 
-  private void executeQuery(String statement) throws ServiceException {
+  private int executeQuery(String statement) throws ServiceException {
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
-      outputFormatter.printErrorMessage(sout, "response is null");
+      displayFormatter.printErrorMessage(sout, "response is null");
       wasError = true;
     } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
       if (response.getIsForwarded()) {
@@ -421,17 +490,19 @@ public class TajoCli {
         waitForQueryCompleted(queryId);
       } else {
         if (!response.hasTableDesc() && !response.hasResultSet()) {
-          outputFormatter.printMessage(sout, "OK");
+          displayFormatter.printMessage(sout, "OK");
         } else {
           localQueryCompleted(response, startTime);
         }
       }
     } else {
       if (response.hasErrorMessage()) {
-        outputFormatter.printErrorMessage(sout, response.getErrorMessage());
+        displayFormatter.printErrorMessage(sout, response.getErrorMessage());
         wasError = true;
       }
     }
+
+    return wasError ? -1 : 0;
   }
 
   private void localQueryCompleted(ClientProtos.SubmitQueryResponse response, long startTime) {
@@ -444,13 +515,13 @@ public class TajoCli {
       // non-forwarded INSERT INTO query does not have any query id.
       // In this case, it just returns succeeded query information without printing the query results.
       if (response.getMaxRowNum() < 0 && queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        outputFormatter.printResult(sout, sin, desc, responseTime, res);
+        displayFormatter.printResult(sout, sin, desc, responseTime, res);
       } else {
         res = TajoClient.createResultSet(client, response);
-        outputFormatter.printResult(sout, sin, desc, responseTime, res);
+        displayFormatter.printResult(sout, sin, desc, responseTime, res);
       }
     } catch (Throwable t) {
-      outputFormatter.printErrorMessage(sout, t);
+      displayFormatter.printErrorMessage(sout, t);
       wasError = true;
     } finally {
       if (res != null) {
@@ -485,7 +556,7 @@ public class TajoCli {
         }
 
         if (status.getState() == QueryState.QUERY_RUNNING || status.getState() == QueryState.QUERY_SUCCEEDED) {
-          outputFormatter.printProgress(sout, status);
+          displayFormatter.printProgress(sout, status);
         }
 
         if (status.getState() != QueryState.QUERY_RUNNING &&
@@ -499,10 +570,10 @@ public class TajoCli {
       }
 
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
-        outputFormatter.printErrorMessage(sout, status);
+        displayFormatter.printErrorMessage(sout, status);
         wasError = true;
       } else if (status.getState() == QueryState.QUERY_KILLED) {
-        outputFormatter.printKilledMessage(sout, queryId);
+        displayFormatter.printKilledMessage(sout, queryId);
         wasError = true;
       } else {
         if (status.getState() == QueryState.QUERY_SUCCEEDED) {
@@ -511,15 +582,15 @@ public class TajoCli {
           if (status.hasResult()) {
             res = TajoClient.createResultSet(client, queryId, response);
             TableDesc desc = new TableDesc(response.getTableDesc());
-            outputFormatter.printResult(sout, sin, desc, responseTime, res);
+            displayFormatter.printResult(sout, sin, desc, responseTime, res);
           } else {
             TableDesc desc = new TableDesc(response.getTableDesc());
-            outputFormatter.printResult(sout, sin, desc, responseTime, res);
+            displayFormatter.printResult(sout, sin, desc, responseTime, res);
           }
         }
       }
     } catch (Throwable t) {
-      outputFormatter.printErrorMessage(sout, t);
+      displayFormatter.printErrorMessage(sout, t);
       wasError = true;
     } finally {
       if (res != null) {
@@ -538,8 +609,7 @@ public class TajoCli {
   public int executeScript(String script) throws Exception {
     wasError = false;
     List<ParsedResult> results = SimpleParser.parseScript(script);
-    executeParsedResults(results);
-    return 0;
+    return executeParsedResults(results);
   }
 
   private void printUsage() {
@@ -562,7 +632,6 @@ public class TajoCli {
     TajoConf conf = new TajoConf();
     TajoCli shell = new TajoCli(conf, args, System.in, System.out);
     System.out.println();
-    int status = shell.runShell();
-    System.exit(status);
+    System.exit(shell.runShell());
   }
 }

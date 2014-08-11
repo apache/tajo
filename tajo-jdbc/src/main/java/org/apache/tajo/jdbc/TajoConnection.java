@@ -83,7 +83,7 @@ public class TajoConnection implements Connection {
         port = this.uri.getPort();
       }
 
-      if (this.uri.getPath() == null) { // if no database is given, set default.
+      if (this.uri.getPath() == null || this.uri.getPath().equalsIgnoreCase("")) { // if no database is given, set default.
         databaseName = TajoConstants.DEFAULT_DATABASE_NAME;
       } else {
         // getPath() will return '/database'.

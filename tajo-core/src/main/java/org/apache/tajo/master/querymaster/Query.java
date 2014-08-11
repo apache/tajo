@@ -23,6 +23,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -30,6 +31,7 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
@@ -37,7 +39,6 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
@@ -49,9 +50,11 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -437,10 +440,43 @@ public class Query implements EventHandler<QueryEvent> {
               }
             }
           } else {
-            fs.rename(stagingResultDir, finalOutputDir);
-            LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+            NodeType queryType = queryContext.getCommandType();
+
+            if (queryType == NodeType.INSERT) { // INSERT INTO an existing table
+
+              NumberFormat fmt = NumberFormat.getInstance();
+              fmt.setGroupingUsed(false);
+              fmt.setMinimumIntegerDigits(3);
+
+              if (queryContext.hasPartition()) {
+                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+                  if (eachFile.isFile()) {
+                    LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());
+                    continue;
+                  }
+                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1);
+                }
+              } else {
+                int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
+                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++);
+                }
+              }
+              // checking all file moved and remove empty dir
+              verifyAllFileMoved(fs, stagingResultDir);
+              FileStatus[] files = fs.listStatus(stagingResultDir);
+              if (files != null && files.length != 0) {
+                for (FileStatus eachFile: files) {
+                  LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
+                }
+              }
+            } else { // CREATE TABLE AS SELECT (CTAS)
+              fs.rename(stagingResultDir, finalOutputDir);
+              LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+            }
           }
         } catch (IOException e) {
+          // TODO report to client
           e.printStackTrace();
         }
       } else {
@@ -448,6 +484,111 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       return finalOutputDir;
+    }
+
+    private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {
+      FileStatus[] files = fs.listStatus(stagingPath);
+      if (files != null && files.length != 0) {
+        for (FileStatus eachFile: files) {
+          if (eachFile.isFile()) {
+            LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
+            return false;
+          } else {
+            if (verifyAllFileMoved(fs, eachFile.getPath())) {
+              fs.delete(eachFile.getPath(), false);
+            } else {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }
+
+    /**
+     * Attach the sequence number to a path.
+     *
+     * @param path Path
+     * @param seq sequence number
+     * @param nf Number format
+     * @return New path attached with sequence number
+     * @throws IOException
+     */
+    private String replaceFileNameSeq(Path path, int seq, NumberFormat nf) throws IOException {
+      String[] tokens = path.getName().split("-");
+      if (tokens.length != 4) {
+        throw new IOException("Wrong result file name:" + path);
+      }
+      return tokens[0] + "-" + tokens[1] + "-" + tokens[2] + "-" + nf.format(seq);
+    }
+
+    /**
+     * Attach the sequence number to the output file name and than move the file into the final result path.
+     *
+     * @param fs FileSystem
+     * @param stagingResultDir The staging result dir
+     * @param fileStatus The file status
+     * @param finalOutputPath Final output path
+     * @param nf Number format
+     * @param fileSeq The sequence number
+     * @throws IOException
+     */
+    private void moveResultFromStageToFinal(FileSystem fs, Path stagingResultDir,
+                                            FileStatus fileStatus, Path finalOutputPath,
+                                            NumberFormat nf,
+                                            int fileSeq) throws IOException {
+      if (fileStatus.isDirectory()) {
+        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
+        if (subPath != null) {
+          Path finalSubPath = new Path(finalOutputPath, subPath);
+          if (!fs.exists(finalSubPath)) {
+            fs.mkdirs(finalSubPath);
+          }
+          int maxSeq = StorageUtil.getMaxFileSequence(fs, finalSubPath, false);
+          for (FileStatus eachFile : fs.listStatus(fileStatus.getPath())) {
+            moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputPath, nf, ++maxSeq);
+          }
+        } else {
+          throw new IOException("Wrong staging dir:" + stagingResultDir + "," + fileStatus.getPath());
+        }
+      } else {
+        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
+        if (subPath != null) {
+          Path finalSubPath = new Path(finalOutputPath, subPath);
+          finalSubPath = new Path(finalSubPath.getParent(), replaceFileNameSeq(finalSubPath, fileSeq, nf));
+          if (!fs.exists(finalSubPath.getParent())) {
+            fs.mkdirs(finalSubPath.getParent());
+          }
+          if (fs.exists(finalSubPath)) {
+            throw new IOException("Already exists data file:" + finalSubPath);
+          }
+          boolean success = fs.rename(fileStatus.getPath(), finalSubPath);
+          if (success) {
+            LOG.info("Moving staging file[" + fileStatus.getPath() + "] + " +
+                "to final output[" + finalSubPath + "]");
+          } else {
+            LOG.error("Can't move staging file[" + fileStatus.getPath() + "] + " +
+                "to final output[" + finalSubPath + "]");
+          }
+        }
+      }
+    }
+
+    private String extractSubPath(Path parentPath, Path childPath) {
+      String parentPathStr = parentPath.toUri().getPath();
+      String childPathStr = childPath.toUri().getPath();
+
+      if (parentPathStr.length() > childPathStr.length()) {
+        return null;
+      }
+
+      int index = childPathStr.indexOf(parentPathStr);
+      if (index != 0) {
+        return null;
+      }
+
+      return childPathStr.substring(parentPathStr.length() + 1);
     }
 
     private static interface QueryHook {
@@ -495,7 +636,7 @@ public class Query implements EventHandler<QueryEvent> {
         SubQuery lastStage = query.getSubQuery(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
 
-        String nullChar = queryContext.get(ConfVars.CSVFILE_NULL.varname, ConfVars.CSVFILE_NULL.defaultVal);
+        String nullChar = queryContext.get(SessionVars.NULL_CHAR);
         meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
 
         TableStats stats = lastStage.getResultStats();

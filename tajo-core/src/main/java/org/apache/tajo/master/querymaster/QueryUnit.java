@@ -626,7 +626,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.intermediateData;
   }
 
-  public static class PullHost {
+  public static class PullHost implements Cloneable {
     String host;
     int port;
     public PullHost(String pullServerAddr, int pullServerPort){
@@ -659,6 +659,14 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
       return false;
     }
+
+    @Override
+    public PullHost clone() throws CloneNotSupportedException {
+      PullHost newPullHost = (PullHost) super.clone();
+      newPullHost.host = host;
+      newPullHost.port = port;
+      return newPullHost;
+    }
   }
 
   public static class IntermediateEntry {
@@ -667,12 +675,21 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     int attemptId;
     int partId;
     PullHost host;
+    long volume;
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {
       this.taskId = taskId;
       this.attemptId = attemptId;
       this.partId = partId;
       this.host = host;
+    }
+
+    public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host, long volume) {
+      this.taskId = taskId;
+      this.attemptId = attemptId;
+      this.partId = partId;
+      this.host = host;
+      this.volume = volume;
     }
 
     public ExecutionBlockId getEbId() {
@@ -697,6 +714,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     public PullHost getPullHost() {
       return this.host;
+    }
+
+    public long getVolume() {
+      return this.volume;
     }
 
     @Override

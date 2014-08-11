@@ -126,6 +126,7 @@ enum CommandType {
 message ShuffleFileOutput {
     required int32 partId = 1;
     optional string fileName = 2;
+    optional int64 volume = 3;
 }
 
 message QueryExecutionRequestProto {
@@ -145,6 +146,7 @@ enum ShuffleType {
   NONE_SHUFFLE = 0;
   HASH_SHUFFLE = 1;
   RANGE_SHUFFLE = 2;
+  SCATTERED_HASH_SHUFFLE = 3;
 }
 
 enum TransmitType {
@@ -177,6 +179,10 @@ message RunExecutionBlockRequestProto {
     optional string queryOutputPath = 6;
 }
 
+message ExecutionBlockListProto {
+    repeated ExecutionBlockIdProto executionBlockId = 1;
+}
+
 service TajoWorkerProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
 
@@ -184,6 +190,7 @@ service TajoWorkerProtocolService {
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
+  rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
 
 message EnforceProperty {

@@ -328,8 +328,8 @@ public class QueryMasterTask extends CompositeService {
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
-      LogicalPlan plan = planner.createPlan(session, expr);
-      optimizer.optimize(session, plan);
+      LogicalPlan plan = planner.createPlan(queryContext, expr);
+      optimizer.optimize(queryContext, plan);
 
       GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
       hookManager.addHook(new GlobalEngine.InsertHook());
@@ -368,7 +368,6 @@ public class QueryMasterTask extends CompositeService {
 
   private void initStagingDir() throws IOException {
     Path stagingDir = null;
-    Path outputDir = null;
     FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
 
     try {
@@ -378,20 +377,7 @@ public class QueryMasterTask extends CompositeService {
 
       // Create a subdirectories
       LOG.info("The staging dir '" + stagingDir + "' is created.");
-
       queryContext.setStagingDir(stagingDir);
-
-      /////////////////////////////////////////////////
-      // Check and Create Output Directory If Necessary
-      /////////////////////////////////////////////////
-      if (queryContext.hasOutputPath()) {
-        outputDir = queryContext.getOutputPath();
-        if (!queryContext.isOutputOverwrite()) {
-          if (defaultFS.exists(outputDir)) {
-            throw new IOException("The output directory '" + outputDir + " already exists.");
-          }
-        }
-      }
     } catch (IOException ioe) {
       if (stagingDir != null && defaultFS.exists(stagingDir)) {
         try {
