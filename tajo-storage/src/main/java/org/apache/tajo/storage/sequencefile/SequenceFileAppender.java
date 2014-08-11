@@ -25,11 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.tajo.catalog.Schema;
@@ -73,7 +70,8 @@ public class SequenceFileAppender extends FileAppender {
 
   long rowCount;
   private boolean isShuffle;
-  private static final BytesWritable EMPTY_KEY = new BytesWritable();
+
+  private Writable EMPTY_KEY;
 
   public SequenceFileAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
     super(conf, schema, meta, path);
@@ -128,20 +126,24 @@ public class SequenceFileAppender extends FileAppender {
       throw new IOException(e);
     }
 
-    Class<? extends Writable>  valueClass;
+    Class<? extends Writable>  keyClass, valueClass;
     if (serde instanceof BinarySerializerDeserializer) {
+      keyClass = BytesWritable.class;
+      EMPTY_KEY = new BytesWritable();
       valueClass = BytesWritable.class;
     } else {
+      keyClass = LongWritable.class;
+      EMPTY_KEY = new LongWritable();
       valueClass = Text.class;
     }
 
     String type = this.meta.getOption(StorageConstants.COMPRESSION_TYPE, CompressionType.NONE.name());
     if (type.equals(CompressionType.BLOCK.name())) {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.BLOCK, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.BLOCK, codec);
     } else if (type.equals(CompressionType.RECORD.name())) {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.RECORD, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.RECORD, codec);
     } else {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.NONE, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.NONE, codec);
     }
 
     if (enabledStats) {
