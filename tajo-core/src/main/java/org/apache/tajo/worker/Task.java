@@ -148,7 +148,7 @@ public class Task {
     this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(systemConf, queryContext, taskId,
+    this.context = new TaskAttemptContext(queryContext, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
@@ -537,7 +537,7 @@ public class Task {
         FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
           // TODO store the fetcher histories
-          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+          if (systemConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
             builder.setStartTime(fetcher.getStartTime());
             builder.setFinishTime(fetcher.getFinishTime());
             builder.setFileLength(fetcher.getFileLen());

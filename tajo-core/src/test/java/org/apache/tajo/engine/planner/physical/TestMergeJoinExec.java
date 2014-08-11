@@ -154,7 +154,7 @@ public class TestMergeJoinExec {
   @Test
   public final void testMergeInnerJoin() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode root = plan.getRootBlock().getRoot();
 
     JoinNode joinNode = PlannerUtil.findTopNode(root, NodeType.JOIN);
@@ -166,7 +166,7 @@ public class TestMergeJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testMergeInnerJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
