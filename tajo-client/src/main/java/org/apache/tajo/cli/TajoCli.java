@@ -80,7 +80,8 @@ public class TajoCli {
       UnsetCommand.class,
       ExecExternalShellCommand.class,
       HdfsCommand.class,
-      TajoAdminCommand.class
+      TajoAdminCommand.class,
+      TajoGetConfCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 

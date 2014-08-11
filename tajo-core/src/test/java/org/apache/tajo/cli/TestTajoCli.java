@@ -31,6 +31,7 @@ import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.NetUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -291,6 +292,36 @@ public class TestTajoCli {
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testGetConf() throws Exception {
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
+
+    String consoleResult = new String(out.toByteArray());
+    assertEquals(consoleResult, tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.ROOT_DIR) + "\n");
+  }
+
+  @Test
+  public void testShowMasters() throws Exception {
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    tajoCli.executeMetaCommand("\\admin -showmasters");
+
+    String consoleResult = new String(out.toByteArray());
+
+    String masterAddress = tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+    String host = masterAddress.split(":")[0];
+
+    assertEquals(consoleResult, host + "\n");
   }
 
   @Test
