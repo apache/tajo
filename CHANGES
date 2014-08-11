@@ -109,6 +109,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-947: ColPartitionStoreExec can cause URISyntaxException due 
+    to special characters. (Mai Hai Thanh via hyunsik)
+
     TAJO-999: SequenceFile key class need to be compatible. (jaehwa)
 
     TAJO-994: 'count(distinct x)' function counts first null value. (hyunsik)

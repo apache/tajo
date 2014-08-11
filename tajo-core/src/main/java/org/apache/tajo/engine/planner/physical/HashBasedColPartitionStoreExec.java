@@ -26,6 +26,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -79,7 +80,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
           if(i > 0)
             sb.append("/");
           sb.append(keyNames[i]).append("=");
-          sb.append(datum.asChars());
+          sb.append(StringUtils.escapePathName(datum.asChars()));
         }
       }
 
