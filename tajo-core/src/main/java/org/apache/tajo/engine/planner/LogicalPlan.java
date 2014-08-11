@@ -67,10 +67,8 @@ public class LogicalPlan {
   LogicalPlanner planner;
 
   private boolean isExplain;
-  private final String currentDatabase;
 
-  public LogicalPlan(String currentDatabase, LogicalPlanner planner) {
-    this.currentDatabase = currentDatabase;
+  public LogicalPlan(LogicalPlanner planner) {
     this.planner = planner;
   }
 
