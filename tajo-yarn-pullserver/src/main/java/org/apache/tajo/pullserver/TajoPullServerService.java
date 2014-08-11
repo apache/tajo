@@ -379,6 +379,8 @@ public class TajoPullServerService extends AbstractService {
       final List<String> taskIdList = params.get("ta");
       final List<String> subQueryIds = params.get("sid");
       final List<String> partIds = params.get("p");
+      final List<String> offsetList = params.get("offset");
+      final List<String> lengthList = params.get("length");
 
       if (types == null || subQueryIds == null || qids == null || partIds == null) {
         sendError(ctx, "Required queryId, type, subquery Id, and part id",
@@ -396,6 +398,9 @@ public class TajoPullServerService extends AbstractService {
       String queryId = qids.get(0);
       String shuffleType = types.get(0);
       String sid = subQueryIds.get(0);
+
+      long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
+      long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
 
       if (!shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
         sendError(ctx, "Required taskIds", BAD_REQUEST);
@@ -452,7 +457,17 @@ public class TajoPullServerService extends AbstractService {
         Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
 
         File file = new File(path.toUri());
-        FileChunk chunk = new FileChunk(file, 0, file.length());
+        long startPos = (offset >= 0 && length >= 0) ? offset : 0;
+        long readLen = (offset >= 0 && length >= 0) ? length : file.length();
+
+        if (startPos >= file.length()) {
+          String errorMessage = "Start pos[" + startPos + "] great than file length [" + file.length() + "]";
+          LOG.error(errorMessage);
+          sendError(ctx, errorMessage, BAD_REQUEST);
+          return;
+        }
+        LOG.info("RequestURL" + request.getUri() + ", fileLen=" + file.length());
+        FileChunk chunk = new FileChunk(file, startPos, readLen);
         chunks.add(chunk);
       } else {
         LOG.error("Unknown shuffle type: " + shuffleType);

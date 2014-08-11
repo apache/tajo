@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.shell.PathData;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
@@ -35,6 +36,10 @@ import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
+import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto.PageProto;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -43,10 +48,8 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.storage.HashShuffleAppenderManager.HashShuffleIntermediate;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -484,6 +487,63 @@ public class TajoWorker extends CompositeService {
 
     public HashShuffleAppenderManager getHashShuffleAppenderManager() {
       return hashShuffleAppenderManager;
+    }
+
+    public ExecutionBlockReport closeHashShuffle(ExecutionBlockId ebId) {
+      ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
+      reporterBuilder.setEbId(ebId.getProto());
+      reporterBuilder.setReportSuccess(true);
+      try {
+        List<IntermediateEntryProto> intermediateEntries = new ArrayList<IntermediateEntryProto>();
+        List<HashShuffleIntermediate> shuffles = hashShuffleAppenderManager.close(ebId);
+        if (shuffles == null) {
+          reporterBuilder.addAllIntermediateEntries(intermediateEntries);
+          return reporterBuilder.build();
+        }
+
+        IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
+        PageProto.Builder pageBuilder = PageProto.newBuilder();
+        FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
+
+        for (HashShuffleIntermediate eachShuffle: shuffles) {
+          List<PageProto> pages = new ArrayList<PageProto>();
+          List<FailureIntermediateProto> failureIntermediateItems = new ArrayList<FailureIntermediateProto>();
+
+          for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
+            pageBuilder.clear();
+            pageBuilder.setPos(eachPage.getFirst());
+            pageBuilder.setLength(eachPage.getSecond());
+            pages.add(pageBuilder.build());
+          }
+
+          for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
+            failureBuilder.clear();
+            failureBuilder.setPagePos(eachFailure.getFirst());
+            failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
+            failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
+            failureIntermediateItems.add(failureBuilder.build());
+          }
+          intermediateBuilder.clear();
+          intermediateBuilder.setEbId(ebId.getProto())
+              .setHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName() + ":" + getPullService().getPort())
+              .setTaskId(-1)
+              .setAttemptId(-1)
+              .setPartId(eachShuffle.getPartId())
+              .setVolume(eachShuffle.getVolume())
+              .addAllPages(pages)
+              .addAllFailures(failureIntermediateItems);
+          intermediateEntries.add(intermediateBuilder.build());
+        }
+
+        // send intermediateEntries to QueryMaster
+        reporterBuilder.addAllIntermediateEntries(intermediateEntries);
+
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        reporterBuilder.setReportSuccess(false);
+        reporterBuilder.setReportErrorMessage(e.getMessage());
+      }
+      return reporterBuilder.build();
     }
   }
 

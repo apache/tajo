@@ -24,8 +24,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.logical.ShuffleFileWriteNode;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.HashShuffleAppender;
@@ -53,6 +53,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
+  private int numHashShuffleBufferTuples;
 
   public HashShuffleFileWriteExec(TaskAttemptContext context, final AbstractStorageManager sm,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
@@ -74,6 +75,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     }
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
     this.hashShuffleAppenderManager = context.getHashShuffleAppenderManager();
+    this.numHashShuffleBufferTuples = context.getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_BUFFER_SIZE);
   }
 
   @Override
@@ -91,8 +93,9 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     return appender;
   }
 
-  Map<Integer, Long> partitionStats = new HashMap<Integer, Long>();
+//  Map<Integer, Long> partitionStats = new HashMap<Integer, Long>();
   Map<Integer, List<Tuple>> partitionTuples = new HashMap<Integer, List<Tuple>>();
+  long writtenBytes = 0L;
 
   @Override
   public Tuple next() throws IOException {
@@ -115,17 +118,12 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
           partitionTupleList.add(tuple.clone());
         } catch (CloneNotSupportedException e) {
         }
-        if (tupleCount >= 10000) {
+        if (tupleCount >= numHashShuffleBufferTuples) {
           for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
             int appendPartId = entry.getKey();
             HashShuffleAppender appender = getAppender(appendPartId);
-            long appendedSize = appender.addTuples(entry.getValue());
-            Long previousSize = partitionStats.get(appendPartId);
-            if (previousSize == null) {
-              partitionStats.put(appendPartId, appendedSize);
-            } else {
-              partitionStats.put(appendPartId, appendedSize + previousSize);
-            }
+            int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
+            writtenBytes += appendedSize;
             entry.getValue().clear();
           }
           tupleCount = 0;
@@ -136,45 +134,16 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
         int appendPartId = entry.getKey();
         HashShuffleAppender appender = getAppender(appendPartId);
-        long appendedSize = appender.addTuples(entry.getValue());
-        Long previousSize = partitionStats.get(appendPartId);
-        if (previousSize == null) {
-          partitionStats.put(appendPartId, appendedSize);
-        } else {
-          partitionStats.put(appendPartId, appendedSize + previousSize);
-        }
+        int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
+        writtenBytes += appendedSize;
         entry.getValue().clear();
       }
 
-      // set table stats
-      List<TableStats> statSet = new ArrayList<TableStats>();
-      for (Integer eachPartId : partitionStats.keySet()) {
-        HashShuffleAppender appender = appenderMap.get(eachPartId);
-        TableStats appenderStat = appender.getStats();
-        TableStats tableStats = null;
-        try {
-          tableStats = (TableStats) appenderStat.clone();
-        } catch (CloneNotSupportedException e) {
-          LOG.error(e);
-        }
-        tableStats.setNumBytes(partitionStats.get(eachPartId));
-        tableStats.setReadBytes(partitionStats.get(eachPartId));
-
-        if (numRows > 0) {
-          context.addShuffleFileOutput(eachPartId,
-              hashShuffleAppenderManager.getPartitionAppenderDataFile(
-                  context.getQueryId().getQueryUnitId().getExecutionBlockId(), eachPartId).getName());
-          context.addPartitionOutputVolume(eachPartId, tableStats.getNumBytes());
-        }
-        statSet.add(tableStats);
-      }
-
-      // Collect and aggregated statistics data
-      TableStats aggregated = StatisticsUtil.aggregateTableStat(statSet);
+      TableStats aggregated = (TableStats)child.getInputStats().clone();
+      aggregated.setReadBytes(writtenBytes);
       aggregated.setNumRows(numRows);
       context.setResultStats(aggregated);
 
-      partitionStats.clear();
       partitionTuples.clear();
 
       return null;

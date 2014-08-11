@@ -24,14 +24,15 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Map;
+import java.net.URI;
+import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
 import static org.apache.tajo.master.querymaster.Repartitioner.FetchGroupMeta;
@@ -44,33 +45,63 @@ public class TestRepartitioner {
     String hostName = "tajo1";
     int port = 1234;
     ExecutionBlockId sid = new ExecutionBlockId(q1, 2);
-    int partitionId = 2;
+    int numPartition = 10;
 
-    List<QueryUnit.IntermediateEntry> intermediateEntries = TUtil.newList();
+    Map<Integer, List<IntermediateEntry>> intermediateEntries = new HashMap<Integer, List<IntermediateEntry>>();
+    for (int i = 0; i < numPartition; i++) {
+      intermediateEntries.put(i, new ArrayList<IntermediateEntry>());
+    }
     for (int i = 0; i < 1000; i++) {
-      intermediateEntries.add(new QueryUnit.IntermediateEntry(i, 0, partitionId, new QueryUnit.PullHost(hostName, port)));
+      int partitionId = i % numPartition;
+      IntermediateEntry entry = new IntermediateEntry(i, 0, partitionId, new QueryUnit.PullHost(hostName, port));
+      entry.setEbId(sid);
+      entry.setVolume(10);
+      intermediateEntries.get(partitionId).add(entry);
     }
 
-    FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE,
-        sid, partitionId, intermediateEntries);
+    Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
+        new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
-    fetch.setName(sid.toString());
+    for (Map.Entry<Integer, List<IntermediateEntry>> eachEntry: intermediateEntries.entrySet()) {
+      FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE,
+          sid, eachEntry.getKey(), eachEntry.getValue());
 
-    TajoWorkerProtocol.FetchProto proto = fetch.getProto();
-    fetch = new FetchImpl(proto);
-    assertEquals(proto, fetch.getProto());
+      fetch.setName(sid.toString());
+
+      TajoWorkerProtocol.FetchProto proto = fetch.getProto();
+      fetch = new FetchImpl(proto);
+      assertEquals(proto, fetch.getProto());
+
+      Map<ExecutionBlockId, List<IntermediateEntry>> ebEntries = new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+      ebEntries.put(sid, eachEntry.getValue());
+
+      hashEntries.put(eachEntry.getKey(), ebEntries);
+
+      List<URI> uris = fetch.getURIs();
+      assertEquals(1, uris.size());   //In Hash Suffle, Fetcher return only one URI per partition.
+
+      URI uri = uris.get(0);
+      final Map<String, List<String>> params =
+          new QueryStringDecoder(uri).getParameters();
+
+      assertEquals(eachEntry.getKey().toString(), params.get("p").get(0));
+      assertEquals("h", params.get("type").get(0));
+      assertEquals("" + sid.getId(), params.get("sid").get(0));
+    }
+
+    Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> mergedHashEntries =
+        Repartitioner.mergeIntermediateByPullHost(hashEntries);
+
+    assertEquals(numPartition, mergedHashEntries.size());
+    for (int i = 0; i < numPartition; i++) {
+      Map<ExecutionBlockId, List<IntermediateEntry>> eachEntry = mergedHashEntries.get(0);
+      assertEquals(1, eachEntry.size());
+      List<IntermediateEntry> interEntry = eachEntry.get(sid);
+      assertEquals(1, interEntry.size());
+
+      assertEquals(1000, interEntry.get(0).getVolume());
+    }
   }
-
-//  private List<String> splitMaps(List<String> mapq) {
-//    if (null == mapq) {
-//      return null;
-//    }
-//    final List<String> ret = new ArrayList<String>();
-//    for (String s : mapq) {
-//      Collections.addAll(ret, s.split(","));
-//    }
-//    return ret;
-//  }
 
   @Test
   public void testScheduleFetchesByEvenDistributedVolumes() {
@@ -117,6 +148,244 @@ public class TestRepartitioner {
 
     for (int i = 0; i < expected.length; i++) {
       assertTrue(expected[i] + " is expected, but " + results[i], expected[i] == results[i]);
+    }
+  }
+
+  @Test
+  public void testMergeIntermediates() {
+    //Test Merge
+    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+
+    int[] pageLengths = {10 * 1024 * 1024, 10 * 1024 * 1024, 10 * 1024 * 1024, 5 * 1024 * 1024};   //35 MB
+    long expectedTotalLength = 0;
+    for (int i = 0; i < 20; i++) {
+      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      long offset = 0;
+      for (int j = 0; j < pageLengths.length; j++) {
+        pages.add(new Pair(offset, pageLengths[j]));
+        offset += pageLengths[j];
+        expectedTotalLength += pageLengths[j];
+      }
+      IntermediateEntry interm = new IntermediateEntry(i, -1, -1, new QueryUnit.PullHost("" + i, i));
+      interm.setPages(pages);
+      interm.setVolume(offset);
+      intermediateEntries.add(interm);
+    }
+
+    long splitVolume = 128 * 1024 * 1024;
+    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+        splitVolume, 10 * 1024 * 1024);
+    assertEquals(6, fetches.size());
+
+    int totalInterms = 0;
+    int index = 0;
+    int numZeroPosFetcher = 0;
+    long totalLength = 0;
+    for (List<FetchImpl> eachFetchList: fetches) {
+      totalInterms += eachFetchList.size();
+      long eachFetchVolume = 0;
+      for (FetchImpl eachFetch: eachFetchList) {
+        eachFetchVolume += eachFetch.getLength();
+        if (eachFetch.getOffset() == 0) {
+          numZeroPosFetcher++;
+        }
+        totalLength += eachFetch.getLength();
+      }
+      assertTrue(eachFetchVolume + " should be smaller than splitVolume", eachFetchVolume < splitVolume);
+      if (index < fetches.size() - 1) {
+        assertTrue(eachFetchVolume + " should be great than 100MB", eachFetchVolume >= 100 * 1024 * 1024);
+      }
+      index++;
+    }
+    assertEquals(23, totalInterms);
+    assertEquals(20, numZeroPosFetcher);
+    assertEquals(expectedTotalLength, totalLength);
+  }
+
+  @Test
+  public void testSplitIntermediates() {
+    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+
+    int[] pageLengths = new int[20];  //195MB
+    for (int i = 0 ; i < pageLengths.length; i++) {
+      if (i < pageLengths.length - 1) {
+        pageLengths[i] =  10 * 1024 * 1024;
+      } else {
+        pageLengths[i] =  5 * 1024 * 1024;
+      }
+    }
+
+    long expectedTotalLength = 0;
+    for (int i = 0; i < 20; i++) {
+      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      long offset = 0;
+      for (int j = 0; j < pageLengths.length; j++) {
+        pages.add(new Pair(offset, pageLengths[j]));
+        offset += pageLengths[j];
+        expectedTotalLength += pageLengths[j];
+      }
+      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, new QueryUnit.PullHost("" + i, i));
+      interm.setPages(pages);
+      interm.setVolume(offset);
+      intermediateEntries.add(interm);
+    }
+
+    long splitVolume = 128 * 1024 * 1024;
+    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+        splitVolume, 10 * 1024 * 1024);
+    assertEquals(32, fetches.size());
+
+    int index = 0;
+    int numZeroPosFetcher = 0;
+    long totalLength = 0;
+    Set<String> uniqPullHost = new HashSet<String>();
+
+    for (List<FetchImpl> eachFetchList: fetches) {
+      long length = 0;
+      for (FetchImpl eachFetch: eachFetchList) {
+        if (eachFetch.getOffset() == 0) {
+          numZeroPosFetcher++;
+        }
+        totalLength += eachFetch.getLength();
+        length += eachFetch.getLength();
+        uniqPullHost.add(eachFetch.getPullHost().toString());
+      }
+      assertTrue(length + " should be smaller than splitVolume", length < splitVolume);
+      if (index < fetches.size() - 1) {
+        assertTrue(length + " should be great than 100MB" + fetches.size() + "," + index, length >= 100 * 1024 * 1024);
+      }
+      index++;
+    }
+    assertEquals(20, numZeroPosFetcher);
+    assertEquals(20, uniqPullHost.size());
+    assertEquals(expectedTotalLength, totalLength);
+  }
+
+  @Test
+  public void testSplitIntermediates2() {
+    long[][] pageDatas = {
+        {0, 10538717},
+        {10538717, 10515884},
+        {21054601, 10514343},
+        {31568944, 10493988},
+        {42062932, 10560639},
+        {52623571, 10548486},
+        {63172057, 10537811},
+        {73709868, 10571060},
+        {84280928, 10515062},
+        {94795990, 10502964},
+        {105298954, 10514011},
+        {115812965, 10532154},
+        {126345119, 10534133},
+        {136879252, 10549749},
+        {147429001, 10566547},
+        {157995548, 10543700},
+        {168539248, 10490324},
+        {179029572, 10500720},
+        {189530292, 10505425},
+        {200035717, 10548418},
+        {210584135, 10562887},
+        {221147022, 10554967},
+        {231701989, 10507297},
+        {242209286, 10515612},
+        {252724898, 10491274},
+        {263216172, 10512956},
+        {273729128, 10490736},
+        {284219864, 10501878},
+        {294721742, 10564568},
+        {305286310, 10488896},
+        {315775206, 10516308},
+        {326291514, 10517965},
+        {336809479, 10487038},
+        {347296517, 10603472},
+        {357899989, 10507330},
+        {368407319, 10549429},
+        {378956748, 10533443},
+        {389490191, 10530852},
+        {400021043, 11036431},
+        {411057474, 10541007},
+        {421598481, 10600477},
+        {432198958, 10519805},
+        {442718763, 10500769},
+        {453219532, 10507192},
+        {463726724, 10540424},
+        {474267148, 10509129},
+        {484776277, 10527100},
+        {495303377, 10720789},
+        {506024166, 10568542},
+        {516592708, 11046886},
+        {527639594, 10580358},
+        {538219952, 10508940},
+        {548728892, 10523968},
+        {559252860, 10580626},
+        {569833486, 10539361},
+        {580372847, 10496662},
+        {590869509, 10505280},
+        {601374789, 10564655},
+        {611939444, 10505842},
+        {622445286, 10523889},
+        {632969175, 10553186},
+        {643522361, 10535866},
+        {654058227, 10501796},
+        {664560023, 10530358},
+        {675090381, 10585340},
+        {685675721, 10602017},
+        {696277738, 10546614},
+        {706824352, 10511511},
+        {717335863, 11019221},
+        {728355084, 10558143},
+        {738913227, 10516245},
+        {749429472, 10502613},
+        {759932085, 10522145},
+        {770454230, 10489373},
+        {780943603, 10520973},
+        {791464576, 11021218},
+        {802485794, 10496362},
+        {812982156, 10502354},
+        {823484510, 10515932},
+        {834000442, 10591044},
+        {844591486, 5523957}
+    };
+
+    List<IntermediateEntry> entries = new ArrayList<IntermediateEntry>();
+    for (int i = 0; i < 2; i++) {
+      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      for (int j = 0; j < pageDatas.length; j++) {
+        pages.add(new Pair(pageDatas[j][0], (int) (pageDatas[j][1])));
+      }
+      IntermediateEntry entry = new IntermediateEntry(-1, -1, 1, new QueryUnit.PullHost("host" + i , 9000));
+      entry.setPages(pages);
+
+      entries.add(entry);
+    }
+
+    long splitVolume = 256 * 1024 * 1024;
+    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, entries, splitVolume,
+        10 * 1024 * 1024);
+
+
+    long[][] expected = {
+        {0,263216172},
+        {263216172,264423422},
+        {527639594,263824982},
+        {791464576,58650867},
+        {0,200035717},
+        {200035717,263691007},
+        {463726724,264628360},
+        {728355084,121760359},
+    };
+    int index = 0;
+    for (List<FetchImpl> eachFetchList: fetches) {
+      if (index == 3) {
+        assertEquals(2, eachFetchList.size());
+      } else {
+        assertEquals(1, eachFetchList.size());
+      }
+      for (FetchImpl eachFetch: eachFetchList) {
+        assertEquals(expected[index][0], eachFetch.getOffset());
+        assertEquals(expected[index][1], eachFetch.getLength());
+        index++;
+      }
     }
   }
 }

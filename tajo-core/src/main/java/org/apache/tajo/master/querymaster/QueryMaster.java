@@ -35,6 +35,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
@@ -52,6 +54,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
@@ -164,13 +167,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
-  protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
-    LOG.info("cleanup executionBlocks : " + executionBlockIds);
+
+  protected List<IntermediateEntryProto> cleanupExecutionBlock(SubQuery subQuery,
+              List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) throws Exception {
+    LOG.info("cleanup executionBlocks: " + executionBlockIds);
     NettyClientBase rpc = null;
     List<TajoMasterProtocol.WorkerResourceProto> workers = getAllWorker();
     TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
     builder.addAllExecutionBlockId(Lists.newArrayList(executionBlockIds));
     TajoWorkerProtocol.ExecutionBlockListProto executionBlockListProto = builder.build();
+
+    Exception err = null;
+
+    List<IntermediateEntryProto> intermediateEntries = new ArrayList<IntermediateEntryProto>();
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
       try {
         if (worker.getPeerRpcPort() == 0) continue;
@@ -179,13 +188,48 @@ public class QueryMaster extends CompositeService implements EventHandler {
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
-        tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
+        CallFuture<ExecutionBlockReport> callBack = new CallFuture<ExecutionBlockReport>();
+        tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, callBack);
+        long startTime = System.currentTimeMillis();
+        if (err == null) {
+          while (true) {
+            try {
+              ExecutionBlockReport report = callBack.get(10, TimeUnit.SECONDS);
+              if (report == null) {
+                if (System.currentTimeMillis() - startTime > 180 * 1000) {
+                  LOG.error("Can't ExecutionBlock report from " + worker.getHost() + ":" + worker.getPeerRpcPort());
+                  break;
+                }
+              }
+              if (!report.getReportSuccess()) {
+                throw new Exception("Getting ExecutionBlockReport from " + worker.getHost() + ":" + worker.getPeerRpcPort() +
+                    " error: " + report.getReportErrorMessage());
+              }
+              intermediateEntries.addAll(report.getIntermediateEntriesList());
+              break;
+            } catch (InterruptedException e) {
+              LOG.error(e.getMessage(), e);
+              break;
+            } catch (TimeoutException e) {
+              if (System.currentTimeMillis() - startTime > 180 * 1000) {
+                LOG.error("Can't ExecutionBlock report from " + worker.getHost() + ":" + worker.getPeerRpcPort());
+                break;
+              }
+            }
+          }
+        }
       } catch (Exception e) {
         LOG.error(e.getMessage());
+        err = e;
       } finally {
         connPool.releaseConnection(rpc);
       }
     }
+    if (err != null) {
+      throw err;
+    }
+
+    return intermediateEntries;
   }
 
   private void cleanup(QueryId queryId) {

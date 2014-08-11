@@ -615,12 +615,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       assertTrue(!subQueries.isEmpty());
       for (SubQuery subQuery: subQueries) {
         if (subQuery.getId().toStringNoPrefix().endsWith("_000001")) {
-          QueryUnit[] queryUnits = subQuery.getQueryUnits();
-          assertNotNull(queryUnits);
-          for (QueryUnit eachQueryUnit: queryUnits) {
-            for (ShuffleFileOutput output: eachQueryUnit.getShuffleFileOutputs()) {
-              partitionIds.add(output.getPartId());
-            }
+          for (QueryUnit.IntermediateEntry eachInterm: subQuery.getHashShuffleIntermediateEntries()) {
+            partitionIds.add(eachInterm.getPartId());
           }
         }
       }

@@ -25,12 +25,17 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,6 +48,7 @@ public class HashShuffleAppenderManager {
   private FileSystem defaultFS;
   private FileSystem localFS;
   private LocalDirAllocator lDirAllocator;
+  private int pageSize;
 
   public HashShuffleAppenderManager(TajoConf systemConf) throws IOException {
     this.systemConf = systemConf;
@@ -53,7 +59,7 @@ public class HashShuffleAppenderManager {
     // initialize DFS and LocalFileSystems
     defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
     localFS = FileSystem.getLocal(systemConf);
-
+    pageSize = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME) * 1024 * 1024;
   }
 
   public HashShuffleAppender getAppender(TajoConf tajoConf, ExecutionBlockId ebId, int partId,
@@ -78,7 +84,7 @@ public class HashShuffleAppenderManager {
         if (!fs.exists(dataFile.getParent())) {
           fs.mkdirs(dataFile.getParent());
         }
-        FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(
+        FileAppender appender = (FileAppender) StorageManagerFactory.getStorageManager(
             tajoConf).getAppender(meta, outSchema, dataFile);
         appender.enableStats();
         appender.init();
@@ -86,7 +92,8 @@ public class HashShuffleAppenderManager {
         partitionAppenderMeta = new PartitionAppenderMeta();
         partitionAppenderMeta.partId = partId;
         partitionAppenderMeta.dataFile = dataFile;
-        partitionAppenderMeta.appender = new HashShuffleAppender(partId, appender);
+        partitionAppenderMeta.appender = new HashShuffleAppender(ebId, partId, pageSize, appender);
+        partitionAppenderMeta.appender.init();
         partitionAppenderMap.put(partId, partitionAppenderMeta);
 
         LOG.info("Create Hash shuffle file(partId=" + partId + "): " + dataFile);
@@ -130,22 +137,86 @@ public class HashShuffleAppenderManager {
     return null;
   }
 
-  public void close(ExecutionBlockId ebId) {
+  public List<HashShuffleIntermediate> close(ExecutionBlockId ebId) throws IOException {
     Map<Integer, PartitionAppenderMeta> partitionAppenderMap = null;
     synchronized (appenderMap) {
       partitionAppenderMap = appenderMap.remove(ebId);
     }
 
     if (partitionAppenderMap == null) {
-      return;
+      LOG.info("Close HashShuffleAppender:" + ebId + ", not a hash shuffle");
+      return null;
     }
 
-    LOG.info("Close HashShuffleAppender:" + ebId);
+    // Send Intermediate data to QueryMaster.
+    List<HashShuffleIntermediate> intermEntries = new ArrayList<HashShuffleIntermediate>();
     for (PartitionAppenderMeta eachMeta : partitionAppenderMap.values()) {
       try {
         eachMeta.appender.close();
+        HashShuffleIntermediate intermediate =
+            new HashShuffleIntermediate(eachMeta.partId, eachMeta.appender.getOffset(),
+                eachMeta.appender.getPages(),
+                eachMeta.appender.getMergedTupleIndexes());
+        intermEntries.add(intermediate);
       } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+        throw e;
       }
+    }
+
+    LOG.info("Close HashShuffleAppender:" + ebId + ", intermediates=" + intermEntries.size());
+
+    return intermEntries;
+  }
+
+  public void taskFinished(QueryUnitAttemptId taskId) {
+    synchronized (appenderMap) {
+      Map<Integer, PartitionAppenderMeta> partitionAppenderMap =
+        appenderMap.get(taskId.getQueryUnitId().getExecutionBlockId());
+      if (partitionAppenderMap == null) {
+        return;
+      }
+
+      for (PartitionAppenderMeta eachAppender: partitionAppenderMap.values()) {
+        eachAppender.appender.taskFinished(taskId);
+      }
+    }
+  }
+
+  public static class HashShuffleIntermediate {
+    private int partId;
+
+    private long volume;
+
+    //[<page start offset,<task start, task end>>]
+    private Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes;
+
+    //[<page start offset, length>]
+    private List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+
+    public HashShuffleIntermediate(int partId, long volume,
+                                   List<Pair<Long, Integer>> pages,
+                                   Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes) {
+      this.partId = partId;
+      this.volume = volume;
+      this.failureTskTupleIndexes = failureTskTupleIndexes;
+      this.pages = pages;
+    }
+
+    public int getPartId() {
+      return partId;
+    }
+
+    public long getVolume() {
+      return volume;
+    }
+
+    public Collection<Pair<Long, Pair<Integer, Integer>>> getFailureTskTupleIndexes() {
+      return failureTskTupleIndexes;
+    }
+
+    public List<Pair<Long, Integer>> getPages() {
+      return pages;
     }
   }
 

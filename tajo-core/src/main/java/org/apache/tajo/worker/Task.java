@@ -436,6 +436,7 @@ public class Task {
     } finally {
       context.setProgress(1.0f);
       taskRunnerContext.completedTasksNum.incrementAndGet();
+      context.getHashShuffleAppenderManager().taskFinished(taskId);
 
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
@@ -485,7 +486,6 @@ public class Task {
         masterProxy.done(null, report, NullCallback.get());
         taskRunnerContext.succeededTasksNum.incrementAndGet();
       }
-
       finishTime = System.currentTimeMillis();
       LOG.info(context.getTaskId() + " completed. " +
           "Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +

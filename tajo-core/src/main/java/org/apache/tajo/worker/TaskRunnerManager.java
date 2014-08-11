@@ -23,13 +23,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskRunnerManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
@@ -92,17 +90,17 @@ public class TaskRunnerManager extends CompositeService {
     synchronized(taskRunnerMap) {
       TaskRunner taskRunner = taskRunnerMap.remove(id);
       if (taskRunner != null) {
-        synchronized(taskRunnerCompleteCounter) {
-          ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
-          AtomicInteger counter = taskRunnerCompleteCounter.get(ebId);
-          if (counter != null) {
-            if (counter.decrementAndGet() <= 0) {
-              LOG.info(ebId + "'s all tasks are completed.");
-              workerContext.getHashShuffleAppenderManager().close(ebId);
-              taskRunnerCompleteCounter.remove(ebId);
-            }
-          }
-        }
+//        synchronized(taskRunnerCompleteCounter) {
+//          ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
+//          Pair<AtomicInteger, AtomicInteger> counter = taskRunnerCompleteCounter.get(ebId);
+//          if (counter != null) {
+//            if (counter.getSecond().decrementAndGet() <= 0) {
+//              LOG.info(ebId + "'s all tasks are completed.");
+//              closeHashShuffle(ebId, counter.getFirst().get());
+//              taskRunnerCompleteCounter.remove(ebId);
+//            }
+//          }
+//        }
       }
     }
     if(workerContext.isYarnContainerMode()) {
@@ -161,7 +159,10 @@ public class TaskRunnerManager extends CompositeService {
     }
   }
 
-  Map<ExecutionBlockId, AtomicInteger> taskRunnerCompleteCounter = new HashMap<ExecutionBlockId, AtomicInteger>();
+  // <#t asks, # running tasks>
+//  Map<ExecutionBlockId, Pair<AtomicInteger, AtomicInteger>> taskRunnerCompleteCounter =
+//      new HashMap<ExecutionBlockId, Pair<AtomicInteger, AtomicInteger>>();
+
   public void startTask(final String[] params) {
     //TODO change to use event dispatcher
     Thread t = new Thread() {
@@ -178,16 +179,16 @@ public class TaskRunnerManager extends CompositeService {
             taskRunnerHistoryMap.put(taskRunner.getId(), taskRunner.getContext().getExcutionBlockHistory());
           }
 
-          synchronized(taskRunnerCompleteCounter) {
-            ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
-            AtomicInteger counter = taskRunnerCompleteCounter.get(ebId);
-            if (counter == null) {
-              counter = new AtomicInteger(0);
-              taskRunnerCompleteCounter.put(ebId, counter);
-            }
-            counter.incrementAndGet();
-
-          }
+//          synchronized(taskRunnerCompleteCounter) {
+//            ExecutionBlockId ebId = taskRunner.getContext().getExecutionBlockId();
+//            Pair<AtomicInteger, AtomicInteger> counter = taskRunnerCompleteCounter.get(ebId);
+//            if (counter == null) {
+//              counter = new Pair(new AtomicInteger(0), new AtomicInteger(0));
+//              taskRunnerCompleteCounter.put(ebId, counter);
+//            }
+//            counter.getFirst().incrementAndGet();
+//            counter.getSecond().incrementAndGet();
+//          }
           taskRunner.init(systemConf);
           taskRunner.start();
         } catch (Exception e) {

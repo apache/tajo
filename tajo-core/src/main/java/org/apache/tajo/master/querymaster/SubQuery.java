@@ -51,10 +51,12 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.KeyValueSet;
@@ -252,6 +254,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private int killedObjectCount = 0;
   private int failedObjectCount = 0;
   private TaskSchedulerContext schedulerContext;
+  private List<IntermediateEntry> hashShuffleIntermediateEntries = new ArrayList<IntermediateEntry>();
 
   public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block, AbstractStorageManager sm) {
     this.context = context;
@@ -1096,22 +1099,35 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   private void cleanup() {
-    stopScheduler();
-    releaseContainers();
+    try {
+      stopScheduler();
+      releaseContainers();
 
-    if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
-      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
-      List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
-      for (ExecutionBlock executionBlock :  childs){
-        ebIds.add(executionBlock.getId().getProto());
-      }
+      //if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+        List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
+        List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
+        // first is current ebid
+        ebIds.add(getId().getProto());
 
-      try {
-        getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
-      } catch (Throwable e) {
-        LOG.error(e);
-      }
+        for (ExecutionBlock executionBlock : childs) {
+          ebIds.add(executionBlock.getId().getProto());
+        }
+
+        List<IntermediateEntryProto> intermEntries =
+            getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(this, ebIds);
+
+        for (IntermediateEntryProto entry : intermEntries) {
+          hashShuffleIntermediateEntries.add(new IntermediateEntry(entry));
+        }
+      //}
+    } catch (Throwable e) {
+      //TODO processing error
+      LOG.error(e.getMessage(), e);
     }
+  }
+
+  public List<IntermediateEntry> getHashShuffleIntermediateEntries() {
+    return hashShuffleIntermediateEntries;
   }
 
   private static class SubQueryCompleteTransition

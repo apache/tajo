@@ -48,6 +48,9 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
   private List<Integer> taskIds;               // repeated, the task ids
   private List<Integer> attemptIds;            // repeated, the attempt ids
 
+  private long offset = -1;
+  private long length = -1;
+
   public FetchImpl() {
     builder = TajoWorkerProtocol.FetchProto.newBuilder();
     taskIds = new ArrayList<Integer>();
@@ -63,6 +66,14 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
         proto.getHasNext(),
         proto.getName(),
         proto.getTaskIdList(), proto.getAttemptIdList());
+
+    if (proto.hasOffset()) {
+      this.offset = proto.getOffset();
+    }
+
+    if (proto.hasLength()) {
+      this.length = proto.getLength();
+    }
   }
 
   public FetchImpl(QueryUnit.PullHost host, TajoWorkerProtocol.ShuffleType type, ExecutionBlockId executionBlockId,
@@ -119,6 +130,9 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     Preconditions.checkArgument(taskIds.size() == attemptIds.size());
     builder.addAllTaskId(taskIds);
     builder.addAllAttemptId(attemptIds);
+
+    builder.setOffset(offset);
+    builder.setLength(length);
     return builder.build();
   }
 
@@ -201,6 +215,22 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     return attemptIds;
   }
 
+  public long getOffset() {
+    return offset;
+  }
+
+  public void setOffset(long offset) {
+    this.offset = offset;
+  }
+
+  public long getLength() {
+    return length;
+  }
+
+  public void setLength(long length) {
+    this.length = length;
+  }
+
   public FetchImpl clone() throws CloneNotSupportedException {
     FetchImpl newFetchImpl = (FetchImpl) super.clone();
 
@@ -218,6 +248,8 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     if (attemptIds != null) {
       newFetchImpl.attemptIds = Lists.newArrayList(attemptIds);
     }
+    newFetchImpl.offset = offset;
+    newFetchImpl.length = length;
     return newFetchImpl;
   }
 }

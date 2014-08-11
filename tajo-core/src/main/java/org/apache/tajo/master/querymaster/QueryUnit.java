@@ -34,12 +34,15 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.FragmentPair;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -667,6 +670,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       newPullHost.port = port;
       return newPullHost;
     }
+
+    @Override
+    public String toString() {
+      return host + ":" + port;
+    }
   }
 
   public static class IntermediateEntry {
@@ -676,6 +684,31 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     int partId;
     PullHost host;
     long volume;
+    List<Pair<Long, Integer>> pages;
+    List<Pair<Long, Pair<Integer, Integer>>> failureRowNums;
+
+    public IntermediateEntry(IntermediateEntryProto proto) {
+      this.ebId = new ExecutionBlockId(proto.getEbId());
+      this.taskId = proto.getTaskId();
+      this.attemptId = proto.getAttemptId();
+      this.partId = proto.getPartId();
+
+      String[] pullHost = proto.getHost().split(":");
+      this.host = new PullHost(pullHost[0], Integer.parseInt(pullHost[1]));
+      this.volume = proto.getVolume();
+
+      failureRowNums = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
+      for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
+
+        failureRowNums.add(new Pair(eachFailure.getPagePos(),
+            new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
+      }
+
+      pages = new ArrayList<Pair<Long, Integer>>();
+      for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
+        pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
+      }
+    }
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {
       this.taskId = taskId;
@@ -724,9 +757,55 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       return this.volume = volume;
     }
 
+    public List<Pair<Long, Integer>> getPages() {
+      return pages;
+    }
+
+    public void setPages(List<Pair<Long, Integer>> pages) {
+      this.pages = pages;
+    }
+
+    public List<Pair<Long, Pair<Integer, Integer>>> getFailureRowNums() {
+      return failureRowNums;
+    }
+
     @Override
     public int hashCode() {
       return Objects.hashCode(ebId, taskId, partId, attemptId, host);
+    }
+
+    public List<Pair<Long, Long>> split(long firstSplitVolume, long splitVolume) {
+      List<Pair<Long, Long>> splits = new ArrayList<Pair<Long, Long>>();
+
+      if (pages == null || pages.isEmpty()) {
+        return splits;
+      }
+      int pageSize = pages.size();
+
+      long currentOffset = -1;
+      long currentBytes = 0;
+
+      long realSplitVolume = firstSplitVolume > 0 ? firstSplitVolume : splitVolume;
+      for (int i = 0; i < pageSize; i++) {
+        Pair<Long, Integer> eachPage = pages.get(i);
+        if (currentOffset == -1) {
+          currentOffset = eachPage.getFirst();
+        }
+        if (currentBytes > 0 && currentBytes + eachPage.getSecond() >= realSplitVolume) {
+          splits.add(new Pair(currentOffset, currentBytes));
+          currentOffset = eachPage.getFirst();
+          currentBytes = 0;
+          realSplitVolume = splitVolume;
+        }
+
+        currentBytes += eachPage.getSecond();
+      }
+
+      //add last
+      if (currentBytes > 0) {
+        splits.add(new Pair(currentOffset, currentBytes));
+      }
+      return splits;
     }
   }
 }
