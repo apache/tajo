@@ -81,14 +81,14 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       fillKeyTuple(tuple, currentKey);
 
       if (prevKey == null) {
-        appender = getAppenderForNewPartition(getSubdirectory(currentKey));
+        appender = getNextPartitionAppender(getSubdirectory(currentKey));
         prevKey = new VTuple(currentKey);
       } else {
         if (!prevKey.equals(currentKey) && !getSubdirectory(prevKey).equalsIgnoreCase(getSubdirectory(currentKey))) {
           appender.close();
           StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
 
-          appender = getAppenderForNewPartition(getSubdirectory(currentKey));
+          appender = getNextPartitionAppender(getSubdirectory(currentKey));
           prevKey = new VTuple(currentKey);
 
           // reset all states for file rotating
@@ -103,7 +103,7 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
         writtenFileNum++;
         StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
 
-        openNewFile(writtenFileNum);
+        openAppender(writtenFileNum);
       }
     }
 

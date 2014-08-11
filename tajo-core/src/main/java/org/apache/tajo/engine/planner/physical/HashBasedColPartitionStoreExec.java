@@ -52,7 +52,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     Appender appender = appenderMap.get(partition);
 
     if (appender == null) {
-      appender = getAppenderForNewPartition(partition);
+      appender = getNextPartitionAppender(partition);
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);

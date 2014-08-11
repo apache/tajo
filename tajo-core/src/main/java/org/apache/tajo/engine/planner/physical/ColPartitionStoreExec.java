@@ -83,9 +83,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
     }
 
-    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
-      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE);
-    }
+    maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE);
 
     // Find column index to name subpartition directory path
     keyNum = this.plan.getPartitionMethod().getExpressionSchema().size();
@@ -133,7 +131,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     return StorageUtil.concatPath(storeTablePath.getParent(), partition, storeTablePath.getName());
   }
 
-  protected Appender getAppenderForNewPartition(String partition) throws IOException {
+  protected Appender getNextPartitionAppender(String partition) throws IOException {
     lastFileName = getDataFile(partition);
     FileSystem fs = lastFileName.getFileSystem(context.getConf());
 
@@ -150,12 +148,12 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       LOG.info("File size: " + status.getLen());
     }
 
-    openNewFile(0);
+    openAppender(0);
 
     return appender;
   }
 
-  public void openNewFile(int suffixId) throws IOException {
+  public void openAppender(int suffixId) throws IOException {
     Path actualFilePath = lastFileName;
     if (suffixId > 0) {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
