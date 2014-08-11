@@ -59,7 +59,17 @@ public class FieldEval extends EvalNode implements Cloneable {
 	public DataType getValueType() {
 		return column.getDataType();
 	}
-	
+
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public EvalNode getExpr(int idx) {
+    return null;
+  }
+
   public Column getColumnRef() {
     return column;
   }

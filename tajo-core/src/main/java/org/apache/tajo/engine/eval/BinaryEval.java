@@ -88,6 +88,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
     return (T) this.rightExpr;
   }
 
+  @Override
   public EvalNode getExpr(int id) {
     if (id == 0) {
       return this.leftExpr;
@@ -152,6 +153,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	public DataType getValueType() {
 	  return returnType;
 	}
+
+  @Override
+  public int childNum() {
+    return 2;
+  }
 
   @Deprecated
   public void preOrder(EvalNodeVisitor visitor) {

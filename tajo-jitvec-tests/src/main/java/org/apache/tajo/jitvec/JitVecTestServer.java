@@ -31,6 +31,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.exception.VerifyException;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.master.session.Session;
@@ -145,6 +146,10 @@ public class JitVecTestServer extends AbstractService {
         }
 
         builder.setSerializedPlan(plan.getRootBlock().getRoot().toJson());
+
+        System.out.println("\n\n======================================================================\n\n");
+        System.out.println(CoreGsonHelper.getPrettyInstance().toJson(plan.getRootBlock().getRoot()));
+        System.out.println("\n\n======================================================================\n\n");
       } catch (PlanningException e) {
         if (e.getMessage() != null) {
           LOG.error(e.getMessage());

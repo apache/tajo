@@ -31,7 +31,7 @@ import org.junit.Test;
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.*;
 
-public class TestEvalTree extends ExprTestBase{
+public class TestEvalTree extends ExprTestBase {
   @Test
   public void testTupleEval() throws CloneNotSupportedException {
     ConstEval e1 = new ConstEval(DatumFactory.createInt4(1));
@@ -89,6 +89,16 @@ public class TestEvalTree extends ExprTestBase{
       return CatalogUtil.newSimpleDataType(BOOLEAN);
     }
 
+    @Override
+    public int childNum() {
+      return 0;
+    }
+
+    @Override
+    public EvalNode getExpr(int idx) {
+      return null;
+    }
+
   }
 
   public static class MockFalseExpr extends EvalNode {
@@ -125,6 +135,16 @@ public class TestEvalTree extends ExprTestBase{
     @Override
     public DataType getValueType() {
       return CatalogUtil.newSimpleDataType(BOOLEAN);
+    }
+
+    @Override
+    public int childNum() {
+      return 0;
+    }
+
+    @Override
+    public EvalNode getExpr(int idx) {
+      return null;
     }
   }
 

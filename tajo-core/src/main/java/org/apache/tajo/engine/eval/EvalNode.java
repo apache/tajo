@@ -46,6 +46,10 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	}
 	
 	public abstract DataType getValueType();
+
+  public abstract int childNum();
+
+  public abstract EvalNode getExpr(int idx);
 	
 	public abstract String getName();
 

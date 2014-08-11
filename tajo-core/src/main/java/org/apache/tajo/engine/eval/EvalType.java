@@ -79,8 +79,33 @@ public enum EvalType {
     this.operatorName = text;
   }
 
-  public static boolean isLogicalOperator(EvalNode evalNode) {
-    EvalType type = evalNode.getType();
+  public static boolean isUnaryOperator(EvalType type) {
+    boolean match = false;
+
+    match |= type == CAST;
+    match |= type == IS_NULL;
+    match |= type == NOT;
+    match |= type == SIGNED;
+
+    return match;
+  }
+
+  public static boolean isBinaryOperator(EvalType type) {
+    boolean match = false;
+
+    match |= isArithmeticOperator(type);
+    match |= isLogicalOperator(type) && type != NOT;
+    match |= isComparisonOperator(type) && type != BETWEEN;
+
+    match |= type == IN;
+    match |= type == LIKE;
+    match |= type == REGEX;
+    match |= type == SIMILAR_TO;
+
+    return match;
+  }
+
+  public static boolean isLogicalOperator(EvalType type) {
     boolean match = false;
 
     match |= type == AND;
@@ -90,8 +115,7 @@ public enum EvalType {
     return match;
   }
 
-  public static boolean isComparisonOperator(EvalNode evalNode) {
-    EvalType type = evalNode.getType();
+  public static boolean isComparisonOperator(EvalType type) {
     boolean match = false;
 
     match |= type == EQUAL;
@@ -105,8 +129,7 @@ public enum EvalType {
     return match;
   }
 
-  public static boolean isArithmeticOperator(EvalNode evalNode) {
-    EvalType type = evalNode.getType();
+  public static boolean isArithmeticOperator(EvalType type) {
     boolean match = false;
 
     match |= type == PLUS;

@@ -80,6 +80,22 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   @Override
+  public int childNum() {
+    return whens.size() + (elseResult != null ? 1 : 0);
+  }
+
+  @Override
+  public EvalNode getExpr(int idx) {
+    if (idx < whens.size()) {
+      return whens.get(idx);
+    } else if (idx == whens.size()) {
+      return elseResult;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
+  }
+
+  @Override
   public String getName() {
     return "?";
   }
@@ -172,6 +188,22 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     @Override
     public DataType getValueType() {
       return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
+    }
+
+    @Override
+    public int childNum() {
+      return 2;
+    }
+
+    @Override
+    public EvalNode getExpr(int idx) {
+      if (idx == 0) {
+        return condition;
+      } else if (idx == 1) {
+        return result;
+      } else {
+        throw new ArrayIndexOutOfBoundsException(idx);
+      }
     }
 
     @Override
