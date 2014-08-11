@@ -66,6 +66,7 @@ public class TestBroadcastJoinPlan {
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
+  private QueryContext defaultContext;
   private Path testDir;
 
   private TableDesc smallTable1;
@@ -79,8 +80,8 @@ public class TestBroadcastJoinPlan {
   public void setUp() throws Exception {
     util = new TajoTestingCluster();
     conf = util.getConfiguration();
-    conf.setLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD, 500 * 1024);
-    conf.setBoolVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO, true);
+    conf.setLongVar(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD, 500 * 1024);
+    conf.setBoolVar(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED, true);
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     catalog = util.startCatalogCluster().getCatalog();
@@ -126,6 +127,7 @@ public class TestBroadcastJoinPlan {
     catalog.createTable(largeTable3);
 
     analyzer = new SQLAnalyzer();
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
   private TableDesc makeTestData(String tableName, Schema schema, int dataSize) throws Exception {
@@ -183,12 +185,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -244,12 +246,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -308,12 +310,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -336,12 +338,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -386,12 +388,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -427,12 +429,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -483,12 +485,12 @@ public class TestBroadcastJoinPlan {
         LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -537,12 +539,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -620,12 +622,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -703,12 +705,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -762,12 +764,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -815,12 +817,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -907,12 +909,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
@@ -972,12 +974,12 @@ public class TestBroadcastJoinPlan {
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(), expr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext();
+    QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);

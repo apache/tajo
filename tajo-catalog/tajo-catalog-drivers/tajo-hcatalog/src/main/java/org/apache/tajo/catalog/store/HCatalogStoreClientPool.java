@@ -16,7 +16,9 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.*;
+import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.log4j.Logger;
 
 import java.util.Iterator;
@@ -41,12 +43,22 @@ public class HCatalogStoreClientPool {
    * connection pool.
    */
   public class HCatalogStoreClient {
-    private final HiveMetaStoreClient hiveClient;
+    private final IMetaStoreClient hiveClient;
     public AtomicBoolean isInUse = new AtomicBoolean(false);
 
     private HCatalogStoreClient(HiveConf hiveConf) {
       try {
-        this.hiveClient = new HiveMetaStoreClient(hiveConf);
+        HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
+          @Override
+          public HiveMetaHook getHook(Table table) throws MetaException {
+            /* metadata hook implementation, or null if this
+             * storage handler does not need any metadata notifications
+             */
+            return null;
+          }
+        };
+
+        this.hiveClient = RetryingMetaStoreClient.getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
         clientPool.add(this);
         LOG.info("MetaStoreClient created (size = " + clientPool.size() + ")");
       } catch (Exception e) {
@@ -58,7 +70,7 @@ public class HCatalogStoreClientPool {
     /**
      * Returns the internal HiveMetaStoreClient object.
      */
-    public HiveMetaStoreClient getHiveClient() {
+    public IMetaStoreClient getHiveClient() {
       return hiveClient;
     }
 

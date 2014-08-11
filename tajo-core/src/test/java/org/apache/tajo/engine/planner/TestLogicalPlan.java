@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
@@ -56,7 +55,7 @@ public class TestLogicalPlan {
 
   @Test
   public final void testQueryBlockGraph() {
-    LogicalPlan plan = new LogicalPlan(LocalTajoTestingUtility.createDummySession().getCurrentDatabase(), planner);
+    LogicalPlan plan = new LogicalPlan(planner);
     LogicalPlan.QueryBlock root = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     LogicalPlan.QueryBlock new1 = plan.newQueryBlock();
     LogicalPlan.QueryBlock new2 = plan.newQueryBlock();

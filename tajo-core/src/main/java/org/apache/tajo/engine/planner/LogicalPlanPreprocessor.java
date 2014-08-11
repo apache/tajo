@@ -27,8 +27,9 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -87,7 +88,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       if (CatalogUtil.isFQTableName(asteriskExpr.getQualifier())) {
         qualifier = asteriskExpr.getQualifier();
       } else {
-        qualifier = CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), asteriskExpr.getQualifier());
+        qualifier = CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), asteriskExpr.getQualifier());
       }
 
       relationOp = block.getRelation(qualifier);
@@ -351,7 +352,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     if (CatalogUtil.isFQTableName(expr.getName())) {
       actualRelationName = relation.getName();
     } else {
-      actualRelationName = CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), relation.getName());
+      actualRelationName = CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), relation.getName());
     }
 
     TableDesc desc = catalog.getTableDesc(actualRelationName);
@@ -380,7 +381,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
     // a table subquery should be dealt as a relation.
     TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
-    node.init(CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), expr.getName()), child);
+    node.init(CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), expr.getName()), child);
     ctx.queryBlock.addRelation(node);
     return node;
   }

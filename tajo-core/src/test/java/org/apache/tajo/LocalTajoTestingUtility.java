@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
@@ -67,6 +68,10 @@ public class LocalTajoTestingUtility {
   }
   public static Session createDummySession() {
     return new Session(UUID.randomUUID().toString(), dummyUserInfo.getUserName(), TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
+  public static QueryContext createDummyContext(TajoConf conf) {
+    return new QueryContext(conf, createDummySession());
   }
 
   /**

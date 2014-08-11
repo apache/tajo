@@ -153,7 +153,7 @@ public class TestResultSet {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
           .run(table, schemas, tableOptions, new String[][]{data}, query);
