@@ -31,8 +31,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.TUtil;
 
 import java.io.File;
 import java.util.*;
@@ -48,7 +50,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
-  private final TajoConf conf;
   private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
   private TaskAttemptState state;
@@ -74,10 +75,9 @@ public class TaskAttemptContext {
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
 
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
-    this.conf = conf;
     this.queryContext = queryContext;
     this.queryId = queryId;
 
@@ -102,19 +102,15 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
-    return this.conf;
+    return queryContext.getConf();
   }
 
-  public String getConfig(String key) {
-    return queryContext.get(key) != null ? queryContext.get(key) : conf.get(key);
-  }
-  
   public TaskAttemptState getState() {
     return this.state;
   }
@@ -238,10 +234,30 @@ public class TaskAttemptContext {
       tableFragments = new ArrayList<FragmentProto>();
     }
 
+    List<Path> paths = fragmentToPath(tableFragments);
+
     for (FragmentProto eachFragment: fragments) {
-      tableFragments.add(eachFragment);
+      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
+      // If current attempt already has same path, we don't need to add it to fragments.
+      if (!paths.contains(fileFragment.getPath())) {
+        tableFragments.add(eachFragment);
+      }
     }
-    fragmentMap.put(tableId, tableFragments);
+
+    if (tableFragments.size() > 0) {
+      fragmentMap.put(tableId, tableFragments);
+    }
+  }
+
+  private List<Path> fragmentToPath(List<FragmentProto> tableFragments) {
+    List<Path> list = TUtil.newList();
+
+    for (FragmentProto proto : tableFragments) {
+      FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
+      list.add(fragment.getPath());
+    }
+
+    return list;
   }
 
   public Path getWorkDir() {

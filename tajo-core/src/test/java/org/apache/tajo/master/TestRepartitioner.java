@@ -18,23 +18,28 @@
 
 package org.apache.tajo.master;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.Repartitioner;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
+import static org.apache.tajo.master.querymaster.Repartitioner.FetchGroupMeta;
+import static org.junit.Assert.assertTrue;
 
 public class TestRepartitioner {
   @Test
@@ -50,7 +55,7 @@ public class TestRepartitioner {
       intermediateEntries.add(new QueryUnit.IntermediateEntry(i, 0, partitionId, new QueryUnit.PullHost(hostName, port)));
     }
 
-    FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE,
+    FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
         sid, partitionId, intermediateEntries);
 
     fetch.setName(sid.toString());
@@ -82,5 +87,83 @@ public class TestRepartitioner {
       Collections.addAll(ret, s.split(","));
     }
     return ret;
+  }
+
+  @Test
+  public void testScheduleFetchesByEvenDistributedVolumes() {
+    Map<Integer, FetchGroupMeta> fetchGroups = Maps.newHashMap();
+    String tableName = "test1";
+
+
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    FetchImpl [] fetches = new FetchImpl[12];
+    for (int i = 0; i < 12; i++) {
+      fetches[i] = new FetchImpl(new QueryUnit.PullHost("localhost", 10000 + i), ShuffleType.HASH_SHUFFLE, ebId, i / 2);
+    }
+
+    int [] VOLUMES = {100, 80, 70, 30, 10, 5};
+
+    for (int i = 0; i < 12; i += 2) {
+      fetchGroups.put(i, new FetchGroupMeta(VOLUMES[i / 2], fetches[i]).addFetche(fetches[i + 1]));
+    }
+
+    Pair<Long [], Map<String, List<FetchImpl>>[]> results;
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 1);
+    long expected [] = {100 + 80 + 70 + 30 + 10 + 5};
+    assertFetchVolumes(expected, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 2);
+    long expected0 [] = {130, 165};
+    assertFetchVolumes(expected0, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 3);
+    long expected1 [] = {100, 95, 100};
+    assertFetchVolumes(expected1, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 4);
+    long expected2 [] = {100, 80, 70, 45};
+    assertFetchVolumes(expected2, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 5);
+    long expected3 [] = {100, 80, 70, 30, 15};
+    assertFetchVolumes(expected3, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+
+    results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 6);
+    long expected4 [] = {100, 80, 70, 30, 10, 5};
+    assertFetchVolumes(expected4, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
+  }
+
+  private static void assertFetchVolumes(long [] expected, Long [] results) {
+    assertEquals("the lengths of volumes are mismatch", expected.length, results.length);
+
+    for (int i = 0; i < expected.length; i++) {
+      assertTrue(expected[i] + " is expected, but " + results[i], expected[i] == results[i]);
+    }
+  }
+
+  private static void assertFetchImpl(FetchImpl [] expected, Map<String, List<FetchImpl>>[] result) {
+    Set<FetchImpl> expectedURLs = Sets.newHashSet();
+
+    for (FetchImpl f : expected) {
+      expectedURLs.add(f);
+    }
+
+    Set<FetchImpl> resultURLs = Sets.newHashSet();
+
+    for (Map<String, List<FetchImpl>> e : result) {
+      for (List<FetchImpl> list : e.values()) {
+        resultURLs.addAll(list);
+      }
+    }
+
+    assertEquals(expectedURLs.size(), resultURLs.size());
+    assertEquals(expectedURLs, resultURLs);
   }
 }

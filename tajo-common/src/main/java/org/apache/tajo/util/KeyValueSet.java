@@ -19,10 +19,12 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
+import sun.misc.FloatingDecimal;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +34,9 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, GsonObject {
+  public static final String TRUE_STR = "true";
+  public static final String FALSE_STR = "false";
+
 	private KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
 	
 	@Expose private Map<String,String> keyVals;
@@ -63,40 +68,133 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public int size() {
     return keyVals.size();
   }
-	
-	public void put(String key, String val) {
-		this.keyVals.put(key, val);
-	}
 
   public void putAll(Map<String, String> keyValues) {
     if (keyValues != null) {
       this.keyVals.putAll(keyValues);
     }
   }
-	
-	public void putAll(KeyValueSet keyValueSet) {
+
+  public void putAll(KeyValueSet keyValueSet) {
     if (keyValueSet != null) {
-	    this.keyVals.putAll(keyValueSet.keyVals);
+      this.keyVals.putAll(keyValueSet.keyVals);
     }
-	}
+  }
+
+  public Map<String,String> getAllKeyValus() {
+    return keyVals;
+  }
+
+  public boolean containsKey(String key) {
+    return this.keyVals.containsKey(key);
+  }
+
+  public void set(String key, String val) {
+    Preconditions.checkNotNull(key);
+    Preconditions.checkNotNull(val);
+
+    this.keyVals.put(key, val);
+  }
+
+  public String get(String key, String defaultVal) {
+    if(keyVals.containsKey(key)) {
+      return keyVals.get(key);
+    } else if (defaultVal != null) {
+      return defaultVal;
+    } else {
+      throw new IllegalArgumentException("No such a config key: "  + key);
+    }
+  }
+
+  public String get(String key) {
+    return get(key, null);
+  }
+
+  public void setBool(String key, boolean val) {
+    set(key, val ? TRUE_STR : FALSE_STR);
+  }
+
+  public boolean getBool(String key, Boolean defaultVal) {
+    if (containsKey(key)) {
+      String strVal = get(key, null);
+      return strVal != null ? strVal.equalsIgnoreCase(TRUE_STR) : false;
+    } else if (defaultVal != null) {
+      return defaultVal;
+    } else {
+      return false;
+    }
+  }
+
+  public boolean getBool(String key) {
+    return getBool(key, null);
+  }
+
+  public void setInt(String key, int val) {
+    set(key, String.valueOf(val));
+  }
+
+  public int getInt(String key, Integer defaultVal) {
+    if (containsKey(key)) {
+      String strVal = get(key, null);
+      return Integer.parseInt(strVal);
+    } else if (defaultVal != null) {
+      return defaultVal;
+    } else {
+      throw new IllegalArgumentException("No such a config key: "  + key);
+    }
+  }
+
+  public int getInt(String key) {
+    return getInt(key, null);
+  }
+
+  public void setLong(String key, long val) {
+    set(key, String.valueOf(val));
+  }
+
+  public long getLong(String key, Long defaultVal) {
+    if (containsKey(key)) {
+      String strVal = get(key, null);
+      return Long.parseLong(strVal);
+    } else if (defaultVal != null) {
+      return defaultVal;
+    } else {
+      throw new IllegalArgumentException("No such a config key: "  + key);
+    }
+  }
+
+  public long getLong(String key) {
+    return getLong(key, null);
+  }
+
+  public void setFloat(String key, float val) {
+    set(key, String.valueOf(val));
+  }
+
+  public float getFloat(String key, Float defaultVal) {
+    if (containsKey(key)) {
+      String strVal = get(key, null);
+      try {
+        sun.misc.FloatingDecimal fd = FloatingDecimal.readJavaFormatString(strVal);
+        if (Float.MAX_VALUE < fd.doubleValue()) {
+          throw new IllegalStateException("Parsed value is overflow in float type");
+        }
+        return fd.floatValue();
+      } catch (NumberFormatException nfe) {
+        throw new IllegalArgumentException("No such a config key: "  + key);
+      }
+    } else if (defaultVal != null) {
+      return defaultVal.floatValue();
+    } else {
+      throw new IllegalArgumentException("No such a config key: "  + key);
+    }
+  }
+
+  public float getFloat(String key) {
+    return getFloat(key, null);
+  }
 	
-	public String get(String key) {
-		return this.keyVals.get(key);
-	}
-	
-	public String get(String key, String defaultVal) {
-	  if(keyVals.containsKey(key))
-	    return keyVals.get(key);
-	  else {
-	    return defaultVal;
-	  }
-	}
-	
-	public Map<String,String> getAllKeyValus() {
-	  return keyVals;
-	}
-	
-	public String delete(String key) {
+	public String remove(String key) {
 		return keyVals.remove(key);
 	}
 

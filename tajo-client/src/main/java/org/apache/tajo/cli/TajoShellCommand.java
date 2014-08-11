@@ -23,16 +23,24 @@ import org.apache.tajo.conf.TajoConf;
 
 public abstract class TajoShellCommand {
   public abstract String getCommand();
+  public String [] getAliases() {
+    return new String[] {};
+  }
   public abstract void invoke(String [] command) throws Exception;
   public abstract String getUsage();
   public abstract String getDescription();
+  public void printHelp() {
+    context.getOutput().print(getCommand());
+    context.getOutput().print(" - ");
+    context.getOutput().println(getDescription());
+  }
 
   protected TajoCli.TajoCliContext context;
   protected TajoClient client;
   protected int maxColumn;
 
   public TajoShellCommand(TajoCli.TajoCliContext context) {
-    maxColumn = context.getTajoClient().getConf().getIntVar(TajoConf.ConfVars.CLI_MAX_COLUMN);
+    maxColumn = context.getTajoClient().getConf().getIntVar(TajoConf.ConfVars.$CLI_MAX_COLUMN);
     this.context = context;
     client = context.getTajoClient();
   }

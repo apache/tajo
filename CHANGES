@@ -29,6 +29,26 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-928: Session variables should override query configs in TajoConf.
+    (hyunsik)
+
+    TAJO-989: Cleanup of child blocks after parent execution block is complete
+    (jinho)
+
+    TAJO-966: Range partition should support split of multiple characters.
+    (hyunsik)
+
+    TAJO-987: Hash shuffle should be balanced according to intermediate
+    volumes. (hyunsik)
+
+    TAJO-955: Add database selection submit button in catalogview.jsp for text
+    based browse. (Hyoungjun Kim via jihoon)
+
+    TAJO-956: CONCAT should be support multiple params and null param.
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-953: RawFile should release a DirectBuffer immediately. (jinho)
+
     TAJO-933: Fork some classes of Parquet as builtin third-party classes.
     (hyunsik)
 
@@ -88,6 +108,66 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-995: HiveMetaStoreClient wrapper should retry the connection. (jinho)
+
+    TAJO-947: ColPartitionStoreExec can cause URISyntaxException due 
+    to special characters. (Mai Hai Thanh via hyunsik)
+
+    TAJO-999: SequenceFile key class need to be compatible. (jaehwa)
+
+    TAJO-994: 'count(distinct x)' function counts first null value. (hyunsik)
+
+    TAJO-996: Sometimes, scheduleFetchesByEvenDistributedVolumes loses
+    some FetchImpls. (hyunsik)
+
+    TAJO-949: PullServer does not release files, when a channel throws 
+    an internal exception. (jinho)
+    
+    TAJO-975: alias name which is the same to existing column name may cause
+    NPE during PPD. (hyunsik)
+
+    TAJO-979: Dividing float value by zero should throw "Divide by zero
+    Exception" (Hyoungjun Kim via hyunsik)
+
+    TAJO-978: RoundFloat8 should return Float8Datum type. (Hyoungjun Kim via 
+    hyunsik)
+
+    TAJO-957: ROUND should be support INT parameter. (Mai Hai Thanh via hyunsik)
+
+    TAJO-980: execution page in Web UI broken. (hyunsik)
+
+    TAJO-952: Wrong default partition volume config. (Mai Hai Thanh via jihoon)
+
+    TAJO-974: Eliminate unexpected case condition in SubQuery. (Hyoungjun Kim 
+    via hyunsik) 
+
+    TAJO-977: INSERT into a partitioned table as SELECT statement uses a wrong 
+    schema. (Hyoungjun Kim via hyunsik)
+
+    TAJO-968: Self-Join query (including partitioned table) doesn't run 
+    unexpectedly using auto broadcast join. (jaewha)
+
+    TAJO-914: join queries with constant values can cause schema mismatch in
+    logical plan. (hyunsik)
+
+    TAJO-969: Distributed sort on a large data set may result in incorrect
+    results. (hyunsik)
+
+    TAJO-972: Broadcast join with left outer join returns duplicated rows.
+    (Hyoungjun Kim via jaehwa)
+
+    TAJO-666: java.nio.BufferOverflowException occurs when the query includes 
+    an order by clause on a TEXT column. (Mai Hai Thanh via jihoon)
+
+    TAJO-939: Refactoring the column resolver in LogicalPlan. (hyunsik)
+
+    TAJO-965: Upgrade Bytes class and move some methods to others. (hyunsik)
+
+    TAJO-961: TajoCli should exit when at least one query faces error while
+    executing a SQL script. (hyunsik)
+
+    TAJO-960: TajoCli's problem does not show the current status. (hyunsik)
 
     TAJO-945: Connecting to Tajo by JDBC driver failed with SQL Exception 
     "Invalid JDBC URI". (Mai Hai Thanh via jihoon)

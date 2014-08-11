@@ -31,7 +31,7 @@ import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -221,10 +221,10 @@ public class CSVFileScanner extends FileScannerV2 {
 
     if (prevTailLen == 0) {
       tail = new byte[0];
-      tuples = Bytes.splitPreserveAllTokens(buf, rbyte, (char) LF);
+      tuples = BytesUtils.splitPreserveAllTokens(buf, rbyte, (char) LF);
     } else {
       byte[] lastRow = ArrayUtils.addAll(tail, buf);
-      tuples = Bytes.splitPreserveAllTokens(lastRow, rbyte + tail.length, (char) LF);
+      tuples = BytesUtils.splitPreserveAllTokens(lastRow, rbyte + tail.length, (char) LF);
       tail = null;
     }
 
@@ -294,7 +294,7 @@ public class CSVFileScanner extends FileScannerV2 {
         offset = this.tupleOffsets[currentIdx];
       }
 
-      byte[][] cells = Bytes.splitPreserveAllTokens(tuples[currentIdx++], delimiter, targetColumnIndexes);
+      byte[][] cells = BytesUtils.splitPreserveAllTokens(tuples[currentIdx++], delimiter, targetColumnIndexes);
       return new LazyTuple(schema, cells, offset);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);

@@ -32,16 +32,17 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -107,22 +108,24 @@ public class ExprTestBase {
       InvalidStatementException {
 
     Session session = LocalTajoTestingUtility.createDummySession();
+    QueryContext context = new QueryContext(util.getConfiguration(), session);
+
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
     if (parsedResults.size() > 1) {
       throw new RuntimeException("this query includes two or more statements.");
     }
     Expr expr = analyzer.parse(parsedResults.get(0).getHistoryStatement());
     VerificationState state = new VerificationState();
-    preLogicalPlanVerifier.verify(session, state, expr);
+    preLogicalPlanVerifier.verify(context, state, expr);
     if (state.getErrorMessages().size() > 0) {
       if (!condition && state.getErrorMessages().size() > 0) {
         throw new PlanningException(state.getErrorMessages().get(0));
       }
       assertFalse(state.getErrorMessages().get(0), true);
     }
-    LogicalPlan plan = planner.createPlan(session, expr, true);
+    LogicalPlan plan = planner.createPlan(context, expr, true);
     optimizer.optimize(plan);
-    annotatedPlanVerifier.verify(session, state, plan);
+    annotatedPlanVerifier.verify(context, state, plan);
 
     if (state.getErrorMessages().size() > 0) {
       assertFalse(state.getErrorMessages().get(0), true);
@@ -170,7 +173,7 @@ public class ExprTestBase {
       }
 
       lazyTuple =
-          new LazyTuple(inputSchema, Bytes.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
+          new LazyTuple(inputSchema, BytesUtils.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
       vtuple = new VTuple(inputSchema.size());
       for (int i = 0; i < inputSchema.size(); i++) {
         // If null value occurs, null datum is manually inserted to an input tuple.

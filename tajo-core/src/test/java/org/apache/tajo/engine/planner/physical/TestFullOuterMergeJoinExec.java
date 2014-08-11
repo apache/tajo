@@ -36,7 +36,6 @@ import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -62,7 +61,7 @@ public class TestFullOuterMergeJoinExec {
   private LogicalPlanner planner;
   private AbstractStorageManager sm;
   private Path testDir;
-  private static final Session session = LocalTajoTestingUtility.createDummySession();
+  private QueryContext defaultContext;
 
   private TableDesc dep3;
   private TableDesc dep4;
@@ -279,6 +278,8 @@ public class TestFullOuterMergeJoinExec {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
   @After
@@ -304,7 +305,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin0() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -316,7 +317,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin0");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -341,7 +342,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin1() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -353,7 +354,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin1");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -378,7 +379,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin2() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[2]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -390,7 +391,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin2");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -416,7 +417,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin3() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[3]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -428,7 +429,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, dep4Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin3");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -456,7 +457,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin4() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[4]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -469,7 +470,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(emp3Frags, phone3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin4");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
@@ -495,7 +496,7 @@ public class TestFullOuterMergeJoinExec {
   @Test
   public final void testFullOuterMergeJoin5() throws IOException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[5]);
-    LogicalNode plan = planner.createPlan(session, expr).getRootBlock().getRoot();
+    LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
@@ -508,7 +509,7 @@ public class TestFullOuterMergeJoinExec {
     FileFragment[] merged = TUtil.concat(phone3Frags,emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFullOuterMergeJoin5");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
