@@ -24,7 +24,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -57,7 +56,8 @@ public final class CountValueDistinct extends CountRows {
   public void merge(FunctionContext context, Tuple part) {
     CountDistinctValueContext distinctContext = (CountDistinctValueContext) context;
     Datum value = part.get(0);
-    if ((distinctContext.latest == null || (!distinctContext.latest.equals(value)) && !(value instanceof NullDatum))) {
+
+    if (!value.isNull() && (distinctContext.latest == null || (!distinctContext.latest.equals(value)))) {
       distinctContext.latest = value;
       distinctContext.count++;
     }
