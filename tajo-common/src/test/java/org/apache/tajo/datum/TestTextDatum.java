@@ -18,21 +18,22 @@
 
 package org.apache.tajo.datum;
 
-import org.junit.Test;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.nio.charset.Charset;
+
+import static org.junit.Assert.*;
 
 public class TestTextDatum {
-	
+
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createText("12345");
 		assertEquals(d.type(), Type.TEXT);
 	}
-	
+
 	@Test
 	public final void testAsInt4() {
 		Datum d = DatumFactory.createText("12345");
@@ -62,7 +63,7 @@ public class TestTextDatum {
 		Datum d = DatumFactory.createText("12345");
 		assertEquals("12345", d.asChars());
 	}
-	
+
 	@Test
   public final void testSize() {
 	  Datum d = DatumFactory.createText("12345");
@@ -73,5 +74,25 @@ public class TestTextDatum {
   public final void testAsTextBytes() {
     Datum d = DatumFactory.createText("12345");
     assertArrayEquals(d.asByteArray(), d.asTextBytes());
+  }
+
+  @Test
+  public final void testTextEncoding() {
+    String text = "나랏말싸미 듕귁에 달아 문자와로 서르 사맛디 아니할쎄";
+    TextDatum test = new TextDatum(text);
+
+    TextDatum fromUTF8 = new TextDatum(text.getBytes(Charset.forName("UTF-8")));
+    assertEquals(test, fromUTF8);
+
+    //hack for testing
+    Whitebox.setInternalState(Charset.class, "defaultCharset", Charset.forName("EUC-KR"));
+    assertEquals(Charset.forName("EUC-KR"), Charset.defaultCharset());
+
+    assertEquals(text, test.asChars());
+    assertNotEquals(new String(test.asByteArray()), test.asChars());
+
+    //hack for testing
+    Whitebox.setInternalState(Charset.class, "defaultCharset", Charset.forName("UTF-8"));
+    assertEquals(Charset.forName("UTF-8"), Charset.defaultCharset());
   }
 }
