@@ -84,6 +84,7 @@ public class TestTextDatum {
     TextDatum fromUTF8 = new TextDatum(text.getBytes(Charset.forName("UTF-8")));
     assertEquals(test, fromUTF8);
 
+    Charset systemCharSet = Charset.defaultCharset();
     //hack for testing
     Whitebox.setInternalState(Charset.class, "defaultCharset", Charset.forName("EUC-KR"));
     assertEquals(Charset.forName("EUC-KR"), Charset.defaultCharset());
@@ -91,8 +92,8 @@ public class TestTextDatum {
     assertEquals(text, test.asChars());
     assertNotEquals(new String(test.asByteArray()), test.asChars());
 
-    //hack for testing
-    Whitebox.setInternalState(Charset.class, "defaultCharset", Charset.forName("UTF-8"));
-    assertEquals(Charset.forName("UTF-8"), Charset.defaultCharset());
+    //restore
+    Whitebox.setInternalState(Charset.class, "defaultCharset", systemCharSet);
+    assertEquals(systemCharSet, Charset.defaultCharset());
   }
 }
