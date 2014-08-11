@@ -296,7 +296,7 @@ public class QueryMasterTask extends CompositeService {
       QueryId queryId = event.getQueryId();
       LOG.info("Query completion notified from " + queryId);
 
-      while (!isTerminatedState(query.getState())) {
+      while (!isTerminatedState(query.getSynchronizedState())) {
         try {
           synchronized (this) {
             wait(10);
@@ -305,7 +305,7 @@ public class QueryMasterTask extends CompositeService {
           LOG.error(e);
         }
       }
-      LOG.info("Query final state: " + query.getState());
+      LOG.info("Query final state: " + query.getSynchronizedState());
       queryMasterContext.stopQuery(queryId);
     }
 
@@ -328,8 +328,8 @@ public class QueryMasterTask extends CompositeService {
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
-      LogicalPlan plan = planner.createPlan(session, expr);
-      optimizer.optimize(session, plan);
+      LogicalPlan plan = planner.createPlan(queryContext, expr);
+      optimizer.optimize(queryContext, plan);
 
       GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
       hookManager.addHook(new GlobalEngine.InsertHook());
@@ -478,7 +478,7 @@ public class QueryMasterTask extends CompositeService {
         return QueryState.QUERY_NOT_ASSIGNED;
       }
     } else {
-      return query.getState(true);
+      return query.getState();
     }
   }
 

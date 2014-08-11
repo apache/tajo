@@ -32,10 +32,7 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -313,7 +310,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   public float getTaskProgress() {
     readLock.lock();
     try {
-      if (getState(true) == SubQueryState.NEW) {
+      if (getState() == SubQueryState.NEW) {
         return 0;
       } else {
         return (float)(succeededObjectCount) / (float)totalScheduledObjectsCount;
@@ -327,7 +324,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     List<QueryUnit> tempTasks = null;
     readLock.lock();
     try {
-      if (getState(true) == SubQueryState.NEW) {
+      if (getState() == SubQueryState.NEW) {
         return 0.0f;
       } else {
         tempTasks = new ArrayList<QueryUnit>(tasks.values());
@@ -475,22 +472,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return getId().compareTo(other.getId());
   }
 
-  public SubQueryState getState(boolean async) {
-    if(async){
-      /* non-blocking call for client API */
-      return subQueryState;
-    } else {
-      readLock.lock();
-      try {
-        return stateMachine.getCurrentState();
-      } finally {
-        readLock.unlock();
-      }
+  public SubQueryState getSynchronizedState() {
+    readLock.lock();
+    try {
+      return stateMachine.getCurrentState();
+    } finally {
+      readLock.unlock();
     }
   }
 
+  /* non-blocking call for client API */
   public SubQueryState getState() {
-    return getState(false);
+    return subQueryState;
   }
 
   public static TableStats[] computeStatFromUnionBlock(SubQuery subQuery) {
@@ -602,20 +595,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   @Override
   public void handle(SubQueryEvent event) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getState());
+      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getSynchronizedState());
     }
 
     try {
       writeLock.lock();
-      SubQueryState oldState = getState();
+      SubQueryState oldState = getSynchronizedState();
       try {
         getStateMachine().doTransition(event.getType(), event);
-        subQueryState = getState();
+        subQueryState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", eventType:" + event.getType().name()
             + ", oldState:" + oldState.name()
-            + ", nextState:" + getState().name()
+            + ", nextState:" + getSynchronizedState().name()
             , e);
         eventHandler.handle(new SubQueryEvent(getId(),
             SubQueryEventType.SQ_INTERNAL_ERROR));
@@ -623,9 +616,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       // notify the eventhandler of state change
       if (LOG.isDebugEnabled()) {
-        if (oldState != getState()) {
+        if (oldState != getSynchronizedState()) {
           LOG.debug(getId() + " SubQuery Transitioned from " + oldState + " to "
-              + getState());
+              + getSynchronizedState());
         }
       }
     } finally {
@@ -773,7 +766,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb /
-            conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
+            conf.getIntVar(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME));
 
         int totalMem = getClusterTotalMemory(subQuery);
         LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
@@ -781,8 +774,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
 
-        if (conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM) > 0) {
-          taskNum = conf.getIntVar(ConfVars.TESTCASE_MIN_TASK_NUM);
+        if (conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM) > 0) {
+          taskNum = conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM);
           LOG.warn("!!!!! TESTCASE MODE !!!!!");
         }
 
@@ -826,7 +819,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
           // determine the number of task
           int taskNumBySize = (int) Math.ceil((double) mb /
-              conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
+              conf.getIntVar(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME));
 
           int totalMem = getClusterTotalMemory(subQuery);
 
@@ -897,7 +890,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         long aggregatedVolume = 0;
         for (ExecutionBlock childBlock : masterPlan.getChilds(execBlock)) {
           SubQuery subquery = context.getSubQuery(childBlock.getId());
-          if (subquery == null || subquery.getState() != SubQueryState.SUCCEEDED) {
+          if (subquery == null || subquery.getSynchronizedState() != SubQueryState.SUCCEEDED) {
             aggregatedVolume += getInputVolume(masterPlan, context, childBlock);
           } else {
             aggregatedVolume += subquery.getResultStats().getNumBytes();
@@ -1141,7 +1134,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     stopScheduler();
     releaseContainers();
 
-    if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+    if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
       List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
       List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
       for (ExecutionBlock executionBlock :  childs){
@@ -1179,7 +1172,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
             subQuery.abort(SubQueryState.KILLED);
             return SubQueryState.KILLED;
           } else {
-            LOG.error("Invalid State " + subQuery.getState() + " State");
+            LOG.error("Invalid State " + subQuery.getSynchronizedState() + " State");
             subQuery.abort(SubQueryState.ERROR);
             return SubQueryState.ERROR;
           }

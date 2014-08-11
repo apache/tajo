@@ -29,6 +29,8 @@
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="org.apache.tajo.SessionVars" %>
 
 <%
   QueryId queryId = TajoIdUtils.parseQueryId(request.getParameter("queryId"));
@@ -81,7 +83,7 @@ for(SubQuery eachSubQuery: subQueries) {
 %>
   <tr>
     <td><a href='<%=detailLink%>'><%=eachSubQuery.getId()%></a></td>
-    <td><%=eachSubQuery.getState(true)%></td>
+    <td><%=eachSubQuery.getState()%></td>
     <td><%=df.format(eachSubQuery.getStartTime())%></td>
     <td><%=eachSubQuery.getFinishTime() == 0 ? "-" : df.format(eachSubQuery.getFinishTime())%></td>
     <td><%=JSPUtil.getElapsedTime(eachSubQuery.getStartTime(), eachSubQuery.getFinishTime())%></td>
@@ -93,6 +95,14 @@ for(SubQuery eachSubQuery: subQueries) {
   %>
   </table>
   <p/>
+  <h3>Applied Session Variables</h3>
+  <table width="100%" border="1" class="border_table">
+  <%for(Map.Entry<String,String> entry: query.getPlan().getContext().getAllKeyValus().entrySet()) {
+      if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
+          %> <tr><td width="200"><%=entry.getKey()%></td><td><%=entry.getValue()%></td> <%
+      }
+  } %>
+  </table>
   <hr/>
   <h3>Logical Plan</h3>
   <pre style="white-space:pre-wrap;"><%=query.getPlan().getLogicalPlan().toString()%></pre>

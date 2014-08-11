@@ -52,9 +52,9 @@ public class TestArithmeticOperator {
   public void setUp() {
     TajoConf tajoConf = new TajoConf();
     if ("Zero_Exception".equals(option)) {
-      tajoConf.setBoolVar(ConfVars.BEHAVIOR_ARITHMETIC_ABORT, true);
+      tajoConf.setBoolVar(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT, true);
     } else {
-      tajoConf.setBoolVar(ConfVars.BEHAVIOR_ARITHMETIC_ABORT, false);
+      tajoConf.setBoolVar(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT, false);
     }
     Datum.initAbortWhenDivideByZero(tajoConf);
   }

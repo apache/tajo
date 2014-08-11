@@ -26,11 +26,13 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -58,6 +60,7 @@ public class TajoAdmin {
     options.addOption("p", "port", true, "Tajo server port");
     options.addOption("list", null, false, "Show Tajo query list");
     options.addOption("cluster", null, false, "Show Cluster Info");
+    options.addOption("showmasters", null, false, "gets list of tajomasters in the cluster");
     options.addOption("desc", null, false, "Show Query Description");
     options.addOption("kill", null, true, "Kill a running query");
   }
@@ -108,6 +111,8 @@ public class TajoAdmin {
     } else if (cmd.hasOption("kill")) {
       cmdType = 4;
       queryId = cmd.getOptionValue("kill");
+    } else if (cmd.hasOption("showmasters")) {
+      cmdType = 5;
     }
 
     // if there is no "-h" option,
@@ -154,6 +159,9 @@ public class TajoAdmin {
         break;
       case 4:
         processKill(writer, queryId);
+        break;
+      case 5:
+        processMasters(writer);
         break;
       default:
         printUsage();
@@ -404,6 +412,14 @@ public class TajoAdmin {
     } else {
       writer.write("ERROR:" + status.getErrorMessage());
     }
+  }
+
+  private void processMasters(Writer writer) throws ParseException, IOException,
+      ServiceException, SQLException {
+    String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+    InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
+    writer.write(masterAddress.getHostName());
+    writer.write("\n");
   }
 
   public static void main(String [] args) throws Exception {

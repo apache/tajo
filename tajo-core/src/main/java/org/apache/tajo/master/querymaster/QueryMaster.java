@@ -29,10 +29,12 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoAsyncDispatcher;
@@ -84,6 +86,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private AtomicBoolean queryMasterStop = new AtomicBoolean(false);
 
   private QueryMasterContext queryMasterContext;
+
+  private QueryContext queryContext;
 
   private QueryHeartbeatThread queryHeartbeatThread;
 
@@ -376,12 +380,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         try {
           queryMasterTask.stop();
-          //if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")
-         //     && !workerContext.isYarnContainerMode()) {
-          if (!getContext().getConf().getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+          if (!queryContext.getBool(SessionVars.DEBUG_ENABLED)) {
             cleanup(queryId);
           }
-          //}
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
@@ -421,6 +422,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
       if (!queryMasterTask.isInitError()) {
         queryMasterTask.start();
       }
+
+      queryContext = event.getQueryContext();
 
       synchronized(queryMasterTasks) {
         queryMasterTasks.put(event.getQueryId(), queryMasterTask);
