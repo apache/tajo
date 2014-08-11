@@ -26,10 +26,10 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -42,18 +42,18 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
   private ExprAnnotator annotator;
 
   public static class PreprocessContext {
-    public Session session;
+    public QueryContext queryContext;
     public LogicalPlan plan;
     public LogicalPlan.QueryBlock currentBlock;
 
-    public PreprocessContext(Session session, LogicalPlan plan, LogicalPlan.QueryBlock currentBlock) {
-      this.session = session;
+    public PreprocessContext(QueryContext queryContext, LogicalPlan plan, LogicalPlan.QueryBlock currentBlock) {
+      this.queryContext = queryContext;
       this.plan = plan;
       this.currentBlock = currentBlock;
     }
 
     public PreprocessContext(PreprocessContext context, LogicalPlan.QueryBlock currentBlock) {
-      this.session = context.session;
+      this.queryContext = context.queryContext;
       this.plan = context.plan;
       this.currentBlock = currentBlock;
     }
@@ -104,7 +104,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
       if (CatalogUtil.isFQTableName(asteriskExpr.getQualifier())) {
         qualifier = asteriskExpr.getQualifier();
       } else {
-        qualifier = CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), asteriskExpr.getQualifier());
+        qualifier = CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), asteriskExpr.getQualifier());
       }
 
       relationOp = block.getRelation(qualifier);
@@ -359,7 +359,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
     if (CatalogUtil.isFQTableName(expr.getName())) {
       actualRelationName = relation.getName();
     } else {
-      actualRelationName = CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), relation.getName());
+      actualRelationName = CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), relation.getName());
     }
 
     TableDesc desc = catalog.getTableDesc(actualRelationName);
@@ -388,7 +388,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanPrepr
 
     // a table subquery should be dealt as a relation.
     TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
-    node.init(CatalogUtil.buildFQName(ctx.session.getCurrentDatabase(), expr.getName()), child);
+    node.init(CatalogUtil.buildFQName(ctx.queryContext.getCurrentDatabase(), expr.getName()), child);
     ctx.currentBlock.addRelation(node);
     return node;
   }

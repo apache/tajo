@@ -37,6 +37,7 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -258,7 +259,7 @@ public class TupleUtil {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), parts[1]));
+      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());

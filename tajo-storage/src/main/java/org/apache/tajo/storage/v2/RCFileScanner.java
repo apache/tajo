@@ -70,7 +70,7 @@ public class RCFileScanner extends FileScannerV2 {
     key = new LongWritable();
     column = new BytesRefArrayWritable();
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL, NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {

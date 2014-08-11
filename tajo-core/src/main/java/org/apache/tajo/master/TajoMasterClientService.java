@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -193,7 +194,8 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto existSessionVariable(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public BoolProto existSessionVariable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
       try {
         String value = context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue());
         if (value != null) {
@@ -278,9 +280,16 @@ public class TajoMasterClientService extends AbstractService {
 
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryContext queryContext = new QueryContext(conf, session);
+        if (queryContext.getCurrentDatabase() == null) {
+          for (Map.Entry<String,String> e : queryContext.getAllKeyValus().entrySet()) {
+            System.out.println(e.getKey() + "=" + e.getValue());
+          }
+        }
+
         UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
         try {
-          context.getGlobalEngine().updateQuery(session, request.getQuery(), request.getIsJson());
+          context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
           builder.setResultCode(ResultCode.OK);
           return builder.build();
         } catch (Exception e) {
@@ -539,7 +548,9 @@ public class TajoMasterClientService extends AbstractService {
     public BoolProto createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-        if (context.getGlobalEngine().createDatabase(session, request.getValue(), null, false)) {
+        QueryContext queryContext = new QueryContext(conf, session);
+
+        if (context.getGlobalEngine().createDatabase(queryContext, request.getValue(), null, false)) {
           return BOOL_TRUE;
         } else {
           return BOOL_FALSE;
@@ -567,8 +578,9 @@ public class TajoMasterClientService extends AbstractService {
     public BoolProto dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().dropDatabase(session, request.getValue(), false)) {
+        if (context.getGlobalEngine().dropDatabase(queryContext, request.getValue(), false)) {
           return BOOL_TRUE;
         } else {
           return BOOL_FALSE;
@@ -603,6 +615,10 @@ public class TajoMasterClientService extends AbstractService {
         } else {
           databaseName = session.getCurrentDatabase();
           tableName = request.getValue();
+        }
+
+        if (databaseName == null) {
+          System.out.println("A");
         }
 
         if (catalog.existsTable(databaseName, tableName)) {
@@ -672,6 +688,7 @@ public class TajoMasterClientService extends AbstractService {
         throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryContext queryContext = new QueryContext(conf, session);
 
         Path path = new Path(request.getPath());
         FileSystem fs = path.getFileSystem(conf);
@@ -689,7 +706,7 @@ public class TajoMasterClientService extends AbstractService {
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTableOnPath(session, request.getName(), schema,
+          desc = context.getGlobalEngine().createTableOnPath(queryContext, request.getName(), schema,
               meta, path, true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
@@ -715,7 +732,9 @@ public class TajoMasterClientService extends AbstractService {
     public BoolProto dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(dropTable.getSessionId().getId());
-        context.getGlobalEngine().dropTable(session, dropTable.getName(), false, dropTable.getPurge());
+        QueryContext queryContext = new QueryContext(conf, session);
+
+        context.getGlobalEngine().dropTable(queryContext, dropTable.getName(), false, dropTable.getPurge());
         return BOOL_TRUE;
       } catch (Throwable t) {
         throw new ServiceException(t);

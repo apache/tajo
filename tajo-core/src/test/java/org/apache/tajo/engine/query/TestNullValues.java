@@ -53,7 +53,7 @@ public class TestNullValues {
         "3|filled|0.2"
     };
     KeyValueSet opts = new KeyValueSet();
-    opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    opts.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable1 where col3 is null");
@@ -80,7 +80,7 @@ public class TestNullValues {
         "3|filled|"
     };
     KeyValueSet opts = new KeyValueSet();
-    opts.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    opts.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable2 where col1 is not null");
@@ -115,7 +115,7 @@ public class TestNullValues {
         ",,,43578,19,13,6,3581,2557,1024"
     };
     KeyValueSet opts = new KeyValueSet();
-    opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
+    opts.set(StorageConstants.CSVFILE_DELIMITER, ",");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578");
@@ -148,8 +148,8 @@ public class TestNullValues {
         ",\\N,,43578"
     };
     KeyValueSet opts = new KeyValueSet();
-    opts.put(StorageConstants.CSVFILE_DELIMITER, ",");
-    opts.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    opts.set(StorageConstants.CSVFILE_DELIMITER, ",");
+    opts.set(StorageConstants.CSVFILE_NULL, "\\\\N");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578");
@@ -253,8 +253,8 @@ public class TestNullValues {
         "4|d|4.0|\\N"
     };
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     ResultSet res = TajoTestingCluster
         .run(table, schemas, tableOptions, new String[][]{data}, query);

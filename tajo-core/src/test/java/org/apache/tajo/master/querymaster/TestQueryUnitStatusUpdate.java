@@ -44,7 +44,7 @@ public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    conf.set(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
+    conf.set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
   }
 
   @Test
