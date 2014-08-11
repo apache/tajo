@@ -78,10 +78,13 @@ public class NamedExprsManager {
   /** Map: Alias Name <-> Original Name */
   private BiMap<String, String> aliasedColumnMap = HashBiMap.create();
 
-  private LogicalPlan plan;
+  private final LogicalPlan plan;
 
-  public NamedExprsManager(LogicalPlan plan) {
+  private final LogicalPlan.QueryBlock block;
+
+  public NamedExprsManager(LogicalPlan plan, LogicalPlan.QueryBlock block) {
     this.plan = plan;
+    this.block = block;
   }
 
   private int getNextId() {

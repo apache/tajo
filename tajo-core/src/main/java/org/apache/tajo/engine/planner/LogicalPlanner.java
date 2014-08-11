@@ -654,7 +654,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     int targetIdx = 0;
     for (int i = 0; i < referenceNames.length ; i++) {
       if (!windowFuncIndices.contains(i)) {
-        targets[targetIdx++] = block.namedExprsMgr.getTarget(referenceNames[i]);
+        if (block.isConstReference(referenceNames[i])) {
+          targets[targetIdx++] = new Target(block.getConstByReference(referenceNames[i]), referenceNames[i]);
+        } else {
+          targets[targetIdx++] = block.namedExprsMgr.getTarget(referenceNames[i]);
+        }
       }
     }
     for (int i = 0; i < winFuncRefs.size(); i++) {
