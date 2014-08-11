@@ -29,6 +29,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-928: Session variables should override query configs in TajoConf.
+    (hyunsik)
+
     TAJO-989: Cleanup of child blocks after parent execution block is complete
     (jinho)
 
@@ -105,6 +108,11 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-947: ColPartitionStoreExec can cause URISyntaxException due 
+    to special characters. (Mai Hai Thanh via hyunsik)
+
+    TAJO-999: SequenceFile key class need to be compatible. (jaehwa)
 
     TAJO-994: 'count(distinct x)' function counts first null value. (hyunsik)
 

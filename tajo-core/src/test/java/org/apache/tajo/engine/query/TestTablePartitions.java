@@ -786,4 +786,47 @@ public class TestTablePartitions extends QueryTestCaseBase {
     fail("Can't find query from workers" + queryId);
     return null;
   }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys1() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR'");
+
+    String resStr = resultSetToString(res);
+    String expected =
+        "id,name,type\n" +
+            "-------------------------------\n"
+            + "3,NONE,AIR\n"
+            + "3,TEST SPECIAL CHARS,RA:*?><I/L#%S\n";
+
+    assertEquals(expected, resStr);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys2() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S'");
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR01'");
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

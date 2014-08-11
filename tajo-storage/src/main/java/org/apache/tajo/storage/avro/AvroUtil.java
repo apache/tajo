@@ -31,15 +31,20 @@ import org.apache.tajo.catalog.TableMeta;
 public class AvroUtil {
   public static Schema getAvroSchema(TableMeta meta, Configuration conf)
       throws IOException {
-    String schemaLiteral = meta.getOption(StorageConstants.AVRO_SCHEMA_LITERAL);
-    String schemaUrl = meta.getOption(StorageConstants.AVRO_SCHEMA_URL);
-    if (schemaLiteral == null && schemaUrl == null) {
+
+
+    boolean isSchemaLiteral = meta.containsOption(StorageConstants.AVRO_SCHEMA_LITERAL);
+    boolean isSchemaUrl = meta.containsOption(StorageConstants.AVRO_SCHEMA_URL);
+    if (!isSchemaLiteral && !isSchemaUrl) {
       throw new RuntimeException("No Avro schema for table.");
     }
-    if (schemaLiteral != null) {
-      return new Schema.Parser().parse(schemaLiteral);
+    if (isSchemaLiteral) {
+      String schema = meta.getOption(StorageConstants.AVRO_SCHEMA_LITERAL);
+      return new Schema.Parser().parse(schema);
     }
-    Path schemaPath = new Path(schemaUrl);
+
+    String schemaURL = meta.getOption(StorageConstants.AVRO_SCHEMA_URL);
+    Path schemaPath = new Path(schemaURL);
     FileSystem fs = schemaPath.getFileSystem(conf);
     FSDataInputStream inputStream = fs.open(schemaPath);
     return new Schema.Parser().parse(inputStream);
