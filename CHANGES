@@ -329,6 +329,9 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1001: Add missed postgresql license to NOTICE.txt and LICENSE.txt.
+    (hyunsik)
+
     TAJO-890: Redirect stdout of maven test to /dev/null in Travis CI 
     script. (hyunsik)
 
