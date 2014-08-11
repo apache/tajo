@@ -831,6 +831,7 @@ public class Repartitioner {
       while (p > 0 && iterator.hasNext()) {
         FetchGroupMeta fetchGroupMeta = iterator.next();
         assignedVolumes[p] += fetchGroupMeta.getVolume();
+        TUtil.putCollectionToNestedList(fetchesArray[p], tableName, fetchGroupMeta.fetchUrls);
 
         // While the current one is smaller than next one, it adds additional fetches to current one.
         while(iterator.hasNext() && assignedVolumes[p - 1] > assignedVolumes[p]) {
