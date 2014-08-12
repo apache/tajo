@@ -467,7 +467,6 @@ public class TajoPullServerService extends AbstractService {
           return;
         }
         LOG.info("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
-        LOG.fatal(">>>>>>>>>>>>>>>>startPos:" + startPos + ", " + length);
         FileChunk chunk = new FileChunk(file, startPos, readLen);
         chunks.add(chunk);
       } else {

@@ -112,7 +112,7 @@ public class HashShuffleAppenderManager {
       // the base dir for an output dir
       String executionBlockBaseDir = ebId.getQueryId().toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
       Path baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(executionBlockBaseDir, systemConf));
-      LOG.info(ebId + "'s basedir is created (" + baseDirPath + ")");
+      //LOG.info(ebId + "'s basedir is created (" + baseDirPath + ")");
 
       // If EB has many partition, too many shuffle file are in single directory.
       return StorageUtil.concatPath(baseDirPath, "" + getPartParentId(partId, systemConf), "" + partId);

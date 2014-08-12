@@ -156,11 +156,13 @@ public class HashShuffleAppender implements Appender {
         nextPage(offset);
       }
       appender.close();
-      if (!pages.isEmpty()) {
-        LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size()
-            + ", lastPage=" + pages.get(pages.size() - 1));
-      } else {
-        LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size());
+      if (LOG.isDebugEnabled()) {
+        if (!pages.isEmpty()) {
+          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size()
+              + ", lastPage=" + pages.get(pages.size() - 1));
+        } else {
+          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size());
+        }
       }
       closed.set(true);
       tableStats = appender.getStats();

@@ -298,7 +298,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   public void setStartTime() {
-    LOG.fatal("setStartTime>>>>>>>>>>>>>" + startTime + ">" + context.getClock().getTime());
     startTime = context.getClock().getTime();
   }
 
@@ -308,7 +307,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   public void setFinishTime() {
-    LOG.fatal("setFinishTime>>>>>>>>>>>>>" + startTime + ">" + context.getClock().getTime());
     finishTime = context.getClock().getTime();
   }
 
@@ -1127,7 +1125,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   protected void waitingIntermediateReport() {
     LOG.info(getId() + ", waiting IntermediateReport: expectedTaskNum=" + completeReportReceived.get());
     synchronized(completeReportReceived) {
-      startTime = System.currentTimeMillis();
+      long startTime = System.currentTimeMillis();
       while (true) {
         if (completeReportReceived.get() >= tasks.size()) {
           LOG.info(getId() + ", completed waiting IntermediateReport");
@@ -1158,12 +1156,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     if (report.getIntermediateEntriesCount() > 0) {
       synchronized (hashShuffleIntermediateEntries) {
         for (IntermediateEntryProto eachInterm: report.getIntermediateEntriesList()) {
-          if (getId().getId() == 7) {
-            LOG.fatal(">>>>>receiveExecutionBlockReport>" + eachInterm.getPartId() + "," + eachInterm.getVolume());
-            for(IntermediateEntryProto.PageProto eachPage: eachInterm.getPagesList()) {
-              LOG.fatal(">>>receiveExecutionBlockReport>Page:" + eachPage.getPos() + "," + eachPage.getLength());
-            }
-          }
           hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
         }
       }

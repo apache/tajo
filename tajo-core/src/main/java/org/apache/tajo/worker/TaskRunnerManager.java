@@ -153,12 +153,6 @@ public class TaskRunnerManager extends CompositeService {
           TajoWorkerProtocol.FailureIntermediateProto.newBuilder();
 
       for (HashShuffleAppenderManager.HashShuffleIntermediate eachShuffle: shuffles) {
-        if (ebId.getId() == 7) {
-          LOG.fatal(">>>>>" + eachShuffle.getPartId() + "," + eachShuffle.getVolume());
-          for(Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
-            LOG.fatal(">>>Page:" + eachPage);
-          }
-        }
         List<TajoWorkerProtocol.IntermediateEntryProto.PageProto> pages =
             new ArrayList<TajoWorkerProtocol.IntermediateEntryProto.PageProto>();
         List<TajoWorkerProtocol.FailureIntermediateProto> failureIntermediateItems =
