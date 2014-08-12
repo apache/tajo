@@ -41,12 +41,6 @@ public interface HAService {
   public void delete() throws IOException;
 
   /**
-   * Transit current master status to active.
-   *
-   */
-  public void transitActiveStatus() throws IOException;
-
-  /**
    *
    * @return True if current master is an active master.
    */

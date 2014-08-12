@@ -81,9 +81,6 @@ public class TajoWorker extends CompositeService {
 
   private TajoWorkerManagerService tajoWorkerManagerService;
 
-//  private InetSocketAddress tajoMasterAddress;
-
-//  private InetSocketAddress workerResourceTrackerAddr;
   private TajoMasterInfo tajoMasterInfo;
 
   private CatalogClient catalogClient;
@@ -248,10 +245,15 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
-          .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));
-      tajoMasterInfo.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
-          .RESOURCE_TRACKER_RPC_ADDRESS)));
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        tajoMasterInfo.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+      } else {
+        tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .RESOURCE_TRACKER_RPC_ADDRESS)));
+      }
       connectToCatalog();
     }
 

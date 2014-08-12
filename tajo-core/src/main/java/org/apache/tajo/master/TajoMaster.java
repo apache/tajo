@@ -227,7 +227,7 @@ public class TajoMaster extends CompositeService {
   private void initHAManger() throws Exception {
     // If tajo provides haService based on ZooKeeper, following codes need to update.
     if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      haService = new HAServiceHDFSImpl(context, getMasterName());
+      haService = new HAServiceHDFSImpl(context);
       haService.register();
     }
   }

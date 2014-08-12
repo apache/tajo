@@ -61,14 +61,11 @@ public class HAServiceHDFSImpl implements HAService {
 
   private String currentActiveMaster;
 
-  public HAServiceHDFSImpl(MasterContext context, String masterName) throws IOException {
+  public HAServiceHDFSImpl(MasterContext context) throws IOException {
     this.context = context;
-
     this.conf = context.getConf();
     initSystemDirectory();
-
-    this.masterName = masterName;
-
+    this.masterName = conf.get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS.varname);
     monitorInterval = conf.getIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
   }
 
@@ -192,11 +189,6 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   @Override
-  public void transitActiveStatus() throws IOException {
-    // TODO: This will be implemented for HA admin tools.
-  }
-
-  @Override
   public boolean isActiveStatus() {
     return isActiveStatus;
   }
@@ -230,6 +222,7 @@ public class HAServiceHDFSImpl implements HAService {
 
     FSDataInputStream stream = fs.open(path);
     String data = stream.readUTF();
+
     stream.close();
 
     String[] addresses = data.split("_");

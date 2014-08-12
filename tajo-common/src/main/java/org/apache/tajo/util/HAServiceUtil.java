@@ -23,8 +23,11 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 
 import javax.net.SocketFactory;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HAServiceUtil {
 
@@ -79,18 +82,11 @@ public class HAServiceUtil {
 
     if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       try {
-        // Get Tajo root dir
-        Path rootPath = TajoConf.getTajoRootDir(conf);
+        FileSystem fs = getFileSystem(conf);
+        Path[] paths = getSystemPath(conf);
 
-        // Check Tajo root dir
-        FileSystem fs = rootPath.getFileSystem(conf);
-
-        // Check and create Tajo system HA dir
-        Path haPath = TajoConf.getSystemHADir(conf);
-        Path activePath = new Path(haPath, TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
-
-        if (fs.exists(activePath)) {
-          FileStatus[] files = fs.listStatus(activePath);
+        if (fs.exists(paths[1])) {
+          FileStatus[] files = fs.listStatus(paths[1]);
 
           if (files.length == 1) {
             Path file = files[0].getPath();
@@ -181,5 +177,121 @@ public class HAServiceUtil {
       isAlive = false;
     }
     return isAlive;
+  }
+
+  public static int getState(String masterName, TajoConf conf) {
+    String targetMaster = masterName.replaceAll(":", "_");
+    int retValue = -1;
+
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path[] paths = getSystemPath(conf);
+      Path temPath = null;
+
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(paths[2]);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        if (temPath.getName().equals(targetMaster)) {
+          return 0;
+        }
+      }
+
+      // Check active master
+      files = fs.listStatus(paths[1]);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        if (temPath.getName().equals(targetMaster)) {
+          return 1;
+        }
+      }
+      retValue = -2;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return retValue;
+  }
+
+  public static int formatHA(TajoConf conf) {
+    int retValue = -1;
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path[] paths = getSystemPath(conf);
+      Path temPath = null;
+
+      int aliveMasterCount = 0;
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(paths[2]);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+          aliveMasterCount++;
+        }
+      }
+
+      // Check active master
+      files = fs.listStatus(paths[1]);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+          aliveMasterCount++;
+        }
+      }
+
+      // If there is any alive master, users can't format storage.
+      if (aliveMasterCount > 0) {
+        return 0;
+      }
+
+      // delete ha path.
+      fs.delete(paths[0], true);
+      retValue = 1;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return retValue;
+  }
+
+
+  public static List<String> getMasters(TajoConf conf) {
+    List<String> list = new ArrayList<String>();
+
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path[] paths = getSystemPath(conf);
+      Path temPath = null;
+
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(paths[2]);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        list.add(temPath.getName().replaceAll("_", ":"));
+      }
+
+      // Check active master
+      files = fs.listStatus(paths[1]);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        list.add(temPath.getName().replaceAll("_", ":"));
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return list;
+  }
+
+  private static FileSystem getFileSystem(TajoConf conf) throws IOException {
+    Path rootPath = TajoConf.getTajoRootDir(conf);
+    return rootPath.getFileSystem(conf);
+  }
+
+  private static Path[] getSystemPath(TajoConf conf) throws IOException {
+    Path[] paths = new Path[3];
+    paths[0] = TajoConf.getSystemHADir(conf);
+    paths[1] = new Path(paths[0], TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+    paths[2] = new Path(paths[0], TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+
+    return paths;
   }
 }

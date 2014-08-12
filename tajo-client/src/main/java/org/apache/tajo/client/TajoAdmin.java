@@ -420,10 +420,25 @@ public class TajoAdmin {
 
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
-    writer.write(masterAddress.getHostName());
-    writer.write("\n");
+    checkMasterStatus();
+    if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+
+      List<String> list = HAServiceUtil.getMasters(tajoConf);
+      int i = 0;
+      for (String master : list) {
+        if (i > 0) {
+          writer.write(" ");
+        }
+        writer.write(master);
+        i++;
+      }
+      writer.write("\n");
+    } else {
+      String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+      InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
+      writer.write(masterAddress.getHostName());
+      writer.write("\n");
+    }
   }
 
   // In TajoMaster HA mode, if TajoAdmin can't connect existing active master,
