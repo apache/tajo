@@ -45,6 +45,17 @@ public class LogicalPlanConvertor {
 
   }
 
+  public static PlanProto.EvalTree serialize(EvalNode evalNode) {
+    EvalTreeProtoBuilderContext context = new EvalTreeProtoBuilderContext();
+    EvalTreeProtoSerializer serializer = new EvalTreeProtoSerializer();
+    serializer.visit(context, evalNode, new Stack<EvalNode>());
+    return context.evalTreeBuilder.build();
+  }
+
+  public static EvalNode deserialize(PlanProto.EvalTree evalTree) {
+    return EvalTreeProtoDeserializer.deserialize(evalTree);
+  }
+
   public static class EvalTreeProtoBuilderContext {
     private int seqId = 0;
     private Map<EvalNode, Integer> idMap = Maps.newHashMap();
@@ -52,7 +63,7 @@ public class LogicalPlanConvertor {
   }
 
   public static class EvalTreeProtoDeserializer {
-    public EvalNode deserialize(PlanProto.EvalTree tree) {
+    public static EvalNode deserialize(PlanProto.EvalTree tree) {
       SortedMap<Integer, PlanProto.EvalNode> protoMap = Maps.newTreeMap();
       Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
@@ -96,6 +107,10 @@ public class LogicalPlanConvertor {
           EvalNode rhs = evalNodeMap.get(binProto.getRhsId());
           current = new BinaryEval(type, lhs, rhs);
           evalNodeMap.put(protoNode.getId(), current);
+        } else if (type == EvalType.CONST) {
+          PlanProto.ConstEval constProto = protoNode.getConst();
+          current = new ConstEval(LogicalPlanConvertor.deserialize(constProto.getValue()));
+          evalNodeMap.put(protoNode.getId(), current);
         } else {
           throw new RuntimeException("Unknown EvalType: " + type.name());
         }
@@ -131,6 +146,14 @@ public class LogicalPlanConvertor {
       return childIds;
     }
 
+    private PlanProto.EvalNode.Builder createEvalBuilder(int id, EvalNode eval) {
+      PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
+      nodeBuilder.setId(id);
+      nodeBuilder.setDataType(eval.getValueType());
+      nodeBuilder.setType(PlanProto.EvalType.valueOf(eval.getType().name()));
+      return nodeBuilder;
+    }
+
     public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, UnaryEval unaryEval) {
       // visiting childs
       stack.push(unaryEval);
@@ -152,18 +175,11 @@ public class LogicalPlanConvertor {
         unaryBuilder.setCastingType(castEval.getValueType());
       }
 
-      // register itself
+      // register itself and add eval to eval tree
       int selfId = registerAndGetId(context, unaryEval);
-
-      // build node itself
-      PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
-      nodeBuilder.setId(selfId);
-      nodeBuilder.setDataType(unaryEval.getValueType());
-      nodeBuilder.setType(PlanProto.EvalType.valueOf(unaryEval.getType().name()));
-      nodeBuilder.setUnary(unaryBuilder);
-
-      // add node to eval tree
-      context.evalTreeBuilder.addNodes(nodeBuilder);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, unaryEval);
+      builder.setUnary(unaryBuilder);
+      context.evalTreeBuilder.addNodes(builder);
       return unaryEval;
     }
 
@@ -180,19 +196,19 @@ public class LogicalPlanConvertor {
       binaryBuilder.setLhsId(childIds[0]);
       binaryBuilder.setRhsId(childIds[1]);
 
-      // register itself
       int selfId = registerAndGetId(context, binaryEval);
-
-      // build node itself
-      PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
-      nodeBuilder.setId(selfId);
-      nodeBuilder.setDataType(binaryEval.getValueType());
-      nodeBuilder.setType(PlanProto.EvalType.valueOf(binaryEval.getType().name()));
-      nodeBuilder.setBinary(binaryBuilder);
-
-      // add node to eval tree
-      context.evalTreeBuilder.addNodes(nodeBuilder);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, binaryEval);
+      builder.setBinary(binaryBuilder);
+      context.evalTreeBuilder.addNodes(builder);
       return binaryEval;
+    }
+
+    public EvalNode visitConst(EvalTreeProtoBuilderContext context, ConstEval constEval, Stack<EvalNode> stack) {
+      int selfId = registerAndGetId(context, constEval);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, constEval);
+      builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constEval.getValue())));
+      context.evalTreeBuilder.addNodes(builder);
+      return constEval;
     }
   }
 
@@ -221,7 +237,6 @@ public class LogicalPlanConvertor {
     default:
       throw new RuntimeException("Unknown data type: " + datum.getType().name());
     }
-
   }
 
   public static PlanProto.Datum serialize(Datum datum) {

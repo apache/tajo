@@ -113,7 +113,10 @@ public class TestLogicalPlanConvertor {
   @Test
   public void testConvert() throws Exception {
     Target [] targets = getRawTargets("select 1 + 2");
+    assertSerializationOfEvalNode(targets[0].getEvalTree());
 
+    targets = getRawTargets("select l_orderkey + l_partkey from lineitem");
+    assertSerializationOfEvalNode(targets[0].getEvalTree());
   }
 
   @Test
@@ -132,6 +135,11 @@ public class TestLogicalPlanConvertor {
   private static void assertSerializationDatum(Datum datum) {
     PlanProto.Datum converted = LogicalPlanConvertor.serialize(datum);
     assertEquals(datum, LogicalPlanConvertor.deserialize(converted));
+  }
+
+  private static void assertSerializationOfEvalNode(EvalNode evalNode) {
+    PlanProto.EvalTree converted = LogicalPlanConvertor.serialize(evalNode);
+    assertEquals(evalNode, LogicalPlanConvertor.deserialize(converted));
   }
 
   @Test
