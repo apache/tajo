@@ -44,7 +44,7 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
   }
 
   public EvalNode getExpr(int idx) {
-    Preconditions.checkArgument(idx != 0, "UnaryEval always has one child.");
+    Preconditions.checkArgument(idx == 0, "UnaryEval always has one child.");
     return child;
   }
 

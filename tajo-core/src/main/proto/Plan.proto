@@ -141,13 +141,13 @@ message EvalNode {
   optional BinaryEval binary = 5;
   optional ConstEval const = 6;
   optional ColumnProto field = 7; // field eval
-
+  optional FunctionEval function = 8;
 }
 
 message UnaryEval {
   required int32 child_id = 1;
-  required DataType castingType = 2;
-  required bool negative = 3;
+  optional DataType castingType = 2;
+  optional bool negative = 3;
 }
 
 message BinaryEval {
@@ -159,13 +159,24 @@ message ConstEval {
   required Datum value = 1;
 }
 
+message FunctionEval {
+  required FunctionDescProto funcion = 1;
+  repeated int32 paramIds = 2;
+}
+
 message Datum {
   required Type type = 1;
   optional bool boolean = 2;
-  optional int32 int4 = 3;
-  optional int64 int8 = 4;
+  optional int32 int4 = 3;    // int4, date
+  optional int64 int8 = 4;    // int8, timestamp, and time
   optional float float4 = 5;
   optional double float8 = 6;
   optional string text = 7;
   optional bytes blob = 8;
+  optional Interval interval = 12;
+}
+
+message Interval {
+  optional int32 month = 1 [default = 0];
+  optional int64 msec = 2;
 }

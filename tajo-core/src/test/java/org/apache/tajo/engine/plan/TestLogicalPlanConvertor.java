@@ -19,16 +19,12 @@
 package org.apache.tajo.engine.plan;
 
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.Selection;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -39,12 +35,9 @@ import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
-import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.*;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 
 public class TestLogicalPlanConvertor {
@@ -96,31 +89,31 @@ public class TestLogicalPlanConvertor {
   @Test
   public void testConvert() throws Exception {
     Target [] targets = getRawTargets("select 1 + 2");
-    assertSerializationOfEvalNode(targets[0].getEvalTree());
+    assertEvalNodeProtoSerder(targets[0].getEvalTree());
 
     targets = getRawTargets("select l_orderkey + l_partkey from lineitem");
-    assertSerializationOfEvalNode(targets[0].getEvalTree());
+    assertEvalNodeProtoSerder(targets[0].getEvalTree());
   }
 
   @Test
   public void testDatumConvert() throws Exception {
-    assertSerializationDatum(DatumFactory.createBool(true));
-    assertSerializationDatum(DatumFactory.createBool(false));
-    assertSerializationDatum(DatumFactory.createInt2((short) 1));
-    assertSerializationDatum(DatumFactory.createInt4(1980));
-    assertSerializationDatum(DatumFactory.createInt8(19800401));
-    assertSerializationDatum(DatumFactory.createFloat4(3.14f));
-    assertSerializationDatum(DatumFactory.createFloat8(3.141592d));
-    assertSerializationDatum(DatumFactory.createText("Apache Tajo"));
-    assertSerializationDatum(DatumFactory.createBlob("Apache Tajo".getBytes()));
+    assertDatumProtoSerder(DatumFactory.createBool(true));
+    assertDatumProtoSerder(DatumFactory.createBool(false));
+    assertDatumProtoSerder(DatumFactory.createInt2((short) 1));
+    assertDatumProtoSerder(DatumFactory.createInt4(1980));
+    assertDatumProtoSerder(DatumFactory.createInt8(19800401));
+    assertDatumProtoSerder(DatumFactory.createFloat4(3.14f));
+    assertDatumProtoSerder(DatumFactory.createFloat8(3.141592d));
+    assertDatumProtoSerder(DatumFactory.createText("Apache Tajo"));
+    assertDatumProtoSerder(DatumFactory.createBlob("Apache Tajo".getBytes()));
   }
 
-  private static void assertSerializationDatum(Datum datum) {
+  public static void assertDatumProtoSerder(Datum datum) {
     PlanProto.Datum converted = LogicalPlanConvertor.serialize(datum);
     assertEquals(datum, LogicalPlanConvertor.deserialize(converted));
   }
 
-  private static void assertSerializationOfEvalNode(EvalNode evalNode) {
+  public static void assertEvalNodeProtoSerder(EvalNode evalNode) {
     PlanProto.EvalTree converted = LogicalPlanConvertor.serialize(evalNode);
     assertEquals(evalNode, LogicalPlanConvertor.deserialize(converted));
   }

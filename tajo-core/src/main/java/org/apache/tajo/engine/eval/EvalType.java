@@ -141,6 +141,16 @@ public enum EvalType {
     return match;
   }
 
+  public static boolean isFunction(EvalType type) {
+    boolean match = false;
+
+    match |= type == FUNCTION;
+    match |= type == AGG_FUNCTION;
+    match |= type == WINDOW_FUNCTION;
+
+    return match;
+  }
+
   public String getOperatorName() {
     return operatorName != null ? operatorName : name();
   }

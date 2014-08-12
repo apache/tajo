@@ -21,13 +21,21 @@ package org.apache.tajo.engine.plan;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -118,6 +126,34 @@ public class LogicalPlanConvertor {
         } else if (type == EvalType.FIELD) {
           CatalogProtos.ColumnProto columnProto = protoNode.getField();
           current = new FieldEval(new Column(columnProto));
+
+        } else if (EvalType.isFunction(type)) {
+          PlanProto.FunctionEval funcProto = protoNode.getFunction();
+
+          EvalNode [] params = new EvalNode[funcProto.getParamIdsCount()];
+          for (int i = 0; i < funcProto.getParamIdsCount(); i++) {
+            params[i] = evalNodeMap.get(funcProto.getParamIds(i));
+          }
+
+          FunctionDesc funcDesc = null;
+          try {
+            funcDesc = new FunctionDesc(funcProto.getFuncion());
+            if (type == EvalType.FUNCTION) {
+              GeneralFunction instance = (GeneralFunction) funcDesc.newInstance();
+              current = new GeneralFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+            } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
+              AggFunction instance = (AggFunction) funcDesc.newInstance();
+              if (type == EvalType.AGG_FUNCTION) {
+                current = new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+              } else {
+                current = new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params, null);
+              }
+            }
+          } catch (ClassNotFoundException cnfe) {
+            throw new NoSuchFunctionException(funcDesc.getSignature(), funcDesc.getParamTypes());
+          } catch (InternalException ie) {
+            throw new NoSuchFunctionException(funcDesc.getSignature(), funcDesc.getParamTypes());
+          }
         } else {
           throw new RuntimeException("Unknown EvalType: " + type.name());
         }
@@ -163,69 +199,91 @@ public class LogicalPlanConvertor {
       return nodeBuilder;
     }
 
-    public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+    public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, UnaryEval unary) {
       // visiting childs
-      stack.push(unaryEval);
-      super.visitUnaryEval(context, stack, unaryEval);
+      stack.push(unary);
+      super.visitUnaryEval(context, stack, unary);
       stack.pop();
 
       // register childs
-      int [] childIds = registerGetChildIds(context, unaryEval);
+      int [] childIds = registerGetChildIds(context, unary);
       PlanProto.UnaryEval.Builder unaryBuilder = PlanProto.UnaryEval.newBuilder();
       unaryBuilder.setChildId(childIds[0]);
-      if (unaryEval.getType() == EvalType.IS_NULL) {
-        IsNullEval isNullEval = (IsNullEval) unaryEval;
+      if (unary.getType() == EvalType.IS_NULL) {
+        IsNullEval isNullEval = (IsNullEval) unary;
         unaryBuilder.setNegative(isNullEval.isNot());
-      } else if (unaryEval.getType() == EvalType.SIGNED) {
-        SignedEval signedEval = (SignedEval) unaryEval;
+      } else if (unary.getType() == EvalType.SIGNED) {
+        SignedEval signedEval = (SignedEval) unary;
         unaryBuilder.setNegative(signedEval.isNegative());
-      } else if (unaryEval.getType() == EvalType.CAST) {
-        CastEval castEval = (CastEval) unaryEval;
+      } else if (unary.getType() == EvalType.CAST) {
+        CastEval castEval = (CastEval) unary;
         unaryBuilder.setCastingType(castEval.getValueType());
       }
 
       // register itself and add eval to eval tree
-      int selfId = registerAndGetId(context, unaryEval);
-      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, unaryEval);
+      int selfId = registerAndGetId(context, unary);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, unary);
       builder.setUnary(unaryBuilder);
       context.evalTreeBuilder.addNodes(builder);
-      return unaryEval;
+      return unary;
     }
 
-    public EvalNode visitBinaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+    public EvalNode visitBinaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, BinaryEval binary) {
 
       // visiting childs
-      stack.push(binaryEval);
-      super.visitBinaryEval(context, stack, binaryEval);
+      stack.push(binary);
+      super.visitBinaryEval(context, stack, binary);
       stack.pop();
 
       // register childs
-      int [] childIds = registerGetChildIds(context, binaryEval);
+      int [] childIds = registerGetChildIds(context, binary);
       PlanProto.BinaryEval.Builder binaryBuilder = PlanProto.BinaryEval.newBuilder();
       binaryBuilder.setLhsId(childIds[0]);
       binaryBuilder.setRhsId(childIds[1]);
 
-      int selfId = registerAndGetId(context, binaryEval);
-      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, binaryEval);
+      int selfId = registerAndGetId(context, binary);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, binary);
       builder.setBinary(binaryBuilder);
       context.evalTreeBuilder.addNodes(builder);
-      return binaryEval;
+      return binary;
     }
 
-    public EvalNode visitConst(EvalTreeProtoBuilderContext context, ConstEval constEval, Stack<EvalNode> stack) {
-      int selfId = registerAndGetId(context, constEval);
-      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, constEval);
-      builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constEval.getValue())));
+    public EvalNode visitConst(EvalTreeProtoBuilderContext context, ConstEval constant, Stack<EvalNode> stack) {
+      int selfId = registerAndGetId(context, constant);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, constant);
+      builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constant.getValue())));
       context.evalTreeBuilder.addNodes(builder);
-      return constEval;
+      return constant;
     }
 
-    public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval fieldEval) {
-      int selfId = registerAndGetId(context, fieldEval);
-      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, fieldEval);
-      builder.setField(fieldEval.getColumnRef().getProto());
+    public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
+      int selfId = registerAndGetId(context, field);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, field);
+      builder.setField(field.getColumnRef().getProto());
       context.evalTreeBuilder.addNodes(builder);
-      return fieldEval;
+      return field;
+    }
+
+    public EvalNode visitFuncCall(EvalTreeProtoBuilderContext context, FunctionEval function, Stack<EvalNode> stack) {
+
+      stack.push(function);
+      super.visitFuncCall(context, function, stack);
+      stack.pop();
+
+      //  register childs
+      int [] childIds = registerGetChildIds(context, function);
+      PlanProto.FunctionEval.Builder funcBuilder = PlanProto.FunctionEval.newBuilder();
+      funcBuilder.setFuncion(function.getFuncDesc().getProto());
+      for (int i = 0; i < childIds.length; i++) {
+        funcBuilder.addParamIds(i);
+      }
+
+      int selfId = registerAndGetId(context, function);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, function);
+      builder.setFunction(funcBuilder);
+      context.evalTreeBuilder.addNodes(builder);
+
+      return function;
     }
   }
 
@@ -233,6 +291,8 @@ public class LogicalPlanConvertor {
     switch (datum.getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(datum.getBoolean());
+    case CHAR:
+      return DatumFactory.createChar(datum.getText());
     case INT1:
     case INT2:
       return DatumFactory.createInt2((short) datum.getInt4());
@@ -244,10 +304,15 @@ public class LogicalPlanConvertor {
       return DatumFactory.createFloat4(datum.getFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(datum.getFloat8());
-    case CHAR:
     case VARCHAR:
     case TEXT:
       return DatumFactory.createText(datum.getText());
+    case TIMESTAMP:
+      return new TimestampDatum(datum.getInt8());
+    case DATE:
+      return DatumFactory.createDate(datum.getInt4());
+    case TIME:
+      return DatumFactory.createTime(datum.getInt8());
     case BINARY:
     case BLOB:
       return DatumFactory.createBlob(datum.getBlob().toByteArray());
@@ -268,10 +333,13 @@ public class LogicalPlanConvertor {
     case INT1:
     case INT2:
     case INT4:
+    case DATE:
       builder.setInt4(datum.asInt4());
       break;
     case INT8:
-      builder.setInt8(datum.asInt4());
+    case TIMESTAMP:
+    case TIME:
+      builder.setInt8(datum.asInt8());
       break;
     case FLOAT4:
       builder.setFloat4(datum.asFloat4());
