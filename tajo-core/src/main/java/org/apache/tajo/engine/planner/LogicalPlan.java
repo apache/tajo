@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
@@ -407,7 +408,8 @@ public class LogicalPlan {
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
     private boolean hasWindowFunction = false;
-    private final Map<String, ConstEval> constReferencesMap = TUtil.newHashMap();
+    private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();
+    private final Map<Expr, String> constantPool = Maps.newHashMap();
 
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
@@ -432,7 +434,7 @@ public class LogicalPlan {
 
     public QueryBlock(String blockName) {
       this.blockName = blockName;
-      this.namedExprsMgr = new NamedExprsManager(LogicalPlan.this);
+      this.namedExprsMgr = new NamedExprsManager(LogicalPlan.this, this);
     }
 
     public String getName() {
@@ -503,16 +505,25 @@ public class LogicalPlan {
       return this.canonicalNameToRelationMap.size() > 0;
     }
 
-    public void addConstReference(String refName, ConstEval value) {
-      constReferencesMap.put(refName, value);
+    public void addConstReference(String refName, Expr expr, ConstEval value) {
+      constantPoolByRef.put(refName, value);
+      constantPool.put(expr, refName);
     }
 
     public boolean isConstReference(String refName) {
-      return constReferencesMap.containsKey(refName);
+      return constantPoolByRef.containsKey(refName);
+    }
+
+    public boolean isRegisteredConst(Expr expr) {
+      return constantPool.containsKey(expr);
+    }
+
+    public String getConstReference(Expr expr) {
+      return constantPool.get(expr);
     }
 
     public ConstEval getConstByReference(String refName) {
-      return constReferencesMap.get(refName);
+      return constantPoolByRef.get(refName);
     }
 
     public void addColumnAlias(String original, String alias) {

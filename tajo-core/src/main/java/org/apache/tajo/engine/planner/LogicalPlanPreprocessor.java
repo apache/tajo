@@ -197,7 +197,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       } else if (OpType.isLiteralType(namedExpr.getExpr().getType()) && namedExpr.hasAlias()) {
         Expr constExpr = namedExpr.getExpr();
         ConstEval constEval = (ConstEval) annotator.createEvalNode(ctx, constExpr, NameResolvingMode.RELS_ONLY);
-        ctx.queryBlock.addConstReference(namedExpr.getAlias(), constEval);
+        ctx.queryBlock.addConstReference(namedExpr.getAlias(), constExpr, constEval);
       }
     }
 

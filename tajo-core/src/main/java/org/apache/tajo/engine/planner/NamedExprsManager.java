@@ -148,6 +148,10 @@ public class NamedExprsManager {
       return idToNamesMap.get(refId).get(0);
     }
 
+    if (block.isRegisteredConst(expr)) {
+      return block.getConstReference(expr);
+    }
+
     String generatedName = plan.generateUniqueColumnName(expr);
     return addExpr(expr, generatedName);
   }

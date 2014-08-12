@@ -183,6 +183,44 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupByWithConstantKeys4() throws Exception {
+    //    select
+    //    'day',
+    //        l_orderkey,
+    //        count(*) as sum
+    //    from
+    //        lineitem
+    //    group by
+    //    'day',
+    //        l_orderkey
+    //    order by
+    //    'day',
+    //        l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithConstantKeys5() throws Exception {
+    //    select
+    //    'day',
+    //        l_orderkey,
+    //        count(*) as sum
+    //    from
+    //        lineitem
+    //    group by
+    //    'day',
+    //        l_orderkey
+    //    order by
+    //    'day',
+    //        l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testDistinctAggregation1() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;

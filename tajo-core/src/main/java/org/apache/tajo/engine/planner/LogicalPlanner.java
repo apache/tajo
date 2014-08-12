@@ -352,7 +352,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           String generatedName = context.plan.generateUniqueColumnName(namedExpr.getExpr());
           ConstEval constEval = (ConstEval) exprAnnotator.createEvalNode(context, namedExpr.getExpr(),
               NameResolvingMode.RELS_ONLY);
-          context.getQueryBlock().addConstReference(generatedName, constEval);
+          context.getQueryBlock().addConstReference(generatedName, namedExpr.getExpr(), constEval);
           normalizedExprList[i] = new ExprNormalizedResult(context, false);
           normalizedExprList[i].baseExpr = new ColumnReferenceExpr(generatedName);
 
