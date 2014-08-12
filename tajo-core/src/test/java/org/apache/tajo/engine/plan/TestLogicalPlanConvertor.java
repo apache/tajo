@@ -21,6 +21,7 @@ package org.apache.tajo.engine.plan;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.Selection;
@@ -55,25 +56,8 @@ public class TestLogicalPlanConvertor {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.startCatalogCluster();
-    catalog = util.getMiniCatalogCluster().getCatalog();
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.createFunction(funcDesc);
-    }
-    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
-    catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-
-    Schema schema = new Schema();
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("score", TajoDataTypes.Type.INT4);
-    schema.addColumn("age", TajoDataTypes.Type.INT4);
-
-    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
-    TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
-        CommonTestingUtil.getTestDir());
-    catalog.createTable(desc);
+    util = TpchTestBase.getInstance().getTestingCluster();
+    catalog = util.getMaster().getCatalog();
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
@@ -81,14 +65,13 @@ public class TestLogicalPlanConvertor {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
   }
 
   public static Target[] getRawTargets(String query) {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(session, expr);
+      plan = planner.createPlan(session, expr, true);
     } catch (PlanningException e) {
       e.printStackTrace();
     }

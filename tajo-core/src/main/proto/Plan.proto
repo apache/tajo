@@ -140,6 +140,7 @@ message EvalNode {
   optional UnaryEval unary = 4; // NOT
   optional BinaryEval binary = 5;
   optional ConstEval const = 6;
+  optional ColumnProto field = 7; // field eval
 
 }
 
@@ -149,13 +150,13 @@ message UnaryEval {
   required bool negative = 3;
 }
 
-message ConstEval {
-  required Datum value = 1;
-}
-
 message BinaryEval {
   required int32 lhs_id = 1;
   required int32 rhs_id = 2;
+}
+
+message ConstEval {
+  required Datum value = 1;
 }
 
 message Datum {

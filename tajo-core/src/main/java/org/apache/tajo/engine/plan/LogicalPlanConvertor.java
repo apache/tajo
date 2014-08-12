@@ -20,6 +20,8 @@ package org.apache.tajo.engine.plan;
 
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.*;
@@ -63,6 +65,7 @@ public class LogicalPlanConvertor {
   }
 
   public static class EvalTreeProtoDeserializer {
+
     public static EvalNode deserialize(PlanProto.EvalTree tree) {
       SortedMap<Integer, PlanProto.EvalNode> protoMap = Maps.newTreeMap();
       Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
@@ -101,19 +104,25 @@ public class LogicalPlanConvertor {
           default:
             throw new RuntimeException("Unknown EvalType: " + type.name());
           }
+
         } else if (EvalType.isBinaryOperator(type)) {
           PlanProto.BinaryEval binProto = protoNode.getBinary();
           EvalNode lhs = evalNodeMap.get(binProto.getLhsId());
           EvalNode rhs = evalNodeMap.get(binProto.getRhsId());
           current = new BinaryEval(type, lhs, rhs);
-          evalNodeMap.put(protoNode.getId(), current);
+
         } else if (type == EvalType.CONST) {
           PlanProto.ConstEval constProto = protoNode.getConst();
           current = new ConstEval(LogicalPlanConvertor.deserialize(constProto.getValue()));
-          evalNodeMap.put(protoNode.getId(), current);
+
+        } else if (type == EvalType.FIELD) {
+          CatalogProtos.ColumnProto columnProto = protoNode.getField();
+          current = new FieldEval(new Column(columnProto));
         } else {
           throw new RuntimeException("Unknown EvalType: " + type.name());
         }
+
+        evalNodeMap.put(protoNode.getId(), current);
       }
 
       return current;
@@ -209,6 +218,14 @@ public class LogicalPlanConvertor {
       builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constEval.getValue())));
       context.evalTreeBuilder.addNodes(builder);
       return constEval;
+    }
+
+    public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval fieldEval) {
+      int selfId = registerAndGetId(context, fieldEval);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, fieldEval);
+      builder.setField(fieldEval.getColumnRef().getProto());
+      context.evalTreeBuilder.addNodes(builder);
+      return fieldEval;
     }
   }
 
