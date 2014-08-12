@@ -157,18 +157,13 @@ public class TajoWorkerManagerService extends CompositeService
   @Override
   public void cleanupExecutionBlocks(RpcController controller,
                                      TajoWorkerProtocol.ExecutionBlockListProto ebIds,
-                                     RpcCallback<ExecutionBlockReport> done) {
-    ExecutionBlockReport report = null;
+                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
     for (TajoIdProtos.ExecutionBlockIdProto executionBlockIdProto : ebIds.getExecutionBlockIdList()) {
-      if (report == null) {
-        report = workerContext.closeHashShuffle(new ExecutionBlockId(executionBlockIdProto));
-        continue;
-      }
       String inputDir = TaskRunner.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(inputDir);
       String outputDir = TaskRunner.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(outputDir);
     }
-    done.run(report);
+    done.run(TajoWorker.TRUE_PROTO);
   }
 }

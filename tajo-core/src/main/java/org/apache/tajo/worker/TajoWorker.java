@@ -35,6 +35,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
 import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
@@ -349,7 +350,7 @@ public class TajoWorker extends CompositeService {
 
   public class WorkerContext {
     public QueryMaster getQueryMaster() {
-      if(queryMasterManagerService == null) {
+      if (queryMasterManagerService == null) {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
@@ -384,28 +385,29 @@ public class TajoWorker extends CompositeService {
     }
 
     public String getWorkerName() {
-      if(queryMasterMode) {
+      if (queryMasterMode) {
         return getQueryMasterManagerService().getHostAndPort();
       } else {
         return getTajoWorkerManagerService().getHostAndPort();
       }
     }
+
     public void stopWorker(boolean force) {
       stop();
-      if(force) {
+      if (force) {
         System.exit(0);
       }
     }
 
     protected void cleanup(String strPath) {
-      if(deletionService == null) return;
+      if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(strPath, systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter){
+        for (Path path : iter) {
           deletionService.delete(localFS.makeQualified(path));
         }
       } catch (IOException e) {
@@ -414,21 +416,21 @@ public class TajoWorker extends CompositeService {
     }
 
     protected void cleanupTemporalDirectories() {
-      if(deletionService == null) return;
+      if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter){
+        for (Path path : iter) {
           PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
 
           ArrayList<Path> paths = new ArrayList<Path>();
-          for (PathData pd : items){
+          for (PathData pd : items) {
             paths.add(pd.path);
           }
-          if(paths.size() == 0) continue;
+          if (paths.size() == 0) continue;
 
           deletionService.delete(null, paths.toArray(new Path[paths.size()]));
         }
@@ -450,13 +452,13 @@ public class TajoWorker extends CompositeService {
     }
 
     public void setClusterResource(TajoMasterProtocol.ClusterResourceSummary clusterResource) {
-      synchronized(numClusterNodes) {
+      synchronized (numClusterNodes) {
         TajoWorker.this.clusterResource = clusterResource;
       }
     }
 
     public TajoMasterProtocol.ClusterResourceSummary getClusterResource() {
-      synchronized(numClusterNodes) {
+      synchronized (numClusterNodes) {
         return TajoWorker.this.clusterResource;
       }
     }
@@ -487,63 +489,6 @@ public class TajoWorker extends CompositeService {
 
     public HashShuffleAppenderManager getHashShuffleAppenderManager() {
       return hashShuffleAppenderManager;
-    }
-
-    public ExecutionBlockReport closeHashShuffle(ExecutionBlockId ebId) {
-      ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
-      reporterBuilder.setEbId(ebId.getProto());
-      reporterBuilder.setReportSuccess(true);
-      try {
-        List<IntermediateEntryProto> intermediateEntries = new ArrayList<IntermediateEntryProto>();
-        List<HashShuffleIntermediate> shuffles = hashShuffleAppenderManager.close(ebId);
-        if (shuffles == null) {
-          reporterBuilder.addAllIntermediateEntries(intermediateEntries);
-          return reporterBuilder.build();
-        }
-
-        IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
-        PageProto.Builder pageBuilder = PageProto.newBuilder();
-        FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
-
-        for (HashShuffleIntermediate eachShuffle: shuffles) {
-          List<PageProto> pages = new ArrayList<PageProto>();
-          List<FailureIntermediateProto> failureIntermediateItems = new ArrayList<FailureIntermediateProto>();
-
-          for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
-            pageBuilder.clear();
-            pageBuilder.setPos(eachPage.getFirst());
-            pageBuilder.setLength(eachPage.getSecond());
-            pages.add(pageBuilder.build());
-          }
-
-          for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
-            failureBuilder.clear();
-            failureBuilder.setPagePos(eachFailure.getFirst());
-            failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
-            failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
-            failureIntermediateItems.add(failureBuilder.build());
-          }
-          intermediateBuilder.clear();
-          intermediateBuilder.setEbId(ebId.getProto())
-              .setHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName() + ":" + getPullService().getPort())
-              .setTaskId(-1)
-              .setAttemptId(-1)
-              .setPartId(eachShuffle.getPartId())
-              .setVolume(eachShuffle.getVolume())
-              .addAllPages(pages)
-              .addAllFailures(failureIntermediateItems);
-          intermediateEntries.add(intermediateBuilder.build());
-        }
-
-        // send intermediateEntries to QueryMaster
-        reporterBuilder.addAllIntermediateEntries(intermediateEntries);
-
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        reporterBuilder.setReportSuccess(false);
-        reporterBuilder.setReportErrorMessage(e.getMessage());
-      }
-      return reporterBuilder.build();
     }
   }
 

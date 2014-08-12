@@ -791,12 +791,13 @@ public class Query implements EventHandler<QueryEvent> {
         if (castEvent.getState() == SubQueryState.SUCCEEDED &&  // latest subquery succeeded
             query.getState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
             hasNext(query)) {                                   // there remains at least one subquery.
+          query.getSubQuery(castEvent.getExecutionBlockId()).waitingIntermediateReport();
           executeNextBlock(query);
         } else { // if a query is completed due to finished, kill, failure, or error
           query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
         }
       } catch (Throwable t) {
-        LOG.error(t);
+        LOG.error(t.getMessage(), t);
         query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));
       }
     }

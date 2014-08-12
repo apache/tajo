@@ -118,7 +118,8 @@ message ExecutionBlockReport {
     required ExecutionBlockIdProto ebId = 1;
     required bool reportSuccess = 2;
     optional string reportErrorMessage = 3;
-    repeated IntermediateEntryProto intermediateEntries = 4;
+    required int32 succeededTasks = 4;
+    repeated IntermediateEntryProto intermediateEntries = 5;
 }
 
 message QueryUnitResponseProto {
@@ -219,7 +220,7 @@ service TajoWorkerProtocolService {
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
-  rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (ExecutionBlockReport);
+  rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
 
 message EnforceProperty {

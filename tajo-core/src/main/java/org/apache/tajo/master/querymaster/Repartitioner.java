@@ -321,47 +321,44 @@ public class Repartitioner {
         scanEbId = childBlock.getId();
       }
       SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-      //for (QueryUnit task : childExecSM.getQueryUnits()) {
-      //  if (task.getIntermediateData() != null && !task.getIntermediateData().isEmpty()) {
-      //    for (IntermediateEntry intermEntry : task.getIntermediateData()) {
+
       if (childExecSM.getHashShuffleIntermediateEntries() != null &&
           !childExecSM.getHashShuffleIntermediateEntries().isEmpty()) {
         for (IntermediateEntry intermEntry: childExecSM.getHashShuffleIntermediateEntries()) {
-            intermEntry.setEbId(childBlock.getId());
-            if (hashEntries.containsKey(intermEntry.getPartId())) {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                  hashEntries.get(intermEntry.getPartId());
+          intermEntry.setEbId(childBlock.getId());
+          if (hashEntries.containsKey(intermEntry.getPartId())) {
+            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                hashEntries.get(intermEntry.getPartId());
 
-              if (tbNameToInterm.containsKey(scanEbId)) {
-                tbNameToInterm.get(scanEbId).add(intermEntry);
-              } else {
-                tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-              }
+            if (tbNameToInterm.containsKey(scanEbId)) {
+              tbNameToInterm.get(scanEbId).add(intermEntry);
             } else {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                  new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
               tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-              hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
             }
-          }
-        } else {
-          //if no intermidatedata(empty table), make empty entry
-          int emptyPartitionId = 0;
-          if (hashEntries.containsKey(emptyPartitionId)) {
-            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
-            if (tbNameToInterm.containsKey(scanEbId))
-              tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
-            else
-              tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                 new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
-            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
-            hashEntries.put(emptyPartitionId, tbNameToInterm);
+            tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
+            hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
           }
         }
+      } else {
+        //if no intermidatedata(empty table), make empty entry
+        int emptyPartitionId = 0;
+        if (hashEntries.containsKey(emptyPartitionId)) {
+          Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
+          if (tbNameToInterm.containsKey(scanEbId))
+            tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
+          else
+            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+        } else {
+          Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+              new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+          tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+          hashEntries.put(emptyPartitionId, tbNameToInterm);
+        }
       }
-//    }
+    }
 
     // merge intermediate entry by ebid, pullhost
     // Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> mergedHashEntries = mergeIntermediateByPullHost(hashEntries);

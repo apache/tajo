@@ -140,7 +140,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       }
 
       TableStats aggregated = (TableStats)child.getInputStats().clone();
-      aggregated.setReadBytes(writtenBytes);
+      aggregated.setNumBytes(writtenBytes);
       aggregated.setNumRows(numRows);
       context.setResultStats(aggregated);
 

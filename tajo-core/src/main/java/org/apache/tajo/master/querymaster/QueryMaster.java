@@ -167,17 +167,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
-
-  protected List<IntermediateEntryProto> cleanupExecutionBlock(SubQuery subQuery,
-              List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) throws Exception {
+  protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
     LOG.info("cleanup executionBlocks: " + executionBlockIds);
     NettyClientBase rpc = null;
     List<TajoMasterProtocol.WorkerResourceProto> workers = getAllWorker();
     TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
     builder.addAllExecutionBlockId(Lists.newArrayList(executionBlockIds));
     TajoWorkerProtocol.ExecutionBlockListProto executionBlockListProto = builder.build();
-
-    Exception err = null;
 
     List<IntermediateEntryProto> intermediateEntries = new ArrayList<IntermediateEntryProto>();
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
@@ -188,48 +184,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
-        CallFuture<ExecutionBlockReport> callBack = new CallFuture<ExecutionBlockReport>();
-        tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, callBack);
-        long startTime = System.currentTimeMillis();
-        if (err == null) {
-          while (true) {
-            try {
-              ExecutionBlockReport report = callBack.get(10, TimeUnit.SECONDS);
-              if (report == null) {
-                if (System.currentTimeMillis() - startTime > 180 * 1000) {
-                  LOG.error("Can't ExecutionBlock report from " + worker.getHost() + ":" + worker.getPeerRpcPort());
-                  break;
-                }
-              }
-              if (!report.getReportSuccess()) {
-                throw new Exception("Getting ExecutionBlockReport from " + worker.getHost() + ":" + worker.getPeerRpcPort() +
-                    " error: " + report.getReportErrorMessage());
-              }
-              intermediateEntries.addAll(report.getIntermediateEntriesList());
-              break;
-            } catch (InterruptedException e) {
-              LOG.error(e.getMessage(), e);
-              break;
-            } catch (TimeoutException e) {
-              if (System.currentTimeMillis() - startTime > 180 * 1000) {
-                LOG.error("Can't ExecutionBlock report from " + worker.getHost() + ":" + worker.getPeerRpcPort());
-                break;
-              }
-            }
-          }
-        }
+        tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
-        err = e;
+        continue;
       } finally {
         connPool.releaseConnection(rpc);
       }
     }
-    if (err != null) {
-      throw err;
-    }
-
-    return intermediateEntries;
   }
 
   private void cleanup(QueryId queryId) {

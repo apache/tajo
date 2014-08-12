@@ -41,6 +41,7 @@ import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -163,6 +164,18 @@ public class TaskRunner extends AbstractService {
       this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+    }
+  }
+
+  protected void sendExecutionBlockReport(TajoWorkerProtocol.ExecutionBlockReport reporter) throws Exception {
+    QueryMasterProtocol.QueryMasterProtocolService.Interface qmClientService = null;
+    NettyClientBase qmClient = null;
+    try {
+      qmClient = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+      qmClientService = qmClient.getStub();
+      qmClientService.doneExecutionBlock(null, reporter, NullCallback.get());
+    } finally {
+      connPool.releaseConnection(qmClient);
     }
   }
 
