@@ -173,6 +173,11 @@ public class VTuple implements Tuple, Cloneable {
 	}
 
   @Override
+  public char[] getChars(int fieldId) {
+    return values[fieldId].asUnicodeChars();
+  }
+
+  @Override
   public Tuple clone() throws CloneNotSupportedException {
     VTuple tuple = (VTuple) super.clone();
 

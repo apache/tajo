@@ -32,6 +32,7 @@ import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.BytesUtils;
+import org.apache.tajo.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -43,6 +44,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   private int variableId;
   private BigInteger[] cardForEachDigit;
   private BigInteger[] colCards;
+  private boolean [] isPureAscii;
 
   /**
    *
@@ -52,13 +54,19 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
    */
   public UniformRangePartition(final TupleRange totalRange, final SortSpec[] sortSpecs, boolean inclusive) {
     super(sortSpecs, totalRange, inclusive);
-    colCards = new BigInteger[sortSpecs.length];
 
+    isPureAscii = new boolean[sortSpecs.length];
+    colCards = new BigInteger[sortSpecs.length];
     normalize(sortSpecs, this.mergedRange);
 
     for (int i = 0; i < sortSpecs.length; i++) {
-      colCards[i] = computeCardinality(sortSpecs[i].getSortKey().getDataType(), totalRange.getStart().get(i),
-          totalRange.getEnd().get(i), inclusive, sortSpecs[i].isAscending());
+      Datum startValue = totalRange.getStart().get(i);
+      Datum endValue = totalRange.getEnd().get(i);
+
+      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
+
+      colCards[i] =  computeCardinality(sortSpecs[i].getSortKey().getDataType(), startValue, endValue,
+          inclusive, sortSpecs[i].isAscending());
     }
 
     cardForEachDigit = new BigInteger[colCards.length];
@@ -528,5 +536,14 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     }
 
     return end;
+  }
+
+  public static BigInteger charsToBigInteger(char [] chars) {
+    BigInteger lastPoint = BigInteger.ZERO;
+    for (int i = chars.length - 1; i >= 0; i--) {
+      lastPoint = lastPoint.or(BigInteger.valueOf(Character.codePointAt(chars, i)));
+      lastPoint = lastPoint.shiftLeft(16);
+    }
+    return lastPoint;
   }
 }

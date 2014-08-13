@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.primitives.UnsignedBytes;
+import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -28,16 +30,17 @@ import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestUniformRangePartition {
   /**
-   * It verify overflow and increment.
+   * It verify overflow and increment in normal case.
    */
   @Test
-  public void testIncrement1() {
+  public void testIncrementOfText() {
     Schema schema = new Schema()
         .addColumn("l_returnflag", Type.TEXT)
         .addColumn("l_linestatus", Type.TEXT);
@@ -84,7 +87,7 @@ public class TestUniformRangePartition {
    * It verify overflow with the number that exceeds the last digit.
    */
   @Test
-  public void testIncrement2() {
+  public void testIncrementOfText2() {
     Schema schema = new Schema()
         .addColumn("l_returnflag", Type.TEXT)
         .addColumn("l_linestatus", Type.TEXT);
@@ -129,7 +132,7 @@ public class TestUniformRangePartition {
    * It verify the case where two or more digits are overflow.
    */
   @Test
-  public void testIncrement3() {
+  public void testIncrementOfText3() {
     Schema schema = new Schema()
         .addColumn("l_returnflag", Type.TEXT)
         .addColumn("l_linestatus", Type.TEXT)
@@ -162,7 +165,67 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrement4() {
+  public void testIncrementOfUnicode2() {
+    String abc = "갹a";
+    byte [] b = Convert.chars2utf(abc.toCharArray());
+
+    for (int i = 0; i < b.length; i++) {
+      System.out.println(UnsignedBytes.toInt(b[i]));
+    }
+  }
+
+  @Test
+  public void testIncrementOfUnicode() {
+    char [] a = new String("가").toCharArray();
+    System.out.println(Character.codePointAt(a, 0));
+    System.out.println(((int)a[0]));
+
+    char [] b = new String("갸").toCharArray();
+    System.out.println(Character.codePointAt(b, 0));
+    System.out.println(new String(new char[] {(char) (Character.codePointAt(b, 0) + 1)}));
+
+    char [] c = new String("나").toCharArray();
+    System.out.println(Character.codePointAt(c, 0));
+
+    char [] en = new String("a").toCharArray();
+    System.out.println(Character.getName(Character.codePointAt(en, 0)));
+    System.out.println(Character.getName(Character.codePointAt(c, 0)));
+  }
+
+  @Test
+  public void testIncrementOfUnicodeText() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("가"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("마"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 3;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+
+  }
+
+  @Test
+  public void testIncrementOfInt8() {
     Schema schema = new Schema()
         .addColumn("l_orderkey", Type.INT8)
         .addColumn("l_linenumber", Type.INT8);
@@ -189,7 +252,7 @@ public class TestUniformRangePartition {
     assertEquals(39, range3.get(1).asInt4());
   }
 
-  @Test public void testIncrement5() {
+  @Test public void testIncrementOfInt8AndFinal() {
     Schema schema = new Schema()
         .addColumn("l_orderkey", Type.INT8)
         .addColumn("l_linenumber", Type.INT8)
@@ -222,7 +285,7 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrement6() {
+  public void testIncrementOfFloat8() {
     Schema schema = new Schema()
         .addColumn("l_orderkey", Type.FLOAT8)
         .addColumn("l_linenumber", Type.FLOAT8)
@@ -255,7 +318,7 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrement7() {
+  public void testIncrementOfInet4() {
     Schema schema = new Schema()
         .addColumn("l_orderkey", Type.INET4)
         .addColumn("l_linenumber", Type.INET4)

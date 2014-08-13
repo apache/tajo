@@ -92,6 +92,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     throw new InvalidCastException(type, Type.TEXT);
   }
 
+  public char [] asUnicodeChars() {
+    throw new InvalidCastException(type, Type.TEXT);
+  }
+
   public byte[] asTextBytes() {
     return toString().getBytes();
   }

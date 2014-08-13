@@ -171,6 +171,11 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public char [] getChars(int fieldId) {
+    return get(fieldId).asUnicodeChars();
+  }
+
+  @Override
   public Tuple clone() throws CloneNotSupportedException {
     FrameTuple frameTuple = (FrameTuple) super.clone();
     frameTuple.set(this.left.clone(), this.right.clone());

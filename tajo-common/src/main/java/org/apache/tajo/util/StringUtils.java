@@ -25,6 +25,8 @@ import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.Arrays;
 import java.util.BitSet;
 
@@ -69,6 +71,12 @@ public class StringUtils {
       buf.append(" msec");
     }
     return buf.toString();
+  }
+
+  static CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); // or "ISO-8859-1" for ISO Latin 1
+
+  public static boolean isPureAscii(String v) {
+    return asciiEncoder.canEncode(v);
   }
 
   public static String quote(String str) {

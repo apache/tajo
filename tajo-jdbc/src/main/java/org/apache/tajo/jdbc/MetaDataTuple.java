@@ -140,6 +140,11 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public char[] getChars(int fieldId) {
+    return values.get(fieldId).asUnicodeChars();
+  }
+
+  @Override
   public Tuple clone() throws CloneNotSupportedException {
     throw new UnsupportedException("clone");
   }
