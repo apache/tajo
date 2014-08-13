@@ -112,6 +112,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1000: TextDatum.asChar() is incorrect, if client charset is different.
+    (jinho)
+
     TAJO-995: HiveMetaStoreClient wrapper should retry the connection. (jinho)
 
     TAJO-947: ColPartitionStoreExec can cause URISyntaxException due 
