@@ -181,10 +181,10 @@ public class TestSortQuery extends QueryTestCaseBase {
   @Test
   public final void testSortNullColumn() throws Exception {
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -214,8 +214,25 @@ public class TestSortQuery extends QueryTestCaseBase {
 
       cleanupQuery(res);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "0");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
       executeString("DROP TABLE nullsort PURGE;").close();
     }
+  }
+
+  @Test
+  public final void testSortWithConstKeys() throws Exception {
+    // select
+    //   l_orderkey,
+    //   l_linenumber,
+    //   1 as key1,
+    //   2 as key2
+    // from
+    //   lineitem
+    // order by
+    //   key1,
+    //  key2;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

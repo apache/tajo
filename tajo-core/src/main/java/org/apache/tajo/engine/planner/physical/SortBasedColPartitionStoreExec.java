@@ -30,6 +30,7 @@ import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -78,8 +79,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       if(i > 0) {
         sb.append("/");
       }
-      sb.append(keyNames[i]).append("=");
-      sb.append(datum.asChars());
+      sb.append(keyNames[i]).append("=");      
+      sb.append(StringUtils.escapePathName(datum.asChars()));
     }
     return sb.toString();
   }
@@ -95,7 +96,7 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
         appender = getAppender(getSubdirectory(currentKey));
         prevKey = new VTuple(currentKey);
       } else {
-        if (!prevKey.equals(currentKey)) {
+        if (!prevKey.equals(currentKey) && !getSubdirectory(prevKey).equalsIgnoreCase(getSubdirectory(currentKey))) {
           appender.close();
           StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
 

@@ -29,6 +29,15 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-895: ConstEval should not be included in target list of projectable 
+    nodes. (hyunsik)
+
+    TAJO-928: Session variables should override query configs in TajoConf.
+    (hyunsik)
+
+    TAJO-989: Cleanup of child blocks after parent execution block is complete
+    (jinho)
+
     TAJO-966: Range partition should support split of multiple characters.
     (hyunsik)
 
@@ -102,6 +111,21 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-995: HiveMetaStoreClient wrapper should retry the connection. (jinho)
+
+    TAJO-947: ColPartitionStoreExec can cause URISyntaxException due 
+    to special characters. (Mai Hai Thanh via hyunsik)
+
+    TAJO-999: SequenceFile key class need to be compatible. (jaehwa)
+
+    TAJO-994: 'count(distinct x)' function counts first null value. (hyunsik)
+
+    TAJO-996: Sometimes, scheduleFetchesByEvenDistributedVolumes loses
+    some FetchImpls. (hyunsik)
+
+    TAJO-949: PullServer does not release files, when a channel throws 
+    an internal exception. (jinho)
     
     TAJO-975: alias name which is the same to existing column name may cause
     NPE during PPD. (hyunsik)
@@ -307,6 +331,9 @@ Release 0.9.0 - unreleased
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   TASKS
+
+    TAJO-1001: Add missed postgresql license to NOTICE.txt and LICENSE.txt.
+    (hyunsik)
 
     TAJO-890: Redirect stdout of maven test to /dev/null in Travis CI 
     script. (hyunsik)

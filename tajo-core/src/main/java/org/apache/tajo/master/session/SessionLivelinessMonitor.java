@@ -40,7 +40,7 @@ public class SessionLivelinessMonitor extends AbstractLivelinessMonitor<String> 
     TajoConf systemConf = (TajoConf) conf;
 
     // seconds
-    int expireIntvl = systemConf.getIntVar(TajoConf.ConfVars.CLIENT_SESSION_EXPIRY_TIME);
+    int expireIntvl = systemConf.getIntVar(TajoConf.ConfVars.$CLIENT_SESSION_EXPIRY_TIME);
     setExpireInterval(expireIntvl);
     setMonitorInterval(expireIntvl / 3);
     super.serviceInit(conf);

@@ -58,7 +58,6 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
@@ -563,7 +562,6 @@ public class TajoPullServerService extends AbstractService {
         for (String ta : taskIds) {
           String targetFile = queryBaseDir + "/" + sid + "/" + ta + "/output/" + partId;
           if (!lDirAlloc.ifExists(targetFile, conf)) {
-            //LOG.warn(e);
             LOG.warn("Fetcher target file:" + targetFile + " not exists");
             sendError(ctx, NO_CONTENT);
             return;
@@ -625,27 +623,33 @@ public class TajoPullServerService extends AbstractService {
                                    FileChunk file,
                                    String requestUri) throws IOException {
       long startTime = System.currentTimeMillis();
-      RandomAccessFile spill;
+      RandomAccessFile spill = null;
+      ChannelFuture writeFuture;
       try {
         spill = new RandomAccessFile(file.getFile(), "r");
+        if (ch.getPipeline().get(SslHandler.class) == null) {
+          final FadvisedFileRegionWrapper filePart = new FadvisedFileRegionWrapper(spill,
+              file.startOffset, file.length(), manageOsCache, readaheadLength,
+              readaheadPool, file.getFile().getAbsolutePath());
+          writeFuture = ch.write(filePart);
+          writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
+        } else {
+          // HTTPS cannot be done with zero copy.
+          final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
+              file.startOffset, file.length, sslFileBufferSize,
+              manageOsCache, readaheadLength, readaheadPool,
+              file.getFile().getAbsolutePath());
+          writeFuture = ch.write(chunk);
+        }
       } catch (FileNotFoundException e) {
         LOG.info(file.getFile() + " not found");
         return null;
-      }
-      ChannelFuture writeFuture;
-      if (ch.getPipeline().get(SslHandler.class) == null) {
-        final FadvisedFileRegionWrapper filePart = new FadvisedFileRegionWrapper(spill,
-            file.startOffset, file.length(), manageOsCache, readaheadLength,
-            readaheadPool, file.getFile().getAbsolutePath());
-        writeFuture = ch.write(filePart);
-        writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
-      } else {
-        // HTTPS cannot be done with zero copy.
-        final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
-            file.startOffset, file.length, sslFileBufferSize,
-            manageOsCache, readaheadLength, readaheadPool,
-            file.getFile().getAbsolutePath());
-        writeFuture = ch.write(chunk);
+      } catch (Throwable e) {
+        if (spill != null) {
+          //should close a opening file
+          spill.close();
+        }
+        return null;
       }
       metrics.shuffleConnections.incr();
       metrics.shuffleOutputBytes.incr(file.length); // optimistic
@@ -671,23 +675,10 @@ public class TajoPullServerService extends AbstractService {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
-      Channel ch = e.getChannel();
-      Throwable cause = e.getCause();
-      if (cause instanceof TooLongFrameException) {
-        sendError(ctx, BAD_REQUEST);
-        return;
-      }
-
-      String errorMessage = cause.getMessage();
-      if (errorMessage == null) {
-        errorMessage = cause.getClass().getCanonicalName();
-      }
-      LOG.error("PullServer error: " + errorMessage);
-      if (LOG.isDebugEnabled()) {
-        LOG.error(cause);
-      }
-      if (ch.isConnected()) {
-        sendError(ctx, INTERNAL_SERVER_ERROR);
+      LOG.error(e.getCause().getMessage(), e.getCause());
+      //if channel.close() is not called, never closed files in this request
+      if (ctx.getChannel().isConnected()){
+        ctx.getChannel().close();
       }
     }
   }

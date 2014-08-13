@@ -166,6 +166,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectSameConstantsWithDifferentAliases3() throws Exception {
+    // select l_orderkey, '20130819' as date1, '20130819', '20130819', '20130819'
+    // from lineitem where l_orderkey > -1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSelectSameExprsWithDifferentAliases() throws Exception {
     // select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
     ResultSet res = executeQuery();
@@ -432,8 +441,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public final void testNowInMultipleTasks() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -442,7 +451,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
 
       ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
 
@@ -451,7 +460,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       while (res.next()) {
         String currentNowValue = res.getString(1);
         if (nowValue != null) {
-          assertTrue(nowValue.equals(currentNowValue));
+          assertTrue(nowValue + " is different to " + currentNowValue, nowValue.equals(currentNowValue));
         }
         nowValue = currentNowValue;
         numRecords++;
@@ -474,8 +483,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
       }
       assertEquals(5, numRecords);
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.TESTCASE_MIN_TASK_NUM.varname,
-          ConfVars.TESTCASE_MIN_TASK_NUM.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname,
+          ConfVars.$TEST_MIN_TASK_NUM.defaultVal);
       executeString("DROP TABLE table11 PURGE");
     }
   }
