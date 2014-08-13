@@ -919,11 +919,13 @@ public class Repartitioner {
           "tajo.shuffle.hash.appender.page.volumn-mb");
     }
     List<List<FetchImpl>> fetches = new ArrayList<List<FetchImpl>>();
-    
+
+    long totalIntermediateSize = 0L;
     for (Entry<ExecutionBlockId, List<IntermediateEntry>> listEntry : intermediates.entrySet()) {
       // merge by PartitionId
       Map<Integer, List<IntermediateEntry>> partitionIntermMap = new HashMap<Integer, List<IntermediateEntry>>();
       for (IntermediateEntry eachInterm: listEntry.getValue()) {
+        totalIntermediateSize += eachInterm.getVolume();
         int partId = eachInterm.getPartId();
         List<IntermediateEntry> partitionInterms = partitionIntermMap.get(partId);
         if (partitionInterms == null) {
@@ -934,9 +936,9 @@ public class Repartitioner {
         }
       }
 
-      // Grouping or splitting to fit DIST_QUERY_TABLE_PARTITION_VOLUME size
-      for (List<IntermediateEntry> partitionEntires : partitionIntermMap.values()) {
-        List<List<FetchImpl>> eachFetches = splitOrMergeIntermediates(listEntry.getKey(), partitionEntires,
+      // Grouping or splitting to fit $DIST_QUERY_TABLE_PARTITION_VOLUME size
+      for (List<IntermediateEntry> partitionEntries : partitionIntermMap.values()) {
+        List<List<FetchImpl>> eachFetches = splitOrMergeIntermediates(listEntry.getKey(), partitionEntries,
             splitVolume, pageSize);
         if (eachFetches != null && !eachFetches.isEmpty()) {
           fetches.addAll(eachFetches);
@@ -958,7 +960,9 @@ public class Repartitioner {
 
     LOG.info(subQuery.getId()
         + ", ShuffleType:" + SCATTERED_HASH_SHUFFLE.name()
-        + ", DeterminedTaskNum : " + fetches.size());
+        + ", Intermediate Size: " + totalIntermediateSize
+        + ", splitSize: " + splitVolume
+        + ", DeterminedTaskNum: " + fetches.size());
   }
 
   /**
