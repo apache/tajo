@@ -142,6 +142,7 @@ message EvalNode {
   optional ConstEval const = 6;
   optional ColumnProto field = 7; // field eval
   optional FunctionEval function = 8;
+  optional RowConstEval rowConst = 9;
 }
 
 message UnaryEval {
@@ -153,10 +154,17 @@ message UnaryEval {
 message BinaryEval {
   required int32 lhs_id = 1;
   required int32 rhs_id = 2;
+  optional bool negative = 3 [default = false];
 }
+
+
 
 message ConstEval {
   required Datum value = 1;
+}
+
+message RowConstEval {
+  repeated Datum values = 1;
 }
 
 message FunctionEval {

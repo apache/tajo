@@ -117,11 +117,24 @@ public class LogicalPlanConvertor {
           PlanProto.BinaryEval binProto = protoNode.getBinary();
           EvalNode lhs = evalNodeMap.get(binProto.getLhsId());
           EvalNode rhs = evalNodeMap.get(binProto.getRhsId());
-          current = new BinaryEval(type, lhs, rhs);
+
+          if (type == EvalType.IN) {
+            current = new InEval(lhs, (RowConstantEval) rhs, binProto.getNegative());
+          } else {
+            current = new BinaryEval(type, lhs, rhs);
+          }
 
         } else if (type == EvalType.CONST) {
           PlanProto.ConstEval constProto = protoNode.getConst();
           current = new ConstEval(LogicalPlanConvertor.deserialize(constProto.getValue()));
+
+        } else if (type == EvalType.ROW_CONSTANT) {
+          PlanProto.RowConstEval rowConstProto = protoNode.getRowConst();
+          Datum [] values = new Datum[rowConstProto.getValuesCount()];
+          for (int i = 0; i < rowConstProto.getValuesCount(); i++) {
+            values[i] = LogicalPlanConvertor.deserialize(rowConstProto.getValues(i));
+          }
+          current = new RowConstantEval(values);
 
         } else if (type == EvalType.FIELD) {
           CatalogProtos.ColumnProto columnProto = protoNode.getField();
@@ -199,14 +212,13 @@ public class LogicalPlanConvertor {
       return nodeBuilder;
     }
 
+    @Override
     public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, UnaryEval unary) {
-      // visiting childs
-      stack.push(unary);
+      // visiting and registering childs
       super.visitUnaryEval(context, stack, unary);
-      stack.pop();
-
-      // register childs
       int [] childIds = registerGetChildIds(context, unary);
+
+      // building itself
       PlanProto.UnaryEval.Builder unaryBuilder = PlanProto.UnaryEval.newBuilder();
       unaryBuilder.setChildId(childIds[0]);
       if (unary.getType() == EvalType.IS_NULL) {
@@ -220,7 +232,7 @@ public class LogicalPlanConvertor {
         unaryBuilder.setCastingType(castEval.getValueType());
       }
 
-      // register itself and add eval to eval tree
+      // registering itself and building EvalNode
       int selfId = registerAndGetId(context, unary);
       PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, unary);
       builder.setUnary(unaryBuilder);
@@ -228,19 +240,18 @@ public class LogicalPlanConvertor {
       return unary;
     }
 
+    @Override
     public EvalNode visitBinaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, BinaryEval binary) {
-
-      // visiting childs
-      stack.push(binary);
+      // visiting and registering childs
       super.visitBinaryEval(context, stack, binary);
-      stack.pop();
-
-      // register childs
       int [] childIds = registerGetChildIds(context, binary);
+
+      // building itself
       PlanProto.BinaryEval.Builder binaryBuilder = PlanProto.BinaryEval.newBuilder();
       binaryBuilder.setLhsId(childIds[0]);
       binaryBuilder.setRhsId(childIds[1]);
 
+      // registering itself and building EvalNode
       int selfId = registerAndGetId(context, binary);
       PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, binary);
       builder.setBinary(binaryBuilder);
@@ -248,12 +259,29 @@ public class LogicalPlanConvertor {
       return binary;
     }
 
+    @Override
     public EvalNode visitConst(EvalTreeProtoBuilderContext context, ConstEval constant, Stack<EvalNode> stack) {
       int selfId = registerAndGetId(context, constant);
       PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, constant);
       builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constant.getValue())));
       context.evalTreeBuilder.addNodes(builder);
       return constant;
+    }
+
+    @Override
+    public EvalNode visitRowConstant(EvalTreeProtoBuilderContext context, RowConstantEval rowConst,
+                                     Stack<EvalNode> stack) {
+
+      PlanProto.RowConstEval.Builder rowConstBuilder = PlanProto.RowConstEval.newBuilder();
+      for (Datum d : rowConst.getValues()) {
+        rowConstBuilder.addValues(LogicalPlanConvertor.serialize(d));
+      }
+
+      int selfId = registerAndGetId(context, rowConst);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, rowConst);
+      builder.setRowConst(rowConstBuilder);
+      context.evalTreeBuilder.addNodes(builder);
+      return rowConst;
     }
 
     public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
@@ -265,19 +293,18 @@ public class LogicalPlanConvertor {
     }
 
     public EvalNode visitFuncCall(EvalTreeProtoBuilderContext context, FunctionEval function, Stack<EvalNode> stack) {
-
-      stack.push(function);
+      // visiting and registering childs
       super.visitFuncCall(context, function, stack);
-      stack.pop();
-
-      //  register childs
       int [] childIds = registerGetChildIds(context, function);
+
+      // building itself
       PlanProto.FunctionEval.Builder funcBuilder = PlanProto.FunctionEval.newBuilder();
       funcBuilder.setFuncion(function.getFuncDesc().getProto());
       for (int i = 0; i < childIds.length; i++) {
         funcBuilder.addParamIds(i);
       }
 
+      // registering itself and building EvalNode
       int selfId = registerAndGetId(context, function);
       PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, function);
       builder.setFunction(funcBuilder);
