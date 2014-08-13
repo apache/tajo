@@ -589,7 +589,7 @@ public class PlannerUtil {
         Column[] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression
-          Column column = EvalTreeUtil.findAllColumnRefs(binaryEval.getExpr(i)).get(0);
+          Column column = EvalTreeUtil.findAllColumnRefs(binaryEval.getChild(i)).get(0);
           for (int j = 0; j < schemas.length; j++) {
             // check whether the column is for either outer or inner
             // 0 is outer, and 1 is inner

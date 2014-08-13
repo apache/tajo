@@ -863,7 +863,7 @@ public class ProjectionPushDownRule extends
           BinaryEval binaryQual = (BinaryEval) eachQual;
 
           for (int i = 0; i < 2; i++) {
-            EvalNode term = binaryQual.getExpr(i);
+            EvalNode term = binaryQual.getChild(i);
             pushDownIfComplexTermInJoinCondition(newContext, eachQual, term);
           }
         }
