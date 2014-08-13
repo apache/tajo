@@ -24,7 +24,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.master.session.Session;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Set;
@@ -38,17 +38,17 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
   }
 
   public static class Context {
-    Session session;
+    QueryContext queryContext;
     VerificationState state;
 
-    public Context(Session session, VerificationState state) {
-      this.session = session;
+    public Context(QueryContext queryContext, VerificationState state) {
+      this.queryContext = queryContext;
       this.state = state;
     }
   }
 
-  public VerificationState verify(Session session, VerificationState state, Expr expr) throws PlanningException {
-    Context context = new Context(session, state);
+  public VerificationState verify(QueryContext queryContext, VerificationState state, Expr expr) throws PlanningException {
+    Context context = new Context(queryContext, state);
     visit(context, new Stack<Expr>(), expr);
     return context.state;
   }
@@ -127,7 +127,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
     if (CatalogUtil.isFQTableName(tableName)) {
       qualifiedName = tableName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.session.getCurrentDatabase(), tableName);
+      qualifiedName = CatalogUtil.buildFQName(context.queryContext.getCurrentDatabase(), tableName);
     }
 
     if (!catalog.existsTable(qualifiedName)) {
@@ -143,7 +143,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
     if (CatalogUtil.isFQTableName(tableName)) {
       qualifiedName = tableName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.session.getCurrentDatabase(), tableName);
+      qualifiedName = CatalogUtil.buildFQName(context.queryContext.getCurrentDatabase(), tableName);
+    }
+    if(qualifiedName == null) {
+      System.out.println("A");
     }
     if (catalog.existsTable(qualifiedName)) {
       context.state.addVerification(String.format("relation \"%s\" already exists", qualifiedName));
@@ -246,7 +249,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
         if (expr.hasTableName()) {
           String qualifiedName = expr.getTableName();
           if (TajoConstants.EMPTY_STRING.equals(CatalogUtil.extractQualifier(expr.getTableName()))) {
-            qualifiedName = CatalogUtil.buildFQName(context.session.getCurrentDatabase(),
+            qualifiedName = CatalogUtil.buildFQName(context.queryContext.getCurrentDatabase(),
                 expr.getTableName());
           }
 

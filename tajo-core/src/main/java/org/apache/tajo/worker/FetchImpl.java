@@ -26,6 +26,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.Repartitioner;
+import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -251,5 +252,27 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     newFetchImpl.offset = offset;
     newFetchImpl.length = length;
     return newFetchImpl;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    FetchImpl fetch = (FetchImpl) o;
+
+    return TUtil.checkEquals(hasNext, fetch.hasNext) &&
+        TUtil.checkEquals(partitionId, fetch.partitionId) &&
+        TUtil.checkEquals(attemptIds, fetch.attemptIds) &&
+        TUtil.checkEquals(executionBlockId, fetch.executionBlockId) &&
+        TUtil.checkEquals(host, fetch.host) &&
+        TUtil.checkEquals(name, fetch.name) &&
+        TUtil.checkEquals(rangeParams, fetch.rangeParams) &&
+        TUtil.checkEquals(taskIds, fetch.taskIds) &&
+        TUtil.checkEquals(type, fetch.type);
   }
 }

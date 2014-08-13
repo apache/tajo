@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
@@ -81,7 +82,7 @@ public class TajoConf extends Configuration {
     try {
       if (CURRENT_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.TAJO_TIMEZONE));
+        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
       return CURRENT_TIMEZONE;
     } finally {
@@ -105,7 +106,7 @@ public class TajoConf extends Configuration {
     try {
       if (DATE_ORDER < 0) {
         TajoConf tajoConf = new TajoConf();
-        String dateOrder = tajoConf.getVar(ConfVars.TAJO_DATE_ORDER);
+        String dateOrder = tajoConf.getVar(ConfVars.$DATE_ORDER);
         if ("YMD".equals(dateOrder)) {
           DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
         } else if ("DMY".equals(dateOrder)) {
@@ -133,11 +134,13 @@ public class TajoConf extends Configuration {
     }
   }
 
-  public static enum ConfVars {
+  public static enum ConfVars implements ConfigKey {
 
-    //////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////
     // Tajo System Configuration
-    //////////////////////////////////
+    //
+    // They are all static configs which are not changed or not overwritten at all.
+    ///////////////////////////////////////////////////////////////////////////////////////
 
     // a username for a running Tajo cluster
     ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/"),
@@ -196,23 +199,19 @@ public class TajoConf extends Configuration {
     // Catalog
     CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005"),
 
-    //////////////////////////////////
-    // for Yarn Resource Manager
-    //////////////////////////////////
+
+    // for Yarn Resource Manager ----------------------------------------------
+
     /** how many launching TaskRunners in parallel */
     YARN_RM_QUERY_MASTER_MEMORY_MB("tajo.querymaster.memory-mb", 512),
     YARN_RM_QUERY_MASTER_DISKS("tajo.yarn-rm.querymaster.disks", 1),
     YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.yarn-rm.parallel-task-runner-launcher-num", 16),
     YARN_RM_WORKER_NUMBER_PER_NODE("tajo.yarn-rm.max-worker-num-per-node", 8),
 
-    //////////////////////////////////
     // Query Configuration
-    //////////////////////////////////
     QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60),
 
-    //////////////////////////////////
-    // Shuffle Configuration
-    //////////////////////////////////
+    // Shuffle Configuration --------------------------------------------------
     PULLSERVER_PORT("tajo.pullserver.port", 0),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
@@ -222,10 +221,9 @@ public class TajoConf extends Configuration {
     SHUFFLE_FETCHER_READ_RETRY_MAX_NUM("tajo.shuffle.fetcher.read.retry.max-num", 20),
     SHUFFLE_HASH_APPENDER_BUFFER_SIZE("tajo.shuffle.hash.appender.buffer.size", 10000),
     SHUFFLE_HASH_APPENDER_PAGE_VOLUME("tajo.shuffle.hash.appender.page.volumn-mb", 30),
+    HASH_SHUFFLE_PARENT_DIRS("tajo.hash.shuffle.parent.dirs.count", 10),
 
-    //////////////////////////////////
-    // Storage Configuration
-    //////////////////////////////////
+    // Storage Configuration --------------------------------------------------
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
     MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
     // for RCFile
@@ -237,48 +235,15 @@ public class TajoConf extends Configuration {
     STORAGE_MANAGER_DISK_SCHEDULER_REPORT_INTERVAL("tajo.storage-manager.disk-scheduler.report-interval", 60 * 1000),
     STORAGE_MANAGER_CONCURRENCY_PER_DISK("tajo.storage-manager.disk-scheduler.per-disk-concurrency", 2),
 
-    //////////////////////////////////////////
-    // Distributed Query Execution Parameters
-    //////////////////////////////////////////
-    DIST_QUERY_BROADCAST_JOIN_AUTO("tajo.dist-query.join.auto-broadcast", true),
-    DIST_QUERY_BROADCAST_JOIN_THRESHOLD("tajo.dist-query.join.broadcast.threshold-bytes", (long)5 * 1048576),
 
-    DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 128),
-    DIST_QUERY_SORT_TASK_VOLUME("tajo.dist-query.sort.task-volume-mb", 128),
-    DIST_QUERY_GROUPBY_TASK_VOLUME("tajo.dist-query.groupby.task-volume-mb", 128),
-
-    DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128),
-    DIST_QUERY_SORT_PARTITION_VOLUME("tajo.dist-query.sort.partition-volume-mb", 256),
-    DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
-
-    DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
-    DIST_QUERY_CLUSTER_SLOT_MAX_RATIO("tajo.dist-query.cluster-slot.max-ratio", 1.0f),
-
-    //////////////////////////////////
-    // Physical Executors
-    //////////////////////////////////
-    EXECUTOR_EXTERNAL_SORT_THREAD_NUM("tajo.executor.external-sort.thread-num", 1),
-    EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),
-    EXECUTOR_EXTERNAL_SORT_FANOUT("tajo.executor.external-sort.fanout-num", 8),
-
-    EXECUTOR_INNER_JOIN_INMEMORY_HASH_TABLE_SIZE("tajo.executor.join.inner.in-memory-table-num", (long)1000000),
-    EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.inner.in-memory-hash-threshold-bytes",
-        (long)256 * 1048576),
-    EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-bytes",
-        (long)256 * 1048576),
-    EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
-        (long)256 * 1048576),
-
-    //////////////////////////////////
-    // RPC
-    //////////////////////////////////
+    // RPC --------------------------------------------------------------------
     RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
 
-    //Internal RPC Client
+    //  Internal RPC Client
     INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM("tajo.internal.rpc.client.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 2),
 
-    //Internal RPC Server
+    // Internal RPC Server
     MASTER_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.rpc.server.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 2),
     QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM("tajo.querymaster.rpc.server.worker-thread-num",
@@ -299,60 +264,92 @@ public class TajoConf extends Configuration {
     WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.worker.service.rpc.server.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 1),
 
-    //////////////////////////////////
-    // The Below is reserved
-    //////////////////////////////////
-
-    // GeoIP
-    GEOIP_DATA("tajo.function.geoip-database-location", ""),
-
-    //////////////////////////////////
-    // Task Configuration
+    // Task Configuration -----------------------------------------------------
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
     TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
-    //////////////////////////////////
 
-    //////////////////////////////////
-    // User Session Configuration
-    //////////////////////////////////
-    CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
+    // Query and Optimization -------------------------------------------------
+    EXECUTOR_EXTERNAL_SORT_THREAD_NUM("tajo.executor.external-sort.thread-num", 1),
+    EXECUTOR_EXTERNAL_SORT_FANOUT("tajo.executor.external-sort.fanout-num", 8),
 
-    // Metrics
+    EXECUTOR_INNER_JOIN_INMEMORY_HASH_TABLE_SIZE("tajo.executor.join.inner.in-memory-table-num", (long)1000000),
+
+    // Metrics ----------------------------------------------------------------
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
-    //CLI
-    CLI_MAX_COLUMN("tajo.cli.max_columns", 120),
-    CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
-    CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
-    CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
-    CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
-    CLI_NULL_CHAR("tajo.cli.nullchar", ""),
-    CLI_ERROR_STOP("tajo.cli.error.stop", false),
+    // Misc -------------------------------------------------------------------
 
-    //TIME & DATE
-    TAJO_TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
-    TAJO_DATE_ORDER("tajo.date.order", "YMD"),
+    // Geo IP
+    GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
-    //PLANNER
-    PLANNER_USE_FILTER_PUSHDOWN("tajo.planner.use.filter.pushdown", true),
+    /////////////////////////////////////////////////////////////////////////////////
+    // User Session Configuration
+    //
+    // All session variables begin with dollor($) sign. They are default configs
+    // for session variables. Do not directly use the following configs. Instead,
+    // please use QueryContext in order to access session variables.
+    //
+    // Also, users can change the default values of session variables in tajo-site.xml.
+    /////////////////////////////////////////////////////////////////////////////////
+
+
+    $EMPTY("tajo._", ""),
+
+    // Query and Optimization ---------------------------------------------------
+
+    // for distributed query strategies
+    $DIST_QUERY_BROADCAST_JOIN_THRESHOLD("tajo.dist-query.join.broadcast.threshold-bytes", (long)5 * 1048576),
+
+    $DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 128),
+    $DIST_QUERY_SORT_TASK_VOLUME("tajo.dist-query.sort.task-volume-mb", 128),
+    $DIST_QUERY_GROUPBY_TASK_VOLUME("tajo.dist-query.groupby.task-volume-mb", 128),
+
+    $DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128),
+    $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
+    $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
+
+    // for physical Executors
+    $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),
+    $EXECUTOR_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.common.in-memory-hash-threshold-bytes",
+        (long)256 * 1048576),
+    $EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.inner.in-memory-hash-threshold-bytes",
+        (long)256 * 1048576),
+    $EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-bytes",
+        (long)256 * 1048576),
+    $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
+        (long)256 * 1048576),
+    $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
+
+
+    // Client -----------------------------------------------------------------
+    $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
+
+    // Command line interface and its behavior --------------------------------
+    $CLI_MAX_COLUMN("tajo.cli.max_columns", 120),
+    $CLI_NULL_CHAR("tajo.cli.nullchar", ""),
+    $CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
+    $CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
+    $CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
+    $CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
+    $CLI_ERROR_STOP("tajo.cli.error.stop", false),
+
+    // Timezone & Date ----------------------------------------------------------
+    $TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
+    $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT
-    CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+    $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
-    //OPTIMIZER
-    OPTIMIZER_JOIN_ENABLE("tajo.optimizer.join.enable", true),
+    // Only for Debug and Testing
+    $DEBUG_ENABLED("tajo.debug.enabled", false),
+    $TEST_BROADCAST_JOIN_ENABLED("tajo.dist-query.join.auto-broadcast", true),
+    $TEST_JOIN_OPT_ENABLED("tajo.test.plan.join-optimization.enabled", true),
+    $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),
+    $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
 
-    // DEBUG OPTION
-    TAJO_DEBUG("tajo.debug", false),
-
-    // ONLY FOR TESTCASE
-    TESTCASE_MIN_TASK_NUM("tajo.testcase.min.task.num", -1),
-
-    // behavior control
-    BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
-
-    HASH_SHUFFLE_PARENT_DIRS("tajo.hash.shuffle.parent.dirs.count", 10);
+    // Behavior Control ---------------------------------------------------------
+    $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
     ;
 
     public final String varname;
@@ -434,6 +431,16 @@ public class TajoConf extends Configuration {
       String typeString() { return name().toUpperCase();}
       abstract void checkType(String value) throws Exception;
     }
+
+    @Override
+    public String keyname() {
+      return varname;
+    }
+
+    @Override
+    public ConfigType type() {
+      return ConfigType.SYSTEM;
+    }
   }
 
   public static int getIntVar(Configuration conf, ConfVars var) {
@@ -455,8 +462,12 @@ public class TajoConf extends Configuration {
   }
 
   public static long getLongVar(Configuration conf, ConfVars var) {
-    assert (var.valClass == Long.class);
-    return conf.getLong(var.varname, var.defaultLongVal);
+    assert (var.valClass == Long.class || var.valClass == Integer.class);
+    if (var.valClass == Integer.class) {
+      return conf.getInt(var.varname, var.defaultIntVal);
+    } else {
+      return conf.getLong(var.varname, var.defaultLongVal);
+    }
   }
 
   public static long getLongVar(Configuration conf, ConfVars var, long defaultVal) {
@@ -521,7 +532,6 @@ public class TajoConf extends Configuration {
   }
 
   public static String getVar(Configuration conf, ConfVars var) {
-    assert (var.valClass == String.class);
     return conf.get(var.varname, var.defaultVal);
   }
 

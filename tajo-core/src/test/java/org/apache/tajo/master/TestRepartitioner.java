@@ -19,7 +19,9 @@
 package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -35,6 +37,7 @@ import java.net.URI;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 import static org.apache.tajo.master.querymaster.Repartitioner.FetchGroupMeta;
 import static org.junit.Assert.assertTrue;
 
@@ -109,38 +112,49 @@ public class TestRepartitioner {
     String tableName = "test1";
 
 
-    fetchGroups.put(0, new FetchGroupMeta(100, new FetchImpl()));
-    fetchGroups.put(1, new FetchGroupMeta(80, new FetchImpl()));
-    fetchGroups.put(2, new FetchGroupMeta(70, new FetchImpl()));
-    fetchGroups.put(3, new FetchGroupMeta(30, new FetchImpl()));
-    fetchGroups.put(4, new FetchGroupMeta(10, new FetchImpl()));
-    fetchGroups.put(5, new FetchGroupMeta(5, new FetchImpl()));
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    FetchImpl [] fetches = new FetchImpl[12];
+    for (int i = 0; i < 12; i++) {
+      fetches[i] = new FetchImpl(new QueryUnit.PullHost("localhost", 10000 + i), ShuffleType.HASH_SHUFFLE, ebId, i / 2);
+    }
+
+    int [] VOLUMES = {100, 80, 70, 30, 10, 5};
+
+    for (int i = 0; i < 12; i += 2) {
+      fetchGroups.put(i, new FetchGroupMeta(VOLUMES[i / 2], fetches[i]).addFetche(fetches[i + 1]));
+    }
 
     Pair<Long [], Map<String, List<FetchImpl>>[]> results;
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 1);
     long expected [] = {100 + 80 + 70 + 30 + 10 + 5};
     assertFetchVolumes(expected, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 2);
     long expected0 [] = {130, 165};
     assertFetchVolumes(expected0, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 3);
     long expected1 [] = {100, 95, 100};
     assertFetchVolumes(expected1, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 4);
     long expected2 [] = {100, 80, 70, 45};
     assertFetchVolumes(expected2, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 5);
     long expected3 [] = {100, 80, 70, 30, 15};
     assertFetchVolumes(expected3, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 6);
     long expected4 [] = {100, 80, 70, 30, 10, 5};
     assertFetchVolumes(expected4, results.getFirst());
+    assertFetchImpl(fetches, results.getSecond());
   }
 
   private static void assertFetchVolumes(long [] expected, Long [] results) {
@@ -387,5 +401,24 @@ public class TestRepartitioner {
         index++;
       }
     }
+  }
+
+  private static void assertFetchImpl(FetchImpl [] expected, Map<String, List<FetchImpl>>[] result) {
+    Set<FetchImpl> expectedURLs = Sets.newHashSet();
+
+    for (FetchImpl f : expected) {
+      expectedURLs.add(f);
+    }
+
+    Set<FetchImpl> resultURLs = Sets.newHashSet();
+
+    for (Map<String, List<FetchImpl>> e : result) {
+      for (List<FetchImpl> list : e.values()) {
+        resultURLs.addAll(list);
+      }
+    }
+
+    assertEquals(expectedURLs.size(), resultURLs.size());
+    assertEquals(expectedURLs, resultURLs);
   }
 }

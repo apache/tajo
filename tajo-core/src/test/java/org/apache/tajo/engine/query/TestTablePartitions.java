@@ -52,7 +52,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
@@ -797,12 +800,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public void testScatteredHashShuffle() throws Exception {
-    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME.varname, "2");
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname, "2");
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname, "1");
     try {
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
       Schema schema = new Schema();
       schema.addColumn("col1", TajoDataTypes.Type.TEXT);
@@ -847,12 +850,55 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // assert data file size
 
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME.varname,
-          TajoConf.ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname,
+          TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.defaultVal);
       testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname,
           TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.defaultVal);
       executeString("DROP TABLE test_partition PURGE").close();
       executeString("DROP TABLE testScatteredHashShuffle PURGE").close();
     }
+  }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys1() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR'");
+
+    String resStr = resultSetToString(res);
+    String expected =
+        "id,name,type\n" +
+            "-------------------------------\n"
+            + "3,NONE,AIR\n"
+            + "3,TEST SPECIAL CHARS,RA:*?><I/L#%S\n";
+
+    assertEquals(expected, resStr);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys2() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S'");
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR01'");
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

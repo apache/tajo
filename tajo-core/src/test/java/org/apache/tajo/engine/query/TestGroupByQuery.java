@@ -167,6 +167,60 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testGroupByWithConstantKeys3() throws Exception {
+    // select
+    //   l_partkey as a,
+    //   timestamp '2014-07-07 04:28:31.561' as b,
+    //   '##' as c,
+    //   count(*) d
+    // from
+    //   lineitem
+    // group by
+    //  b, c;         <- b and c all are constant values.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithConstantKeys4() throws Exception {
+    //    select
+    //    'day',
+    //        l_orderkey,
+    //        count(*) as sum
+    //    from
+    //        lineitem
+    //    group by
+    //    'day',
+    //        l_orderkey
+    //    order by
+    //    'day',
+    //        l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupByWithConstantKeys5() throws Exception {
+    //    select
+    //    'day',
+    //        l_orderkey,
+    //        count(*) as sum
+    //    from
+    //        lineitem
+    //    group by
+    //    'day',
+    //        l_orderkey
+    //    order by
+    //    'day',
+    //        l_orderkey;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testDistinctAggregation1() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;
@@ -291,8 +345,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // case9
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -342,11 +396,11 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testDistinctAggregationCasebyCase2() throws Exception {
+  public final void testDistinctAggregationCaseByCase3() throws Exception {
     // first distinct is smaller than second distinct.
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -364,22 +418,40 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     TajoTestingCluster.createTable("table10", schema, tableOptions, data);
 
-    ResultSet res = executeString(
-        "select col1 \n" +
-            ",count(distinct col2) as cnt1\n" +
-            ",count(distinct case when col3 is not null then col2 else null end) as cnt2\n" +
-            "from table10 \n" +
-            "group by col1"
-    );
-    String result = resultSetToString(res);
-
-    String expected = "col1,cnt1,cnt2\n" +
-        "-------------------------------\n" +
-        "a,3,1\n";
-
-    assertEquals(expected, result);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
 
     executeString("DROP TABLE table10 PURGE").close();
+  }
+
+  @Test
+  public final void testDistinctAggregationCaseByCase4() throws Exception {
+    // Reproduction case for TAJO-994
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.TEXT);
+    schema.addColumn("col2", Type.TEXT);
+
+    String[] data = new String[]{
+        "a|\\N",
+        "a|\\N|",
+        "a|\\N|",
+        "a|\\N|",
+        "a|\\N|",
+        "a|\\N|"
+    };
+
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE table11 PURGE").close();
   }
 
   @Test
@@ -544,8 +616,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testNumShufflePartition() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.put(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -574,7 +646,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
 
     try {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
       ResultSet res = executeString(
           "select col1 \n" +
               ",count(distinct col2) as cnt1\n" +
@@ -624,8 +696,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       assertEquals(2, partitionIds.size());
       executeString("DROP TABLE testnumshufflepartition PURGE").close();
     } finally {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
-          ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
+          ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
   }
 }

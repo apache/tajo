@@ -53,7 +53,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
-  private final TajoConf conf;
   private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
   private TaskAttemptState state;
@@ -81,13 +80,9 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  public TaskAttemptContext(final TajoConf conf,
-                            final QueryContext queryContext,
-                            final WorkerContext workerContext,
-                            final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(QueryContext queryContext, final WorkerContext workerContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
-    this.conf = conf;
     this.queryContext = queryContext;
     this.workerContext = workerContext;
     this.queryId = queryId;
@@ -114,9 +109,10 @@ public class TaskAttemptContext {
     if (workerContext != null) {
       this.hashShuffleAppenderManager = workerContext.getHashShuffleAppenderManager();
     } else {
-      LOG.error("HashShuffleAppenderManager ");
+      // For TestCase
+      LOG.warn("WorkerContext is null, so create HashShuffleAppenderManager created per a Task.");
       try {
-        this.hashShuffleAppenderManager = new HashShuffleAppenderManager(conf);
+        this.hashShuffleAppenderManager = new HashShuffleAppenderManager(queryContext.getConf());
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
       }
@@ -124,18 +120,15 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(final TajoConf conf,
-                            final QueryContext queryContext,
-                            final QueryUnitAttemptId queryId,
-                            final Fragment [] fragments,
-                            final Path workDir) {
-    this(conf, queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
+                            final Fragment [] fragments,  final Path workDir) {
+    this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
-    return this.conf;
+    return queryContext.getConf();
   }
-  
+
   public TaskAttemptState getState() {
     return this.state;
   }
