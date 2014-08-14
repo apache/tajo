@@ -137,27 +137,21 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       ranges.add(tupleRange);
       last = ranges.get(ranges.size() - 1).getEnd();
       reminder = reminder.subtract(term);
-
-      if (ranges.size() > 1) {
-        if (sortSpecs[0].isAscending()) {
-          assert (ranges.get(ranges.size() - 2).compareTo(ranges.get(ranges.size() - 1)) < 0);
-        } else {
-          assert (ranges.get(ranges.size() - 2).compareTo(ranges.get(ranges.size() - 1)) > 0);
-        }
-      }
     }
 
     // Recovering the transformed same bytes tuples into the original start and end keys
     ranges.get(0).setStart(mergedRange.getStart());
     ranges.get(ranges.size() - 1).setEnd(mergedRange.getEnd());
 
-    // Guarantee the keys are totally ordered correctly
+    // Ensure all keys are totally ordered correctly.
     for (int i = 0; i < ranges.size(); i++) {
       if (i > 1) {
         if (sortSpecs[0].isAscending()) {
-          assert (ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0);
+          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
+              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
         } else {
-          assert (ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0);
+          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0,
+              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
         }
       }
     }
