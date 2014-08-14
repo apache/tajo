@@ -24,6 +24,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.StringUtils;
 
 import java.math.BigInteger;
@@ -128,6 +129,10 @@ public abstract class RangePartitionAlgorithm {
             b = start.asByteArray();
             a = end.asByteArray();
           }
+
+          byte [][] padded = BytesUtils.padBytes(a, b);
+          a = padded[0];
+          b = padded[1];
 
           byte[] prependHeader = {1, 0};
           final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, a));

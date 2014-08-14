@@ -66,8 +66,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     for (int i = 0; i < sortSpecs.length; i++) {
       Datum startValue = totalRange.getStart().get(i);
       Datum endValue = totalRange.getEnd().get(i);
-//      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
-      isPureAscii[i] = false;
+      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
     }
 
     colCards = new BigInteger[sortSpecs.length];
@@ -127,6 +126,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     BigInteger reminder = reverseCardsForDigit[0];
     Tuple last = mergedRange.getStart();
     TupleRange tupleRange;
+
     while(reminder.compareTo(BigInteger.ZERO) > 0) {
       if (reminder.compareTo(term) <= 0) { // final one is inclusive
         tupleRange = new TupleRange(sortSpecs, last, mergedRange.getEnd());
@@ -138,10 +138,29 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       ranges.add(tupleRange);
       last = ranges.get(ranges.size() - 1).getEnd();
       reminder = reminder.subtract(term);
+
+      if (ranges.size() > 1) {
+        if (sortSpecs[0].isAscending()) {
+          assert (ranges.get(ranges.size() - 2).compareTo(ranges.get(ranges.size() - 1)) < 0);
+        } else {
+          assert (ranges.get(ranges.size() - 2).compareTo(ranges.get(ranges.size() - 1)) > 0);
+        }
+      }
     }
 
-    for (TupleRange r : ranges) {
-      denormalize(sortSpecs, r);
+    // Recovering the transformed same bytes tuples into the original start and end keys
+    ranges.get(0).setStart(mergedRange.getStart());
+    ranges.get(ranges.size() - 1).setEnd(mergedRange.getEnd());
+
+    // Guarantee the keys are totally ordered correctly
+    for (int i = 0; i < ranges.size(); i++) {
+      if (i > 1) {
+        if (sortSpecs[0].isAscending()) {
+          assert (ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0);
+        } else {
+          assert (ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0);
+        }
+      }
     }
 
     return ranges.toArray(new TupleRange[ranges.size()]);

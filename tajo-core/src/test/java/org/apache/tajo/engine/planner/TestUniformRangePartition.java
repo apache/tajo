@@ -183,11 +183,7 @@ public class TestUniformRangePartition {
     Tuple prevTuple = null;
     for (int i = 0; i < 100; i++) {
       tuple = partitioner.increment(tuple, BigInteger.valueOf(30000), 0);
-
       if (prevTuple != null) {
-        if (!(comp.compare(prevTuple, tuple) < 0)) {
-          System.out.println("AAAA");
-        }
         assertTrue("prev=" + prevTuple + ", current=" + tuple, comp.compare(prevTuple, tuple) < 0);
       }
       prevTuple = tuple;
@@ -234,21 +230,20 @@ public class TestUniformRangePartition {
     Tuple s = new VTuple(1);
     s.put(0, DatumFactory.createText("가"));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createText("다"));
+    e.put(0, DatumFactory.createText("꽥"));
 
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
-    int partNum = 2;
+    int partNum = 8;
     TupleRange [] ranges = partitioner.partition(partNum);
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
       if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
-      } else {
-        prev = r;
       }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -266,6 +261,66 @@ public class TestUniformRangePartition {
     Tuple e = new VTuple(1);
     s.put(0, DatumFactory.createText("가가가"));
     e.put(0, DatumFactory.createText("하하하"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForUnicodeDiffLenBeginTextAsc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createText("가"));
+    e.put(0, DatumFactory.createText("하하하"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForUnicodeDiffLenEndTextAsc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createText("가가가"));
+    e.put(0, DatumFactory.createText("하"));
 
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 
@@ -306,11 +361,72 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) > 0);
       }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForUnicodeDiffLenBeginTextDesc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createText("하"));
+    e.put(0, DatumFactory.createText("가가가"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) > 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForUnicodeDiffLenEndTextDesc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createText("하"));
+    e.put(0, DatumFactory.createText("가가가"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) > 0);
+      }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -536,7 +652,7 @@ public class TestUniformRangePartition {
     TupleRange prev = null;
     for (int i = 0; i < ranges.length; i++) {
       if (prev != null) {
-        assertTrue(i + "th,prev=" + prev + ",cur=" + ranges[i], prev.compareTo(ranges[i]) < 0);
+        assertTrue(i + "th, prev=" + prev + ",cur=" + ranges[i], prev.compareTo(ranges[i]) < 0);
       }
       prev = ranges[i];
     }
@@ -597,11 +713,11 @@ public class TestUniformRangePartition {
     TupleRange [] ranges = partitioner.partition(partNum);
 
     TupleRange prev = null;
-    for (int i = 0; i < ranges.length; i++) {
+    for (TupleRange r : ranges) {
       if (prev != null) {
-        assertTrue(i + "th,prev=" + prev + ",cur=" + ranges[i], prev.compareTo(ranges[i]) > 0);
+        assertTrue(prev.compareTo(r) > 0);
       }
-      prev = ranges[i];
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -629,11 +745,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -684,11 +799,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
   }
 

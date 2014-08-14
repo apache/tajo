@@ -113,8 +113,7 @@ public class TextDatum extends Datum {
       case TEXT:
       case CHAR:
       case BLOB:
-        //return COMPARATOR.compare(bytes, datum.asByteArray());
-        return Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray()));
+        return COMPARATOR.compare(bytes, datum.asByteArray());
 
       case NULL_TYPE:
         return -1;
@@ -140,8 +139,8 @@ public class TextDatum extends Datum {
       case TEXT:
       case CHAR:
       case BLOB:
-        //return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
-        return DatumFactory.createBool(Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray())));
+        return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
+        //return DatumFactory.createBool(Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray())));
       case NULL_TYPE:
         return datum;
       default:

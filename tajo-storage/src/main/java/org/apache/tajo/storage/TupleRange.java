@@ -28,8 +28,8 @@ import java.util.Comparator;
  * It represents a pair of start and end tuples.
  */
 public class TupleRange implements Comparable<TupleRange> {
-  private final Tuple start;
-  private final Tuple end;
+  private Tuple start;
+  private Tuple end;
   private final TupleComparator comp;
 
   public TupleRange(final SortSpec [] sortSpecs, final Tuple start, final Tuple end) {
@@ -48,8 +48,16 @@ public class TupleRange implements Comparable<TupleRange> {
     return schema;
   }
 
+  public void setStart(Tuple tuple) {
+    this.start = tuple;
+  }
+
   public final Tuple getStart() {
     return this.start;
+  }
+
+  public void setEnd(Tuple tuple) {
+    this.end = tuple;
   }
 
   public final Tuple getEnd() {
