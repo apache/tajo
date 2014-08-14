@@ -57,14 +57,18 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     super(sortSpecs, totalRange, inclusive);
 
     isPureAscii = new boolean[sortSpecs.length];
+    for (int i = 0; i < sortSpecs.length; i++) {
+      Datum startValue = totalRange.getStart().get(i);
+      Datum endValue = totalRange.getEnd().get(i);
+      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
+    }
+
     colCards = new BigInteger[sortSpecs.length];
     normalize(sortSpecs, this.mergedRange);
 
     for (int i = 0; i < sortSpecs.length; i++) {
       Datum startValue = totalRange.getStart().get(i);
       Datum endValue = totalRange.getEnd().get(i);
-
-      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
 
       colCards[i] =  computeCardinality(sortSpecs[i].getSortKey().getDataType(), startValue, endValue,
           inclusive, sortSpecs[i].isAscending());
@@ -543,8 +547,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
                 BigInteger remain = incs[i];
                 for (int k = lastChars.length - 1; k > 0 && remain.compareTo(BigInteger.ZERO) > 0; k--) {
-                  BigInteger charVal = BigInteger.valueOf(lastChars[(lastChars.length -1) - k]);
-                  BigInteger digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16)).pow(k);
+                  BigInteger digitBase = BigInteger.valueOf(65536).pow(k);
 
                   if (remain.compareTo(digitBase) > 0) {
                     charIncs[k] = remain.divide(digitBase).intValue();
@@ -555,14 +558,15 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 charIncs[charIncs.length - 1] = remain.intValue();
 
                 for (int k = 0; k < lastChars.length; k++) {
-                  long sum = (long)lastChars[k] + (long)charIncs[k];
+                  int sum = (int)lastChars[k] + (int)charIncs[k];
                   if (sum > 65536) {
-                    charIncs[k] = 65536 - charIncs[k];
-                    lastChars[k - 1]++;
+                    charIncs[k] = sum - 65536;
+                    charIncs[k-1] += 1;
 
-                    lastChars[i] += charIncs[i];
+                    lastChars[k-1] += 1;
+                    lastChars[k] += charIncs[k];
                   } else {
-                    lastChars[i] += charIncs[i];
+                    lastChars[k] += charIncs[k];
                   }
                 }
 

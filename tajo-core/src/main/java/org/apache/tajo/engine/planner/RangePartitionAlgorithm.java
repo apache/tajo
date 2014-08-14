@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
@@ -26,10 +25,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.StringUtils;
-import sun.text.CollatorUtilities;
 
 import java.math.BigInteger;
-import java.text.Collator;
 
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;

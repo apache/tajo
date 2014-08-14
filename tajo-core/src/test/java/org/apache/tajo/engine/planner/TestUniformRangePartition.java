@@ -18,19 +18,17 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
 
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -165,31 +163,33 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrementOfUnicode2() {
-    String abc = "갹a";
-    byte [] b = Convert.chars2utf(abc.toCharArray());
-
-    for (int i = 0; i < b.length; i++) {
-      System.out.println(UnsignedBytes.toInt(b[i]));
-    }
-  }
-
-  @Test
   public void testIncrementOfUnicode() {
-    char [] a = new String("가").toCharArray();
-    System.out.println(Character.codePointAt(a, 0));
-    System.out.println(((int)a[0]));
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
 
-    char [] b = new String("갸").toCharArray();
-    System.out.println(Character.codePointAt(b, 0));
-    System.out.println(new String(new char[] {(char) (Character.codePointAt(b, 0) + 1)}));
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
-    char [] c = new String("나").toCharArray();
-    System.out.println(Character.codePointAt(c, 0));
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createText("가가가"));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createText("하하하"));
 
-    char [] en = new String("a").toCharArray();
-    System.out.println(Character.getName(Character.codePointAt(en, 0)));
-    System.out.println(Character.getName(Character.codePointAt(c, 0)));
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    TupleComparator comp = new TupleComparator(schema, sortSpecs);
+
+    Tuple tuple = s;
+    Tuple prevTuple = null;
+    for (int i = 0; i < 100; i++) {
+      tuple = partitioner.increment(tuple, BigInteger.valueOf(30000), 0);
+
+      if (prevTuple == null) {
+        prevTuple = tuple;
+      } else {
+        assertTrue(comp.compare(prevTuple, tuple) < 0);
+      }
+    }
   }
 
   @Test
@@ -255,21 +255,21 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrementOfUnicodeText() {
+  public void testPartitionForUnicodeTextAsc() {
     Schema schema = new Schema()
         .addColumn("col1", Type.TEXT);
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
     Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createText("가나"));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createText("마바"));
+    s.put(0, DatumFactory.createText("가가가"));
+    e.put(0, DatumFactory.createText("하하하"));
 
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
-    int partNum = 3;
+    int partNum = 64;
     TupleRange [] ranges = partitioner.partition(partNum);
 
     TupleRange prev = null;
@@ -278,6 +278,38 @@ public class TestUniformRangePartition {
         prev = r;
       } else {
         assertTrue(prev.compareTo(r) < 0);
+      }
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForUnicodeTextDesc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.TEXT);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createText("하하하"));
+    e.put(0, DatumFactory.createText("가가가"));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) > 0);
       }
     }
     assertEquals(partNum, ranges.length);
