@@ -184,11 +184,13 @@ public class TestUniformRangePartition {
     for (int i = 0; i < 100; i++) {
       tuple = partitioner.increment(tuple, BigInteger.valueOf(30000), 0);
 
-      if (prevTuple == null) {
-        prevTuple = tuple;
-      } else {
-        assertTrue(comp.compare(prevTuple, tuple) < 0);
+      if (prevTuple != null) {
+        if (!(comp.compare(prevTuple, tuple) < 0)) {
+          System.out.println("AAAA");
+        }
+        assertTrue("prev=" + prevTuple + ", current=" + tuple, comp.compare(prevTuple, tuple) < 0);
       }
+      prevTuple = tuple;
     }
   }
 
@@ -212,11 +214,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -243,10 +244,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
+      } else {
+        prev = r;
       }
     }
     assertEquals(partNum, ranges.length);
@@ -274,11 +275,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -465,11 +465,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
   }
 
@@ -535,12 +534,11 @@ public class TestUniformRangePartition {
     TupleRange [] ranges = partitioner.partition(48);
 
     TupleRange prev = null;
-    for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
-        assertTrue(prev.compareTo(r) < 0);
+    for (int i = 0; i < ranges.length; i++) {
+      if (prev != null) {
+        assertTrue(i + "th,prev=" + prev + ",cur=" + ranges[i], prev.compareTo(ranges[i]) < 0);
       }
+      prev = ranges[i];
     }
     assertEquals(48, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -568,11 +566,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -600,12 +597,11 @@ public class TestUniformRangePartition {
     TupleRange [] ranges = partitioner.partition(partNum);
 
     TupleRange prev = null;
-    for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
-        assertTrue(prev.compareTo(r) > 0);
+    for (int i = 0; i < ranges.length; i++) {
+      if (prev != null) {
+        assertTrue(i + "th,prev=" + prev + ",cur=" + ranges[i], prev.compareTo(ranges[i]) > 0);
       }
+      prev = ranges[i];
     }
     assertEquals(partNum, ranges.length);
     assertTrue(ranges[0].getStart().equals(s));
@@ -717,11 +713,10 @@ public class TestUniformRangePartition {
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {
-      if (prev == null) {
-        prev = r;
-      } else {
+      if (prev != null) {
         assertTrue(prev.compareTo(r) < 0);
       }
+      prev = r;
     }
   }
 }

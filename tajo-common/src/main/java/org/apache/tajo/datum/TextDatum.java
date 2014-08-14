@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.Chars;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
 import com.sun.tools.javac.util.Convert;
@@ -32,7 +33,7 @@ public class TextDatum extends Datum {
   @Expose private final int size;
   @Expose private final byte[] bytes;
 
-  public static final int UNICODE_CHAR_BITS_NUM = 65536; // bits number for 2 bytes
+  public static final int UNICODE_CHAR_BITS_NUM = Character.MAX_VALUE; // bits number for 2 bytes
   public static final TextDatum EMPTY_TEXT = new TextDatum("");
   public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 
@@ -112,7 +113,8 @@ public class TextDatum extends Datum {
       case TEXT:
       case CHAR:
       case BLOB:
-        return COMPARATOR.compare(bytes, datum.asByteArray());
+        //return COMPARATOR.compare(bytes, datum.asByteArray());
+        return Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray()));
 
       case NULL_TYPE:
         return -1;
@@ -138,7 +140,8 @@ public class TextDatum extends Datum {
       case TEXT:
       case CHAR:
       case BLOB:
-        return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
+        //return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
+        return DatumFactory.createBool(Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray())));
       case NULL_TYPE:
         return datum;
       default:

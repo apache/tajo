@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Chars;
 import com.google.common.primitives.UnsignedLong;
+import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes;
@@ -65,7 +66,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     for (int i = 0; i < sortSpecs.length; i++) {
       Datum startValue = totalRange.getStart().get(i);
       Datum endValue = totalRange.getEnd().get(i);
-      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
+//      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
+      isPureAscii[i] = false;
     }
 
     colCards = new BigInteger[sortSpecs.length];
@@ -189,10 +191,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             endChars = range.getEnd().getUnicodeChars(i);
           }
 
-          char[][] padded = new char[2][];
-          int max = Math.max(startChars.length, endChars.length);
-          padded[0] = Chars.ensureCapacity(startChars, startChars.length, max - startChars.length);
-          padded[1] = Chars.ensureCapacity(endChars, endChars.length, max - endChars.length);
+          char[][] padded = BytesUtils.padChars(startChars, endChars);
           range.getStart().put(i, DatumFactory.createText(new String(padded[0])));
           range.getEnd().put(i, DatumFactory.createText(new String(padded[1])));
         }
@@ -564,7 +563,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 charIncs[charIncs.length - 1] = remain.intValue();
 
                 for (int k = 0; k < lastChars.length; k++) {
-                  int sum = (int)lastChars[k] + (int)charIncs[k];
+                  if (charIncs[k] == 0) {
+                    continue;
+                  }
+
+                  int sum = (int)lastChars[k] + charIncs[k];
                   if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) {
                     charIncs[k] = sum - TextDatum.UNICODE_CHAR_BITS_NUM;
                     charIncs[k-1] += 1;
@@ -573,10 +576,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                     lastChars[k] += charIncs[k];
                   } else {
                     lastChars[k] += charIncs[k];
+
                   }
                 }
 
-                end.put(i, DatumFactory.createText(new String(lastChars)));
+                end.put(i, DatumFactory.createText(Convert.chars2utf(lastChars)));
               }
             }
           }
