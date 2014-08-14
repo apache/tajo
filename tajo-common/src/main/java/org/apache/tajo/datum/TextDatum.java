@@ -140,7 +140,6 @@ public class TextDatum extends Datum {
       case CHAR:
       case BLOB:
         return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);
-        //return DatumFactory.createBool(Chars.lexicographicalComparator().compare(Convert.utf2chars(bytes), Convert.utf2chars(datum.asByteArray())));
       case NULL_TYPE:
         return datum;
       default:
