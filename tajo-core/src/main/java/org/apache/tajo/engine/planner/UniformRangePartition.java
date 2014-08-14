@@ -559,6 +559,10 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                 lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
                 end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
               } else {
+
+                // We consider an array of chars as a 2^16 base number system because each char is 2^16 bits.
+                // See Character.MAX_NUMBER. Then, we increase some number to the last array of chars.
+
                 char[] lastChars = last.getUnicodeChars(i);
                 int [] charIncs = new int[lastChars.length];
 
@@ -580,7 +584,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                   }
 
                   int sum = (int)lastChars[k] + charIncs[k];
-                  if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) {
+                  if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) { // if carry occurs in the current digit
                     charIncs[k] = sum - TextDatum.UNICODE_CHAR_BITS_NUM;
                     charIncs[k-1] += 1;
 
