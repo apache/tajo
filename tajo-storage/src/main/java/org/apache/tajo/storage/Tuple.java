@@ -64,7 +64,7 @@ public interface Tuple extends Cloneable {
 	
 	public String getText(int fieldId);
 
-  public char [] getChars(int fieldId);
+  public char [] getUnicodeChars(int fieldId);
 
   public Tuple clone() throws CloneNotSupportedException;
 

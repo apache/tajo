@@ -149,20 +149,9 @@ public abstract class RangePartitionAlgorithm {
             a = end.asUnicodeChars();
           }
 
-          BigInteger startBI = BigInteger.ZERO;
-          BigInteger stopBI = BigInteger.ZERO;
+          BigInteger startBI = UniformRangePartition.charsToBigInteger(a);
+          BigInteger stopBI = UniformRangePartition.charsToBigInteger(b);
 
-          for (int i = 0; i < a.length; i++) {
-            BigInteger charVal = BigInteger.valueOf(a[i]);
-            BigInteger base = charVal.multiply(BigInteger.valueOf(2^16));
-            startBI = startBI.add(base.pow(i + 1));
-          }
-
-          for (int i = 0; i < b.length; i++) {
-            BigInteger charVal = BigInteger.valueOf(b[i]);
-            BigInteger base = charVal.multiply(BigInteger.valueOf(2^16));
-            stopBI = stopBI.add(base.pow(i + 1));
-          }
           BigInteger diffBI = stopBI.subtract(startBI);
           columnCard = diffBI;
         }

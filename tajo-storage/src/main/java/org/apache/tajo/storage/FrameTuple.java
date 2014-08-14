@@ -171,7 +171,7 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public char [] getChars(int fieldId) {
+  public char [] getUnicodeChars(int fieldId) {
     return get(fieldId).asUnicodeChars();
   }
 

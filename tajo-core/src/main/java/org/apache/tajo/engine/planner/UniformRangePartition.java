@@ -266,17 +266,35 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
       }
       case TEXT: {
-        byte [] lastBytes = last.asByteArray();
-        byte [] endBytes = mergedRange.getEnd().getBytes(colId);
+        if (isPureAscii[colId]) {
+          byte[] lastBytes = last.asByteArray();
+          byte[] endBytes = mergedRange.getEnd().getBytes(colId);
 
-        Preconditions.checkState(lastBytes.length == endBytes.length);
+          Preconditions.checkState(lastBytes.length == endBytes.length);
 
-        if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(new BigInteger(lastBytes)));
-          return new BigDecimal(new BigInteger(endBytes)).compareTo(candidate) < 0;
+          if (sortSpecs[colId].isAscending()) {
+            candidate = incDecimal.add(new BigDecimal(new BigInteger(lastBytes)));
+            return new BigDecimal(new BigInteger(endBytes)).compareTo(candidate) < 0;
+          } else {
+            candidate = new BigDecimal(new BigInteger(lastBytes)).subtract(incDecimal);
+            return candidate.compareTo(new BigDecimal(new BigInteger(endBytes))) < 0;
+          }
         } else {
-          candidate = new BigDecimal(new BigInteger(lastBytes)).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(new BigInteger(endBytes))) < 0;
+          char[] lastChars = last.asUnicodeChars();
+          char[] endChars = mergedRange.getEnd().getUnicodeChars(colId);
+
+          Preconditions.checkState(lastChars.length == endChars.length);
+
+          BigInteger lastBi = charsToBigInteger(lastChars);
+          BigInteger endBi = charsToBigInteger(endChars);
+
+          if (sortSpecs[colId].isAscending()) {
+            candidate = incDecimal.add(new BigDecimal(lastBi));
+            return new BigDecimal(endBi).compareTo(candidate) < 0;
+          } else {
+            candidate = new BigDecimal(lastBi).subtract(incDecimal);
+            return candidate.compareTo(new BigDecimal(endBi)) < 0;
+          }
         }
       }
       case INET4: {
@@ -490,7 +508,30 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             if (last.isNull(i)) {
               lastBigInt = BigInteger.valueOf(0);
             } else {
-              lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
+              if (isPureAscii[i]) {
+                lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
+              } else {
+                char[] lastChars = last.getUnicodeChars(i);
+                int [] charIncs = new int[lastChars.length];
+
+                BigInteger remain = incs[i];
+                for (int k = lastChars.length - 1; k > 0 && remain.compareTo(BigInteger.ZERO) > 0; k--) {
+                  BigInteger charVal = BigInteger.valueOf(lastChars[k]);
+                  BigInteger digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16)).pow(k);
+
+                  if (remain.compareTo(digitBase) > 0) {
+                    charIncs[k] = remain.divide(digitBase).intValue();
+                    BigInteger sub = digitBase.multiply(BigInteger.valueOf(charIncs[k]));
+                    remain = remain.subtract(sub);
+                  }
+                }
+                charIncs[charIncs.length - 1] = remain.intValue();
+                for (int k = 0; k < lastChars.length; k++) {
+                  lastChars[i] += charIncs[i];
+                }
+
+                lastBigInt = charsToBigInteger(lastChars);
+              }
             }
             end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
           }
@@ -539,11 +580,18 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   }
 
   public static BigInteger charsToBigInteger(char [] chars) {
-    BigInteger lastPoint = BigInteger.ZERO;
+    BigInteger digitBase = null;
+    BigInteger sum = BigInteger.ZERO;
     for (int i = chars.length - 1; i >= 0; i--) {
-      lastPoint = lastPoint.or(BigInteger.valueOf(Character.codePointAt(chars, i)));
-      lastPoint = lastPoint.shiftLeft(16);
+      BigInteger charVal = BigInteger.valueOf(chars[i]);
+      if (i > 0) {
+        digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16).pow(i));
+        sum = sum.add(digitBase);
+      } else {
+        sum = sum.add(charVal);
+      }
+
     }
-    return lastPoint;
+    return digitBase;
   }
 }

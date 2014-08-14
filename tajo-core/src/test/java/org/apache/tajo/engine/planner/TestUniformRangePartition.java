@@ -200,9 +200,9 @@ public class TestUniformRangePartition {
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
     Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createText("가"));
+    s.put(0, DatumFactory.createText("가나"));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createText("마"));
+    e.put(0, DatumFactory.createText("마바"));
 
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 

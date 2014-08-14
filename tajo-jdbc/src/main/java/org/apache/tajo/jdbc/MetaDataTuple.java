@@ -140,7 +140,7 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
-  public char[] getChars(int fieldId) {
+  public char[] getUnicodeChars(int fieldId) {
     return values.get(fieldId).asUnicodeChars();
   }
 
