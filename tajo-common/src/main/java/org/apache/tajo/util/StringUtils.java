@@ -284,4 +284,30 @@ public class StringUtils {
     }
     return sb.toString();
   }
+
+  public static char[][] padChars(char []...bytes) {
+    char[] startChars = bytes[0];
+    char[] endChars = bytes[1];
+
+    char[][] padded = new char[2][];
+    int max = Math.max(startChars.length, endChars.length);
+
+    padded[0] = new char[max];
+    padded[1] = new char[max];
+
+    for (int i = 0; i < startChars.length; i++) {
+      padded[0][i] = startChars[i];
+    }
+    for (int i = startChars.length; i < max; i++) {
+      padded[0][i] = 0;
+    }
+    for (int i = 0; i < endChars.length; i++) {
+      padded[1][i] = endChars[i];
+    }
+    for (int i = endChars.length; i < max; i++) {
+      padded[1][i] = 0;
+    }
+
+    return padded;
+  }
 }

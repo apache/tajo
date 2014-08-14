@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Chars;
 import com.google.common.primitives.UnsignedLong;
 import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.Column;
@@ -210,7 +209,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             endChars = range.getEnd().getUnicodeChars(i);
           }
 
-          char[][] padded = BytesUtils.padChars(startChars, endChars);
+          char[][] padded = StringUtils.padChars(startChars, endChars);
           range.getStart().put(i, DatumFactory.createText(new String(padded[0])));
           range.getEnd().put(i, DatumFactory.createText(new String(padded[1])));
         }
