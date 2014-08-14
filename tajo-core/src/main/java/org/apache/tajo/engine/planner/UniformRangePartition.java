@@ -43,7 +43,7 @@ import java.util.List;
 
 /**
  * It serializes multiple sort key spaces into one dimension space by regarding key spaces as
- * arbitrary base number Systems respectively.
+ * arbitrary base number systems respectively.
  */
 public class UniformRangePartition extends RangePartitionAlgorithm {
   private int variableId;
