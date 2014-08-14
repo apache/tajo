@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Chars;
 import com.google.common.primitives.UnsignedLong;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -141,27 +142,51 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
    * @param sortSpecs The sort specs
    * @param range Tuple range to be normalize
    */
-  public static void normalize(final SortSpec [] sortSpecs, TupleRange range) {
+  public void normalize(final SortSpec [] sortSpecs, TupleRange range) {
     // normalize text fields to have same bytes length
     for (int i = 0; i < sortSpecs.length; i++) {
       if (sortSpecs[i].getSortKey().getDataType().getType() == TajoDataTypes.Type.TEXT) {
-        byte [] startBytes;
-        byte [] endBytes;
-        if (range.getStart().isNull(i)) {
-          startBytes = BigInteger.ZERO.toByteArray();
-        } else {
-          startBytes = range.getStart().getBytes(i);
-        }
+        if (isPureAscii[i]) {
+          byte[] startBytes;
+          byte[] endBytes;
+          if (range.getStart().isNull(i)) {
+            startBytes = BigInteger.ZERO.toByteArray();
+          } else {
+            startBytes = range.getStart().getBytes(i);
+          }
 
-        if (range.getEnd().isNull(i)) {
-          endBytes = BigInteger.ZERO.toByteArray();
-        } else {
-          endBytes = range.getEnd().getBytes(i);
-        }
+          if (range.getEnd().isNull(i)) {
+            endBytes = BigInteger.ZERO.toByteArray();
+          } else {
+            endBytes = range.getEnd().getBytes(i);
+          }
 
-        byte [][] padded = BytesUtils.padBytes(startBytes, endBytes);
-        range.getStart().put(i, DatumFactory.createText(padded[0]));
-        range.getEnd().put(i, DatumFactory.createText(padded[1]));
+          byte[][] padded = BytesUtils.padBytes(startBytes, endBytes);
+          range.getStart().put(i, DatumFactory.createText(padded[0]));
+          range.getEnd().put(i, DatumFactory.createText(padded[1]));
+
+        } else {
+          char[] startChars;
+          char[] endChars;
+          if (range.getStart().isNull(i)) {
+            startChars = new char[] {0};
+          } else {
+            startChars = range.getStart().getUnicodeChars(i);
+          }
+
+          if (range.getEnd().isNull(i)) {
+            endChars = new char[] {0};
+          } else {
+            endChars = range.getEnd().getUnicodeChars(i);
+          }
+
+          char[][] padded = new char[2][];
+          int max = Math.max(startChars.length, endChars.length);
+          padded[0] = Chars.ensureCapacity(startChars, startChars.length, max - startChars.length);
+          padded[1] = Chars.ensureCapacity(endChars, endChars.length, max - endChars.length);
+          range.getStart().put(i, DatumFactory.createText(new String(padded[0])));
+          range.getEnd().put(i, DatumFactory.createText(new String(padded[1])));
+        }
       }
     }
   }
@@ -507,16 +532,18 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             BigInteger lastBigInt;
             if (last.isNull(i)) {
               lastBigInt = BigInteger.valueOf(0);
+              end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
             } else {
               if (isPureAscii[i]) {
                 lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
+                end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
               } else {
                 char[] lastChars = last.getUnicodeChars(i);
                 int [] charIncs = new int[lastChars.length];
 
                 BigInteger remain = incs[i];
                 for (int k = lastChars.length - 1; k > 0 && remain.compareTo(BigInteger.ZERO) > 0; k--) {
-                  BigInteger charVal = BigInteger.valueOf(lastChars[k]);
+                  BigInteger charVal = BigInteger.valueOf(lastChars[(lastChars.length -1) - k]);
                   BigInteger digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16)).pow(k);
 
                   if (remain.compareTo(digitBase) > 0) {
@@ -526,14 +553,22 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                   }
                 }
                 charIncs[charIncs.length - 1] = remain.intValue();
+
                 for (int k = 0; k < lastChars.length; k++) {
-                  lastChars[i] += charIncs[i];
+                  long sum = (long)lastChars[k] + (long)charIncs[k];
+                  if (sum > 65536) {
+                    charIncs[k] = 65536 - charIncs[k];
+                    lastChars[k - 1]++;
+
+                    lastChars[i] += charIncs[i];
+                  } else {
+                    lastChars[i] += charIncs[i];
+                  }
                 }
 
-                lastBigInt = charsToBigInteger(lastChars);
+                end.put(i, DatumFactory.createText(new String(lastChars)));
               }
             }
-            end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
           }
           break;
         case DATE:
@@ -583,15 +618,14 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     BigInteger digitBase = null;
     BigInteger sum = BigInteger.ZERO;
     for (int i = chars.length - 1; i >= 0; i--) {
-      BigInteger charVal = BigInteger.valueOf(chars[i]);
+      BigInteger charVal = BigInteger.valueOf(chars[(chars.length - 1) - i]);
       if (i > 0) {
         digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16).pow(i));
         sum = sum.add(digitBase);
       } else {
         sum = sum.add(charVal);
       }
-
     }
-    return digitBase;
+    return sum;
   }
 }
