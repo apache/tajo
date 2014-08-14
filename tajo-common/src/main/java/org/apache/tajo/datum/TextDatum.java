@@ -32,6 +32,7 @@ public class TextDatum extends Datum {
   @Expose private final int size;
   @Expose private final byte[] bytes;
 
+  public static final int UNICODE_CHAR_BITS_NUM = 65536; // bits number for 2 bytes
   public static final TextDatum EMPTY_TEXT = new TextDatum("");
   public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 

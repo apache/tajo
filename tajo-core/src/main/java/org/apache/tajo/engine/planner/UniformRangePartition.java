@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.exception.RangeOverflowException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
@@ -40,12 +41,15 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.List;
 
-
+/**
+ * It serializes multiple sort key spaces into one dimension space by regarding key spaces as
+ * arbitrary base number Systems respectively.
+ */
 public class UniformRangePartition extends RangePartitionAlgorithm {
   private int variableId;
   private BigInteger[] cardForEachDigit;
   private BigInteger[] colCards;
-  private boolean [] isPureAscii;
+  private boolean [] isPureAscii; // flags to indicate if i'th key contains pure ascii characters.
 
   /**
    *
@@ -56,6 +60,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   public UniformRangePartition(final TupleRange totalRange, final SortSpec[] sortSpecs, boolean inclusive) {
     super(sortSpecs, totalRange, inclusive);
 
+    // filling pure ascii flags
     isPureAscii = new boolean[sortSpecs.length];
     for (int i = 0; i < sortSpecs.length; i++) {
       Datum startValue = totalRange.getStart().get(i);
@@ -538,6 +543,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
               lastBigInt = BigInteger.valueOf(0);
               end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
             } else {
+
               if (isPureAscii[i]) {
                 lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
                 end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
@@ -547,7 +553,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
                 BigInteger remain = incs[i];
                 for (int k = lastChars.length - 1; k > 0 && remain.compareTo(BigInteger.ZERO) > 0; k--) {
-                  BigInteger digitBase = BigInteger.valueOf(65536).pow(k);
+                  BigInteger digitBase = BigInteger.valueOf(TextDatum.UNICODE_CHAR_BITS_NUM).pow(k);
 
                   if (remain.compareTo(digitBase) > 0) {
                     charIncs[k] = remain.divide(digitBase).intValue();
@@ -559,8 +565,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
                 for (int k = 0; k < lastChars.length; k++) {
                   int sum = (int)lastChars[k] + (int)charIncs[k];
-                  if (sum > 65536) {
-                    charIncs[k] = sum - 65536;
+                  if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) {
+                    charIncs[k] = sum - TextDatum.UNICODE_CHAR_BITS_NUM;
                     charIncs[k-1] += 1;
 
                     lastChars[k-1] += 1;
@@ -619,12 +625,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   }
 
   public static BigInteger charsToBigInteger(char [] chars) {
-    BigInteger digitBase = null;
+    BigInteger digitBase;
     BigInteger sum = BigInteger.ZERO;
     for (int i = chars.length - 1; i >= 0; i--) {
       BigInteger charVal = BigInteger.valueOf(chars[(chars.length - 1) - i]);
       if (i > 0) {
-        digitBase = charVal.multiply(BigInteger.valueOf(2 ^ 16).pow(i));
+        digitBase = charVal.multiply(BigInteger.valueOf(TextDatum.UNICODE_CHAR_BITS_NUM).pow(i));
         sum = sum.add(digitBase);
       } else {
         sum = sum.add(charVal);

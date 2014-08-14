@@ -31,7 +31,7 @@ import java.math.BigInteger;
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;
   protected TupleRange mergedRange;
-  protected final BigInteger totalCard;
+  protected final BigInteger totalCard; // total cardinality
   /** true if the end of the range is inclusive. Otherwise, it should be false. */
   protected final boolean inclusive;
 
