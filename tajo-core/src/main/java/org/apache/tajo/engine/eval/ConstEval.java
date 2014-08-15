@@ -58,7 +58,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     return null;
   }
 

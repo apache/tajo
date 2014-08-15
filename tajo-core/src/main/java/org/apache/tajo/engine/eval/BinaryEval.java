@@ -89,7 +89,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode getExpr(int id) {
+  public EvalNode getChild(int id) {
     if (id == 0) {
       return this.leftExpr;
     } else if (id == 1) {

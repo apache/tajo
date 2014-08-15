@@ -90,7 +90,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     if (idx < whens.size()) {
       return whens.get(idx);
     } else if (idx == whens.size()) {
@@ -201,7 +201,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
 
     @Override
-    public EvalNode getExpr(int idx) {
+    public EvalNode getChild(int idx) {
       if (idx == 0) {
         return condition;
       } else if (idx == 1) {

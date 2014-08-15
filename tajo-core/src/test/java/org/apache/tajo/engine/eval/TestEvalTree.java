@@ -95,7 +95,7 @@ public class TestEvalTree extends ExprTestBase {
     }
 
     @Override
-    public EvalNode getExpr(int idx) {
+    public EvalNode getChild(int idx) {
       return null;
     }
 
@@ -143,7 +143,7 @@ public class TestEvalTree extends ExprTestBase {
     }
 
     @Override
-    public EvalNode getExpr(int idx) {
+    public EvalNode getChild(int idx) {
       return null;
     }
   }

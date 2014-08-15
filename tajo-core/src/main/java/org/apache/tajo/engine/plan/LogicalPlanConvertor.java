@@ -217,8 +217,8 @@ public class LogicalPlanConvertor {
     private int [] registerGetChildIds(EvalTreeProtoBuilderContext context, EvalNode evalNode) {
       int [] childIds = new int[evalNode.childNum()];
       for (int i = 0; i < evalNode.childNum(); i++) {
-        if (context.idMap.containsKey(evalNode.getExpr(i))) {
-          childIds[i] = context.idMap.get(evalNode.getExpr(i));
+        if (context.idMap.containsKey(evalNode.getChild(i))) {
+          childIds[i] = context.idMap.get(evalNode.getChild(i));
         } else {
           childIds[i] = context.seqId++;
         }

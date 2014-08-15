@@ -89,7 +89,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     return argEvals[idx];
   }
 

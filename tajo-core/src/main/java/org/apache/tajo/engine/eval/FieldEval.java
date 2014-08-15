@@ -66,7 +66,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     return null;
   }
 

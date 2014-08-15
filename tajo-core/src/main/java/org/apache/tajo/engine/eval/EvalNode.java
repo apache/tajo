@@ -49,7 +49,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 
   public abstract int childNum();
 
-  public abstract EvalNode getExpr(int idx);
+  public abstract EvalNode getChild(int idx);
 	
 	public abstract String getName();
 

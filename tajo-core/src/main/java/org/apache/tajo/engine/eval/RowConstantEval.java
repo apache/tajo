@@ -47,7 +47,7 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     return null;
   }
 

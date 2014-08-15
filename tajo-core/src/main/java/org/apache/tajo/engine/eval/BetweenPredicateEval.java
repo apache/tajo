@@ -195,7 +195,7 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode getExpr(int idx) {
+  public EvalNode getChild(int idx) {
     if (idx == 0) {
       return predicand;
     } else if (idx == 1) {
