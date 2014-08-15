@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.unit;
+package org.apache.tajo.engine.optimizer.eval;
 
-public class StorageUnit {
+import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.LogicalPlanner;
 
-	public static final int B = 8;
-	public static final int KB = 1024;
-	public static final int MB = KB * 1024;
-	public static final int GB = MB * 1024;
-	public static final int TB = GB * 1024;
-	public static final int PB = TB * 1024;
+@Prioritized
+public interface EvalTreeOptimizationRule {
+  public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode tree);
 }

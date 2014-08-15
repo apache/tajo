@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.unit;
+package org.apache.tajo.engine.optimizer.eval;
 
-public class StorageUnit {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-	public static final int B = 8;
-	public static final int KB = 1024;
-	public static final int MB = KB * 1024;
-	public static final int GB = MB * 1024;
-	public static final int TB = GB * 1024;
-	public static final int PB = TB * 1024;
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface Prioritized {
+  int priority() default 99;
 }
