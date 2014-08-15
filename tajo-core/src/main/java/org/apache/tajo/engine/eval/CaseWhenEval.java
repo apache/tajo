@@ -28,6 +28,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
@@ -43,7 +44,11 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     super(EvalType.CASE);
   }
 
-  public void addWhen(EvalNode condition, EvalNode result) {
+  public void addIfCond(IfThenEval ifCond) {
+    whens.add(ifCond);
+  }
+
+  public void addIfCond(EvalNode condition, EvalNode result) {
     whens.add(new IfThenEval(condition, result));
   }
 

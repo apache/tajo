@@ -32,9 +32,7 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -147,6 +145,22 @@ public class LogicalPlanConvertor {
               evalNodeMap.get(betweenProto.getPredicand()),
               evalNodeMap.get(betweenProto.getBegin()),
               evalNodeMap.get(betweenProto.getEnd()));
+
+        } else if (type == EvalType.CASE) {
+          PlanProto.CaseWhenEval caseWhenProto = protoNode.getCasewhen();
+          CaseWhenEval caseWhenEval = new CaseWhenEval();
+          for (int i = 0; i < caseWhenProto.getIfCondsCount(); i++) {
+            caseWhenEval.addIfCond((CaseWhenEval.IfThenEval) evalNodeMap.get(caseWhenProto.getIfConds(i)));
+          }
+          if (caseWhenProto.hasElse()) {
+            caseWhenEval.setElseResult(evalNodeMap.get(caseWhenProto.getElse()));
+          }
+          current = caseWhenEval;
+
+        } else if (type == EvalType.IF_THEN) {
+          PlanProto.IfCondEval ifCondProto = protoNode.getIfCond();
+          current = new CaseWhenEval.IfThenEval(evalNodeMap.get(ifCondProto.getCondition()),
+              evalNodeMap.get(ifCondProto.getThen()));
 
         } else if (EvalType.isFunction(type)) {
           PlanProto.FunctionEval funcProto = protoNode.getFunction();
@@ -321,7 +335,51 @@ public class LogicalPlanConvertor {
       builder.setBetween(betweenBuilder);
       context.evalTreeBuilder.addNodes(builder);
       return between;
+    }
 
+    public EvalNode visitCaseWhen(EvalTreeProtoBuilderContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
+      // visiting and registering childs
+      super.visitCaseWhen(context, caseWhen, stack);
+      int [] childIds = registerGetChildIds(context, caseWhen);
+      Preconditions.checkState(childIds.length > 0, "Case When must have at least one child, but there is no child");
+
+      // building itself
+      PlanProto.CaseWhenEval.Builder caseWhenBuilder = PlanProto.CaseWhenEval.newBuilder();
+      int ifCondsNum = childIds.length - (caseWhen.hasElse() ? 1 : 0);
+      for (int i = 0; i < ifCondsNum; i++) {
+        caseWhenBuilder.addIfConds(childIds[i]);
+      }
+      if (caseWhen.hasElse()) {
+        caseWhenBuilder.setElse(childIds[childIds.length - 1]);
+      }
+
+      // registering itself and building EvalNode
+      int selfId = registerAndGetId(context, caseWhen);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, caseWhen);
+      builder.setCasewhen(caseWhenBuilder);
+      context.evalTreeBuilder.addNodes(builder);
+
+      return caseWhen;
+    }
+
+    public EvalNode visitIfThen(EvalTreeProtoBuilderContext context, CaseWhenEval.IfThenEval ifCond,
+                                Stack<EvalNode> stack) {
+      // visiting and registering childs
+      super.visitIfThen(context, ifCond, stack);
+      int [] childIds = registerGetChildIds(context, ifCond);
+
+      // building itself
+      PlanProto.IfCondEval.Builder ifCondBuilder = PlanProto.IfCondEval.newBuilder();
+      ifCondBuilder.setCondition(childIds[0]);
+      ifCondBuilder.setThen(childIds[1]);
+
+      // registering itself and building EvalNode
+      int selfId = registerAndGetId(context, ifCond);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, ifCond);
+      builder.setIfCond(ifCondBuilder);
+      context.evalTreeBuilder.addNodes(builder);
+
+      return ifCond;
     }
 
     public EvalNode visitFuncCall(EvalTreeProtoBuilderContext context, FunctionEval function, Stack<EvalNode> stack) {

@@ -144,6 +144,8 @@ message EvalNode {
   optional FunctionEval function = 8;
   optional RowConstEval rowConst = 9;
   optional BetweenEval between = 10;
+  optional CaseWhenEval casewhen = 11;
+  optional IfCondEval ifCond = 12;
 }
 
 message UnaryEval {
@@ -164,6 +166,16 @@ message BetweenEval {
   required int32 end = 3;
   optional bool negative = 4 [default = false];
   optional bool symmetric = 5 [default = false];
+}
+
+message CaseWhenEval {
+  repeated int32 ifConds = 1;
+  optional int32 else = 2;
+}
+
+message IfCondEval {
+  required int32 condition = 1;
+  required int32 then = 2;
 }
 
 message ConstEval {

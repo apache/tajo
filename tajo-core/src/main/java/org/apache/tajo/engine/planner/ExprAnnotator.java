@@ -352,7 +352,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     for (CaseWhenPredicate.WhenExpr when : caseWhen.getWhens()) {
       condition = visit(ctx, stack, when.getCondition());
       result = visit(ctx, stack, when.getResult());
-      caseWhenEval.addWhen(condition, result);
+      caseWhenEval.addIfCond(condition, result);
     }
 
     if (caseWhen.hasElseResult()) {
