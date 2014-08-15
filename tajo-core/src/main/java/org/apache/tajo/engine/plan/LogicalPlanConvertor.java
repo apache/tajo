@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.plan;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.tajo.catalog.Column;
@@ -139,6 +140,13 @@ public class LogicalPlanConvertor {
         } else if (type == EvalType.FIELD) {
           CatalogProtos.ColumnProto columnProto = protoNode.getField();
           current = new FieldEval(new Column(columnProto));
+
+        } else if (type == EvalType.BETWEEN) {
+          PlanProto.BetweenEval betweenProto = protoNode.getBetween();
+          current = new BetweenPredicateEval(betweenProto.getNegative(), betweenProto.getSymmetric(),
+              evalNodeMap.get(betweenProto.getPredicand()),
+              evalNodeMap.get(betweenProto.getBegin()),
+              evalNodeMap.get(betweenProto.getEnd()));
 
         } else if (EvalType.isFunction(type)) {
           PlanProto.FunctionEval funcProto = protoNode.getFunction();
@@ -290,6 +298,30 @@ public class LogicalPlanConvertor {
       builder.setField(field.getColumnRef().getProto());
       context.evalTreeBuilder.addNodes(builder);
       return field;
+    }
+
+    public EvalNode visitBetween(EvalTreeProtoBuilderContext context, BetweenPredicateEval between,
+                                 Stack<EvalNode> stack) {
+      // visiting and registering childs
+      super.visitBetween(context, between, stack);
+      int [] childIds = registerGetChildIds(context, between);
+      Preconditions.checkState(childIds.length == 3, "Between must have three childs, but there are " + childIds.length
+          + " child nodes");
+
+      // building itself
+      PlanProto.BetweenEval.Builder betweenBuilder = PlanProto.BetweenEval.newBuilder();
+      betweenBuilder.setNegative(between.isNot());
+      betweenBuilder.setSymmetric(between.isSymmetric());
+      betweenBuilder.setPredicand(childIds[0]);
+      betweenBuilder.setBegin(childIds[1]);
+      betweenBuilder.setEnd(childIds[2]);
+
+      int selfId = registerAndGetId(context, between);
+      PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, between);
+      builder.setBetween(betweenBuilder);
+      context.evalTreeBuilder.addNodes(builder);
+      return between;
+
     }
 
     public EvalNode visitFuncCall(EvalTreeProtoBuilderContext context, FunctionEval function, Stack<EvalNode> stack) {

@@ -143,6 +143,7 @@ message EvalNode {
   optional ColumnProto field = 7; // field eval
   optional FunctionEval function = 8;
   optional RowConstEval rowConst = 9;
+  optional BetweenEval between = 10;
 }
 
 message UnaryEval {
@@ -157,7 +158,13 @@ message BinaryEval {
   optional bool negative = 3 [default = false];
 }
 
-
+message BetweenEval {
+  required int32 predicand = 1;
+  required int32 begin = 2;
+  required int32 end = 3;
+  optional bool negative = 4 [default = false];
+  optional bool symmetric = 5 [default = false];
+}
 
 message ConstEval {
   required Datum value = 1;

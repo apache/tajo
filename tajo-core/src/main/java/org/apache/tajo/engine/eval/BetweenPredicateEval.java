@@ -46,6 +46,26 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     this.end = end;
   }
 
+  public boolean isNot() {
+    return not;
+  }
+
+  public boolean isSymmetric() {
+    return symmetric;
+  }
+
+  public void setExpr(int idx, EvalNode node) {
+    if (idx == 0) {
+      predicand = node;
+    } else if (idx == 1) {
+      begin = node;
+    } else if (idx == 2) {
+      end = node;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
+  }
+
   public void setPredicand(EvalNode predicand) {
     this.predicand = predicand;
   }
