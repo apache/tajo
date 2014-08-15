@@ -42,6 +42,16 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public EvalNode getChild(int idx) {
+    return null;
+  }
+
+  @Override
   public String getName() {
     return "ROW";
   }
