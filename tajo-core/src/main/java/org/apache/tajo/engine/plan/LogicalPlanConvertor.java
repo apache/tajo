@@ -24,9 +24,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
@@ -118,9 +116,11 @@ public class LogicalPlanConvertor {
           EvalNode lhs = evalNodeMap.get(binProto.getLhsId());
           EvalNode rhs = evalNodeMap.get(binProto.getRhsId());
 
-          if (type == EvalType.IN) {
+          switch (type) {
+          case IN:
             current = new InEval(lhs, (RowConstantEval) rhs, binProto.getNegative());
-          } else {
+            break;
+          default:
             current = new BinaryEval(type, lhs, rhs);
           }
 
@@ -301,7 +301,7 @@ public class LogicalPlanConvertor {
       PlanProto.FunctionEval.Builder funcBuilder = PlanProto.FunctionEval.newBuilder();
       funcBuilder.setFuncion(function.getFuncDesc().getProto());
       for (int i = 0; i < childIds.length; i++) {
-        funcBuilder.addParamIds(i);
+        funcBuilder.addParamIds(childIds[i]);
       }
 
       // registering itself and building EvalNode
@@ -343,6 +343,10 @@ public class LogicalPlanConvertor {
     case BINARY:
     case BLOB:
       return DatumFactory.createBlob(datum.getBlob().toByteArray());
+    case INTERVAL:
+      return new IntervalDatum(datum.getInterval().getMonth(), datum.getInterval().getMsec());
+    case NULL_TYPE:
+      return NullDatum.get();
     default:
       throw new RuntimeException("Unknown data type: " + datum.getType().name());
     }
@@ -354,6 +358,8 @@ public class LogicalPlanConvertor {
     builder.setType(datum.type());
 
     switch (datum.type()) {
+    case NULL_TYPE:
+      break;
     case BOOLEAN:
       builder.setBoolean(datum.asBool());
       break;
@@ -382,6 +388,13 @@ public class LogicalPlanConvertor {
     case BINARY:
     case BLOB:
       builder.setBlob(ByteString.copyFrom(datum.asByteArray()));
+      break;
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
+      PlanProto.Interval.Builder intervalBuilder = PlanProto.Interval.newBuilder();
+      intervalBuilder.setMonth(interval.getMonths());
+      intervalBuilder.setMsec(interval.getMilliSeconds());
+      builder.setInterval(intervalBuilder);
       break;
     default:
       throw new RuntimeException("Unknown data type: " + datum.type().name());

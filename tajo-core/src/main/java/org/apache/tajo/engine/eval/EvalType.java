@@ -97,6 +97,7 @@ public enum EvalType {
     match |= isLogicalOperator(type) && type != NOT;
     match |= isComparisonOperator(type) && type != BETWEEN;
 
+    match |= type == CONCATENATE;
     match |= type == IN;
     match |= type == LIKE;
     match |= type == REGEX;
