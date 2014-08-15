@@ -34,6 +34,7 @@ import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -110,11 +111,13 @@ public class JitVecTestServer extends AbstractService {
       JitVecTestServerProtocol.PlanResponse.Builder builder = JitVecTestServerProtocol.PlanResponse.newBuilder();
 
       Session session = new Session("00", "tajo", "default");
+      QueryContext queryContext = new QueryContext(conf, session);
+
       try {
         LOG.info("Request is received: " + request.getSql());
         Expr expr = analyzer.parse(request.getSql());
         VerificationState state = new VerificationState();
-        preVerifier.verify(session, state, expr);
+        preVerifier.verify(queryContext, state, expr);
         if (!state.verified()) {
           StringBuilder sb = new StringBuilder();
           for (String error : state.getErrorMessages()) {
@@ -123,19 +126,19 @@ public class JitVecTestServer extends AbstractService {
           throw new VerifyException(sb.toString());
         }
 
-        LogicalPlan plan = planner.createPlan(session, expr);
+        LogicalPlan plan = planner.createPlan(queryContext, expr);
         if (LOG.isDebugEnabled()) {
           LOG.debug("=============================================");
           LOG.debug("Non Optimized Query: \n" + plan.toString());
           LOG.debug("=============================================");
         }
         LOG.info("Non Optimized Query: \n" + plan.toString());
-        optimizer.optimize(session, plan);
+        optimizer.optimize(queryContext, plan);
         LOG.info("=============================================");
         LOG.info("Optimized Query: \n" + plan.toString());
         LOG.info("=============================================");
 
-        annotatedPlanVerifier.verify(session, state, plan);
+        annotatedPlanVerifier.verify(queryContext, state, plan);
 
         if (!state.verified()) {
           StringBuilder sb = new StringBuilder();

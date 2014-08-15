@@ -31,7 +31,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.plan.EvalTreeProtoDeserializer;
+import org.apache.tajo.engine.plan.EvalTreeProtoSerializer;
 import org.apache.tajo.engine.plan.TestLogicalPlanConvertor;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
@@ -150,7 +153,7 @@ public class ExprTestBase {
       assertJsonSerDer(t.getEvalTree());
     }
     for (Target t : targets) {
-      TestLogicalPlanConvertor.assertEvalNodeProtoSerder(t.getEvalTree());
+      assertEvalTreeProtoSerDer(t.getEvalTree());
     }
     return targets;
   }
@@ -239,5 +242,10 @@ public class ExprTestBase {
         cat.dropTable(qualifiedTableName);
       }
     }
+  }
+
+  public static void assertEvalTreeProtoSerDer(EvalNode evalNode) {
+    PlanProto.EvalTree converted = EvalTreeProtoSerializer.serialize(evalNode);
+    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(converted));
   }
 }
