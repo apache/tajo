@@ -95,7 +95,17 @@ public class BinaryEval extends EvalNode implements Cloneable {
     } else if (id == 1) {
       return this.rightExpr;
     } else {
-      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available (" + id + " is not available)");
+      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available, but (" + id + ") is not available)");
+    }
+  }
+
+  public void setChild(int id, EvalNode child) {
+    if (id == 0) {
+      this.leftExpr = child;
+    } else if (id == 1) {
+      this.rightExpr = child;
+    } else {
+      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available, but (" + id + ") is not available)");
     }
   }
 

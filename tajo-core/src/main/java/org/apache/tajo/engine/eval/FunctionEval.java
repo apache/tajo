@@ -71,6 +71,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	  return this.argEvals;
 	}
 
+  public void setArg(int idx, EvalNode arg) {
+    this.argEvals[idx] = arg;
+  }
+
   public void setArgs(EvalNode [] args) {
     this.argEvals = args;
   }
@@ -88,7 +92,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public EvalNode getExpr(int idx) {
     return argEvals[idx];
   }
-	
+
 	public DataType getValueType() {
 		return this.funcDesc.getReturnType();
 	}

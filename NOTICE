@@ -8,3 +8,9 @@ This product includes Protobuf-java-format (http://code.google.com/p/protobuf-ja
 Copyright 2000-2011 NeuStar, Inc. All rights reserved.
 Copyright (c) 2009, Orbitz World Wide All rights reserved.
 Copyright 2012 Cloudera Inc.
+
+This product includes PostgreSQL Database Management System.
+(formerly known as Postgres, then as Postgres95)
+License: PostgreSQL License (http://www.postgresql.org/about/licence/)
+Portions Copyright (c) 1996-2014, PostgreSQL Global Development Group
+Portions Copyright (c) 1994, The Regents of the University of California

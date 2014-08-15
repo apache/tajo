@@ -152,12 +152,12 @@ public class TestNLJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLCrossJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
-    Expr context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),
-        context).getRootBlock().getRoot();
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
+        expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -181,13 +181,12 @@ public class TestNLJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLInnerJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, new QueryContext(),
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan), merged, workDir);
     ctx.setEnforcer(new Enforcer());
-    Expr context =  analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummySession(),
-        context).getRootBlock().getRoot();
-    //LogicalOptimizer.optimize(ctx, plan);
+    Expr expr =  analyzer.parse(QUERIES[1]);
+    LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
+        expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

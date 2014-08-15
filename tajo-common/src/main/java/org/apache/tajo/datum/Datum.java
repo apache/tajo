@@ -113,7 +113,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   protected static void initAbortWhenDivideByZero(TajoConf tajoConf) {
-    abortWhenDivideByZero = tajoConf.getBoolVar(ConfVars.BEHAVIOR_ARITHMETIC_ABORT);
+    abortWhenDivideByZero = tajoConf.getBoolVar(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT);
   }
 
   public abstract int size();

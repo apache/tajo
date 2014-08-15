@@ -70,18 +70,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     LogicalPlan.QueryBlock currentBlock;
     NameResolvingMode columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block, NameResolvingMode colRsvLevel) {
-      this.plan = plan;
-      this.currentBlock = block;
+    public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
+      this.plan = planContext.plan;
+      this.currentBlock = planContext.queryBlock;
       this.columnRsvLevel = colRsvLevel;
     }
   }
 
-  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr,
+  public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
                                  NameResolvingMode colRsvLevel)
       throws PlanningException {
-    Context context = new Context(plan, block, colRsvLevel);
-    return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
+    Context context = new Context(planContext, colRsvLevel);
+    return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<Expr>(), expr));
   }
 
   public static void assertEval(boolean condition, String message) throws PlanningException {

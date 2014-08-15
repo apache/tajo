@@ -328,8 +328,8 @@ public class QueryMasterTask extends CompositeService {
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
-      LogicalPlan plan = planner.createPlan(session, expr);
-      optimizer.optimize(session, plan);
+      LogicalPlan plan = planner.createPlan(queryContext, expr);
+      optimizer.optimize(queryContext, plan);
 
       GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
       hookManager.addHook(new GlobalEngine.InsertHook());
