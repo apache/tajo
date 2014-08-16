@@ -22,7 +22,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Tuple;
@@ -39,7 +38,6 @@ import java.io.IOException;
 public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   private Tuple currentKey;
   private Tuple prevKey;
-  private TableStats aggregated;
 
   public SortBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
@@ -50,7 +48,6 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     super.init();
 
     currentKey = new VTuple(keyNum);
-    aggregated = new TableStats();
   }
 
   private void fillKeyTuple(Tuple inTuple, Tuple keyTuple) {
@@ -84,9 +81,9 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
         appender = getNextPartitionAppender(getSubdirectory(currentKey));
         prevKey = new VTuple(currentKey);
       } else {
-        if (!prevKey.equals(currentKey) && !getSubdirectory(prevKey).equalsIgnoreCase(getSubdirectory(currentKey))) {
+        if (!prevKey.equals(currentKey)) {
           appender.close();
-          StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
+          StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
           appender = getNextPartitionAppender(getSubdirectory(currentKey));
           prevKey = new VTuple(currentKey);
@@ -98,10 +95,10 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
       appender.addTuple(tuple);
 
-      if (maxPerFileSize <= appender.getEstimatedOutputSize()) {
+      if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
         writtenFileNum++;
-        StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
+        StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
         openAppender(writtenFileNum);
       }
@@ -114,8 +111,10 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   public void close() throws IOException {
     if (appender != null) {
       appender.close();
-      StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
-      context.setResultStats(aggregated);
+
+      // Collect statistics data
+      StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
+      context.setResultStats(aggregatedStats);
     }
   }
 

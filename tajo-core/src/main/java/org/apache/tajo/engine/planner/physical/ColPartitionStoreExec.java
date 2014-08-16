@@ -38,6 +38,7 @@ import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   protected Appender appender;
 
   // for file punctuation
-  protected TableStats sumStats;                  // for aggregating all stats of written files
+  protected TableStats aggregatedStats;                  // for aggregating all stats of written files
   protected long maxPerFileSize = Long.MAX_VALUE; // default max file size is 2^63
   protected int writtenFileNum = 0;               // how many file are written so far?
   protected Path lastFileName;                    // latest written file name
@@ -83,7 +84,9 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
     }
 
-    maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE);
+    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
+      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
+    }
 
     // Find column index to name subpartition directory path
     keyNum = this.plan.getPartitionMethod().getExpressionSchema().size();
@@ -125,6 +128,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());
     }
+
+    aggregatedStats = new TableStats();
   }
 
   protected Path getDataFile(String partition) {
@@ -159,8 +164,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-        outSchema, actualFilePath);
+    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, actualFilePath);
 
     appender.enableStats();
     appender.init();

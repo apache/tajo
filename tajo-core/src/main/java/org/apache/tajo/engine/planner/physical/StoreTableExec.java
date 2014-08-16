@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -26,10 +28,8 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -38,6 +38,8 @@ import java.io.IOException;
  * This is a physical executor to store a table part into a specified storage.
  */
 public class StoreTableExec extends UnaryPhysicalExec {
+  private static final Log LOG = LogFactory.getLog(StoreTableExec.class);
+
   private PersistentStoreNode plan;
   private TableMeta meta;
   private Appender appender;
@@ -54,7 +56,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     this.plan = plan;
 
     if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
-      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE);
+      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
     }
   }
 
@@ -67,11 +69,17 @@ public class StoreTableExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
     openNewFile(writtenFileNum);
+
+    sumStats = new TableStats();
   }
 
   public void openNewFile(int suffixId) throws IOException {
+    String prevFile = null;
+
     lastFileName = context.getOutputPath();
     if (suffixId > 0) {
+      prevFile = lastFileName.toString();
+
       lastFileName = new Path(lastFileName + "_" + suffixId);
     }
 
@@ -82,12 +90,16 @@ public class StoreTableExec extends UnaryPhysicalExec {
     } else {
       String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
       meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema,
-          context.getOutputPath());
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, lastFileName);
     }
 
     appender.enableStats();
     appender.init();
+
+    if (suffixId > 0) {
+      LOG.info(prevFile + " exceeds " + SessionVars.MAX_OUTPUT_FILE_SIZE.keyname() + " (" + maxPerFileSize + " MB), " +
+          "The remain output will be written into " + lastFileName.toString());
+    }
   }
 
   /* (non-Javadoc)
@@ -98,15 +110,11 @@ public class StoreTableExec extends UnaryPhysicalExec {
     while((tuple = child.next()) != null) {
       appender.addTuple(tuple);
 
-      if (maxPerFileSize <= appender.getEstimatedOutputSize()) {
+      if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
-        writtenFileNum++;
 
-        if (sumStats == null) {
-          sumStats = appender.getStats();
-        } else {
-          StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
-        }
+        writtenFileNum++;
+        StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
         openNewFile(writtenFileNum);
       }
     }
