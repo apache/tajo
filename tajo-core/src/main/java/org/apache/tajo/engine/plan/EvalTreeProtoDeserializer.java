@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.plan;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -30,27 +31,40 @@ import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.exception.InternalException;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
+import java.util.*;
 
+/**
+ * It deserializes a serialized eval tree consisting of a number of EvalNodes.
+ *
+ * {@link org.apache.tajo.engine.plan.EvalTreeProtoSerializer} serializes an eval tree in a postfix traverse order.
+ * So, this class firstly sorts all serialized eval nodes in ascending order of their sequence IDs. Then,
+ * it sequentially restores each serialized node to EvalNode instance.
+ *
+ * @see org.apache.tajo.engine.plan.EvalTreeProtoSerializer
+ */
 public class EvalTreeProtoDeserializer {
 
   public static EvalNode deserialize(PlanProto.EvalTree tree) {
-    SortedMap<Integer, PlanProto.EvalNode> protoMap = Maps.newTreeMap();
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
-    for (PlanProto.EvalNode node : tree.getNodesList()) {
-      protoMap.put(node.getId(), node);
-    }
+    // sort serialized eval nodes in an ascending order of their IDs.
+    List<PlanProto.EvalNode> nodeList = Lists.newArrayList(tree.getNodesList());
+    Collections.sort(nodeList, new Comparator<PlanProto.EvalNode>() {
+      @Override
+      public int compare(PlanProto.EvalNode o1, PlanProto.EvalNode o2) {
+        return o1.getId() - o2.getId();
+      }
+    });
 
     EvalNode current = null;
 
-    Iterator<Map.Entry<Integer, PlanProto.EvalNode>> it = protoMap.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<Integer, PlanProto.EvalNode> entry = it.next();
+    // The sorted order is the same of a postfix traverse order.
+    // So, it sequentially transforms each serialized node into a EvalNode instance in a postfix order of
+    // the original eval tree.
 
-      PlanProto.EvalNode protoNode = entry.getValue();
+    Iterator<PlanProto.EvalNode> it = nodeList.iterator();
+    while (it.hasNext()) {
+      PlanProto.EvalNode protoNode = it.next();
 
       EvalType type = EvalType.valueOf(protoNode.getType().name());
 

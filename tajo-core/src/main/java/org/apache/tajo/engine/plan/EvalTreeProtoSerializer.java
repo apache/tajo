@@ -29,6 +29,11 @@ import org.apache.tajo.engine.plan.proto.PlanProto;
 import java.util.Map;
 import java.util.Stack;
 
+/**
+ * It traverses an eval tree consisting of a number of {@link org.apache.tajo.engine.eval.EvalNode}
+ * in a postfix traverse order. The postfix traverse order guarantees that all child nodes of some node N
+ * were already visited when the node N is visited. This manner makes tree serialization possible in a simple logic.
+ */
 public class EvalTreeProtoSerializer
     extends SimpleEvalNodeVisitor<EvalTreeProtoSerializer.EvalTreeProtoBuilderContext> {
 

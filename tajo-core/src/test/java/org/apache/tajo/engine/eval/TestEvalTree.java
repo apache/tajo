@@ -98,7 +98,6 @@ public class TestEvalTree extends ExprTestBase {
     public EvalNode getChild(int idx) {
       return null;
     }
-
   }
 
   public static class MockFalseExpr extends EvalNode {

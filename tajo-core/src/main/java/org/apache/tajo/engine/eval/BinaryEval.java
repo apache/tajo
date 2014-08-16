@@ -89,6 +89,11 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
+  public int childNum() {
+    return 2;
+  }
+
+  @Override
   public EvalNode getChild(int id) {
     if (id == 0) {
       return this.leftExpr;
@@ -163,11 +168,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	public DataType getValueType() {
 	  return returnType;
 	}
-
-  @Override
-  public int childNum() {
-    return 2;
-  }
 
   @Deprecated
   public void preOrder(EvalNodeVisitor visitor) {

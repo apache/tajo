@@ -33,7 +33,6 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.plan.EvalTreeProtoDeserializer;
 import org.apache.tajo.engine.plan.EvalTreeProtoSerializer;
-import org.apache.tajo.engine.plan.TestLogicalPlanConvertor;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.query.QueryContext;
