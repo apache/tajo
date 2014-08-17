@@ -73,9 +73,11 @@ message LogicalNode {
   optional JoinNode join = 7;
   optional FilterNode filter = 8;
   optional GroupbyNode groupby = 9;
-  optional SortNode sort = 10;
-  optional LimitNode limit = 11;
-  optional ProjectionNode projection = 12;
+  optional SortNode sort = 11;
+  optional LimitNode limit = 12;
+  optional ProjectionNode projection = 13;
+  optional EvalExprNode exprEval = 14;
+  optional RootNode root = 15;
 }
 
 message ScanNode {
@@ -115,7 +117,17 @@ message SortNode {
 }
 
 message ProjectionNode {
+  required int32 childId = 1;
+  required bool distinct = 2;
+  repeated Target targets = 3;
+}
+
+message EvalExprNode {
   repeated Target targets = 1;
+}
+
+message RootNode {
+  required int32 childId = 1;
 }
 
 message Target {

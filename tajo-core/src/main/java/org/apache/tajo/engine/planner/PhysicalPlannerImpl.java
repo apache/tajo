@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.plan.LogicalNodeTreeDeserializer;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.logical.*;
@@ -868,7 +869,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       TajoWorkerProtocol.SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
 
       boolean condition = scanNode.getTableName().equals(sortEnforcer.getTableName());
-      SortSpec [] sortSpecs = PlannerUtil.convertSortSpecs(sortEnforcer.getSortSpecsList());
+      SortSpec [] sortSpecs = LogicalNodeTreeDeserializer.convertSortSpecs(sortEnforcer.getSortSpecsList());
       return condition && TUtil.checkEquals(sortNode.getSortKeys(), sortSpecs);
     } else {
       return false;

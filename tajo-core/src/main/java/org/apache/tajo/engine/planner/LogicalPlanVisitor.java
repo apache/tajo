@@ -26,6 +26,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitRoot(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalRootNode node,
                    Stack<LogicalNode> stack) throws PlanningException;
 
+  RESULT visitEvalExpr(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, EvalExprNode node,
+                       Stack<LogicalNode> stack) throws PlanningException;
+
   RESULT visitProjection(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ProjectionNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
 

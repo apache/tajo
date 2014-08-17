@@ -58,7 +58,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         current = visitRoot(context, plan, block, (LogicalRootNode) node, stack);
         break;
       case EXPRS:
-        return null;
+        current = visitEvalExpr(context, plan, block, (EvalExprNode) node, stack);
+        break;
       case PROJECTION:
         current = visitProjection(context, plan, block, (ProjectionNode) node, stack);
         break;
@@ -145,6 +146,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitEvalExpr(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, EvalExprNode node,
+                              Stack<LogicalNode> stack) throws PlanningException {
+    return null;
   }
 
   @Override

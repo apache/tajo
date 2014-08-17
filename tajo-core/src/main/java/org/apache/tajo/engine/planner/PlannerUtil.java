@@ -731,15 +731,6 @@ public class PlannerUtil {
     return names;
   }
 
-  public static SortSpec[] convertSortSpecs(Collection<CatalogProtos.SortSpecProto> sortSpecProtos) {
-    SortSpec[] sortSpecs = new SortSpec[sortSpecProtos.size()];
-    int i = 0;
-    for (CatalogProtos.SortSpecProto proto : sortSpecProtos) {
-      sortSpecs[i++] = new SortSpec(proto);
-    }
-    return sortSpecs;
-  }
-
   /**
    * Generate an explain string of a LogicalNode and its descendant nodes.
    *

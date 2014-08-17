@@ -235,9 +235,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Set ProjectionNode
     projectionNode = context.queryBlock.getNodeFromExpr(projection);
-    projectionNode.setInSchema(child.getOutSchema());
-    projectionNode.setTargets(targets);
+    projectionNode.init(projection.isDistinct(), targets);
     projectionNode.setChild(child);
+    projectionNode.setInSchema(child.getOutSchema());
 
     if (projection.isDistinct() && block.hasNode(NodeType.GROUP_BY)) {
       throw new VerifyException("Cannot support grouping and distinct at the same time yet");

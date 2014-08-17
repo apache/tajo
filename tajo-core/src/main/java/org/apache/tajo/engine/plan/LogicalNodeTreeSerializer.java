@@ -18,8 +18,9 @@
 
 package org.apache.tajo.engine.plan;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -27,6 +28,7 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -39,13 +41,11 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     instance = new LogicalNodeTreeSerializer();
   }
 
-  public static PlanProto.LogicalNode serialize(LogicalNode node) throws PlanningException {
-    instance.visit(new SerializeContext(), null, null, node, new Stack<LogicalNode>());
-
-    return null;
+  public static PlanProto.LogicalNodeTree serialize(LogicalNode node) throws PlanningException {
+    SerializeContext context = new SerializeContext();
+    instance.visit(context, null, null, node, new Stack<LogicalNode>());
+    return context.treeBuilder.build();
   }
-
-
 
   public static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
     int selfId;
@@ -71,6 +71,51 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     private PlanProto.LogicalNodeTree.Builder treeBuilder = PlanProto.LogicalNodeTree.newBuilder();
   }
 
+  public LogicalNode visitRoot(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               LogicalRootNode root, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitRoot(context, plan, block, root, stack);
+
+    int [] childIds = registerGetChildIds(context, root);
+
+    PlanProto.RootNode.Builder rootBuilder = PlanProto.RootNode.newBuilder();
+    rootBuilder.setChildId(childIds[0]);
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, root);
+    nodeBuilder.setRoot(rootBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return root;
+  }
+
+  public LogicalNode visitEvalExpr(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   EvalExprNode exprEval, Stack<LogicalNode> stack) throws PlanningException {
+    PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
+    exprEvalBuilder.addAllTargets(convertTargets(exprEval.getTargets()));
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, exprEval);
+    nodeBuilder.setExprEval(exprEvalBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return exprEval;
+  }
+
+  public LogicalNode visitProjection(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     ProjectionNode projection, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitProjection(context, plan, block, projection, stack);
+
+    int [] childIds = registerGetChildIds(context, projection);
+
+    PlanProto.ProjectionNode.Builder projectionBuilder = PlanProto.ProjectionNode.newBuilder();
+    projectionBuilder.setChildId(childIds[0]);
+    projectionBuilder.addAllTargets(convertTargets(projection.getTargets()));
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, projection);
+    nodeBuilder.setProjection(projectionBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return projection;
+  }
+
   @Override
   public LogicalNode visitLimit(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                 LimitNode limit, Stack<LogicalNode> stack) throws PlanningException {
@@ -78,7 +123,6 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     int [] childIds = registerGetChildIds(context, limit);
 
-    // building itself
     PlanProto.LimitNode.Builder limitBuilder = PlanProto.LimitNode.newBuilder();
     limitBuilder.setChildId(childIds[0]);
     limitBuilder.setFetchFirstNum(limit.getFetchFirstNum());
@@ -97,7 +141,6 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     int [] childIds = registerGetChildIds(context, sort);
 
-    // building itself
     PlanProto.SortNode.Builder sortBuilder = PlanProto.SortNode.newBuilder();
     sortBuilder.setChildId(childIds[0]);
     for (int i = 0; i < sort.getSortKeys().length; i++) {
@@ -109,6 +152,24 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     context.treeBuilder.addNodes(nodeBuilder);
 
     return sort;
+  }
+
+  @Override
+  public LogicalNode visitHaving(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 HavingNode having, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitHaving(context, plan, block, having, stack);
+
+    int [] childIds = registerGetChildIds(context, having);
+
+    PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
+    filterBuilder.setChildId(childIds[0]);
+    filterBuilder.setQual(EvalTreeProtoSerializer.serialize(having.getQual()));
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, having);
+    nodeBuilder.setFilter(filterBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return having;
   }
 
   public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -141,7 +202,6 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     int [] childIds = registerGetChildIds(context, filter);
 
-    // building itself
     PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
     filterBuilder.setChildId(childIds[0]);
     filterBuilder.setQual(EvalTreeProtoSerializer.serialize(filter.getQual()));
@@ -153,11 +213,35 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     return filter;
   }
 
+  public LogicalNode visitJoin(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode join,
+                          Stack<LogicalNode> stack) throws PlanningException {
+    super.visitJoin(context, plan, block, join, stack);
+
+    int [] childIds = registerGetChildIds(context, join);
+
+    // building itself
+    PlanProto.JoinNode.Builder joinBuilder = PlanProto.JoinNode.newBuilder();
+    joinBuilder.setJoinType(convertJoinType(join.getJoinType()));
+    joinBuilder.setLeftChildId(childIds[0]);
+    joinBuilder.setRightChildId(childIds[1]);
+    if (join.hasJoinQual()) {
+      joinBuilder.setJoinQual(EvalTreeProtoSerializer.serialize(join.getJoinQual()));
+    }
+    if (join.hasTargets()) {
+      joinBuilder.addAllTargets(convertTargets(join.getTargets()));
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, join);
+    nodeBuilder.setJoin(joinBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return join;
+  }
+
   @Override
   public LogicalNode visitScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                ScanNode scan, Stack<LogicalNode> stack) throws PlanningException {
 
-    // building itself
     PlanProto.ScanNode.Builder scanBuilder = PlanProto.ScanNode.newBuilder();
     scanBuilder.setTable(scan.getTableDesc().getProto());
     if (scan.hasAlias()) {
@@ -165,16 +249,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
 
     if (scan.hasTargets()) {
-      for (Target t : scan.getTargets()) {
-        PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
-
-        targetBuilder.setExpr(EvalTreeProtoSerializer.serialize(t.getEvalTree()));
-
-        if (t.hasAlias()) {
-          targetBuilder.setAlias(t.getAlias());
-        }
-        scanBuilder.addTargets(targetBuilder);
-      }
+      scanBuilder.addAllTargets(convertTargets(scan.getTargets()));
     }
 
     if (scan.hasQual()) {
@@ -190,6 +265,46 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
   public static PlanProto.NodeType convertType(NodeType type) {
     return PlanProto.NodeType.valueOf(type.name());
+  }
+
+  public static PlanProto.JoinType convertJoinType(JoinType type) {
+    switch (type) {
+    case CROSS:
+      return PlanProto.JoinType.CROSS_JOIN;
+    case INNER:
+      return PlanProto.JoinType.INNER_JOIN;
+    case LEFT_OUTER:
+      return PlanProto.JoinType.LEFT_OUTER_JOIN;
+    case RIGHT_OUTER:
+      return PlanProto.JoinType.RIGHT_OUTER_JOIN;
+    case FULL_OUTER:
+      return PlanProto.JoinType.FULL_OUTER_JOIN;
+    case LEFT_SEMI:
+      return PlanProto.JoinType.LEFT_SEMI_JOIN;
+    case RIGHT_SEMI:
+      return PlanProto.JoinType.RIGHT_SEMI_JOIN;
+    case LEFT_ANTI:
+      return PlanProto.JoinType.LEFT_ANTI_JOIN;
+    case RIGHT_ANTI:
+      return PlanProto.JoinType.RIGHT_ANTI_JOIN;
+    case UNION:
+      return PlanProto.JoinType.UNION_JOIN;
+    default:
+      throw new RuntimeException("Unknown JoinType: " + type.name());
+    }
+  }
+
+  private Iterable<PlanProto.Target> convertTargets(Target [] targets) {
+    List<PlanProto.Target> converted = Lists.newArrayList();
+    for (int i = 0; i < targets.length; i++) {
+      PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
+      targetBuilder.setExpr(EvalTreeProtoSerializer.serialize(targets[i].getEvalTree()));
+      if (targets[i].hasAlias()) {
+        targetBuilder.setAlias(targets[i].getAlias());
+      }
+      converted.add(targetBuilder.build());
+    }
+    return converted;
   }
 
   private int [] registerGetChildIds(SerializeContext context, LogicalNode node) {
