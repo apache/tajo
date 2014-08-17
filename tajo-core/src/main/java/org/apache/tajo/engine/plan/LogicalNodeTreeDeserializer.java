@@ -68,7 +68,7 @@ public class LogicalNodeTreeDeserializer {
         current = convertRoot(nodeMap, protoNode);
         break;
       case EXPRS:
-        current = convertEvalExpr(nodeMap, protoNode);
+        current = convertEvalExpr(protoNode);
         break;
       case PROJECTION:
         current = convertProjection(nodeMap, protoNode);
@@ -165,7 +165,9 @@ public class LogicalNodeTreeDeserializer {
 
     HavingNode having = new HavingNode(protoNode.getPid());
     having.setChild(nodeMap.get(havingProto.getChildId()));
-    having.setQual(EvalTreeProtoDeserializer.deserialize(havingProto.getQual());
+    having.setQual(EvalTreeProtoDeserializer.deserialize(havingProto.getQual()));
+    having.setInSchema(convertSchema(protoNode.getInSchema()));
+    having.setOutSchema(convertSchema(protoNode.getOutSchema()));
 
     return having;
   }
