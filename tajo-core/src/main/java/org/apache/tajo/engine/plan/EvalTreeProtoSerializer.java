@@ -46,26 +46,14 @@ public class EvalTreeProtoSerializer
   public static class EvalTreeProtoBuilderContext {
     private int seqId = 0;
     private Map<EvalNode, Integer> idMap = Maps.newHashMap();
-    private PlanProto.EvalTree.Builder evalTreeBuilder = PlanProto.EvalTree.newBuilder();
+    private PlanProto.EvalTree.Builder treeBuilder = PlanProto.EvalTree.newBuilder();
   }
 
   public static PlanProto.EvalTree serialize(EvalNode evalNode) {
     EvalTreeProtoSerializer.EvalTreeProtoBuilderContext context =
         new EvalTreeProtoSerializer.EvalTreeProtoBuilderContext();
     instance.visit(context, evalNode, new Stack<EvalNode>());
-    return context.evalTreeBuilder.build();
-  }
-
-  private int registerAndGetId(EvalTreeProtoBuilderContext context, EvalNode evalNode) {
-    int selfId;
-    if (context.idMap.containsKey(evalNode)) {
-      selfId = context.idMap.get(evalNode);
-    } else {
-      selfId = context.seqId++;
-      context.idMap.put(evalNode, selfId);
-    }
-
-    return selfId;
+    return context.treeBuilder.build();
   }
 
   private int [] registerGetChildIds(EvalTreeProtoBuilderContext context, EvalNode evalNode) {
@@ -80,11 +68,19 @@ public class EvalTreeProtoSerializer
     return childIds;
   }
 
-  private PlanProto.EvalNode.Builder createEvalBuilder(int id, EvalNode eval) {
+  private PlanProto.EvalNode.Builder createEvalBuilder(EvalTreeProtoBuilderContext context, EvalNode node) {
+    int sid; // serialization sequence id
+    if (context.idMap.containsKey(node)) {
+      sid = context.idMap.get(node);
+    } else {
+      sid = context.seqId++;
+      context.idMap.put(node, sid);
+    }
+
     PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
-    nodeBuilder.setId(id);
-    nodeBuilder.setDataType(eval.getValueType());
-    nodeBuilder.setType(PlanProto.EvalType.valueOf(eval.getType().name()));
+    nodeBuilder.setId(sid);
+    nodeBuilder.setDataType(node.getValueType());
+    nodeBuilder.setType(PlanProto.EvalType.valueOf(node.getType().name()));
     return nodeBuilder;
   }
 
@@ -109,10 +105,9 @@ public class EvalTreeProtoSerializer
     }
 
     // registering itself and building EvalNode
-    int selfId = registerAndGetId(context, unary);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, unary);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, unary);
     builder.setUnary(unaryBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return unary;
   }
 
@@ -128,19 +123,17 @@ public class EvalTreeProtoSerializer
     binaryBuilder.setRhsId(childIds[1]);
 
     // registering itself and building EvalNode
-    int selfId = registerAndGetId(context, binary);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, binary);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, binary);
     builder.setBinary(binaryBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return binary;
   }
 
   @Override
   public EvalNode visitConst(EvalTreeProtoBuilderContext context, ConstEval constant, Stack<EvalNode> stack) {
-    int selfId = registerAndGetId(context, constant);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, constant);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, constant);
     builder.setConst(PlanProto.ConstEval.newBuilder().setValue(serialize(constant.getValue())));
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return constant;
   }
 
@@ -153,18 +146,16 @@ public class EvalTreeProtoSerializer
       rowConstBuilder.addValues(serialize(d));
     }
 
-    int selfId = registerAndGetId(context, rowConst);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, rowConst);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, rowConst);
     builder.setRowConst(rowConstBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return rowConst;
   }
 
   public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
-    int selfId = registerAndGetId(context, field);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, field);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, field);
     builder.setField(field.getColumnRef().getProto());
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return field;
   }
 
@@ -184,10 +175,10 @@ public class EvalTreeProtoSerializer
     betweenBuilder.setBegin(childIds[1]);
     betweenBuilder.setEnd(childIds[2]);
 
-    int selfId = registerAndGetId(context, between);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, between);
+    // registering itself and building EvalNode
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, between);
     builder.setBetween(betweenBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
     return between;
   }
 
@@ -208,10 +199,9 @@ public class EvalTreeProtoSerializer
     }
 
     // registering itself and building EvalNode
-    int selfId = registerAndGetId(context, caseWhen);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, caseWhen);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, caseWhen);
     builder.setCasewhen(caseWhenBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
 
     return caseWhen;
   }
@@ -228,10 +218,9 @@ public class EvalTreeProtoSerializer
     ifCondBuilder.setThen(childIds[1]);
 
     // registering itself and building EvalNode
-    int selfId = registerAndGetId(context, ifCond);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, ifCond);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, ifCond);
     builder.setIfCond(ifCondBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
 
     return ifCond;
   }
@@ -249,10 +238,9 @@ public class EvalTreeProtoSerializer
     }
 
     // registering itself and building EvalNode
-    int selfId = registerAndGetId(context, function);
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(selfId, function);
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, function);
     builder.setFunction(funcBuilder);
-    context.evalTreeBuilder.addNodes(builder);
+    context.treeBuilder.addNodes(builder);
 
     return function;
   }
