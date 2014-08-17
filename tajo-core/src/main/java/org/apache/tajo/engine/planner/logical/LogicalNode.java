@@ -58,6 +58,10 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 		this.type = type;
 	}
 
+  public abstract int childNum();
+
+  public abstract LogicalNode getChild(int idx);
+
 	public double getCost() {
 		return this.cost;
 	}

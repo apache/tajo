@@ -37,6 +37,16 @@ public class AlterTablespaceNode extends LogicalNode implements Cloneable {
     super(pid, NodeType.ALTER_TABLESPACE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public String getTablespaceName() {
     return tablespaceName;
   }

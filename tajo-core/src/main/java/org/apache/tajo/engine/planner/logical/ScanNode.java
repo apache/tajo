@@ -42,6 +42,16 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
     super(pid, nodeType);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public ScanNode(int pid) {
     super(pid, NodeType.SCAN);
   }

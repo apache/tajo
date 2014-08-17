@@ -35,6 +35,16 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     super(pid, NodeType.TABLE_SUBQUERY);
   }
 
+  @Override
+  public int childNum() {
+    return 1;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return subQuery;
+  }
+
   public void init(String tableName, LogicalNode subQuery) {
     this.tableName = tableName;
     if (subQuery != null) {

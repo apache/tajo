@@ -30,6 +30,16 @@ public class DropTableNode extends LogicalNode implements Cloneable {
     super(pid, NodeType.DROP_TABLE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public void init(String tableName, boolean ifExists, boolean purge) {
     this.tableName = tableName;
     this.ifExists = ifExists;

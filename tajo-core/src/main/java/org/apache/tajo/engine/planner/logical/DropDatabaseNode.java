@@ -30,6 +30,16 @@ public class DropDatabaseNode extends LogicalNode implements Cloneable {
     super(pid, NodeType.DROP_DATABASE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public void init(String databaseName, boolean ifExists) {
     this.databaseName = databaseName;
     this.ifExists = ifExists;

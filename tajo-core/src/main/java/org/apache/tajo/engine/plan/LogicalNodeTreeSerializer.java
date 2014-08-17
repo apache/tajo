@@ -19,14 +19,13 @@
 package org.apache.tajo.engine.plan;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.Map;
 import java.util.Stack;
@@ -46,9 +45,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     return null;
   }
 
-  public static PlanProto.NodeType convertType(NodeType type) {
-    return PlanProto.NodeType.valueOf(type.name());
-  }
+
 
   public static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
     int selfId;
@@ -72,6 +69,88 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     private int seqId = 0;
     private Map<LogicalNode, Integer> idMap = Maps.newHashMap();
     private PlanProto.LogicalNodeTree.Builder treeBuilder = PlanProto.LogicalNodeTree.newBuilder();
+  }
+
+  @Override
+  public LogicalNode visitLimit(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                LimitNode limit, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitLimit(context, plan, block, limit, stack);
+
+    int [] childIds = registerGetChildIds(context, limit);
+
+    // building itself
+    PlanProto.LimitNode.Builder limitBuilder = PlanProto.LimitNode.newBuilder();
+    limitBuilder.setChildId(childIds[0]);
+    limitBuilder.setFetchFirstNum(limit.getFetchFirstNum());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, limit);
+    nodeBuilder.setLimit(limitBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return limit;
+  }
+
+  @Override
+  public LogicalNode visitSort(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                SortNode sort, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitSort(context, plan, block, sort, stack);
+
+    int [] childIds = registerGetChildIds(context, sort);
+
+    // building itself
+    PlanProto.SortNode.Builder sortBuilder = PlanProto.SortNode.newBuilder();
+    sortBuilder.setChildId(childIds[0]);
+    for (int i = 0; i < sort.getSortKeys().length; i++) {
+      sortBuilder.addSortSpecs(sort.getSortKeys()[i].getProto());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, sort);
+    nodeBuilder.setSort(sortBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return sort;
+  }
+
+  public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                  GroupbyNode groupbyNode, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitGroupBy(context, plan, block, groupbyNode, new Stack<LogicalNode>());
+
+    int [] childIds = registerGetChildIds(context, groupbyNode);
+
+    PlanProto.GroupbyNode.Builder groupbyBuilder = PlanProto.GroupbyNode.newBuilder();
+    groupbyBuilder.setChildId(childIds[0]);
+
+    for (int i = 0; i < groupbyNode.getGroupingColumns().length; i++) {
+      groupbyBuilder.addGroupingKeys(groupbyNode.getGroupingColumns()[i].getProto());
+    }
+    for (int i = 0; i < groupbyNode.getGroupingColumns().length; i++) {
+      groupbyBuilder.addAggFunctions(EvalTreeProtoSerializer.serialize(groupbyNode.getAggFunctions()[i]));
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, groupbyNode);
+    nodeBuilder.setGroupby(groupbyBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return groupbyNode;
+  }
+
+  @Override
+  public LogicalNode visitFilter(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 SelectionNode filter, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitFilter(context, plan, block, filter, stack);
+
+    int [] childIds = registerGetChildIds(context, filter);
+
+    // building itself
+    PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
+    filterBuilder.setChildId(childIds[0]);
+    filterBuilder.setQual(EvalTreeProtoSerializer.serialize(filter.getQual()));
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, filter);
+    nodeBuilder.setFilter(filterBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return filter;
   }
 
   @Override
@@ -104,9 +183,24 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, scan);
     nodeBuilder.setScan(scanBuilder);
-
     context.treeBuilder.addNodes(nodeBuilder);
 
     return scan;
+  }
+
+  public static PlanProto.NodeType convertType(NodeType type) {
+    return PlanProto.NodeType.valueOf(type.name());
+  }
+
+  private int [] registerGetChildIds(SerializeContext context, LogicalNode node) {
+    int [] childIds = new int[node.childNum()];
+    for (int i = 0; i < node.childNum(); i++) {
+      if (context.idMap.containsKey(node.getChild(i))) {
+        childIds[i] = context.idMap.get(node.getChild(i));
+      } else {
+        childIds[i] = context.seqId++;
+      }
+    }
+    return childIds;
   }
 }

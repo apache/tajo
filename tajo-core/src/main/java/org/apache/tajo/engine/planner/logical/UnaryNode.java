@@ -31,6 +31,20 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	public UnaryNode(int pid, NodeType type) {
 		super(pid, type);
 	}
+
+  @Override
+  public int childNum() {
+    return 1;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    if (idx == 0) {
+      return child;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
+  }
 	
 	public void setChild(LogicalNode subNode) {
 		this.child = subNode;

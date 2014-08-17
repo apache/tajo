@@ -70,6 +70,12 @@ message LogicalNode {
   required SchemaProto out_schema = 5;
 
   optional ScanNode scan = 6;
+  optional JoinNode join = 7;
+  optional FilterNode filter = 8;
+  optional GroupbyNode groupby = 9;
+  optional SortNode sort = 10;
+  optional LimitNode limit = 11;
+  optional ProjectionNode projection = 12;
 }
 
 message ScanNode {
@@ -79,9 +85,55 @@ message ScanNode {
   optional EvalTree qual = 5;
 }
 
+message FilterNode {
+  required int32 childId = 1;
+  required EvalTree qual = 2;
+}
+
+message JoinNode {
+  required int32 leftChildId = 1;
+  required int32 rightChildId = 2;
+  required JoinType joinType = 3;
+  optional EvalTree joinQual = 4;
+  repeated Target targets = 5;
+}
+
+message LimitNode {
+  required int32 childId = 1;
+  required int64 fetchFirstNum = 2;
+}
+
+message GroupbyNode {
+  required int32 childId = 1;
+  repeated ColumnProto groupingKeys = 2;
+  repeated EvalTree aggFunctions = 3;
+}
+
+message SortNode {
+  required int32 childId = 1;
+  repeated SortSpecProto sortSpecs = 2;
+}
+
+message ProjectionNode {
+  repeated Target targets = 1;
+}
+
 message Target {
   required EvalTree expr = 1;
   required string alias = 2;
+}
+
+enum JoinType {
+  CROSS_JOIN = 0;
+  INNER_JOIN = 1;
+  LEFT_OUTER_JOIN = 2;
+  RIGHT_OUTER_JOIN = 3;
+  FULL_OUTER_JOIN = 4;
+  UNION_JOIN = 5;
+  LEFT_ANTI_JOIN = 6;
+  RIGHT_ANTI_JOIN = 7;
+  LEFT_SEMI_JOIN = 8;
+  RIGHT_SEMI_JOIN = 9;
 }
 
 enum EvalType {

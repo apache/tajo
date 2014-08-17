@@ -32,6 +32,16 @@ public class TruncateTableNode extends LogicalNode {
     super(pid, NodeType.TRUNCATE_TABLE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public List<String> getTableNames() {
     return tableNames;
   }
