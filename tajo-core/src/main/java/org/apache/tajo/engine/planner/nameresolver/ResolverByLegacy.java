@@ -74,7 +74,7 @@ public class ResolverByLegacy extends NameResolver {
     Schema currentNodeSchema = null;
     if (currentNode != null) {
       if (currentNode instanceof RelationNode) {
-        currentNodeSchema = ((RelationNode) currentNode).getTableSchema();
+        currentNodeSchema = ((RelationNode) currentNode).getLogicalSchema();
       } else {
         currentNodeSchema = currentNode.getInSchema();
       }

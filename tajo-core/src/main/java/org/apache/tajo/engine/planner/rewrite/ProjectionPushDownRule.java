@@ -1041,7 +1041,7 @@ public class ProjectionPushDownRule extends
     if (node.hasTargets()) {
       targets = node.getTargets();
     } else {
-      targets = PlannerUtil.schemaToTargets(node.getTableSchema());
+      targets = PlannerUtil.schemaToTargets(node.getLogicalSchema());
     }
 
     LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();

@@ -101,7 +101,7 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
     }
   }
 
-  public Schema getTableSchema() {
+  public Schema getLogicalSchema() {
     return logicalSchema;
   }
 

@@ -66,7 +66,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   @Override
-  public Schema getTableSchema() {
+  public Schema getLogicalSchema() {
     // an output schema can be determined by targets. So, an input schema of
     // TableSubQueryNode is only eligible for table schema.
     //

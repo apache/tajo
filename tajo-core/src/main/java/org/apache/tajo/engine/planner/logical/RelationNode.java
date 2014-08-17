@@ -45,5 +45,5 @@ public abstract class RelationNode extends LogicalNode {
 
   public abstract String getCanonicalName();
 
-  public abstract Schema getTableSchema();
+  public abstract Schema getLogicalSchema();
 }

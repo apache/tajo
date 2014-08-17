@@ -29,7 +29,6 @@ import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -108,7 +107,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
         throw new NoSuchColumnException(CatalogUtil.buildFQName(qualifier, "*"));
       }
 
-      Schema schema = relationOp.getTableSchema();
+      Schema schema = relationOp.getLogicalSchema();
       Column[] resolvedColumns = new Column[schema.size()];
       return schema.getColumns().toArray(resolvedColumns);
     } else { // if a column reference is not qualified
@@ -119,7 +118,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       while (iterator.hasNext()) {
         relationOp = iterator.next();
-        schema = relationOp.getTableSchema();
+        schema = relationOp.getLogicalSchema();
         resolvedColumns.addAll(schema.getColumns());
       }
 

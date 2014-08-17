@@ -499,7 +499,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
-      verifyIfTargetsCanBeEvaluated(relationNode.getTableSchema(), (Projectable) relationNode);
+      verifyIfTargetsCanBeEvaluated(relationNode.getLogicalSchema(), (Projectable) relationNode);
 
     } else {
       verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
@@ -1271,7 +1271,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
                                                       Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
-    for (Column column : relationNode.getTableSchema().getColumns()) {
+    for (Column column : relationNode.getLogicalSchema().getColumns()) {
       String aliasName = block.namedExprsMgr.checkAndGetIfAliasedColumn(column.getQualifiedName());
       if (aliasName != null) {
         targets.add(new Target(new FieldEval(column), aliasName));
@@ -1976,7 +1976,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
-    if (columnRefs.size() > 0 && !node.getTableSchema().containsAll(columnRefs)) {
+    if (columnRefs.size() > 0 && !node.getLogicalSchema().containsAll(columnRefs)) {
       return false;
     }
 
