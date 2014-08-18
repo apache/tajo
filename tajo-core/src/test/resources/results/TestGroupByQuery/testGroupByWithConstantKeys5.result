@@ -1,0 +1,5 @@
+?text,key,l_orderkey,sum
+-------------------------------
+day,day,1,2
+day,day,2,1
+day,day,3,2

@@ -166,6 +166,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSelectSameConstantsWithDifferentAliases3() throws Exception {
+    // select l_orderkey, '20130819' as date1, '20130819', '20130819', '20130819'
+    // from lineitem where l_orderkey > -1;
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testSelectSameExprsWithDifferentAliases() throws Exception {
     // select l_orderkey, l_partkey + 1 as plus1, l_partkey + 1 as plus2 from lineitem where l_orderkey > -1;
     ResultSet res = executeQuery();
@@ -451,7 +460,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       while (res.next()) {
         String currentNowValue = res.getString(1);
         if (nowValue != null) {
-          assertTrue(nowValue.equals(currentNowValue));
+          assertTrue(nowValue + " is different to " + currentNowValue, nowValue.equals(currentNowValue));
         }
         nowValue = currentNowValue;
         numRecords++;

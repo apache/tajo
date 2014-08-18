@@ -20,6 +20,7 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -233,12 +234,23 @@ public class EvalTreeUtil {
   /**
    * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
    *
+   * If three conditions are satisfied, we can recognize the expression as a equi join condition.
+   * <ol>
+   *   <li>An expression is an equal comparison expression.</li>
+   *   <li>Both terms in an expression are column references.</li>
+   *   <li>Both column references point come from different tables</li>
+   * </ol>
+   *
+   * For theta join condition, we will use "an expression is a predicate including column references which come
+   * from different two tables" instead of the first rule.
+   *
    * @param expr EvalNode to be evaluated
    * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
    *                         Otherwise, it only returns equi-join conditions.
    * @return True if it is join condition.
    */
   public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
+
     if (expr instanceof BinaryEval) {
       boolean joinComparator;
       if (includeThetaJoin) {
@@ -250,7 +262,16 @@ public class EvalTreeUtil {
       BinaryEval binaryEval = (BinaryEval) expr;
       boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
 
-      return joinComparator && isBothTermFields;
+
+      String leftQualifier =
+          EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr()).iterator().next().getQualifiedName();
+      String rightQualifier =
+          EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr()).iterator().next().getQualifiedName();
+
+      boolean isDifferentTables =
+          !(CatalogUtil.extractQualifier(leftQualifier).equals(CatalogUtil.extractQualifier(rightQualifier)));
+
+      return joinComparator && isBothTermFields && isDifferentTables;
     } else {
       return false;
     }

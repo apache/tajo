@@ -78,10 +78,13 @@ public class NamedExprsManager {
   /** Map: Alias Name <-> Original Name */
   private BiMap<String, String> aliasedColumnMap = HashBiMap.create();
 
-  private LogicalPlan plan;
+  private final LogicalPlan plan;
 
-  public NamedExprsManager(LogicalPlan plan) {
+  private final LogicalPlan.QueryBlock block;
+
+  public NamedExprsManager(LogicalPlan plan, LogicalPlan.QueryBlock block) {
     this.plan = plan;
+    this.block = block;
   }
 
   private int getNextId() {
@@ -145,6 +148,10 @@ public class NamedExprsManager {
       return idToNamesMap.get(refId).get(0);
     }
 
+    if (block.isRegisteredConst(expr)) {
+      return block.getConstReference(expr);
+    }
+
     String generatedName = plan.generateUniqueColumnName(expr);
     return addExpr(expr, generatedName);
   }
@@ -154,6 +161,10 @@ public class NamedExprsManager {
    * It specifies the alias as an reference name.
    */
   public String addExpr(Expr expr, String alias) throws PlanningException {
+
+    if (OpType.isLiteralType(expr.getType())) {
+      return alias;
+    }
 
     // if this name already exists, just returns the name.
     if (nameToIdMap.containsKey(alias)) {
