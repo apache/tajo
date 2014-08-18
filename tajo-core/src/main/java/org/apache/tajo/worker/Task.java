@@ -436,7 +436,7 @@ public class Task {
     } finally {
       context.setProgress(1.0f);
       taskRunnerContext.completedTasksNum.incrementAndGet();
-      context.getHashShuffleAppenderManager().taskFinished(taskId);
+      context.getHashShuffleAppenderManager().finalizeTask(taskId);
 
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);

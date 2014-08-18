@@ -122,21 +122,6 @@ public class HashShuffleAppenderManager {
     }
   }
 
-  public Path getPartitionAppenderDataFile(ExecutionBlockId ebId, int partId) {
-    synchronized (appenderMap) {
-      Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.get(ebId);
-      if (partitionAppenderMap != null) {
-        PartitionAppenderMeta meta = partitionAppenderMap.get(partId);
-        if (meta != null) {
-          return meta.dataFile;
-        }
-      }
-    }
-
-    LOG.warn("Can't find HashShuffleAppender:" + ebId + ", part=" + partId);
-    return null;
-  }
-
   public List<HashShuffleIntermediate> close(ExecutionBlockId ebId) throws IOException {
     Map<Integer, PartitionAppenderMeta> partitionAppenderMap = null;
     synchronized (appenderMap) {
@@ -169,7 +154,7 @@ public class HashShuffleAppenderManager {
     return intermEntries;
   }
 
-  public void taskFinished(QueryUnitAttemptId taskId) {
+  public void finalizeTask(QueryUnitAttemptId taskId) {
     synchronized (appenderMap) {
       Map<Integer, PartitionAppenderMeta> partitionAppenderMap =
         appenderMap.get(taskId.getQueryUnitId().getExecutionBlockId());

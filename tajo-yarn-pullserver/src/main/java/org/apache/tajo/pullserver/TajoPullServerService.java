@@ -208,7 +208,6 @@ public class TajoPullServerService extends AbstractService {
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
-      //super.init(new Configuration(conf));
       super.init(conf);
 
       this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
