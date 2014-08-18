@@ -56,6 +56,16 @@ public class EvalTreeProtoSerializer
     return context.treeBuilder.build();
   }
 
+  /**
+   * Return child's serialization IDs. Usually, 0 is used for a child id of unary node or left child of
+   * binary node. 1 is used for right child of binary node. Between will use 0 as predicand, 1 as begin, and 2 as
+   * end eval node. For more detail, you should refer to each EvalNode implementation.
+   *
+   * @param context Context
+   * @param evalNode EvalNode
+   * @return The array of IDs which points to stored EvalNode.
+   * @see org.apache.tajo.engine.eval.EvalNode
+   */
   private int [] registerGetChildIds(EvalTreeProtoBuilderContext context, EvalNode evalNode) {
     int [] childIds = new int[evalNode.childNum()];
     for (int i = 0; i < evalNode.childNum(); i++) {
