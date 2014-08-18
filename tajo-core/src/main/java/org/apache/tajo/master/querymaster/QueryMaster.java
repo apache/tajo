@@ -53,6 +53,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -94,6 +96,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private TajoWorker.WorkerContext workerContext;
 
   private RpcConnectionPool connPool;
+
+  private ExecutorService eventExecutor;
 
   public QueryMaster(TajoWorker.WorkerContext workerContext) {
     super(QueryMaster.class.getName());
@@ -140,6 +144,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     finishedQueryMasterTaskCleanThread = new FinishedQueryMasterTaskCleanThread();
     finishedQueryMasterTaskCleanThread.start();
 
+    eventExecutor = Executors.newSingleThreadExecutor();
     super.start();
   }
 
@@ -160,6 +165,11 @@ public class QueryMaster extends CompositeService implements EventHandler {
     if(finishedQueryMasterTaskCleanThread != null) {
       finishedQueryMasterTaskCleanThread.interrupt();
     }
+
+    if(eventExecutor != null){
+      eventExecutor.shutdown();
+    }
+
     super.stop();
 
     LOG.info("QueryMaster stop");
@@ -310,6 +320,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public TajoConf getConf() {
       return conf;
+    }
+
+    public ExecutorService getEventExecutor(){
+      return eventExecutor;
     }
 
     public TajoAsyncDispatcher getDispatcher() {
