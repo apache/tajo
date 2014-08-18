@@ -94,7 +94,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     List<NamedExpr> windowAggExprs = new ArrayList<NamedExpr>(); // window expressions which can be referred
     Set<WindowSpecReferences> windowSpecs = Sets.newLinkedHashSet();
 
-    private ExprNormalizedResult(LogicalPlanner.PlanContext context, boolean tryBinaryCommonTermsElimination) {
+    public ExprNormalizedResult(LogicalPlanner.PlanContext context, boolean tryBinaryCommonTermsElimination) {
       this.plan = context.plan;
       this.block = context.queryBlock;
       this.tryBinaryCommonTermsElimination = tryBinaryCommonTermsElimination;
