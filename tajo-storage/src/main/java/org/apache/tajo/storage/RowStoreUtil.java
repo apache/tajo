@@ -23,6 +23,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.exception.UnknownDataTypeException;
 import org.apache.tajo.util.BitArray;
 
 import java.nio.ByteBuffer;
@@ -152,6 +154,9 @@ public class RowStoreUtil {
             break;
           case INET6:
             // TODO - to be implemented
+            throw new UnsupportedException(type.getType().name());
+          default:
+            throw new RuntimeException(new UnknownDataTypeException(type.getType().name()));
         }
       }
       return tuple;
@@ -221,6 +226,7 @@ public class RowStoreUtil {
             break;
           case INET6: bb.put(tuple.get(i).asByteArray()); break;
           default:
+            throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
         }
       }
 
@@ -265,7 +271,7 @@ public class RowStoreUtil {
           case INET4:
           case INET6: size += tuple.get(i).asByteArray().length; break;
           default:
-            size += 4;
+            throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
         }
       }
 

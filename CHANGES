@@ -29,6 +29,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-984: Improve the default data type handling in RowStoreUtil.
+    (jihoon via hyunsik)
+
     TAJO-895: ConstEval should not be included in target list of projectable 
     nodes. (hyunsik)
 
