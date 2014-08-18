@@ -75,9 +75,20 @@ message LogicalNode {
   optional GroupbyNode groupby = 9;
   optional SortNode sort = 11;
   optional LimitNode limit = 12;
-  optional ProjectionNode projection = 13;
-  optional EvalExprNode exprEval = 14;
-  optional RootNode root = 15;
+  optional WindowAggNode window = 13;
+  optional ProjectionNode projection = 14;
+  optional EvalExprNode exprEval = 15;
+  optional SetNode set = 16;
+  optional TableSubQueryNode tableSubQuery = 17;
+  optional PersistentStoreNode persistentStore = 18;
+  optional StoreTableNodeSpec storeTable = 19;
+  optional InsertNodeSpec insert = 20;
+  optional CreateTableNodeSpec createTable = 21;
+  optional RootNode root = 22;
+
+  optional CreateDatabaseNode createDatabase = 23;
+  optional DropDatabaseNode dropDatabase = 24;
+  optional DropTableNode dropTable = 25;
 }
 
 message ScanNode {
@@ -100,20 +111,71 @@ message JoinNode {
   repeated Target targets = 5;
 }
 
-message LimitNode {
-  required int32 childId = 1;
-  required int64 fetchFirstNum = 2;
-}
-
 message GroupbyNode {
   required int32 childId = 1;
   repeated ColumnProto groupingKeys = 2;
   repeated EvalTree aggFunctions = 3;
 }
 
+message DistinctGroupbyNode {
+  required int32 childId = 1;
+  repeated GroupbyNode groupbyNodes = 2;
+  repeated Target targets = 3;
+  repeated ColumnProto groupingKeys = 4;
+  repeated int32 resultId = 5;
+}
+
 message SortNode {
   required int32 childId = 1;
   repeated SortSpecProto sortSpecs = 2;
+}
+
+message LimitNode {
+  required int32 childId = 1;
+  required int64 fetchFirstNum = 2;
+}
+
+message WindowAggNode {
+  required int32 childId = 1;
+  repeated ColumnProto partitionKeys = 2;
+  repeated SortSpecProto sortSpecs = 3;
+  repeated EvalTree windowFunctions = 4;
+  required bool  distinct = 5; // if distinct aggregation function is included in window function
+  repeated Target targets = 6;
+}
+
+message SetNode {
+  required int32 leftChildId = 1;
+  required int32 rightChildId = 2;
+}
+
+message TableSubQueryNode {
+  required int32 childId = 1;
+  required string tableName = 2;
+  repeated Target targets = 3;
+}
+
+message PartitionTableScanSpec {
+  repeated string paths = 1;
+}
+
+message PersistentStoreNode {
+  required int32 childId = 1;
+  required StoreType storageType = 2;
+  required KeyValueSetProto tableProperties = 3;
+}
+
+message StoreTableNodeSpec { // required PersistentStoreSpec
+  repeated string tableName = 2;
+  optional PartitionDescProto partitionDesc = 3;
+}
+
+message InsertNodeSpec { // required StoreTableSpec
+  required bool overwrite = 1;
+  required SchemaProto tableSchema = 2;
+  required SchemaProto targetSchema = 3;
+  required SchemaProto projectedSchema = 4;
+  required string path = 5;
 }
 
 message ProjectionNode {
@@ -128,6 +190,29 @@ message EvalExprNode {
 
 message RootNode {
   required int32 childId = 1;
+}
+
+message CreateDatabaseNode {
+  required string dbName = 1;
+  required bool ifNotExists = 2;
+}
+
+message DropDatabaseNode {
+  required string dbName = 1;
+  required bool ifExists = 2;
+}
+
+message CreateTableNodeSpec { // required PersistentStoreSpec
+  required SchemaProto schema = 1;
+  required string path = 2;
+  required bool external = 3;
+  required bool ifNotExists = 4;
+}
+
+message DropTableNode {
+  required string tableName = 1;
+  required bool ifExists = 2;
+  required bool purge = 3;
 }
 
 message Target {
