@@ -446,12 +446,26 @@ public class TajoClient implements Closeable {
     return new QueryStatus(res);
   }
 
-  public static boolean isQueryRunnning(QueryState state) {
-    return state == QueryState.QUERY_NEW ||
-        state == QueryState.QUERY_RUNNING ||
-        state == QueryState.QUERY_MASTER_LAUNCHED ||
+  /* query submit */
+  public static boolean isInPreNewState(QueryState state) {
+    return state == QueryState.QUERY_NOT_ASSIGNED ||
         state == QueryState.QUERY_MASTER_INIT ||
-        state == QueryState.QUERY_NOT_ASSIGNED;
+        state == QueryState.QUERY_MASTER_LAUNCHED;
+  }
+
+  /* query submitted. but is not running */
+  public static boolean isInInitState(QueryState state) {
+    return  state == QueryState.QUERY_NEW || state == QueryState.QUERY_INIT;
+  }
+
+  /* query started. but is not complete */
+  public static boolean isInRunningState(QueryState state) {
+    return isInInitState(state) || state == QueryState.QUERY_RUNNING;
+  }
+
+  /* query complete */
+  public static boolean isInCompleteState(QueryState state) {
+    return !isInPreNewState(state) && !isInRunningState(state);
   }
 
   public ResultSet getQueryResult(QueryId queryId)
@@ -507,7 +521,7 @@ public class TajoClient implements Closeable {
     }
     QueryStatus status = getQueryStatus(queryId);
 
-    while(status != null && isQueryRunnning(status.getState())) {
+    while(status != null && !isInCompleteState(status.getState())) {
       try {
         Thread.sleep(500);
       } catch (InterruptedException e) {

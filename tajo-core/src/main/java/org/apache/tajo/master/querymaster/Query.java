@@ -94,6 +94,7 @@ public class Query implements EventHandler<QueryEvent> {
 
   // State Machine
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
+  private QueryState queryState;
 
   // Transition Handler
   private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
@@ -231,10 +232,11 @@ public class Query implements EventHandler<QueryEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
+    queryState = stateMachine.getCurrentState();
   }
 
   public float getProgress() {
-    QueryState state = getStateMachine().getCurrentState();
+    QueryState state = getState();
     if (state == QueryState.QUERY_SUCCEEDED) {
       return 1.0f;
     } else {
@@ -253,6 +255,7 @@ public class Query implements EventHandler<QueryEvent> {
           }
         } else {
           subProgresses[idx] = 0.0f;
+          finished = false;
         }
         idx++;
       }
@@ -337,13 +340,18 @@ public class Query implements EventHandler<QueryEvent> {
     return this.subqueries.values();
   }
 
-  public QueryState getState() {
+  public QueryState getSynchronizedState() {
     readLock.lock();
     try {
       return stateMachine.getCurrentState();
     } finally {
       readLock.unlock();
     }
+  }
+
+  /* non-blocking call for client API */
+  public QueryState getState() {
+    return queryState;
   }
 
   public ExecutionBlockCursor getExecutionBlockCursor() {
@@ -783,13 +791,13 @@ public class Query implements EventHandler<QueryEvent> {
           query.erroredSubQueryCount++;
         } else {
           LOG.error(String.format("Invalid SubQuery (%s) State %s at %s",
-              castEvent.getExecutionBlockId().toString(), castEvent.getState().name(), query.getState().name()));
+              castEvent.getExecutionBlockId().toString(), castEvent.getState().name(), query.getSynchronizedState().name()));
           query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));
         }
 
         // if a subquery is succeeded and a query is running
         if (castEvent.getState() == SubQueryState.SUCCEEDED &&  // latest subquery succeeded
-            query.getState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
+            query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
             hasNext(query)) {                                   // there remains at least one subquery.
           query.getSubQuery(castEvent.getExecutionBlockId()).waitingIntermediateReport();
           executeNextBlock(query);
@@ -843,21 +851,22 @@ public class Query implements EventHandler<QueryEvent> {
     LOG.info("Processing " + event.getQueryId() + " of type " + event.getType());
     try {
       writeLock.lock();
-      QueryState oldState = getState();
+      QueryState oldState = getSynchronizedState();
       try {
         getStateMachine().doTransition(event.getType(), event);
+        queryState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", type:" + event
             + ", oldState:" + oldState.name()
-            + ", nextState:" + getState().name()
+            + ", nextState:" + getSynchronizedState().name()
             , e);
         eventHandler.handle(new QueryEvent(this.id, QueryEventType.INTERNAL_ERROR));
       }
 
       //notify the eventhandler of state change
-      if (oldState != getState()) {
-        LOG.info(id + " Query Transitioned from " + oldState + " to " + getState());
+      if (oldState != getSynchronizedState()) {
+        LOG.info(id + " Query Transitioned from " + oldState + " to " + getSynchronizedState());
       }
     }
 
