@@ -21,6 +21,9 @@ package org.apache.tajo.engine.plan;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -90,7 +93,8 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
   public LogicalNode visitEvalExpr(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    EvalExprNode exprEval, Stack<LogicalNode> stack) throws PlanningException {
     PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
-    exprEvalBuilder.addAllTargets(convertTargets(exprEval.getTargets()));
+    exprEvalBuilder.addAllTargets(
+        LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(exprEval.getTargets()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, exprEval);
     nodeBuilder.setExprEval(exprEvalBuilder);
@@ -107,7 +111,8 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     PlanProto.ProjectionNode.Builder projectionBuilder = PlanProto.ProjectionNode.newBuilder();
     projectionBuilder.setChildId(childIds[0]);
-    projectionBuilder.addAllTargets(convertTargets(projection.getTargets()));
+    projectionBuilder.addAllTargets(
+        LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(projection.getTargets()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, projection);
     nodeBuilder.setProjection(projectionBuilder);
@@ -132,6 +137,36 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     context.treeBuilder.addNodes(nodeBuilder);
 
     return limit;
+  }
+
+  public LogicalNode visitWindowAgg(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    WindowAggNode windowAgg, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitWindowAgg(context, plan, block, windowAgg, stack);
+
+    int [] childIds = registerGetChildIds(context, windowAgg);
+
+    PlanProto.WindowAggNode.Builder windowAggBuilder = PlanProto.WindowAggNode.newBuilder();
+    windowAggBuilder.setChildId(childIds[0]);
+    if (windowAgg.hasPartitionKeys()) {
+      windowAggBuilder.addAllPartitionKeys(
+          LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(windowAgg.getPartitionKeys()));
+    }
+    if (windowAgg.hasAggFunctions()) {
+      windowAggBuilder.addAllWindowFunctions(
+          LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(windowAgg.getWindowFunctions()));
+    }
+    windowAggBuilder.setDistinct(windowAgg.isDistinct());
+
+    if (windowAgg.hasSortSpecs()) {
+      windowAggBuilder.addAllSortSpecs(
+          LogicalNodeTreeSerializer.<CatalogProtos.SortSpecProto>toProtoObjects(windowAgg.getSortSpecs()));
+    }
+    if (windowAgg.hasTargets()) {
+      windowAggBuilder.addAllTargets(
+          LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(windowAgg.getTargets()));
+    }
+
+    return windowAgg;
   }
 
   @Override
@@ -181,11 +216,13 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     PlanProto.GroupbyNode.Builder groupbyBuilder = PlanProto.GroupbyNode.newBuilder();
     groupbyBuilder.setChildId(childIds[0]);
 
-    for (int i = 0; i < groupbyNode.getGroupingColumns().length; i++) {
-      groupbyBuilder.addGroupingKeys(groupbyNode.getGroupingColumns()[i].getProto());
+    if (groupbyNode.groupingKeyNum() > 0) {
+      groupbyBuilder.addAllGroupingKeys(
+          LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(groupbyNode.getGroupingColumns()));
     }
-    for (int i = 0; i < groupbyNode.getGroupingColumns().length; i++) {
-      groupbyBuilder.addAggFunctions(EvalTreeProtoSerializer.serialize(groupbyNode.getAggFunctions()[i]));
+    if (groupbyNode.hasAggFunctions()) {
+      groupbyBuilder.addAllAggFunctions(
+          LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(groupbyNode.getAggFunctions()));
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, groupbyNode);
@@ -228,7 +265,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
       joinBuilder.setJoinQual(EvalTreeProtoSerializer.serialize(join.getJoinQual()));
     }
     if (join.hasTargets()) {
-      joinBuilder.addAllTargets(convertTargets(join.getTargets()));
+      joinBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(join.getTargets()));
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, join);
@@ -249,7 +286,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
 
     if (scan.hasTargets()) {
-      scanBuilder.addAllTargets(convertTargets(scan.getTargets()));
+      scanBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(scan.getTargets()));
     }
 
     if (scan.hasQual()) {
@@ -294,15 +331,19 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
   }
 
-  private Iterable<PlanProto.Target> convertTargets(Target [] targets) {
-    List<PlanProto.Target> converted = Lists.newArrayList();
-    for (int i = 0; i < targets.length; i++) {
-      PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
-      targetBuilder.setExpr(EvalTreeProtoSerializer.serialize(targets[i].getEvalTree()));
-      if (targets[i].hasAlias()) {
-        targetBuilder.setAlias(targets[i].getAlias());
-      }
-      converted.add(targetBuilder.build());
+  public static PlanProto.Target convertTarget(Target target) {
+    PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
+    targetBuilder.setExpr(EvalTreeProtoSerializer.serialize(target.getEvalTree()));
+    if (target.hasAlias()) {
+      targetBuilder.setAlias(target.getAlias());
+    }
+    return targetBuilder.build();
+  }
+
+  public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects) {
+    List<T> converted = Lists.newArrayList();
+    for (int i = 0; i < protoObjects.length; i++) {
+      converted.add((T) protoObjects[i].getProto());
     }
     return converted;
   }

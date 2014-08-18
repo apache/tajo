@@ -66,6 +66,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case LIMIT:
         current = visitLimit(context, plan, block, (LimitNode) node, stack);
         break;
+      case WINDOW_AGG:
+        current = visitWindowAgg(context, plan, block, (WindowAggNode) node, stack);
+        break;
       case SORT:
         current = visitSort(context, plan, block, (SortNode) node, stack);
         break;
@@ -74,9 +77,6 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         break;
       case GROUP_BY:
         current = visitGroupBy(context, plan, block, (GroupbyNode) node, stack);
-        break;
-      case WINDOW_AGG:
-        current = visitWindowAgg(context, plan, block, (WindowAggNode) node, stack);
         break;
       case DISTINCT_GROUP_BY:
         current = visitDistinct(context, plan, block, (DistinctGroupbyNode) node, stack);

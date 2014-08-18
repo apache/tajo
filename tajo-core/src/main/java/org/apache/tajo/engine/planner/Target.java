@@ -20,17 +20,20 @@ package org.apache.tajo.engine.planner;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.plan.LogicalNodeTreeSerializer;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 /**
  * A Target contains how to evaluate an expression and its alias name.
  */
-public class Target implements Cloneable, GsonObject {
+public class Target implements Cloneable, GsonObject, ProtoObject<PlanProto.Target> {
   @Expose private EvalNode expr;
   @Expose private Column column;
   @Expose private String alias = null;
@@ -125,5 +128,10 @@ public class Target implements Cloneable, GsonObject {
 
   public String toJson() {
     return CoreGsonHelper.toJson(this, Target.class);
+  }
+
+  @Override
+  public PlanProto.Target getProto() {
+    return LogicalNodeTreeSerializer.convertTarget(this);
   }
 }
