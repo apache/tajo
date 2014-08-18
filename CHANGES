@@ -339,6 +339,9 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1007: Update site for new committer and new contributors. 
+    (hyunsik)
+
     TAJO-1001: Add missed postgresql license to NOTICE.txt and LICENSE.txt.
     (hyunsik)
 
