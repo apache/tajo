@@ -174,7 +174,7 @@ public class TajoAdmin {
 
   private void processDesc(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    checkMasterStatus();
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
@@ -214,7 +214,7 @@ public class TajoAdmin {
 
   private void processCluster(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    checkMasterStatus();
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<WorkerResourceInfo> workerList = tajoClient.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
@@ -379,7 +379,7 @@ public class TajoAdmin {
 
   private void processList(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    checkMasterStatus();
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     StringBuilder builder = new StringBuilder();
@@ -420,7 +420,7 @@ public class TajoAdmin {
 
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    checkMasterStatus();
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
 
       List<String> list = HAServiceUtil.getMasters(tajoConf);
@@ -441,20 +441,6 @@ public class TajoAdmin {
     }
   }
 
-  // In TajoMaster HA mode, if TajoAdmin can't connect existing active master,
-  // this should try to connect new active master.
-  private void checkMasterStatus() {
-    try {
-      if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-        if (!HAServiceUtil.isMasterAlive(tajoConf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
-            .varname), tajoConf)) {
-          tajoClient.close();
-          tajoClient = new TajoClient(tajoConf);
-        }
-      }
-    } catch (Exception e) {
-    }
-  }
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
 

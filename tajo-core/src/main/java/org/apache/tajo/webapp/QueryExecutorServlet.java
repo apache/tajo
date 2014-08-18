@@ -11,6 +11,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
@@ -272,17 +273,9 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       startTime = System.currentTimeMillis();
       try {
-        // In TajoMaster HA mode, if this servlet can't connect existing active master,
-        // this should try to connect new active master.
         TajoConf conf = tajoClient.getConf();
-        if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-          if (!HAServiceUtil.isMasterAlive(conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
-              .varname), conf)) {
-            tajoClient.close();
-            tajoClient = new TajoClient(new TajoConf());
-          }
-        }
-        
+        tajoClient = TajoHAClientUtil.getTajoClient(conf, tajoClient);
+
         response = tajoClient.executeQuery(query);
 
         if (response == null) {

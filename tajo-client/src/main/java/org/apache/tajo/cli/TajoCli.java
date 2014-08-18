@@ -28,6 +28,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -304,8 +305,10 @@ public class TajoCli {
       return script;
     }
 
+    System.out.println("### script:" + script);
     for (String eachParam: params) {
       String[] tokens = eachParam.split("=");
+        System.out.println("### tokensLength:" + tokens.length);
       if (tokens.length != 2) {
         continue;
       }
@@ -455,7 +458,7 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeJsonQuery(String json) throws ServiceException {
+  private void executeJsonQuery(String json) throws ServiceException, IOException {
     checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
@@ -482,7 +485,7 @@ public class TajoCli {
     }
   }
 
-  private int executeQuery(String statement) throws ServiceException {
+  private int executeQuery(String statement) throws ServiceException, IOException {
     checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
@@ -633,28 +636,13 @@ public class TajoCli {
     }
   }
 
-  // In TajoMaster HA mode, if TajoCli can't connect existing active master,
-  // this should try to connect new active master.
-  private void checkMasterStatus() {
-    try {
-      if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-        if (!HAServiceUtil.isMasterAlive(conf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
-            .varname), conf)) {
-          String baseDatabase = client.getBaseDatabase();
-          conf.set(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname,
-              HAServiceUtil.getMasterClientName(conf));
-
-          client.close();
-          commands.clear();
-
-          client = new TajoClient(conf, baseDatabase);
-          context.setCurrentDatabase(client.getCurrentDatabase());
-
-          initHistory();
-          initCommands();
-        }
-      }
-    } catch (Exception e) {
+  private void checkMasterStatus() throws IOException, ServiceException {
+    String sessionId = client.getSessionId().getId();
+    client = TajoHAClientUtil.getTajoClient(conf, client, context);
+    if(!sessionId.equals(client.getSessionId().getId())) {
+      commands.clear();
+      initHistory();
+      initCommands();
     }
   }
 

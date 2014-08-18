@@ -83,10 +83,10 @@ public class HAServiceUtil {
     if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       try {
         FileSystem fs = getFileSystem(conf);
-        Path[] paths = getSystemPath(conf);
+        Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
 
-        if (fs.exists(paths[1])) {
-          FileStatus[] files = fs.listStatus(paths[1]);
+        if (fs.exists(activePath)) {
+          FileStatus[] files = fs.listStatus(activePath);
 
           if (files.length == 1) {
             Path file = files[0].getPath();
@@ -185,11 +185,13 @@ public class HAServiceUtil {
 
     try {
       FileSystem fs = getFileSystem(conf);
-      Path[] paths = getSystemPath(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+
       Path temPath = null;
 
       // Check backup masters
-      FileStatus[] files = fs.listStatus(paths[2]);
+      FileStatus[] files = fs.listStatus(backupPath);
       for (FileStatus status : files) {
         temPath = status.getPath();
         if (temPath.getName().equals(targetMaster)) {
@@ -198,7 +200,7 @@ public class HAServiceUtil {
       }
 
       // Check active master
-      files = fs.listStatus(paths[1]);
+      files = fs.listStatus(activePath);
       if (files.length == 1) {
         temPath = files[0].getPath();
         if (temPath.getName().equals(targetMaster)) {
@@ -216,12 +218,13 @@ public class HAServiceUtil {
     int retValue = -1;
     try {
       FileSystem fs = getFileSystem(conf);
-      Path[] paths = getSystemPath(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
       Path temPath = null;
 
       int aliveMasterCount = 0;
       // Check backup masters
-      FileStatus[] files = fs.listStatus(paths[2]);
+      FileStatus[] files = fs.listStatus(backupPath);
       for (FileStatus status : files) {
         temPath = status.getPath();
         if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
@@ -230,7 +233,7 @@ public class HAServiceUtil {
       }
 
       // Check active master
-      files = fs.listStatus(paths[1]);
+      files = fs.listStatus(activePath);
       if (files.length == 1) {
         temPath = files[0].getPath();
         if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
@@ -244,7 +247,7 @@ public class HAServiceUtil {
       }
 
       // delete ha path.
-      fs.delete(paths[0], true);
+      fs.delete(TajoConf.getSystemHADir(conf), true);
       retValue = 1;
     } catch (Exception e) {
       e.printStackTrace();
@@ -258,18 +261,19 @@ public class HAServiceUtil {
 
     try {
       FileSystem fs = getFileSystem(conf);
-      Path[] paths = getSystemPath(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
       Path temPath = null;
 
       // Check backup masters
-      FileStatus[] files = fs.listStatus(paths[2]);
+      FileStatus[] files = fs.listStatus(backupPath);
       for (FileStatus status : files) {
         temPath = status.getPath();
         list.add(temPath.getName().replaceAll("_", ":"));
       }
 
       // Check active master
-      files = fs.listStatus(paths[1]);
+      files = fs.listStatus(activePath);
       if (files.length == 1) {
         temPath = files[0].getPath();
         list.add(temPath.getName().replaceAll("_", ":"));
@@ -286,12 +290,4 @@ public class HAServiceUtil {
     return rootPath.getFileSystem(conf);
   }
 
-  private static Path[] getSystemPath(TajoConf conf) throws IOException {
-    Path[] paths = new Path[3];
-    paths[0] = TajoConf.getSystemHADir(conf);
-    paths[1] = new Path(paths[0], TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
-    paths[2] = new Path(paths[0], TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
-
-    return paths;
-  }
 }
