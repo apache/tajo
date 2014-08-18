@@ -112,6 +112,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1009: A binary eval for column references of the same tables 
+    should not be recognized as a join condition. (hyunsik)
+
     TAJO-985: Client API should be non-blocking. (jinho)
 
     TAJO-1006: Fix wrong storage unit for kilo bytes and others. (hyunsik)

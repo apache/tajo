@@ -58,6 +58,7 @@ import java.util.Set;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestEvalTreeUtil {
@@ -364,5 +365,11 @@ public class TestEvalTreeUtil {
     for (AggregationFunctionCallEval eval : list) {
       assertTrue(result.contains(eval.getName()));
     }
+  }
+
+  @Test
+  public final void testIsJoinQual() throws PlanningException {
+    EvalNode evalNode = getRootSelection("select score from people where people.score > people.age");
+    assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
   }
 }
