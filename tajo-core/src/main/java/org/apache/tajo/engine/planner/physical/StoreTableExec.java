@@ -89,7 +89,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
       String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+      StorageUtil.setNullCharForTextSerializer(meta, nullChar);
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, lastFileName);
     }
 

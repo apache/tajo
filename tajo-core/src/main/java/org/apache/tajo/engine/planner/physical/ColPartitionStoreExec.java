@@ -81,7 +81,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     if (!(plan instanceof InsertNode)) {
       String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+      StorageUtil.setNullCharForTextSerializer(meta, nullChar);
     }
 
     if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {

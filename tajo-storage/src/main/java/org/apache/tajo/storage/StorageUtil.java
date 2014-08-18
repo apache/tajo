@@ -240,4 +240,25 @@ public class StorageUtil extends StorageConstants {
       amt -= ret;
     }
   }
+
+  /**
+   * Set nullChar to TableMeta according to file format
+   *
+   * @param meta TableMeta
+   * @param nullChar A character for NULL representation
+   */
+  public static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
+    switch (meta.getStoreType()) {
+    case CSV:
+      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+      break;
+    case RCFILE:
+      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+      break;
+    case SEQUENCEFILE:
+      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+      break;
+    default: // nothing to do
+    }
+  }
 }
