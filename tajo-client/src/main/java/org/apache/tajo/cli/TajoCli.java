@@ -229,6 +229,7 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
+    checkMasterStatus();
     context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();
     initCommands();
@@ -305,10 +306,8 @@ public class TajoCli {
       return script;
     }
 
-    System.out.println("### script:" + script);
     for (String eachParam: params) {
       String[] tokens = eachParam.split("=");
-        System.out.println("### tokensLength:" + tokens.length);
       if (tokens.length != 2) {
         continue;
       }
@@ -637,9 +636,10 @@ public class TajoCli {
   }
 
   private void checkMasterStatus() throws IOException, ServiceException {
-    String sessionId = client.getSessionId().getId();
+    String sessionId = client.getSessionId() != null ? client.getSessionId().getId() : null;
     client = TajoHAClientUtil.getTajoClient(conf, client, context);
-    if(!sessionId.equals(client.getSessionId().getId())) {
+    if(sessionId != null && (client.getSessionId() == null ||
+        !sessionId.equals(client.getSessionId().getId()))) {
       commands.clear();
       initHistory();
       initCommands();

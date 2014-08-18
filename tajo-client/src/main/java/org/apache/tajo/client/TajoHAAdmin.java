@@ -158,7 +158,7 @@ public class TajoHAAdmin {
 
   private void getState(Writer writer, String param) throws ParseException, IOException,
       ServiceException {
-    checkMasterStatus();
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     int retValue = HAServiceUtil.getState(param, tajoClient.getConf());
 
     switch (retValue) {
@@ -192,19 +192,6 @@ public class TajoHAAdmin {
       default:
         writer.write("Cannot format ha information.\n");
         break;
-    }
-  }
-
-  // In TajoMaster HA mode, if TajoAdmin can't connect existing active master,
-  // this should try to connect new active master.
-  private void checkMasterStatus() {
-    try {
-      if (!HAServiceUtil.isMasterAlive(tajoConf.get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS
-          .varname), tajoConf)) {
-        tajoClient.close();
-        tajoClient = new TajoClient(tajoConf);
-      }
-    } catch (Exception e) {
     }
   }
 
