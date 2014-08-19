@@ -236,7 +236,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
       List<EvalNode> removedFromFilter = new ArrayList<EvalNode>();
       for (EvalNode eachEval: context.pushingDownFilters) {
-        if (EvalTreeUtil.isJoinQual(eachEval, true)) {
+        if (EvalTreeUtil.isJoinQual(block, eachEval, true)) {
           outerJoinPredicationEvals.add(eachEval);
           removedFromFilter.add(eachEval);
         } else {
@@ -287,8 +287,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // Join's input schema = right child output columns + left child output columns
-    Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, joinNode, left, notMatched, null, true,
-        0);
+    Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
+        null, true, 0);
     context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, block, left, stack);
 
@@ -296,7 +296,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
-    transformedMap = findCanPushdownAndTransform(context, joinNode, right, notMatched, null, true, left.getOutSchema().size());
+    transformedMap = findCanPushdownAndTransform(context, block, joinNode, right, notMatched, null, true,
+        left.getOutSchema().size());
     context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
 
     visit(context, plan, block, right, stack);
@@ -511,7 +512,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
-        context, projectionNode, childNode, notMatched, null, false, 0);
+        context, block,projectionNode, childNode, notMatched, null, false, 0);
 
     context.setFiltersTobePushed(transformedMap.keySet());
 
@@ -567,7 +568,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private BiMap<EvalNode, EvalNode> findCanPushdownAndTransform(
-      FilterPushDownContext context, Projectable node,
+      FilterPushDownContext context, LogicalPlan.QueryBlock block, Projectable node,
       LogicalNode childNode, List<EvalNode> notMatched,
       Set<String> partitionColumns,
       boolean ignoreJoin, int columnOffset) throws PlanningException {
@@ -581,7 +582,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();
 
     for (EvalNode eval : context.pushingDownFilters) {
-      if (ignoreJoin && EvalTreeUtil.isJoinQual(eval, true)) {
+      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, eval, true)) {
         notMatched.add(eval);
         continue;
       }
@@ -797,7 +798,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // transform
     Map<EvalNode, EvalNode> tranformed =
-        findCanPushdownAndTransform(context, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
+        findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
 
     context.setFiltersTobePushed(tranformed.keySet());
     LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
@@ -862,7 +863,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, scanNode, null, notMatched, partitionColumns, true, 0);
+        findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, true, 0);
 
     for (EvalNode eval : transformed.keySet()) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {

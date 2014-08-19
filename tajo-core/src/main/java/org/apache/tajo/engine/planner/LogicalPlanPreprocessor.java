@@ -183,14 +183,14 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       expr.setNamedExprs(rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]));
     }
 
-    // 1) Normalize field names into full qualified names
-    // 2) Register explicit column aliases to block
     NamedExpr[] projectTargetExprs = expr.getNamedExprs();
-    NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
       NamedExpr namedExpr = projectTargetExprs[i];
-      normalizer.visit(ctx, new Stack<Expr>(), namedExpr.getExpr());
 
+      // 1) Normalize all field names occured in each expr into full qualified names
+      NameRefInSelectListNormalizer.normalize(ctx, namedExpr.getExpr());
+
+      // 2) Register explicit column aliases to block
       if (namedExpr.getExpr().getType() == OpType.Column && namedExpr.hasAlias()) {
         ctx.queryBlock.addColumnAlias(((ColumnReferenceExpr)namedExpr.getExpr()).getCanonicalName(),
             namedExpr.getAlias());
@@ -461,7 +461,18 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return insertNode;
   }
 
-  class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<LogicalPlanner.PlanContext, Object> {
+  static class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<LogicalPlanner.PlanContext, Object> {
+    private static final NameRefInSelectListNormalizer instance;
+
+    static {
+      instance = new NameRefInSelectListNormalizer();
+    }
+
+    public static void normalize(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
+      NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
+      normalizer.visit(context,new Stack<Expr>(), expr);
+    }
+
     @Override
     public Expr visitColumnReference(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
         throws PlanningException {

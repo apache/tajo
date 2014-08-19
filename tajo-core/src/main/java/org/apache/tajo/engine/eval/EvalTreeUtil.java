@@ -20,11 +20,17 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.NamedExpr;
+import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.ExprFinder;
+import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.TUtil;
@@ -231,6 +237,10 @@ public class EvalTreeUtil {
     return exprSet.contains(target);
   }
 
+  public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
+    return isJoinQual(null, expr, includeThetaJoin);
+  }
+
   /**
    * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
    *
@@ -249,7 +259,7 @@ public class EvalTreeUtil {
    *                         Otherwise, it only returns equi-join conditions.
    * @return True if it is join condition.
    */
-  public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
+  public static boolean isJoinQual(@Nullable LogicalPlan.QueryBlock block, EvalNode expr, boolean includeThetaJoin) {
 
     if (expr instanceof BinaryEval) {
       boolean joinComparator;
@@ -262,16 +272,44 @@ public class EvalTreeUtil {
       BinaryEval binaryEval = (BinaryEval) expr;
       boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
 
+      Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
+      Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
 
-      String leftQualifier =
-          EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr()).iterator().next().getQualifiedName();
-      String rightQualifier =
-          EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr()).iterator().next().getQualifiedName();
+      boolean ensureColumnsOFDifferentTables = false;
 
-      boolean isDifferentTables =
-          !(CatalogUtil.extractQualifier(leftQualifier).equals(CatalogUtil.extractQualifier(rightQualifier)));
+      if (leftColumns.size() == 1 && rightColumns.size() == 1) {
+        Column leftColumn = leftColumns.iterator().next();
+        Column rightColumn = rightColumns.iterator().next();
 
-      return joinComparator && isBothTermFields && isDifferentTables;
+        String leftQualifier = CatalogUtil.extractQualifier(leftColumn.getQualifiedName());
+        String rightQualifier = CatalogUtil.extractQualifier(rightColumn.getQualifiedName());
+
+        if (block != null) {
+          boolean leftQualified = CatalogUtil.isFQColumnName(leftColumn.getQualifiedName());
+          boolean rightQualified = CatalogUtil.isFQColumnName(rightColumn.getQualifiedName());
+
+          if (!leftQualified) {
+            NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(leftColumn.getQualifiedName());
+            Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
+
+            if (foundColumns.size() > 0) {
+              leftQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+            }
+          }
+          if (!rightQualified) {
+            NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(rightColumn.getQualifiedName());
+            Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
+
+            if (foundColumns.size() > 0) {
+              rightQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+            }
+          }
+        }
+
+        ensureColumnsOFDifferentTables = !leftQualifier.equals(rightQualifier);
+      }
+
+      return joinComparator && isBothTermFields && ensureColumnsOFDifferentTables;
     } else {
       return false;
     }
