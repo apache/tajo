@@ -45,6 +45,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.master.ha.HAService;
+import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -129,6 +131,8 @@ public class TajoMaster extends CompositeService {
   private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
   private TajoSystemMetrics systemMetrics;
+
+  private HAService haService;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -218,6 +222,20 @@ public class TajoMaster extends CompositeService {
       webServer.start();
     }
   }
+
+
+  private void initHAManger() throws Exception {
+    // If tajo provides haService based on ZooKeeper, following codes need to update.
+    if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      haService = new HAServiceHDFSImpl(context);
+      haService.register();
+    }
+  }
+
+  public boolean isActiveMaster() {
+    return (haService != null ? haService.isActiveStatus() : true);
+  }
+
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
@@ -362,6 +380,12 @@ public class TajoMaster extends CompositeService {
     }
 
     initSystemMetrics();
+
+    try {
+      initHAManger();
+    } catch (IOException e) {
+      LOG.error(e.getMessage(), e);
+    }
   }
 
   private void writeSystemConf() throws IOException {
@@ -402,6 +426,14 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void stop() {
+    if (haService != null) {
+      try {
+        haService.delete();
+      } catch (Exception e) {
+        LOG.error(e);
+      }
+    }
+
     if (webServer != null) {
       try {
         webServer.stop();
@@ -491,6 +523,10 @@ public class TajoMaster extends CompositeService {
 
     public TajoSystemMetrics getSystemMetrics() {
       return systemMetrics;
+    }
+
+    public HAService getHAService() {
+      return haService;
     }
   }
 

@@ -237,6 +237,24 @@ public class EvalTreeUtil {
     return exprSet.contains(target);
   }
 
+  /**
+   * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
+   *
+   * If three conditions are satisfied, we can recognize the expression as a equi join condition.
+   * <ol>
+   *   <li>An expression is an equal comparison expression.</li>
+   *   <li>Both terms in an expression are column references.</li>
+   *   <li>Both column references point come from different tables</li>
+   * </ol>
+   *
+   * For theta join condition, we will use "an expression is a predicate including column references which come
+   * from different two tables" instead of the first rule.
+   *
+   * @param expr EvalNode to be evaluated
+   * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
+   *                         Otherwise, it only returns equi-join conditions.
+   * @return True if it is join condition.
+   */
   public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
     return isJoinQual(null, expr, includeThetaJoin);
   }
@@ -254,6 +272,7 @@ public class EvalTreeUtil {
    * For theta join condition, we will use "an expression is a predicate including column references which come
    * from different two tables" instead of the first rule.
    *
+   * @param block if block is not null, it tracks the lineage of aliased name derived from complex expressions.
    * @param expr EvalNode to be evaluated
    * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
    *                         Otherwise, it only returns equi-join conditions.
@@ -275,41 +294,50 @@ public class EvalTreeUtil {
       Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
       Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
 
-      boolean ensureColumnsOFDifferentTables = false;
+      boolean ensureColumnsOfDifferentTables = false;
 
-      if (leftColumns.size() == 1 && rightColumns.size() == 1) {
+      if (leftColumns.size() == 1 && rightColumns.size() == 1) { // ensure there is only one column of each table
         Column leftColumn = leftColumns.iterator().next();
         Column rightColumn = rightColumns.iterator().next();
 
         String leftQualifier = CatalogUtil.extractQualifier(leftColumn.getQualifiedName());
         String rightQualifier = CatalogUtil.extractQualifier(rightColumn.getQualifiedName());
 
+        // if block is given, it will track an original expression of each term in order to decide whether
+        // this expression is a join condition, or not.
         if (block != null) {
           boolean leftQualified = CatalogUtil.isFQColumnName(leftColumn.getQualifiedName());
           boolean rightQualified = CatalogUtil.isFQColumnName(rightColumn.getQualifiedName());
 
-          if (!leftQualified) {
+          if (!leftQualified) { // if left one is aliased name
+
+            // getting original expression of left term
             NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(leftColumn.getQualifiedName());
             Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
 
-            if (foundColumns.size() > 0) {
+            // ensure there is only one column of an original expression
+            if (foundColumns.size() == 1) {
               leftQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
             }
           }
-          if (!rightQualified) {
+          if (!rightQualified) { // if right one is aliased name
+
+            // getting original expression of right term
             NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(rightColumn.getQualifiedName());
             Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
 
-            if (foundColumns.size() > 0) {
+            // ensure there is only one column of an original expression
+            if (foundColumns.size() == 1) {
               rightQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
             }
           }
         }
 
-        ensureColumnsOFDifferentTables = !leftQualifier.equals(rightQualifier);
+        // if columns of both term is different to each other, it will be true.
+        ensureColumnsOfDifferentTables = !leftQualifier.equals(rightQualifier);
       }
 
-      return joinComparator && isBothTermFields && ensureColumnsOFDifferentTables;
+      return joinComparator && isBothTermFields && ensureColumnsOfDifferentTables;
     } else {
       return false;
     }
