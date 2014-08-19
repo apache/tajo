@@ -115,6 +115,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1011: EvalTreeUtil::isJoinQual need to handle other join conditions. (jaehwa)
+
     TAJO-1009: A binary eval for column references of the same tables 
     should not be recognized as a join condition. (hyunsik)
 
