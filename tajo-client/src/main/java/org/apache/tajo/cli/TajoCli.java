@@ -28,10 +28,12 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -81,7 +83,8 @@ public class TajoCli {
       ExecExternalShellCommand.class,
       HdfsCommand.class,
       TajoAdminCommand.class,
-      TajoGetConfCommand.class
+      TajoGetConfCommand.class,
+      TajoHAAdminCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -226,6 +229,7 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
+    checkMasterStatus();
     context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();
     initCommands();
@@ -419,6 +423,7 @@ public class TajoCli {
   }
 
   public int executeMetaCommand(String line) throws Exception {
+    checkMasterStatus();
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
       String arguments [] = metaCommand.split(" ");
@@ -452,7 +457,8 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeJsonQuery(String json) throws ServiceException {
+  private void executeJsonQuery(String json) throws ServiceException, IOException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
@@ -478,7 +484,8 @@ public class TajoCli {
     }
   }
 
-  private int executeQuery(String statement) throws ServiceException {
+  private int executeQuery(String statement) throws ServiceException, IOException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
@@ -623,6 +630,17 @@ public class TajoCli {
     //for testcase
     if (client != null) {
       client.close();
+    }
+  }
+
+  private void checkMasterStatus() throws IOException, ServiceException {
+    String sessionId = client.getSessionId() != null ? client.getSessionId().getId() : null;
+    client = TajoHAClientUtil.getTajoClient(conf, client, context);
+    if(sessionId != null && (client.getSessionId() == null ||
+        !sessionId.equals(client.getSessionId().getId()))) {
+      commands.clear();
+      initHistory();
+      initCommands();
     }
   }
 
