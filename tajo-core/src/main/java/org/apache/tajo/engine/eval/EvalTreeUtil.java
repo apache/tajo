@@ -262,14 +262,36 @@ public class EvalTreeUtil {
       BinaryEval binaryEval = (BinaryEval) expr;
       boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
 
+      // If there is a filter using constants, we can't find unique column name as follows:
+      // ex) select * from lineitem where l_orderkey = 2;
+      // In this case, we may find NoSuchElementException because iterator has not any elements.
+      // Thus, we should find whether iterator has one more elements.
+      String leftQualifier = "", rightQualifier = "";
+      if (EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr()).iterator().hasNext()) {
+        Column leftColumn = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr()).iterator().next();
+        leftQualifier = leftColumn.getQualifiedName();
+      }
 
-      String leftQualifier =
-          EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr()).iterator().next().getQualifiedName();
-      String rightQualifier =
-          EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr()).iterator().next().getQualifiedName();
+      if (EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr()).iterator().hasNext()) {
+        Column rightColumn = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr()).iterator().next();
+        rightQualifier = rightColumn.getQualifiedName();
+      }
 
-      boolean isDifferentTables =
-          !(CatalogUtil.extractQualifier(leftQualifier).equals(CatalogUtil.extractQualifier(rightQualifier)));
+      String extractLeftQualifier = CatalogUtil.extractQualifier(leftQualifier);
+      String extractRightQualifier = CatalogUtil.extractQualifier(rightQualifier);
+      boolean isDifferentTables = false;
+
+      // If there are column alias and some functions, extracted qualifier will be empty data as follows:
+      // ex) select   n1.n_nationkey,   substr(n1.n_name, 1, 4) name1,   substr(n2.n_name, 1, 4) name2
+      //     from nation n1 join nation n2 on substr(n1.n_name, 1, 4) = substr(n2.n_name, 1, 4)
+      //     order by n1.n_nationkey;
+      // Thus, we can't check whether join tables used different tables.
+      if (extractLeftQualifier.equals("") && extractRightQualifier.equals("")) {
+        isDifferentTables = true;
+      } else {
+        isDifferentTables = !(CatalogUtil.extractQualifier(leftQualifier).
+            equals(CatalogUtil.extractQualifier(rightQualifier)));
+      }
 
       return joinComparator && isBothTermFields && isDifferentTables;
     } else {
