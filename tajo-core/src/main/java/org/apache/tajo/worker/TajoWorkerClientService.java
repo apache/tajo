@@ -133,7 +133,7 @@ public class TajoWorkerClientService extends AbstractService {
             RpcController controller,
             ClientProtos.GetQueryResultRequest request) throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      Query query = workerContext.getQueryMaster().getQueryMasterTask(queryId, true).getQuery();
+      QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId, true);
 
       ClientProtos.GetQueryResultResponse.Builder builder = ClientProtos.GetQueryResultResponse.newBuilder();
       try {
@@ -142,12 +142,12 @@ public class TajoWorkerClientService extends AbstractService {
         LOG.warn("Can't get current user name");
       }
 
-      if(query == null) {
+      if(queryMasterTask == null || queryMasterTask.getQuery() == null) {
         builder.setErrorMessage("No Query for " + queryId);
       } else {
-        switch (query.getState()) {
+        switch (queryMasterTask.getState()) {
           case QUERY_SUCCEEDED:
-            builder.setTableDesc(query.getResultDesc().getProto());
+            builder.setTableDesc(queryMasterTask.getQuery().getResultDesc().getProto());
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
@@ -196,10 +196,10 @@ public class TajoWorkerClientService extends AbstractService {
         Query query = queryMasterTask.getQuery();
 
         if (query != null) {
-          builder.setState(query.getState());
+          builder.setState(queryMasterTask.getState());
           builder.setProgress(query.getProgress());
           builder.setSubmitTime(query.getAppSubmitTime());
-          if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+          if (queryMasterTask.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
             builder.setFinishTime(query.getFinishTime());
           } else {
             builder.setFinishTime(System.currentTimeMillis());

@@ -316,7 +316,7 @@ public class QueryMasterTask extends CompositeService {
       QueryId queryId = event.getQueryId();
       LOG.info("Query completion notified from " + queryId);
 
-      while (!isTerminatedState(query.getState())) {
+      while (!isTerminatedState(query.getSynchronizedState())) {
         try {
           synchronized (this) {
             wait(10);
@@ -325,7 +325,7 @@ public class QueryMasterTask extends CompositeService {
           LOG.error(e);
         }
       }
-      LOG.info("Query final state: " + query.getState());
+      LOG.info("Query final state: " + query.getSynchronizedState());
       queryMasterContext.stopQuery(queryId);
     }
 

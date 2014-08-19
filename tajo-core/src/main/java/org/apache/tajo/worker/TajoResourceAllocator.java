@@ -323,7 +323,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           containers.add(container);
         }
 
-        SubQueryState state = queryTaskContext.getSubQuery(executionBlockId).getState();
+        SubQueryState state = queryTaskContext.getSubQuery(executionBlockId).getSynchronizedState();
         if (!SubQuery.isRunningState(state)) {
           try {
             List<ContainerId> containerIds = new ArrayList<ContainerId>();

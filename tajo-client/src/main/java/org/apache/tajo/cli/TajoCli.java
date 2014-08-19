@@ -556,22 +556,20 @@ public class TajoCli {
       while (true) {
         // TODO - configurable
         status = client.getQueryStatus(queryId);
-        if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
+        if(TajoClient.isInPreNewState(status.getState())) {
           Thread.sleep(Math.min(20 * initRetries, 1000));
           initRetries++;
           continue;
         }
 
-        if (status.getState() == QueryState.QUERY_RUNNING || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClient.isInRunningState(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
           displayFormatter.printProgress(sout, status);
         }
 
-        if (status.getState() != QueryState.QUERY_RUNNING &&
-            status.getState() != QueryState.QUERY_NOT_ASSIGNED &&
-            status.getState() != QueryState.QUERY_KILL_WAIT) {
+        if (TajoClient.isInCompleteState(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
-          Thread.sleep(Math.min(200 * progressRetries, 1000));
+          Thread.sleep(Math.min(100 * progressRetries, 1000));
           progressRetries += 2;
         }
       }

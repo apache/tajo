@@ -196,7 +196,7 @@ public class TajoAdmin {
         long end = queryInfo.getFinishTime();
         long start = queryInfo.getStartTime();
         String executionTime = decimalF.format((end-start) / 1000) + " sec";
-        if (!TajoClient.isQueryRunnning(queryInfo.getState())) {
+        if (TajoClient.isInCompleteState(queryInfo.getState())) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
         }
