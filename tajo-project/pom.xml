@@ -104,6 +104,16 @@
       <timezone>-8</timezone>
     </developer>
     <developer>
+      <id>hjkim</id>
+      <name>Hyoung Jun Kim</name>
+      <email>hjkim@apache.org</email>
+      <organization>Gruter</organization>
+      <roles>
+        <role>Committer</role>
+      </roles>
+      <timezone>+9</timezone>
+    </developer>      
+    <developer>
       <id>hyunsik</id>
       <name>Hyunsik Choi</name>
       <email>hyunsik@apache.org</email>
@@ -256,6 +266,16 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
+      <name>KyoungBok Lee</name>
+      <organization>Line</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Mai Hai Thanh</name>
+      <organization>ETRI</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>        
+    <contributor>
       <name>Prafulla T.</name>
       <organization></organization>
       <roles><role>Contributor</role></roles>
@@ -264,11 +284,6 @@
       <name>Tae-kyeong Goh</name>
       <organization>Gruter</organization>
       <roles><role>Logo Designer</role></roles>
-    </contributor>
-    <contributor>
-      <name>KyoungBok Lee</name>
-      <organization>Line</organization>
-      <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Seungun Choe</name>

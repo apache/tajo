@@ -20,6 +20,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.ha.HAService" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
@@ -53,6 +54,16 @@
     Worker queryMaster = workers.get(eachQueryMasterKey);
     if(queryMaster != null) {
       portMap.put(queryMaster.getHostName(), queryMaster.getHttpPort());
+    }
+  }
+
+  HAService haService = master.getContext().getHAService();
+  String activeLabel = "";
+  if (haService != null) {
+    if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
     }
   }
 %>
@@ -89,7 +100,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Running Queries</h3>
 <%

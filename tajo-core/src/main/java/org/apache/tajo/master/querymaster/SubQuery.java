@@ -87,6 +87,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
   private final List<String> diagnostics = new ArrayList<String>();
+  private SubQueryState subQueryState;
 
   private long startTime;
   private long finishTime;
@@ -261,6 +262,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     stateMachine = stateMachineFactory.make(this);
+    subQueryState = stateMachine.getCurrentState();
   }
 
   public static boolean isRunningState(SubQueryState state) {
@@ -323,7 +325,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     readLock.lock();
     try {
       if (getState() == SubQueryState.NEW) {
-        return 0;
+        return 0.0f;
       } else {
         tempTasks = new ArrayList<QueryUnit>(tasks.values());
       }
@@ -338,7 +340,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    return totalProgress/(float)tempTasks.size();
+    if (totalProgress > 0.0f) {
+      return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 1000.0f) / 1000.0f;
+    } else {
+      return 0.0f;
+    }
   }
 
   public int getSucceededObjectCount() {
@@ -466,13 +472,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return getId().compareTo(other.getId());
   }
 
-  public SubQueryState getState() {
+  public SubQueryState getSynchronizedState() {
     readLock.lock();
     try {
       return stateMachine.getCurrentState();
     } finally {
       readLock.unlock();
     }
+  }
+
+  /* non-blocking call for client API */
+  public SubQueryState getState() {
+    return subQueryState;
   }
 
   public static TableStats[] computeStatFromUnionBlock(SubQuery subQuery) {
@@ -584,19 +595,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   @Override
   public void handle(SubQueryEvent event) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getState());
+      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getSynchronizedState());
     }
 
     try {
       writeLock.lock();
-      SubQueryState oldState = getState();
+      SubQueryState oldState = getSynchronizedState();
       try {
         getStateMachine().doTransition(event.getType(), event);
+        subQueryState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", eventType:" + event.getType().name()
             + ", oldState:" + oldState.name()
-            + ", nextState:" + getState().name()
+            + ", nextState:" + getSynchronizedState().name()
             , e);
         eventHandler.handle(new SubQueryEvent(getId(),
             SubQueryEventType.SQ_INTERNAL_ERROR));
@@ -604,9 +616,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       // notify the eventhandler of state change
       if (LOG.isDebugEnabled()) {
-        if (oldState != getState()) {
+        if (oldState != getSynchronizedState()) {
           LOG.debug(getId() + " SubQuery Transitioned from " + oldState + " to "
-              + getState());
+              + getSynchronizedState());
         }
       }
     } finally {
@@ -622,7 +634,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       SubQueryEvent, SubQueryState> {
 
     @Override
-    public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
+    public SubQueryState transition(final SubQuery subQuery, SubQueryEvent subQueryEvent) {
       subQuery.setStartTime();
       ExecutionBlock execBlock = subQuery.getBlock();
       SubQueryState state;
@@ -633,24 +645,39 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.finalizeStats();
           state = SubQueryState.SUCCEEDED;
         } else {
-          ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
-          DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
-          setShuffleIfNecessary(subQuery, channel);
-          initTaskScheduler(subQuery);
-          schedule(subQuery);
-          subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
-          LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
+          // execute pre-processing asyncronously
+          subQuery.getContext().getQueryMasterContext().getEventExecutor()
+              .submit(new Runnable() {
+                        @Override
+                        public void run() {
+                          try {
+                            ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
+                            DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
+                            setShuffleIfNecessary(subQuery, channel);
+                            initTaskScheduler(subQuery);
+                            schedule(subQuery);
+                            subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
+                            LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
 
-          if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-            subQuery.stopScheduler();
-            subQuery.finalizeStats();
-            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
-            return SubQueryState.SUCCEEDED;
-          } else {
-            subQuery.taskScheduler.start();
-            allocateContainers(subQuery);
-            return SubQueryState.INITED;
-          }
+                            if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+                              subQuery.stopScheduler();
+                              subQuery.finalizeStats();
+                              subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
+                            } else {
+                              subQuery.taskScheduler.start();
+                              allocateContainers(subQuery);
+
+                            }
+                          } catch (Exception e) {
+                            LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
+                            subQuery.setFinishTime();
+                            subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
+                            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.ERROR));
+                          }
+                        }
+                      }
+              );
+          state = SubQueryState.INITED;
         }
       } catch (Exception e) {
         LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
@@ -863,7 +890,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         long aggregatedVolume = 0;
         for (ExecutionBlock childBlock : masterPlan.getChilds(execBlock)) {
           SubQuery subquery = context.getSubQuery(childBlock.getId());
-          if (subquery == null || subquery.getState() != SubQueryState.SUCCEEDED) {
+          if (subquery == null || subquery.getSynchronizedState() != SubQueryState.SUCCEEDED) {
             aggregatedVolume += getInputVolume(masterPlan, context, childBlock);
           } else {
             aggregatedVolume += subquery.getResultStats().getNumBytes();
@@ -1145,7 +1172,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
             subQuery.abort(SubQueryState.KILLED);
             return SubQueryState.KILLED;
           } else {
-            LOG.error("Invalid State " + subQuery.getState() + " State");
+            LOG.error("Invalid State " + subQuery.getSynchronizedState() + " State");
             subQuery.abort(SubQueryState.ERROR);
             return SubQueryState.ERROR;
           }
