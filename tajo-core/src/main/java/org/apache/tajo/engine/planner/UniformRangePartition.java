@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.exception.RangeOverflowException;
 import org.apache.tajo.storage.Tuple;
@@ -46,42 +47,43 @@ import java.util.List;
  * arbitrary base number systems respectively.
  */
 public class UniformRangePartition extends RangePartitionAlgorithm {
-  private TupleRange originalRange;
+  private final TupleRange originalRange;
   private int variableId;
   private BigInteger[] cardForEachDigit;
   private BigInteger[] colCards;
   private boolean [] isPureAscii; // flags to indicate if i'th key contains pure ascii characters.
-
+  private boolean [] beginNulls; // flags to indicate if i'th begin value is null.
+  private boolean [] endNulls; // flags to indicate if i'th begin value is null.
 
   /**
    *
-   * @param totalRange
+   * @param entireRange
    * @param sortSpecs The description of sort keys
    * @param inclusive true if the end of the range is inclusive
    */
-  public UniformRangePartition(final TupleRange totalRange, final SortSpec[] sortSpecs, boolean inclusive) {
-    super(sortSpecs, totalRange, inclusive);
+  public UniformRangePartition(final TupleRange entireRange, final SortSpec[] sortSpecs, boolean inclusive) {
+    super(sortSpecs, entireRange, inclusive);
 
-    try {
-      originalRange = totalRange.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
+    this.originalRange = entireRange;
+    beginNulls = new boolean[sortSpecs.length];
+    endNulls = new boolean[sortSpecs.length];
 
     // filling pure ascii flags
     isPureAscii = new boolean[sortSpecs.length];
     for (int i = 0; i < sortSpecs.length; i++) {
-      Datum startValue = totalRange.getStart().get(i);
-      Datum endValue = totalRange.getEnd().get(i);
+      Datum startValue = entireRange.getStart().get(i);
+      Datum endValue = entireRange.getEnd().get(i);
       isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
+      beginNulls[i] = startValue.isNull();
+      endNulls[i] = endValue.isNull();
     }
 
     colCards = new BigInteger[sortSpecs.length];
     normalize(sortSpecs, this.mergedRange);
 
     for (int i = 0; i < sortSpecs.length; i++) {
-      Datum startValue = totalRange.getStart().get(i);
-      Datum endValue = totalRange.getEnd().get(i);
+      Datum startValue = entireRange.getStart().get(i);
+      Datum endValue = entireRange.getEnd().get(i);
 
       colCards[i] =  computeCardinality(sortSpecs[i].getSortKey().getDataType(), startValue, endValue,
           inclusive, sortSpecs[i].isAscending());
@@ -152,17 +154,17 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     ranges.get(ranges.size() - 1).setEnd(originalRange.getEnd());
 
     // Ensure all keys are totally ordered correctly.
-    for (int i = 0; i < ranges.size(); i++) {
-      if (i > 1) {
-        if (sortSpecs[0].isAscending()) {
-          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
-              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
-        } else {
-          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0,
-              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
-        }
-      }
-    }
+//    for (int i = 0; i < ranges.size(); i++) {
+//      if (i > 1) {
+//        if (sortSpecs[0].isAscending()) {
+//          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
+//              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
+//        } else {
+//          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0,
+//              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
+//        }
+//      }
+//    }
 
     return ranges.toArray(new TupleRange[ranges.size()]);
   }
@@ -630,6 +632,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           break;
         default:
           throw new UnsupportedOperationException(column.getDataType() + " is not supported yet");
+      }
+
+      // replace i'th end value by NULL if begin and end are all NULL
+      if (beginNulls[i] && endNulls[i]) {
+        end.put(i, NullDatum.get());
+        continue;
       }
     }
 
