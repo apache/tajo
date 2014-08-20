@@ -147,8 +147,8 @@ public class TajoGetConf {
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
 
-    Writer writer = new PrintWriter(System.out);    try {
-      System.out.println("### 1000 ###");
+    Writer writer = new PrintWriter(System.out);
+    try {
       TajoGetConf admin = new TajoGetConf(conf, writer);
       admin.runCommand(args, false);
     } finally {

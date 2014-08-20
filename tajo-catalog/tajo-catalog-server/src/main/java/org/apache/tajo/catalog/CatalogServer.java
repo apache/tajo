@@ -887,7 +887,7 @@ public class CatalogServer extends AbstractService {
         } else {
           for (FunctionDescProto existing : functions.get(signature)) {
             if (existing.getParameterTypesList() != null &&
-                  CatalogUtil.isMatchedFunction(existing.getParameterTypesList(), params)) {
+                CatalogUtil.isMatchedFunction(existing.getParameterTypesList(), params)) {
               return existing;
             }
           }

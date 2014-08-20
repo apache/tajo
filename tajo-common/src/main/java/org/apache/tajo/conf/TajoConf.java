@@ -158,6 +158,10 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
 
+    // Tajo Master HA Configurations
+    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false),
+    TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
+
     // Resource tracker service
     RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003"),
     RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120 * 1000), // seconds
@@ -595,6 +599,10 @@ public class TajoConf extends Configuration {
 
   public static Path getSystemResourceDir(TajoConf conf) {
     return new Path(getSystemDir(conf), TajoConstants.SYSTEM_RESOURCE_DIR_NAME);
+  }
+
+  public static Path getSystemHADir(TajoConf conf) {
+    return new Path(getSystemDir(conf), TajoConstants.SYSTEM_HA_DIR_NAME);
   }
 
   private static boolean hasScheme(String path) {

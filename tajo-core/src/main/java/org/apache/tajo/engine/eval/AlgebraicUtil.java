@@ -72,7 +72,7 @@ public class AlgebraicUtil {
       EvalNode lTerm = null;
       EvalNode rTerm = null;
 
-      if (EvalType.isArithmeticOperator(left)) { // we can ensure that left is binary.
+      if (EvalType.isArithmeticOperator(left.getType())) { // we can ensure that left is binary.
 
         // If the left-left term is a variable, the left-right term is transposed.
         if (EvalTreeUtil.containColumnRef(((BinaryEval)left).getLeftExpr(), target)) {
@@ -234,7 +234,7 @@ public class AlgebraicUtil {
    */
   public static PartialBinaryExpr splitLeftTerm(BinaryEval binary) {
     
-    if (!(EvalType.isArithmeticOperator(binary))) {
+    if (!(EvalType.isArithmeticOperator(binary.getType()))) {
       throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     
@@ -259,7 +259,7 @@ public class AlgebraicUtil {
    */
   public static PartialBinaryExpr splitRightTerm(BinaryEval binary) {
     
-    if (!(EvalType.isArithmeticOperator(binary))) {
+    if (!(EvalType.isArithmeticOperator(binary.getType()))) {
       throw new AlgebraicException("Invalid algebraic operation: " + binary);
     }
     

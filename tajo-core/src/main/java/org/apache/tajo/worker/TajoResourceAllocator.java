@@ -49,6 +49,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.util.ApplicationIdUtils;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -237,9 +238,31 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       RpcConnectionPool connPool = RpcConnectionPool.getPool(queryTaskContext.getConf());
       NettyClientBase tmClient = null;
       try {
-        tmClient = connPool.getConnection(
-            queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-            TajoMasterProtocol.class, true);
+
+        // In TajoMaster HA mode, if backup master be active status,
+        // worker may fail to connect existing active master. Thus,
+        // if worker can't connect the master, worker should try to connect another master and
+        // update master address in worker context.
+        if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+          try {
+            tmClient = connPool.getConnection(
+                queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+                TajoMasterProtocol.class, true);
+          } catch (Exception e) {
+            queryTaskContext.getQueryMasterContext().getWorkerContext().
+                setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(tajoConf));
+            queryTaskContext.getQueryMasterContext().getWorkerContext().
+                setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(tajoConf));
+            tmClient = connPool.getConnection(
+                queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+                TajoMasterProtocol.class, true);
+          }
+        } else {
+          tmClient = connPool.getConnection(
+              queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        }
+
         TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
         masterClientService.allocateWorkerResources(null, request, callBack);
       } catch (Exception e) {
@@ -300,7 +323,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           containers.add(container);
         }
 
-        SubQueryState state = queryTaskContext.getSubQuery(executionBlockId).getState();
+        SubQueryState state = queryTaskContext.getSubQuery(executionBlockId).getSynchronizedState();
         if (!SubQuery.isRunningState(state)) {
           try {
             List<ContainerId> containerIds = new ArrayList<ContainerId>();

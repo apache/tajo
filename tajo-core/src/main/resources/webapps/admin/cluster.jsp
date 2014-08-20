@@ -19,13 +19,16 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.master.rm.*" %>
+<%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.ha.HAService" %>
+<%@ page import="org.apache.tajo.master.ha.TajoMasterInfo" %>
+<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -70,6 +73,33 @@
 
   String deadWorkersHtml = deadWorkers.isEmpty() ? "0": "<font color='red'>" + deadWorkers.size() + "</font>";
   String deadQueryMastersHtml = deadQueryMasters.isEmpty() ? "0": "<font color='red'>" + deadQueryMasters.size() + "</font>";
+
+  HAService haService = master.getContext().getHAService();
+  List<TajoMasterInfo> masters = TUtil.newList();
+
+  String activeLabel = "";
+  if (haService != null) {
+    if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
+    }
+
+    masters.addAll(haService.getMasters());
+  }
+
+  int numLiveMasters = 0;
+  int numDeadMasters = 0;
+
+  for(TajoMasterInfo eachMaster : masters) {
+    if (eachMaster.isAvailable()) {
+      numLiveMasters++;
+    } else {
+      numDeadMasters++;
+    }
+  }
+  String deadMasterHtml = numDeadMasters == 0 ? "0": "<font color='red'>" + numDeadMasters +"</font>";
+
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -82,7 +112,54 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
+  <div>Live:<%=numLiveMasters%>, Dead: <%=deadMasterHtml%>, Total: <%=masters.size()%></div>
+<%
+  if (masters != null) {
+    if(numLiveMasters == 0) {
+      out.write("No TajoMasters\n");
+    } else {
+%>
+  <p/>
+  <table width="100%" class="border_table" border="1">
+    <tr><th>No</th><th>TajoMaster</th><th>Rpc Server</th><th>Rpc Client</th><th>ResourceTracker</th>
+      <th>Catalog</th><th>Active/Backup</th><th>Status</th></tr>
+    <%
+      int no = 1;
+
+      for(TajoMasterInfo eachMaster : masters) {
+      String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress().getHostName() + ":" +
+          eachMaster.getWebServerAddress().getPort() + "/index.jsp";
+      String isActive = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
+      String isAvailable = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
+    %>
+    <tr>
+      <td width='30' align='right'><%=no++%></td>
+      <td><a href='<%=tajoMasterHttp%>'><%=eachMaster.getWebServerAddress().getHostName() + ":" +
+          eachMaster.getWebServerAddress().getPort()%></a></td>
+      <td width='200' align='right'><%=eachMaster.getTajoMasterAddress().getHostName() + ":" +
+          eachMaster.getTajoMasterAddress().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getTajoClientAddress().getHostName() + ":" +
+          eachMaster.getTajoClientAddress().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getWorkerResourceTrackerAddr().getHostName() + ":" +
+          eachMaster.getWorkerResourceTrackerAddr().getPort()%></td>
+      <td width='200' align='right'><%=eachMaster.getCatalogAddress().getHostName() + ":" +
+          eachMaster.getCatalogAddress().getPort()%></td>
+      <td width='200' align='right'><%=isActive%></td>
+      <td width='100' align='center'><%=isAvailable%></td>
+    </tr>
+    <%
+      } //end fo for
+    %>
+  </table>
+  <%
+    } //end of if
+  %>
+  <p/>
+<%
+  } //end of if
+%>
+
   <hr/>
   <h2>Query Master</h2>
   <div>Live:<%=liveQueryMasters.size()%>, Dead: <%=deadQueryMastersHtml%>, QueryMaster Tasks: <%=runningQueryMasterTasks%></div>

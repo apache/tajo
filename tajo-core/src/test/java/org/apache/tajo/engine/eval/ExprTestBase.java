@@ -31,6 +31,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.plan.EvalTreeProtoDeserializer;
+import org.apache.tajo.engine.plan.EvalTreeProtoSerializer;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
@@ -53,6 +56,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class ExprTestBase {
   private static TajoTestingCluster util;
@@ -135,8 +139,20 @@ public class ExprTestBase {
     if (targets == null) {
       throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
     }
+
+    // Trying regression test for cloning, (de)serialization for json and protocol buffer
+    for (Target t : targets) {
+      try {
+        assertEquals(t.getEvalTree(), t.getEvalTree().clone());
+      } catch (CloneNotSupportedException e) {
+        fail(e.getMessage());
+      }
+    }
     for (Target t : targets) {
       assertJsonSerDer(t.getEvalTree());
+    }
+    for (Target t : targets) {
+      assertEvalTreeProtoSerDer(t.getEvalTree());
     }
     return targets;
   }
@@ -225,5 +241,10 @@ public class ExprTestBase {
         cat.dropTable(qualifiedTableName);
       }
     }
+  }
+
+  public static void assertEvalTreeProtoSerDer(EvalNode evalNode) {
+    PlanProto.EvalTree converted = EvalTreeProtoSerializer.serialize(evalNode);
+    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(converted));
   }
 }
