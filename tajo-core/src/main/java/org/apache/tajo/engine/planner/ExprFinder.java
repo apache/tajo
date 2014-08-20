@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
-class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
+public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
 
   static class Context {
     Set<Expr> set = new HashSet<Expr>();
