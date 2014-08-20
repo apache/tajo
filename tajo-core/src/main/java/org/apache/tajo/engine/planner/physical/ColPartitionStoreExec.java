@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.unit.StorageUnit;
@@ -79,10 +78,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
 
-    if (!(plan instanceof InsertNode)) {
-      String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
-      StorageUtil.setNullCharForTextSerializer(meta, nullChar);
-    }
+    PhysicalPlanUtil.setNullCharIfNecessary(context.getQueryContext(), plan, meta);
 
     if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
       maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;

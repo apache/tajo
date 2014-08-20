@@ -18,6 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.StorageConstants;
+
 import java.util.Stack;
 
 public class PhysicalPlanUtil {
@@ -33,6 +40,62 @@ public class PhysicalPlanUtil {
         return exec;
       } else {
         return super.visit(exec, stack, target);
+      }
+    }
+  }
+
+  /**
+   * Set nullChar to TableMeta according to file format
+   *
+   * @param meta TableMeta
+   * @param nullChar A character for NULL representation
+   */
+  private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
+    switch (meta.getStoreType()) {
+    case CSV:
+      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+      break;
+    case RCFILE:
+      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+      break;
+    case SEQUENCEFILE:
+      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+      break;
+    default: // nothing to do
+    }
+  }
+
+  /**
+   * Check if TableMeta contains NULL char property according to file format
+   *
+   * @param meta Table Meta
+   * @return True if TableMeta contains NULL char property according to file format
+   */
+  public static boolean containsNullChar(TableMeta meta) {
+    switch (meta.getStoreType()) {
+    case CSV:
+      return meta.containsOption(StorageConstants.CSVFILE_NULL);
+    case RCFILE:
+      return meta.containsOption(StorageConstants.RCFILE_NULL);
+    case SEQUENCEFILE:
+      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+    default: // nothing to do
+      return false;
+    }
+  }
+
+  /**
+   * Set session variable null char TableMeta if necessary
+   *
+   * @param context QueryContext
+   * @param plan StoreTableNode
+   * @param meta TableMeta
+   */
+  public static void setNullCharIfNecessary(QueryContext context, PersistentStoreNode plan, TableMeta meta) {
+    if (plan.getType() != NodeType.INSERT) {
+      // table property in TableMeta is the first priority, and session is the second priority
+      if (!containsNullChar(meta) && context.containsKey(SessionVars.NULL_CHAR)) {
+        setNullCharForTextSerializer(meta, context.get(SessionVars.NULL_CHAR));
       }
     }
   }

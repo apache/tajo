@@ -28,7 +28,10 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -54,10 +57,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
   public StoreTableExec(TaskAttemptContext context, PersistentStoreNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
-
-    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
-      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
-    }
   }
 
   public void init() throws IOException {
@@ -68,8 +67,14 @@ public class StoreTableExec extends UnaryPhysicalExec {
     } else {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
     }
-    openNewFile(writtenFileNum);
 
+    PhysicalPlanUtil.setNullCharIfNecessary(context.getQueryContext(), plan, meta);
+
+    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
+      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
+    }
+
+    openNewFile(writtenFileNum);
     sumStats = new TableStats();
   }
 
@@ -88,8 +93,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
-      String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
-      StorageUtil.setNullCharForTextSerializer(meta, nullChar);
       appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, lastFileName);
     }
 

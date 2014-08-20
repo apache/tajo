@@ -192,7 +192,7 @@ public class TestPhysicalPlanner {
 
     Tuple tuple = new VTuple(scoreSchmea.size());
     int m = 0;
-    for (int i = 1; i <= 35000; i++) {
+    for (int i = 1; i <= 40000; i++) {
       for (int k = 3; k < 5; k++) { // |{3,4}| = 2
         for (int j = 1; j <= 3; j++) { // |{1,2,3}| = 3
           tuple.put(
@@ -497,7 +497,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     // checking the number of punctuated files
-    int expectedFileNum = (int) Math.ceil(stats.getNumBytes() / (float) StorageUnit.MB);
+    int expectedFileNum = (int) (stats.getNumBytes() / (float) StorageUnit.MB);
     FileSystem fs = ctx.getOutputPath().getFileSystem(conf);
     FileStatus [] statuses = fs.listStatus(ctx.getOutputPath().getParent());
     assertEquals(expectedFileNum, statuses.length);
