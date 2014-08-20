@@ -28,19 +28,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.shell.PathData;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
-import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto.PageProto;
+import org.apache.tajo.master.ha.TajoMasterInfo;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -48,9 +43,8 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.HashShuffleAppenderManager.HashShuffleIntermediate;
 import org.apache.tajo.util.*;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -88,9 +82,7 @@ public class TajoWorker extends CompositeService {
 
   private TajoWorkerManagerService tajoWorkerManagerService;
 
-  private InetSocketAddress tajoMasterAddress;
-
-  private InetSocketAddress workerResourceTrackerAddr;
+  private TajoMasterInfo tajoMasterInfo;
 
   private CatalogClient catalogClient;
 
@@ -245,8 +237,9 @@ public class TajoWorker extends CompositeService {
 
     super.init(conf);
 
+    tajoMasterInfo = new TajoMasterInfo();
     if(yarnContainerMode && queryMasterMode) {
-      tajoMasterAddress = NetUtils.createSocketAddr(cmdArgs[2]);
+      tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(cmdArgs[2]));
       connectToCatalog();
 
       QueryId queryId = TajoIdUtils.parseQueryId(cmdArgs[1]);
@@ -255,8 +248,15 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      tajoMasterAddress = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
-      workerResourceTrackerAddr = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        tajoMasterInfo.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+      } else {
+        tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .RESOURCE_TRACKER_RPC_ADDRESS)));
+      }
       connectToCatalog();
     }
 
@@ -350,7 +350,7 @@ public class TajoWorker extends CompositeService {
 
   public class WorkerContext {
     public QueryMaster getQueryMaster() {
-      if (queryMasterManagerService == null) {
+      if(queryMasterManagerService == null) {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
@@ -385,29 +385,28 @@ public class TajoWorker extends CompositeService {
     }
 
     public String getWorkerName() {
-      if (queryMasterMode) {
+      if(queryMasterMode) {
         return getQueryMasterManagerService().getHostAndPort();
       } else {
         return getTajoWorkerManagerService().getHostAndPort();
       }
     }
-
     public void stopWorker(boolean force) {
       stop();
-      if (force) {
+      if(force) {
         System.exit(0);
       }
     }
 
     protected void cleanup(String strPath) {
-      if (deletionService == null) return;
+      if(deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(strPath, systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter) {
+        for (Path path : iter){
           deletionService.delete(localFS.makeQualified(path));
         }
       } catch (IOException e) {
@@ -416,21 +415,21 @@ public class TajoWorker extends CompositeService {
     }
 
     protected void cleanupTemporalDirectories() {
-      if (deletionService == null) return;
+      if(deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter) {
+        for (Path path : iter){
           PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
 
           ArrayList<Path> paths = new ArrayList<Path>();
-          for (PathData pd : items) {
+          for (PathData pd : items){
             paths.add(pd.path);
           }
-          if (paths.size() == 0) continue;
+          if(paths.size() == 0) continue;
 
           deletionService.delete(null, paths.toArray(new Path[paths.size()]));
         }
@@ -452,23 +451,31 @@ public class TajoWorker extends CompositeService {
     }
 
     public void setClusterResource(TajoMasterProtocol.ClusterResourceSummary clusterResource) {
-      synchronized (numClusterNodes) {
+      synchronized(numClusterNodes) {
         TajoWorker.this.clusterResource = clusterResource;
       }
     }
 
     public TajoMasterProtocol.ClusterResourceSummary getClusterResource() {
-      synchronized (numClusterNodes) {
+      synchronized(numClusterNodes) {
         return TajoWorker.this.clusterResource;
       }
     }
 
     public InetSocketAddress getTajoMasterAddress() {
-      return tajoMasterAddress;
+      return tajoMasterInfo.getTajoMasterAddress();
+    }
+
+    public void setTajoMasterAddress(InetSocketAddress tajoMasterAddress) {
+      tajoMasterInfo.setTajoMasterAddress(tajoMasterAddress);
     }
 
     public InetSocketAddress getResourceTrackerAddress() {
-      return workerResourceTrackerAddr;
+      return tajoMasterInfo.getWorkerResourceTrackerAddr();
+    }
+
+    public void setWorkerResourceTrackerAddr(InetSocketAddress workerResourceTrackerAddr) {
+      tajoMasterInfo.setWorkerResourceTrackerAddr(workerResourceTrackerAddr);
     }
 
     public int getPeerRpcPort() {
