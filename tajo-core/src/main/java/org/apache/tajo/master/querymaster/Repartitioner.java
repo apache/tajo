@@ -991,6 +991,9 @@ public class Repartitioner {
       if (firstSplitVolume < pageSize) {
         firstSplitVolume = splitVolume;
       }
+
+      //Each Pair object in the splits variable is assigned to the next ExectionBlock's task.
+      //The first long value is a offset of the intermediate file and the second long value is length.
       List<Pair<Long, Long>> splits = currentInterm.split(firstSplitVolume, splitVolume);
       if (splits == null || splits.isEmpty()) {
         break;
