@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1008: TAJO-1008: Protocol buffer De/Serialization for EvalNode.
+    (hyunsik)
+
     TAJO-984: Improve the default data type handling in RowStoreUtil.
     (jihoon via hyunsik)
 

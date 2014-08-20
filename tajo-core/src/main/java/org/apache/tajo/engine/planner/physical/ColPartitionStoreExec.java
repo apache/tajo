@@ -24,10 +24,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
@@ -35,6 +37,7 @@ import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -49,6 +52,14 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   protected final int keyNum;
   protected final int [] keyIds;
   protected final String [] keyNames;
+
+  protected Appender appender;
+
+  // for file punctuation
+  protected TableStats aggregatedStats;                  // for aggregating all stats of written files
+  protected long maxPerFileSize = Long.MAX_VALUE; // default max file size is 2^63
+  protected int writtenFileNum = 0;               // how many file are written so far?
+  protected Path lastFileName;                    // latest written file name
 
   public ColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
@@ -65,6 +76,15 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
     } else {
       meta = CatalogUtil.newTableMeta(plan.getStorageType());
+    }
+
+    if (!(plan instanceof InsertNode)) {
+      String nullChar = context.getQueryContext().get(SessionVars.NULL_CHAR);
+      StorageUtil.setNullCharForTextSerializer(meta, nullChar);
+    }
+
+    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
+      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
     }
 
     // Find column index to name subpartition directory path
@@ -107,33 +127,45 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());
     }
+
+    aggregatedStats = new TableStats();
   }
 
   protected Path getDataFile(String partition) {
     return StorageUtil.concatPath(storeTablePath.getParent(), partition, storeTablePath.getName());
   }
 
-  protected Appender makeAppender(String partition) throws IOException {
-    Path dataFile = getDataFile(partition);
-    FileSystem fs = dataFile.getFileSystem(context.getConf());
+  protected Appender getNextPartitionAppender(String partition) throws IOException {
+    lastFileName = getDataFile(partition);
+    FileSystem fs = lastFileName.getFileSystem(context.getConf());
 
-    if (fs.exists(dataFile.getParent())) {
-      LOG.info("Path " + dataFile.getParent() + " already exists!");
+    if (fs.exists(lastFileName.getParent())) {
+      LOG.info("Path " + lastFileName.getParent() + " already exists!");
     } else {
-      fs.mkdirs(dataFile.getParent());
-      LOG.info("Add subpartition path directory :" + dataFile.getParent());
+      fs.mkdirs(lastFileName.getParent());
+      LOG.info("Add subpartition path directory :" + lastFileName.getParent());
     }
 
-    if (fs.exists(dataFile)) {
-      LOG.info("File " + dataFile + " already exists!");
-      FileStatus status = fs.getFileStatus(dataFile);
+    if (fs.exists(lastFileName)) {
+      LOG.info("File " + lastFileName + " already exists!");
+      FileStatus status = fs.getFileStatus(lastFileName);
       LOG.info("File size: " + status.getLen());
     }
 
-    Appender appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, dataFile);
-    appender.enableStats();
-    appender.init();
+    openAppender(0);
 
     return appender;
+  }
+
+  public void openAppender(int suffixId) throws IOException {
+    Path actualFilePath = lastFileName;
+    if (suffixId > 0) {
+      actualFilePath = new Path(lastFileName + "_" + suffixId);
+    }
+
+    appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, outSchema, actualFilePath);
+
+    appender.enableStats();
+    appender.init();
   }
 }

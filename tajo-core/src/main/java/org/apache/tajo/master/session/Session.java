@@ -28,7 +28,7 @@ import java.util.Map;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SessionProto;
 
-public class Session implements SessionConstants, ProtoObject<SessionProto> {
+public class Session implements SessionConstants, ProtoObject<SessionProto>, Cloneable {
   private final String sessionId;
   private final String userName;
   private String currentDatabase;
@@ -132,5 +132,11 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
 
   public String toString() {
     return "user=" + getUserName() + ",id=" + getSessionId() +",last_atime=" + getLastAccessTime();
+  }
+
+  public Session clone() throws CloneNotSupportedException {
+    Session newSession = (Session) super.clone();
+    newSession.sessionVariables.putAll(getAllVariables());
+    return newSession;
   }
 }

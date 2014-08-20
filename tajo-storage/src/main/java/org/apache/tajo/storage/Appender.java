@@ -31,6 +31,8 @@ public interface Appender extends Closeable {
   
   void flush() throws IOException;
 
+  long getEstimatedOutputSize() throws IOException;
+  
   void close() throws IOException;
 
   void enableStats();
