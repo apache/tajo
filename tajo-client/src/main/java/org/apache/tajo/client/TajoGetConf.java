@@ -20,12 +20,24 @@ package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
+import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TajoGetConf {
   private static final org.apache.commons.cli.Options options;

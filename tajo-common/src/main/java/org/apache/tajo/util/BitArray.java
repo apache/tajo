@@ -80,7 +80,7 @@ public class BitArray {
   public void fromByteBuffer(ByteBuffer byteBuffer) {
     clear();
     int i = 0;
-    while(i < data.length && byteBuffer.hasRemaining()) {
+    while(byteBuffer.hasRemaining()) {
       data[i] = byteBuffer.get();
       i++;
     }

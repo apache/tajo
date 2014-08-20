@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
@@ -37,6 +39,8 @@ import java.util.Map;
  * This class is a physical operator to store at column partitioned table.
  */
 public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
+  private static Log LOG = LogFactory.getLog(HashBasedColPartitionStoreExec.class);
+
   private final Map<String, Appender> appenderMap = new HashMap<String, Appender>();
 
   public HashBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
@@ -52,7 +56,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     Appender appender = appenderMap.get(partition);
 
     if (appender == null) {
-      appender = getNextPartitionAppender(partition);
+      appender = makeAppender(partition);
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);
