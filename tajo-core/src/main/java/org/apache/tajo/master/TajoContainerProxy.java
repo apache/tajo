@@ -26,6 +26,7 @@ import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -34,6 +35,7 @@ import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -160,9 +162,29 @@ public class TajoContainerProxy extends ContainerProxy {
     RpcConnectionPool connPool = RpcConnectionPool.getPool(context.getConf());
     NettyClientBase tmClient = null;
     try {
+      // In TajoMaster HA mode, if backup master be active status,
+      // worker may fail to connect existing active master. Thus,
+      // if worker can't connect the master, worker should try to connect another master and
+      // update master address in worker context.
+      TajoConf conf = context.getConf();
+      if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        try {
+          tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        } catch (Exception e) {
+          context.getQueryMasterContext().getWorkerContext().setWorkerResourceTrackerAddr(
+              HAServiceUtil.getResourceTrackerAddress(conf));
+          context.getQueryMasterContext().getWorkerContext().setTajoMasterAddress(
+              HAServiceUtil.getMasterUmbilicalAddress(conf));
+          tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        }
+      } else {
         tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
             TajoMasterProtocol.class, true);
-        TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+      }
+
+      TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
         masterClientService.releaseWorkerResource(null,
           TajoMasterProtocol.WorkerResourceReleaseRequest.newBuilder()
               .setExecutionBlockId(executionBlockId.getProto())

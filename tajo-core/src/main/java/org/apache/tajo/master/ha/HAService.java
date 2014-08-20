@@ -16,26 +16,41 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.master.ha;
 
-import org.apache.tajo.catalog.statistics.TableStats;
-
-import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
-public interface Appender extends Closeable {
+/**
+ * The HAService is responsible for setting active TajoMaster on startup or when the
+ * current active is changing (eg due to failure), monitoring the health of TajoMaster.
+ *
+ */
+public interface HAService {
 
-  void init() throws IOException;
+  /**
+   * Add master name to shared storage.
+   */
+  public void register() throws IOException;
 
-  void addTuple(Tuple t) throws IOException;
-  
-  void flush() throws IOException;
 
-  long getEstimatedOutputSize() throws IOException;
-  
-  void close() throws IOException;
+  /**
+   * Delete master name to shared storage.
+   *
+   */
+  public void delete() throws IOException;
 
-  void enableStats();
-  
-  TableStats getStats();
+  /**
+   *
+   * @return True if current master is an active master.
+   */
+  public boolean isActiveStatus();
+
+  /**
+   *
+   * @return return all master list
+   * @throws IOException
+   */
+  public List<TajoMasterInfo> getMasters() throws IOException;
+
 }

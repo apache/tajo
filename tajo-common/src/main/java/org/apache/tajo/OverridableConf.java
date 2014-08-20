@@ -99,6 +99,10 @@ public class OverridableConf extends KeyValueSet {
     return getBool(key, null);
   }
 
+  public void setInt(ConfigKey key, int val) {
+    setInt(key.keyname(), val);
+  }
+
   public int getInt(ConfigKey key, Integer defaultVal) {
     assertRegisteredEnum(key);
 
@@ -120,6 +124,10 @@ public class OverridableConf extends KeyValueSet {
     return getInt(key, null);
   }
 
+  public void setLong(ConfigKey key, long val) {
+    setLong(key.keyname(), val);
+  }
+
   public long getLong(ConfigKey key, Long defaultVal) {
     assertRegisteredEnum(key);
 
@@ -139,6 +147,10 @@ public class OverridableConf extends KeyValueSet {
 
   public long getLong(ConfigKey key) {
     return getLong(key, null);
+  }
+
+  public void setFloat(ConfigKey key, float val) {
+    setFloat(key.keyname(), val);
   }
 
   public float getFloat(ConfigKey key, Float defaultVal) {

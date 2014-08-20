@@ -34,6 +34,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.v2.DiskDeviceInfo;
 import org.apache.tajo.storage.v2.DiskMountInfo;
 import org.apache.tajo.storage.v2.DiskUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -217,7 +218,22 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
               new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
 
-          rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          // In TajoMaster HA mode, if backup master be active status,
+          // worker may fail to connect existing active master. Thus,
+          // if worker can't connect the master, worker should try to connect another master and
+          // update master address in worker context.
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+            try {
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            } catch (Exception e) {
+              context.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+              context.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            }
+          } else {
+            rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          }
+
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 
