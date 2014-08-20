@@ -154,17 +154,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     ranges.get(ranges.size() - 1).setEnd(originalRange.getEnd());
 
     // Ensure all keys are totally ordered correctly.
-//    for (int i = 0; i < ranges.size(); i++) {
-//      if (i > 1) {
-//        if (sortSpecs[0].isAscending()) {
-//          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
-//              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
-//        } else {
-//          Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) > 0,
-//              "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
-//        }
-//      }
-//    }
+    for (int i = 0; i < ranges.size(); i++) {
+      if (i > 1) {
+        Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
+            "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
+      }
+    }
 
     return ranges.toArray(new TupleRange[ranges.size()]);
   }
@@ -483,7 +478,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createChar((char) (mergedRange.getStart().get(i).asChar() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() + incs[i].longValue())));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() + incs[i].longValue())));
+            } else {
+              end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() - incs[i].longValue())));
+            }
           }
           break;
         case BIT:
@@ -491,7 +490,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createBit(
                 (byte) (mergedRange.getStart().get(i).asByte() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() + incs[i].longValue())));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() + incs[i].longValue())));
+            } else {
+              end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() - incs[i].longValue())));
+            }
           }
           break;
         case INT2:
@@ -499,7 +502,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createInt2(
                 (short) (mergedRange.getStart().get(i).asInt2() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() + incs[i].longValue())));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() + incs[i].longValue())));
+            } else {
+              end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() - incs[i].longValue())));
+            }
           }
           break;
         case INT4:
@@ -519,7 +526,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createInt8(
                 mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createInt8(last.get(i).asInt8() + incs[i].longValue()));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createInt8(last.get(i).asInt8() + incs[i].longValue()));
+            } else {
+              end.put(i, DatumFactory.createInt8(last.get(i).asInt8() - incs[i].longValue()));
+            }
           }
           break;
         case FLOAT4:
@@ -527,7 +538,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createFloat4(
                 mergedRange.getStart().get(i).asFloat4() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() + incs[i].longValue()));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() + incs[i].longValue()));
+            } else {
+              end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() - incs[i].longValue()));
+            }
           }
           break;
         case FLOAT8:
@@ -535,7 +550,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createFloat8(
                 mergedRange.getStart().get(i).asFloat8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() + incs[i].longValue()));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() + incs[i].longValue()));
+            } else {
+              end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() - incs[i].longValue()));
+            }
           }
           break;
         case TEXT:
@@ -551,7 +570,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
               if (isPureAscii[i]) {
                 lastBigInt = UnsignedLong.valueOf(new BigInteger(last.get(i).asByteArray())).bigIntegerValue();
-                end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
+                if (sortSpecs[i].isAscending()) {
+                  end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
+                } else {
+                  end.put(i, DatumFactory.createText(lastBigInt.subtract(incs[i]).toByteArray()));
+                }
               } else {
 
                 // We consider an array of chars as a 2^16 base number system because each char is 2^16 bits.
@@ -577,16 +600,28 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                     continue;
                   }
 
-                  int sum = (int)lastChars[k] + charIncs[k];
-                  if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) { // if carry occurs in the current digit
-                    charIncs[k] = sum - TextDatum.UNICODE_CHAR_BITS_NUM;
-                    charIncs[k-1] += 1;
+                  if (sortSpecs[i].isAscending()) {
+                    int sum = (int) lastChars[k] + charIncs[k];
+                    if (sum > TextDatum.UNICODE_CHAR_BITS_NUM) { // if carry occurs in the current digit
+                      charIncs[k] = sum - TextDatum.UNICODE_CHAR_BITS_NUM;
+                      charIncs[k - 1] += 1;
 
-                    lastChars[k-1] += 1;
-                    lastChars[k] += charIncs[k];
+                      lastChars[k - 1] += 1;
+                      lastChars[k] += charIncs[k];
+                    } else {
+                      lastChars[k] += charIncs[k];
+                    }
                   } else {
-                    lastChars[k] += charIncs[k];
+                    int sum = (int) lastChars[k] - charIncs[k];
+                    if (0 > TextDatum.UNICODE_CHAR_BITS_NUM) { // if carry occurs in the current digit
+                      charIncs[k] = TextDatum.UNICODE_CHAR_BITS_NUM - sum;
+                      charIncs[k - 1] -= 1;
 
+                      lastChars[k - 1] -= 1;
+                      lastChars[k] += charIncs[k];
+                    } else {
+                      lastChars[k] -= charIncs[k];
+                    }
                   }
                 }
 
@@ -599,14 +634,22 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createDate((int) (mergedRange.getStart().get(i).asInt4() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createDate((int) (last.get(i).asInt4() + incs[i].longValue())));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createDate((int) (last.get(i).asInt4() + incs[i].longValue())));
+            } else {
+              end.put(i, DatumFactory.createDate((int) (last.get(i).asInt4() - incs[i].longValue())));
+            }
           }
           break;
         case TIME:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createTime(mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createTime(last.get(i).asInt8() + incs[i].longValue()));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createTime(last.get(i).asInt8() + incs[i].longValue()));
+            } else {
+              end.put(i, DatumFactory.createTime(last.get(i).asInt8() - incs[i].longValue()));
+            }
           }
           break;
         case TIMESTAMP:
@@ -614,7 +657,11 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(
                 mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() + incs[i].longValue()));
+            if (sortSpecs[i].isAscending()) {
+              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() + incs[i].longValue()));
+            } else {
+              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() - incs[i].longValue()));
+            }
           }
           break;
         case INET4:
@@ -624,10 +671,17 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             assert ipBytes.length == 4;
             end.put(i, DatumFactory.createInet4(ipBytes));
           } else {
-            int lastVal = last.get(i).asInt4() + incs[i].intValue();
-            ipBytes = new byte[4];
-            Bytes.putInt(ipBytes, 0, lastVal);
-            end.put(i, DatumFactory.createInet4(ipBytes));
+            if (sortSpecs[i].isAscending()) {
+              int lastVal = last.get(i).asInt4() + incs[i].intValue();
+              ipBytes = new byte[4];
+              Bytes.putInt(ipBytes, 0, lastVal);
+              end.put(i, DatumFactory.createInet4(ipBytes));
+            } else {
+              int lastVal = last.get(i).asInt4() - incs[i].intValue();
+              ipBytes = new byte[4];
+              Bytes.putInt(ipBytes, 0, lastVal);
+              end.put(i, DatumFactory.createInet4(ipBytes));
+            }
           }
           break;
         default:
