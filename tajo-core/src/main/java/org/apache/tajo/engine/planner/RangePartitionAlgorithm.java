@@ -44,7 +44,11 @@ public abstract class RangePartitionAlgorithm {
    */
   public RangePartitionAlgorithm(SortSpec [] sortSpecs, TupleRange totalRange, boolean inclusive) {
     this.sortSpecs = sortSpecs;
-    this.mergedRange = totalRange;
+    try {
+      this.mergedRange = totalRange.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
     this.inclusive = inclusive;
     this.totalCard = computeCardinalityForAllColumns(sortSpecs, totalRange, inclusive);
   }

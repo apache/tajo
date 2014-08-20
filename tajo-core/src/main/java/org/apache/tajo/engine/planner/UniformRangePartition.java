@@ -148,8 +148,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     }
 
     // Recovering the transformed same bytes tuples into the original start and end keys
-    ranges.get(0).setStart(mergedRange.getStart());
-    ranges.get(ranges.size() - 1).setEnd(mergedRange.getEnd());
+    ranges.get(0).setStart(originalRange.getStart());
+    ranges.get(ranges.size() - 1).setEnd(originalRange.getEnd());
 
     // Ensure all keys are totally ordered correctly.
     for (int i = 0; i < ranges.size(); i++) {
