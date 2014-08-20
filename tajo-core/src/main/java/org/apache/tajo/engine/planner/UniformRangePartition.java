@@ -46,10 +46,12 @@ import java.util.List;
  * arbitrary base number systems respectively.
  */
 public class UniformRangePartition extends RangePartitionAlgorithm {
+  private TupleRange originalRange;
   private int variableId;
   private BigInteger[] cardForEachDigit;
   private BigInteger[] colCards;
   private boolean [] isPureAscii; // flags to indicate if i'th key contains pure ascii characters.
+
 
   /**
    *
@@ -59,6 +61,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
    */
   public UniformRangePartition(final TupleRange totalRange, final SortSpec[] sortSpecs, boolean inclusive) {
     super(sortSpecs, totalRange, inclusive);
+
+    try {
+      originalRange = totalRange.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
 
     // filling pure ascii flags
     isPureAscii = new boolean[sortSpecs.length];
@@ -207,22 +215,6 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           range.getStart().put(i, DatumFactory.createText(new String(padded[0])));
           range.getEnd().put(i, DatumFactory.createText(new String(padded[1])));
         }
-      }
-    }
-  }
-
-  /**
-   * Normalized keys have padding values, but it will cause the key mismatch in pull server.
-   * So, it denormalize the normalized keys again.
-   *
-   * @param sortSpecs The sort specs
-   * @param range Tuple range to be denormalized
-   */
-  public static void denormalize(SortSpec [] sortSpecs, TupleRange range) {
-    for (int i = 0; i < sortSpecs.length; i++) {
-      if (sortSpecs[i].getSortKey().getDataType().getType() == TajoDataTypes.Type.TEXT) {
-        range.getStart().put(i,DatumFactory.createText(BytesUtils.trimBytes(range.getStart().getBytes(i))));
-        range.getEnd().put(i,DatumFactory.createText(BytesUtils.trimBytes(range.getEnd().getBytes(i))));
       }
     }
   }
