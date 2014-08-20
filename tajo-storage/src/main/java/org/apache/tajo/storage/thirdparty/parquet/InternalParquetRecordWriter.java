@@ -139,10 +139,6 @@ class InternalParquetRecordWriter<T> {
     }
   }
 
-  public long getEstimatedWrittenSize() throws IOException {
-    return w.getPos() + store.memSize();
-  }
-
   private void flushStore()
       throws IOException {
     LOG.info(format("Flushing mem store to file. allocated memory: %,d", store.allocatedSize()));

@@ -283,7 +283,7 @@ public class EvalTreeUtil {
     if (expr instanceof BinaryEval) {
       boolean joinComparator;
       if (includeThetaJoin) {
-        joinComparator = EvalType.isComparisonOperator(expr);
+        joinComparator = EvalType.isComparisonOperator(expr.getType());
       } else {
         joinComparator = expr.getType() == EvalType.EQUAL;
       }
