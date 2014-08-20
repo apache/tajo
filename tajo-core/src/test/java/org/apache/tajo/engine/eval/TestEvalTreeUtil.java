@@ -372,4 +372,11 @@ public class TestEvalTreeUtil {
     EvalNode evalNode = getRootSelection("select score from people where people.score > people.age");
     assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
   }
+
+  @Test
+  public final void testIsJoinQual2() throws PlanningException {
+    EvalNode evalNode = getRootSelection(
+        "select score from people where substr(people.score::text,1,1) > substr(people.age::text,1,1)");
+    assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
+  }
 }
