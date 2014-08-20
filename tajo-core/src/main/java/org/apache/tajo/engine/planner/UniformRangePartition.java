@@ -153,11 +153,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     ranges.get(0).setStart(originalRange.getStart());
     ranges.get(ranges.size() - 1).setEnd(originalRange.getEnd());
 
-    // Ensure all keys are totally ordered correctly.
+    // Ensure all keys are totally ordered in a right order.
     for (int i = 0; i < ranges.size(); i++) {
       if (i > 1) {
         Preconditions.checkState(ranges.get(i - 2).compareTo(ranges.get(i - 1)) < 0,
-            "Sort ranges are not totally ordered: prev key-" + ranges.get(i - 2) + ", cur key-" + ranges.get(i - 1));
+            "Computed ranges are not totally ordered. Previous key=" + ranges.get(i - 2) + ", Current Key="
+                + ranges.get(i - 1));
       }
     }
 
@@ -451,6 +452,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         if (i == 0) {
           throw new RangeOverflowException(mergedRange, last, incs[i].longValue(), sortSpecs[i].isAscending());
         }
+        // increment some volume of the serialized one-dimension key space
         long rem = incrementAndGetReminder(i, last.get(i), value.longValue());
         incs[i] = BigInteger.valueOf(rem);
         incs[i - 1] = incs[i-1].add(BigInteger.ONE);
@@ -613,7 +615,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
                     }
                   } else {
                     int sum = (int) lastChars[k] - charIncs[k];
-                    if (0 > TextDatum.UNICODE_CHAR_BITS_NUM) { // if carry occurs in the current digit
+                    if (sum < 0) { // if carry occurs in the current digit
                       charIncs[k] = TextDatum.UNICODE_CHAR_BITS_NUM - sum;
                       charIncs[k - 1] -= 1;
 

@@ -36,6 +36,67 @@ import static org.junit.Assert.assertTrue;
 public class TestUniformRangePartition {
 
   @Test
+  public void testPartitionForINT2Asc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.INT2);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createInt2((short) 1));
+    e.put(0, DatumFactory.createInt2((short) 30000));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForINT2Desc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.INT2);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createInt2((short) 30000));
+    e.put(0, DatumFactory.createInt2((short) 1));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
   public void testPartitionForINT4Asc() {
     Schema schema = new Schema()
         .addColumn("col1", Type.INT4);
@@ -127,7 +188,7 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testPartitionForINT8Desc() {
+  public void testPartitionForInt8Desc() {
     Schema schema = new Schema()
         .addColumn("col1", Type.INT8);
 
@@ -138,6 +199,128 @@ public class TestUniformRangePartition {
     Tuple e = new VTuple(1);
     s.put(0, DatumFactory.createInt8(10000));
     e.put(0, DatumFactory.createInt8(1));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForFloat4Asc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.FLOAT4);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createFloat4((float) 1.0));
+    e.put(0, DatumFactory.createFloat4((float) 10000.0));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForFloat4Desc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.FLOAT4);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createFloat4((float) 10000.0));
+    e.put(0, DatumFactory.createFloat4((float) 1.0));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForFloat8Asc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.FLOAT8);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createFloat8(1.0));
+    e.put(0, DatumFactory.createFloat8(10000.0));
+
+    TupleRange expected = new TupleRange(sortSpecs, s, e);
+
+    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
+    int partNum = 64;
+    TupleRange [] ranges = partitioner.partition(partNum);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev != null) {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+      prev = r;
+    }
+    assertEquals(partNum, ranges.length);
+    assertTrue(ranges[0].getStart().equals(s));
+    assertTrue(ranges[partNum - 1].getEnd().equals(e));
+  }
+
+  @Test
+  public void testPartitionForFloat8Desc() {
+    Schema schema = new Schema()
+        .addColumn("col1", Type.FLOAT8);
+
+    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
+    sortSpecs[0].setDescOrder();
+
+    Tuple s = new VTuple(1);
+    Tuple e = new VTuple(1);
+    s.put(0, DatumFactory.createFloat8((float) 10000.0));
+    e.put(0, DatumFactory.createFloat8((float) 1.0));
 
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 
@@ -485,7 +668,7 @@ public class TestUniformRangePartition {
     TupleRange prev = null;
     for (TupleRange r : ranges) {
       if (prev != null) {
-        assertTrue(prev.compareTo(r) > 0);
+        assertTrue(prev.compareTo(r) < 0);
       }
       prev = r;
     }
@@ -516,7 +699,7 @@ public class TestUniformRangePartition {
     TupleRange prev = null;
     for (TupleRange r : ranges) {
       if (prev != null) {
-        assertTrue(prev.compareTo(r) > 0);
+        assertTrue(prev.compareTo(r) < 0);
       }
       prev = r;
     }
@@ -547,7 +730,7 @@ public class TestUniformRangePartition {
     TupleRange prev = null;
     for (TupleRange r : ranges) {
       if (prev != null) {
-        assertTrue(prev.compareTo(r) > 0);
+        assertTrue(prev.compareTo(r) < 0);
       }
       prev = r;
     }
