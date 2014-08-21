@@ -168,8 +168,7 @@ public class TajoGeneratorAdapter {
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
-    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME
-        || type.getType() == INTERVAL) {
+    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
       return 2;
     } else {
       return 1;
@@ -698,9 +697,12 @@ public class TajoGeneratorAdapter {
       paramTypes = new Class[] {long.class};
       break;
     case INTERVAL:
-      convertMethod = "createInterval";
-      returnType = IntervalDatum.class;
-      paramTypes = new Class[] {long.class};
+//      convertMethod = "createInterval";
+//      returnType = IntervalDatum.class;
+//      paramTypes = new Class[] {long.class};
+      convertMethod = null;
+      returnType = null;
+      paramTypes = null;
       break;
     default:
       throw new RuntimeException("Unsupported type: " + type.getType().name());

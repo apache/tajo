@@ -666,11 +666,8 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
       context.push(constEval.getValue().asChars());
       break;
     case INTERVAL:
-      //context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 0);
-      //context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, context.owner,
-          //context.variableMap.get(constEval), "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";");
-      //context.invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
-      context.push(constEval.getValue().asInt8());
+      // load pre-stored variable.
+      emitGetField(context, context.owner, context.variableMap.get(constEval), IntervalDatum.class);
       break;
     default:
       throw new UnsupportedOperationException(constEval.getValueType().getType().name() +
@@ -886,12 +883,15 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
           ConstEval constEval = (ConstEval) entry.getKey();
 
           if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+            IntervalDatum datum = (IntervalDatum) constEval.getValue();
+
             final String internalName = TajoGeneratorAdapter.getInternalName(IntervalDatum.class);
 
             initMethod.visitTypeInsn(Opcodes.NEW, internalName);
             consAdapter.dup();
-            initMethod.visitLdcInsn(constEval.getValue().asInt8());
-            initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "(J)V");
+            initMethod.visitLdcInsn(datum.getMonths());
+            initMethod.visitLdcInsn(datum.getMilliSeconds());
+            initMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "(IJ)V");
             int INTERVAL_DATUM = consAdapter.astore();
 
             consAdapter.aload(0);
