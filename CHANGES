@@ -124,6 +124,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1004: UniformRangePartition cannot deal with unicode ranges.
+    (hyunsik)
+
     TAJO-1013: A complex equality condition including columns of the same
     table is recognized as a join condition. (hyunsik)
 

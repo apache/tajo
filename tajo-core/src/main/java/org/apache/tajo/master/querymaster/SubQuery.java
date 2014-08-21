@@ -58,7 +58,6 @@ import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
@@ -675,7 +674,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                               allocateContainers(subQuery);
 
                             }
-                          } catch (Exception e) {
+                          } catch (Throwable e) {
                             LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
                             subQuery.setFinishTime();
                             subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
@@ -686,7 +685,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               );
           state = SubQueryState.INITED;
         }
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
         subQuery.setFinishTime();
         subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
