@@ -148,7 +148,7 @@ public class Task {
     this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(queryContext, taskId,
+    this.context = new TaskAttemptContext(queryContext, worker.getWorkerContext(), taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
@@ -200,12 +200,14 @@ public class Task {
     LOG.info("==================================");
     LOG.info("* Subquery " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.shuffleType + " shuffle":""));
+        + (interQuery ? ", Use " + this.shuffleType + " shuffle":"") +
+        ", Fragments (num: " + request.getFragments().size() + ")" +
+        ", Fetches (total:" + request.getFetches().size() + ") :");
 
-    LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
-    LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
-    for (FetchImpl f : request.getFetches()) {
-      LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+    if(LOG.isDebugEnabled()) {
+      for (FetchImpl f : request.getFetches()) {
+        LOG.debug("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+      }
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {
@@ -442,6 +444,7 @@ public class Task {
 
       context.setProgress(1.0f);
       taskRunnerContext.completedTasksNum.incrementAndGet();
+      context.getHashShuffleAppenderManager().finalizeTask(taskId);
 
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
@@ -491,9 +494,9 @@ public class Task {
         masterProxy.done(null, report, NullCallback.get());
         taskRunnerContext.succeededTasksNum.incrementAndGet();
       }
-
       finishTime = System.currentTimeMillis();
-      LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
+      LOG.info(context.getTaskId() + " completed. " +
+          "Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
           ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
           + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
           + ", failed: " + taskRunnerContext.failedTasksNum.intValue());

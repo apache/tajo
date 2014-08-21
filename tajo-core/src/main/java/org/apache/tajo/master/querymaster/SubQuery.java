@@ -48,18 +48,23 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -250,6 +255,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private int killedObjectCount = 0;
   private int failedObjectCount = 0;
   private TaskSchedulerContext schedulerContext;
+  private List<IntermediateEntry> hashShuffleIntermediateEntries = new ArrayList<IntermediateEntry>();
+  private AtomicInteger completeReportReceived = new AtomicInteger(0);
 
   public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block, AbstractStorageManager sm) {
     this.context = context;
@@ -1080,25 +1087,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.completedTaskCount++;
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
-//          if (task.isLeafTask()) {
-//            subQuery.succeededObjectCount += task.getTotalFragmentNum();
-//          } else {
-//            subQuery.succeededObjectCount++;
-//          }
           subQuery.succeededObjectCount++;
         } else if (task.getState() == TaskState.KILLED) {
-//          if (task.isLeafTask()) {
-//            subQuery.killedObjectCount += task.getTotalFragmentNum();
-//          } else {
-//            subQuery.killedObjectCount++;
-//          }
           subQuery.killedObjectCount++;
         } else if (task.getState() == TaskState.FAILED) {
-//          if (task.isLeafTask()) {
-//            subQuery.failedObjectCount+= task.getTotalFragmentNum();
-//          } else {
-//            subQuery.failedObjectCount++;
-//          }
           subQuery.failedObjectCount++;
           // if at least one task is failed, try to kill all tasks.
           subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
@@ -1137,15 +1129,60 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
       List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
       List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
-      for (ExecutionBlock executionBlock :  childs){
+
+      for (ExecutionBlock executionBlock : childs) {
         ebIds.add(executionBlock.getId().getProto());
       }
 
-      try {
-        getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
-      } catch (Throwable e) {
-        LOG.error(e);
+      getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
+    }
+  }
+
+  public List<IntermediateEntry> getHashShuffleIntermediateEntries() {
+    return hashShuffleIntermediateEntries;
+  }
+
+  protected void waitingIntermediateReport() {
+    LOG.info(getId() + ", waiting IntermediateReport: expectedTaskNum=" + completeReportReceived.get());
+    synchronized(completeReportReceived) {
+      long startTime = System.currentTimeMillis();
+      while (true) {
+        if (completeReportReceived.get() >= tasks.size()) {
+          LOG.info(getId() + ", completed waiting IntermediateReport");
+          return;
+        } else {
+          try {
+            completeReportReceived.wait(10 * 1000);
+          } catch (InterruptedException e) {
+          }
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          if (elapsedTime >= 120 * 1000) {
+            LOG.error(getId() + ", Timeout while receiving intermediate reports: " + elapsedTime + " ms");
+            abort(SubQueryState.FAILED);
+            return;
+          }
+        }
       }
+    }
+  }
+
+  public void receiveExecutionBlockReport(TajoWorkerProtocol.ExecutionBlockReport report) {
+    LOG.info(getId() + ", receiveExecutionBlockReport:" +  report.getSucceededTasks());
+    if (!report.getReportSuccess()) {
+      LOG.error(getId() + ", ExecutionBlock final report fail cause:" + report.getReportErrorMessage());
+      abort(SubQueryState.FAILED);
+      return;
+    }
+    if (report.getIntermediateEntriesCount() > 0) {
+      synchronized (hashShuffleIntermediateEntries) {
+        for (IntermediateEntryProto eachInterm: report.getIntermediateEntriesList()) {
+          hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
+        }
+      }
+    }
+    synchronized(completeReportReceived) {
+      completeReportReceived.addAndGet(report.getSucceededTasks());
+      completeReportReceived.notifyAll();
     }
   }
 

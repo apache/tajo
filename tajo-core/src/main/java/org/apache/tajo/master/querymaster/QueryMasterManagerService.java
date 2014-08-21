@@ -40,6 +40,8 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class QueryMasterManagerService extends CompositeService
     implements QueryMasterProtocol.QueryMasterProtocolService.Interface {
@@ -211,6 +213,17 @@ public class QueryMasterManagerService extends CompositeService
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
+    }
+  }
+
+  @Override
+  public void doneExecutionBlock(
+      RpcController controller, TajoWorkerProtocol.ExecutionBlockReport request,
+      RpcCallback<PrimitiveProtos.BoolProto> done) {
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
+    if (queryMasterTask != null) {
+      ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
+      queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
     }
   }
 

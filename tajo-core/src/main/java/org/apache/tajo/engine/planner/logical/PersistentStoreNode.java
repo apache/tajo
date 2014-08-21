@@ -33,7 +33,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
   @Expose protected StoreType storageType = StoreType.CSV;
-  @Expose protected KeyValueSet options;
+  @Expose protected KeyValueSet options = new KeyValueSet();
 
   protected PersistentStoreNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
