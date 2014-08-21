@@ -28,7 +28,7 @@ import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.codegen.ExprCodeGenerator;
+import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
@@ -223,9 +223,9 @@ public class ExprTestBase {
 
     try {
       targets = getRawTargets(query, condition);
-      ExprCodeGenerator codegen = null;
+      EvalCodeGenerator codegen = null;
       if (runtimeCodeGenFlag) {
-        codegen = new ExprCodeGenerator(classLoader);
+        codegen = new EvalCodeGenerator(classLoader);
       }
 
       Tuple outTuple = new VTuple(targets.length);

@@ -438,7 +438,7 @@ public class TajoGeneratorAdapter {
 
   public static int getOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
     if (!isPrimitiveOpCode(evalType, returnType)) {
-      throw new CodeGenException("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
+      throw new CodeGenerationException("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
     }
     return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.getType());
   }

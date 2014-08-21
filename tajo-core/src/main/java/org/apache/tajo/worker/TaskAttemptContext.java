@@ -28,7 +28,7 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.codegen.ExprCodeGenerator;
+import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -78,7 +78,7 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
 
   private TajoClassLoader classLoader;
-  private ExprCodeGenerator codeGen;
+  private EvalCodeGenerator codeGen;
 
   public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
@@ -87,7 +87,7 @@ public class TaskAttemptContext {
     this.queryId = queryId;
 
     classLoader = new TajoClassLoader();
-    codeGen = new ExprCodeGenerator(classLoader);
+    codeGen = new EvalCodeGenerator(classLoader);
 
     if (fragments != null) {
       for (FragmentProto t : fragments) {
@@ -144,7 +144,7 @@ public class TaskAttemptContext {
     return this.enforcer;
   }
 
-  public ExprCodeGenerator getCodeGen() {
+  public EvalCodeGenerator getCodeGen() {
     return codeGen;
   }
 
