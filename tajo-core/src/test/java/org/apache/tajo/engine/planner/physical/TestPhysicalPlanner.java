@@ -762,6 +762,71 @@ public class TestPhysicalPlanner {
   }
 
   @Test
+  public final void testPartitionedStorePlanWithMaxFileSize() throws IOException, PlanningException {
+
+    // Preparing working dir and input fragments
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.score_large", largeScore.getMeta(),
+        largeScore.getPath(), Integer.MAX_VALUE);
+    QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlanWithMaxFileSize");
+
+    // Setting session variables
+    QueryContext queryContext = new QueryContext(conf, session);
+    queryContext.setInt(SessionVars.MAX_OUTPUT_FILE_SIZE, 1);
+
+    // Preparing task context
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext, id, new FileFragment[] { frags[0] }, workDir);
+    ctx.setOutputPath(new Path(workDir, "part-01-000000"));
+    // SortBasedColumnPartitionStoreExec will be chosen by default.
+    ctx.setEnforcer(new Enforcer());
+    Expr context = analyzer.parse(CreateTableAsStmts[4]);
+    LogicalPlan plan = planner.createPlan(queryContext, context);
+    LogicalNode rootNode = optimizer.optimize(plan);
+
+    // Executing CREATE TABLE PARTITION BY
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+    exec.next();
+    exec.close();
+
+    FileSystem fs = sm.getFileSystem();
+    FileStatus [] list = fs.listStatus(workDir);
+    // checking the number of partitions
+    assertEquals(2, list.length);
+
+    List<FileFragment> fragments = Lists.newArrayList();
+    int i = 0;
+    for (FileStatus status : list) {
+      assertTrue(status.isDirectory());
+
+      long fileVolumSum = 0;
+      FileStatus [] fileStatuses = fs.listStatus(status.getPath());
+      for (FileStatus fileStatus : fileStatuses) {
+        fileVolumSum += fileStatus.getLen();
+        fragments.add(new FileFragment("partition", fileStatus.getPath(), 0, fileStatus.getLen()));
+      }
+      assertTrue("checking the meaningfulness of test", fileVolumSum > StorageUnit.MB && fileStatuses.length > 1);
+
+      long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
+      assertEquals(expectedFileNum, fileStatuses.length);
+    }
+    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    scanner.init();
+
+    long rowNum = 0;
+    while (scanner.next() != null) {
+      rowNum++;
+    }
+
+    // checking the number of all written rows
+    assertTrue(largeScore.getStats().getNumRows() == rowNum);
+
+    scanner.close();
+  }
+
+  @Test
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
       throws IOException, PlanningException {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.score", score.getMeta(), score.getPath(),
