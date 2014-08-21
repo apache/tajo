@@ -36,10 +36,6 @@ import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
 
-  public TestSQLExpression() {
-    super(true);
-  }
-
   @Test
   public void testQuotedIdentifiers() throws IOException {
     Schema schema = new Schema();

@@ -33,7 +33,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 public class TestPatternMatchingPredicates extends ExprTestBase {
 
   public TestPatternMatchingPredicates() {
-    super(true);
   }
 
   @Test

@@ -31,7 +31,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.*;
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   public TestStringOperatorsAndFunctions() {
-    super(true);
   }
 
   @Test

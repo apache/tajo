@@ -18,19 +18,20 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.*;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.InvalidStatementException;
 import org.apache.tajo.cli.ParsedResult;
 import org.apache.tajo.cli.SimpleParser;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -53,14 +54,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class ExprTestBase {
   private static TajoTestingCluster util;
@@ -76,13 +74,7 @@ public class ExprTestBase {
     return DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone());
   }
 
-  private boolean runtimeCodeGenFlag = true;
-
   public ExprTestBase() {
-  }
-
-  public ExprTestBase(boolean runtimeCodeGenFlag) {
-    this.runtimeCodeGenFlag = runtimeCodeGenFlag;
   }
 
   @BeforeClass
@@ -257,14 +249,14 @@ public class ExprTestBase {
     try {
       targets = getRawTargets(context, query, condition);
       EvalCodeGenerator codegen = null;
-      if (runtimeCodeGenFlag) {
+      if (context.getBool(SessionVars.CODEGEN)) {
         codegen = new EvalCodeGenerator(classLoader);
       }
 
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
-        if (runtimeCodeGenFlag) {
+        if (context.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);
         }
         outTuple.put(i, eval.eval(inputSchema, vtuple));

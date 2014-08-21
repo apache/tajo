@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestExprCodeGenerator extends ExprTestBase {
+public class TestEvalCodeGenerator extends ExprTestBase {
   private static Schema schema;
   static {
     schema = new Schema();
@@ -41,10 +41,6 @@ public class TestExprCodeGenerator extends ExprTestBase {
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
     schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
     schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
-  }
-
-  public TestExprCodeGenerator() {
-    super(true);
   }
 
   @Test
