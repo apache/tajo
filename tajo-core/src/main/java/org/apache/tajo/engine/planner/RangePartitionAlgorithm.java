@@ -24,13 +24,15 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
+import org.apache.tajo.util.StringUtils;
 
 import java.math.BigInteger;
 
 public abstract class RangePartitionAlgorithm {
   protected SortSpec [] sortSpecs;
   protected TupleRange mergedRange;
-  protected final BigInteger totalCard;
+  protected final BigInteger totalCard; // total cardinality
   /** true if the end of the range is inclusive. Otherwise, it should be false. */
   protected final boolean inclusive;
 
@@ -42,7 +44,11 @@ public abstract class RangePartitionAlgorithm {
    */
   public RangePartitionAlgorithm(SortSpec [] sortSpecs, TupleRange totalRange, boolean inclusive) {
     this.sortSpecs = sortSpecs;
-    this.mergedRange = totalRange;
+    try {
+      this.mergedRange = totalRange.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
     this.inclusive = inclusive;
     this.totalCard = computeCardinalityForAllColumns(sortSpecs, totalRange, inclusive);
   }
@@ -115,21 +121,46 @@ public abstract class RangePartitionAlgorithm {
         }
         break;
       case TEXT: {
-        byte [] a;
-        byte [] b;
-        if (isAscending) {
-          a = start.asByteArray();
-          b = end.asByteArray();
-        } else {
-          b = start.asByteArray();
-          a = end.asByteArray();
-        }
+        boolean isPureAscii = StringUtils.isPureAscii(start.asChars()) && StringUtils.isPureAscii(end.asChars());
 
-        byte [] prependHeader = {1, 0};
-        final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, a));
-        final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, b));
-        BigInteger diffBI = stopBI.subtract(startBI);
-        columnCard = diffBI;
+        if (isPureAscii) {
+          byte[] a;
+          byte[] b;
+          if (isAscending) {
+            a = start.asByteArray();
+            b = end.asByteArray();
+          } else {
+            b = start.asByteArray();
+            a = end.asByteArray();
+          }
+
+          byte [][] padded = BytesUtils.padBytes(a, b);
+          a = padded[0];
+          b = padded[1];
+
+          byte[] prependHeader = {1, 0};
+          final BigInteger startBI = new BigInteger(Bytes.add(prependHeader, a));
+          final BigInteger stopBI = new BigInteger(Bytes.add(prependHeader, b));
+          BigInteger diffBI = stopBI.subtract(startBI);
+          columnCard = diffBI;
+        } else {
+          char [] a;
+          char [] b;
+
+          if (isAscending) {
+            a = start.asUnicodeChars();
+            b = end.asUnicodeChars();
+          } else {
+            b = start.asUnicodeChars();
+            a = end.asUnicodeChars();
+          }
+
+          BigInteger startBI = UniformRangePartition.charsToBigInteger(a);
+          BigInteger stopBI = UniformRangePartition.charsToBigInteger(b);
+
+          BigInteger diffBI = stopBI.subtract(startBI);
+          columnCard = diffBI;
+        }
         break;
       }
       case DATE:

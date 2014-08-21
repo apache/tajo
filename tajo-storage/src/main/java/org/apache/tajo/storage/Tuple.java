@@ -67,6 +67,8 @@ public interface Tuple extends Cloneable {
 
   public ProtobufDatum getProtobufDatum(int fieldId);
 
+  public char [] getUnicodeChars(int fieldId);
+
   public Tuple clone() throws CloneNotSupportedException;
 
   public Datum[] getValues();
