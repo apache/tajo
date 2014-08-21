@@ -26,7 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.codegen.CodeGenException;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
@@ -199,7 +199,7 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   @Override
-  protected void compile() throws CodeGenException {
+  protected void compile() throws CompilationError {
     if (plan.hasQual()) {
       qual = context.getCodeGen().compile(inSchema, qual);
     }

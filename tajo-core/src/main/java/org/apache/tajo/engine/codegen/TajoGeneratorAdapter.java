@@ -40,7 +40,7 @@ import java.util.Map;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
-public class TajoGeneratorAdapter {
+class TajoGeneratorAdapter {
 
   public static final Map<EvalType, Map<TajoDataTypes.Type, Integer>> OpCodesMap = Maps.newHashMap();
 
@@ -160,11 +160,8 @@ public class TajoGeneratorAdapter {
   }
 
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
-    return
-        dataType.getType() == TajoDataTypes.Type.BOOLEAN ||
-            dataType.getType() == TajoDataTypes.Type.INT1 ||
-            dataType.getType() == TajoDataTypes.Type.INT2 ||
-            dataType.getType() == TajoDataTypes.Type.INT4;
+    TajoDataTypes.Type type = dataType.getType();
+    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type== INET4;
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
@@ -244,6 +241,8 @@ public class TajoGeneratorAdapter {
       case GEQ:
         methodvisitor.visitJumpInsn(Opcodes.IF_ICMPLT, elseLabel);
         break;
+      default:
+        throw new CompilationError("Unknown comparison operator: " + evalType.name());
       }
     } else {
 
@@ -273,6 +272,8 @@ public class TajoGeneratorAdapter {
       case GEQ:
         methodvisitor.visitJumpInsn(Opcodes.IFLT, elseLabel);
         break;
+      default:
+        throw new CompilationError("Unknown comparison operator: " + evalType.name());
       }
     }
   }
@@ -285,6 +286,7 @@ public class TajoGeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
+    case INET4:
       methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
@@ -296,9 +298,13 @@ public class TajoGeneratorAdapter {
     case FLOAT8:
       methodvisitor.visitVarInsn(Opcodes.DLOAD, idx);
       break;
-    default:
+    case TEXT:
+    case INTERVAL:
+    case PROTOBUF:
       methodvisitor.visitVarInsn(Opcodes.ALOAD, idx);
       break;
+    default:
+      throw new CompilationError("Unknown data type: " + dataType.getType().name());
     }
   }
 
@@ -400,8 +406,8 @@ public class TajoGeneratorAdapter {
       push(0.0f);
     } else if (type.getType() == TajoDataTypes.Type.CHAR || type.getType() == TajoDataTypes.Type.TEXT) {
       push("");
-    } else if (type.getType() == INTERVAL) {
-      invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[] {});
+    } else if (type.getType() == INTERVAL || type.getType() == PROTOBUF) {
+      invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[]{});
     } else {
       assert false;
     }
@@ -438,7 +444,7 @@ public class TajoGeneratorAdapter {
 
   public static int getOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
     if (!isPrimitiveOpCode(evalType, returnType)) {
-      throw new CodeGenException("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
+      throw new CompilationError("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
     }
     return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.getType());
   }
@@ -555,9 +561,6 @@ public class TajoGeneratorAdapter {
         methodvisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(DateTimeUtil.class),
             "toJulianTime", "(L" + Type.getInternalName(String.class) + ";)J");
         break;
-      }
-      case INTERVAL: {
-
       }
       default: throw new InvalidCastException(srcType, targetType);
       }
@@ -697,12 +700,15 @@ public class TajoGeneratorAdapter {
       paramTypes = new Class[] {long.class};
       break;
     case INTERVAL:
-//      convertMethod = "createInterval";
-//      returnType = IntervalDatum.class;
-//      paramTypes = new Class[] {long.class};
+    case PROTOBUF:
       convertMethod = null;
       returnType = null;
       paramTypes = null;
+      break;
+    case INET4:
+      convertMethod = "createInet4";
+      returnType = Inet4Datum.class;
+      paramTypes = new Class[] {int.class};
       break;
     default:
       throw new RuntimeException("Unsupported type: " + type.getType().name());
@@ -888,12 +894,26 @@ public class TajoGeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
+    case INET4:
       methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
       break;
-    case INT8: methodvisitor.visitVarInsn(Opcodes.LSTORE, varId); break;
-    case FLOAT4: methodvisitor.visitVarInsn(Opcodes.FSTORE, varId); break;
-    case FLOAT8: methodvisitor.visitVarInsn(Opcodes.DSTORE, varId); break;
-    default: methodvisitor.visitVarInsn(Opcodes.ASTORE, varId); break;
+    case TIME:
+    case TIMESTAMP:
+    case INT8:
+      methodvisitor.visitVarInsn(Opcodes.LSTORE, varId);
+      break;
+    case FLOAT4:
+      methodvisitor.visitVarInsn(Opcodes.FSTORE, varId);
+      break;
+    case FLOAT8:
+      methodvisitor.visitVarInsn(Opcodes.DSTORE, varId);
+      break;
+    case INTERVAL:
+    case TEXT:
+      methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
+      break;
+    default:
+      throw new CompilationError("Unknown data type: " + type.getType().name());
     }
 
     return varId;

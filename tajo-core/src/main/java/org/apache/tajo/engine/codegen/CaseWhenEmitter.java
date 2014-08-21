@@ -29,7 +29,7 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 import java.util.List;
 import java.util.Stack;
 
-public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
+class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
   public static final CaseWhenEmitter instance;
 
   static {
@@ -59,8 +59,8 @@ public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
       CaseWhenSwitchGenerator gen = new CaseWhenSwitchGenerator(codeGen, context, stack, cases, caseWhen.getElse());
 
       stack.push(caseWhen);
+
       codeGen.visit(context, commonTerm, stack);
-      stack.pop();
 
       Label ifNull = context.newLabel();
       Label endIf = context.newLabel();
@@ -71,16 +71,17 @@ public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
 
       codeGen.emitLabel(context, ifNull);
       context.pop(commonTerm.getValueType());
-      context.pushNullOfThreeValuedLogic();
+      context.pushDummyValue(caseWhen.getValueType());
       context.pushNullFlag(false);
 
       codeGen.emitLabel(context, endIf);
 
+      stack.pop();
     } else { // TYPE 2: CASE WHEN x = c1 THEN r1 WHEN y = c2 THEN r2 ELSE ... END
       int casesNum = caseWhen.getIfThenEvals().size();
       Label [] labels = new Label[casesNum - 1];
 
-      for (int i = 0; i < casesNum - 1; i++) {
+      for (int i = 0; i < labels.length; i++) {
         labels[i] = context.newLabel();
       }
 
@@ -88,11 +89,23 @@ public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
       Label ifNull = context.newLabel();
       Label afterAll = context.newLabel();
 
+      // The following will generate code as follows. defaultLabel points to the last else clause.
+      //
+      // if (...) {
+      //   .....
+      // } else if (...) {
+      //   ....
+      // } else if (...) {
+      // } ..... {
+      // } else { <- default label
+      //   ...
+      // }
+
       stack.push(caseWhen);
       for (int i = 0; i < casesNum; i++) {
         CaseWhenEval.IfThenEval ifThenEval = caseWhen.getIfThenEvals().get(i);
-        stack.push(ifThenEval);
 
+        stack.push(caseWhen);
         codeGen.visit(context, ifThenEval.getCondition(), stack);
         int NULL_FLAG = context.istore();
         int CHILD = context.store(ifThenEval.getCondition().getValueType());
@@ -100,9 +113,9 @@ public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
         context.iload(NULL_FLAG);
         context.emitNullityCheck(ifNull);
 
-        context.pushBooleanOfThreeValuedLogic(false);
+        context.pushBooleanOfThreeValuedLogic(true);
         context.load(ifThenEval.getCondition().getValueType(), CHILD);
-        context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, casesNum - 1 < i ? labels[i] : defaultLabel);  // false
+        context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPNE, (casesNum - 1) < i ? labels[i] : defaultLabel);  // false
 
         codeGen.visit(context, ifThenEval.getResult(), stack);
         context.gotoLabel(afterAll);
@@ -125,9 +138,8 @@ public class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
       }
 
       codeGen.emitLabel(context, ifNull);
-      context.pushDummyValue(caseWhen.getIfThenEvals().get(0).getResult().getValueType());
+      context.pushDummyValue(caseWhen.getValueType());
       context.pushNullFlag(false);
-      context.gotoLabel(afterAll);
 
       codeGen.emitLabel(context, afterAll);
     }

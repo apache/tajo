@@ -19,12 +19,10 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.codegen.CodeGenException;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
@@ -34,7 +32,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 
@@ -107,7 +104,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   }
 
   @Override
-  protected void compile() throws CodeGenException {
+  protected void compile() throws CompilationError {
     joinQual = context.getCodeGen().compile(inSchema, joinQual);
   }
 

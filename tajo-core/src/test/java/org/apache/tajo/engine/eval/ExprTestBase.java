@@ -18,8 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -65,6 +64,7 @@ import static org.junit.Assert.fail;
 
 public class ExprTestBase {
   private static TajoTestingCluster util;
+  private static TajoConf conf;
   private static CatalogService cat;
   private static SQLAnalyzer analyzer;
   private static PreLogicalPlanVerifier preLogicalPlanVerifier;
@@ -88,6 +88,7 @@ public class ExprTestBase {
   @BeforeClass
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
+    conf = util.getConfiguration();
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
@@ -114,19 +115,21 @@ public class ExprTestBase {
     assertEquals(expr, fromJson);
   }
 
+  public TajoConf getConf() {
+    return new TajoConf(conf);
+  }
+
   /**
    * verify query syntax and get raw targets.
    *
+   * @param context QueryContext
    * @param query a query for execution
    * @param condition this parameter means whether it is for success case or is not for failure case.
    * @return
    * @throws PlanningException
    */
-  private static Target[] getRawTargets(String query, boolean condition) throws PlanningException,
+  private static Target[] getRawTargets(QueryContext context, String query, boolean condition) throws PlanningException,
       InvalidStatementException {
-
-    Session session = LocalTajoTestingUtility.createDummySession();
-    QueryContext context = new QueryContext(util.getConfiguration(), session);
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
     if (parsedResults.size() > 1) {
@@ -176,17 +179,39 @@ public class ExprTestBase {
   }
 
   public void testSimpleEval(String query, String [] expected, boolean condition) throws IOException {
-    testEval(null, null, null, query, expected, ',', condition);
+    testEval(null, null, null, null, query, expected, ',', condition);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
       throws IOException {
-    testEval(schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
+    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
         expected, ',', true);
   }
 
-  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected,
-                       char delimiter, boolean condition) throws IOException {
+  public void testEval(OverridableConf overideConf, Schema schema, String tableName, String csvTuple, String query,
+                       String [] expected)
+      throws IOException {
+    testEval(overideConf, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+        query, expected, ',', true);
+  }
+
+  public void testEval(Schema schema, String tableName, String csvTuple, String query,
+                       String [] expected, char delimiter, boolean condition) throws IOException {
+    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+        query, expected, delimiter, condition);
+  }
+
+  public void testEval(OverridableConf overideConf, Schema schema, String tableName, String csvTuple, String query,
+                       String [] expected, char delimiter, boolean condition) throws IOException {
+    Session session = LocalTajoTestingUtility.createDummySession();
+    QueryContext context;
+    if (overideConf == null) {
+      context = new QueryContext(util.getConfiguration(), session);
+    } else {
+      context = new QueryContext(util.getConfiguration(), session);
+      context.putAll(overideConf);
+    }
+
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
     String qualifiedTableName =
@@ -206,8 +231,16 @@ public class ExprTestBase {
           new LazyTuple(inputSchema, BytesUtils.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
       vtuple = new VTuple(inputSchema.size());
       for (int i = 0; i < inputSchema.size(); i++) {
+
         // If null value occurs, null datum is manually inserted to an input tuple.
-        if (lazyTuple.get(i) instanceof TextDatum && lazyTuple.get(i).asChars().equals("")) {
+        boolean nullDatum;
+        Datum datum = lazyTuple.get(i);
+        nullDatum = (datum instanceof TextDatum || datum instanceof CharDatum);
+        nullDatum = nullDatum && datum.asChars().equals("") ||
+            datum.asChars().equals(context.get(SessionVars.NULL_CHAR));
+        nullDatum |= datum.isNull();
+
+        if (nullDatum) {
           vtuple.put(i, NullDatum.get());
         } else {
           vtuple.put(i, lazyTuple.get(i));
@@ -222,7 +255,7 @@ public class ExprTestBase {
     TajoClassLoader classLoader = new TajoClassLoader();
 
     try {
-      targets = getRawTargets(query, condition);
+      targets = getRawTargets(context, query, condition);
       EvalCodeGenerator codegen = null;
       if (runtimeCodeGenFlag) {
         codegen = new EvalCodeGenerator(classLoader);

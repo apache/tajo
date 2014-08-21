@@ -18,13 +18,125 @@
 
 package org.apache.tajo.engine.function;
 
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import static org.junit.Assert.fail;
 
 public class TestConditionalExpressions extends ExprTestBase {
+  @Test
+  public void testCaseWhens1() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT1);
+    schema.addColumn("col2", TajoDataTypes.Type.INT2);
+    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    schema.addColumn("col4", TajoDataTypes.Type.INT8);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col7", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    schema.addColumn("col9", TajoDataTypes.Type.INT4);
+
+    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 between 1 and 3 then 10 else 100 end from table1;",
+        new String [] {"10"});
+    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 > 1 then 10 when col1 > 2 then 20 else 100 end from table1;",
+        new String [] {"100"});
+    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;",
+        new String [] {"10"});
+    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from table1;",
+        new String [] {"t"});
+  }
+
+  @Test
+  public void testCaseWhensWithNullReturn() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+
+    testEval(schema, "table1", "str1,str2",
+        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
+        new String[]{"str2"});
+    testEval(schema, "table1", ",str2",
+        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
+        new String[]{""});
+  }
+
+  @Test
+  public void testCaseWhensWithCommonExpression() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT4);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE WHEN col1 = 1 THEN 1 WHEN col1 = 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"1"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE WHEN col2 = 1 THEN 1 WHEN col2 = 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"2"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE WHEN col3 = 1 THEN 1 WHEN col3 = 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"3"});
+
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"1"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"2"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"3"});
+
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+        new String [] {"aaa"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+        new String [] {"bbb"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+        new String [] {"ccc"});
+  }
+
+  @Test
+  public void testCaseWhensWithCommonExpressionAndNull() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT4);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {""});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"2"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+        new String [] {"3"});
+
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE NULL END FROM table1",
+        new String [] {"1"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM table1",
+        new String [] {"2"});
+    testEval(schema, "table1", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM table1",
+        new String [] {""});
+  }
+
   @Test
   public void testCoalesceText() throws Exception {
     testSimpleEval("select coalesce('value1', 'value2');", new String[]{"value1"});

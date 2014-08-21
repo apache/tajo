@@ -31,7 +31,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.TimeZone;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
@@ -97,16 +97,16 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testExplicitCast() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col0", INT1);
+    schema.addColumn("col1", INT2);
+    schema.addColumn("col2", INT4);
+    schema.addColumn("col3", INT8);
+    schema.addColumn("col4", FLOAT4);
+    schema.addColumn("col5", FLOAT8);
+    schema.addColumn("col6", TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testSimpleEval("select cast (1 as char)", new String[] {"1"});
+    testSimpleEval("select cast (1 as char)", new String[]{"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int1 from table1;", new String [] {"0"});
@@ -994,38 +994,5 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select (false OR true)", new String[] {"t"}); // false - true -> true
     testSimpleEval("select (false OR 1 > null) is null", new String[] {"t"}); // false - unknown -> unknown
     testSimpleEval("select (false OR false)", new String[] {"f"}); // false - false -> false
-  }
-
-  @Test
-  public void testCaseWhens() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT1);
-    schema.addColumn("col2", TajoDataTypes.Type.INT2);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
-    schema.addColumn("col4", TajoDataTypes.Type.INT8);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col7", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col9", TajoDataTypes.Type.INT4);
-
-    testEval(schema, "table1",
-        "1,2,3,4,5.0,6.0,text,abc,",
-        "select case when col1 between 1 and 3 then 10 else 100 end from table1;",
-        new String [] {"10"});
-
-    testEval(schema, "table1",
-        "1,2,3,4,5.0,6.0,text,abc,",
-        "select case when col1 > 1 then 10 when col1 > 2 then 20 else 100 end from table1;",
-        new String [] {"100"});
-
-    testEval(schema, "table1",
-        "1,2,3,4,5.0,6.0,text,abc,",
-        "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;",
-        new String [] {"10"});
-    testEval(schema, "table1",
-        "1,2,3,4,5.0,6.0,text,abc,",
-        "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from table1;",
-        new String [] {"t"});
   }
 }

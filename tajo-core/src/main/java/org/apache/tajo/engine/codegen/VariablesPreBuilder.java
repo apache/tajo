@@ -25,7 +25,7 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 
 import java.util.Stack;
 
-public class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
 
   public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     super.visitBinaryEval(context, stack, binaryEval);

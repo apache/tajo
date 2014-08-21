@@ -89,8 +89,8 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is null from table1;", new String [] {"t"});
-//    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is null from table1;", new String [] {"t"});
-//    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is null from table1;", new String[]{"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is null from table1;", new String [] {"t"});
 
@@ -101,16 +101,19 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
-//    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
-//    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is not null from table1;", new String [] {"f"});
   }
 
   @Test
   public void testComparison() throws IOException {
-    testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
+    Schema inetSchema = new Schema();
+    inetSchema.addColumn("addr1", TajoDataTypes.Type.INET4);
+    inetSchema.addColumn("addr2", TajoDataTypes.Type.INET4);
 
+    testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
     testSimpleEval("select (1::int8 > null) is null", new String[] {"t"});
 
     testSimpleEval("select 1 = null;", new String [] {""});
@@ -120,12 +123,14 @@ public class TestExprCodeGenerator extends ExprTestBase {
     testSimpleEval("select 1 < null;", new String [] {""});
     testSimpleEval("select 1 <= null;", new String [] {""});
 
-
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
+
+    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.1", "select addr1 = addr2 from table1;", new String[]{"t"});
+    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.2", "select addr1 = addr2 from table1;", new String[]{"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});

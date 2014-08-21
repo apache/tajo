@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 

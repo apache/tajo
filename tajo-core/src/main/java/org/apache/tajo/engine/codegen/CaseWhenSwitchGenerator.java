@@ -25,7 +25,7 @@ import org.apache.tajo.org.objectweb.asm.Label;
 import java.util.NavigableMap;
 import java.util.Stack;
 
-public class CaseWhenSwitchGenerator implements TajoGeneratorAdapter.SwitchCaseGenerator {
+class CaseWhenSwitchGenerator implements TajoGeneratorAdapter.SwitchCaseGenerator {
   final private EvalCodeGenerator generator;
   final private EvalCodeGenContext context;
   final private Stack<EvalNode> stack;

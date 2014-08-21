@@ -18,12 +18,14 @@
 
 package org.apache.tajo.engine.codegen;
 
-public class CodeGenException extends RuntimeException {
-  public CodeGenException(String message) {
+import org.apache.tajo.engine.eval.EvalNode;
+
+public class CompilationError extends RuntimeException {
+  public CompilationError(String message) {
     super(message);
   }
 
-  public CodeGenException(Throwable t) {
-    super(t);
+  public CompilationError(EvalNode evalNode, Throwable t, byte [] clazz) {
+    super("Compilation Error: " + evalNode.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
   }
 }

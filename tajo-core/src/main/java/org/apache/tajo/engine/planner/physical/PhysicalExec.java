@@ -24,7 +24,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.codegen.CodeGenException;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -55,7 +55,7 @@ public abstract class PhysicalExec implements SchemaObject {
     }
   }
 
-  protected void compile() throws CodeGenException {
+  protected void compile() throws CompilationError {
   }
 
   public abstract Tuple next() throws IOException;

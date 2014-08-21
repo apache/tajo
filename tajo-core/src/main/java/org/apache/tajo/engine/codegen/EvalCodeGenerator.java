@@ -18,23 +18,27 @@
 
 package org.apache.tajo.engine.codegen;
 
-import com.google.common.base.Preconditions;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.org.objectweb.asm.*;
+import org.apache.tajo.org.objectweb.asm.util.ASMifier;
+import org.apache.tajo.org.objectweb.asm.util.TraceClassVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
+import java.io.FileInputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
@@ -74,7 +78,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     this.classLoader = classLoader;
   }
 
-  public EvalNode compile(Schema schema, EvalNode expr) throws CodeGenException {
+  public EvalNode compile(Schema schema, EvalNode expr) throws CompilationError {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
@@ -84,6 +88,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     context.emitReturn();
 
     Class aClass = classLoader.defineClass(className, classWriter.toByteArray());
+
     Constructor constructor;
     EvalNode compiledEval;
 
@@ -91,7 +96,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       constructor = aClass.getConstructor();
       compiledEval = (EvalNode) constructor.newInstance();
     } catch (Throwable t) {
-      throw new CodeGenException(t);
+      throw new CompilationError(expr, t, classWriter.toByteArray());
     }
     return compiledEval;
   }
@@ -351,11 +356,17 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       context.pushNullOfThreeValuedLogic();
       context.pushNullFlag(false);
     } else {
-      String methodName = null;
-      int idx = context.schema.getColumnId(field.getColumnRef().getQualifiedName());
+
+      Column columnRef = field.getColumnRef();
+      int fieldIdx;
+      if (columnRef.hasQualifier()) {
+        fieldIdx = context.schema.getColumnId(columnRef.getQualifiedName());
+      } else {
+        fieldIdx = context.schema.getColumnIdByName(columnRef.getSimpleName());
+      }
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-      context.push(idx);
+      context.push(fieldIdx);
       context.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
 
       context.push(true);
@@ -364,6 +375,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       Label afterAll = new Label();
       context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
 
+      String methodName = null;
       Class returnType = null;
       Class [] paramTypes = null;
       switch (field.getValueType().getType()) {
@@ -382,6 +394,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       case INT2:
       case INT4:
       case DATE:
+      case INET4:
         methodName = "getInt4";
         returnType = int.class;
         paramTypes = new Class [] {int.class};
@@ -413,12 +426,17 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
         returnType = IntervalDatum.class;
         paramTypes = new Class [] {int.class};
         break;
+      case PROTOBUF:
+        methodName = "getProtobufDatum";
+        returnType = ProtobufDatum.class;
+        paramTypes = new Class [] {int.class};
+        break;
       default:
         throw new InvalidEvalException(field.getValueType() + " is not supported yet");
       }
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-      context.push(idx);
+      context.push(fieldIdx);
       context.invokeInterface(Tuple.class, methodName, returnType, paramTypes);
 
       context.pushNullFlag(true); // not null
@@ -452,7 +470,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC,
           org.apache.tajo.org.objectweb.asm.Type.getInternalName(EvalCodeGenerator.class), "OR_LOGIC", "[[B");
     } else {
-      throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
+      throw new CompilationError("visitAndOrEval() cannot generate the code at " + evalNode);
     }
     context.load(evalNode.getLeftExpr().getValueType(), LHS);
     context.methodvisitor.visitInsn(Opcodes.AALOAD);
@@ -517,7 +535,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitComparisonEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
-      throws CodeGenException {
+      throws CompilationError {
 
     DataType lhsType = evalNode.getLeftExpr().getValueType();
     DataType rhsType = evalNode.getRightExpr().getValueType();
@@ -542,7 +560,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
       context.emitNullityCheck(ifNull, LHS_NULLFLAG, RHS_NULLFLAG);
 
-      context.load(evalNode.getLeftExpr().getValueType(), LHS);                     // < lhs
+      context.load(evalNode.getLeftExpr().getValueType(), LHS);             // < lhs
       context.load(evalNode.getRightExpr().getValueType(), RHS);            // < lhs, rhs
 
       context.ifCmp(evalNode.getLeftExpr().getValueType(), evalNode.getType(), ifNotMatched);
@@ -567,7 +585,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitStringConcat(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
-      throws CodeGenException {
+      throws CompilationError {
 
     stack.push(evalNode);
 
@@ -629,15 +647,25 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
     switch (constEval.getValueType().getType()) {
     case NULL_TYPE:
-      if (!stack.isEmpty() && stack.peek() instanceof BinaryEval) {
-        BinaryEval parent = (BinaryEval) stack.peek();
-        if (parent.getLeftExpr() == constEval) {
-          context.pushDummyValue(parent.getRightExpr().getValueType());
-        } else {
-          context.pushDummyValue(parent.getLeftExpr().getValueType());
-        }
+
+      if (stack.isEmpty()) {
+        context.pushNullOfThreeValuedLogic();
       } else {
-        context.push(0); // UNKNOWN
+        EvalNode parentNode = stack.peek();
+
+        if (parentNode instanceof BinaryEval) {
+          BinaryEval parent = (BinaryEval) stack.peek();
+          if (parent.getLeftExpr() == constEval) {
+            context.pushDummyValue(parent.getRightExpr().getValueType());
+          } else {
+            context.pushDummyValue(parent.getLeftExpr().getValueType());
+          }
+        } else if (parentNode instanceof CaseWhenEval) {
+          CaseWhenEval caseWhen = (CaseWhenEval) parentNode;
+          context.pushDummyValue(caseWhen.getValueType());
+        } else {
+          throw new CompilationError("Cannot find matched type in the stack: " + constEval);
+        }
       }
       break;
     case BOOLEAN:

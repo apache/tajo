@@ -365,6 +365,10 @@ public class DatumFactory {
     return new BlobDatum(val.getBytes());
   }
 
+  public static Inet4Datum createInet4(int encoded) {
+    return new Inet4Datum(encoded);
+  }
+
   public static Inet4Datum createInet4(byte[] val) {
     return new Inet4Datum(val);
   }
