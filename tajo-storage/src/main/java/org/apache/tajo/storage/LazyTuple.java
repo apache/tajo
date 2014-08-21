@@ -191,6 +191,11 @@ public class LazyTuple implements Tuple, Cloneable {
     return get(fieldId).asChars();
   }
 
+  @Override
+  public char[] getUnicodeChars(int fieldId) {
+    return get(fieldId).asUnicodeChars();
+  }
+
   public String toString() {
     boolean first = true;
     StringBuilder str = new StringBuilder();

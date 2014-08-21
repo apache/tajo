@@ -675,7 +675,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                               allocateContainers(subQuery);
 
                             }
-                          } catch (Exception e) {
+                          } catch (Throwable e) {
                             LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
                             subQuery.setFinishTime();
                             subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
@@ -686,7 +686,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               );
           state = SubQueryState.INITED;
         }
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
         subQuery.setFinishTime();
         subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));

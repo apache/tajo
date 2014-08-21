@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util;
 
+import com.google.common.primitives.Chars;
 import org.apache.hadoop.io.WritableUtils;
 
 import java.io.ByteArrayOutputStream;
