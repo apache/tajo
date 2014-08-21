@@ -18,8 +18,8 @@
 
 package org.apache.tajo.engine.codegen;
 
-public class CodeGenerationException extends RuntimeException {
-  public CodeGenerationException(String message) {
+public class CodeGenException extends RuntimeException {
+  public CodeGenException(String message) {
     super(message);
   }
 }

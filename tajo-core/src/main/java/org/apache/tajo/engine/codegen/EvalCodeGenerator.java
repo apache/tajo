@@ -307,7 +307,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     context.methodvisitor.visitJumpInsn(Opcodes.GOTO, label);
   }
 
-  private void emitLabel(EvalCodeGenContext context, Label label) {
+  void emitLabel(EvalCodeGenContext context, Label label) {
     context.methodvisitor.visitLabel(label);
   }
 
@@ -448,7 +448,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC,
           org.apache.tajo.org.objectweb.asm.Type.getInternalName(EvalCodeGenerator.class), "OR_LOGIC", "[[B");
     } else {
-      throw new CodeGenerationException("visitAndOrEval() cannot generate the code at " + evalNode);
+      throw new CodeGenException("visitAndOrEval() cannot generate the code at " + evalNode);
     }
     context.load(evalNode.getLeftExpr().getValueType(), LHS);
     context.methodvisitor.visitInsn(Opcodes.AALOAD);
@@ -513,7 +513,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitComparisonEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
-      throws CodeGenerationException {
+      throws CodeGenException {
 
     DataType lhsType = evalNode.getLeftExpr().getValueType();
     DataType rhsType = evalNode.getRightExpr().getValueType();
@@ -563,7 +563,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitStringConcat(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
-      throws CodeGenerationException {
+      throws CodeGenException {
 
     stack.push(evalNode);
 
@@ -765,7 +765,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, owner, fieldName, getDescription(clazz));
   }
 
-  public static Class getStringPatternEvalClass(EvalType type) {
+  static Class getStringPatternEvalClass(EvalType type) {
     if (type == EvalType.LIKE) {
       return LikePredicateEval.class;
     } else if (type == EvalType.SIMILAR_TO) {
@@ -795,161 +795,8 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return CoreGsonHelper.fromJson(json, Schema.class);
   }
 
-
-  private EvalNode extractCommonTerm(List<CaseWhenEval.IfThenEval> ifThenEvals) {
-    EvalNode commonTerm = null;
-
-    for (int i = 0; i < ifThenEvals.size(); i++) {
-      EvalNode predicate = ifThenEvals.get(i).getCondition();
-      if (!checkIfSimplePredicate(predicate)) {
-        return null;
-      }
-
-      BinaryEval bin = (BinaryEval) predicate;
-
-      EvalNode baseTerm;
-      if (bin.getLeftExpr().getType() == EvalType.CONST) {
-        baseTerm = bin.getRightExpr();
-      } else {
-        baseTerm = bin.getLeftExpr();
-      }
-
-      if (commonTerm == null) {
-        commonTerm = baseTerm;
-      } else {
-        if (!baseTerm.equals(commonTerm)) {
-          return null;
-        }
-      }
-    }
-
-    return commonTerm;
-  }
-
-  /**
-   * Simple predicate means one term is constant and comparator is equal.
-   *
-   * @param predicate Predicate to be checked
-   * @return True if the predicate is a simple form.
-   */
-  private boolean checkIfSimplePredicate(EvalNode predicate) {
-    if (predicate.getType() == EvalType.EQUAL) {
-      BinaryEval binaryEval = (BinaryEval) predicate;
-      EvalNode lhs = binaryEval.getLeftExpr();
-      EvalNode rhs = binaryEval.getRightExpr();
-
-      boolean simple = false;
-      simple |= rhs.getType() == EvalType.CONST && TajoGeneratorAdapter.isJVMInternalInt(rhs.getValueType());
-      simple |= lhs.getType() == EvalType.CONST && TajoGeneratorAdapter.isJVMInternalInt(lhs.getValueType());
-      return simple;
-    } else {
-      return false;
-    }
-  }
-
-  private int getSwitchIndex(EvalNode predicate) {
-    Preconditions.checkArgument(checkIfSimplePredicate(predicate),
-        "This expression cannot be used for switch table: " + predicate);
-
-    BinaryEval bin = (BinaryEval) predicate;
-
-    if (bin.getLeftExpr().getType() == EvalType.CONST) {
-      return bin.getLeftExpr().eval(null, null).asInt4();
-    } else {
-      return bin.getRightExpr().eval(null, null).asInt4();
-    }
-  }
-
   public EvalNode visitCaseWhen(EvalCodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
-
-    // TYPE 1: CASE <expr> WHEN x THEN c1 WHEN y THEN c2 WHEN c3 ELSE ... END;
-    EvalNode commonTerm = extractCommonTerm(caseWhen.getIfThenEvals());
-
-    if (commonTerm != null) {
-      int casesNum = caseWhen.getIfThenEvals().size();
-      List<CaseWhenEval.IfThenEval> ifThenList = caseWhen.getIfThenEvals();
-      SwitchCase [] cases = new SwitchCase[casesNum];
-
-      for (int i = 0; i < caseWhen.getIfThenEvals().size(); i++) {
-        int key = getSwitchIndex(ifThenList.get(i).getCondition());
-        EvalNode result = ifThenList.get(i).getResult();
-        cases[i] = new SwitchCase(key, result);
-      }
-      CaseWhenSwitchGenerator gen = new CaseWhenSwitchGenerator(this, context, stack, cases, caseWhen.getElse());
-
-      stack.push(caseWhen);
-      visit(context, commonTerm, stack);
-      stack.pop();
-
-      Label ifNull = context.newLabel();
-      Label endIf = context.newLabel();
-
-      context.emitNullityCheck(ifNull);
-      context.generatorAdapter.tableSwitch(gen.keys(), gen);
-      context.gotoLabel(endIf);
-
-      emitLabel(context, ifNull);
-      context.pop(commonTerm.getValueType());
-      context.pushNullOfThreeValuedLogic();
-      context.pushNullFlag(false);
-
-      emitLabel(context, endIf);
-
-    } else { // TYPE 2: CASE WHEN x = c1 THEN r1 WHEN y = c2 THEN r2 ELSE ... END
-      int casesNum = caseWhen.getIfThenEvals().size();
-      Label [] labels = new Label[casesNum - 1];
-
-      for (int i = 0; i < casesNum - 1; i++) {
-        labels[i] = context.newLabel();
-      }
-
-      Label defaultLabel = context.newLabel();
-      Label ifNull = context.newLabel();
-      Label afterAll = context.newLabel();
-
-      stack.push(caseWhen);
-      for (int i = 0; i < casesNum; i++) {
-        CaseWhenEval.IfThenEval ifThenEval = caseWhen.getIfThenEvals().get(i);
-        stack.push(ifThenEval);
-
-        visit(context, ifThenEval.getCondition(), stack);
-        int NULL_FLAG = context.istore();
-        int CHILD = context.store(ifThenEval.getCondition().getValueType());
-
-        context.iload(NULL_FLAG);
-        context.emitNullityCheck(ifNull);
-
-        context.pushBooleanOfThreeValuedLogic(false);
-        context.load(ifThenEval.getCondition().getValueType(), CHILD);
-        context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, casesNum - 1 < i ? labels[i] : defaultLabel);  // false
-
-        visit(context, ifThenEval.getResult(), stack);
-        context.gotoLabel(afterAll);
-        stack.pop();
-
-        if (i < casesNum - 1) {
-          emitLabel(context, labels[i]); // else if
-        }
-      }
-      stack.pop();
-
-      emitLabel(context, defaultLabel);
-      if (caseWhen.hasElse()) {
-        stack.push(caseWhen);
-        visit(context, caseWhen.getElse(), stack);
-        stack.pop();
-        context.gotoLabel(afterAll);
-      } else {
-        context.gotoLabel(ifNull);
-      }
-
-      emitLabel(context, ifNull);
-      context.pushDummyValue(caseWhen.getIfThenEvals().get(0).getResult().getValueType());
-      context.pushNullFlag(false);
-      context.gotoLabel(afterAll);
-
-      emitLabel(context, afterAll);
-    }
+    CaseWhenEmitter.getInstance().emit(this, context, caseWhen, stack);
     return caseWhen;
   }
 
