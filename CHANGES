@@ -31,6 +31,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-992: Reduce number of hash shuffle output file.(Hyoungjun Kim)
+
     TAJO-1008: Protocol buffer De/Serialization for EvalNode. (hyunsik)
 
     TAJO-984: Improve the default data type handling in RowStoreUtil.

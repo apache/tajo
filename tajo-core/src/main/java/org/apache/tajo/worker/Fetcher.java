@@ -252,6 +252,7 @@ public class Fetcher {
         }
 
         if(fileLen == length){
+          IOUtils.cleanup(LOG, fc, raf);
           finishTime = System.currentTimeMillis();
           state = TajoProtos.FetcherState.FETCH_FINISHED;
         }

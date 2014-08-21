@@ -41,12 +41,14 @@ import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -162,6 +164,18 @@ public class TaskRunner extends AbstractService {
       this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+    }
+  }
+
+  protected void sendExecutionBlockReport(TajoWorkerProtocol.ExecutionBlockReport reporter) throws Exception {
+    QueryMasterProtocol.QueryMasterProtocolService.Interface qmClientService = null;
+    NettyClientBase qmClient = null;
+    try {
+      qmClient = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+      qmClientService = qmClient.getStub();
+      qmClientService.doneExecutionBlock(null, reporter, NullCallback.get());
+    } finally {
+      connPool.releaseConnection(qmClient);
     }
   }
 
@@ -324,6 +338,10 @@ public class TaskRunner extends AbstractService {
     public TaskRunnerHistory getExcutionBlockHistory(){
       return history;
     }
+
+    public WorkerContext getWorkerContext() {
+      return taskRunnerManager.getWorkerContext();
+    }
   }
 
   public TaskRunnerContext getContext() {
@@ -383,7 +401,9 @@ public class TaskRunner extends AbstractService {
                 }
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
-                LOG.info("Retry assigning task:" + getId());
+                if (LOG.isDebugEnabled()) {
+                  LOG.info("Retry assigning task:" + getId());
+                }
                 continue;
               }
 
