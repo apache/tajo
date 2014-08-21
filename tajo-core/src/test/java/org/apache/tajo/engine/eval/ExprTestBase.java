@@ -265,14 +265,6 @@ public class ExprTestBase {
       } else {
         assertFalse(e.getMessage(), true);
       }
-    } catch (InvocationTargetException e) {
-      e.printStackTrace();
-    } catch (NoSuchMethodException e) {
-      e.printStackTrace();
-    } catch (InstantiationException e) {
-      e.printStackTrace();
-    } catch (IllegalAccessException e) {
-      e.printStackTrace();
     } finally {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);

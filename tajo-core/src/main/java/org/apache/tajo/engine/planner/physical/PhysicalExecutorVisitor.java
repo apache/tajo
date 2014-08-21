@@ -18,12 +18,14 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.PhysicalPlanningException;
+
 import java.util.Stack;
 
 public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
 
   RESULT visitBNLJoin(CONTEXT context, BNLJoinExec exec, Stack<PhysicalExec> stack)
-      throws PhysicalPlanningException;
+      throws PhysicalPlanningException, PhysicalPlanningException;
 
   RESULT visitBSTIndexScan(CONTEXT context, BSTIndexScanExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;

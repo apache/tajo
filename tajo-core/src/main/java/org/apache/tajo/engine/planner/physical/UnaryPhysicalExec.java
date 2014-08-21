@@ -19,8 +19,10 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -46,13 +48,17 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
     this.child = child;
   }
 
+  @Override
   public void init() throws IOException {
     progress = 0.0f;
     if (child != null) {
       child.init();
     }
+
+    super.init();
   }
 
+  @Override
   public void rescan() throws IOException {
     progress = 0.0f;
     if (child != null) {
@@ -60,6 +66,7 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
     }
   }
 
+  @Override
   public void close() throws IOException {
     progress = 1.0f;
     if (child != null) {

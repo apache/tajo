@@ -149,20 +149,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, selNode.getChild(), stack);
         stack.pop();
 
-        try {
-          selNode.setQual(ctx.getCodeGen().compile(selNode.getInSchema(), selNode.getQual()));
-        } catch (NoSuchMethodException e) {
-          e.printStackTrace();
-        } catch (IllegalAccessException e) {
-          e.printStackTrace();
-        } catch (InvocationTargetException e) {
-          e.printStackTrace();
-        } catch (InstantiationException e) {
-          e.printStackTrace();
-        } catch (PlanningException e) {
-          e.printStackTrace();
-        }
-
         return new SelectionExec(ctx, selNode, leftExec);
 
       case PROJECTION:
@@ -170,14 +156,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         stack.push(prjNode);
         leftExec = createPlanRecursive(ctx, prjNode.getChild(), stack);
         stack.pop();
-
-        for (Target target : prjNode.getTargets()) {
-          try {
-            target.setExpr(ctx.getCodeGen().compile(prjNode.getInSchema(), target.getEvalTree()));
-          } catch (Throwable e) {
-            e.printStackTrace();
-          }
-        }
 
         return new ProjectionExec(ctx, prjNode, leftExec);
 

@@ -183,7 +183,7 @@ public class LazyTuple implements Tuple, Cloneable {
 
   @Override
   public double getFloat8(int fieldId) {
-    return get(fieldId).asInt8();
+    return get(fieldId).asFloat8();
   }
 
   @Override

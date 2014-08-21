@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.worker;
 
-import java.io.IOException;
+import com.google.common.collect.Maps;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.engine.eval.EvalNode;
 
-public class PhysicalPlanningException extends IOException {
-  public PhysicalPlanningException(String message) {
-    super(message);
-  }
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-  public PhysicalPlanningException(Exception ioe) {
-    super(ioe);
+public class ExecutionBlockSharedResource {
+  private AtomicBoolean initialized = new AtomicBoolean(false);
+  private Map<EvalNode, EvalNode> compiledEvals = Maps.newConcurrentMap();
+
+  public boolean initializedResources() {
+    return initialized.get();
   }
 }

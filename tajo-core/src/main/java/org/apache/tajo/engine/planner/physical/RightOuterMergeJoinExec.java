@@ -87,13 +87,18 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
 
     // for projection
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
 
     leftNumCols = outer.getSchema().size();
+  }
+
+  @Override
+  protected void compile() {
+    joinQual = context.getCodeGen().compile(inSchema, joinQual);
   }
 
   public JoinNode getPlan() {

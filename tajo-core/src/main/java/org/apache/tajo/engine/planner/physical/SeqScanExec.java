@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
@@ -87,6 +88,12 @@ public class SeqScanExec extends PhysicalExec {
       cacheKey = new TupleCacheKey(
           context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
     }
+
+    if (fragments != null
+        && plan.getTableDesc().hasPartition()
+        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
+      rewriteColumnPartitionedTableSchema();
+    }
   }
 
   /**
@@ -140,12 +147,6 @@ public class SeqScanExec extends PhysicalExec {
   public void init() throws IOException {
     Schema projected;
 
-    if (fragments != null
-        && plan.getTableDesc().hasPartition()
-        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
-      rewriteColumnPartitionedTableSchema();
-    }
-
     if (plan.hasTargets()) {
       projected = new Schema();
       Set<Column> columnSet = new HashSet<Column>();
@@ -194,19 +195,18 @@ public class SeqScanExec extends PhysicalExec {
       initScanner(projected);
     }
 
-    if (plan.hasTargets()) {
-      for (Target target : plan.getTargets()) {
-        try {
-          target.setExpr(context.getCodeGen().compile(plan.getTableSchema(), target.getEvalTree()));
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
-      }
+    super.init();
+  }
+
+  @Override
+  protected void compile() throws CodeGenException {
+    if (plan.hasQual()) {
+      qual = context.getCodeGen().compile(inSchema, qual);
     }
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),

@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 
@@ -52,6 +54,8 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
     leftChild.init();
     rightChild.init();
     progress = 0.0f;
+
+    super.init();
   }
 
   @Override

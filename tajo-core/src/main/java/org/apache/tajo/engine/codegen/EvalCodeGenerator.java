@@ -74,9 +74,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     this.classLoader = classLoader;
   }
 
-  public EvalNode compile(Schema schema, EvalNode expr)
-      throws NoSuchMethodException, IllegalAccessException,
-      InvocationTargetException, InstantiationException, PlanningException {
+  public EvalNode compile(Schema schema, EvalNode expr) throws CodeGenException {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
@@ -86,9 +84,16 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     context.emitReturn();
 
     Class aClass = classLoader.defineClass(className, classWriter.toByteArray());
-    Constructor constructor = aClass.getConstructor();
-    EvalNode r = (EvalNode) constructor.newInstance();
-    return r;
+    Constructor constructor;
+    EvalNode compiledEval;
+
+    try {
+      constructor = aClass.getConstructor();
+      compiledEval = (EvalNode) constructor.newInstance();
+    } catch (Throwable t) {
+      throw new CodeGenException(t);
+    }
+    return compiledEval;
   }
 
   private void printOut(EvalCodeGenContext context, String message) {
@@ -343,7 +348,6 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   public EvalNode visitField(EvalCodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
 
     if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
-      printOut(context, "visitField >> NULL");
       context.pushNullOfThreeValuedLogic();
       context.pushNullFlag(false);
     } else {

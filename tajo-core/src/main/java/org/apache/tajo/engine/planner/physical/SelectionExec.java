@@ -18,7 +18,10 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.engine.codegen.CodeGenException;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.SelectionNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -26,13 +29,18 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class SelectionExec extends UnaryPhysicalExec  {
-  private final EvalNode qual;
+  private EvalNode qual;
 
   public SelectionExec(TaskAttemptContext context,
                        SelectionNode plan,
                        PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.qual = plan.getQual();
+  }
+
+  @Override
+  public void compile() throws CodeGenException {
+    qual = context.getCodeGen().compile(inSchema, qual);
   }
 
   @Override

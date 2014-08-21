@@ -45,6 +45,10 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
     }
   }
 
+  protected void compile() {
+    joinQual = context.getCodeGen().compile(inSchema, joinQual);
+  }
+
   /**
    * The End of Tuple (EOT) condition is true only when no more tuple in the left relation (on disk).
    * next() method finds the first unmatched tuple from both tables.

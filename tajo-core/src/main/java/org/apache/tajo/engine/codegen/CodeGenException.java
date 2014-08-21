@@ -22,4 +22,8 @@ public class CodeGenException extends RuntimeException {
   public CodeGenException(String message) {
     super(message);
   }
+
+  public CodeGenException(Throwable t) {
+    super(t);
+  }
 }

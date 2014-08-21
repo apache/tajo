@@ -84,11 +84,16 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     this.innerIterator = innerTupleSlots.iterator();
     
     // for projection
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
+  }
+
+  @Override
+  protected void compile() {
+    joinQual = context.getCodeGen().compile(inSchema, joinQual);
   }
 
   public JoinNode getPlan(){

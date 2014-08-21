@@ -82,12 +82,17 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
 
     // for projection
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
+  }
+
+  @Override
+  protected void compile() {
+    joinQual = context.getCodeGen().compile(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
