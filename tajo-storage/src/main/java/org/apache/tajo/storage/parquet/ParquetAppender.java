@@ -129,6 +129,10 @@ public class ParquetAppender extends FileAppender {
     writer.close();
   }
 
+  public long getEstimatedOutputSize() throws IOException {
+    return writer.getEstimatedWrittenSize();
+  }
+
   /**
    * If table statistics is enabled, retrieve the table statistics.
    *
