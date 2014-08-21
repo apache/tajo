@@ -144,6 +144,7 @@
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoWorkerProtocol.proto</argument>
                 <argument>src/main/proto/InternalTypes.proto</argument>
+                <argument>src/main/proto/Plan.proto</argument>
               </arguments>
             </configuration>
             <goals>

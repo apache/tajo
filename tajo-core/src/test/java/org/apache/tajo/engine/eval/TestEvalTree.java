@@ -89,6 +89,15 @@ public class TestEvalTree extends ExprTestBase {
       return CatalogUtil.newSimpleDataType(BOOLEAN);
     }
 
+    @Override
+    public int childNum() {
+      return 0;
+    }
+
+    @Override
+    public EvalNode getChild(int idx) {
+      return null;
+    }
   }
 
   public static class MockFalseExpr extends EvalNode {
@@ -125,6 +134,16 @@ public class TestEvalTree extends ExprTestBase {
     @Override
     public DataType getValueType() {
       return CatalogUtil.newSimpleDataType(BOOLEAN);
+    }
+
+    @Override
+    public int childNum() {
+      return 0;
+    }
+
+    @Override
+    public EvalNode getChild(int idx) {
+      return null;
     }
   }
 

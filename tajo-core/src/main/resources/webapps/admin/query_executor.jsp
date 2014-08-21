@@ -19,10 +19,21 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.ha.HAService" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+
+  HAService haService = master.getContext().getHAService();
+  String activeLabel = "";
+  if (haService != null) {
+      if (haService.isActiveStatus()) {
+      activeLabel = "<font color='#1e90ff'>(active)</font>";
+    } else {
+      activeLabel = "<font color='#1e90ff'>(backup)</font>";
+    }
+  }
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -275,7 +286,7 @@ function getPage() {
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Query</h3>
   <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>

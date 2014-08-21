@@ -178,6 +178,24 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
+  public int childNum() {
+    return 3;
+  }
+
+  @Override
+  public EvalNode getChild(int idx) {
+    if (idx == 0) {
+      return predicand;
+    } else if (idx == 1) {
+      return begin;
+    } else if (idx == 2) {
+      return end;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
+  }
+
+  @Override
   public String getName() {
     return "between";
   }

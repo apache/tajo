@@ -32,6 +32,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.engine.optimizer.eval.EvalTreeOptimizer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -57,6 +58,7 @@ import java.util.Set;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestEvalTreeUtil {
@@ -148,6 +150,7 @@ public class TestEvalTreeUtil {
   }
 
   public static EvalNode getRootSelection(String query) throws PlanningException {
+
     Expr block = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
@@ -156,8 +159,11 @@ public class TestEvalTreeUtil {
       e.printStackTrace();
     }
 
+    LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(defaultContext, plan, plan.getRootBlock(),
+        new EvalTreeOptimizer(), true);
+
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
-    return planner.getExprAnnotator().createEvalNode(plan, plan.getRootBlock(), selection.getQual(),
+    return planner.getExprAnnotator().createEvalNode(context, selection.getQual(),
         NameResolvingMode.RELS_AND_SUBEXPRS);
   }
 
@@ -359,5 +365,18 @@ public class TestEvalTreeUtil {
     for (AggregationFunctionCallEval eval : list) {
       assertTrue(result.contains(eval.getName()));
     }
+  }
+
+  @Test
+  public final void testIsJoinQual() throws PlanningException {
+    EvalNode evalNode = getRootSelection("select score from people where people.score > people.age");
+    assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
+  }
+
+  @Test
+  public final void testIsJoinQual2() throws PlanningException {
+    EvalNode evalNode = getRootSelection(
+        "select score from people where substr(people.score::text,1,1) > substr(people.age::text,1,1)");
+    assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
   }
 }

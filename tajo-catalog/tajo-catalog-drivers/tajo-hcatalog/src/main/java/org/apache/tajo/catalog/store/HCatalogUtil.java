@@ -20,9 +20,11 @@ package org.apache.tajo.catalog.store;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
 import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hcatalog.common.HCatException;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
@@ -30,6 +32,7 @@ import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
 public class HCatalogUtil {
@@ -137,4 +140,7 @@ public class HCatalogUtil {
     }
   }
 
+  public static Table getTable(IMetaStoreClient client, String dbName, String tableName) throws TException {
+    return new Table(client.getTable(dbName, tableName));
+  }
 }

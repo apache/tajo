@@ -1,4 +1,4 @@
-?literal,  ?literal_1
+?text,  ?text_1
 -------------------------------
 abc,  123
 (1 rows, , 0 B selected)

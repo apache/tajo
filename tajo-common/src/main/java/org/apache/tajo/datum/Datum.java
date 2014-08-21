@@ -75,7 +75,6 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   public int asInt4() {
     throw new InvalidCastException(type, Type.INT4);
   }
-
   public long asInt8() {
     throw new InvalidCastException(type, Type.INT8);
   }

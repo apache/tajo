@@ -102,11 +102,11 @@ public class ExprCodeGenerator extends SimpleEvalNodeVisitor<ExprCodeGenerator.E
   }
 
   public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
-    if (EvalType.isLogicalOperator(binaryEval)) {
+    if (EvalType.isLogicalOperator(binaryEval.getType())) {
       return visitAndOrEval(context, binaryEval, stack);
-    } else if (EvalType.isArithmeticOperator(binaryEval)) {
+    } else if (EvalType.isArithmeticOperator(binaryEval.getType())) {
       return visitArithmeticEval(context, binaryEval, stack);
-    } else if (EvalType.isComparisonOperator(binaryEval)) {
+    } else if (EvalType.isComparisonOperator(binaryEval.getType())) {
       return visitComparisonEval(context, binaryEval, stack);
     } else if (binaryEval.getType() == EvalType.CONCATENATE) {
       return visitStringConcat(context, binaryEval, stack);

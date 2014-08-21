@@ -48,6 +48,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.thrift.TException;
 
 import java.io.IOException;
 import java.util.*;
@@ -77,13 +78,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public boolean existTable(final String databaseName, final String tableName) throws CatalogException {
     boolean exist = false;
-    org.apache.hadoop.hive.ql.metadata.Table table = null;
+    org.apache.hadoop.hive.ql.metadata.Table table;
     HCatalogStoreClientPool.HCatalogStoreClient client = null;
 
     // get table
     try {
       client = clientPool.getClient();
-      table = HCatUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      table = HCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
       if (table != null) {
         exist = true;
       }
@@ -118,7 +119,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // get hive table schema
       try {
         client = clientPool.getClient();
-        table = HCatUtil.getTable(client.getHiveClient(), databaseName, tableName);
+        table = HCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
         path = table.getPath();
       } catch (NoSuchObjectException nsoe) {
         throw new CatalogException("Table not found. - tableName:" + tableName, nsoe);
@@ -291,7 +292,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       client = clientPool.getClient();
       return client.getHiveClient().getAllTables(databaseName);
-    } catch (MetaException e) {
+    } catch (TException e) {
       throw new CatalogException(e);
     } finally {
       if(client != null) client.release();
@@ -401,7 +402,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       client = clientPool.getClient();
       return client.getHiveClient().getAllDatabases();
-    } catch (MetaException e) {
+    } catch (TException e) {
       throw new CatalogException(e);
     } finally {
       if (client != null) {

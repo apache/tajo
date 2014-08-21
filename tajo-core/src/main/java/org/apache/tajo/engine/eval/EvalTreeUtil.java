@@ -20,10 +20,17 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.NamedExpr;
+import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.ExprFinder;
+import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.TUtil;
@@ -233,16 +240,50 @@ public class EvalTreeUtil {
   /**
    * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
    *
+   * If three conditions are satisfied, we can recognize the expression as a equi join condition.
+   * <ol>
+   *   <li>An expression is an equal comparison expression.</li>
+   *   <li>Both terms in an expression are column references.</li>
+   *   <li>Both column references point come from different tables</li>
+   * </ol>
+   *
+   * For theta join condition, we will use "an expression is a predicate including column references which come
+   * from different two tables" instead of the first rule.
+   *
    * @param expr EvalNode to be evaluated
    * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
    *                         Otherwise, it only returns equi-join conditions.
    * @return True if it is join condition.
    */
   public static boolean isJoinQual(EvalNode expr, boolean includeThetaJoin) {
+    return isJoinQual(null, expr, includeThetaJoin);
+  }
+
+  /**
+   * If a given expression is join condition, it returns TRUE. Otherwise, it returns FALSE.
+   *
+   * If three conditions are satisfied, we can recognize the expression as a equi join condition.
+   * <ol>
+   *   <li>An expression is an equal comparison expression.</li>
+   *   <li>Both terms in an expression are column references.</li>
+   *   <li>Both column references point come from different tables</li>
+   * </ol>
+   *
+   * For theta join condition, we will use "an expression is a predicate including column references which come
+   * from different two tables" instead of the first rule.
+   *
+   * @param block if block is not null, it tracks the lineage of aliased name derived from complex expressions.
+   * @param expr EvalNode to be evaluated
+   * @param includeThetaJoin If true, it will return equi as well as non-equi join conditions.
+   *                         Otherwise, it only returns equi-join conditions.
+   * @return True if it is join condition.
+   */
+  public static boolean isJoinQual(@Nullable LogicalPlan.QueryBlock block, EvalNode expr, boolean includeThetaJoin) {
+
     if (expr instanceof BinaryEval) {
       boolean joinComparator;
       if (includeThetaJoin) {
-        joinComparator = EvalType.isComparisonOperator(expr);
+        joinComparator = EvalType.isComparisonOperator(expr.getType());
       } else {
         joinComparator = expr.getType() == EvalType.EQUAL;
       }
@@ -250,7 +291,53 @@ public class EvalTreeUtil {
       BinaryEval binaryEval = (BinaryEval) expr;
       boolean isBothTermFields = isSingleColumn(binaryEval.getLeftExpr()) && isSingleColumn(binaryEval.getRightExpr());
 
-      return joinComparator && isBothTermFields;
+      Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
+      Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+
+      boolean ensureColumnsOfDifferentTables = false;
+
+      if (leftColumns.size() == 1 && rightColumns.size() == 1) { // ensure there is only one column of each table
+        Column leftColumn = leftColumns.iterator().next();
+        Column rightColumn = rightColumns.iterator().next();
+
+        String leftQualifier = CatalogUtil.extractQualifier(leftColumn.getQualifiedName());
+        String rightQualifier = CatalogUtil.extractQualifier(rightColumn.getQualifiedName());
+
+        // if block is given, it will track an original expression of each term in order to decide whether
+        // this expression is a join condition, or not.
+        if (block != null) {
+          boolean leftQualified = CatalogUtil.isFQColumnName(leftColumn.getQualifiedName());
+          boolean rightQualified = CatalogUtil.isFQColumnName(rightColumn.getQualifiedName());
+
+          if (!leftQualified) { // if left one is aliased name
+
+            // getting original expression of left term
+            NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(leftColumn.getQualifiedName());
+            Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
+
+            // ensure there is only one column of an original expression
+            if (foundColumns.size() == 1) {
+              leftQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+            }
+          }
+          if (!rightQualified) { // if right one is aliased name
+
+            // getting original expression of right term
+            NamedExpr rawExpr = block.getNamedExprsManager().getNamedExpr(rightColumn.getQualifiedName());
+            Set<ColumnReferenceExpr> foundColumns = ExprFinder.finds(rawExpr.getExpr(), OpType.Column);
+
+            // ensure there is only one column of an original expression
+            if (foundColumns.size() == 1) {
+              rightQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+            }
+          }
+        }
+
+        // if columns of both term is different to each other, it will be true.
+        ensureColumnsOfDifferentTables = !leftQualifier.equals(rightQualifier);
+      }
+
+      return joinComparator && isBothTermFields && ensureColumnsOfDifferentTables;
     } else {
       return false;
     }

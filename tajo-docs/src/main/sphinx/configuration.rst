@@ -11,3 +11,4 @@ Configuration
     configuration/worker_configuration
     configuration/catalog_configuration
     configuration/configuration_defaults
+    configuration/ha_configuration

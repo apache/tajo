@@ -85,9 +85,14 @@ public class TajoTestingCluster {
   public Boolean isHCatalogStoreUse = false;
 
   public TajoTestingCluster() {
+    this(false);
+  }
+
+  public TajoTestingCluster(boolean masterHaEMode) {
     this.conf = new TajoConf();
+    this.conf.setBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE, masterHaEMode);
     initPropertiesAndConfigs();
-	}
+  }
 
   void initPropertiesAndConfigs() {
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
