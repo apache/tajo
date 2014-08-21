@@ -45,6 +45,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -777,6 +778,11 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new RangeShuffleFileWriteExec(ctx, sm, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
 
     case NONE_SHUFFLE:
+      // if there is no given NULL CHAR property in the table property and the query is neither CTAS or INSERT,
+      // we set DEFAULT NULL CHAR to the table property.
+      if (!ctx.getQueryContext().containsKey(SessionVars.NULL_CHAR)) {
+        plan.getOptions().set(StorageConstants.CSVFILE_NULL, TajoConf.ConfVars.$CSVFILE_NULL.defaultVal);
+      }
       return new StoreTableExec(ctx, plan, subOp);
 
     default:

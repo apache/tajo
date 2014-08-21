@@ -145,6 +145,11 @@ public class HashShuffleAppender implements Appender {
   }
 
   @Override
+  public long getEstimatedOutputSize() throws IOException {
+    return pageSize * pages.size();
+  }
+
+  @Override
   public void close() throws IOException {
     synchronized(appender) {
       if (closed.get()) {
