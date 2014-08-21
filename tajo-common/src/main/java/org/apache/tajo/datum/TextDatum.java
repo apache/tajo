@@ -20,6 +20,7 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
+import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -96,7 +97,7 @@ public class TextDatum extends Datum {
 
   @Override
   public char[] asUnicodeChars() {
-    return new String(this.bytes, defaultCharset).toCharArray();
+    return Convert.utf2chars(this.bytes);
   }
 
   @Override
