@@ -23,7 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.codegen.ExecutorCompiler;
+import org.apache.tajo.engine.codegen.ExecutorPreCompiler;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.CoreGsonHelper;
@@ -46,7 +46,7 @@ public class ExecutionBlockSharedResource {
 
   // Resources
   private TajoClassLoader classLoader;
-  private ExecutorCompiler.CompilationContext compilationContext;
+  private ExecutorPreCompiler.CompilationContext compilationContext;
   private LogicalNode plan;
   private boolean codeGenEnabled = false;
 
@@ -86,8 +86,8 @@ public class ExecutionBlockSharedResource {
     if (context.getBool(SessionVars.CODEGEN)) {
       codeGenEnabled = true;
       classLoader = new TajoClassLoader();
-      compilationContext = new ExecutorCompiler.CompilationContext(classLoader);
-      ExecutorCompiler.compile(compilationContext, plan);
+      compilationContext = new ExecutorPreCompiler.CompilationContext(classLoader);
+      ExecutorPreCompiler.compile(compilationContext, plan);
     }
   }
 

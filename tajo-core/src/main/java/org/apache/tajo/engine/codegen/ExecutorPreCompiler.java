@@ -23,10 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.util.Pair;
 
@@ -34,13 +31,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Stack;
 
-public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.CompilationContext, LogicalNode> {
-  private static final Log LOG = LogFactory.getLog(ExecutorCompiler.class);
+public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreCompiler.CompilationContext, LogicalNode> {
+  private static final Log LOG = LogFactory.getLog(ExecutorPreCompiler.class);
 
-  private static final ExecutorCompiler instance;
+  private static final ExecutorPreCompiler instance;
 
   static {
-    instance = new ExecutorCompiler();
+    instance = new ExecutorPreCompiler();
   }
 
   public static void compile(CompilationContext context, LogicalNode node) throws PlanningException {
@@ -74,25 +71,31 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
   }
 
   private static void compileIfAbsent(CompilationContext context, Schema schema, EvalNode eval) {
-    if (!context.compiledEval.containsKey(eval)) {
+    Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
+    if (!context.compiledEval.containsKey(key)) {
       try {
         EvalNode compiled = context.compiler.compile(schema, eval);
-        context.compiledEval.put(new Pair<Schema, EvalNode>(schema, eval), compiled);
+        context.compiledEval.put(key, compiled);
 
       } catch (Throwable t) {
         // If any compilation error occurs, it works in a fallback mode. This mode just uses EvalNode objects
         // instead of a compiled EvalNode.
-        context.compiledEval.put(new Pair<Schema, EvalNode>(schema, eval), eval);
+        context.compiledEval.put(key, eval);
         LOG.warn(t);
       }
     }
   }
 
   private static void compileProjectableNode(CompilationContext context, Schema schema, Projectable node) {
+    Target [] targets;
     if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
-        compileIfAbsent(context, schema, target.getEvalTree());
-      }
+      targets = node.getTargets();
+    } else {
+      targets = PlannerUtil.schemaToTargets(node.getOutSchema());
+    }
+
+    for (Target target : targets) {
+      compileIfAbsent(context, schema, target.getEvalTree());
     }
   }
 
@@ -202,8 +205,8 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
   public LogicalNode visitScan(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
 
-    compileProjectableNode(context, node.getTableSchema(), node);
-    compileSelectableNode(context, node.getTableSchema(), node);
+    compileProjectableNode(context, node.getInSchema(), node);
+    compileSelectableNode(context, node.getInSchema(), node);
 
     return node;
   }
