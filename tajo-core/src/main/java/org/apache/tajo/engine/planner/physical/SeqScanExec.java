@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -67,8 +68,12 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
-                     ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
+  // For code generation
+  private List<Integer> recompiledTargetIds = Lists.newArrayList();
+  private boolean requiredRecompileOfQual = false;
+
+  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
+                     CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
@@ -127,18 +132,27 @@ public class SeqScanExec extends PhysicalExec {
       Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
       ConstEval constExpr = new ConstEval(datum);
 
-      for (Target target : plan.getTargets()) {
+
+      for (int i = 0; i < plan.getTargets().length; i++) {
+        Target target = plan.getTargets()[i];
+
         if (target.getEvalTree().equals(targetExpr)) {
           if (!target.hasAlias()) {
             target.setAlias(target.getEvalTree().getName());
           }
           target.setExpr(constExpr);
+
+          recompiledTargetIds.add(i);
+
         } else {
-          EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr);
+          if (EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr) > 0) {
+            recompiledTargetIds.add(i);
+          }
         }
       }
 
       if (plan.hasQual()) {
+        requiredRecompileOfQual = true;
         EvalTreeUtil.replace(plan.getQual(), targetExpr, constExpr);
       }
     }
@@ -201,12 +215,16 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   protected void compile() throws CompilationError {
     if (plan.hasQual()) {
-      qual = context.getCodeGen().compile(inSchema, qual);
+      if (requiredRecompileOfQual) {
+        qual = context.compileEval(inSchema, qual);
+      } else {
+        qual = context.getPrecompiledEval(qual);
+      }
     }
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets(), recompiledTargetIds);
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),

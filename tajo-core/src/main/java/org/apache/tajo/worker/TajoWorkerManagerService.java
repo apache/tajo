@@ -25,16 +25,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetSocketAddress;
 
@@ -118,7 +116,12 @@ public class TajoWorkerManagerService extends CompositeService
                                     TajoWorkerProtocol.RunExecutionBlockRequestProto request,
                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
     workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
+
     try {
+      workerContext.initSharedResource(
+          new QueryContext(workerContext.getConf(), request.getQueryContext()),
+          TajoIdUtils.createExecutionBlockId(request.getExecutionBlockId()), request.getPlanJson());
+
       String[] params = new String[7];
       params[0] = "standby";  //mode(never used)
       params[1] = request.getExecutionBlockId();
@@ -132,8 +135,8 @@ public class TajoWorkerManagerService extends CompositeService
       params[6] = request.getQueryOutputPath();
       workerContext.getTaskRunnerManager().startTask(params);
       done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
       done.run(TajoWorker.FALSE_PROTO);
     }
   }

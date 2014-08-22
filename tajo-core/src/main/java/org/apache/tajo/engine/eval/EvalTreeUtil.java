@@ -43,12 +43,18 @@ public class EvalTreeUtil {
     node.postOrder(new ChangeColumnRefVisitor(oldName, newName));
   }
 
-  public static void replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
+  public static int replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
     EvalReplaceVisitor replacer = new EvalReplaceVisitor(targetExpr, tobeReplaced);
-    replacer.visitChild(null, expr, new Stack<EvalNode>());
+    ReplaceContext context = new ReplaceContext();
+    replacer.visitChild(context, expr, new Stack<EvalNode>());
+    return context.countOfReplaces;
   }
 
-  public static class EvalReplaceVisitor extends BasicEvalNodeVisitor<EvalNode, EvalNode> {
+  private static class ReplaceContext {
+    int countOfReplaces = 0;
+  }
+
+  public static class EvalReplaceVisitor extends BasicEvalNodeVisitor<ReplaceContext, EvalNode> {
     private EvalNode target;
     private EvalNode tobeReplaced;
 
@@ -58,10 +64,12 @@ public class EvalTreeUtil {
     }
 
     @Override
-    public EvalNode visitChild(EvalNode context, EvalNode evalNode, Stack<EvalNode> stack) {
+    public EvalNode visitChild(ReplaceContext context, EvalNode evalNode, Stack<EvalNode> stack) {
       super.visitChild(context, evalNode, stack);
 
       if (evalNode.equals(target)) {
+        context.countOfReplaces++;
+
         EvalNode parent = stack.peek();
 
         if (parent instanceof BetweenPredicateEval) {

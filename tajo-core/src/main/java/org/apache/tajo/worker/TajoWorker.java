@@ -36,7 +36,10 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.ha.TajoMasterInfo;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -364,6 +367,10 @@ public class TajoWorker extends CompositeService {
       return queryMasterManagerService.getQueryMaster();
     }
 
+    public TajoConf getConf() {
+      return systemConf;
+    }
+
     public TajoWorkerManagerService getTajoWorkerManagerService() {
       return tajoWorkerManagerService;
     }
@@ -406,9 +413,15 @@ public class TajoWorker extends CompositeService {
       }
     }
 
-    public void newSharedResource(ExecutionBlockId blockId) {
-      ExecutionBlockSharedResource sharedResource = new ExecutionBlockSharedResource();
-      sharedResourceMap.put(blockId, sharedResource);
+    public void initSharedResource(QueryContext queryContext, ExecutionBlockId blockId, String planJson)
+        throws InterruptedException {
+
+      if (!sharedResourceMap.containsKey(blockId)) {
+        ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
+        if (sharedResourceMap.putIfAbsent(blockId, resource) == null) {
+          resource.initialize(queryContext, planJson);
+        }
+      }
     }
 
     public ExecutionBlockSharedResource getSharedResource(ExecutionBlockId blockId) {

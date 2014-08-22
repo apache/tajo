@@ -121,7 +121,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getCodeGen().compile(inSchema, joinQual);
+    joinQual = context.getPrecompiledEval(joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {

@@ -208,7 +208,8 @@ message RunExecutionBlockRequestProto {
     required string containerId = 5;
     optional string queryOutputPath = 6;
 
-    required string serializedPlan = 7;
+    required KeyValueSetProto queryContext = 7;
+    required string planJson = 8;
 }
 
 message ExecutionBlockListProto {

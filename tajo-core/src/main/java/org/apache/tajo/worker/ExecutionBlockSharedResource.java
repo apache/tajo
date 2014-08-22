@@ -18,22 +18,100 @@
 
 package org.apache.tajo.worker;
 
-import com.google.common.collect.Maps;
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.codegen.ExecutorCompiler;
+import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.query.QueryContext;
 
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ExecutionBlockSharedResource {
-  private AtomicBoolean initialized = new AtomicBoolean(false);
-  private Map<EvalNode, EvalNode> compiledEvals = Maps.newConcurrentMap();
+  private static Log LOG = LogFactory.getLog(ExecutionBlockSharedResource.class);
+  private AtomicBoolean initializing = new AtomicBoolean(false);
+  private volatile Boolean resourceInitSuccess = new Boolean(false);
+  private CountDownLatch initializedResourceLatch = new CountDownLatch(1);
 
-  public boolean initializedResources() {
-    return initialized.get();
+  // Resources
+  private TajoClassLoader classLoader;
+  private ExecutorCompiler.CompilationContext compilationContext;
+  private LogicalNode plan;
+  private boolean codeGenEnabled = false;
+
+  public void initialize(final QueryContext context, final String planJson) throws InterruptedException {
+    if (!initializing.getAndSet(true)) {
+      Thread thread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try {
+
+            plan = CoreGsonHelper.fromJson(planJson, LogicalNode.class);
+
+            if (context.getBool(SessionVars.CODEGEN)) {
+              codeGenEnabled = true;
+              classLoader = new TajoClassLoader();
+              compilationContext = new ExecutorCompiler.CompilationContext(classLoader);
+              ExecutorCompiler.compile(compilationContext, plan);
+            }
+            resourceInitSuccess = true;
+          } catch (Throwable t) {
+            LOG.error(t);
+          } finally {
+            initializedResourceLatch.countDown();
+          }
+        }
+      });
+      thread.run();
+      thread.join();
+
+      if (!resourceInitSuccess) {
+        throw new RuntimeException("Resource cannot be initialized");
+      }
+    }
+  }
+
+  public boolean awaitInitializedResource() throws InterruptedException {
+    initializedResourceLatch.await();
+    return resourceInitSuccess;
+  }
+
+  public LogicalNode getPlan() {
+    return this.plan;
+  }
+
+  public EvalNode compileEval(Schema schema, EvalNode eval) {
+    return compilationContext.getCompiler().compile(schema, eval);
+  }
+
+  public EvalNode getPreCompiledEval(EvalNode eval) {
+    if (codeGenEnabled) {
+      if (compilationContext.getPrecompiedEvals().containsKey(eval)) {
+        return compilationContext.getPrecompiedEvals().get(eval);
+      } else {
+        LOG.warn(eval.toString() + " does not exists");
+        return eval;
+      }
+    } else {
+      throw new IllegalStateException("CodeGen is disabled");
+    }
   }
 
   public void release() {
-    compiledEvals.clear();
+    compilationContext = null;
+
+    if (classLoader != null) {
+      try {
+        classLoader.clean();
+      } catch (Throwable throwable) {
+        throwable.printStackTrace();
+      }
+      classLoader = null;
+    }
   }
 }

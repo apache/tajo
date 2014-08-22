@@ -24,6 +24,9 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Projector {
   private final TaskAttemptContext context;
   private final Schema inSchema;
@@ -34,6 +37,11 @@ public class Projector {
   private final EvalNode[] evals;
 
   public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets) {
+    this(context, inSchema, outSchema, targets, Collections.EMPTY_LIST);
+  }
+
+  public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets,
+                   List<Integer> recompileTargetIds) {
     this.context = context;
     this.inSchema = inSchema;
     if (targets == null) {
@@ -46,8 +54,17 @@ public class Projector {
     evals = new EvalNode[targetNum];
 
     if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
+      EvalNode eval;
+      EvalNode compiledEval;
       for (int i = 0; i < targetNum; i++) {
-        evals[i] = context.getCodeGen().compile(inSchema, this.targets[i].getEvalTree());
+        eval = this.targets[i].getEvalTree();
+
+        if (recompileTargetIds.contains(i)) {
+          compiledEval = context.compileEval(inSchema, eval);
+        } else {
+          compiledEval = context.getPrecompiledEval(eval);
+        }
+        evals[i] = compiledEval;
       }
     } else {
       for (int i = 0; i < targetNum; i++) {

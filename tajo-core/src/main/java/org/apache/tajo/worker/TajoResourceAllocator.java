@@ -153,7 +153,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     // But, Assign ExecutionBlock to assigned tajo worker
     for(Container eachContainer: event.getContainers()) {
       TajoContainerProxy containerProxy = new TajoContainerProxy(queryTaskContext, tajoConf,
-          eachContainer, event.getExecutionBlockId(), event.getPlanJson());
+          eachContainer, event.getQueryContext(), event.getExecutionBlockId(), event.getPlanJson());
       executorService.submit(new LaunchRunner(eachContainer.getId(), containerProxy));
     }
   }

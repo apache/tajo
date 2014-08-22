@@ -16,30 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.engine.planner.logical;
 
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.engine.eval.EvalNode;
 
-import java.util.Collection;
+/**
+ * An interface for logical node which is able to filter tuples.
+ */
+public interface SelectableNode {
 
-public class LaunchTaskRunnersEvent extends TaskRunnerGroupEvent {
-  private final QueryContext queryContext;
-  private final String planJson;
+  /**
+   * Checking if it has filter condition
+   *
+   * @return True if it has filter condition. Otherwise, it will return false.
+   */
+  public boolean hasQual();
 
-  public LaunchTaskRunnersEvent(ExecutionBlockId executionBlockId,
-                                Collection<Container> containers, QueryContext queryContext, String planJson) {
-    super(EventType.CONTAINER_REMOTE_LAUNCH, executionBlockId, containers);
-    this.queryContext = queryContext;
-    this.planJson = planJson;
-  }
+  /**
+   * Set a filter condition.
+   *
+   * @param eval EvalNode resulting in a boolean result.
+   */
+  public void setQual(EvalNode eval);
 
-  public QueryContext getQueryContext() {
-    return queryContext;
-  }
-
-  public String getPlanJson() {
-    return planJson;
-  }
+  /**
+   * Get a filter condition
+   *
+   * @return Filter Condition
+   */
+  public EvalNode getQual();
 }

@@ -68,6 +68,8 @@ public class TajoTestingCluster {
 	// If non-null, then already a cluster running.
 	private File clusterTestBuildDir = null;
 
+  private OverridableConf userSessionVars;
+
 	/**
 	 * System property key to get test directory value.
 	 * Name is as it is because mini dfs has hard-codings to put test data here.
@@ -95,6 +97,8 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
+    userSessionVars = new OverridableConf(conf, ConfigKey.ConfigType.SESSION);
+
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));

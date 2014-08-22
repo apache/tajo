@@ -26,10 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.codegen.EvalCodeGenerator;
-import org.apache.tajo.engine.codegen.TajoClassLoader;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
@@ -83,19 +83,18 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  private TajoClassLoader classLoader;
-  private EvalCodeGenerator codeGen;
-
-  public TaskAttemptContext(QueryContext queryContext, final WorkerContext workerContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(QueryContext queryContext, final WorkerContext workerContext,
+                            final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
-    this.workerContext = workerContext;
-    this.sharedResource = workerContext.getClusterResource()
-    this.queryId = queryId;
 
-    classLoader = new TajoClassLoader();
-    codeGen = new EvalCodeGenerator(classLoader);
+    if (workerContext != null) { // For unit tests
+      this.workerContext = workerContext;
+      this.sharedResource = workerContext.getSharedResource(queryId.getQueryUnitId().getExecutionBlockId());
+    }
+
+    this.queryId = queryId;
 
     if (fragments != null) {
       for (FragmentProto t : fragments) {
@@ -164,21 +163,20 @@ public class TaskAttemptContext {
     return this.enforcer;
   }
 
-  public EvalCodeGenerator getCodeGen() {
-    return codeGen;
+  public ExecutionBlockSharedResource getSharedResource() {
+    return sharedResource;
   }
 
-  public void unloadGeneratedClasses() {
-    if (codeGen != null) {
-      codeGen = null;
-    }
-    if (classLoader != null) {
-      try {
-        classLoader.clean();
-      } catch (Throwable throwable) {
-        throwable.printStackTrace();
-      }
-      classLoader = null;
+  public EvalNode compileEval(Schema schema, EvalNode eval) {
+    return sharedResource.compileEval(schema, eval);
+  }
+
+  public EvalNode getPrecompiledEval(EvalNode eval) {
+    if (sharedResource != null) {
+      return sharedResource.getPreCompiledEval(eval);
+    } else {
+      LOG.debug("Shared resource is not initialized. It is NORMAL in unit tests");
+      return eval;
     }
   }
 

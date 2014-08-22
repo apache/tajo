@@ -82,8 +82,9 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
-    String className = "org.Test.Test" + classSeq++;
-    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className), schema, classWriter, expr);
+    String className = EvalCodeGenerator.class.getPackage().getName() + ".CompiledEval" + classSeq++;
+    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className),
+        schema, classWriter, expr);
     visit(context, expr, new Stack<EvalNode>());
     context.emitReturn();
 
@@ -776,7 +777,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return patternEval;
   }
 
-  public EvalNode visitStringPatternMatch(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
+  protected EvalNode visitStringPatternMatch(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
     Class clazz = getStringPatternEvalClass(patternEval.getType());
     String fieldName = context.symbols.get(patternEval);
     emitGetField(context, context.owner, fieldName, clazz);
@@ -792,12 +793,12 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return patternEval;
   }
 
-  public static void emitGetField(EvalCodeGenContext context, String owner, String fieldName, Class clazz) {
+  protected static void emitGetField(EvalCodeGenContext context, String owner, String fieldName, Class clazz) {
     context.aload(0);
     context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, owner, fieldName, getDescription(clazz));
   }
 
-  static Class getStringPatternEvalClass(EvalType type) {
+  public static Class getStringPatternEvalClass(EvalType type) {
     if (type == EvalType.LIKE) {
       return LikePredicateEval.class;
     } else if (type == EvalType.SIMILAR_TO) {
@@ -827,12 +828,14 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return CoreGsonHelper.fromJson(json, Schema.class);
   }
 
-  public EvalNode visitCaseWhen(EvalCodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
+  @Override
+  protected EvalNode visitCaseWhen(EvalCodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
     CaseWhenEmitter.getInstance().emit(this, context, caseWhen, stack);
     return caseWhen;
   }
 
-  public EvalNode visitIfThen(EvalCodeGenContext context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
+  @Override
+  protected EvalNode visitIfThen(EvalCodeGenContext context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getCondition(), stack);
     visit(context, evalNode.getResult(), stack);

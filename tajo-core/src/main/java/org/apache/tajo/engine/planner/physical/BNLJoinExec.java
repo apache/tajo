@@ -89,7 +89,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   @Override
   protected void compile() {
     if (hasJoinQual) {
-      joinQual = context.getCodeGen().compile(inSchema, joinQual);
+      joinQual = context.getPrecompiledEval(joinQual);
     }
   }
 

@@ -1037,6 +1037,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
         subQuery.eventHandler.handle(
             new LaunchTaskRunnersEvent(subQuery.getId(), allocationEvent.getAllocatedContainer(),
+                subQuery.getContext().getQueryContext(),
                 CoreGsonHelper.toJson(subQuery.getBlock().getPlan(), LogicalNode.class))
         );
 

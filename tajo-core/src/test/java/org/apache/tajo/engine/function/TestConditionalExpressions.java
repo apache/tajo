@@ -54,7 +54,7 @@ public class TestConditionalExpressions extends ExprTestBase {
         new String [] {"10"});
     testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
         "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from table1;",
-        new String [] {"t"});
+        new String [] {"f"});
   }
 
   @Test
