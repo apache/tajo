@@ -31,10 +31,11 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.worker.event.TaskRunnerStartEvent;
+import org.apache.tajo.worker.event.TaskRunnerStopEvent;
 
 import java.net.InetSocketAddress;
 
@@ -114,14 +115,14 @@ public class TajoWorkerManagerService extends CompositeService
   }
 
   @Override
-  public void executeExecutionBlock(RpcController controller,
+  public void startExecutionBlock(RpcController controller,
                                     TajoWorkerProtocol.RunExecutionBlockRequestProto request,
                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
     workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
     try {
       String[] params = new String[7];
       params[0] = "standby";  //mode(never used)
-      params[1] = request.getExecutionBlockId();
+      params[1] = request.getExecutionBlockId().toString();
       // NodeId has a form of hostname:port.
       params[2] = request.getNodeId();
       params[3] = request.getContainerId();
@@ -130,7 +131,27 @@ public class TajoWorkerManagerService extends CompositeService
       params[4] = request.getQueryMasterHost();
       params[5] = String.valueOf(request.getQueryMasterPort());
       params[6] = request.getQueryOutputPath();
-      workerContext.getTaskRunnerManager().startTask(params);
+
+
+      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStartEvent(
+          params
+          , new ExecutionBlockId(request.getExecutionBlockId())
+      ));
+      done.run(TajoWorker.TRUE_PROTO);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+      done.run(TajoWorker.FALSE_PROTO);
+    }
+  }
+
+  @Override
+  public void stopExecutionBlock(RpcController controller,
+                                 TajoIdProtos.ExecutionBlockIdProto requestProto,
+                                 RpcCallback<PrimitiveProtos.BoolProto> done) {
+    try {
+      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStopEvent(
+          new ExecutionBlockId(requestProto)
+      ));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -154,14 +175,15 @@ public class TajoWorkerManagerService extends CompositeService
     done.run(TajoWorker.TRUE_PROTO);
   }
 
+
   @Override
   public void cleanupExecutionBlocks(RpcController controller,
                                      TajoWorkerProtocol.ExecutionBlockListProto ebIds,
                                      RpcCallback<PrimitiveProtos.BoolProto> done) {
     for (TajoIdProtos.ExecutionBlockIdProto executionBlockIdProto : ebIds.getExecutionBlockIdList()) {
-      String inputDir = TaskRunner.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String inputDir = TaskRunnerContext.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(inputDir);
-      String outputDir = TaskRunner.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String outputDir = TaskRunnerContext.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(outputDir);
     }
     done.run(TajoWorker.TRUE_PROTO);

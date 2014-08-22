@@ -289,19 +289,29 @@ public class TaskAttemptContext {
   public float getProgress() {
     return this.progress;
   }
-  
+
   public void setProgress(float progress) {
     float previousProgress = this.progress;
     this.progress = progress;
-    progressChanged.set(previousProgress != progress);
+    if (previousProgress != progress) {
+      setProgressChanged(true);
+    }
   }
 
-  public boolean isPorgressChanged() {
+  public boolean isProgressChanged() {
     return progressChanged.get();
   }
+
+  public void setProgressChanged(boolean changed){
+    progressChanged.set(changed);
+  }
+
   public void setExecutorProgress(float executorProgress) {
-    float adjustProgress = executorProgress * (1 - fetcherProgress);
-    setProgress(fetcherProgress + adjustProgress);
+    if (hasFetchPhase()) {
+      setProgress(fetcherProgress + (executorProgress * 0.5f));
+    } else {
+      setProgress(executorProgress);
+    }
   }
 
   public void setFetcherProgress(float fetcherProgress) {
@@ -347,10 +357,6 @@ public class TaskAttemptContext {
 
   public QueryContext getQueryContext() {
     return queryContext;
-  }
-
-  public WorkerContext getWorkContext() {
-    return workerContext;
   }
 
   public QueryUnitAttemptId getQueryId() {

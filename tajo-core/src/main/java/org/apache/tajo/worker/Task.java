@@ -25,8 +25,10 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
@@ -43,11 +45,10 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
-import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -59,7 +60,7 @@ import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -69,11 +70,9 @@ public class Task {
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
-  private final FileSystem localFS;
-  private TaskRunner.TaskRunnerContext taskRunnerContext;
-  private final QueryMasterProtocolService.Interface masterProxy;
-  private final LocalDirAllocator lDirAllocator;
+  private final TaskRunnerContext taskRunnerContext;
   private final QueryUnitAttemptId taskId;
+  private final String taskRunnerId;
 
   private final Path taskDir;
   private final QueryUnitRequest request;
@@ -85,7 +84,6 @@ public class Task {
   private boolean interQuery;
   private boolean killed = false;
   private boolean aborted = false;
-  private final Reporter reporter;
   private Path inputTableBaseDir;
 
   private long startTime;
@@ -97,7 +95,6 @@ public class Task {
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
-  private ClientSocketChannelFactory channelFactory = null;
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
@@ -132,20 +129,19 @@ public class Task {
         }
       };
 
-  public Task(QueryUnitAttemptId taskId,
-              final TaskRunner.TaskRunnerContext worker,
-              final QueryMasterProtocolService.Interface masterProxy,
+  public Task(String taskRunnerId,
+              Path baseDir,
+              QueryUnitAttemptId taskId,
+              final TaskRunnerContext worker,
               final QueryUnitRequest request) throws IOException {
+    this.taskRunnerId = taskRunnerId;
     this.request = request;
     this.taskId = taskId;
 
     this.systemConf = worker.getConf();
     this.queryContext = request.getQueryContext();
     this.taskRunnerContext = worker;
-    this.masterProxy = masterProxy;
-    this.localFS = worker.getLocalFS();
-    this.lDirAllocator = worker.getLocalDirAllocator();
-    this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
+    this.taskDir = StorageUtil.concatPath(baseDir,
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
     this.context = new TaskAttemptContext(queryContext, worker.getWorkerContext(), taskId,
@@ -153,9 +149,6 @@ public class Task {
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.inputStats = new TableStats();
-
-    this.reporter = new Reporter(taskId, masterProxy);
-    this.reporter.startCommunicationThread();
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
@@ -219,11 +212,12 @@ public class Task {
 
   public void init() throws IOException {
     // initialize a task temporal dir
+    FileSystem localFS = taskRunnerContext.getLocalFS();
     localFS.mkdirs(taskDir);
 
     if (request.getFetches().size() > 0) {
       inputTableBaseDir = localFS.makeQualified(
-          lDirAllocator.getLocalPathForWrite(
+          taskRunnerContext.getLocalDirAllocator().getLocalPathForWrite(
               getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
       localFS.mkdirs(inputTableBaseDir);
       Path tableDir;
@@ -280,8 +274,9 @@ public class Task {
   }
 
   public void fetch() {
+    ExecutorService executorService = taskRunnerContext.getTaskRunner(taskRunnerId).getFetchLauncher();
     for (Fetcher f : fetcherRunners) {
-      taskRunnerContext.getFetchLauncher().submit(new FetchRunner(context, f));
+      executorService.submit(new FetchRunner(context, f));
     }
   }
 
@@ -289,25 +284,18 @@ public class Task {
     killed = true;
     context.stop();
     context.setState(TaskAttemptState.TA_KILLED);
-    releaseChannelFactory();
   }
 
   public void abort() {
     aborted = true;
     context.stop();
-    releaseChannelFactory();
   }
 
   public void cleanUp() {
     // remove itself from worker
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
-      try {
-        localFS.delete(context.getWorkDir(), true);
-        synchronized (taskRunnerContext.getTasks()) {
-          taskRunnerContext.getTasks().remove(this.getId());
-        }
-      } catch (IOException e) {
-        LOG.error(e.getMessage(), e);
+      synchronized (taskRunnerContext.getTasks()) {
+        taskRunnerContext.getTasks().remove(this.getId());
       }
     } else {
       LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
@@ -316,7 +304,7 @@ public class Task {
 
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
-    builder.setWorkerName(taskRunnerContext.getNodeId());
+    builder.setWorkerName(taskRunnerContext.getTaskRunner(taskRunnerId).getNodeId().toString());
     builder.setId(context.getTaskId().getProto())
         .setProgress(context.getProgress())
         .setState(context.getState());
@@ -327,6 +315,24 @@ public class Task {
       builder.setResultStats(context.getResultStats().getProto());
     }
     return builder.build();
+  }
+
+  public boolean isRunning(){
+    return context.getState() == TaskAttemptState.TA_RUNNING;
+  }
+  public boolean isProgressChanged() {
+    return context.isProgressChanged();
+  }
+
+  public void updateProgress() {
+    if(killed || aborted){
+      return;
+    }
+
+    if (executor != null && context.getProgress() < 1.0f) {
+      float progress = executor.getProgress();
+      context.setExecutorProgress(progress);
+    }
   }
 
   private CatalogProtos.TableStatsProto reloadInputStats() {
@@ -403,10 +409,9 @@ public class Task {
       FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.updateAssignedFragments(inputTable, frags);
     }
-    releaseChannelFactory();
   }
 
-  public void run() {
+  public void run() throws Exception {
     startTime = System.currentTimeMillis();
     Exception error = null;
     try {
@@ -417,14 +422,15 @@ public class Task {
         // complete.
         waitForFetch();
         context.setFetcherProgress(FETCHER_PROGRESS);
-        context.setProgress(FETCHER_PROGRESS);
+        context.setProgressChanged(true);
+        updateProgress();
       }
 
       this.executor = taskRunnerContext.getTQueryEngine().
           createPlan(context, plan);
       this.executor.init();
 
-      while(!killed && executor.next() != null) {
+      while(!killed && !aborted && executor.next() != null) {
       }
       this.executor.close();
       reloadInputStats();
@@ -434,16 +440,14 @@ public class Task {
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
-      context.setProgress(1.0f);
       taskRunnerContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
-
+      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = taskRunnerContext.getQueryMasterStub();
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
-        context.setProgress(0.0f);
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
-          masterProxy.statusUpdate(null, getReport(), NullCallback.get());
+          queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
           taskRunnerContext.killedTasksNum.incrementAndGet();
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
@@ -459,32 +463,17 @@ public class Task {
             errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
-          masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
+          queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
           taskRunnerContext.failedTasksNum.incrementAndGet();
         }
-
-        // stopping the status report
-        try {
-          reporter.stopCommunicationThread();
-        } catch (InterruptedException e) {
-          LOG.warn(e);
-        }
-
       } else {
         // if successful
         context.setProgress(1.0f);
         context.setState(TaskAttemptState.TA_SUCCEEDED);
-
-        // stopping the status report
-        try {
-          reporter.stopCommunicationThread();
-        } catch (InterruptedException e) {
-          LOG.warn(e);
-        }
+        taskRunnerContext.succeededTasksNum.incrementAndGet();
 
         TaskCompletionReport report = getTaskCompletionReport();
-        masterProxy.done(null, report, NullCallback.get());
-        taskRunnerContext.succeededTasksNum.incrementAndGet();
+        queryMasterStub.done(null, report, NullCallback.get());
       }
       finishTime = System.currentTimeMillis();
       LOG.info(context.getTaskId() + " completed. " +
@@ -497,9 +486,8 @@ public class Task {
   }
 
   public void cleanupTask() {
-    taskRunnerContext.addTaskHistory(getId(), createTaskHistory());
+    taskRunnerContext.addTaskHistory(taskRunnerId, getId(), createTaskHistory());
     taskRunnerContext.getTasks().remove(getId());
-    taskRunnerContext = null;
 
     fetcherRunners.clear();
     fetcherRunners = null;
@@ -509,11 +497,8 @@ public class Task {
         executor = null;
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.fatal(e.getMessage(), e);
     }
-    plan = null;
-    context = null;
-    releaseChannelFactory();
   }
 
   public TaskHistory createTaskHistory() {
@@ -554,7 +539,7 @@ public class Task {
         taskHistory.setFinishedFetchCount(i);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.warn(e.getMessage(), e);
     }
 
     return taskHistory;
@@ -650,7 +635,7 @@ public class Task {
 
   @VisibleForTesting
   public static float adjustFetchProcess(int totalFetcher, int remainFetcher) {
-    return ((float)(totalFetcher - remainFetcher)) / (float)totalFetcher * FETCHER_PROGRESS;
+    return ((totalFetcher - remainFetcher) / (float) totalFetcher) * FETCHER_PROGRESS;
   }
 
   private synchronized void fetcherFinished(TaskAttemptContext ctx) {
@@ -658,24 +643,15 @@ public class Task {
     if(fetcherSize == 0) {
       return;
     }
-    try {
-      int numRunningFetcher = (int)(ctx.getFetchLatch().getCount()) - 1;
 
-      if (numRunningFetcher == 0) {
-        context.setProgress(FETCHER_PROGRESS);
-      } else {
-        context.setProgress(adjustFetchProcess(fetcherSize, numRunningFetcher));
-      }
-    } finally {
-      ctx.getFetchLatch().countDown();
-    }
-  }
+    ctx.getFetchLatch().countDown();
 
-  private void releaseChannelFactory(){
-    if(channelFactory != null) {
-      channelFactory.shutdown();
-      channelFactory.releaseExternalResources();
-      channelFactory = null;
+    int remainFetcher = (int)(ctx.getFetchLatch().getCount());
+    if (remainFetcher == 0) {
+      context.setFetcherProgress(FETCHER_PROGRESS);
+    } else {
+      context.setFetcherProgress(adjustFetchProcess(fetcherSize, remainFetcher));
+      context.setProgressChanged(true);
     }
   }
 
@@ -683,15 +659,9 @@ public class Task {
                                         List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
-
-      releaseChannelFactory();
-
-
-      int workerNum = ctx.getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
-      channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
-      Path inputDir = lDirAllocator.
-          getLocalPathToRead(
-              getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
+      ClientSocketChannelFactory channelFactory = taskRunnerContext.getShuffleChannelFactory();
+      Path inputDir = taskRunnerContext.getLocalDirAllocator().
+          getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
       File storeDir;
 
       int i = 0;
@@ -716,91 +686,9 @@ public class Task {
     }
   }
 
-  protected class Reporter {
-    private QueryMasterProtocolService.Interface masterStub;
-    private Thread pingThread;
-    private AtomicBoolean stop = new AtomicBoolean(false);
-    private static final int PROGRESS_INTERVAL = 3000;
-    private static final int MAX_RETRIES = 3;
-    private QueryUnitAttemptId taskId;
-
-    public Reporter(QueryUnitAttemptId taskId, QueryMasterProtocolService.Interface masterStub) {
-      this.taskId = taskId;
-      this.masterStub = masterStub;
-    }
-
-    Runnable createReporterThread() {
-
-      return new Runnable() {
-        int remainingRetries = MAX_RETRIES;
-        @Override
-        public void run() {
-          while (!stop.get() && !context.isStopped()) {
-            try {
-              if(executor != null && context.getProgress() < 1.0f) {
-                float progress = executor.getProgress();
-                context.setExecutorProgress(progress);
-              }
-            } catch (Throwable t) {
-              LOG.error("Get progress error: " + t.getMessage(), t);
-            }
-
-            try {
-              if (context.isPorgressChanged()) {
-                masterStub.statusUpdate(null, getReport(), NullCallback.get());
-              } else {
-                masterStub.ping(null, taskId.getProto(), NullCallback.get());
-              }
-            } catch (Throwable t) {
-              LOG.error(t.getMessage(), t);
-              remainingRetries -=1;
-              if (remainingRetries == 0) {
-                ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
-                LOG.warn("Last retry, exiting ");
-                throw new RuntimeException(t);
-              }
-            } finally {
-              if (!context.isStopped() && remainingRetries > 0) {
-                synchronized (pingThread) {
-                  try {
-                    pingThread.wait(PROGRESS_INTERVAL);
-                  } catch (InterruptedException e) {
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
-    }
-
-    public void startCommunicationThread() {
-      if (pingThread == null) {
-        pingThread = new Thread(createReporterThread());
-        pingThread.setName("communication thread");
-        pingThread.start();
-      }
-    }
-
-    public void stopCommunicationThread() throws InterruptedException {
-      if(stop.getAndSet(true)){
-        return;
-      }
-
-      if (pingThread != null) {
-        // Intent of the lock is to not send an interupt in the middle of an
-        // umbilical.ping or umbilical.statusUpdate
-        synchronized(pingThread) {
-          //Interrupt if sleeping. Otherwise wait for the RPC call to return.
-          pingThread.notifyAll();
-        }
-      }
-    }
-  }
-
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
-        StorageUtil.concatPath(TaskRunner.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
+        StorageUtil.concatPath(TaskRunnerContext.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;
