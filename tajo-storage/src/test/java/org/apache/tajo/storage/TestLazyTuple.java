@@ -22,6 +22,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.util.BytesUtils;
 import org.junit.Before;
@@ -220,19 +221,24 @@ public class TestLazyTuple {
 
   @Test
   public void testInvalidNumber() {
-    byte[][] bytes = BytesUtils.splitPreserveAllTokens(" 1| |2 ||".getBytes(), '|');
+    byte[][] bytes = BytesUtils.splitPreserveAllTokens(" 1| |2 |||\\NN".getBytes(), '|');
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT8);
     schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
     schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
 
     LazyTuple tuple = new LazyTuple(schema, bytes, 0);
     assertEquals(bytes.length, tuple.size());
 
     for (int i = 0; i < tuple.size(); i++){
-      assertEquals(NullDatum.get(), tuple.get(i));
+      if (i == 5) {
+        assertEquals(DistinctNullDatum.get(), tuple.get(i));
+      } else {
+        assertEquals(NullDatum.get(), tuple.get(i));
+      }
     }
   }
 
