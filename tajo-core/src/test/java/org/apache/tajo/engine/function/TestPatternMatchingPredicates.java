@@ -19,11 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.ExprTestBase;
-import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -31,9 +27,6 @@ import java.io.IOException;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestPatternMatchingPredicates extends ExprTestBase {
-
-  public TestPatternMatchingPredicates() {
-  }
 
   @Test
   public void testLike() throws IOException {

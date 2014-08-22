@@ -27,17 +27,11 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.org.objectweb.asm.*;
-import org.apache.tajo.org.objectweb.asm.util.ASMifier;
-import org.apache.tajo.org.objectweb.asm.util.TraceClassVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
-import java.io.FileInputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.util.Stack;
 

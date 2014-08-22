@@ -30,9 +30,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
-  public TestStringOperatorsAndFunctions() {
-  }
-
   @Test
   public void testConcatenateOnLiteral() throws IOException {
     testSimpleEval("select ('abc' || 'def') col1 ", new String[]{"abcdef"});

@@ -149,8 +149,6 @@ public class CharDatum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
       case CHAR:
-        CharDatum other = (CharDatum) datum;
-        return UnsignedBytes.lexicographicalComparator().compare(bytes, other.bytes);
       case TEXT:
         return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());
       case NULL_TYPE:

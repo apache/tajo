@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.regex.Pattern;

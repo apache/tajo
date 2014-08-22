@@ -51,6 +51,7 @@ public class NullDatum extends Datum {
     return true;
   }
 
+  @Override
   public boolean isNotNull() {
     return false;
   }
