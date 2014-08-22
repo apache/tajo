@@ -16,24 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.master;
 
-import com.google.common.collect.Maps;
+import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.engine.eval.EvalNode;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Collection;
 
-public class ExecutionBlockSharedResource {
-  private AtomicBoolean initialized = new AtomicBoolean(false);
-  private Map<EvalNode, EvalNode> compiledEvals = Maps.newConcurrentMap();
+public class LaunchTaskRunnersEvent extends TaskRunnerGroupEvent {
+  private final String planJson;
 
-  public boolean initializedResources() {
-    return initialized.get();
+  public LaunchTaskRunnersEvent(ExecutionBlockId executionBlockId,
+                                Collection<Container> containers, String planJson) {
+    super(EventType.CONTAINER_REMOTE_LAUNCH, executionBlockId, containers);
+    this.planJson = planJson;
   }
 
-  public void release() {
-    compiledEvals.clear();
+  public String getPlanJson() {
+    return planJson;
   }
 }

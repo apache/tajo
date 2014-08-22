@@ -19,6 +19,7 @@
 package org.apache.tajo.worker;
 
 import com.codahale.metrics.Gauge;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,6 +36,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.ha.TajoMasterInfo;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -57,6 +59,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -351,6 +354,9 @@ public class TajoWorker extends CompositeService {
   }
 
   public class WorkerContext {
+    private ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource> sharedResourceMap =
+        new ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource>();
+
     public QueryMaster getQueryMaster() {
       if(queryMasterManagerService == null) {
         return null;
@@ -398,6 +404,19 @@ public class TajoWorker extends CompositeService {
       if(force) {
         System.exit(0);
       }
+    }
+
+    public void newSharedResource(ExecutionBlockId blockId) {
+      ExecutionBlockSharedResource sharedResource = new ExecutionBlockSharedResource();
+      sharedResourceMap.put(blockId, sharedResource);
+    }
+
+    public ExecutionBlockSharedResource getSharedResource(ExecutionBlockId blockId) {
+      return sharedResourceMap.get(blockId);
+    }
+
+    public void releaseSharedResource(ExecutionBlockId blockId) {
+      sharedResourceMap.remove(blockId).release();
     }
 
     protected void cleanup(String strPath) {

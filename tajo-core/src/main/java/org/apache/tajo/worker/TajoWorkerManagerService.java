@@ -163,6 +163,9 @@ public class TajoWorkerManagerService extends CompositeService
       workerContext.cleanup(inputDir);
       String outputDir = TaskRunner.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(outputDir);
+
+      // Release shared resources
+      workerContext.releaseSharedResource(new ExecutionBlockId(executionBlockIdProto));
     }
     done.run(TajoWorker.TRUE_PROTO);
   }

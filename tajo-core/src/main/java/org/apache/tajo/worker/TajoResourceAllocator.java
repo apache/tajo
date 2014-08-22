@@ -31,10 +31,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.ContainerProxy;
-import org.apache.tajo.master.TajoContainerProxy;
-import org.apache.tajo.master.TaskRunnerGroupEvent;
-import org.apache.tajo.master.TaskRunnerLauncher;
+import org.apache.tajo.master.*;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
 import org.apache.tajo.master.event.SubQueryContainerAllocationEvent;
@@ -143,19 +140,20 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     @Override
     public void handle(TaskRunnerGroupEvent event) {
       if (event.getType() == TaskRunnerGroupEvent.EventType.CONTAINER_REMOTE_LAUNCH) {
-        launchTaskRunners(event.getExecutionBlockId(), event.getContainers());
+        LaunchTaskRunnersEvent launchEvent = (LaunchTaskRunnersEvent) event;
+        launchTaskRunners(launchEvent);
       } else if (event.getType() == TaskRunnerGroupEvent.EventType.CONTAINER_REMOTE_CLEANUP) {
         stopContainers(event.getContainers());
       }
     }
   }
 
-  private void launchTaskRunners(ExecutionBlockId executionBlockId, Collection<Container> containers) {
+  private void launchTaskRunners(LaunchTaskRunnersEvent event) {
     // Query in standby mode doesn't need launch Worker.
     // But, Assign ExecutionBlock to assigned tajo worker
-    for(Container eachContainer: containers) {
+    for(Container eachContainer: event.getContainers()) {
       TajoContainerProxy containerProxy = new TajoContainerProxy(queryTaskContext, tajoConf,
-          eachContainer, executionBlockId);
+          eachContainer, event.getExecutionBlockId(), event.getPlanJson());
       executorService.submit(new LaunchRunner(eachContainer.getId(), containerProxy));
     }
   }

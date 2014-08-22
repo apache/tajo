@@ -42,10 +42,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
+  private String planJson;
+
   public TajoContainerProxy(QueryMasterTask.QueryMasterTaskContext context,
                             Configuration conf, Container container,
-                            ExecutionBlockId executionBlockId) {
+                            ExecutionBlockId executionBlockId, String planJson) {
     super(context, conf, executionBlockId, container);
+    this.planJson = planJson;
   }
 
   @Override
@@ -101,6 +104,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
               .setQueryOutputPath(context.getStagingDir().toString())
+              .setSerializedPlan(planJson)
               .build();
 
       tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());

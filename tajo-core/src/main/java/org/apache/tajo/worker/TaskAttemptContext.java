@@ -77,6 +77,7 @@ public class TaskAttemptContext {
   private Enforcer enforcer;
   private QueryContext queryContext;
   private WorkerContext workerContext;
+  private ExecutionBlockSharedResource sharedResource;
 
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
@@ -90,6 +91,7 @@ public class TaskAttemptContext {
                             final Path workDir) {
     this.queryContext = queryContext;
     this.workerContext = workerContext;
+    this.sharedResource = workerContext.getClusterResource()
     this.queryId = queryId;
 
     classLoader = new TajoClassLoader();
