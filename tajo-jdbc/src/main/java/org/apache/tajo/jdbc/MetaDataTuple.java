@@ -17,6 +17,7 @@ package org.apache.tajo.jdbc; /**
  */
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -42,6 +43,11 @@ public class MetaDataTuple implements Tuple {
   @Override
   public boolean contains(int fieldid) {
     return false;
+  }
+
+  @Override
+  public boolean isDistinctNull(int fieldid) {
+    return values.get(fieldid) instanceof DistinctNullDatum;
   }
 
   @Override
