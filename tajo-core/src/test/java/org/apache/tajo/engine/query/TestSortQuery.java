@@ -34,8 +34,6 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertEquals;
-
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
 
@@ -179,7 +177,7 @@ public class TestSortQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testSortNullColumn() throws Exception {
+  public final void testSortOnNullColumn() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
       KeyValueSet tableOptions = new KeyValueSet();
@@ -197,25 +195,68 @@ public class TestSortQuery extends QueryTestCaseBase {
       };
       TajoTestingCluster.createTable("nullsort", schema, tableOptions, data, 2);
 
-      ResultSet res = executeString(
-          "select * from (" +
-              "select case when id > 2 then null else id end as col1, name as col2 from nullsort) a " +
-          "order by col1, col2"
-      );
-
-      String expected = "col1,col2\n" +
-          "-------------------------------\n" +
-          "1,BRAZIL\n" +
-          "2,ALGERIA\n" +
-          "null,ARGENTINA\n" +
-          "null,CANADA\n";
-
-      assertEquals(expected, resultSetToString(res));
-
+      ResultSet res = executeQuery();
+      assertResultSet(res);
       cleanupQuery(res);
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
       executeString("DROP TABLE nullsort PURGE;").close();
+    }
+  }
+
+  @Test
+  public final void testSortOnUnicodeTextAsc() throws Exception {
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.INT4);
+      schema.addColumn("col2", Type.TEXT);
+      String[] data = new String[]{
+          "1|하하하",
+          "2|캬캬캬",
+          "3|가가가",
+          "4|냐하하"
+      };
+      TajoTestingCluster.createTable("unicode_sort1", schema, tableOptions, data, 2);
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+      executeString("DROP TABLE unicode_sort1 PURGE;").close();
+    }
+  }
+
+  @Test
+  public final void testSortOnUnicodeTextDesc() throws Exception {
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.INT4);
+      schema.addColumn("col2", Type.TEXT);
+      String[] data = new String[]{
+          "1|하하하",
+          "2|캬캬캬",
+          "3|가가가",
+          "4|냐하하"
+      };
+      TajoTestingCluster.createTable("unicode_sort2", schema, tableOptions, data, 2);
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+      executeString("DROP TABLE unicode_sort2 PURGE;").close();
     }
   }
 

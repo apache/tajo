@@ -31,6 +31,13 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-931: Output file can be punctuated depending on the file size.
+    (hyunsik)
+
+    TAJO-992: Reduce number of hash shuffle output file.(Hyoungjun Kim)
+
+    TAJO-1008: Protocol buffer De/Serialization for EvalNode. (hyunsik)
+
     TAJO-984: Improve the default data type handling in RowStoreUtil.
     (jihoon via hyunsik)
 
@@ -117,7 +124,14 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
-    TAJO-1011: EvalTreeUtil::isJoinQual need to handle other join conditions. (jaehwa)
+    TAJO-1004: UniformRangePartition cannot deal with unicode ranges.
+    (hyunsik)
+
+    TAJO-1013: A complex equality condition including columns of the same
+    table is recognized as a join condition. (hyunsik)
+
+    TAJO-1011: EvalTreeUtil::isJoinQual need to handle other join conditions.
+    (jaehwa)
 
     TAJO-1009: A binary eval for column references of the same tables 
     should not be recognized as a join condition. (hyunsik)
