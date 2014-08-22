@@ -579,8 +579,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
               long lastHeartbeat = eachTask.getLastClientHeartbeat();
               long time = System.currentTimeMillis() - lastHeartbeat;
               if(lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
-                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
-                eachTask.expiredSessionTimeout();
+                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query session timeout: " + time + " ms");
+                eachTask.expireQuerySession();
               }
             } catch (Exception e) {
               LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
