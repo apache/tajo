@@ -36,7 +36,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
-
+  private static final byte[] distinctNullBytes = DistinctNullDatum.get().asTextBytes();
 
   @Override
   public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException {
@@ -106,6 +106,9 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         length = protoBytes.length;
         out.write(protoBytes, 0, protoBytes.length);
         break;
+      case DISTINCT_NULL_TYPE:
+        length = distinctNullBytes.length;
+        out.write(distinctNullBytes);
       case NULL_TYPE:
       default:
         break;
@@ -115,102 +118,214 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
 
   @Override
   public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
-
     Datum datum;
     switch (col.getDataType().getType()) {
       case BOOLEAN:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createBool(bytes[offset] == 't' || bytes[offset] == 'T');
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createBool(bytes[offset] == 't' || bytes[offset] == 'T');
+          }
+        }
         break;
       case BIT:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createBit(Byte.parseByte(new String(bytes, offset, length)));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createBit(Byte.parseByte(new String(bytes, offset, length)));
+          }
+        }
         break;
       case CHAR:
-        datum = isNullText(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createChar(new String(bytes, offset, length).trim());
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createChar(new String(bytes, offset, length).trim());
+          }
+        }
         break;
       case INT1:
       case INT2:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, offset, length));
+          }
+        }
         break;
       case INT4:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt4(NumberUtil.parseInt(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createInt4(NumberUtil.parseInt(bytes, offset, length));
+          }
+        }
         break;
       case INT8:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInt8(new String(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createInt8(new String(bytes, offset, length));
+          }
+        }
         break;
       case FLOAT4:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createFloat4(new String(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createFloat4(new String(bytes, offset, length));
+          }
+        }
         break;
       case FLOAT8:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, offset, length));
+          }
+        }
         break;
       case TEXT: {
-        byte[] chars = new byte[length];
-        System.arraycopy(bytes, offset, chars, 0, length);
-        datum = isNullText(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createText(chars);
-        break;
-      }
-      case DATE:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createDate(new String(bytes, offset, length));
-        break;
-      case TIME:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTime(new String(bytes, offset, length));
-        break;
-      case TIMESTAMP:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimestamp(new String(bytes, offset, length));
-        break;
-      case INTERVAL:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInterval(new String(bytes, offset, length));
-        break;
-      case PROTOBUF: {
-        if (isNull(bytes, offset, length, nullCharacters)) {
-          datum = NullDatum.get();
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
         } else {
-          ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType());
-          Message.Builder builder = factory.newBuilder();
-          try {
-            byte[] protoBytes = new byte[length];
-            System.arraycopy(bytes, offset, protoBytes, 0, length);
-            protobufJsonFormat.merge(protoBytes, builder);
-            datum = factory.createDatum(builder.build());
-          } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+          if (isNullText(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            byte[] chars = new byte[length];
+            System.arraycopy(bytes, offset, chars, 0, length);
+            datum = DatumFactory.createText(chars);
           }
         }
         break;
       }
+      case DATE:
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createDate(new String(bytes, offset, length));
+          }
+        }
+        break;
+      case TIME:
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createTime(new String(bytes, offset, length));
+          }
+        }
+        break;
+      case TIMESTAMP:
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createTimestamp(new String(bytes, offset, length));
+          }
+        }
+        break;
+      case INTERVAL:
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createInterval(new String(bytes, offset, length));
+          }
+        }
+        break;
+      case PROTOBUF: {
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType());
+            Message.Builder builder = factory.newBuilder();
+            try {
+              byte[] protoBytes = new byte[length];
+              System.arraycopy(bytes, offset, protoBytes, 0, length);
+              protobufJsonFormat.merge(protoBytes, builder);
+              datum = factory.createDatum(builder.build());
+            } catch (IOException e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
+          }
+        }
+
+        break;
+      }
       case INET4:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInet4(new String(bytes, offset, length));
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
+        } else {
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            datum = DatumFactory.createInet4(new String(bytes, offset, length));
+          }
+        }
         break;
       case BLOB: {
-        if (isNull(bytes, offset, length, nullCharacters)) {
-          datum = NullDatum.get();
+        if (isDistinctNull(bytes, offset, length)) {
+          datum = DistinctNullDatum.get();
         } else {
-          byte[] blob = new byte[length];
-          System.arraycopy(bytes, offset, blob, 0, length);
-          datum = DatumFactory.createBlob(Base64.decodeBase64(blob));
+          if (isNull(bytes, offset, length, nullCharacters)) {
+            datum = NullDatum.get();
+          } else {
+            byte[] blob = new byte[length];
+            System.arraycopy(bytes, offset, blob, 0, length);
+            datum = DatumFactory.createBlob(Base64.decodeBase64(blob));
+          }
         }
+
         break;
       }
       default:
         datum = NullDatum.get();
         break;
     }
+
     return datum;
+  }
+
+  private static boolean isDistinctNull(byte[] val, int offset, int length) {
+    return  Bytes.equals(val, offset, length, distinctNullBytes, 0, distinctNullBytes.length);
   }
 
   private static boolean isNull(byte[] val, int offset, int length, byte[] nullBytes) {

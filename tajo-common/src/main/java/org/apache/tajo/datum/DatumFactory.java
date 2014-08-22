@@ -67,6 +67,8 @@ public class DatumFactory {
         return NullDatum.class;
       case NULL_TYPE:
         return NullDatum.class;
+      case DISTINCT_NULL_TYPE:
+        return DistinctNullDatum.class;
       default:
         throw new UnsupportedOperationException(type.name());
     }
@@ -103,6 +105,8 @@ public class DatumFactory {
       return createBlob(value);
     case INET4:
       return createInet4(value);
+    case DISTINCT_NULL_TYPE:
+      return createDistinctNullDatum();
     default:
       throw new UnsupportedOperationException(dataType.toString());
     }
@@ -149,6 +153,8 @@ public class DatumFactory {
           e.printStackTrace();
           throw new RuntimeException(e);
         }
+      case DISTINCT_NULL_TYPE:
+        createDistinctNullDatum();
       default:
         throw new UnsupportedOperationException(dataType.toString());
     }
@@ -180,6 +186,10 @@ public class DatumFactory {
 
   public static NullDatum createNullDatum() {
     return NullDatum.get();
+  }
+
+  public static DistinctNullDatum createDistinctNullDatum() {
+    return DistinctNullDatum.get();
   }
 
   public static Datum createBool(byte val) {
@@ -222,9 +232,7 @@ public class DatumFactory {
     return new Int2Datum(Short.valueOf(val));
   }
 
-  public static Int4Datum createInt4(int val) {
-    return new Int4Datum(val);
-  }
+  public static Int4Datum createInt4(int val) { return new Int4Datum(val);  }
 
   public static Int4Datum createInt4(String val) {
     return new Int4Datum(Integer.parseInt(val));

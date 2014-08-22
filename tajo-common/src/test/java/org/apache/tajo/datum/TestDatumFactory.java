@@ -72,4 +72,11 @@ public class TestDatumFactory {
 		Datum d = DatumFactory.createText("12345a");
 		assertEquals(Type.TEXT, d.type());
 	}
+
+  @Test
+  public final void testCreateDistinctNull() {
+    Datum d = DatumFactory.createDistinctNullDatum();
+    assertEquals(Type.DISTINCT_NULL_TYPE, d.type());
+  }
+
 }

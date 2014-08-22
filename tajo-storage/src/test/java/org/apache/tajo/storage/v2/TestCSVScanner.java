@@ -66,16 +66,19 @@ public class TestCSVScanner {
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("age", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("score", TajoDataTypes.Type.FLOAT8);
 
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
 
     Tuple[] tuples = new Tuple[4];
     for(int i=0; i < tuples.length; i++) {
-      tuples[i] = new VTuple(3);
+      tuples[i] = new VTuple(schema.getColumns().size());
       tuples[i].put(new Datum[] {
           DatumFactory.createInt4(i),
           DatumFactory.createInt4(i + 32),
-          DatumFactory.createText("name" + i)});
+          DatumFactory.createText("name" + i),
+          DatumFactory.createDistinctNullDatum()
+      });
     }
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
@@ -91,10 +94,15 @@ public class TestCSVScanner {
     scanner.init();
     int i=0;
     Tuple tuple = null;
+    int distinctNullCount = 0;
     while( (tuple = scanner.next()) != null) {
+      if (tuple.isDistinctNull(3)) {
+        distinctNullCount++;
+      }
       i++;
     }
     assertEquals(4,i);
+    assertEquals(4,distinctNullCount);
   }
 
   @Test

@@ -27,7 +27,9 @@ public interface Tuple extends Cloneable {
 	public boolean contains(int fieldid);
 
   public boolean isNull(int fieldid);
-	
+
+  public boolean isDistinctNull(int fieldid);
+
 	public void clear();
 	
 	public void put(int fieldId, Datum value);

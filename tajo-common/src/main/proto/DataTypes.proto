@@ -94,6 +94,8 @@ enum Type {
   TIMESTAMP_ARRAY = 134;
   TIMESTAMPZ_ARRAY = 135;
   INTERVAL_ARRAY = 136;
+
+  DISTINCT_NULL_TYPE = 137; // NULL type for count distinct intermediate data
 }
 
 message DataType {
