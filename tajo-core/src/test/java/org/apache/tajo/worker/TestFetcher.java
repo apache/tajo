@@ -84,7 +84,7 @@ public class TestFetcher {
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s", queryId, sid, partId, "h");
 
     Path inputPath = new Path(dataPath);
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(inputPath, true);
+    FSDataOutputStream stream = FileSystem.getLocal(conf).create(inputPath, true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -124,7 +124,7 @@ public class TestFetcher {
     String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -152,11 +152,12 @@ public class TestFetcher {
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
     Path inputPath = new Path(dataPath);
-    if(LocalFileSystem.get(conf).exists(inputPath)){
-      LocalFileSystem.get(conf).delete(new Path(dataPath), true);
+    FileSystem fs = FileSystem.getLocal(conf);
+    if(fs.exists(inputPath)){
+      fs.delete(new Path(dataPath), true);
     }
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath).getParent(), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath).getParent(), true);
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
@@ -182,7 +183,7 @@ public class TestFetcher {
     String shuffleType = "x";
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, shuffleType, ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
 
     for (int i = 0; i < 100; i++) {
       String data = params + rnd.nextInt();

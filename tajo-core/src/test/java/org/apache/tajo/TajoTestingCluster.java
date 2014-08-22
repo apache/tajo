@@ -68,8 +68,6 @@ public class TajoTestingCluster {
 	// If non-null, then already a cluster running.
 	private File clusterTestBuildDir = null;
 
-  private OverridableConf userSessionVars;
-
 	/**
 	 * System property key to get test directory value.
 	 * Name is as it is because mini dfs has hard-codings to put test data here.
@@ -93,12 +91,17 @@ public class TajoTestingCluster {
   public TajoTestingCluster(boolean masterHaEMode) {
     this.conf = new TajoConf();
     this.conf.setBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE, masterHaEMode);
+
+    setTestingFlagProperties();
     initPropertiesAndConfigs();
   }
 
-  void initPropertiesAndConfigs() {
-    userSessionVars = new OverridableConf(conf, ConfigKey.ConfigType.SESSION);
+  void setTestingFlagProperties() {
+    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+  }
 
+  void initPropertiesAndConfigs() {
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));
@@ -109,7 +112,6 @@ public class TajoTestingCluster {
 
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
-    conf.set(CommonTestingUtil.TAJO_TEST, "TRUE");
   }
 
 	public TajoConf getConfiguration() {

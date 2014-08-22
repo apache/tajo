@@ -28,6 +28,7 @@ import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.util.Pair;
 
 import java.util.Collections;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
     context.compiledEval = Collections.unmodifiableMap(context.compiledEval);
   }
 
-  public static Map<EvalNode, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)
+  public static Map<Pair<Schema, EvalNode>, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)
       throws PlanningException {
     CompilationContext context = new CompilationContext(classLoader);
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
@@ -56,7 +57,7 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
 
   public static class CompilationContext {
     private final EvalCodeGenerator compiler;
-    private Map<EvalNode, EvalNode> compiledEval;
+    private Map<Pair<Schema,EvalNode>, EvalNode> compiledEval;
 
     public CompilationContext(TajoClassLoader classLoader) {
       this.compiler = new EvalCodeGenerator(classLoader);
@@ -67,7 +68,7 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
       return compiler;
     }
 
-    public Map<EvalNode, EvalNode> getPrecompiedEvals() {
+    public Map<Pair<Schema, EvalNode>, EvalNode> getPrecompiedEvals() {
       return compiledEval;
     }
   }
@@ -76,12 +77,12 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
     if (!context.compiledEval.containsKey(eval)) {
       try {
         EvalNode compiled = context.compiler.compile(schema, eval);
-        context.compiledEval.put(eval, compiled);
+        context.compiledEval.put(new Pair<Schema, EvalNode>(schema, eval), compiled);
 
       } catch (Throwable t) {
         // If any compilation error occurs, it works in a fallback mode. This mode just uses EvalNode objects
         // instead of a compiled EvalNode.
-        context.compiledEval.put(eval, eval);
+        context.compiledEval.put(new Pair<Schema, EvalNode>(schema, eval), eval);
         LOG.warn(t);
       }
     }
@@ -176,7 +177,9 @@ public class ExecutorCompiler extends BasicLogicalPlanVisitor<ExecutorCompiler.C
   @Override
   public LogicalNode visitTableSubQuery(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
-    super.visitTableSubQuery(context, plan, block, node, stack);
+    stack.push(node);
+    visit(context, plan, null, node.getSubQuery(), stack);
+    stack.pop();
 
     if (node.hasTargets()) {
       for (Target target : node.getTargets()) {

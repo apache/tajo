@@ -38,7 +38,7 @@ public class SelectionExec extends UnaryPhysicalExec  {
 
   @Override
   public void compile() throws CompilationError {
-    qual = context.getPrecompiledEval(qual);
+    qual = context.getPrecompiledEval(inSchema, qual);
   }
 
   @Override

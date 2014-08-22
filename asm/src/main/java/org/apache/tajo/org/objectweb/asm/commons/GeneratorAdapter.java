@@ -1217,16 +1217,34 @@ public class GeneratorAdapter extends LocalVariablesSorter {
      * @param generator
      *            a generator to generate the code for the switch cases.
      */
+    public void tableSwitch(final int[] keys, final TableSwitchGenerator generator) {
+        tableSwitch(keys, generator, new Label());
+    }
+
+    /**
+     * Generates the instructions for a switch statement.
+     *
+     * @param keys
+     *            the switch case keys.
+     * @param generator
+     *            a generator to generate the code for the switch cases.
+     */
     public void tableSwitch(final int[] keys,
-            final TableSwitchGenerator generator) {
-        float density;
-        if (keys.length == 0) {
-            density = 0;
-        } else {
-            density = (float) keys.length
-                    / (keys[keys.length - 1] - keys[0] + 1);
-        }
-        tableSwitch(keys, generator, density >= 0.5f);
+                            final TableSwitchGenerator generator, Label defaultLabel) {
+      float density;
+      if (keys.length == 0) {
+        density = 0;
+      } else {
+        density = (float) keys.length
+            / (keys[keys.length - 1] - keys[0] + 1);
+      }
+      tableSwitch(keys, generator, density >= 0.5f, defaultLabel);
+    }
+
+    @SuppressWarnings("unused")
+    public void tableSwitch(final int[] keys,
+                          final TableSwitchGenerator generator, final boolean useTable) {
+      tableSwitch(keys, generator, useTable, new Label());
     }
 
     /**
@@ -1241,14 +1259,14 @@ public class GeneratorAdapter extends LocalVariablesSorter {
      *            <tt>false</tt> to use a LOOKUPSWITCH instruction.
      */
     public void tableSwitch(final int[] keys,
-            final TableSwitchGenerator generator, final boolean useTable) {
+            final TableSwitchGenerator generator, final boolean useTable, Label def) {
         for (int i = 1; i < keys.length; ++i) {
             if (keys[i] < keys[i - 1]) {
                 throw new IllegalArgumentException(
                         "keys must be sorted ascending");
             }
         }
-        Label def = newLabel();
+
         Label end = newLabel();
         if (keys.length > 0) {
             int len = keys.length;

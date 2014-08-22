@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.collect.Lists;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -67,10 +66,6 @@ public class SeqScanExec extends PhysicalExec {
   private TupleCacheKey cacheKey;
 
   private boolean cacheRead = false;
-
-  // For code generation
-  private List<Integer> recompiledTargetIds = Lists.newArrayList();
-  private boolean requiredRecompileOfQual = false;
 
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
@@ -142,17 +137,12 @@ public class SeqScanExec extends PhysicalExec {
           }
           target.setExpr(constExpr);
 
-          recompiledTargetIds.add(i);
-
         } else {
-          if (EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr) > 0) {
-            recompiledTargetIds.add(i);
-          }
+          EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr);
         }
       }
 
       if (plan.hasQual()) {
-        requiredRecompileOfQual = true;
         EvalTreeUtil.replace(plan.getQual(), targetExpr, constExpr);
       }
     }
@@ -215,16 +205,12 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   protected void compile() throws CompilationError {
     if (plan.hasQual()) {
-      if (requiredRecompileOfQual) {
-        qual = context.compileEval(inSchema, qual);
-      } else {
-        qual = context.getPrecompiledEval(qual);
-      }
+      qual = context.getPrecompiledEval(inSchema, qual);
     }
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets(), recompiledTargetIds);
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),

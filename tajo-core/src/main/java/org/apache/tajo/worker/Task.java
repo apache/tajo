@@ -171,7 +171,7 @@ public class Task {
       }
     }
 
-    plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
+    plan = context.getSharedResource().getPlan();
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {
       for (LogicalNode node : scanNode) {

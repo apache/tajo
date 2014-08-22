@@ -171,9 +171,9 @@ public class TaskAttemptContext {
     return sharedResource.compileEval(schema, eval);
   }
 
-  public EvalNode getPrecompiledEval(EvalNode eval) {
+  public EvalNode getPrecompiledEval(Schema schema, EvalNode eval) {
     if (sharedResource != null) {
-      return sharedResource.getPreCompiledEval(eval);
+      return sharedResource.getPreCompiledEval(schema, eval);
     } else {
       LOG.debug("Shared resource is not initialized. It is NORMAL in unit tests");
       return eval;

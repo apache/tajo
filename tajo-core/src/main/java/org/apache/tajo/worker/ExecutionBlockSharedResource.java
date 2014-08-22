@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
@@ -26,8 +27,10 @@ import org.apache.tajo.engine.codegen.ExecutorCompiler;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.util.Pair;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +41,9 @@ public class ExecutionBlockSharedResource {
   private volatile Boolean resourceInitSuccess = new Boolean(false);
   private CountDownLatch initializedResourceLatch = new CountDownLatch(1);
 
+  // Query
+  private QueryContext context;
+
   // Resources
   private TajoClassLoader classLoader;
   private ExecutorCompiler.CompilationContext compilationContext;
@@ -45,23 +51,19 @@ public class ExecutionBlockSharedResource {
   private boolean codeGenEnabled = false;
 
   public void initialize(final QueryContext context, final String planJson) throws InterruptedException {
+
     if (!initializing.getAndSet(true)) {
       Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
           try {
-
-            plan = CoreGsonHelper.fromJson(planJson, LogicalNode.class);
-
-            if (context.getBool(SessionVars.CODEGEN)) {
-              codeGenEnabled = true;
-              classLoader = new TajoClassLoader();
-              compilationContext = new ExecutorCompiler.CompilationContext(classLoader);
-              ExecutorCompiler.compile(compilationContext, plan);
-            }
+            ExecutionBlockSharedResource.this.context = context;
+            initPlan(planJson);
+            initCodeGeneration();
             resourceInitSuccess = true;
           } catch (Throwable t) {
             LOG.error(t);
+            LOG.error(ExceptionUtils.getStackTrace(t));
           } finally {
             initializedResourceLatch.countDown();
           }
@@ -73,6 +75,19 @@ public class ExecutionBlockSharedResource {
       if (!resourceInitSuccess) {
         throw new RuntimeException("Resource cannot be initialized");
       }
+    }
+  }
+
+  private void initPlan(String planJson) {
+    plan = CoreGsonHelper.fromJson(planJson, LogicalNode.class);
+  }
+
+  private void initCodeGeneration() throws PlanningException {
+    if (context.getBool(SessionVars.CODEGEN)) {
+      codeGenEnabled = true;
+      classLoader = new TajoClassLoader();
+      compilationContext = new ExecutorCompiler.CompilationContext(classLoader);
+      ExecutorCompiler.compile(compilationContext, plan);
     }
   }
 
@@ -89,13 +104,20 @@ public class ExecutionBlockSharedResource {
     return compilationContext.getCompiler().compile(schema, eval);
   }
 
-  public EvalNode getPreCompiledEval(EvalNode eval) {
+  public EvalNode getPreCompiledEval(Schema schema, EvalNode eval) {
     if (codeGenEnabled) {
-      if (compilationContext.getPrecompiedEvals().containsKey(eval)) {
-        return compilationContext.getPrecompiedEvals().get(eval);
+
+      Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
+      if (compilationContext.getPrecompiedEvals().containsKey(key)) {
+        return compilationContext.getPrecompiedEvals().get(key);
       } else {
-        LOG.warn(eval.toString() + " does not exists");
-        return eval;
+        try {
+          LOG.warn(eval.toString() + " does not exists. Immediately compile it: " + eval);
+          return compileEval(schema, eval);
+        } catch (Throwable t) {
+          LOG.warn(t);
+          return eval;
+        }
       }
     } else {
       throw new IllegalStateException("CodeGen is disabled");

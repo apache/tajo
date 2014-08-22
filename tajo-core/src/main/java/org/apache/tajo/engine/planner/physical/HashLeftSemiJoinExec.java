@@ -46,7 +46,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
   }
 
   protected void compile() {
-    joinQual = context.getPrecompiledEval(joinQual);
+    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   /**

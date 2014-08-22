@@ -42,7 +42,6 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -195,12 +194,11 @@ public class ExprTestBase {
 
   public void testEval(OverridableConf overideConf, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected, char delimiter, boolean condition) throws IOException {
-    Session session = LocalTajoTestingUtility.createDummySession();
     QueryContext context;
     if (overideConf == null) {
-      context = new QueryContext(util.getConfiguration(), session);
+      context = LocalTajoTestingUtility.createDummyContext(conf);
     } else {
-      context = new QueryContext(util.getConfiguration(), session);
+      context = LocalTajoTestingUtility.createDummyContext(conf);
       context.putAll(overideConf);
     }
 
@@ -248,6 +246,7 @@ public class ExprTestBase {
 
     try {
       targets = getRawTargets(context, query, condition);
+
       EvalCodeGenerator codegen = null;
       if (context.getBool(SessionVars.CODEGEN)) {
         codegen = new EvalCodeGenerator(classLoader);
@@ -256,9 +255,11 @@ public class ExprTestBase {
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
+
         if (context.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);
         }
+
         outTuple.put(i, eval.eval(inputSchema, vtuple));
       }
 

@@ -93,7 +93,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(joinQual);
+    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   public JoinNode getPlan(){

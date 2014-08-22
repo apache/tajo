@@ -71,8 +71,7 @@ class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
 
       codeGen.emitLabel(context, ifNull);
       context.pop(commonTerm.getValueType());
-      context.pushDummyValue(caseWhen.getValueType());
-      context.pushNullFlag(false);
+      codeGen.visit(context, caseWhen.getElse(), stack);
 
       codeGen.emitLabel(context, endIf);
 
