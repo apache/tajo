@@ -179,9 +179,9 @@
           </executions>
         </plugin>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.7.1</version>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <version>0.7</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -337,54 +337,6 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
-        <version>0.8</version>
-        <executions>
-          <execution>
-            <phase>verify</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <excludeSubProjects>false</excludeSubProjects>
-          <numUnapprovedLicenses>0</numUnapprovedLicenses>
-          <excludes>
-            <exclude>CHANGES</exclude>
-            <exclude>**/workers</exclude>
-            <exclude>**/querymasters</exclude>
-            <exclude>**/*.sql</exclude>
-            <exclude>**/*.hiveql</exclude>
-            <exclude>**/*.schema</exclude>
-            <exclude>**/*.tbl</exclude>
-            <exclude>**/*.js</exclude>
-            <exclude>**/*.result</exclude>
-            <exclude>**/*.json</exclude>
-            <exclude>**/*.avsc</exclude>
-            <!-- generated content -->
-            <exclude>**/target/**</exclude>
-            <exclude>**/*.log</exclude>
-            <!-- source control and IDEs -->
-            <exclude>.git/**</exclude>
-            <exclude>.gitignore</exclude>
-            <exclude>*.patch</exclude>
-            <exclude>.idea/**</exclude>
-            <exclude>**/*.iml</exclude>
-            <exclude>**/*.ipr</exclude>
-            <exclude>**/.project</exclude>
-            <exclude>**/.classpath</exclude>
-            <exclude>**/.settings/**</exclude>
-            <exclude>atlassian-ide-plugin.xml</exclude>
-            <exclude>.reviewboardrc</exclude>
-            <exclude>**/sphinx_rtd_theme/**/*</exclude>
-            <!-- tajo-doc -->
-            <exclude>**/*.rst</exclude>
-            <exclude>**/resources/*</exclude>
-            <!-- thirdparty: we don't need to change license header of thirdparty works. 
-                Please refer to http://www.apache.org/legal/src-headers.html -->
-            <exclude>tajo-thirdparty/**/*</exclude>
-          </excludes>
-        </configuration>
       </plugin>
     </plugins>
   </build>

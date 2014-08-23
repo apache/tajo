@@ -29,6 +29,24 @@ limitations under the License.
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>BUILDING</exclude>
+            <exclude>src/main/sphinx/**/*.rst</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.tomdz.maven</groupId>
         <artifactId>sphinx-maven-plugin</artifactId>
         <version>1.0.2</version>
