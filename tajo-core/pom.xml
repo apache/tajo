@@ -244,7 +244,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>asm</artifactId>
+      <artifactId>tajo-thirdparty-asm</artifactId>
     </dependency>
 
     <dependency>

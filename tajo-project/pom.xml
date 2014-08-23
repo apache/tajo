@@ -760,7 +760,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>asm</artifactId>
+        <artifactId>tajo-thirdparty-asm</artifactId>
         <version>${tajo.version}</version>
         <type>jar</type>
       </dependency>

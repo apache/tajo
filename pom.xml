@@ -90,7 +90,7 @@
     <module>tajo-storage</module>
     <module>tajo-yarn-pullserver</module>
     <module>tajo-dist</module>
-    <module>asm</module>
+    <module>tajo-thirdparty/asm</module>
   </modules>
 
   <build>
@@ -380,6 +380,9 @@
             <!-- tajo-doc -->
             <exclude>**/*.rst</exclude>
             <exclude>**/resources/*</exclude>
+            <!-- thirdparty: we don't need to change license header of thirdparty works. 
+                Please refer to http://www.apache.org/legal/src-headers.html -->
+            <exclude>tajo-thirdparty/**/*</exclude>
           </excludes>
         </configuration>
       </plugin>
