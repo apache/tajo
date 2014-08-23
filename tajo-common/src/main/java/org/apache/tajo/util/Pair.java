@@ -18,6 +18,8 @@
 
 package org.apache.tajo.util;
 
+import com.google.common.base.Objects;
+
 public class Pair<T1, T2> {
   private T1 first;
   private T2 second;
@@ -49,7 +51,17 @@ public class Pair<T1, T2> {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Pair) {
+      Pair other = (Pair) obj;
+      return first.equals(other.first) && second.equals(other.second);
+    } else {
+      return false;
+    }
+  }
+
+  @Override
   public int hashCode() {
-    return toString().hashCode();
+    return Objects.hashCode(first, second);
   }
 }

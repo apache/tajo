@@ -20,9 +20,11 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -47,7 +49,14 @@ public abstract class PhysicalExec implements SchemaObject {
     return outSchema;
   }
 
-  public abstract void init() throws IOException;
+  public void init() throws IOException {
+    if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
+      this.compile();
+    }
+  }
+
+  protected void compile() throws CompilationError {
+  }
 
   public abstract Tuple next() throws IOException;
 

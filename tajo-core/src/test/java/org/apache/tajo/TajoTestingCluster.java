@@ -92,7 +92,14 @@ public class TajoTestingCluster {
   public TajoTestingCluster(boolean masterHaEMode) {
     this.conf = new TajoConf();
     this.conf.setBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE, masterHaEMode);
+
+    setTestingFlagProperties();
     initPropertiesAndConfigs();
+  }
+
+  void setTestingFlagProperties() {
+    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
   }
 
   void initPropertiesAndConfigs() {
@@ -106,7 +113,6 @@ public class TajoTestingCluster {
 
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
-    conf.set(CommonTestingUtil.TAJO_TEST, "TRUE");
   }
 
 	public TajoConf getConfiguration() {

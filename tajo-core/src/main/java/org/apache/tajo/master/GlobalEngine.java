@@ -60,6 +60,7 @@ import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -115,9 +116,20 @@ public class GlobalEngine extends AbstractService {
     super.stop();
   }
 
+  private QueryContext createQueryContext(Session session) {
+    QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
+
+    String tajoTest = System.getProperty(CommonTestingUtil.TAJO_TEST_KEY);
+    if (tajoTest != null && tajoTest.equalsIgnoreCase(CommonTestingUtil.TAJO_TEST_TRUE)) {
+      newQueryContext.putAll(CommonTestingUtil.getSessionVarsForTest());
+    }
+
+    return newQueryContext;
+  }
+
   public SubmitQueryResponse executeQuery(Session session, String query, boolean isJson) {
     LOG.info("Query: " + query);
-    QueryContext queryContext = new QueryContext(context.getConf(), session);
+    QueryContext queryContext = createQueryContext(session);
     Expr planningContext;
 
     try {

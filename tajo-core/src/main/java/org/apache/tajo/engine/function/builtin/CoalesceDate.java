@@ -32,12 +32,11 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, date '2014-01-01');\n"
         + "2014-01-01",
     returnType = Type.DATE,
-    paramTypes = {@ParamTypes(paramTypes = {Type.DATE, Type.DATE_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {Type.DATE_ARRAY})}
 )
 public class CoalesceDate extends Coalesce {
   public CoalesceDate() {
     super(new Column[] {
-        new Column("column", TajoDataTypes.Type.DATE),
         new Column("params", TajoDataTypes.Type.DATE_ARRAY),
     });
   }

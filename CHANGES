@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-906: Runtime code generation for evaluating expression trees.
+    (hyunsik)
+
     TAJO-931: Output file can be punctuated depending on the file size.
     (hyunsik)
 

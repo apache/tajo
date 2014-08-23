@@ -190,7 +190,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     builder.addAllExecutionBlockId(Lists.newArrayList(executionBlockIds));
     TajoWorkerProtocol.ExecutionBlockListProto executionBlockListProto = builder.build();
 
-    List<IntermediateEntryProto> intermediateEntries = new ArrayList<IntermediateEntryProto>();
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
       try {
         if (worker.getPeerRpcPort() == 0) continue;

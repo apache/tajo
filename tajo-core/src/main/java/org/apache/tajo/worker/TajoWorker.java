@@ -28,12 +28,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.shell.PathData;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.ha.TajoMasterInfo;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -55,6 +57,7 @@ import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -207,7 +210,7 @@ public class TajoWorker extends CompositeService {
         addService(pullService);
       }
 
-      if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+      if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
         try {
           httpPort = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS).getPort();
           if(queryMasterMode && !taskRunnerMode) {
@@ -349,11 +352,18 @@ public class TajoWorker extends CompositeService {
   }
 
   public class WorkerContext {
+    private ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource> sharedResourceMap =
+        new ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource>();
+
     public QueryMaster getQueryMaster() {
       if(queryMasterManagerService == null) {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
+    }
+
+    public TajoConf getConf() {
+      return systemConf;
     }
 
     public TajoWorkerManagerService getTajoWorkerManagerService() {
@@ -396,6 +406,25 @@ public class TajoWorker extends CompositeService {
       if(force) {
         System.exit(0);
       }
+    }
+
+    public void initSharedResource(QueryContext queryContext, ExecutionBlockId blockId, String planJson)
+        throws InterruptedException {
+
+      if (!sharedResourceMap.containsKey(blockId)) {
+        ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
+        if (sharedResourceMap.putIfAbsent(blockId, resource) == null) {
+          resource.initialize(queryContext, planJson);
+        }
+      }
+    }
+
+    public ExecutionBlockSharedResource getSharedResource(ExecutionBlockId blockId) {
+      return sharedResourceMap.get(blockId);
+    }
+
+    public void releaseSharedResource(ExecutionBlockId blockId) {
+      sharedResourceMap.remove(blockId).release();
     }
 
     protected void cleanup(String strPath) {

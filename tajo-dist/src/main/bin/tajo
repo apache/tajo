@@ -180,8 +180,8 @@ fi
 # Allow alternate conf dir location.
 HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-$HADOOP_HOME/etc/hadoop}"
 
-# CLASSPATH initially contains $HADOOP_CONF_DIR
-CLASSPATH="${HADOOP_CONF_DIR}"
+# CLASSPATH initially contains $HADOOP_CONF_DIR and tools.jar
+CLASSPATH="${HADOOP_CONF_DIR}:${JAVA_HOME}/lib/tools.jar"
 
 ##############################################################################
 # Hadoop Version Checking Section End

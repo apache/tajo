@@ -109,7 +109,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     }
 
     // for projection
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     // for join
     frameTuple = new FrameTuple();
@@ -117,6 +117,11 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     leftKeyTuple = new VTuple(leftKeyList.length);
 
     rightNumCols = rightChild.getSchema().size();
+  }
+
+  @Override
+  protected void compile() {
+    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
