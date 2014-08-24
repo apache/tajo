@@ -19,5 +19,5 @@
 package org.apache.tajo.storage.directmem;
 
 public interface RowBlockReader {
-
+  public boolean next(UnSafeTuple tuple);
 }

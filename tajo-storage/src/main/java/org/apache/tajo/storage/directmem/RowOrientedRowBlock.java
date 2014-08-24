@@ -109,7 +109,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
       long recordStartPtr = address + curReadPos;
       int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(recordStartPtr, recordLen, types);
+      tuple.set(recordStartPtr, types);
 
       curReadPos += recordLen;
       curRowIdx++;

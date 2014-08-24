@@ -20,6 +20,7 @@ package org.apache.tajo.storage.directmem;
 
 import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -31,13 +32,10 @@ public class UnSafeTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   private long recordPtr;
-  private int recordSize;
-
   private Type [] types;
 
-  void set(long address, int length, Type [] types) {
+  void set(long address, Type [] types) {
     this.recordPtr = address;
-    this.recordSize = length;
     this.types = types;
   }
 
@@ -51,7 +49,7 @@ public class UnSafeTuple implements Tuple {
   }
 
   private long getFieldAddr(int fieldId) {
-    int relativePos = UNSAFE.getInt(recordPtr + 4 + (fieldId * SizeOf.SIZE_OF_INT));
+    int relativePos = UNSAFE.getInt(recordPtr + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
     return recordPtr + relativePos;
   }
 
@@ -94,9 +92,29 @@ public class UnSafeTuple implements Tuple {
   public Datum get(int fieldId) {
     switch (types[fieldId]) {
     case BOOLEAN:
-
+      return DatumFactory.createBool(getBool(fieldId));
+    case INT1:
+    case INT2:
+      return DatumFactory.createInt2(getInt2(fieldId));
+    case INT4:
+      return DatumFactory.createInt4(getInt4(fieldId));
+    case FLOAT4:
+      return DatumFactory.createFloat4(getFloat4(fieldId));
+    case FLOAT8:
+      return DatumFactory.createFloat8(getFloat8(fieldId));
+    case TEXT:
+      return DatumFactory.createText(getText(fieldId));
+    case TIMESTAMP:
+      return DatumFactory.createTimestamp(getInt8(fieldId));
+    case DATE:
+      return DatumFactory.createDate(getInt4(fieldId));
+    case TIME:
+      return DatumFactory.createTime(getInt8(fieldId));
+    case INET4:
+      return DatumFactory.createInet4(getInt4(fieldId));
+    default:
+      throw new UnsupportedException("Unknown type: " + types[fieldId]);
     }
-    return null;
   }
 
   @Override

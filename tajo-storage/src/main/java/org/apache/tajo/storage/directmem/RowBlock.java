@@ -19,9 +19,6 @@
 package org.apache.tajo.storage.directmem;
 
 public interface RowBlock {
-
-  public boolean next(UnSafeTuple tuple);
-
   public long totalMem();
   public void free();
 }

@@ -19,13 +19,17 @@
 package org.apache.tajo.storage.directmem;
 
 import com.google.common.collect.Lists;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -48,10 +52,10 @@ public class TestDirectRowBlock {
     schema.addColumn("col5", Type.FLOAT8);
     schema.addColumn("col6", Type.TEXT);
 
-    int vecSize = 1000000;
+    int vecSize = 5000000;
 
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 100);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 500);
     long allocatedEnd = System.currentTimeMillis();
     System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -103,6 +107,83 @@ public class TestDirectRowBlock {
     }
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
+
+    SortSpec sortSpec = new SortSpec(new Column("col2", Type.INT4));
+    TupleComparator comparator = new TupleComparator(schema, new SortSpec[] {sortSpec});
+
+    rowBlock.free();
+  }
+
+  @Test
+  public void testSortBenchmark() {
+
+    Schema schema = new Schema();
+    schema.addColumn("col0", Type.BOOLEAN);
+    schema.addColumn("col1", Type.INT2);
+    schema.addColumn("col2", Type.INT4);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.FLOAT4);
+    schema.addColumn("col5", Type.FLOAT8);
+    schema.addColumn("col6", Type.TEXT);
+
+    int vecSize = 5000000;
+
+    long allocateStart = System.currentTimeMillis();
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 500);
+    long allocatedEnd = System.currentTimeMillis();
+    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    List<UnSafeTuple> unSafeTuples = Lists.newArrayList();
+    for (int i = 0; i < vecSize; i++) {
+      rowBlock.startRow();
+      rowBlock.putBool(i % 1 == 0 ? true : false);
+      rowBlock.putInt2((short) 1);
+      rowBlock.putInt4(i);
+      rowBlock.putInt8(i);
+      rowBlock.putFloat4(i);
+      rowBlock.putFloat8(i);
+      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());
+      rowBlock.endRow();
+
+      /*
+      rowBlock.resetRowCursor();
+      int j = 0;
+      while(rowBlock.next(tuple)) {
+        assertTrue((j % 1 == 0) == tuple.getBool(0));
+        assertTrue(1 == tuple.getInt2(1));
+        assertEquals(j, tuple.getInt4(2));
+        assertEquals(j, tuple.getInt8(3));
+        assertTrue(j == tuple.getFloat4(4));
+        assertTrue(j == tuple.getFloat8(5));
+        assertEquals(new String("가나다_abc_" + j), tuple.getText(6));
+        j++;
+      }
+      */
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
+
+    long readStart = System.currentTimeMillis();
+    UnSafeTuple tuple = new UnSafeTuple();
+    int j = 0;
+    rowBlock.resetRowCursor();
+    while(rowBlock.next(tuple)) {
+      unSafeTuples.add(tuple);
+      tuple = new UnSafeTuple();
+    }
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+
+
+    SortSpec sortSpec = new SortSpec(new Column("col2", Type.INT4));
+    TupleComparator comparator = new TupleComparator(schema, new SortSpec[] {sortSpec});
+
+    long sortStart = System.currentTimeMillis();
+    Collections.sort(unSafeTuples, comparator);
+    long sortEnd = System.currentTimeMillis();
+    System.out.println(sortEnd - sortStart + " sort msec");
 
     rowBlock.free();
   }
@@ -181,7 +262,7 @@ public class TestDirectRowBlock {
     schema.addColumn("col5", Type.FLOAT8);
     schema.addColumn("col6", Type.TEXT);
 
-    int vecSize = 1000000;
+    int vecSize = 5000000;
 
     List<VTuple> rowBlock = Lists.newArrayList();
     long writeStart = System.currentTimeMillis();
