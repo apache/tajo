@@ -111,7 +111,7 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public boolean getBool(int fieldId) {
-    return UNSAFE.getByte(getFieldAddr(fieldId)) == 0xFF;
+    return UNSAFE.getByte(getFieldAddr(fieldId)) == 0x01;
   }
 
   @Override

@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.util.FileUtil;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -138,6 +139,8 @@ public class DirectRowBlock implements RowBlock {
       long newAddress = ((DirectBuffer)newByteBuf).address();
       UNSAFE.copyMemory(this.address, newAddress, bytesLen);
 
+      LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
+
       // compute the relative position of current row start offset
       long relativeRowStartPos = this.rowStartOffset - this.address;
 
@@ -173,7 +176,7 @@ public class DirectRowBlock implements RowBlock {
 
     fieldIndexes[curFieldIdx] = rowOffset;
 
-    UNSAFE.putByte(rowStartOffset + rowOffset, (byte) (val ? 0xFF : 0x00));
+    UNSAFE.putByte(rowStartOffset + rowOffset, (byte) (val ? 0x01 : 0x00));
 
     rowOffset += SizeOf.SIZE_OF_BOOL;
 
@@ -242,7 +245,7 @@ public class DirectRowBlock implements RowBlock {
     UNSAFE.putInt(rowStartOffset + rowOffset, bytesLen);
     rowOffset += SizeOf.SIZE_OF_INT;
 
-    UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowOffset, bytesLen);
+    UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartOffset + rowOffset, bytesLen);
     rowOffset += bytesLen;
 
     curFieldIdx++;
@@ -263,7 +266,7 @@ public class DirectRowBlock implements RowBlock {
     UNSAFE.putInt(rowStartOffset + rowOffset, bytesLen);
     rowOffset += SizeOf.SIZE_OF_INT;
 
-    UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowOffset, bytesLen);
+    UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartOffset + rowOffset, bytesLen);
     rowOffset += bytesLen;
 
     curFieldIdx++;
