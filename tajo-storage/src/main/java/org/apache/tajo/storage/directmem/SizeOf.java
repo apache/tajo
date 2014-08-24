@@ -27,6 +27,7 @@ public final class SizeOf {
   public static final int BYTES_PER_WORD = SizeOf.SIZE_OF_LONG;
   public static final int BITS_PER_WORD = SizeOf.SIZE_OF_LONG * BITS_PER_BYTE;
 
+  public static final byte SIZE_OF_BOOL = 1;
   public static final byte SIZE_OF_BYTE = 1;
   public static final byte SIZE_OF_SHORT = 2;
   public static final byte SIZE_OF_INT = 4;

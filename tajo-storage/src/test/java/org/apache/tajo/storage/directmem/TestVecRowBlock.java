@@ -58,7 +58,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock rowBlock = new VecRowBlock(schema, vecSize);
     long allocatedEnd = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMemory(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -100,7 +100,7 @@ public class TestVecRowBlock {
     long allocateStart = System.currentTimeMillis();
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMem(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -146,7 +146,7 @@ public class TestVecRowBlock {
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
 
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMem(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -288,7 +288,7 @@ public class TestVecRowBlock {
     VecRowBlock vecRowBlock = new VecRowBlock(schema, vecSize);
 
     long allocateend = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true) + " bytes allocated "
+    System.out.println(FileUtil.humanReadableByteCount(vecRowBlock.totalMem(), true) + " bytes allocated "
         + (allocateend - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
@@ -308,7 +308,7 @@ public class TestVecRowBlock {
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
 
-    System.out.println("Total Size: " + FileUtil.humanReadableByteCount(vecRowBlock.totalMemory(), true));
+    System.out.println("Total Size: " + FileUtil.humanReadableByteCount(vecRowBlock.totalMem(), true));
     System.out.println("Fixed Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.fixedAreaMemory(), true));
     System.out.println("Variable Area Size: " + FileUtil.humanReadableByteCount(vecRowBlock.variableAreaMemory(), true));
     vecRowBlock.free();

@@ -17,12 +17,16 @@
  */
 package org.apache.tajo.storage.directmem;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
+import sun.misc.Cleaner;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 
 public class UnsafeUtil {
   public static final Unsafe unsafe;
@@ -42,8 +46,8 @@ public class UnsafeUtil {
     }
   }
 
-  public static long computeAlignedSize(long size) {
-    long remain = size % SizeOf.BYTES_PER_WORD;
+  public static int alignedSize(int size) {
+    int remain = size % SizeOf.BYTES_PER_WORD;
     if (remain > 0) {
       return size + (SizeOf.BYTES_PER_WORD - remain);
     } else {
@@ -60,7 +64,7 @@ public class UnsafeUtil {
   }
 
   public static long allocVector(TajoDataTypes.DataType dataType, int num) {
-    return unsafe.allocateMemory(computeAlignedSize(TypeUtil.sizeOf(dataType, num)));
+    return unsafe.allocateMemory(alignedSize(TypeUtil.sizeOf(dataType, num)));
   }
 
   public static void free(long addr) {
@@ -165,5 +169,15 @@ public class UnsafeUtil {
     }
 
     return true;
+  }
+
+  public static void free(ByteBuffer bb) {
+    Preconditions.checkNotNull(bb);
+    Preconditions.checkState(bb instanceof DirectBuffer);
+
+    Cleaner cleaner = ((DirectBuffer) bb).cleaner();
+    if (cleaner != null) {
+      cleaner.clean();
+    }
   }
 }

@@ -50,7 +50,7 @@ public class TypeUtil {
     switch (type) {
     case BOOLEAN:
       return (int) Math.ceil(vecSize / Byte.SIZE);
-    case CHAR: return (int) (UnsafeUtil.computeAlignedSize(SizeOf.SIZE_OF_BYTE * maxLen) * vecSize);
+    case CHAR: return (int) (UnsafeUtil.alignedSize(SizeOf.SIZE_OF_BYTE * maxLen) * vecSize);
     case INT1:
     case INT2: return SizeOf.SIZE_OF_SHORT * vecSize;
     case INT4: return SizeOf.SIZE_OF_INT * vecSize;

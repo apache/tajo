@@ -37,9 +37,11 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
+import org.apache.tajo.storage.directmem.VecRowBlock;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.storage.rowblock.RowBlockScanner;
 import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
@@ -250,7 +252,7 @@ public class CSVFile {
     }
   }
 
-  public static class CSVScanner extends FileScanner implements SeekableScanner {
+  public static class CSVScanner extends FileScanner implements SeekableScanner, RowBlockScanner {
     public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
@@ -574,6 +576,11 @@ public class CSVFile {
     @Override
     public boolean isSplittable(){
       return splittable;
+    }
+
+    @Override
+    public boolean next(VecRowBlock rowBlock) throws IOException {
+      return false;
     }
   }
 }

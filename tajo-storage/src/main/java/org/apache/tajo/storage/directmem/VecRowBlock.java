@@ -28,7 +28,7 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class VecRowBlock {
+public class VecRowBlock implements RowBlock {
   private static final Unsafe unsafe = UnsafeUtil.unsafe;
 
   // Schema
@@ -76,7 +76,7 @@ public class VecRowBlock {
     UnsafeUtil.unsafe.setMemory(fixedAreaPtr, fixedAreaMemorySize, (byte) 0x0);
   }
 
-  public long totalMemory() {
+  public long totalMem() {
     return fixedAreaMemorySize + variableAreaMemorySize;
   }
 
@@ -119,7 +119,7 @@ public class VecRowBlock {
 
     for (int i = 0; i < schema.size(); i++) {
       Column column = schema.getColumn(i);
-      totalSize += UnsafeUtil.computeAlignedSize(TypeUtil.sizeOf(column.getDataType(), maxVectorSize));
+      totalSize += UnsafeUtil.alignedSize(TypeUtil.sizeOf(column.getDataType(), maxVectorSize));
     }
     fixedAreaMemorySize = totalSize;
     allocateFixedArea();
@@ -141,7 +141,7 @@ public class VecRowBlock {
         vectorsAddrs[i] = fixedAreaPtr + totalNullHeaderBytes;
       } else {
         Column prevColumn = schema.getColumn(i - 1);
-        perVecSize = UnsafeUtil.computeAlignedSize(TypeUtil.sizeOf(prevColumn.getDataType(), maxVectorSize));
+        perVecSize = UnsafeUtil.alignedSize(TypeUtil.sizeOf(prevColumn.getDataType(), maxVectorSize));
         vectorsAddrs[i] = vectorsAddrs[i - 1] + perVecSize;
       }
     }
@@ -493,6 +493,6 @@ public class VecRowBlock {
   }
 
   public static long computeNullHeaderBytesPerColumn(int vectorSize) {
-    return UnsafeUtil.computeAlignedSize((long) Math.ceil(vectorSize / SizeOf.BITS_PER_BYTE));
+    return UnsafeUtil.alignedSize((int) Math.ceil(vectorSize / SizeOf.BITS_PER_BYTE));
   }
 }
