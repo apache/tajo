@@ -19,4 +19,5 @@
 package org.apache.tajo.storage.directmem;
 
 public interface RowBlockReader {
+
 }

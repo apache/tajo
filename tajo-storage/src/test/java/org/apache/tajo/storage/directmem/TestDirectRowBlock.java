@@ -51,7 +51,7 @@ public class TestDirectRowBlock {
     int vecSize = 1000000;
 
     long allocateStart = System.currentTimeMillis();
-    DirectRowBlock rowBlock = new DirectRowBlock(schema, StorageUnit.MB * 100);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 100);
     long allocatedEnd = System.currentTimeMillis();
     System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -120,7 +120,7 @@ public class TestDirectRowBlock {
     int vecSize = 4096;
 
     long allocateStart = System.currentTimeMillis();
-    DirectRowBlock rowBlock = new DirectRowBlock(schema, 40000);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 40000);
     long allocatedEnd = System.currentTimeMillis();
     System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");

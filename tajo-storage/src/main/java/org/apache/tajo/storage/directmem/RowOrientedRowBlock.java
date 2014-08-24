@@ -29,12 +29,11 @@ import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.Vector;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
-public class DirectRowBlock implements RowBlock {
-  private static final Log LOG = LogFactory.getLog(DirectRowBlock.class);
+public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
+  private static final Log LOG = LogFactory.getLog(RowOrientedRowBlock.class);
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   private Type[] types;
@@ -60,7 +59,7 @@ public class DirectRowBlock implements RowBlock {
   // row state
   private long rowStartOffset;
 
-  public DirectRowBlock(Schema schema, int bytes) {
+  public RowOrientedRowBlock(Schema schema, int bytes) {
     this.buffer = ByteBuffer.allocateDirect(bytes);
     this.address = ((DirectBuffer) buffer).address();
     this.bytesLen = bytes;
@@ -153,6 +152,11 @@ public class DirectRowBlock implements RowBlock {
     }
   }
 
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // RowBlockWriter Implementation
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   // <Row Record Structure>
   //
   // | row length (4 bytes) | field 1 offset | field 2 offset | ... | field N offset| field 1 | field 2| ... | field N |
@@ -165,6 +169,22 @@ public class DirectRowBlock implements RowBlock {
     rowOffset += fieldIndexBytesLen; // skip an array of field indices
     curFieldIdx = 0;
     return true;
+  }
+
+  public void endRow() {
+    totalRowNum++;
+
+    long rowHeaderPos = rowStartOffset;
+    UNSAFE.putInt(rowHeaderPos, rowOffset);
+    rowHeaderPos += SizeOf.SIZE_OF_INT;
+
+    for (int i = 0; i < fieldIndexes.length; i++) {
+      UNSAFE.putInt(rowHeaderPos, fieldIndexes[i]);
+      rowHeaderPos += SizeOf.SIZE_OF_INT;
+    }
+
+    // rowOffset is equivalent to a byte length of this row.
+    curWritePos += rowOffset;
   }
 
   public void skipField() {
@@ -295,21 +315,5 @@ public class DirectRowBlock implements RowBlock {
     rowOffset += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
 
     curFieldIdx++;
-  }
-
-  public void endRow() {
-    totalRowNum++;
-
-    long rowHeaderPos = rowStartOffset;
-    UNSAFE.putInt(rowHeaderPos, rowOffset);
-    rowHeaderPos += SizeOf.SIZE_OF_INT;
-
-    for (int i = 0; i < fieldIndexes.length; i++) {
-      UNSAFE.putInt(rowHeaderPos, fieldIndexes[i]);
-      rowHeaderPos += SizeOf.SIZE_OF_INT;
-    }
-
-    // rowOffset is equivalent to a byte length of this row.
-    curWritePos += rowOffset;
   }
 }
