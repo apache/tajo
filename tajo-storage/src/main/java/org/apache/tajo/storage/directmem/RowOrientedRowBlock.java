@@ -60,9 +60,13 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private long rowStartOffset;
 
   public RowOrientedRowBlock(Schema schema, int bytes) {
-    this.buffer = ByteBuffer.allocateDirect(bytes);
+    this(schema, ByteBuffer.allocateDirect(bytes));
+  }
+
+  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
+    this.buffer = buffer;
     this.address = ((DirectBuffer) buffer).address();
-    this.bytesLen = bytes;
+    this.bytesLen = buffer.limit();
 
     types = new Type[schema.size()];
     maxLengths = new int[schema.size()];
@@ -88,7 +92,9 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     return address;
   }
 
-  public ByteBuffer byteBuffer() {
+  public ByteBuffer nioBuffer() {
+    buffer.flip();
+    buffer.limit(curWritePos);
     return buffer;
   }
 
@@ -155,6 +161,13 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
       buffer = newByteBuf;
       address = newAddress;
     }
+  }
+
+  public void copyRowRecord(ByteBuffer buff, int length) {
+    int payload = length - buff.position();
+    ensureSize(payload);
+    long address = ((DirectBuffer)buff).address();
+    UNSAFE.copyMemory(address + buff.position(), curWritePos, payload);
   }
 
 

@@ -21,17 +21,22 @@ package org.apache.tajo.storage.directmem;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,8 +44,8 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestDirectRowBlock {
-  private static final Log LOG = LogFactory.getLog(TestDirectRowBlock.class);
+public class TestRowOrientedRowBlock {
+  private static final Log LOG = LogFactory.getLog(TestRowOrientedRowBlock.class);
 
   static String TEXT_FIELD_PREFIX = "가나다_abc_";
 
@@ -124,7 +129,12 @@ public class TestDirectRowBlock {
       assertEquals(j, tuple.getInt8(3));
       assertTrue(j == tuple.getFloat4(4));
       assertTrue(j == tuple.getFloat8(5));
-      assertEquals((TEXT_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(new String(TEXT_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(7));
+      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(8));
+      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
+      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
+      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
       j++;
     }
     long readEnd = System.currentTimeMillis();
@@ -475,7 +485,7 @@ public class TestDirectRowBlock {
   }
 
   @Test
-  public void testPutVTuple() {
+  public void testVTuplePutAndGetBenchmark() {
     int vecSize = 1000000;
 
     List<VTuple> rowBlock = Lists.newArrayList();
@@ -521,5 +531,125 @@ public class TestDirectRowBlock {
     }
     // For preventing unnecessary code elimination optimization.
     LOG.info("The number of INT4 values is " + count + ".");
+  }
+
+  @Test
+  public void testSerDerOfRowBlock() {
+    int vecSize = 1000;
+
+    long allocateStart = System.currentTimeMillis();
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 1024);
+    long allocatedEnd = System.currentTimeMillis();
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    UnSafeTuple tuple = new UnSafeTuple();
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      rowBlock.startRow();
+      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
+      rowBlock.putInt2((short) 1);                 // 1
+      rowBlock.putInt4(i);                         // 2
+      rowBlock.putInt8(i);                         // 3
+      rowBlock.putFloat4(i);                       // 4
+      rowBlock.putFloat8(i);                       // 5
+      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      rowBlock.endRow();
+    }
+    long writeEnd = System.currentTimeMillis();
+    LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
+
+    ByteBuffer bb = rowBlock.nioBuffer();
+    RowOrientedRowBlock restoredRowBlock = new RowOrientedRowBlock(schema, bb);
+
+    long readStart = System.currentTimeMillis();
+    tuple = new UnSafeTuple();
+    int j = 0;
+    restoredRowBlock.resetRowCursor();
+    while(restoredRowBlock.next(tuple)) {
+      assertTrue((j % 1 == 0) == tuple.getBool(0));
+      assertTrue(1 == tuple.getInt2(1));
+      assertEquals(j, tuple.getInt4(2));
+      assertEquals(j, tuple.getInt8(3));
+      assertTrue(j == tuple.getFloat4(4));
+      assertTrue(j == tuple.getFloat8(5));
+      assertEquals(new String(TEXT_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(7));
+      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(8));
+      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
+      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
+      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+      j++;
+    }
+    long readEnd = System.currentTimeMillis();
+    LOG.info("reading takes " + (readEnd - readStart) + " msec");
+
+    rowBlock.free();
+  }
+
+  @Test
+  public void testSerDerOfUnSafeTuple() {
+    int vecSize = 1000;
+
+    long allocateStart = System.currentTimeMillis();
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 1024);
+    long allocatedEnd = System.currentTimeMillis();
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      rowBlock.startRow();
+      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
+      rowBlock.putInt2((short) 1);                 // 1
+      rowBlock.putInt4(i);                         // 2
+      rowBlock.putInt8(i);                         // 3
+      rowBlock.putFloat4(i);                       // 4
+      rowBlock.putFloat8(i);                       // 5
+      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      rowBlock.endRow();
+    }
+    long writeEnd = System.currentTimeMillis();
+    LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
+
+    ByteBuffer bb = rowBlock.nioBuffer();
+    RowOrientedRowBlock restoredRowBlock = new RowOrientedRowBlock(schema, bb);
+
+    long readStart = System.currentTimeMillis();
+    UnSafeTuple tuple = new UnSafeTuple();
+    UnSafeTuple copyTuple = new UnSafeTuple();
+    int j = 0;
+    restoredRowBlock.resetRowCursor();
+    while(restoredRowBlock.next(tuple)) {
+      ByteBuffer copy = tuple.nioBuffer();
+      copyTuple.set(copy, SchemaUtil.toTypes(schema));
+      assertTrue((j % 1 == 0) == copyTuple.getBool(0));
+      assertTrue(1 == copyTuple.getInt2(1));
+      assertEquals(j, copyTuple.getInt4(2));
+      assertEquals(j, copyTuple.getInt8(3));
+      assertTrue(j == copyTuple.getFloat4(4));
+      assertTrue(j == copyTuple.getFloat8(5));
+      assertEquals(new String(TEXT_FIELD_PREFIX + j), copyTuple.getText(6));
+      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, copyTuple.getInt8(7));
+      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, copyTuple.getInt4(8));
+      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, copyTuple.getInt8(9));
+      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), copyTuple.getInterval(10));
+      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, copyTuple.getInt4(11));
+      j++;
+    }
+    long readEnd = System.currentTimeMillis();
+    LOG.info("reading takes " + (readEnd - readStart) + " msec");
+
+    rowBlock.free();
   }
 }

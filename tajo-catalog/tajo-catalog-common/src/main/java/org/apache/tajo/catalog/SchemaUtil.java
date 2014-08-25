@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.utils;
+package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.common.TajoDataTypes;
+
+import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class SchemaUtil {
   // See TAJO-914 bug.
@@ -84,5 +87,13 @@ public class SchemaUtil {
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static Type [] toTypes(Schema schema) {
+    Type [] types = new Type[schema.size()];
+    for (int i = 0; i < schema.size(); i++) {
+      types[i] = schema.getColumn(i).getDataType().getType();
+    }
+    return types;
   }
 }

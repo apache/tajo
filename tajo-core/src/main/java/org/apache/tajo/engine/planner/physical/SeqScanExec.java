@@ -34,7 +34,7 @@ import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.engine.utils.TupleCacheKey;
 import org.apache.tajo.engine.utils.TupleUtil;

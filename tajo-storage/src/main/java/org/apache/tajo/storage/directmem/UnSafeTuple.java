@@ -47,12 +47,16 @@ public class UnSafeTuple implements Tuple {
     this.types = types;
   }
 
+  void set(ByteBuffer bb, Type [] types) {
+    set(bb, 0, bb.limit(), types);
+  }
+
   @Override
   public int size() {
     return 0;
   }
 
-  public ByteBuffer byteBuffer() {
+  public ByteBuffer nioBuffer() {
     return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(length)).slice();
   }
 

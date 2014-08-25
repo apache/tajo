@@ -32,13 +32,10 @@ import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
-import org.apache.tajo.storage.directmem.UnsafeUtil;
-import org.apache.tajo.util.BitArray;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
@@ -47,11 +44,6 @@ public class DirectRawFileWriter extends FileAppender {
   private FileChannel channel;
   private RandomAccessFile randomAccessFile;
   private TajoDataTypes.DataType[] columnTypes;
-
-  private ByteBuffer buffer;
-  private BitArray nullFlags;
-  private int headerSize = 0;
-  private static final int RECORD_SIZE = 4;
   private long pos;
 
   private TableStatistics stats;
@@ -81,13 +73,6 @@ public class DirectRawFileWriter extends FileAppender {
       columnTypes[i] = schema.getColumn(i).getDataType();
     }
 
-    buffer = ByteBuffer.allocateDirect(64 * 1024);
-
-    // comput the number of bytes, representing the null flags
-
-    nullFlags = new BitArray(schema.size());
-    headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
-
     if (enabledStats) {
       this.stats = new TableStatistics(this.schema);
     }
@@ -100,48 +85,29 @@ public class DirectRawFileWriter extends FileAppender {
     return pos;
   }
 
-  private void flushBuffer() throws IOException {
-    buffer.limit(buffer.position());
-    buffer.flip();
-    channel.write(buffer);
-    buffer.clear();
-  }
-
-  private boolean flushBufferAndReplace(int recordOffset, int sizeToBeWritten)
-      throws IOException {
-
-    // if the buffer reaches the limit,
-    // write the bytes from 0 to the previous record.
-    if (buffer.remaining() < sizeToBeWritten) {
-
-      int limit = buffer.position();
-      buffer.limit(recordOffset);
-      buffer.flip();
-      channel.write(buffer);
-      buffer.position(recordOffset);
-      buffer.limit(limit);
-      buffer.compact();
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   public void writeRowBlock(RowOrientedRowBlock rowBlock) throws IOException {
-    channel.write(rowBlock.byteBuffer());
+    channel.write(rowBlock.nioBuffer());
     stats.incrementRows(rowBlock.totalRowNum());
+
+    pos = channel.position();
   }
 
   @Override
   public void addTuple(Tuple t) throws IOException {
+    UnSafeTuple unSafeTuple = (UnSafeTuple) t;
+    for (int i = 0; i < schema.size(); i++) {
+      if (enabledStats) {
+        stats.analyzeField(i, t.get(i));
+      }
+    }
+    channel.write(unSafeTuple.nioBuffer());
+    stats.incrementRow();
+
+    pos = channel.position();
   }
 
   @Override
   public void flush() throws IOException {
-    if(buffer != null){
-      flushBuffer();
-    }
   }
 
   @Override
@@ -154,7 +120,6 @@ public class DirectRawFileWriter extends FileAppender {
       LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
     }
 
-    UnsafeUtil.free(buffer);
     IOUtils.cleanup(LOG, channel, randomAccessFile);
   }
 
