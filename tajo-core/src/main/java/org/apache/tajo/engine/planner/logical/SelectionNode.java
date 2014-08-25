@@ -22,20 +22,25 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
 
-public class SelectionNode extends UnaryNode implements Cloneable {
+public class SelectionNode extends UnaryNode implements SelectableNode, Cloneable {
 	@Expose private EvalNode qual;
 
   public SelectionNode(int pid) {
     super(pid, NodeType.SELECTION);
   }
 
-	public EvalNode getQual() {
-		return this.qual;
-	}
+  @Override
+  public boolean hasQual() {
+    return true;
+  }
 
-	public void setQual(EvalNode qual) {
+  public void setQual(EvalNode qual) {
 		this.qual = qual;
 	}
+
+  public EvalNode getQual() {
+    return this.qual;
+  }
 
   @Override
   public PlanString getPlanString() {

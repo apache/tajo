@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
@@ -91,7 +92,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     }
 
     // for projection
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     // for join
     frameTuple = new FrameTuple();
@@ -100,6 +101,11 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
     leftNumCols = outer.getSchema().size();
     rightNumCols = inner.getSchema().size();
+  }
+
+  @Override
+  protected void compile() throws CompilationError {
+    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {

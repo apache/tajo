@@ -18,34 +18,49 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 public class Projector {
+  private final TaskAttemptContext context;
   private final Schema inSchema;
+  private final Target [] targets;
 
   // for projection
   private final int targetNum;
   private final EvalNode[] evals;
 
-  public Projector(Schema inSchema, Schema outSchema, Target [] targets) {
+  public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets) {
+    this.context = context;
     this.inSchema = inSchema;
     if (targets == null) {
-      targets = PlannerUtil.schemaToTargets(outSchema);
+      this.targets = PlannerUtil.schemaToTargets(outSchema);
+    } else {
+      this.targets = targets;
     }
-    this.targetNum = targets.length;
+
+    this.targetNum = this.targets.length;
     evals = new EvalNode[targetNum];
-    for (int i = 0; i < targetNum; i++) {
-      evals[i] = targets[i].getEvalTree();
+
+    if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
+      EvalNode eval;
+      for (int i = 0; i < targetNum; i++) {
+        eval = this.targets[i].getEvalTree();
+        evals[i] = context.getPrecompiledEval(inSchema, eval);
+      }
+    } else {
+      for (int i = 0; i < targetNum; i++) {
+        evals[i] = this.targets[i].getEvalTree();
+      }
     }
   }
 
   public void eval(Tuple in, Tuple out) {
-    if (targetNum > 0) {
-      for (int i = 0; i < evals.length; i++) {
-        out.put(i, evals[i].eval(inSchema, in));
-      }
+    for (int i = 0; i < evals.length; i++) {
+      out.put(i, evals[i].eval(inSchema, in));
     }
   }
 }

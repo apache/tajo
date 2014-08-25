@@ -279,17 +279,15 @@ public class DatumFactory {
   }
 
   public static DateDatum createDate(String dateStr) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
-    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+    return new DateDatum(DateTimeUtil.toJulianDate(dateStr));
   }
 
   public static TimeDatum createTime(long instance) {
     return new TimeDatum(instance);
   }
 
-  public static TimeDatum createTime(String dateStr) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);
-    return new TimeDatum(DateTimeUtil.toTime(tm));
+  public static TimeDatum createTime(String timeStr) {
+    return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
   public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
@@ -306,6 +304,11 @@ public class DatumFactory {
 
   public static IntervalDatum createInterval(String intervalStr) {
     return new IntervalDatum(intervalStr);
+  }
+
+  @SuppressWarnings("unused")
+  public static IntervalDatum createInterval(long interval) {
+    return new IntervalDatum(interval);
   }
 
   public static DateDatum createDate(Datum datum) {
@@ -341,16 +344,21 @@ public class DatumFactory {
   public static TimestampDatum createTimestamp(Datum datum) {
     switch (datum.type()) {
       case TEXT:
-        long timestamp = DateTimeUtil.toJulianTimestamp(datum.asChars());
-        TimeMeta tm = new TimeMeta();
-        DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-        DateTimeUtil.toUTCTimezone(tm);
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+        return parseTimestamp(datum.asChars());
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
         throw new InvalidCastException(datum.type(), Type.TIMESTAMP);
     }
+  }
+
+  @SuppressWarnings("unused")
+  public static TimestampDatum createTimestamp(long julianTimestamp) {
+    return new TimestampDatum(julianTimestamp);
+  }
+
+  public static TimestampDatum parseTimestamp(String str) {
+    return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str));
   }
 
   public static BlobDatum createBlob(byte[] val) {
@@ -363,6 +371,10 @@ public class DatumFactory {
 
   public static BlobDatum createBlob(String val) {
     return new BlobDatum(val.getBytes());
+  }
+
+  public static Inet4Datum createInet4(int encoded) {
+    return new Inet4Datum(encoded);
   }
 
   public static Inet4Datum createInet4(byte[] val) {

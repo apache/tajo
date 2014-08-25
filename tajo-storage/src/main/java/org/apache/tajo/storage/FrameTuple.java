@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 
 /**
@@ -174,6 +175,11 @@ public class FrameTuple implements Tuple, Cloneable {
   @Override
   public String getText(int fieldId) {
     return get(fieldId).asChars();
+  }
+
+  @Override
+  public ProtobufDatum getProtobufDatum(int fieldId) {
+    return (ProtobufDatum) get(fieldId);
   }
 
   @Override

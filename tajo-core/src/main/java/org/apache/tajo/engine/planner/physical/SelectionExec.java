@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.logical.SelectionNode;
 import org.apache.tajo.storage.Tuple;
@@ -26,13 +27,18 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class SelectionExec extends UnaryPhysicalExec  {
-  private final EvalNode qual;
+  private EvalNode qual;
 
   public SelectionExec(TaskAttemptContext context,
                        SelectionNode plan,
                        PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.qual = plan.getQual();
+  }
+
+  @Override
+  public void compile() throws CompilationError {
+    qual = context.getPrecompiledEval(inSchema, qual);
   }
 
   @Override

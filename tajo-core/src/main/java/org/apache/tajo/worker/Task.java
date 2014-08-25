@@ -157,6 +157,20 @@ public class Task {
     this.reporter = new Reporter(taskId, masterProxy);
     this.reporter.startCommunicationThread();
 
+
+    // resource intiailization
+    boolean resourceInitialized = false;
+    try {
+      resourceInitialized = context.getSharedResource().awaitInitializedResource();
+    } catch (InterruptedException e) {
+      LOG.error("Failed Resource Initialization", e);
+    } finally {
+      if (!resourceInitialized) {
+        setState(TaskAttemptState.TA_FAILED);
+        return;
+      }
+    }
+
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {
@@ -218,25 +232,27 @@ public class Task {
   }
 
   public void init() throws IOException {
-    // initialize a task temporal dir
-    localFS.mkdirs(taskDir);
+    if (context.getState() == TaskAttemptState.TA_PENDING) {
+      // initialize a task temporal dir
+      localFS.mkdirs(taskDir);
 
-    if (request.getFetches().size() > 0) {
-      inputTableBaseDir = localFS.makeQualified(
-          lDirAllocator.getLocalPathForWrite(
-              getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
-      localFS.mkdirs(inputTableBaseDir);
-      Path tableDir;
-      for (String inputTable : context.getInputTables()) {
-        tableDir = new Path(inputTableBaseDir, inputTable);
-        if (!localFS.exists(tableDir)) {
-          LOG.info("the directory is created  " + tableDir.toUri());
-          localFS.mkdirs(tableDir);
+      if (request.getFetches().size() > 0) {
+        inputTableBaseDir = localFS.makeQualified(
+            lDirAllocator.getLocalPathForWrite(
+                getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
+        localFS.mkdirs(inputTableBaseDir);
+        Path tableDir;
+        for (String inputTable : context.getInputTables()) {
+          tableDir = new Path(inputTableBaseDir, inputTable);
+          if (!localFS.exists(tableDir)) {
+            LOG.info("the directory is created  " + tableDir.toUri());
+            localFS.mkdirs(tableDir);
+          }
         }
       }
+      // for localizing the intermediate data
+      localize(request);
     }
-    // for localizing the intermediate data
-    localize(request);
   }
 
   public QueryUnitAttemptId getTaskId() {
@@ -426,14 +442,21 @@ public class Task {
 
       while(!killed && executor.next() != null) {
       }
-      this.executor.close();
-      reloadInputStats();
-      this.executor = null;
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
+      if (executor != null) {
+        try {
+          executor.close();
+          reloadInputStats();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        this.executor = null;
+      }
+
       context.setProgress(1.0f);
       taskRunnerContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);

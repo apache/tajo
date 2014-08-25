@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.ProtobufDatum;
 
 public interface Tuple extends Cloneable {
   
@@ -65,6 +66,8 @@ public interface Tuple extends Cloneable {
 	public double getFloat8(int fieldId);
 	
 	public String getText(int fieldId);
+
+  public ProtobufDatum getProtobufDatum(int fieldId);
 
   public char [] getUnicodeChars(int fieldId);
 

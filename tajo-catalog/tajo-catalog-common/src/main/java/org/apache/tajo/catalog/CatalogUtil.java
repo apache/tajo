@@ -481,7 +481,7 @@ public class CatalogUtil {
 
       // If all parameters are equivalent to the basis type
       for (TajoDataTypes.Type type : varLengthTypesOfGivenParams) {
-        if (type != Type.NULL_TYPE && type != basisTypeOfVarLengthType) {
+        if (type != Type.NULL_TYPE && !isCompatibleType(basisTypeOfVarLengthType, type)) {
           return false;
         }
       }

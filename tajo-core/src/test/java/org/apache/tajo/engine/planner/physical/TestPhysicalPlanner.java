@@ -914,7 +914,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testUnionPlan() throws IOException, PlanningException {
+  public final void testUnionPlan() throws IOException, PlanningException, CloneNotSupportedException {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
@@ -927,8 +927,8 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
     UnionNode union = plan.createNode(UnionNode.class);
-    union.setLeftChild(root.getChild());
-    union.setRightChild(root.getChild());
+    union.setLeftChild((LogicalNode) root.getChild().clone());
+    union.setRightChild((LogicalNode) root.getChild().clone());
     root.setChild(union);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);

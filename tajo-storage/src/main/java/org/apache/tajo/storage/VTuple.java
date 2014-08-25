@@ -23,6 +23,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnimplementedException;
 
 import java.net.InetAddress;
@@ -177,6 +178,11 @@ public class VTuple implements Tuple, Cloneable {
 	public String getText(int fieldId) {
 		return values[fieldId].asChars();
 	}
+
+  @Override
+  public ProtobufDatum getProtobufDatum(int fieldId) {
+    return (ProtobufDatum) values[fieldId];
+  }
 
   @Override
   public char[] getUnicodeChars(int fieldId) {

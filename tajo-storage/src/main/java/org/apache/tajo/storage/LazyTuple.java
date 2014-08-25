@@ -22,6 +22,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Arrays;
 
@@ -189,12 +191,17 @@ public class LazyTuple implements Tuple, Cloneable {
 
   @Override
   public double getFloat8(int fieldId) {
-    return get(fieldId).asInt8();
+    return get(fieldId).asFloat8();
   }
 
   @Override
   public String getText(int fieldId) {
     return get(fieldId).asChars();
+  }
+
+  @Override
+  public ProtobufDatum getProtobufDatum(int fieldId) {
+    throw new UnsupportedException();
   }
 
   @Override

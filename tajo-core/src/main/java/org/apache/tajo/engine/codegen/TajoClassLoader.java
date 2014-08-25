@@ -16,16 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.engine.codegen;
 
-import java.io.IOException;
+public class TajoClassLoader extends ClassLoader {
 
-public class PhysicalPlanningException extends IOException {
-  public PhysicalPlanningException(String message) {
-    super(message);
+  public Class defineClass(String name, byte[] b) {
+    return defineClass(name, b, 0, b.length);
   }
 
-  public PhysicalPlanningException(Exception ioe) {
-    super(ioe);
+  public void clean() throws Throwable {
+    super.finalize();
   }
 }

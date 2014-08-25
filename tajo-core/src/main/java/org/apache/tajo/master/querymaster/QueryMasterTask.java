@@ -187,6 +187,12 @@ public class QueryMasterTask extends CompositeService {
 
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
+    try {
+      resourceAllocator.stop();
+    } catch (Throwable t) {
+      LOG.fatal(t.getMessage(), t);
+    }
+
     CallFuture future = new CallFuture();
 
     RpcConnectionPool connPool = RpcConnectionPool.getPool(queryMasterContext.getConf());
@@ -328,14 +334,14 @@ public class QueryMasterTask extends CompositeService {
       LOG.info("Query final state: " + query.getSynchronizedState());
       queryMasterContext.stopQuery(queryId);
     }
+  }
 
-    private boolean isTerminatedState(QueryState state) {
-      return
-          state == QueryState.QUERY_SUCCEEDED ||
-          state == QueryState.QUERY_FAILED ||
-          state == QueryState.QUERY_KILLED ||
-          state == QueryState.QUERY_ERROR;
-    }
+  private static boolean isTerminatedState(QueryState state) {
+    return
+        state == QueryState.QUERY_SUCCEEDED ||
+        state == QueryState.QUERY_FAILED ||
+        state == QueryState.QUERY_KILLED ||
+        state == QueryState.QUERY_ERROR;
   }
 
   public synchronized void startQuery() {
@@ -462,8 +468,10 @@ public class QueryMasterTask extends CompositeService {
     return query;
   }
 
-  public void expiredSessionTimeout() {
-    stop();
+  protected void expireQuerySession() {
+    if(!isTerminatedState(query.getState()) && !(query.getState() == QueryState.QUERY_KILL_WAIT)){
+      query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    }
   }
 
   public QueryMasterTaskContext getQueryTaskContext() {

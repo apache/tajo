@@ -52,6 +52,11 @@ public class NullDatum extends Datum {
   }
 
   @Override
+  public boolean isNotNull() {
+    return false;
+  }
+
+  @Override
   public boolean asBool() {
     throw new InvalidCastException(Type.NULL_TYPE, Type.BOOLEAN);
   }
