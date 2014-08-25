@@ -21,6 +21,7 @@ package org.apache.tajo.storage.directmem;
 import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -45,11 +46,11 @@ public class UnSafeTuple implements Tuple {
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(recordPtr + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(recordPtr + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
   private long getFieldAddr(int fieldId) {
-    int relativePos = UNSAFE.getInt(recordPtr + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    int relativePos = getFieldOffset(fieldId);
     return recordPtr + relativePos;
   }
 
@@ -188,6 +189,14 @@ public class UnSafeTuple implements Tuple {
     byte [] bytes = new byte[len];
     UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
     return new String(bytes);
+  }
+
+  public IntervalDatum getInterval(int fieldId) {
+    long pos = getFieldAddr(fieldId);
+    int months = UNSAFE.getInt(pos);
+    pos += SizeOf.SIZE_OF_INT;
+    long millisecs = UNSAFE.getLong(pos);
+    return new IntervalDatum(months, millisecs);
   }
 
   @Override

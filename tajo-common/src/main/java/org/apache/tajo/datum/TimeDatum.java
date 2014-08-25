@@ -18,7 +18,6 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
@@ -28,12 +27,14 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.TimeZone;
 
+import static org.apache.tajo.common.TajoDataTypes.Type;
+
 public class TimeDatum extends Datum {
   public static final int SIZE = 8;
   private final long time;
 
   public TimeDatum(long time) {
-    super(TajoDataTypes.Type.TIME);
+    super(Type.TIME);
     this.time = time;
   }
 
@@ -71,7 +72,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int asInt4() {
-    throw new InvalidCastException();
+    throw new InvalidCastException(Type.TIME, Type.INT4);
   }
 
   @Override
@@ -81,12 +82,12 @@ public class TimeDatum extends Datum {
 
   @Override
   public float asFloat4() {
-    throw new InvalidCastException();
+    throw new InvalidCastException(Type.TIME, Type.FLOAT4);
   }
 
   @Override
   public double asFloat8() {
-    throw new InvalidCastException();
+    throw new InvalidCastException(Type.TIME, Type.FLOAT8);
   }
 
   @Override
@@ -162,7 +163,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
+    if (datum.type() == Type.TIME) {
       return DatumFactory.createBool(time == (((TimeDatum) datum).time));
     } else if (datum.isNull()) {
       return datum;
@@ -173,7 +174,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
+    if (datum.type() == Type.TIME) {
       TimeDatum another = (TimeDatum)datum;
       return (time < another.time) ? -1 : ((time == another.time) ? 0 : 1);
     } else if (datum instanceof NullDatum || datum.isNull()) {

@@ -101,8 +101,9 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   }
 
   /**
-   * Tuple for legacy
-   * @return
+   * Return for each tuple
+   *
+   * @return True if tuple block is filled with tuples. Otherwise, It will return false.
    */
   public boolean next(UnSafeTuple tuple) {
     if (curRowIdx < totalRowNum) {
@@ -313,9 +314,13 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     long offset = rowStartOffset + rowOffset;
     UNSAFE.putInt(offset, val.getMonths());
     offset += SizeOf.SIZE_OF_INT;
-    UNSAFE.putLong(offset + SizeOf.SIZE_OF_INT, val.getMilliSeconds());
+    UNSAFE.putLong(offset, val.getMilliSeconds());
     rowOffset += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
 
     curFieldIdx++;
+  }
+
+  public void putInet4(int val) {
+    putInt4(val);
   }
 }

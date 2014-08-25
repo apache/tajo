@@ -59,4 +59,6 @@ public interface RowBlockWriter {
   public void putTime(long val);
 
   public void putInterval(IntervalDatum val);
+
+  public void putInet4(int val);
 }
