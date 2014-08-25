@@ -19,6 +19,9 @@
 package org.apache.tajo.storage.directmem;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -27,6 +30,8 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -37,13 +42,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestDirectRowBlock {
-  static String TEXT_FIELD_PREFIX = "가나라_abc_";
+  private static final Log LOG = LogFactory.getLog(TestDirectRowBlock.class);
 
-  @Test
-  public void testPutAndReadValidation() {
+  static String TEXT_FIELD_PREFIX = "가나다_abc_";
 
+  static Schema schema;
 
-    Schema schema = new Schema();
+  @BeforeClass
+  public static void setUp() {
+    schema = new Schema();
     schema.addColumn("col0", Type.BOOLEAN);
     schema.addColumn("col1", Type.INT2);
     schema.addColumn("col2", Type.INT4);
@@ -51,29 +58,37 @@ public class TestDirectRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
     schema.addColumn("col6", Type.TEXT);
+    schema.addColumn("col7", Type.TIMESTAMP);
+    schema.addColumn("col8", Type.DATE);
+    schema.addColumn("col9", Type.TIME);
+    schema.addColumn("col10", Type.INET4);
+    schema.addColumn("col11", Type.PROTOBUF);
+  }
 
-    int vecSize = 5000000;
+  @Test
+  public void testPutAndReadValidation() {
+    int vecSize = 10000;
 
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 500);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
     long allocatedEnd = System.currentTimeMillis();
-    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     UnSafeTuple tuple = new UnSafeTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < vecSize; i++) {
       rowBlock.startRow();
-      rowBlock.putBool(i % 1 == 0 ? true : false);
-      rowBlock.putInt2((short) 1);
-      rowBlock.putInt4(i);
-      rowBlock.putInt8(i);
-      rowBlock.putFloat4(i);
-      rowBlock.putFloat8(i);
-      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());
+      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
+      rowBlock.putInt2((short) 1);                 // 1
+      rowBlock.putInt4(i);                         // 2
+      rowBlock.putInt8(i);                         // 3
+      rowBlock.putFloat4(i);                       // 4
+      rowBlock.putFloat8(i);                       // 5
+      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-09-01").asInt8() + i); // 7
       rowBlock.endRow();
 
-      /*
       rowBlock.resetRowCursor();
       int j = 0;
       while(rowBlock.next(tuple)) {
@@ -83,10 +98,10 @@ public class TestDirectRowBlock {
         assertEquals(j, tuple.getInt8(3));
         assertTrue(j == tuple.getFloat4(4));
         assertTrue(j == tuple.getFloat8(5));
-        assertEquals(new String("가나다_abc_" + j), tuple.getText(6));
+        assertEquals(new String(TEXT_FIELD_PREFIX + j), tuple.getText(6));
+        assertEquals(DatumFactory.createTimestamp("2014-09-01").asInt8() + (long)i, tuple.getInt8(7));
         j++;
       }
-      */
     }
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
@@ -108,28 +123,49 @@ public class TestDirectRowBlock {
     long readEnd = System.currentTimeMillis();
     System.out.println(readEnd - readStart + " read msec");
 
-    SortSpec sortSpec = new SortSpec(new Column("col2", Type.INT4));
-    TupleComparator comparator = new TupleComparator(schema, new SortSpec[] {sortSpec});
-
     rowBlock.free();
   }
 
   @Test
-  public void testSortBenchmark() {
-
-    Schema schema = new Schema();
-    schema.addColumn("col0", Type.BOOLEAN);
-    schema.addColumn("col1", Type.INT2);
-    schema.addColumn("col2", Type.INT4);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.FLOAT4);
-    schema.addColumn("col5", Type.FLOAT8);
-    schema.addColumn("col6", Type.TEXT);
-
-    int vecSize = 5000000;
+  public void testEmptyRow() {
+    int vecSize = 1000000;
 
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 500);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 100);
+    long allocatedEnd = System.currentTimeMillis();
+    System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < vecSize; i++) {
+      rowBlock.startRow();
+      // empty columns
+      rowBlock.endRow();
+    }
+    long writeEnd = System.currentTimeMillis();
+    System.out.println(writeEnd - writeStart + " write msec");
+
+    long readStart = System.currentTimeMillis();
+    UnSafeTuple tuple = new UnSafeTuple();
+    int j = 0;
+    rowBlock.resetRowCursor();
+    while(rowBlock.next(tuple)) {
+      j++;
+    }
+    long readEnd = System.currentTimeMillis();
+    System.out.println(readEnd - readStart + " read msec");
+    rowBlock.free();
+
+    assertEquals(vecSize, j);
+    assertEquals(vecSize, rowBlock.totalRowNum());
+  }
+
+  @Test
+  public void testSortBenchmark() {
+    int vecSize = 1000000;
+
+    long allocateStart = System.currentTimeMillis();
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 100);
     long allocatedEnd = System.currentTimeMillis();
     System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -146,21 +182,6 @@ public class TestDirectRowBlock {
       rowBlock.putFloat8(i);
       rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());
       rowBlock.endRow();
-
-      /*
-      rowBlock.resetRowCursor();
-      int j = 0;
-      while(rowBlock.next(tuple)) {
-        assertTrue((j % 1 == 0) == tuple.getBool(0));
-        assertTrue(1 == tuple.getInt2(1));
-        assertEquals(j, tuple.getInt4(2));
-        assertEquals(j, tuple.getInt8(3));
-        assertTrue(j == tuple.getFloat4(4));
-        assertTrue(j == tuple.getFloat8(5));
-        assertEquals(new String("가나다_abc_" + j), tuple.getText(6));
-        j++;
-      }
-      */
     }
     long writeEnd = System.currentTimeMillis();
     System.out.println(writeEnd - writeStart + " write msec");
@@ -190,14 +211,6 @@ public class TestDirectRowBlock {
 
   @Test
   public void testPutInt() {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.INT2);
-    schema.addColumn("col1", Type.INT2);
-    schema.addColumn("col2", Type.INT4);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.FLOAT4);
-    schema.addColumn("col5", Type.FLOAT8);
-
     int vecSize = 4096;
 
     long allocateStart = System.currentTimeMillis();
@@ -206,7 +219,6 @@ public class TestDirectRowBlock {
     System.out.println(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
-    UnSafeTuple tuple = new UnSafeTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < vecSize; i++) {
       rowBlock.startRow();
@@ -216,9 +228,10 @@ public class TestDirectRowBlock {
       rowBlock.putFloat4(i);
       rowBlock.putFloat8(i);
       rowBlock.endRow();
-      assertEquals(i + "th written", 50, UnsafeUtil.unsafe.getInt(rowBlock.address()));
+      assertEquals(i + "th written", 78, UnsafeUtil.unsafe.getInt(rowBlock.address()));
 
       /*
+      UnSafeTuple tuple = new UnSafeTuple();
       rowBlock.resetRowCursor();
       int j = 0;
       while(rowBlock.next(tuple)) {
@@ -234,7 +247,7 @@ public class TestDirectRowBlock {
     System.out.println(writeEnd - writeStart + " write msec");
 
     long readStart = System.currentTimeMillis();
-    tuple = new UnSafeTuple();
+    UnSafeTuple tuple = new UnSafeTuple();
     int i = 0;
     rowBlock.resetRowCursor();
     while(rowBlock.next(tuple)) {
@@ -253,16 +266,7 @@ public class TestDirectRowBlock {
 
   @Test
   public void testPutVTuple() {
-    Schema schema = new Schema();
-    schema.addColumn("col0", Type.BOOLEAN);
-    schema.addColumn("col1", Type.INT2);
-    schema.addColumn("col2", Type.INT4);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.FLOAT4);
-    schema.addColumn("col5", Type.FLOAT8);
-    schema.addColumn("col6", Type.TEXT);
-
-    int vecSize = 5000000;
+    int vecSize = 1000000;
 
     List<VTuple> rowBlock = Lists.newArrayList();
     long writeStart = System.currentTimeMillis();
@@ -300,7 +304,7 @@ public class TestDirectRowBlock {
     int count = 0;
     for (int i = 0; i < rowBlock.size(); i++) {
       for(int j = 0; j < schema.size(); j++ ) {
-        if (rowBlock.get(i).get(j).type() == Type.INT4) {
+        if (rowBlock.get(i).contains(j) && rowBlock.get(i).get(j).type() == Type.INT4) {
           count ++;
         }
       }

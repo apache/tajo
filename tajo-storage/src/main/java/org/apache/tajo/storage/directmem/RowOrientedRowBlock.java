@@ -97,7 +97,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   }
 
   public int totalRowNum() {
-    return 0;
+    return totalRowNum;
   }
 
   /**
@@ -178,8 +178,12 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     UNSAFE.putInt(rowHeaderPos, rowOffset);
     rowHeaderPos += SizeOf.SIZE_OF_INT;
 
-    for (int i = 0; i < fieldIndexes.length; i++) {
+    for (int i = 0; i < curFieldIdx; i++) {
       UNSAFE.putInt(rowHeaderPos, fieldIndexes[i]);
+      rowHeaderPos += SizeOf.SIZE_OF_INT;
+    }
+    for (int i = curFieldIdx; i < types.length; i++) {
+      UNSAFE.putInt(rowHeaderPos, -1);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
 
@@ -273,8 +277,6 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public void putText(byte [] val) {
     putBlob(val);
-
-    curFieldIdx++;
   }
 
   public void putBlob(byte[] val) {
