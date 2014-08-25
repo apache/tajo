@@ -21,6 +21,7 @@ package org.apache.tajo.storage.directmem;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.TextDatum;
@@ -28,7 +29,10 @@ import org.apache.tajo.util.FileUtil;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -44,23 +48,22 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private int fieldIndexBytesLen;
 
   // Basic States
-  private int totalRowNum;
+  private int maxRowNum = Integer.MAX_VALUE; // optional
+  private int filledRowNum;
 
   // Read States
-  private int curRowIdx;
-  private int curReadPos;
+  private int curRowIdxForRead;
+  private int curPosForRead;
 
   // Write States --------------------
-  private int curWritePos;
-  private int rowOffset;
-  private int curFieldIdx;
-  private int [] fieldIndexes;
-
-  // row state
-  private long rowStartOffset;
+  private int curOffsetForWrite;
+  private long rowStartAddrForWrite;
+  private int rowOffsetForWrite;
+  private int curFieldIdxForWrite;
+  private int [] fieldIndexesForWrite;
 
   public RowOrientedRowBlock(Schema schema, int bytes) {
-    this(schema, ByteBuffer.allocateDirect(bytes));
+    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()));
   }
 
   public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
@@ -75,10 +78,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
       types[i] = dataType.getType();
       maxLengths[i] = dataType.getLength();
     }
-    fieldIndexes = new int[schema.size()];
+    fieldIndexesForWrite = new int[schema.size()];
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
 
-    curWritePos = 0;
+    curOffsetForWrite = 0;
   }
 
   public void free() {
@@ -94,7 +97,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public ByteBuffer nioBuffer() {
     buffer.flip();
-    buffer.limit(curWritePos);
+    buffer.limit(curOffsetForWrite);
     return buffer;
   }
 
@@ -103,11 +106,14 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   }
 
   public long remain() {
-    return bytesLen - curWritePos - rowOffset;
+    return bytesLen - curOffsetForWrite - rowOffsetForWrite;
   }
 
+  public int maxRowNum() {
+    return maxRowNum;
+  }
   public int totalRowNum() {
-    return totalRowNum;
+    return filledRowNum;
   }
 
   /**
@@ -116,14 +122,14 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
    * @return True if tuple block is filled with tuples. Otherwise, It will return false.
    */
   public boolean next(UnSafeTuple tuple) {
-    if (curRowIdx < totalRowNum) {
+    if (curRowIdxForRead < filledRowNum) {
 
-      long recordStartPtr = address + curReadPos;
+      long recordStartPtr = address + curPosForRead;
       int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(buffer, curReadPos, recordLen, types);
+      tuple.set(buffer, curPosForRead, recordLen, types);
 
-      curReadPos += recordLen;
-      curRowIdx++;
+      curPosForRead += recordLen;
+      curRowIdxForRead++;
 
       return true;
     } else {
@@ -132,8 +138,8 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   }
 
   public void resetRowCursor() {
-    curReadPos = 0;
-    curRowIdx = 0;
+    curPosForRead = 0;
+    curRowIdxForRead = 0;
   }
 
   /**
@@ -152,10 +158,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
       LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
 
       // compute the relative position of current row start offset
-      long relativeRowStartPos = this.rowStartOffset - this.address;
+      long relativeRowStartPos = this.rowStartAddrForWrite - this.address;
 
       // Update current write states
-      rowStartOffset = newAddress + relativeRowStartPos;
+      rowStartAddrForWrite = newAddress + relativeRowStartPos;
       bytesLen = newBlockSize;
       UnsafeUtil.free(buffer);
       buffer = newByteBuf;
@@ -163,11 +169,34 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     }
   }
 
-  public void copyRowRecord(ByteBuffer buff, int length) {
-    int payload = length - buff.position();
-    ensureSize(payload);
-    long address = ((DirectBuffer)buff).address();
-    UNSAFE.copyMemory(address + buff.position(), curWritePos, payload);
+  public boolean copyFromChannel(FileChannel channel, TableStats stats) throws IOException {
+    if (channel.position() < channel.size()) {
+      filledRowNum = 0;
+      buffer.clear();
+      channel.read(buffer);
+      bytesLen = buffer.position();
+
+      curOffsetForWrite = 0;
+      rowOffsetForWrite = 0;
+      while (curOffsetForWrite < bytesLen) {
+        rowStartAddrForWrite = address + curOffsetForWrite;
+
+        rowOffsetForWrite = 0;
+        int recordSize = UNSAFE.getInt(rowStartAddrForWrite + rowOffsetForWrite);
+
+        if (remain() < recordSize) {
+          channel.position(channel.position() - remain());
+          return true;
+        }
+
+        curOffsetForWrite += recordSize;
+        filledRowNum++;
+      }
+
+      return true;
+    } else {
+      return false;
+    }
   }
 
 
@@ -181,100 +210,100 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   //                               4 bytes          4 bytes               4 bytes
 
   public boolean startRow() {
-    rowStartOffset = address + curWritePos;
-    rowOffset = 0;
-    rowOffset += 4; // skip row header
-    rowOffset += fieldIndexBytesLen; // skip an array of field indices
-    curFieldIdx = 0;
+    rowStartAddrForWrite = address + curOffsetForWrite;
+    rowOffsetForWrite = 0;
+    rowOffsetForWrite += 4; // skip row header
+    rowOffsetForWrite += fieldIndexBytesLen; // skip an array of field indices
+    curFieldIdxForWrite = 0;
     return true;
   }
 
   public void endRow() {
-    totalRowNum++;
+    filledRowNum++;
 
-    long rowHeaderPos = rowStartOffset;
-    UNSAFE.putInt(rowHeaderPos, rowOffset);
+    long rowHeaderPos = rowStartAddrForWrite;
+    UNSAFE.putInt(rowHeaderPos, rowOffsetForWrite);
     rowHeaderPos += SizeOf.SIZE_OF_INT;
 
-    for (int i = 0; i < curFieldIdx; i++) {
-      UNSAFE.putInt(rowHeaderPos, fieldIndexes[i]);
+    for (int i = 0; i < curFieldIdxForWrite; i++) {
+      UNSAFE.putInt(rowHeaderPos, fieldIndexesForWrite[i]);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
-    for (int i = curFieldIdx; i < types.length; i++) {
+    for (int i = curFieldIdxForWrite; i < types.length; i++) {
       UNSAFE.putInt(rowHeaderPos, -1);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
 
     // rowOffset is equivalent to a byte length of this row.
-    curWritePos += rowOffset;
+    curOffsetForWrite += rowOffsetForWrite;
   }
 
   public void skipField() {
-    fieldIndexes[curFieldIdx++] = -1;
+    fieldIndexesForWrite[curFieldIdxForWrite++] = -1;
   }
 
   public void putBool(boolean val) {
     ensureSize(SizeOf.SIZE_OF_BOOL);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
 
-    UNSAFE.putByte(rowStartOffset + rowOffset, (byte) (val ? 0x01 : 0x00));
+    UNSAFE.putByte(rowStartAddrForWrite + rowOffsetForWrite, (byte) (val ? 0x01 : 0x00));
 
-    rowOffset += SizeOf.SIZE_OF_BOOL;
+    rowOffsetForWrite += SizeOf.SIZE_OF_BOOL;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putInt2(short val) {
     ensureSize(SizeOf.SIZE_OF_SHORT);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
 
-    UNSAFE.putShort(rowStartOffset + rowOffset, val);
-    rowOffset += SizeOf.SIZE_OF_SHORT;
+    UNSAFE.putShort(rowStartAddrForWrite + rowOffsetForWrite, val);
+    rowOffsetForWrite += SizeOf.SIZE_OF_SHORT;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putInt4(int val) {
     ensureSize(SizeOf.SIZE_OF_INT);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
 
-    UNSAFE.putInt(rowStartOffset + rowOffset, val);
-    rowOffset += SizeOf.SIZE_OF_INT;
+    UNSAFE.putInt(rowStartAddrForWrite + rowOffsetForWrite, val);
+    rowOffsetForWrite += SizeOf.SIZE_OF_INT;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putInt8(long val) {
     ensureSize(SizeOf.SIZE_OF_LONG);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
-    UNSAFE.putLong(rowStartOffset + rowOffset, val);
-    rowOffset += SizeOf.SIZE_OF_LONG;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
+    UNSAFE.putLong(rowStartAddrForWrite + rowOffsetForWrite, val);
+    rowOffsetForWrite += SizeOf.SIZE_OF_LONG;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putFloat4(float val) {
     ensureSize(SizeOf.SIZE_OF_FLOAT);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
-    UNSAFE.putFloat(rowStartOffset + rowOffset, val);
-    rowOffset += SizeOf.SIZE_OF_FLOAT;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
+    UNSAFE.putFloat(rowStartAddrForWrite + rowOffsetForWrite, val);
+    rowOffsetForWrite += SizeOf.SIZE_OF_FLOAT;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putFloat8(double val) {
     ensureSize(SizeOf.SIZE_OF_DOUBLE);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
-    UNSAFE.putDouble(rowStartOffset + rowOffset, val);
-    rowOffset += SizeOf.SIZE_OF_DOUBLE;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
+    UNSAFE.putDouble(rowStartAddrForWrite + rowOffsetForWrite, val);
+    rowOffsetForWrite += SizeOf.SIZE_OF_DOUBLE;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putText(String val) {
@@ -283,14 +312,14 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
     ensureSize(4 + bytesLen);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
-    UNSAFE.putInt(rowStartOffset + rowOffset, bytesLen);
-    rowOffset += SizeOf.SIZE_OF_INT;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
+    UNSAFE.putInt(rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
+    rowOffsetForWrite += SizeOf.SIZE_OF_INT;
 
-    UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartOffset + rowOffset, bytesLen);
-    rowOffset += bytesLen;
+    UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
+    rowOffsetForWrite += bytesLen;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putText(byte [] val) {
@@ -302,14 +331,14 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
     ensureSize(4 + bytesLen);
 
-    fieldIndexes[curFieldIdx] = rowOffset;
-    UNSAFE.putInt(rowStartOffset + rowOffset, bytesLen);
-    rowOffset += SizeOf.SIZE_OF_INT;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
+    UNSAFE.putInt(rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
+    rowOffsetForWrite += SizeOf.SIZE_OF_INT;
 
-    UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartOffset + rowOffset, bytesLen);
-    rowOffset += bytesLen;
+    UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
+    rowOffsetForWrite += bytesLen;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putTimestamp(long val) {
@@ -326,15 +355,15 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public void putInterval(IntervalDatum val) {
     ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
-    fieldIndexes[curFieldIdx] = rowOffset;
+    fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
 
-    long offset = rowStartOffset + rowOffset;
+    long offset = rowStartAddrForWrite + rowOffsetForWrite;
     UNSAFE.putInt(offset, val.getMonths());
     offset += SizeOf.SIZE_OF_INT;
     UNSAFE.putLong(offset, val.getMilliSeconds());
-    rowOffset += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
+    rowOffsetForWrite += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
 
-    curFieldIdx++;
+    curFieldIdxForWrite++;
   }
 
   public void putInet4(int val) {

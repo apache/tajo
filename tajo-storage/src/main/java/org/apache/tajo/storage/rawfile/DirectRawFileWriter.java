@@ -87,7 +87,9 @@ public class DirectRawFileWriter extends FileAppender {
 
   public void writeRowBlock(RowOrientedRowBlock rowBlock) throws IOException {
     channel.write(rowBlock.nioBuffer());
-    stats.incrementRows(rowBlock.totalRowNum());
+    if (enabledStats) {
+      stats.incrementRows(rowBlock.totalRowNum());
+    }
 
     pos = channel.position();
   }
@@ -101,7 +103,10 @@ public class DirectRawFileWriter extends FileAppender {
       }
     }
     channel.write(unSafeTuple.nioBuffer());
-    stats.incrementRow();
+
+    if (enabledStats) {
+      stats.incrementRow();
+    }
 
     pos = channel.position();
   }

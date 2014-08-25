@@ -67,6 +67,11 @@ public class UnsafeUtil {
     return unsafe.allocateMemory(alignedSize(TypeUtil.sizeOf(dataType, num)));
   }
 
+  public static long getAddress(ByteBuffer buffer) {
+    Preconditions.checkArgument(buffer instanceof DirectBuffer, "ByteBuffer must be DirectBuffer");
+    return ((DirectBuffer)buffer).address();
+  }
+
   public static void free(long addr) {
     unsafe.freeMemory(addr);
   }
