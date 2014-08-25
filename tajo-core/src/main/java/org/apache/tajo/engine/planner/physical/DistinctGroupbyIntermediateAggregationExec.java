@@ -18,34 +18,19 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
 
-// 첫번째 단계의 결과 파일에 Distinct를 적용한 결과를 만든다.
-// 두번째 단계에서 distinct를 하기 위해 첫단계에서 pre aggregation 해주니 데이터가 많이 줄게됩니다.
-// 그리고 두번째 단계에서 키가 많아져서 분산도 잘되구요
-
-// 세번째
-// distinct 적용한 결과가 두번째에서 distinct 적용한 결과가 grouping key와 하나의 distinct aggregation일 텐데요. 이걸 튜플로 이어 붙이고
 public class DistinctGroupbyIntermediateAggregationExec extends PhysicalExec {
   private DistinctGroupbyNode plan;
   private PhysicalExec child;
@@ -56,63 +41,6 @@ public class DistinctGroupbyIntermediateAggregationExec extends PhysicalExec {
   private boolean computed = false;
   private Iterator<Map.Entry<Tuple, FunctionContext []>> iterator = null;
   private byte[] distinctNullBytes;
-
-  //--------------------------------------------------------------------------------------
-  // Original raw data
-  //--------------------------------------------------------------------------------------
-  // col1 | col2 | col3 |
-  //--------------------------------------------------------------------------------------
-  // 1| 10 | AA |
-  // 2 | 15 | BB |
-  // 2 | 20 | BB |
-  // 3 | 5 | CC |
-  // 4 | 5 | DD |
-  // 5 | 30 | EE |
-  //--------------------------------------------------------------------------------------
-
-
-  //--------------------------------------------------------------------------------------
-  // Input data: It had created on first execution block.
-  //--------------------------------------------------------------------------------------
-  // col1 | col2 | col3 |
-  //--------------------------------------------------------------------------------------
-  // 1| 10 | AA |
-  // 1| 10 | DISTINCT_NULL |
-  // 1| DISTINCT_NULL | AA |
-  // 2 | 15 | BB |
-  // 2 | 15 | DISTINCT_NULL |
-  // 2 | DISTINCT_NULL | BB |
-  // 2 | 20 | BB |
-  // 2 | 20 | DISTINCT_NULL |
-  // 2 | DISTINCT_NULL | BB |
-  // 3 | 5 | CC |
-  // 3 | 5 | DISTINCT_NULL |
-  // 3 | DISTINCT_NULL | CC |
-  // 4 | 5 | DD |
-  // 4 | 5 | DISTINCT_NULL |
-  // 4 | DISTINCT_NULL | DD |
-  // 5 | 30 | EE |
-  // 5 | 30 | DISTINCT_NULL |
-  // 5 | DISTINCT_NULL | EE |
-  //--------------------------------------------------------------------------------------
-
-
-  //--------------------------------------------------------------------------------------
-  // Output data
-  //--------------------------------------------------------------------------------------
-  // col1 | col2 | col3 |
-  //--------------------------------------------------------------------------------------
-  // 1| 1 | DISTINCT_NULL |
-  // 1| DISTINCT_NULL | 1 |
-  // 2 | 2 | DISTINCT_NULL |
-  // 2 | DISTINCT_NULL | 1 |
-  // 3 | 1 | DISTINCT_NULL |
-  // 3 | DISTINCT_NULL | 1 |
-  // 4 | 1 | DISTINCT_NULL |
-  // 4 | DISTINCT_NULL | 1 |
-  // 5 | 1 | DISTINCT_NULL |
-  // 5 | DISTINCT_NULL | 1 |
-  //--------------------------------------------------------------------------------------
 
   protected final int groupingKeyNum;
   protected int groupingKeyIds[];
