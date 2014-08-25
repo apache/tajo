@@ -193,16 +193,6 @@ public class StorageUtil extends StorageConstants {
     }
   }
 
-  public static void closeBuffer(ByteBuffer buffer) {
-    if (buffer != null) {
-      if (buffer.isDirect()) {
-        ((DirectBuffer) buffer).cleaner().clean();
-      } else {
-        buffer.clear();
-      }
-    }
-  }
-
   public static int readFully(InputStream is, byte[] buffer, int offset, int length)
       throws IOException {
     int nread = 0;

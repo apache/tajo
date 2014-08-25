@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.storage.directmem.UnsafeUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
@@ -380,7 +381,7 @@ public class RawFile {
         tableStats.setNumRows(recordCount);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      UnsafeUtil.free(buffer);
       IOUtils.cleanup(LOG, channel, fis);
     }
 
@@ -722,7 +723,7 @@ public class RawFile {
         LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      UnsafeUtil.free(buffer);
       IOUtils.cleanup(LOG, channel, randomAccessFile);
     }
 

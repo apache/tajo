@@ -422,12 +422,12 @@ public class TestDirectRowBlock {
 
   @Test
   public void testSortBenchmark() {
-    int vecSize = 100000;
+    int vecSize = 3000000;
 
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 10);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 300);
     long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), false) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();
