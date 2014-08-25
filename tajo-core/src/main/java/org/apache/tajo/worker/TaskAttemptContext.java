@@ -333,6 +333,10 @@ public class TaskAttemptContext {
   }
 
   public void setExecutorProgress(float executorProgress) {
+    if(Float.isNaN(executorProgress) || Float.isInfinite(executorProgress)){
+      executorProgress = 0.0f;
+    }
+
     if (hasFetchPhase()) {
       setProgress(fetcherProgress + (executorProgress * 0.5f));
     } else {

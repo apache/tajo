@@ -348,7 +348,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     if (totalProgress > 0.0f) {
-      return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 1000.0f) / 1000.0f;
+      return (float) Math.floor((totalProgress / (float) Math.max(tempTasks.size(), 1)) * 1000.0f) / 1000.0f;
     } else {
       return 0.0f;
     }

@@ -332,8 +332,7 @@ public class Task {
     }
 
     if (executor != null && context.getProgress() < 1.0f) {
-      float progress = executor.getProgress();
-      context.setExecutorProgress(progress);
+      context.setExecutorProgress(executor.getProgress());
     }
   }
 
@@ -449,7 +448,6 @@ public class Task {
         this.executor = null;
       }
 
-      context.setProgress(1.0f);
       executionBlockContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
       QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getQueryMasterStub();
@@ -656,7 +654,7 @@ public class Task {
 
     ctx.getFetchLatch().countDown();
 
-    int remainFetcher = (int)(ctx.getFetchLatch().getCount());
+    int remainFetcher = (int) ctx.getFetchLatch().getCount();
     if (remainFetcher == 0) {
       context.setFetcherProgress(FETCHER_PROGRESS);
     } else {
