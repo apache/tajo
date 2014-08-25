@@ -26,8 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
@@ -75,16 +77,23 @@ public class TaskAttemptContext {
   private Enforcer enforcer;
   private QueryContext queryContext;
   private WorkerContext workerContext;
+  private ExecutionBlockSharedResource sharedResource;
 
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  public TaskAttemptContext(QueryContext queryContext, final WorkerContext workerContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
+                            final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
-    this.workerContext = workerContext;
+
+    if (workerContext != null) { // For unit tests
+      this.workerContext = executionBlockContext.getWorkerContext();
+      this.sharedResource = executionBlockContext.getSharedResource();
+    }
+
     this.queryId = queryId;
 
     if (fragments != null) {
@@ -152,6 +161,23 @@ public class TaskAttemptContext {
 
   public Enforcer getEnforcer() {
     return this.enforcer;
+  }
+
+  public ExecutionBlockSharedResource getSharedResource() {
+    return sharedResource;
+  }
+
+  public EvalNode compileEval(Schema schema, EvalNode eval) {
+    return sharedResource.compileEval(schema, eval);
+  }
+
+  public EvalNode getPrecompiledEval(Schema schema, EvalNode eval) {
+    if (sharedResource != null) {
+      return sharedResource.getPreCompiledEval(schema, eval);
+    } else {
+      LOG.debug("Shared resource is not initialized. It is NORMAL in unit tests");
+      return eval;
+    }
   }
 
   public boolean hasResultStats() {

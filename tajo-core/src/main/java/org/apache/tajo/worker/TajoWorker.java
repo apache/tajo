@@ -217,7 +217,7 @@ public class TajoWorker extends CompositeService {
         addService(pullService);
       }
 
-      if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+      if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
         try {
           httpPort = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS).getPort();
           if(queryMasterMode && !taskRunnerMode) {
@@ -353,6 +353,10 @@ public class TajoWorker extends CompositeService {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
+    }
+
+    public TajoConf getConf() {
+      return systemConf;
     }
 
     public TajoWorkerManagerService getTajoWorkerManagerService() {

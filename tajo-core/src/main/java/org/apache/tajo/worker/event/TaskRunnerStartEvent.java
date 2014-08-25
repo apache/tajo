@@ -19,18 +19,33 @@
 package org.apache.tajo.worker.event;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.engine.query.QueryContext;
 
 public class TaskRunnerStartEvent extends TaskRunnerEvent {
 
-  protected final String[] params;
+  private final QueryContext queryContext;
+  private final String[] params;
+  private final String plan;
 
   public TaskRunnerStartEvent(String[] params,
-                              ExecutionBlockId executionBlockId) {
+                              ExecutionBlockId executionBlockId,
+                              QueryContext context,
+                              String plan) {
     super(EventType.START, executionBlockId);
     this.params = params;
+    this.queryContext = context;
+    this.plan = plan;
   }
 
   public String[] getParams(){
     return this.params;
+  }
+
+  public QueryContext getQueryContext() {
+    return queryContext;
+  }
+
+  public String getPlan() {
+    return plan;
   }
 }

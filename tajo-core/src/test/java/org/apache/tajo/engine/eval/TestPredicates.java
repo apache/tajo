@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -109,6 +111,21 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonEqual() throws IOException {
+
+
+    Schema schema = new Schema();
+    schema.addColumn("col0", TajoDataTypes.Type.INT1);
+    schema.addColumn("col1", TajoDataTypes.Type.INT2);
+    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    schema.addColumn("col3", TajoDataTypes.Type.INT8);
+    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    schema.addColumn("nullable", TajoDataTypes.Type.INT4);
+
+    testEval(schema, "t1", "0,1,2,3,4.1,5.1,cmp,asm,", "SELECT col6 = 'cmp' from t1", new String [] {"t"});
+
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);

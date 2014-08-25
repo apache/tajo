@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
 import org.apache.tajo.engine.query.QueryContext;

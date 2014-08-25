@@ -23,6 +23,6 @@ import org.apache.tajo.ExecutionBlockId;
 public class TaskRunnerStopEvent extends TaskRunnerEvent {
 
   public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
-    super(EventType.START, executionBlockId);
+    super(EventType.STOP, executionBlockId);
   }
 }

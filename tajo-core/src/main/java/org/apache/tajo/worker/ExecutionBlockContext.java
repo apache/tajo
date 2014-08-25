@@ -31,6 +31,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -39,6 +40,7 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
 import java.io.IOException;
@@ -52,9 +54,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
-public class TaskRunnerContext {
+public class ExecutionBlockContext {
   /** class logger */
-  private static final Log LOG = LogFactory.getLog(TaskRunnerContext.class);
+  private static final Log LOG = LogFactory.getLog(ExecutionBlockContext.class);
 
   private TaskRunnerManager manager;
   public AtomicInteger completedTasksNum = new AtomicInteger();
@@ -68,6 +70,10 @@ public class TaskRunnerContext {
   // for input files
   private FileSystem defaultFS;
   private ExecutionBlockId executionBlockId;
+  private QueryContext queryContext;
+  private String plan;
+
+  private ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
   private RpcConnectionPool connPool;
@@ -85,18 +91,28 @@ public class TaskRunnerContext {
 
   private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
 
-  public TaskRunnerContext(TaskRunnerManager manager, ExecutionBlockId executionBlockId, InetSocketAddress queryMaster)
-      throws IOException {
+  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, InetSocketAddress queryMaster)
+      throws Throwable {
     this.manager = manager;
-    this.executionBlockId = executionBlockId;
+    this.executionBlockId = event.getExecutionBlockId();
     this.connPool = RpcConnectionPool.getPool(manager.getTajoConf());
     this.qmMasterAddr = queryMaster;
     this.systemConf = manager.getTajoConf();
+    this.reporter = new Reporter();
+    this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
+    this.localFS = FileSystem.getLocal(systemConf);
+
+    // Setup QueryEngine according to the query plan
+    // Here, we can setup row-based query engine or columnar query engine.
+    this.queryEngine = new TajoQueryEngine(systemConf);
+    this.queryContext = event.getQueryContext();
+    this.plan = event.getPlan();
+    this.resource = new ExecutionBlockSharedResource();
 
     init();
   }
 
-  public void init() throws IOException {
+  public void init() throws Throwable {
 
     LOG.info("Tajo Root Dir: " + systemConf.getVar(TajoConf.ConfVars.ROOT_DIR));
     LOG.info("Worker Local Dir: " + systemConf.getVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR));
@@ -122,15 +138,19 @@ public class TaskRunnerContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
-    this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
-    this.localFS = FileSystem.getLocal(systemConf);
-
-    // Setup QueryEngine according to the query plan
-    // Here, we can setup row-based query engine or columnar query engine.
-    this.queryEngine = new TajoQueryEngine(systemConf);
-
-    this.reporter = new Reporter();
     this.reporter.startReporter();
+
+    // resource intiailization
+    try{
+      this.resource.initialize(queryContext, plan);
+    } catch (Throwable e) {
+      getQueryMasterStub().killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
+      throw e;
+    }
+  }
+
+  public ExecutionBlockSharedResource getSharedResource() {
+    return resource;
   }
 
   public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub() throws Exception {
@@ -167,6 +187,8 @@ public class TaskRunnerContext {
       }
     }
     tasks.clear();
+
+    resource.release();
 
     try {
       releaseShuffleChannelFactory();

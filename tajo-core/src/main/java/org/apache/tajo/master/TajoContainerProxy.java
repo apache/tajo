@@ -27,6 +27,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -42,10 +43,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
+  private final QueryContext queryContext;
+  private final String planJson;
+
   public TajoContainerProxy(QueryMasterTask.QueryMasterTaskContext context,
                             Configuration conf, Container container,
-                            ExecutionBlockId executionBlockId) {
+                            QueryContext queryContext, ExecutionBlockId executionBlockId, String planJson) {
     super(context, conf, executionBlockId, container);
+    this.queryContext = queryContext;
+    this.planJson = planJson;
   }
 
   @Override
@@ -101,6 +107,8 @@ public class TajoContainerProxy extends ContainerProxy {
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
               .setQueryOutputPath(context.getStagingDir().toString())
+              .setQueryContext(queryContext.getProto())
+              .setPlanJson(planJson)
               .build();
 
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());

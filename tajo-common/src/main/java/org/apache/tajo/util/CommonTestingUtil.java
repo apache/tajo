@@ -21,12 +21,34 @@ package org.apache.tajo.util;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.ConfigKey;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.conf.TajoConf;
 
 import java.io.IOException;
 import java.util.UUID;
 
 public class CommonTestingUtil {
-  public static final String TAJO_TEST = "tajo.test";
+  public static final String TAJO_TEST_KEY = "tajo.test.enabled";
+  public static final String TAJO_TEST_TRUE = "true";
+  private static OverridableConf userSessionVars;
+
+  static {
+    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+
+    userSessionVars = new OverridableConf(new TajoConf(), ConfigKey.ConfigType.SESSION);
+    for (SessionVars var : SessionVars.values()) {
+      String value = System.getProperty(var.keyname());
+      if (value != null) {
+        userSessionVars.put(var, value);
+      }
+    }
+  }
+
+  public static OverridableConf getSessionVarsForTest() {
+    return userSessionVars;
+  }
 
   /**
    *

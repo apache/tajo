@@ -223,6 +223,7 @@ public class QueryMasterManagerService extends CompositeService
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
       queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
     }
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override

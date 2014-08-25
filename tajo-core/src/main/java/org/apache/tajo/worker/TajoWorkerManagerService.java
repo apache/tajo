@@ -30,6 +30,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -119,7 +120,9 @@ public class TajoWorkerManagerService extends CompositeService
                                     TajoWorkerProtocol.RunExecutionBlockRequestProto request,
                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
     workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
+
     try {
+
       String[] params = new String[7];
       params[0] = "standby";  //mode(never used)
       params[1] = request.getExecutionBlockId().toString();
@@ -132,14 +135,16 @@ public class TajoWorkerManagerService extends CompositeService
       params[5] = String.valueOf(request.getQueryMasterPort());
       params[6] = request.getQueryOutputPath();
 
-
+      ExecutionBlockId executionBlockId = new ExecutionBlockId(request.getExecutionBlockId());
       workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStartEvent(
           params
-          , new ExecutionBlockId(request.getExecutionBlockId())
+          , executionBlockId,
+          new QueryContext(workerContext.getConf(), request.getQueryContext()),
+          request.getPlanJson()
       ));
       done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -175,15 +180,14 @@ public class TajoWorkerManagerService extends CompositeService
     done.run(TajoWorker.TRUE_PROTO);
   }
 
-
   @Override
   public void cleanupExecutionBlocks(RpcController controller,
                                      TajoWorkerProtocol.ExecutionBlockListProto ebIds,
                                      RpcCallback<PrimitiveProtos.BoolProto> done) {
     for (TajoIdProtos.ExecutionBlockIdProto executionBlockIdProto : ebIds.getExecutionBlockIdList()) {
-      String inputDir = TaskRunnerContext.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String inputDir = ExecutionBlockContext.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(inputDir);
-      String outputDir = TaskRunnerContext.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String outputDir = ExecutionBlockContext.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(outputDir);
     }
     done.run(TajoWorker.TRUE_PROTO);

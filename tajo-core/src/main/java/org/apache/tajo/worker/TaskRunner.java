@@ -63,18 +63,18 @@ public class TaskRunner extends AbstractService {
   private Thread taskLauncher;
 
   // Contains the object references related for TaskRunner
-  private TaskRunnerContext taskRunnerContext;
+  private ExecutionBlockContext executionBlockContext;
 
   private long finishTime;
 
   private TaskRunnerHistory history;
 
-  public TaskRunner(TaskRunnerContext taskRunnerContext, String[] args) {
+  public TaskRunner(ExecutionBlockContext executionBlockContext, String[] args) {
     super(TaskRunner.class.getName());
 
     ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
     ThreadFactory fetcherFactory = builder.setNameFormat("Fetcher executor #%d").build();
-    this.systemConf = taskRunnerContext.getConf();
+    this.systemConf = executionBlockContext.getConf();
     this.fetchLauncher = Executors.newFixedThreadPool(
         systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM), fetcherFactory);
     try {
@@ -88,8 +88,8 @@ public class TaskRunner extends AbstractService {
       //String host = args[4];
       //int port = Integer.parseInt(args[5]);
 
-      this.taskRunnerContext = taskRunnerContext;
-      this.history = taskRunnerContext.createTaskRunnerHistory(this);
+      this.executionBlockContext = executionBlockContext;
+      this.history = executionBlockContext.createTaskRunnerHistory(this);
       this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -174,8 +174,8 @@ public class TaskRunner extends AbstractService {
     return finishTime;
   }
 
-  public TaskRunnerContext getContext() {
-    return taskRunnerContext;
+  public ExecutionBlockContext getContext() {
+    return executionBlockContext;
   }
 
   static void fatalError(QueryMasterProtocolService.Interface qmClientService,
@@ -258,7 +258,7 @@ public class TaskRunner extends AbstractService {
                   LOG.info("Initializing: " + taskAttemptId);
                   Task task;
                   try {
-                    task = new Task(getId(), getTaskBaseDir(), taskAttemptId, taskRunnerContext,
+                    task = new Task(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
                         new QueryUnitRequestImpl(taskRequest));
                     getContext().getTasks().put(taskAttemptId, task);
 

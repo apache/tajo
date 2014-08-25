@@ -30,7 +30,6 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.utils.TupleCache;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerEvent;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.apache.tajo.worker.event.TaskRunnerStopEvent;
@@ -40,12 +39,11 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskRunnerManager extends CompositeService implements EventHandler<TaskRunnerEvent> {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
 
-  private final ConcurrentMap<ExecutionBlockId, TaskRunnerContext> taskRunnerContextMap = Maps.newConcurrentMap();
+  private final ConcurrentMap<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap = Maps.newConcurrentMap();
   private final ConcurrentMap<String, TaskRunner> taskRunnerMap = Maps.newConcurrentMap();
   private final ConcurrentMap<String, TaskRunnerHistory> taskRunnerHistoryMap = Maps.newConcurrentMap();
   private TajoWorker.WorkerContext workerContext;
@@ -93,7 +91,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
         }
       }
     }
-    for(TaskRunnerContext context: taskRunnerContextMap.values()) {
+    for(ExecutionBlockContext context: executionBlockContextMap.values()) {
       context.stop();
     }
 
@@ -132,7 +130,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   }
 
   public Task getTaskByQueryUnitAttemptId(QueryUnitAttemptId queryUnitAttemptId) {
-    TaskRunnerContext context = taskRunnerContextMap.get(queryUnitAttemptId.getQueryUnitId().getExecutionBlockId());
+    ExecutionBlockContext context = executionBlockContextMap.get(queryUnitAttemptId.getQueryUnitId().getExecutionBlockId());
     if (context != null) {
       return context.getTask(queryUnitAttemptId);
     }
@@ -159,7 +157,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     LOG.info("======================== Processing " + event.getExecutionBlockId() + " of type " + event.getType());
     if (event instanceof TaskRunnerStartEvent) {
       TaskRunnerStartEvent startEvent = (TaskRunnerStartEvent) event;
-      TaskRunnerContext context = taskRunnerContextMap.get(event.getExecutionBlockId());
+      ExecutionBlockContext context = executionBlockContextMap.get(event.getExecutionBlockId());
       String[] params = startEvent.getParams();
       if(context == null){
         try {
@@ -167,11 +165,12 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
           String host = params[4];
           int port = Integer.parseInt(params[5]);
 
-          context = new TaskRunnerContext(this, event.getExecutionBlockId(), new InetSocketAddress(host, port));
-        } catch (IOException e) {
-          LOG.error(e.getMessage(), e);
+          context = new ExecutionBlockContext(this, startEvent, new InetSocketAddress(host, port));
+        } catch (Throwable e) {
+          LOG.fatal(e.getMessage(), e);
+          throw new RuntimeException(e);
         }
-        taskRunnerContextMap.put(event.getExecutionBlockId(), context);
+        executionBlockContextMap.put(event.getExecutionBlockId(), context);
       }
 
       TaskRunner taskRunner = new TaskRunner(context, params);
@@ -183,11 +182,11 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
       taskRunner.start();
 
     } else if (event instanceof TaskRunnerStopEvent) {
-      TaskRunnerContext taskRunnerContext =  taskRunnerContextMap.remove(event.getExecutionBlockId());
-      if(taskRunnerContext != null){
+      ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(event.getExecutionBlockId());
+      if(executionBlockContext != null){
         TupleCache.getInstance().removeBroadcastCache(event.getExecutionBlockId());
-        taskRunnerContext.reportExecutionBlock(event.getExecutionBlockId());
-        taskRunnerContext.stop();
+        executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
+        executionBlockContext.stop();
         try {
           workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
         } catch (IOException e) {
@@ -206,12 +205,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   public TajoConf getTajoConf() {
     return tajoConf;
   }
-
-  //<# tasks, # running tasks>
-  Map<ExecutionBlockId, Pair<AtomicInteger, AtomicInteger>> taskRunnerCompleteCounter =
-      new HashMap<ExecutionBlockId, Pair<AtomicInteger, AtomicInteger>>();
-
-  Map<ExecutionBlockId, AtomicInteger> successedTaskNums = new HashMap<ExecutionBlockId, AtomicInteger>();
 
   class FinishedTaskCleanThread extends Thread {
     //TODO if history size is large, the historyMap should remove immediately

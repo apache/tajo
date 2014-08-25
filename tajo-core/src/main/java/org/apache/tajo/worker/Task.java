@@ -70,7 +70,7 @@ public class Task {
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
-  private final TaskRunnerContext taskRunnerContext;
+  private final ExecutionBlockContext executionBlockContext;
   private final QueryUnitAttemptId taskId;
   private final String taskRunnerId;
 
@@ -132,19 +132,19 @@ public class Task {
   public Task(String taskRunnerId,
               Path baseDir,
               QueryUnitAttemptId taskId,
-              final TaskRunnerContext worker,
+              final ExecutionBlockContext executionBlockContext,
               final QueryUnitRequest request) throws IOException {
     this.taskRunnerId = taskRunnerId;
     this.request = request;
     this.taskId = taskId;
 
-    this.systemConf = worker.getConf();
+    this.systemConf = executionBlockContext.getConf();
     this.queryContext = request.getQueryContext();
-    this.taskRunnerContext = worker;
+    this.executionBlockContext = executionBlockContext;
     this.taskDir = StorageUtil.concatPath(baseDir,
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(queryContext, worker.getWorkerContext(), taskId,
+    this.context = new TaskAttemptContext(queryContext, executionBlockContext, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
@@ -211,26 +211,28 @@ public class Task {
   }
 
   public void init() throws IOException {
-    // initialize a task temporal dir
-    FileSystem localFS = taskRunnerContext.getLocalFS();
-    localFS.mkdirs(taskDir);
+    if (context.getState() == TaskAttemptState.TA_PENDING) {
+      // initialize a task temporal dir
+      FileSystem localFS = executionBlockContext.getLocalFS();
+      localFS.mkdirs(taskDir);
 
-    if (request.getFetches().size() > 0) {
-      inputTableBaseDir = localFS.makeQualified(
-          taskRunnerContext.getLocalDirAllocator().getLocalPathForWrite(
-              getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
-      localFS.mkdirs(inputTableBaseDir);
-      Path tableDir;
-      for (String inputTable : context.getInputTables()) {
-        tableDir = new Path(inputTableBaseDir, inputTable);
-        if (!localFS.exists(tableDir)) {
-          LOG.info("the directory is created  " + tableDir.toUri());
-          localFS.mkdirs(tableDir);
+      if (request.getFetches().size() > 0) {
+        inputTableBaseDir = localFS.makeQualified(
+            executionBlockContext.getLocalDirAllocator().getLocalPathForWrite(
+                getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
+        localFS.mkdirs(inputTableBaseDir);
+        Path tableDir;
+        for (String inputTable : context.getInputTables()) {
+          tableDir = new Path(inputTableBaseDir, inputTable);
+          if (!localFS.exists(tableDir)) {
+            LOG.info("the directory is created  " + tableDir.toUri());
+            localFS.mkdirs(tableDir);
+          }
         }
       }
+      // for localizing the intermediate data
+      localize(request);
     }
-    // for localizing the intermediate data
-    localize(request);
   }
 
   public QueryUnitAttemptId getTaskId() {
@@ -274,7 +276,7 @@ public class Task {
   }
 
   public void fetch() {
-    ExecutorService executorService = taskRunnerContext.getTaskRunner(taskRunnerId).getFetchLauncher();
+    ExecutorService executorService = executionBlockContext.getTaskRunner(taskRunnerId).getFetchLauncher();
     for (Fetcher f : fetcherRunners) {
       executorService.submit(new FetchRunner(context, f));
     }
@@ -294,8 +296,8 @@ public class Task {
   public void cleanUp() {
     // remove itself from worker
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
-      synchronized (taskRunnerContext.getTasks()) {
-        taskRunnerContext.getTasks().remove(this.getId());
+      synchronized (executionBlockContext.getTasks()) {
+        executionBlockContext.getTasks().remove(this.getId());
       }
     } else {
       LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
@@ -304,7 +306,7 @@ public class Task {
 
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
-    builder.setWorkerName(taskRunnerContext.getTaskRunner(taskRunnerId).getNodeId().toString());
+    builder.setWorkerName(executionBlockContext.getTaskRunner(taskRunnerId).getNodeId().toString());
     builder.setId(context.getTaskId().getProto())
         .setProgress(context.getProgress())
         .setState(context.getState());
@@ -426,29 +428,37 @@ public class Task {
         updateProgress();
       }
 
-      this.executor = taskRunnerContext.getTQueryEngine().
+      this.executor = executionBlockContext.getTQueryEngine().
           createPlan(context, plan);
       this.executor.init();
 
       while(!killed && !aborted && executor.next() != null) {
       }
-      this.executor.close();
-      reloadInputStats();
-      this.executor = null;
     } catch (Exception e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
-      taskRunnerContext.completedTasksNum.incrementAndGet();
+      if (executor != null) {
+        try {
+          executor.close();
+          reloadInputStats();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        this.executor = null;
+      }
+
+      context.setProgress(1.0f);
+      executionBlockContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
-      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = taskRunnerContext.getQueryMasterStub();
+      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getQueryMasterStub();
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
           queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
-          taskRunnerContext.killedTasksNum.incrementAndGet();
+          executionBlockContext.killedTasksNum.incrementAndGet();
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
           TaskFatalErrorReport.Builder errorBuilder =
@@ -464,30 +474,30 @@ public class Task {
           }
 
           queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
-          taskRunnerContext.failedTasksNum.incrementAndGet();
+          executionBlockContext.failedTasksNum.incrementAndGet();
         }
       } else {
         // if successful
         context.setProgress(1.0f);
         context.setState(TaskAttemptState.TA_SUCCEEDED);
-        taskRunnerContext.succeededTasksNum.incrementAndGet();
+        executionBlockContext.succeededTasksNum.incrementAndGet();
 
         TaskCompletionReport report = getTaskCompletionReport();
         queryMasterStub.done(null, report, NullCallback.get());
       }
       finishTime = System.currentTimeMillis();
       LOG.info(context.getTaskId() + " completed. " +
-          "Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
-          ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
-          + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
-          + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
+          "Worker's task counter - total:" + executionBlockContext.completedTasksNum.intValue() +
+          ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
+          + ", killed: " + executionBlockContext.killedTasksNum.intValue()
+          + ", failed: " + executionBlockContext.failedTasksNum.intValue());
       cleanupTask();
     }
   }
 
   public void cleanupTask() {
-    taskRunnerContext.addTaskHistory(taskRunnerId, getId(), createTaskHistory());
-    taskRunnerContext.getTasks().remove(getId());
+    executionBlockContext.addTaskHistory(taskRunnerId, getId(), createTaskHistory());
+    executionBlockContext.getTasks().remove(getId());
 
     fetcherRunners.clear();
     fetcherRunners = null;
@@ -659,8 +669,8 @@ public class Task {
                                         List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
-      ClientSocketChannelFactory channelFactory = taskRunnerContext.getShuffleChannelFactory();
-      Path inputDir = taskRunnerContext.getLocalDirAllocator().
+      ClientSocketChannelFactory channelFactory = executionBlockContext.getShuffleChannelFactory();
+      Path inputDir = executionBlockContext.getLocalDirAllocator().
           getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
       File storeDir;
 
@@ -688,7 +698,7 @@ public class Task {
 
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
-        StorageUtil.concatPath(TaskRunnerContext.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
+        StorageUtil.concatPath(ExecutionBlockContext.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;

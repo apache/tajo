@@ -55,6 +55,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Stack;
 
@@ -147,6 +148,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         stack.push(selNode);
         leftExec = createPlanRecursive(ctx, selNode.getChild(), stack);
         stack.pop();
+
         return new SelectionExec(ctx, selNode, leftExec);
 
       case PROJECTION:
@@ -154,6 +156,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         stack.push(prjNode);
         leftExec = createPlanRecursive(ctx, prjNode.getChild(), stack);
         stack.pop();
+
         return new ProjectionExec(ctx, prjNode, leftExec);
 
       case TABLE_SUBQUERY: {
@@ -210,6 +213,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         leftExec = createPlanRecursive(ctx, joinNode.getLeftChild(), stack);
         rightExec = createPlanRecursive(ctx, joinNode.getRightChild(), stack);
         stack.pop();
+
         return createJoinPlan(ctx, joinNode, leftExec, rightExec);
 
       case UNION:

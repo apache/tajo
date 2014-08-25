@@ -60,9 +60,6 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
       case IF_THEN:
         result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
         break;
-      case IN:
-        result = visitInPredicate(context, (InEval) evalNode, stack);
-        break;
 
       // Functions
       case FUNCTION:
