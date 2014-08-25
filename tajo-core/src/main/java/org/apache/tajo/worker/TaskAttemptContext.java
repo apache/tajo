@@ -89,7 +89,7 @@ public class TaskAttemptContext {
                             final Path workDir) {
     this.queryContext = queryContext;
 
-    if (workerContext != null) { // For unit tests
+    if (executionBlockContext != null) { // For unit tests
       this.workerContext = executionBlockContext.getWorkerContext();
       this.sharedResource = executionBlockContext.getSharedResource();
     }
