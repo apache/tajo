@@ -88,6 +88,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     return address;
   }
 
+  public ByteBuffer byteBuffer() {
+    return buffer;
+  }
+
   public long totalMem() {
     return bytesLen;
   }
@@ -110,7 +114,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
       long recordStartPtr = address + curReadPos;
       int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(recordStartPtr, types);
+      tuple.set(buffer, curReadPos, recordLen, types);
 
       curReadPos += recordLen;
       curRowIdx++;

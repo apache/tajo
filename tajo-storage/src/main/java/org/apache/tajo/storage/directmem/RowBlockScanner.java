@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.rowblock;
+package org.apache.tajo.storage.directmem;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;

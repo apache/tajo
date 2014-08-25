@@ -26,17 +26,24 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class UnSafeTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
-  private long recordPtr;
+  private DirectBuffer bb;
+  private int relativePos;
+  private int length;
   private Type [] types;
 
-  void set(long address, Type [] types) {
-    this.recordPtr = address;
+  void set(ByteBuffer bb, int relativePos, int length, Type [] types) {
+    this.bb = (DirectBuffer) bb;
+    this.relativePos = relativePos;
+    this.length = length;
     this.types = types;
   }
 
@@ -45,13 +52,17 @@ public class UnSafeTuple implements Tuple {
     return 0;
   }
 
+  public ByteBuffer byteBuffer() {
+    return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(length)).slice();
+  }
+
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(recordPtr + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(bb.address() + relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
   private long getFieldAddr(int fieldId) {
-    int relativePos = getFieldOffset(fieldId);
-    return recordPtr + relativePos;
+    int fieldOffset = getFieldOffset(fieldId);
+    return bb.address() + relativePos + fieldOffset;
   }
 
   @Override
