@@ -21,7 +21,6 @@ package org.apache.tajo.storage.directmem;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -30,12 +29,10 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -427,7 +424,7 @@ public class TestRowOrientedRowBlock {
     rowBlock.free();
 
     assertEquals(vecSize, j);
-    assertEquals(vecSize, rowBlock.totalRowNum());
+    assertEquals(vecSize, rowBlock.filledRowNum());
   }
 
   @Test

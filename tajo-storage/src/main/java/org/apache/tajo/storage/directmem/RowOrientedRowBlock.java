@@ -112,7 +112,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   public int maxRowNum() {
     return maxRowNum;
   }
-  public int totalRowNum() {
+  public int filledRowNum() {
     return filledRowNum;
   }
 

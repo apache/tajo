@@ -57,7 +57,7 @@ public class UnSafeTuple implements Tuple {
   }
 
   public ByteBuffer nioBuffer() {
-    return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(length)).slice();
+    return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
   }
 
   private int getFieldOffset(int fieldId) {
