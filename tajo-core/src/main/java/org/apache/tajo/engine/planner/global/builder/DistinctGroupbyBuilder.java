@@ -62,6 +62,14 @@ public class DistinctGroupbyBuilder {
                                   LogicalNode currentNode) throws PlanningException {
     try {
       GroupbyNode groupbyNode = (GroupbyNode)currentNode;
+
+      // Set total Aggregation Functions. It will be passed to DistinctGroupbyNode.
+      AggregationFunctionCallEval[] aggFunctions =
+          new AggregationFunctionCallEval[groupbyNode.getAggFunctions().length];
+      for(int i = 0; i < aggFunctions.length; i++) {
+        aggFunctions[i] = (AggregationFunctionCallEval)groupbyNode.getAggFunctions()[i].clone();
+      }
+
       LogicalPlan plan = context.getPlan().getLogicalPlan();
       DistinctGroupbyNode baseDistinctNode = buildBaseDistinctGroupByNode(context, latestExecBlock, groupbyNode);
 
@@ -70,6 +78,9 @@ public class DistinctGroupbyBuilder {
 
       DistinctGroupbyNode firstStageDistinctNode = distinctNodes[0];
       DistinctGroupbyNode secondStageDistinctNode = distinctNodes[1];
+
+      firstStageDistinctNode.setAggFunctions(aggFunctions);
+      secondStageDistinctNode.setAggFunctions(aggFunctions);
 
       // Set latestExecBlock's plan with firstDistinctNode
       latestExecBlock.setPlan(firstStageDistinctNode);

@@ -25,6 +25,8 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.builtin.CountRows;
+import org.apache.tajo.engine.function.builtin.CountValue;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -62,6 +64,30 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       instance.eval(context, params);
     } else {
       instance.merge(context, params);
+    }
+  }
+
+
+  public void mergeOnMultiStages(FunctionContext context, Schema schema, Tuple tuple) {
+    if (params == null) {
+      this.params = new VTuple(argEvals.length);
+    }
+
+    if (argEvals != null) {
+      for (int i = 0; i < argEvals.length; i++) {
+        params.put(i, argEvals[i].eval(schema, tuple));
+      }
+    }
+
+    if (firstPhase) {
+      instance.eval(context, params);
+    } else {
+
+      if (instance instanceof CountValue) {
+        instance.eval(context, params);
+      } else {
+        instance.merge(context, params);
+      }
     }
   }
 

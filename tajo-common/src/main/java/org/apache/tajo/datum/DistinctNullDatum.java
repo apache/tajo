@@ -59,24 +59,49 @@ public class DistinctNullDatum extends Datum {
   public byte asByte() {
     return 0;
   }
+//
+//  @Override
+//  public short asInt2() { return Short.valueOf(EMPTY_STRING); }
+//
+//  @Override
+//  public int asInt4() { return Integer.parseInt(EMPTY_STRING); }
+//
+//  @Override
+//  public long asInt8() { return Long.parseLong(EMPTY_STRING); }
 
   @Override
-  public short asInt2() { return Short.valueOf(EMPTY_STRING); }
+  public short asInt2() {
+    return 0;
+  }
 
   @Override
-  public int asInt4() { return Integer.parseInt(EMPTY_STRING); }
+  public int asInt4() {
+    return 0;
+  }
 
   @Override
-  public long asInt8() { return Long.parseLong(EMPTY_STRING); }
+  public long asInt8() {
+    return 0;
+  }
 
   @Override
   public byte[] asByteArray() { return EMPTY_STRING.getBytes(); }
 
-  @Override
-  public float asFloat4() { return Float.valueOf(EMPTY_STRING);  }
+//  @Override
+//  public float asFloat4() { return Float.valueOf(EMPTY_STRING);  }
+//
+//  @Override
+//  public double asFloat8() { return Double.valueOf(EMPTY_STRING); }
 
   @Override
-  public double asFloat8() { return Double.valueOf(EMPTY_STRING); }
+  public float asFloat4() {
+    return 0f;
+  }
+
+  @Override
+  public double asFloat8() {
+    return 0d;
+  }
 
   @Override
   public String asChars() {

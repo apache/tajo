@@ -24,7 +24,9 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.Sort;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -38,9 +40,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
@@ -132,14 +132,18 @@ public class TestDistinctGroupByAggregationExec {
 
   private void createEmployee(STAGE stage) throws IOException {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "employee");
+
+    if (catalog.existsTable(tableName)) {
+      catalog.dropTable(tableName);
+    }
     Schema employeeSchema = new Schema();
 
     employeeSchema.addColumn("managerid", Type.INT4);
     employeeSchema.addColumn("empid", Type.INT4);
     employeeSchema.addColumn("deptname", Type.TEXT);
 
-    if (catalog.existsTable(tableName)) {
-      catalog.dropTable(tableName);
+    if (stage == STAGE.INIT) {
+      employeeSchema.addColumn("sex", Type.TEXT);
     }
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
@@ -150,6 +154,8 @@ public class TestDistinctGroupByAggregationExec {
       createInitStageData(employeeMeta, employeeSchema, employeePath);
     } else if (stage == STAGE.FIRST) {
       createFirstStageData(employeeMeta, employeeSchema, employeePath);
+    } else if (stage == STAGE.SECOND) {
+      createSecondStageData(employeeMeta, employeeSchema, employeePath);
     }
 
     employee = new TableDesc(
@@ -166,31 +172,37 @@ public class TestDistinctGroupByAggregationExec {
     tuple.put(0, DatumFactory.createInt4(1));
     tuple.put(1, DatumFactory.createInt4(10));
     tuple.put(2, DatumFactory.createText("AA"));
+    tuple.put(3, DatumFactory.createText("M"));
     appender.addTuple(tuple);
 
     tuple.put(0, DatumFactory.createInt4(2));
     tuple.put(1, DatumFactory.createInt4(15));
     tuple.put(2, DatumFactory.createText("AA"));
+    tuple.put(3, DatumFactory.createText("S"));
     appender.addTuple(tuple);
 
     tuple.put(0, DatumFactory.createInt4(2));
     tuple.put(1, DatumFactory.createInt4(20));
     tuple.put(2, DatumFactory.createText("BB"));
+    tuple.put(3, DatumFactory.createText("M"));
     appender.addTuple(tuple);
 
     tuple.put(0, DatumFactory.createInt4(3));
     tuple.put(1, DatumFactory.createInt4(5));
     tuple.put(2, DatumFactory.createText("CC"));
+    tuple.put(3, DatumFactory.createText("M"));
     appender.addTuple(tuple);
 
     tuple.put(0, DatumFactory.createInt4(4));
     tuple.put(1, DatumFactory.createInt4(5));
     tuple.put(2, DatumFactory.createText("DD"));
+    tuple.put(3, DatumFactory.createText("S"));
     appender.addTuple(tuple);
 
     tuple.put(0, DatumFactory.createInt4(5));
     tuple.put(1, DatumFactory.createInt4(30));
     tuple.put(2, DatumFactory.createText("EE"));
+    tuple.put(3, DatumFactory.createText("S"));
     appender.addTuple(tuple);
     appender.flush();
     appender.close();
@@ -316,6 +328,42 @@ public class TestDistinctGroupByAggregationExec {
     appender.close();
   }
 
+
+  private void createSecondStageData(TableMeta meta, Schema schema, Path path) throws IOException {
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema,
+        path);
+    appender.init();
+
+    Tuple tuple = new VTuple(schema.size());
+    tuple.put(0, DatumFactory.createInt4(3));
+    tuple.put(1, DatumFactory.createInt4(1));
+    tuple.put(2, DatumFactory.createInt4(1));
+    appender.addTuple(tuple);
+
+    tuple.put(0, DatumFactory.createInt4(4));
+    tuple.put(1, DatumFactory.createInt4(1));
+    tuple.put(2, DatumFactory.createInt4(1));
+    appender.addTuple(tuple);
+
+    tuple.put(0, DatumFactory.createInt4(2));
+    tuple.put(1, DatumFactory.createInt4(2));
+    tuple.put(2, DatumFactory.createInt4(2));
+    appender.addTuple(tuple);
+
+    tuple.put(0, DatumFactory.createInt4(1));
+    tuple.put(1, DatumFactory.createInt4(1));
+    tuple.put(2, DatumFactory.createInt4(1));
+    appender.addTuple(tuple);
+
+    tuple.put(0, DatumFactory.createInt4(5));
+    tuple.put(1, DatumFactory.createInt4(1));
+    tuple.put(2, DatumFactory.createInt4(1));
+    appender.addTuple(tuple);
+
+    appender.flush();
+    appender.close();
+  }
+
   private ExecutionBlockId getRootBlock(MasterPlan masterPlan) throws PlanningException {
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(masterPlan, true);
 
@@ -328,8 +376,89 @@ public class TestDistinctGroupByAggregationExec {
     return executionBlockId;
   }
 
+
   @Test
-  public final void testIntermediateAggregation() throws IOException, PlanningException {
+  public final void testInitStageOutput() throws IOException, PlanningException {
+    String tableName = "default.employee";
+
+    // Create first stage result data in force
+    createEmployee(STAGE.INIT);
+
+    // Setting file path
+    FileFragment[] frags = StorageManager.splitNG(conf, tableName, employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testInitStageOutput");
+
+    for (int index = 0; index < 1; index++) {
+
+      // Build global plan
+      Expr expr = analyzer.parse(QUERIES[index]);
+      LogicalPlan plan = planner.createPlan(defaultContext, expr);
+      optimizer.optimize(plan);
+      QueryContext context = new QueryContext(util.getConfiguration());
+      MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);
+      globalPlanner.build(masterPlan);
+
+      // Verify input data
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(employee.getMeta(),
+          employee.getSchema(), employee.getPath());
+      scanner.init();
+
+      int i = 0;
+      int columnSize = 0;
+      Tuple tuple = null;
+      while ((tuple = scanner.next()) != null) {
+        if (i == 0) {
+          columnSize = tuple.size();
+        }
+        i++;
+      }
+
+      assertEquals(i, 6);
+      assertEquals(columnSize, 4);
+
+      // Get ExecutionBlockId for creating PhysicalPlanner
+      ExecutionBlockId executionBlockId = getRootBlock(masterPlan);
+      assertNotNull(executionBlockId);
+
+      ExecutionBlock executionBlock = masterPlan.getExecBlock(executionBlockId);
+      assertEquals(executionBlock.getPlan().getType(), NodeType.DISTINCT_GROUP_BY);
+
+      DistinctGroupbyNode distinctGroupbyNode = (DistinctGroupbyNode) executionBlock.getPlan();
+
+      TaskAttemptContext ctx = new TaskAttemptContext(context,
+          LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+          new FileFragment[]{frags[0]}, workDir);
+      ctx.setEnforcer(new Enforcer());
+
+      PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
+      PhysicalExec exec = phyPlanner.createPlan(ctx, distinctGroupbyNode);
+
+      assertEquals(exec.getClass().getCanonicalName(), DistinctGroupbyHashAggregationExec.class.getCanonicalName());
+      DistinctGroupbyHashAggregationExec hashAggregationExec = (DistinctGroupbyHashAggregationExec) exec;
+
+      SeqScanExec scanLeftChild = (SeqScanExec) hashAggregationExec.getChild();
+      assertEquals(scanLeftChild.getTableName(), tableName);
+
+      DistinctGroupbyInitWriterExec writerExec = new
+          DistinctGroupbyInitWriterExec(ctx, distinctGroupbyNode, scanLeftChild);
+
+      i = 0;
+      writerExec.init();
+      while ((tuple = writerExec.next()) != null) {
+        if (i == 0) {
+          columnSize = tuple.size();
+        }
+        i++;
+      }
+      writerExec.close();
+      assertEquals(i, 18);
+      assertEquals(columnSize, 3);
+    }
+  }
+
+  @Test
+  public final void testFirstStageOutputAggregation() throws IOException, PlanningException {
     String tableName = "default.employee";
 
     // Create first stage result data in force
@@ -338,7 +467,7 @@ public class TestDistinctGroupByAggregationExec {
     // Setting file path
     FileFragment[] frags = StorageManager.splitNG(conf, tableName, employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testIntermediateAggregation");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testFirstStageOutputAggregation");
 
     for (int index = 0; index < QUERIES.length; index++) {
 
@@ -405,6 +534,7 @@ public class TestDistinctGroupByAggregationExec {
       intermediateAggregationExec.init();
       while ((tuple = intermediateAggregationExec.next()) != null) {
         if (index == 0) {
+          System.out.println("### i:" + i + ", tuple:" + tuple.toString());
           if (tuple.getInt4(0) == 1) {
             assertEquals(tuple.get(1).asInt4(), 1);
             assertEquals(tuple.get(2).asInt4(), 1);
@@ -464,5 +594,89 @@ public class TestDistinctGroupByAggregationExec {
       assertEquals(i, 5);
     }
   }
+
+
+  @Test
+  public final void testSecondStageOutputAggregation() throws IOException, PlanningException {
+    String tableName = "default.employee";
+
+    // Create first stage result data in force
+    createEmployee(STAGE.SECOND);
+
+    // Setting file path
+    FileFragment[] frags = StorageManager.splitNG(conf, tableName, employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testSecondStageOutputAggregation");
+
+    for (int index = 0; index < 1; index++) {
+
+      // Build global plan
+      Expr expr = analyzer.parse(QUERIES[index]);
+      LogicalPlan plan = planner.createPlan(defaultContext, expr);
+      optimizer.optimize(plan);
+      QueryContext context = new QueryContext(util.getConfiguration());
+      MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);
+      globalPlanner.build(masterPlan);
+
+      // Verify input data
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(employee.getMeta(),
+          employee.getSchema(), employee.getPath());
+      scanner.init();
+
+      int i = 0;
+      Tuple tuple = null;
+      while ((tuple = scanner.next()) != null) {
+        System.out.println("### INPUT DATA ### i:" + i + ", tuple:" + tuple.toString());
+        i++;
+      }
+
+      assertEquals(i, 5);
+
+      // Get ExecutionBlockId for creating PhysicalPlanner
+      ExecutionBlockId executionBlockId = getRootBlock(masterPlan);
+      assertNotNull(executionBlockId);
+
+      ExecutionBlock executionBlock = masterPlan.getExecBlock(executionBlockId);
+      assertEquals(executionBlock.getPlan().getType(), NodeType.DISTINCT_GROUP_BY);
+
+      DistinctGroupbyNode distinctGroupbyNode = (DistinctGroupbyNode) executionBlock.getPlan();
+
+      TaskAttemptContext ctx = new TaskAttemptContext(context,
+          LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+          new FileFragment[]{frags[0]}, workDir);
+      ctx.setEnforcer(new Enforcer());
+
+
+      List<TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray> sortSpecArrays = new ArrayList<TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray>();
+      for (GroupbyNode groupbyNode: distinctGroupbyNode.getGroupByNodes()) {
+        List<CatalogProtos.SortSpecProto> sortSpecs = new ArrayList<CatalogProtos.SortSpecProto>();
+        for (Column column: groupbyNode.getGroupingColumns()) {
+          sortSpecs.add(CatalogProtos.SortSpecProto.newBuilder().setColumn(column.getProto()).build());
+        }
+        sortSpecArrays.add( TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray.newBuilder()
+            .setPid(distinctGroupbyNode.getGroupByNodes().get(index).getPID())
+            .addAllSortSpecs(sortSpecs).build());
+      }
+      ctx.getEnforcer().enforceDistinctAggregation(distinctGroupbyNode.getPID(),
+          TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm.SORT_AGGREGATION, sortSpecArrays);
+
+
+      PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
+      PhysicalExec exec = phyPlanner.createPlan(ctx, distinctGroupbyNode);
+
+      assertEquals(exec.getClass().getCanonicalName(), DistinctGroupbySortAggregationExec.class.getCanonicalName());
+      DistinctGroupbySortAggregationExec distinctGroupbySortAggregationExec = (DistinctGroupbySortAggregationExec) exec;
+
+      SortAggregateExec[] sortAggregateExecs = distinctGroupbySortAggregationExec.getAggregateExecs();
+//      assertEquals(scanLeftChild.getTableName(), tableName);
+
+      i = 0;
+      while ((tuple = distinctGroupbySortAggregationExec.next()) != null) {
+        System.out.println("### OUTPUT DATA ### i:" + i + ", tuple:" + tuple.toString());
+        i++;
+      }
+    }
+  }
+
 
 }

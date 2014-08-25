@@ -42,6 +42,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   @Expose
   private int[] resultColumnIds;
 
+  /** Aggregation Functions */
+  @Expose private AggregationFunctionCallEval [] aggrFunctions;
+
   public DistinctGroupbyNode(int pid) {
     super(pid, NodeType.DISTINCT_GROUP_BY);
   }
@@ -84,6 +87,18 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   public void setResultColumnIds(int[] resultColumnIds) {
     this.resultColumnIds = resultColumnIds;
+  }
+
+  public boolean hasAggFunctions() {
+    return this.aggrFunctions != null;
+  }
+
+  public AggregationFunctionCallEval [] getAggFunctions() {
+    return this.aggrFunctions;
+  }
+
+  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+    this.aggrFunctions = evals;
   }
 
   @Override

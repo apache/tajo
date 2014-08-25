@@ -328,6 +328,10 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     }
   }
 
+  public PhysicalExec getChild() {
+    return child;
+  }
+
   class HashAggregator {
     // Outer's GroupBy Key -> Each GroupByNode's Key -> FunctionContext
     private Map<Tuple, Map<Tuple, FunctionContext[]>> hashTable;
