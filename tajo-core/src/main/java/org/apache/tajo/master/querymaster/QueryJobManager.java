@@ -31,6 +31,7 @@ import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.scheduler.SimpleFifoScheduler;
 
@@ -241,11 +242,11 @@ public class QueryJobManager extends CompositeService {
 
   private QueryInfo makeQueryInfoFromHeartbeat(TajoMasterProtocol.TajoHeartbeat queryHeartbeat) {
     QueryInfo queryInfo = new QueryInfo(new QueryId(queryHeartbeat.getQueryId()));
-    if(queryHeartbeat.getTajoWorkerHost() != null) {
-      queryInfo.setQueryMaster(queryHeartbeat.getTajoWorkerHost());
-      queryInfo.setQueryMasterPort(queryHeartbeat.getTajoQueryMasterPort());
-      queryInfo.setQueryMasterclientPort(queryHeartbeat.getTajoWorkerClientPort());
-    }
+    WorkerConnectionInfo connectionInfo = new WorkerConnectionInfo(queryHeartbeat.getConnectionInfo());
+
+    queryInfo.setQueryMaster(connectionInfo.getHost());
+    queryInfo.setQueryMasterPort(connectionInfo.getQueryMasterPort());
+    queryInfo.setQueryMasterclientPort(connectionInfo.getClientPort());
     queryInfo.setLastMessage(queryHeartbeat.getStatusMessage());
     queryInfo.setQueryState(queryHeartbeat.getState());
     queryInfo.setProgress(queryHeartbeat.getQueryProgress());

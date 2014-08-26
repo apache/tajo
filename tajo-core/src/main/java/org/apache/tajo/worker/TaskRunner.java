@@ -384,6 +384,7 @@ public class TaskRunner extends AbstractService {
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(executionBlockId.getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
+                    .setWorkerId(getContext().getWorkerContext().getConnectionInfo().getId())
                     .build();
 
                 qmClientService.getTask(null, request, callFuture);

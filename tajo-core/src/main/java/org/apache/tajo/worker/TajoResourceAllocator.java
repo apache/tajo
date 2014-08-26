@@ -32,6 +32,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.*;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
 import org.apache.tajo.master.event.SubQueryContainerAllocationEvent;
@@ -128,6 +129,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         LOG.warn(e.getMessage());
       }
     }
+
+    workerInfoMap.clear();
     super.stop();
   }
 
@@ -292,8 +295,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         List<Container> containers = new ArrayList<Container>();
         for(TajoMasterProtocol.WorkerAllocatedResource eachAllocatedResource: allocatedResources) {
           TajoWorkerContainer container = new TajoWorkerContainer();
-          NodeId nodeId = NodeId.newInstance(eachAllocatedResource.getWorkerHost(),
-              eachAllocatedResource.getPeerRpcPort());
+          NodeId nodeId = NodeId.newInstance(eachAllocatedResource.getConnectionInfo().getHost(),
+              eachAllocatedResource.getConnectionInfo().getPeerRpcPort());
 
           TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 
@@ -310,14 +313,10 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           workerResource.setMemoryMB(eachAllocatedResource.getAllocatedMemoryMB());
           workerResource.setDiskSlots(eachAllocatedResource.getAllocatedDiskSlots());
 
-          Worker worker = new Worker(null, workerResource);
-          worker.setHostName(nodeId.getHost());
-          worker.setPeerRpcPort(nodeId.getPort());
-          worker.setQueryMasterPort(eachAllocatedResource.getQueryMasterPort());
-          worker.setPullServerPort(eachAllocatedResource.getWorkerPullServerPort());
-
+          Worker worker = new Worker(null, workerResource,
+              new WorkerConnectionInfo(eachAllocatedResource.getConnectionInfo()));
           container.setWorkerResource(worker);
-
+          addWorkerConnectionInfo(worker.getConnectionInfo());
           containers.add(container);
         }
 

@@ -42,7 +42,6 @@ public class TajoWorkerManagerService extends CompositeService
 
   private AsyncRpcServer rpcServer;
   private InetSocketAddress bindAddr;
-  private String addr;
   private int port;
 
   private TajoWorker.WorkerContext workerContext;
@@ -70,14 +69,12 @@ public class TajoWorkerManagerService extends CompositeService
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-      this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
-
       this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
-    LOG.info("TajoWorkerManagerService is bind to " + addr);
+    LOG.info("TajoWorkerManagerService is bind to " + bindAddr);
     tajoConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddr));
     super.init(tajoConf);
   }
@@ -98,10 +95,6 @@ public class TajoWorkerManagerService extends CompositeService
 
   public InetSocketAddress getBindAddr() {
     return bindAddr;
-  }
-
-  public String getHostAndPort() {
-    return bindAddr.getHostName() + ":" + bindAddr.getPort();
   }
 
   @Override
@@ -130,8 +123,8 @@ public class TajoWorkerManagerService extends CompositeService
       params[3] = request.getContainerId();
 
       // QueryMaster's address
-      params[4] = request.getQueryMasterHost();
-      params[5] = String.valueOf(request.getQueryMasterPort());
+      params[4] = request.getQueryMaster().getHost();
+      params[5] = String.valueOf(request.getQueryMaster().getQueryMasterPort());
       params[6] = request.getQueryOutputPath();
       workerContext.getTaskRunnerManager().startTask(params);
       done.run(TajoWorker.TRUE_PROTO);

@@ -63,10 +63,7 @@ import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.util.CharsetUtil;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -208,21 +205,18 @@ public class TajoPullServerService extends AbstractService {
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
-      super.init(conf);
 
-      this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
+      conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
           , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
-
+      super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
       LOG.error(t);
     }
   }
 
-  // TODO change AbstractService to throw InterruptedException
   @Override
-  public synchronized void start() {
-    Configuration conf = getConfig();
+  protected void serviceInit(Configuration conf) throws Exception {
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
 
     try {
@@ -241,10 +235,16 @@ public class TajoPullServerService extends AbstractService {
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
     pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
-    super.start();
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
-                                    DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+        DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+    super.serviceInit(conf);
+  }
+
+  // TODO change AbstractService to throw InterruptedException
+  @Override
+  public void serviceStart() throws Exception {
+    super.serviceStart();
   }
 
   public int getPort() {
@@ -252,7 +252,7 @@ public class TajoPullServerService extends AbstractService {
   }
 
   @Override
-  public synchronized void stop() {
+  public void stop() {
     try {
       accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
       ServerBootstrap bootstrap = new ServerBootstrap(selector);

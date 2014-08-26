@@ -29,6 +29,7 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
@@ -55,8 +56,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   final EventHandler eventHandler;
 
   private ContainerId containerId;
-  private String hostName;
-  private int port;
+  private WorkerConnectionInfo workerConnectionInfo;
   private int expire;
 
   private final Lock readLock;
@@ -210,28 +210,12 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     return this.queryUnit;
   }
 
-  public String getHost() {
-    return this.hostName;
-  }
-
-  public int getPort() {
-    return this.port;
+  public WorkerConnectionInfo getWorkerConnectionInfo() {
+    return this.workerConnectionInfo;
   }
 
   public void setContainerId(ContainerId containerId) {
     this.containerId = containerId;
-  }
-
-  public void setHost(String host) {
-    this.hostName = host;
-  }
-
-  public void setPullServerPort(int port) {
-    this.port = port;
-  }
-
-  public int getPullServerPort() {
-    return port;
   }
 
   public synchronized void setExpireTime(int expire) {
@@ -277,7 +261,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     if (report.getShuffleFileOutputsCount() > 0) {
       this.getQueryUnit().setShuffleFileOutputs(report.getShuffleFileOutputsList());
 
-      PullHost host = new PullHost(getHost(), getPullServerPort());
+      PullHost host = new PullHost(getWorkerConnectionInfo().getHost(), getWorkerConnectionInfo().getPullServerPort());
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
             getId().getId(), p.getPartId(), host, p.getVolume());
@@ -325,8 +309,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
                            TaskAttemptEvent event) {
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.containerId = castEvent.getContainerId();
-      taskAttempt.setHost(castEvent.getHostName());
-      taskAttempt.setPullServerPort(castEvent.getPullServerPort());
+      taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),
               TaskEventType.T_ATTEMPT_LAUNCHED));
@@ -415,7 +398,8 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
       taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
-      LOG.error(taskAttempt.getId() + " FROM " + taskAttempt.getHost() + " >> " + errorEvent.errorMessage());
+      LOG.error(taskAttempt.getId() + " FROM " + taskAttempt.getWorkerConnectionInfo().getHost()
+          + " >> " + errorEvent.errorMessage());
     }
   }
 

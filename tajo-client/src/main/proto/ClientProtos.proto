@@ -157,27 +157,22 @@ message GetClusterInfoRequest {
 }
 
 message WorkerResourceInfo {
-  required string allocatedHost = 1;
-  required int32 peerRpcPort = 2;
-  required int32 queryMasterPort = 3;
-  required int32 clientPort = 4;
-  required int32 pullServerPort = 5;
-  required int32 httpPort = 6;
-  required float diskSlots = 7;
-  required int32 cpuCoreSlots = 8;
-  required int32 memoryMB = 9;
-  required float usedDiskSlots = 10;
-  required int32 usedMemoryMB = 11;
-  required int32 usedCpuCoreSlots = 12;
-  required int64 maxHeap = 13;
-  required int64 freeHeap = 14;
-  required int64 totalHeap = 15;
-  required int32 numRunningTasks = 16;
-  required string workerStatus = 17;
-  required int64 lastHeartbeat = 18;
-  required bool queryMasterMode = 19;
-  required bool taskRunnerMode = 20;
-  required int32 numQueryMasterTasks = 21;
+  required WorkerConnectionInfoProto connectionInfo = 1;
+  required float diskSlots = 2;
+  required int32 cpuCoreSlots = 3;
+  required int32 memoryMB = 4;
+  required float usedDiskSlots = 5;
+  required int32 usedMemoryMB = 6;
+  required int32 usedCpuCoreSlots = 7;
+  required int64 maxHeap = 8;
+  required int64 freeHeap = 9;
+  required int64 totalHeap = 10;
+  required int32 numRunningTasks = 11;
+  required string workerStatus = 12;
+  required int64 lastHeartbeat = 13;
+  required bool queryMasterMode = 14;
+  required bool taskRunnerMode = 15;
+  required int32 numQueryMasterTasks = 16;
 }
 
 message GetClusterInfoResponse {
