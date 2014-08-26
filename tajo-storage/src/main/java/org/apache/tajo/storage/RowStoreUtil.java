@@ -20,14 +20,23 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.directmem.SizeOf;
+import org.apache.tajo.storage.directmem.UnsafeUtil;
 import org.apache.tajo.storage.exception.UnknownDataTypeException;
+import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
+import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class RowStoreUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
@@ -282,6 +291,91 @@ public class RowStoreUtil {
 
     public Schema getSchema() {
       return schema;
+    }
+  }
+
+  public static class DirectRowStoreEncoder {
+    private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
+    private Type [] types;
+    private ByteBuffer buffer;
+    private long address;
+
+    private int rowOffset;
+
+    public DirectRowStoreEncoder(Schema schema) {
+      this.types = SchemaUtil.toTypes(schema);
+      buffer = ByteBuffer.allocateDirect(64 * StorageUnit.KB).order(ByteOrder.nativeOrder());
+      address = UnsafeUtil.getAddress(buffer);
+    }
+
+    public ByteBuffer encode(Tuple tuple) {
+      for (int i = 0; i < types.length; i++) {
+        switch (types[i]) {
+        case BOOLEAN:
+          UNSAFE.putByte(address + rowOffset, (byte) (tuple.getBool(i) ? 0x01 : 0x00));
+          rowOffset += SizeOf.SIZE_OF_BYTE;
+          break;
+        case INT1:
+        case INT2:
+          UNSAFE.putShort(address + rowOffset, tuple.getInt2(i));
+          rowOffset += SizeOf.SIZE_OF_SHORT;
+          break;
+        case INT4:
+          UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
+          rowOffset += SizeOf.SIZE_OF_INT;
+          break;
+        case INT8:
+          UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
+          rowOffset += SizeOf.SIZE_OF_LONG;
+          break;
+        case FLOAT4:
+          UNSAFE.putFloat(address + rowOffset, tuple.getFloat4(i));
+          rowOffset += SizeOf.SIZE_OF_FLOAT;
+          break;
+        case FLOAT8:
+          UNSAFE.putDouble(address + rowOffset, tuple.getFloat8(i));
+          rowOffset += SizeOf.SIZE_OF_DOUBLE;
+          break;
+        case TEXT:
+          byte [] bytes = tuple.getBytes(i);
+
+          UNSAFE.putInt(address + rowOffset, bytes.length);
+          rowOffset += SizeOf.SIZE_OF_INT;
+
+          UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address + rowOffset, bytes.length);
+          rowOffset += bytes.length;
+          break;
+        case TIMESTAMP:
+          UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
+          rowOffset += SizeOf.SIZE_OF_LONG;
+          break;
+        case DATE:
+          UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
+          rowOffset += SizeOf.SIZE_OF_INT;
+          break;
+        case TIME:
+          UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
+          rowOffset += SizeOf.SIZE_OF_LONG;
+          break;
+        case INTERVAL:
+          //IntervalDatum intervalDatum = tuple.getI
+          IntervalDatum interval = null;
+          UNSAFE.putInt(address + rowOffset, interval.getMonths());
+          rowOffset += SizeOf.SIZE_OF_INT;
+          UNSAFE.putLong(address + rowOffset, interval.getMilliSeconds());
+          rowOffset += SizeOf.SIZE_OF_LONG;
+          break;
+        case INET4:
+          UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
+          rowOffset += SizeOf.SIZE_OF_INT;
+          break;
+        default:
+          throw new UnsupportedException("Unknown data type: " + types[i]);
+        }
+      }
+
+      buffer.position(0).limit(rowOffset);
+      return buffer;
     }
   }
 }

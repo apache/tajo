@@ -96,19 +96,23 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    UnSafeTuple unSafeTuple = (UnSafeTuple) t;
-    if (enabledStats) {
-      for (int i = 0; i < schema.size(); i++) {
-        stats.analyzeField(i, t.get(i));
+    if (t instanceof UnSafeTuple) {
+      UnSafeTuple unSafeTuple = (UnSafeTuple) t;
+      if (enabledStats) {
+        for (int i = 0; i < schema.size(); i++) {
+          stats.analyzeField(i, t.get(i));
+        }
       }
-    }
-    channel.write(unSafeTuple.nioBuffer());
+      channel.write(unSafeTuple.nioBuffer());
 
-    if (enabledStats) {
-      stats.incrementRow();
-    }
+      if (enabledStats) {
+        stats.incrementRow();
+      }
 
-    pos = channel.position();
+      pos = channel.position();
+    } else {
+
+    }
   }
 
   @Override
