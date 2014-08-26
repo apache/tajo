@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
@@ -29,7 +30,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
-public class DistinctGroupbyInitWriterExec extends PhysicalExec {
+public class DistinctGroupbyFirstWriterExec extends UnaryPhysicalExec {
   private DistinctGroupbyNode plan;
   private PhysicalExec child;
   private float progress;
@@ -42,9 +43,11 @@ public class DistinctGroupbyInitWriterExec extends PhysicalExec {
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
 
-  public DistinctGroupbyInitWriterExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
+  protected TableStats inputStats;
+
+  public DistinctGroupbyFirstWriterExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema());
+    super(context, plan.getInSchema(), plan.getOutSchema(), subOp);
 
     this.plan = plan;
 
@@ -101,63 +104,95 @@ public class DistinctGroupbyInitWriterExec extends PhysicalExec {
       outputTuple = tuple;
       hashTable.put(outputTuple, outputTuple);
 
-      for (int i = 0; i < aggFunctionsNum; i++) {
+      for (int i = 0; i < child.outColumnNum; i++) {
         outputTuple = new VTuple(outColumnNum);
-        int tupleIdx = 0;
-        for (; tupleIdx < groupingKeyNum; tupleIdx++) {
-          outputTuple.put(tupleIdx, keyTuple.get(tupleIdx));
-        }
-
-        for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
-          if (i == funcIdx) {
-            outputTuple.put(tupleIdx, tuple.get(tupleIdx));
+        for (int j = 0; j < child.outColumnNum; j++) {
+          if (i == j) {
+            outputTuple.put(j, tuple.get(j));
           } else {
-            outputTuple.put(tupleIdx, DatumFactory.createDistinctNullDatum());
+            outputTuple.put(j, DatumFactory.createDistinctNullDatum());
           }
         }
         hashTable.put(outputTuple, outputTuple);
       }
+
+//      for (int i = 0; i < aggFunctionsNum; i++) {
+//        outputTuple = new VTuple(outColumnNum);
+//        int tupleIdx = 0;
+//        for (; tupleIdx < groupingKeyNum; tupleIdx++) {
+//          outputTuple.put(tupleIdx, keyTuple.get(tupleIdx));
+//        }
+//
+//        for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
+//          if (i == funcIdx) {
+//            outputTuple.put(tupleIdx, tuple.get(tupleIdx));
+//          } else {
+//            outputTuple.put(tupleIdx, DatumFactory.createDistinctNullDatum());
+//          }
+//        }
+//        hashTable.put(outputTuple, outputTuple);
+//      }
     }
   }
 
+//  @Override
+//  public TableStats getInputStats() {
+//    System.out.println("### 100 ###");
+//    if (child != null) {
+//      System.out.println("### 110 ###");
+//      return child.getInputStats();
+//    } else {
+//      System.out.println("### 120 ###");
+//      return inputStats;
+//    }
+//  }
 
-  @Override
-  public void init() throws IOException {
-    progress = 0.0f;
-    if (child != null) {
-      child.init();
-    }
-  }
+//  @Override
+//  public void init() throws IOException {
+//    progress = 0.0f;
+//    if (child != null) {
+//      child.init();
+//    }
+//  }
 
   @Override
   public void rescan() throws IOException {
-    progress = 0.0f;
-    if (child != null) {
-      child.rescan();
-    }
+//    progress = 0.0f;
+//    if (child != null) {
+//      child.rescan();
+//    }
+    super.rescan();
     iterator = hashTable.entrySet().iterator();
   }
 
   @Override
   public void close() throws IOException {
-    progress = 1.0f;
-    if (child != null) {
-      child.close();
-      child = null;
-    }
-
+//    progress = 1.0f;
+//    if (child != null) {
+//      child.close();
+//      try {
+//        TableStats stat = child.getInputStats();
+//        if (stat != null) {
+//          inputStats = (TableStats)(stat.clone());
+//        }
+//      } catch (CloneNotSupportedException e) {
+//        e.printStackTrace();
+//      }
+//      child = null;
+//    }
+    super.close();
     hashTable.clear();
     hashTable = null;
     iterator = null;
   }
 
-  @Override
-  public float getProgress() {
-    if (child != null) {
-      return child.getProgress();
-    } else {
-      return progress;
-    }
-  }
+//  @Override
+//  public float getProgress() {
+//    if (child != null) {
+//      return child.getProgress();
+//    } else {
+//      return progress;
+//    }
+//  }
 
 }

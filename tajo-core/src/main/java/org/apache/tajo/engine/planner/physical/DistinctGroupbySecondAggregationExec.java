@@ -31,7 +31,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
-public class DistinctGroupbyIntermediateAggregationExec extends PhysicalExec {
+public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private DistinctGroupbyNode plan;
   private PhysicalExec child;
   private float progress;
@@ -47,9 +47,9 @@ public class DistinctGroupbyIntermediateAggregationExec extends PhysicalExec {
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
 
-  public DistinctGroupbyIntermediateAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
+  public DistinctGroupbySecondAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema());
+    super(context, plan.getInSchema(), plan.getOutSchema(), subOp);
 
     this.plan = plan;
 
@@ -168,43 +168,45 @@ public class DistinctGroupbyIntermediateAggregationExec extends PhysicalExec {
     return retValue;
   }
 
-  @Override
-  public void init() throws IOException {
-    progress = 0.0f;
-    if (child != null) {
-      child.init();
-    }
-  }
+//  @Override
+//  public void init() throws IOException {
+//    progress = 0.0f;
+//    if (child != null) {
+//      child.init();
+//    }
+//  }
 
   @Override
   public void rescan() throws IOException {
-    progress = 0.0f;
-    if (child != null) {
-      child.rescan();
-    }
+//    progress = 0.0f;
+//    if (child != null) {
+//      child.rescan();
+//    }
+    super.rescan();
     iterator = hashTable.entrySet().iterator();
   }
 
   @Override
   public void close() throws IOException {
-    progress = 1.0f;
-    if (child != null) {
-      child.close();
-      child = null;
-    }
+//    progress = 1.0f;
+//    if (child != null) {
+//      child.close();
+//      child = null;
+//    }
+    super.close();
 
     hashTable.clear();
     hashTable = null;
     iterator = null;
   }
-
-  @Override
-  public float getProgress() {
-    if (child != null) {
-      return child.getProgress();
-    } else {
-      return progress;
-    }
-  }
+//
+//  @Override
+//  public float getProgress() {
+//    if (child != null) {
+//      return child.getProgress();
+//    } else {
+//      return progress;
+//    }
+//  }
 
 }
