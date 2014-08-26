@@ -60,7 +60,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 1802;
+  private final int numTuple = 3000000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -86,6 +86,9 @@ public class TestExternalSortExec {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
+
+    long startTime = System.currentTimeMillis();
+
     Tuple tuple = new VTuple(schema.size());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] {
@@ -95,10 +98,14 @@ public class TestExternalSortExec {
       });
       appender.addTuple(tuple);
     }
+
     appender.flush();
     appender.close();
 
+    long endTime = System.currentTimeMillis();
+
     System.out.println(appender.getStats().getNumRows() + " rows (" + appender.getStats().getNumBytes() + " bytes)");
+    System.out.println("writing takes " + (endTime - startTime) + " msec");
 
     employee = new TableDesc("default.employee", schema, employeeMeta, employeePath);
     catalog.createTable(employee);
