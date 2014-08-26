@@ -33,6 +33,7 @@ import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
 import org.apache.tajo.storage.directmem.UnsafeUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
@@ -112,11 +113,29 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     return rowblock.copyFromChannel(channel, tableStats);
   }
 
+  private UnSafeTuple unSafeTuple = new UnSafeTuple();
+  RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 64 * StorageUnit.KB);
+  private boolean fetchNeeded = true;
+
   @Override
   public Tuple next() throws IOException {
-    if(eof) return null;
+    if(eof) {
+      return null;
+    }
 
-    return null;
+    while(true) {
+      if (fetchNeeded) {
+        if (!next(rowBlock)) {
+          return null;
+        }
+      }
+
+      fetchNeeded = !rowBlock.next(unSafeTuple);
+
+      if (!fetchNeeded) {
+        return unSafeTuple;
+      }
+    }
   }
 
   @Override

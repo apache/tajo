@@ -53,7 +53,7 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public int size() {
-    return 0;
+    return types.length;
   }
 
   public ByteBuffer nioBuffer() {
@@ -135,12 +135,11 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public void setOffset(long offset) {
-    throw new UnsupportedException("UnSafeTuple does not support setOffset().");
   }
 
   @Override
   public long getOffset() {
-    throw new UnsupportedException("UnSafeTuple does not support getOffset().");
+    return 0;
   }
 
   @Override
@@ -237,6 +236,32 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public Datum[] getValues() {
-    throw new UnsupportedException("UnSafeTuple does not support setOffset().");
+    Datum [] datums = new Datum[size()];
+//    for (int i = 0; i < size(); i++) {
+//      datums[i] = get(i);
+//    }
+    return datums;
+  }
+
+  @Override
+  public String toString() {
+    Datum [] values = getValues();
+    boolean first = true;
+    StringBuilder str = new StringBuilder();
+    str.append("(");
+    for(int i=0; i < values.length; i++) {
+      if(values[i] != null) {
+        if(first) {
+          first = false;
+        } else {
+          str.append(", ");
+        }
+        str.append(i)
+            .append("=>")
+            .append(values[i]);
+      }
+    }
+    str.append(")");
+    return str.toString();
   }
 }

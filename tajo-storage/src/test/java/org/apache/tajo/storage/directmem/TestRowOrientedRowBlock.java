@@ -27,7 +27,6 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -427,7 +426,7 @@ public class TestRowOrientedRowBlock {
     rowBlock.free();
 
     assertEquals(vecSize, j);
-    assertEquals(vecSize, rowBlock.filledRowNum());
+    assertEquals(vecSize, rowBlock.rows());
   }
 
   @Test

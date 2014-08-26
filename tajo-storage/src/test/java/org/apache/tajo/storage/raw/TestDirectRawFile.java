@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -148,6 +149,82 @@ public class TestDirectRawFile {
     reader.close();
     readBlock.free();
 
+    assertEquals(rowNum, j);
+  }
+
+  @Test
+  public void testRWForAllTypesWithNextTuple() throws IOException {
+    int rowNum = 3000000;
+
+    long allocateStart = System.currentTimeMillis();
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 300);
+    long allocatedEnd = System.currentTimeMillis();
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < rowNum; i++) {
+      rowBlock.startRow();
+      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
+      rowBlock.putInt2((short) 1);                 // 1
+      rowBlock.putInt4(i);                         // 2
+      rowBlock.putInt8(i);                         // 3
+      rowBlock.putFloat4(i);                       // 4
+      rowBlock.putFloat8(i);                       // 5
+      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      rowBlock.endRow();
+    }
+    long writeEnd = System.currentTimeMillis();
+    LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
+
+
+    Path testDir = CommonTestingUtil.getTestDir();
+    Path outputFile = new Path(testDir, "output.draw");
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
+    DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
+    writer.init();
+    writer.writeRowBlock(rowBlock);
+    writer.close();
+
+    rowBlock.free();
+
+    FileSystem fs = FileSystem.getLocal(conf);
+    FileStatus status = fs.getFileStatus(outputFile);
+    assertTrue(status.getLen() > 0);
+    LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
+
+    DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
+    reader.init();
+
+    long readStart = System.currentTimeMillis();
+    int j = 0;
+    Tuple tuple;
+    while ((tuple = reader.next()) != null) {
+      assertTrue((j % 1 == 0) == tuple.getBool(0));
+      assertTrue(1 == tuple.getInt2(1));
+      assertEquals(j, tuple.getInt4(2));
+      assertEquals(j, tuple.getInt8(3));
+      assertTrue(j == tuple.getFloat4(4));
+      assertTrue(j == tuple.getFloat8(5));
+      assertEquals(new String(TEXT_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(7));
+      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(8));
+      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
+      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
+      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+      j++;
+    }
+
+    LOG.info("Total read rows: " + j);
+    long readEnd = System.currentTimeMillis();
+    LOG.info("reading takes " + (readEnd - readStart) + " msec");
+    reader.close();
     assertEquals(rowNum, j);
   }
 

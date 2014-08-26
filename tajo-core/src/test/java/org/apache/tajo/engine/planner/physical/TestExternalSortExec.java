@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -59,7 +60,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 100000;
+  private final int numTuple = 1802;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -80,7 +81,7 @@ public class TestExternalSortExec {
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
@@ -97,8 +98,7 @@ public class TestExternalSortExec {
     appender.flush();
     appender.close();
 
-    System.out.println(appender.getStats().getNumRows() + " rows (" + (appender.getStats().getNumBytes() / 1048576) +
-        " MB)");
+    System.out.println(appender.getStats().getNumRows() + " rows (" + appender.getStats().getNumBytes() + " bytes)");
 
     employee = new TableDesc("default.employee", schema, employeeMeta, employeePath);
     catalog.createTable(employee);
@@ -118,6 +118,9 @@ public class TestExternalSortExec {
 
   @Test
   public final void testNext() throws IOException, PlanningException {
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    //queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 1);
+
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
@@ -125,7 +128,7 @@ public class TestExternalSortExec {
         LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
+    LogicalPlan plan = planner.createPlan(queryContext, expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);

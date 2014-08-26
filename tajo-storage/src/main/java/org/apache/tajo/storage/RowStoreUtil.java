@@ -335,16 +335,32 @@ public class RowStoreUtil {
     }
 
     public ByteBuffer encode(Tuple tuple) {
+      buffer.clear();
+      rowOffset = 0;
+
+      int rowStartPos = buffer.position();
+      int curFieldIdx = 0;
+      int [] fieldOffset = new int[types.length];
+      rowOffset += SizeOf.SIZE_OF_INT * (types.length + 1); // record size + offset list
+
       for (int i = 0; i < types.length; i++) {
+        fieldOffset[curFieldIdx++] = rowOffset;
+
         switch (types[i]) {
+        case NULL_TYPE:
+          fieldOffset[curFieldIdx - 1] = -1;
+          break;
+
         case BOOLEAN:
           ensureSize(SizeOf.SIZE_OF_BYTE);
+
           UNSAFE.putByte(address + rowOffset, (byte) (tuple.getBool(i) ? 0x01 : 0x00));
           rowOffset += SizeOf.SIZE_OF_BYTE;
           break;
         case INT1:
         case INT2:
           ensureSize(SizeOf.SIZE_OF_SHORT);
+
           UNSAFE.putShort(address + rowOffset, tuple.getInt2(i));
           rowOffset += SizeOf.SIZE_OF_SHORT;
           break;
@@ -407,7 +423,16 @@ public class RowStoreUtil {
         }
       }
 
-      buffer.position(0).limit(rowOffset);
+      long offset = address + rowStartPos;
+      UNSAFE.putInt(offset, rowOffset);
+      offset += SizeOf.SIZE_OF_INT;
+
+      for (int i = 0; i < types.length; i++) {
+        UNSAFE.putInt(offset, fieldOffset[i]);
+        offset += SizeOf.SIZE_OF_INT;
+      }
+
+      buffer.position(rowStartPos).limit(rowOffset);
       return buffer;
     }
   }

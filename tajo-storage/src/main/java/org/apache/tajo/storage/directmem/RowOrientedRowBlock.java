@@ -26,7 +26,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.FileUtil;
 import sun.misc.Unsafe;
@@ -43,16 +42,19 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private static final Log LOG = LogFactory.getLog(RowOrientedRowBlock.class);
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
+  private static final float DEFAULT_BUF_INCREASE_RATIO = 1.0f;
+
   private Type[] types;
   private int [] maxLengths;
   private int bytesLen;
   private ByteBuffer buffer;
   private long address;
   private int fieldIndexBytesLen;
+  private float bufIncreaseRatio;
 
   // Basic States
   private int maxRowNum = Integer.MAX_VALUE; // optional
-  private int filledRowNum;
+  private int rowNum;
 
   // Read States
   private int curRowIdxForRead;
@@ -65,12 +67,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private int curFieldIdxForWrite;
   private int [] fieldIndexesForWrite;
 
-  public RowOrientedRowBlock(Schema schema, int bytes) {
-    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()));
-  }
-
-  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
+  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer, float bufIncreaseRatio) {
     this.buffer = buffer;
+    this.bufIncreaseRatio = bufIncreaseRatio;
+
     this.address = ((DirectBuffer) buffer).address();
     this.bytesLen = buffer.limit();
 
@@ -85,6 +85,27 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
 
     curOffsetForWrite = 0;
+  }
+
+  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
+    this(schema, buffer, DEFAULT_BUF_INCREASE_RATIO);
+  }
+
+  public RowOrientedRowBlock(Schema schema, int bytes,float bufIncreaseRatio) {
+    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()), bufIncreaseRatio);
+  }
+
+  public RowOrientedRowBlock(Schema schema, int bytes) {
+    this(schema, bytes, DEFAULT_BUF_INCREASE_RATIO);
+  }
+
+  public void clear() {
+    resetRowCursor();
+
+    this.curOffsetForWrite = 0;
+    this.rowOffsetForWrite = 0;
+    this.curFieldIdxForWrite = 0;
+    this.rowNum = 0;
   }
 
   public void free() {
@@ -104,6 +125,14 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     return buffer;
   }
 
+  public float increaseRatio() {
+    return bufIncreaseRatio;
+  }
+
+  public long usedMem() {
+    return curOffsetForWrite;
+  }
+
   public long totalMem() {
     return bytesLen;
   }
@@ -115,8 +144,8 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   public int maxRowNum() {
     return maxRowNum;
   }
-  public int filledRowNum() {
-    return filledRowNum;
+  public int rows() {
+    return rowNum;
   }
 
   /**
@@ -125,7 +154,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
    * @return True if tuple block is filled with tuples. Otherwise, It will return false.
    */
   public boolean next(UnSafeTuple tuple) {
-    if (curRowIdxForRead < filledRowNum) {
+    if (curRowIdxForRead < rowNum) {
 
       long recordStartPtr = address + curPosForRead;
       int recordLen = UNSAFE.getInt(recordStartPtr);
@@ -153,7 +182,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
    */
   private void ensureSize(int size) {
     if (remain() - size < 0) {
-      int newBlockSize = UnsafeUtil.alignedSize(bytesLen << 1);
+      int newBlockSize = UnsafeUtil.alignedSize((int) (bytesLen + (bytesLen * DEFAULT_BUF_INCREASE_RATIO)));
       ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
       long newAddress = ((DirectBuffer)newByteBuf).address();
       UNSAFE.copyMemory(this.address, newAddress, bytesLen);
@@ -220,13 +249,12 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public boolean copyFromChannel(FileChannel channel, TableStats stats) throws IOException {
     if (channel.position() < channel.size()) {
-      filledRowNum = 0;
+      clear();
+
       buffer.clear();
       channel.read(buffer);
       bytesLen = buffer.position();
 
-      curOffsetForWrite = 0;
-      rowOffsetForWrite = 0;
       while (curOffsetForWrite < bytesLen) {
         rowStartAddrForWrite = address + curOffsetForWrite;
 
@@ -239,7 +267,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
         }
 
         curOffsetForWrite += recordSize;
-        filledRowNum++;
+        rowNum++;
       }
 
       return true;
@@ -268,7 +296,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   }
 
   public void endRow() {
-    filledRowNum++;
+    rowNum++;
 
     long rowHeaderPos = rowStartAddrForWrite;
     UNSAFE.putInt(rowHeaderPos, rowOffsetForWrite);
