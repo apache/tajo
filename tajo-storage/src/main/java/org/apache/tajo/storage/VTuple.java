@@ -19,10 +19,7 @@
 package org.apache.tajo.storage;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Inet4Datum;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnimplementedException;
 
 import java.net.InetAddress;
@@ -176,6 +173,11 @@ public class VTuple implements Tuple, Cloneable {
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
     return (ProtobufDatum) values[fieldId];
+  }
+
+  @Override
+  public IntervalDatum getInterval(int fieldId) {
+    return (IntervalDatum) values[fieldId];
   }
 
   @Override

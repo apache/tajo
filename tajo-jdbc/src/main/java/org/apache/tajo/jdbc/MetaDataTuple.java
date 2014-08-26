@@ -17,6 +17,7 @@ package org.apache.tajo.jdbc; /**
  */
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
@@ -142,7 +143,12 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
-    throw new UnsupportedException();
+    throw new UnsupportedException("getProtobufDatum");
+  }
+
+  @Override
+  public IntervalDatum getInterval(int fieldId) {
+    throw new UnsupportedException("getInterval");
   }
 
   @Override
@@ -157,6 +163,6 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public Datum[] getValues(){
-    throw new UnsupportedException();
+    throw new UnsupportedException("getValues");
   }
 }

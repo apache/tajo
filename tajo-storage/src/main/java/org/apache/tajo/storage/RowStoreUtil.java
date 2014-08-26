@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -31,7 +33,9 @@ import org.apache.tajo.storage.exception.UnknownDataTypeException;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
+import org.apache.tajo.util.FileUtil;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -64,6 +68,10 @@ public class RowStoreUtil {
 
   public static RowStoreDecoder createDecoder(Schema schema) {
     return new RowStoreDecoder(schema);
+  }
+
+  public static DirectRowStoreEncoder createDirectRawEncoder(Schema schema) {
+    return new DirectRowStoreEncoder(schema);
   }
 
   public static class RowStoreDecoder {
@@ -295,11 +303,12 @@ public class RowStoreUtil {
   }
 
   public static class DirectRowStoreEncoder {
+    private static final Log LOG = LogFactory.getLog(DirectRowStoreEncoder.class);
+
     private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
     private Type [] types;
     private ByteBuffer buffer;
     private long address;
-
     private int rowOffset;
 
     public DirectRowStoreEncoder(Schema schema) {
@@ -308,36 +317,71 @@ public class RowStoreUtil {
       address = UnsafeUtil.getAddress(buffer);
     }
 
+    private void ensureSize(int size) {
+
+      if (buffer.remaining() - size < 0) { // check the remain size
+        // enlarge new buffer and copy writing data
+        int newBlockSize = UnsafeUtil.alignedSize(buffer.capacity() << 1);
+        ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
+        long newAddress = ((DirectBuffer)newByteBuf).address();
+        UNSAFE.copyMemory(this.address, newAddress, buffer.limit());
+        LOG.debug("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
+
+        // release existing buffer and replace variables
+        UnsafeUtil.free(buffer);
+        buffer = newByteBuf;
+        address = newAddress;
+      }
+    }
+
     public ByteBuffer encode(Tuple tuple) {
       for (int i = 0; i < types.length; i++) {
         switch (types[i]) {
         case BOOLEAN:
+          ensureSize(SizeOf.SIZE_OF_BYTE);
           UNSAFE.putByte(address + rowOffset, (byte) (tuple.getBool(i) ? 0x01 : 0x00));
           rowOffset += SizeOf.SIZE_OF_BYTE;
           break;
         case INT1:
         case INT2:
+          ensureSize(SizeOf.SIZE_OF_SHORT);
           UNSAFE.putShort(address + rowOffset, tuple.getInt2(i));
           rowOffset += SizeOf.SIZE_OF_SHORT;
           break;
+
         case INT4:
+        case DATE:
+        case INET4:
+          ensureSize(SizeOf.SIZE_OF_INT);
           UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
           rowOffset += SizeOf.SIZE_OF_INT;
           break;
+
         case INT8:
+        case TIMESTAMP:
+        case TIME:
+          ensureSize(SizeOf.SIZE_OF_LONG);
           UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
           rowOffset += SizeOf.SIZE_OF_LONG;
           break;
+
         case FLOAT4:
+          ensureSize(SizeOf.SIZE_OF_FLOAT);
           UNSAFE.putFloat(address + rowOffset, tuple.getFloat4(i));
           rowOffset += SizeOf.SIZE_OF_FLOAT;
           break;
         case FLOAT8:
+          ensureSize(SizeOf.SIZE_OF_DOUBLE);
           UNSAFE.putDouble(address + rowOffset, tuple.getFloat8(i));
           rowOffset += SizeOf.SIZE_OF_DOUBLE;
           break;
+
         case TEXT:
+        case PROTOBUF:
+        case BLOB:
           byte [] bytes = tuple.getBytes(i);
+
+          ensureSize(SizeOf.SIZE_OF_INT + bytes.length);
 
           UNSAFE.putInt(address + rowOffset, bytes.length);
           rowOffset += SizeOf.SIZE_OF_INT;
@@ -345,30 +389,19 @@ public class RowStoreUtil {
           UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address + rowOffset, bytes.length);
           rowOffset += bytes.length;
           break;
-        case TIMESTAMP:
-          UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
-          rowOffset += SizeOf.SIZE_OF_LONG;
-          break;
-        case DATE:
-          UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
-          rowOffset += SizeOf.SIZE_OF_INT;
-          break;
-        case TIME:
-          UNSAFE.putLong(address + rowOffset, tuple.getInt8(i));
-          rowOffset += SizeOf.SIZE_OF_LONG;
-          break;
+
         case INTERVAL:
-          //IntervalDatum intervalDatum = tuple.getI
-          IntervalDatum interval = null;
+          ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
+
+          IntervalDatum interval = tuple.getInterval(i);
+
           UNSAFE.putInt(address + rowOffset, interval.getMonths());
           rowOffset += SizeOf.SIZE_OF_INT;
+
           UNSAFE.putLong(address + rowOffset, interval.getMilliSeconds());
           rowOffset += SizeOf.SIZE_OF_LONG;
           break;
-        case INET4:
-          UNSAFE.putInt(address + rowOffset, tuple.getInt4(i));
-          rowOffset += SizeOf.SIZE_OF_INT;
-          break;
+
         default:
           throw new UnsupportedException("Unknown data type: " + types[i]);
         }

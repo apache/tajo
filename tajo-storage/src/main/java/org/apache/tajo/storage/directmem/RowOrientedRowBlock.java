@@ -25,6 +25,9 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.FileUtil;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -169,6 +172,52 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     }
   }
 
+  public void addTuple(Tuple tuple) {
+    startRow();
+
+    for (int i = 0; i < types.length; i++) {
+      if (tuple.isNull(i)) {
+        skipField();
+        continue;
+      }
+      switch (types[i]) {
+      case BOOLEAN:
+        putBool(tuple.getBool(i));
+        break;
+      case INT1:
+      case INT2:
+        putInt2(tuple.getInt2(i));
+        break;
+      case INT4:
+      case DATE:
+      case INET4:
+        putInt4(tuple.getInt4(i));
+        break;
+      case INT8:
+      case TIMESTAMP:
+      case TIME:
+        putInt8(tuple.getInt8(i));
+        break;
+      case FLOAT4:
+        putFloat4(tuple.getFloat4(i));
+        break;
+      case FLOAT8:
+        putFloat8(tuple.getFloat8(i));
+        break;
+      case TEXT:
+        putText(tuple.getBytes(i));
+        break;
+      case INTERVAL:
+        putInterval(tuple.getInterval(i));
+        break;
+      default:
+        throw new UnsupportedException("Unknown data type: " + types[i]);
+      }
+    }
+
+    endRow();
+  }
+
   public boolean copyFromChannel(FileChannel channel, TableStats stats) throws IOException {
     if (channel.position() < channel.size()) {
       filledRowNum = 0;
@@ -308,28 +357,28 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public void putText(String val) {
     byte [] bytes = val.getBytes(TextDatum.DEFAULT_CHARSET);
-    int bytesLen = bytes.length;
+    putText(bytes);
+  }
 
-    ensureSize(4 + bytesLen);
+  public void putText(byte [] val) {
+    int bytesLen = val.length;
+
+    ensureSize(SizeOf.SIZE_OF_INT + bytesLen);
 
     fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
     UNSAFE.putInt(rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
     rowOffsetForWrite += SizeOf.SIZE_OF_INT;
 
-    UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
+    UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, rowStartAddrForWrite + rowOffsetForWrite, bytesLen);
     rowOffsetForWrite += bytesLen;
 
     curFieldIdxForWrite++;
   }
 
-  public void putText(byte [] val) {
-    putBlob(val);
-  }
-
   public void putBlob(byte[] val) {
     int bytesLen = val.length;
 
-    ensureSize(4 + bytesLen);
+    ensureSize(SizeOf.SIZE_OF_INT + bytesLen);
 
     fieldIndexesForWrite[curFieldIdxForWrite] = rowOffsetForWrite;
     UNSAFE.putInt(rowStartAddrForWrite + rowOffsetForWrite, bytesLen);

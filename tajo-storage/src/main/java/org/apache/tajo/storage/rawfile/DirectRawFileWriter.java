@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.FileAppender;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
@@ -94,24 +95,35 @@ public class DirectRawFileWriter extends FileAppender {
     pos = channel.position();
   }
 
+  private RowStoreUtil.DirectRowStoreEncoder encoder;
+
   @Override
   public void addTuple(Tuple t) throws IOException {
+    if (enabledStats) {
+      for (int i = 0; i < schema.size(); i++) {
+        stats.analyzeField(i, t.get(i));
+      }
+    }
+
     if (t instanceof UnSafeTuple) {
       UnSafeTuple unSafeTuple = (UnSafeTuple) t;
-      if (enabledStats) {
-        for (int i = 0; i < schema.size(); i++) {
-          stats.analyzeField(i, t.get(i));
-        }
-      }
-      channel.write(unSafeTuple.nioBuffer());
 
-      if (enabledStats) {
-        stats.incrementRow();
-      }
+      channel.write(unSafeTuple.nioBuffer());
 
       pos = channel.position();
     } else {
 
+      if (encoder == null) {
+        encoder = RowStoreUtil.createDirectRawEncoder(schema);
+      }
+
+      channel.write(encoder.encode(t));
+
+      pos = channel.position();
+    }
+
+    if (enabledStats) {
+      stats.incrementRow();
     }
   }
 
