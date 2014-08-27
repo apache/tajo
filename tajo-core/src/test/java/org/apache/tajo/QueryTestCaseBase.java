@@ -349,8 +349,12 @@ public class QueryTestCaseBase {
       return;
     }
     try {
+      Map<String, String> variables = new HashMap<String, String>();
+      variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+      client.updateSessionVariables(variables);
+
       resultSet.close();
-    } catch (SQLException e) {
+    } catch (Exception e) {
       throw new IOException(e);
     }
   }

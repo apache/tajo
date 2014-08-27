@@ -23,7 +23,6 @@ package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
@@ -73,11 +72,6 @@ public class FrameTuple implements Tuple, Cloneable {
   @Override
   public boolean isNull(int fieldid) {
     return get(fieldid) instanceof NullDatum;
-  }
-
-  @Override
-  public boolean isDistinctNull(int fieldid) {
-    return get(fieldid) instanceof DistinctNullDatum;
   }
 
   @Override

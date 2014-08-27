@@ -952,7 +952,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         if (evalNode.getType() == EvalType.AGG_FUNCTION) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           aggEvalNames.add(namedExpr.getAlias());
-          aggEvalNodes.add((AggregationFunctionCallEval) evalNode);
+
+          AggregationFunctionCallEval aggFunction = (AggregationFunctionCallEval)evalNode;
+          aggFunction.setAlias(namedExpr.getAlias());
+          aggEvalNodes.add(aggFunction);
         }
       } catch (VerifyException ve) {
       }

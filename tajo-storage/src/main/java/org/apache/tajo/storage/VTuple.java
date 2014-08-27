@@ -20,7 +20,6 @@ package org.apache.tajo.storage;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DistinctNullDatum;
 import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
@@ -62,12 +61,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public boolean isDistinctNull(int fieldid) {
-    return values[fieldid] instanceof DistinctNullDatum;
-  }
-
-  @Override
-  public void clear() {   
+  public void clear() {
     for (int i=0; i < values.length; i++) {
       values[i] = null;
     }

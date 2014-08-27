@@ -25,14 +25,14 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.builtin.CountRows;
-import org.apache.tajo.engine.function.builtin.CountValue;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose protected AggFunction instance;
   @Expose boolean firstPhase = false;
+  @Expose String alias;
+
   private Tuple params;
 
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -67,30 +67,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     }
   }
 
-
-  public void mergeOnMultiStages(FunctionContext context, Schema schema, Tuple tuple) {
-    if (params == null) {
-      this.params = new VTuple(argEvals.length);
-    }
-
-    if (argEvals != null) {
-      for (int i = 0; i < argEvals.length; i++) {
-        params.put(i, argEvals[i].eval(schema, tuple));
-      }
-    }
-
-    if (firstPhase) {
-      instance.eval(context, params);
-    } else {
-
-      if (instance instanceof CountValue) {
-        instance.eval(context, params);
-      } else {
-        instance.merge(context, params);
-      }
-    }
-  }
-
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
     throw new UnsupportedOperationException("Cannot execute eval() of aggregation function");
@@ -112,6 +88,10 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       return funcDesc.getReturnType();
     }
   }
+
+  public void setAlias(String alias) { this.alias = alias; }
+
+  public String getAlias() { return  this.alias; }
 
   public Object clone() throws CloneNotSupportedException {
     return super.clone();

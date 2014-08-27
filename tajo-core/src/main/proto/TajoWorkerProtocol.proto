@@ -314,6 +314,12 @@ message DistinctGroupbyEnforcer {
     SORT_AGGREGATION = 1;
   }
 
+  enum MultipleAggregationStage {
+    FIRST_STAGE = 0;
+    SECOND_STAGE = 1;
+    THRID_STAGE = 3;
+  }
+
   message SortSpecArray {
     required int32 pid = 1;
     repeated SortSpecProto sortSpecs = 2;
@@ -321,6 +327,8 @@ message DistinctGroupbyEnforcer {
   required int32 pid = 1;
   required DistinctAggregationAlgorithm algorithm = 2;
   repeated SortSpecArray sortSpecArrays = 3;
+  required bool isMultipleAggregation = 4 [default = false];
+  optional MultipleAggregationStage multipleAggregationStage = 5;
 }
 
 message EnforcerProto {

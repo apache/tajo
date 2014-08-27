@@ -19,33 +19,37 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.DistinctNullDatum;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.Bytes;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * This is the hash-based aggregation operator for count distinct second stage
+ */
 public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private DistinctGroupbyNode plan;
   private PhysicalExec child;
-  private float progress;
   private Tuple tuple = null;
   private Map<Tuple, FunctionContext[]> hashTable;
-  private Map<Tuple, Tuple> allTuples;
+  private Map<Tuple, Int8Datum> countRows;
   private boolean computed = false;
   private Iterator<Map.Entry<Tuple, FunctionContext []>> iterator = null;
-  private byte[] distinctNullBytes;
 
   protected final int groupingKeyNum;
   protected int groupingKeyIds[];
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
+  private boolean hasCountRowAggregation = false;
 
   public DistinctGroupbySecondAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
@@ -70,14 +74,19 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     }
 
     hashTable = new HashMap<Tuple, FunctionContext []>(100000);
-    allTuples = new HashMap<Tuple, Tuple>(100000);
-
-    this.tuple = new VTuple(plan.getOutSchema().size());
+    countRows = new HashMap<Tuple, Int8Datum>(100000);
 
     aggFunctions = plan.getAggFunctions();
     aggFunctionsNum = aggFunctions.length;
 
-    distinctNullBytes = DistinctNullDatum.get().asTextBytes();
+    for(int i = 0; i < aggFunctions.length; i++) {
+      if (!aggFunctions[i].isDistinct() && aggFunctions[i].getName().equals("count")) {
+        hasCountRowAggregation = true;
+        break;
+      }
+    }
+
+    this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
   @Override
@@ -100,7 +109,11 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         tuple.put(tupleIdx, keyTuple.get(tupleIdx));
       }
       for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
-        tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));
+        if (!aggFunctions[funcIdx].isDistinct() && aggFunctions[funcIdx].getName().equals("count")) {
+          tuple.put(tupleIdx, countRows.get(keyTuple));
+        } else {
+          tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));
+        }
       }
 
       return tuple;
@@ -113,8 +126,11 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
+    boolean matched = false;
 
     while((tuple = child.next()) != null && !context.isStopped()) {
+      matched = true;
+
       keyTuple = new VTuple(groupingKeyIds.length);
       // build one key tuple
       for(int i = 0; i < groupingKeyIds.length; i++) {
@@ -122,25 +138,43 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       }
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
-      if(contexts != null) {
-        for(int i = 0; i < aggFunctions.length; i++) {
-          if ((aggFunctions[i].isDistinct() && hasDistinctNull(tuple))
-              || (!aggFunctions[i].isDistinct() && !hasDistinctNull(tuple))) {
-            aggFunctions[i].mergeOnMultiStages(contexts[i], inSchema, tuple);
-          }
-        }
-      } else { // if the key occurs firstly
+
+      if (contexts == null) {
         contexts = new FunctionContext[aggFunctionsNum];
-        for(int i = 0; i < aggFunctionsNum; i++) {
-          contexts[i] = aggFunctions[i].newContext();
+      }
 
-          if ((aggFunctions[i].isDistinct() && hasDistinctNull(tuple))
-              || (!aggFunctions[i].isDistinct() && !hasDistinctNull(tuple))) {
-            aggFunctions[i].mergeOnMultiStages(contexts[i], inSchema, tuple);
-          }
+      // Find original raw data. It has not NullDatum at aggregation column.
+      // Because DistinctGroupbyFirstAggregationExec just set NullDatum at at aggregation column.
+      for(int i = 0; i < aggFunctions.length; i++) {
+        if (contexts[i] == null) {
+          contexts[i] = aggFunctions[i].newContext();
         }
 
-        hashTable.put(keyTuple, contexts);
+        Tuple param = getAggregationParams(aggFunctions[i].getArgs(), inSchema, tuple);
+        if (param.size() > 0 && param.get(0).isNull()) {
+          matched = false;
+        }
+      }
+
+      for(int i = 0; i < aggFunctions.length; i++) {
+        if (aggFunctions[i].isDistinct()) {
+          aggFunctions[i].merge(contexts[i], inSchema, tuple);
+        } else {
+          if (matched && !aggFunctions[i].getName().equals("count")) {
+            aggFunctions[i].merge(contexts[i], inSchema, tuple);
+          }
+        }
+      }
+      hashTable.put(keyTuple, contexts);
+
+      // If original data was found, we must add it to global count rows.
+      if (matched && hasCountRowAggregation) {
+        if (countRows.get(keyTuple) == null) {
+          countRows.put(keyTuple, DatumFactory.createInt8(1l));
+        } else {
+          Int8Datum rows = countRows.get(keyTuple);
+          countRows.put(keyTuple, (Int8Datum)rows.plus(DatumFactory.createInt8(1l)));
+        }
       }
     }
 
@@ -153,60 +187,34 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       }
       hashTable.put(null, contexts);
     }
+
   }
 
-  private boolean hasDistinctNull(Tuple tuple) {
-    boolean retValue = false;
+  public Tuple getAggregationParams(EvalNode[] argEvals, Schema schema, Tuple tuple) {
+    Tuple params = new VTuple(argEvals.length);
 
-    for (int i = 0; i < tuple.size(); i++) {
-      if (Bytes.compareTo(tuple.get(i).asTextBytes(), distinctNullBytes) == 0) {
-        retValue = true;
-        break;
+    if (argEvals != null) {
+      for (int i = 0; i < argEvals.length; i++) {
+        params.put(i, argEvals[i].eval(schema, tuple));
       }
     }
 
-    return retValue;
+    return params;
   }
-
-//  @Override
-//  public void init() throws IOException {
-//    progress = 0.0f;
-//    if (child != null) {
-//      child.init();
-//    }
-//  }
 
   @Override
   public void rescan() throws IOException {
-//    progress = 0.0f;
-//    if (child != null) {
-//      child.rescan();
-//    }
     super.rescan();
     iterator = hashTable.entrySet().iterator();
   }
 
   @Override
   public void close() throws IOException {
-//    progress = 1.0f;
-//    if (child != null) {
-//      child.close();
-//      child = null;
-//    }
     super.close();
 
     hashTable.clear();
     hashTable = null;
     iterator = null;
   }
-//
-//  @Override
-//  public float getProgress() {
-//    if (child != null) {
-//      return child.getProgress();
-//    } else {
-//      return progress;
-//    }
-//  }
 
 }

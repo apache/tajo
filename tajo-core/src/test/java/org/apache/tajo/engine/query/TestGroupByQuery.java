@@ -20,10 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -224,7 +221,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation1() throws Exception {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -235,7 +242,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
    */
   public final void testDistinctAggregation2() throws Exception {
     // select l_orderkey, count(*) as cnt, count(distinct l_linenumber) as unique_key from lineitem group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -243,7 +260,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testDistinctAggregation3() throws Exception {
     // select count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -252,7 +279,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation4() throws Exception {
     // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey)
     // from lineitem group by l_linenumber;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -261,7 +298,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation5() throws Exception {
     // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
     // from lineitem group by l_linenumber;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -270,7 +317,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation6() throws Exception {
     // select count(distinct l_orderkey) v0, sum(l_orderkey) v1, sum(l_linenumber) v2, count(*) as v4 from lineitem
     // group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -279,16 +336,61 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation7() throws Exception {
     // select count(*), count(distinct c_nationkey), count(distinct c_mktsegment) from customer
     // tpch scale 1000: 15000000	25	5
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
+  public final void testDistinctAggregation8() throws Exception {
+//    select l_orderkey
+//    , count(*) as cnt1
+//    , count(distinct l_orderkey) as cnt2
+//    , count(distinct l_linenumber) as cnt3
+//    , count(distinct l_returnflag) as cnt4
+//    from lineitem
+//    group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+
+  @Test
   public final void testDistinctAggregationWithHaving1() throws Exception {
     // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem
     // group by l_linenumber having sum(distinct l_orderkey) >= 6;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -297,162 +399,208 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationWithUnion1() throws Exception {
     // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
     // from (select * from lineitem union select * from lineitem) group by l_linenumber;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    // TODO: fix error
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testDistinctAggregationCasebyCase() throws Exception {
-    ResultSet res;
+    for (int index = 0; index < 2; index++) {
+      Map<String, String> variables = new HashMap<String, String>();
 
-    // one groupby, distinct, aggregation
-    res = executeFile("testDistinctAggregation_case1.sql");
-    assertResultSet(res, "testDistinctAggregation_case1.result");
-    res.close();
+      if (index == 0) {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+      } else {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+      }
+      client.updateSessionVariables(variables);
 
-    // one groupby, two distinct, one aggregation
-    res = executeFile("testDistinctAggregation_case2.sql");
-    assertResultSet(res, "testDistinctAggregation_case2.result");
-    res.close();
+      ResultSet res;
 
-    // one groupby, two distinct, two aggregation(no alias)
-    res = executeFile("testDistinctAggregation_case3.sql");
-    assertResultSet(res, "testDistinctAggregation_case3.result");
-    res.close();
+      // one groupby, distinct, aggregation
+      res = executeFile("testDistinctAggregation_case1.sql");
+      assertResultSet(res, "testDistinctAggregation_case1.result");
+      res.close();
 
-    // two groupby, two distinct, two aggregation
-    res = executeFile("testDistinctAggregation_case4.sql");
-    assertResultSet(res, "testDistinctAggregation_case4.result");
-    res.close();
+      // one groupby, two distinct, one aggregation
+      res = executeFile("testDistinctAggregation_case2.sql");
+      assertResultSet(res, "testDistinctAggregation_case2.result");
+      res.close();
 
-    // two groupby, two distinct, two aggregation with subquery
-    res = executeFile("testDistinctAggregation_case5.sql");
-    assertResultSet(res, "testDistinctAggregation_case5.result");
-    res.close();
+      // one groupby, two distinct, two aggregation(no alias)
+      res = executeFile("testDistinctAggregation_case3.sql");
+      assertResultSet(res, "testDistinctAggregation_case3.result");
+      res.close();
 
-    res = executeFile("testDistinctAggregation_case6.sql");
-    assertResultSet(res, "testDistinctAggregation_case6.result");
-    res.close();
+      // two groupby, two distinct, two aggregation
+      res = executeFile("testDistinctAggregation_case4.sql");
+      assertResultSet(res, "testDistinctAggregation_case4.result");
+      res.close();
 
-    res = executeFile("testDistinctAggregation_case7.sql");
-    assertResultSet(res, "testDistinctAggregation_case7.result");
-    res.close();
+      // two groupby, two distinct, two aggregation with subquery
+      res = executeFile("testDistinctAggregation_case5.sql");
+      assertResultSet(res, "testDistinctAggregation_case5.result");
+      res.close();
 
-    res = executeFile("testDistinctAggregation_case8.sql");
-    assertResultSet(res, "testDistinctAggregation_case8.result");
-    res.close();
+      res = executeFile("testDistinctAggregation_case6.sql");
+      assertResultSet(res, "testDistinctAggregation_case6.result");
+      res.close();
 
-    // case9
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+      res = executeFile("testDistinctAggregation_case7.sql");
+      assertResultSet(res, "testDistinctAggregation_case7.result");
+      res.close();
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.TEXT);
-    schema.addColumn("code", Type.TEXT);
-    schema.addColumn("qty", Type.INT4);
-    schema.addColumn("qty2", Type.FLOAT8);
-    String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+      res = executeFile("testDistinctAggregation_case8.sql");
+      assertResultSet(res, "testDistinctAggregation_case8.result");
+      res.close();
 
-    res = executeString("select id, count(distinct code), " +
-        "avg(qty), min(qty), max(qty), sum(qty), " +
-        "cast(avg(qty2) as INT8), cast(min(qty2) as INT8), cast(max(qty2) as INT8), cast(sum(qty2) as INT8) " +
-        "from table10 group by id");
+      // case9
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
-    String expected = "id,?count_4,?avg_5,?min_6,?max_7,?sum_8,?cast_9,?cast_10,?cast_11,?cast_12\n" +
-        "-------------------------------\n" +
-        "1,2,4.0,0,5,12,4,0,5,12\n" +
-        "2,3,2.0,0,3,6,7,0,8,21\n";
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.TEXT);
+      schema.addColumn("code", Type.TEXT);
+      schema.addColumn("qty", Type.INT4);
+      schema.addColumn("qty2", Type.FLOAT8);
+      String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
+      TajoTestingCluster.createTable("table10", schema, tableOptions, data);
 
-    assertEquals(expected, resultSetToString(res));
+      res = executeString("select id, count(distinct code), " +
+          "avg(qty), min(qty), max(qty), sum(qty), " +
+          "cast(avg(qty2) as INT8), cast(min(qty2) as INT8), cast(max(qty2) as INT8), cast(sum(qty2) as INT8) " +
+          "from table10 group by id");
 
-  // multiple distinct with expression
-    res = executeString(
-        "select count(distinct code) + count(distinct qty) from table10"
-    );
+      String expected = "id,?count_4,?avg_5,?min_6,?max_7,?sum_8,?cast_9,?cast_10,?cast_11,?cast_12\n" +
+          "-------------------------------\n" +
+          "1,2,4.0,0,5,12,4,0,5,12\n" +
+          "2,3,2.0,0,3,6,7,0,8,21\n";
 
-    expected = "?plus_2\n" +
-        "-------------------------------\n" +
-        "9\n";
+      assertEquals(expected, resultSetToString(res));
 
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+      // multiple distinct with expression
+      res = executeString(
+          "select count(distinct code) + count(distinct qty) from table10"
+      );
 
-    res = executeString(
-        "select id, count(distinct code) + count(distinct qty) from table10 group by id"
-    );
+      expected = "?plus_2\n" +
+          "-------------------------------\n" +
+          "9\n";
 
-    expected = "id,?plus_2\n" +
-        "-------------------------------\n" +
-        "1,5\n" +
-        "2,6\n";
+      assertEquals(expected, resultSetToString(res));
+      res.close();
 
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+      res = executeString(
+          "select id, count(distinct code) + count(distinct qty) from table10 group by id"
+      );
 
-    executeString("DROP TABLE table10 PURGE").close();
+      expected = "id,?plus_2\n" +
+          "-------------------------------\n" +
+          "1,5\n" +
+          "2,6\n";
+
+      assertEquals(expected, resultSetToString(res));
+      res.close();
+
+      executeString("DROP TABLE table10 PURGE").close();
+
+      cleanupQuery(res);
+    }
   }
 
   @Test
   public final void testDistinctAggregationCaseByCase3() throws Exception {
-    // first distinct is smaller than second distinct.
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    for (int index = 0; index < 2; index++) {
+      Map<String, String> variables = new HashMap<String, String>();
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
-    schema.addColumn("col2", Type.TEXT);
-    schema.addColumn("col3", Type.TEXT);
+      if (index == 0) {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+      } else {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+      }
+      client.updateSessionVariables(variables);
 
-    String[] data = new String[]{
-        "a|b-1|\\N",
-        "a|b-2|\\N",
-        "a|b-2|\\N",
-        "a|b-3|\\N",
-        "a|b-3|\\N",
-        "a|b-3|\\N"
-    };
+      // first distinct is smaller than second distinct.
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.TEXT);
+      schema.addColumn("col2", Type.TEXT);
+      schema.addColumn("col3", Type.TEXT);
 
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+      String[] data = new String[]{
+          "a|b-1|\\N",
+          "a|b-2|\\N",
+          "a|b-2|\\N",
+          "a|b-3|\\N",
+          "a|b-3|\\N",
+          "a|b-3|\\N"
+      };
 
-    executeString("DROP TABLE table10 PURGE").close();
+      TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+
+      executeString("DROP TABLE table10 PURGE").close();
+    }
   }
 
   @Test
   public final void testDistinctAggregationCaseByCase4() throws Exception {
-    // Reproduction case for TAJO-994
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    for (int index = 0; index < 2; index++) {
+      Map<String, String> variables = new HashMap<String, String>();
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
-    schema.addColumn("col2", Type.TEXT);
+      if (index == 0) {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+      } else {
+        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+      }
+      client.updateSessionVariables(variables);
 
-    String[] data = new String[]{
-        "a|\\N",
-        "a|\\N|",
-        "a|\\N|",
-        "a|\\N|",
-        "a|\\N|",
-        "a|\\N|"
-    };
+      // Reproduction case for TAJO-994
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
-    TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.TEXT);
+      schema.addColumn("col2", Type.TEXT);
 
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+      String[] data = new String[]{
+          "a|\\N",
+          "a|\\N|",
+          "a|\\N|",
+          "a|\\N|",
+          "a|\\N|",
+          "a|\\N|"
+      };
 
-    executeString("DROP TABLE table11 PURGE").close();
-  }
+      TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+
+      executeString("DROP TABLE table11 PURGE").close();
+    }
+   }
 
   @Test
   public final void testComplexParameter() throws Exception {
@@ -527,6 +675,18 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithNullData4() throws Exception {
+// select max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key
+// from lineitem where l_orderkey = 1000
+    Map<String, String> variables = new HashMap<String, String>();
+//    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+//    client.updateSessionVariables(variables);
+//    ResultSet res = executeQuery();
+//    assertResultSet(res);
+//    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -546,10 +706,22 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithNullData6() throws Exception {
+//    select count(distinct age) as unique_key, max(point) as maximum from table1
+
     executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
     assertTableExists("table1");
 
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
@@ -561,7 +733,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
     assertTableExists("table1");
 
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
@@ -585,7 +767,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
     assertTableExists("table1");
 
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
@@ -594,21 +786,51 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithNullData10() throws Exception {
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testGroupByWithNullData11() throws Exception {
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
   public final void testGroupByWithNullData12() throws Exception {
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }

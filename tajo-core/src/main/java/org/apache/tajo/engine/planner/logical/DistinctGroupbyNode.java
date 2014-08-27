@@ -19,6 +19,8 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.NamedExpr;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.planner.PlanString;
@@ -27,9 +29,14 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
+  @Expose
+  private GroupbyNode groupbyPlan;
+
   @Expose
   private List<GroupbyNode> groupByNodes;
 
@@ -100,6 +107,10 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   public void setAggFunctions(AggregationFunctionCallEval[] evals) {
     this.aggrFunctions = evals;
   }
+
+  public void setGroupbyPlan(GroupbyNode groupbyPlan) { this.groupbyPlan = groupbyPlan; }
+
+  public GroupbyNode getGroupbyPlan() { return this.groupbyPlan; }
 
   @Override
   public Object clone() throws CloneNotSupportedException {

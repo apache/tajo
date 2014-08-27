@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.DatumFactory;
@@ -30,13 +31,27 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Tajo supports various options for count distinct. First is to execute a count distinct query with two
+ * execution blocks. It made by DistinctGroupbyBuilder::buildPlan. Second is to execute the query with three
+ * execution blocks. You can use this option for set SessionVars.COUNT_DISTINCT_ALGORITHM to three_stages.
+ *
+ *  - In first stage, tajo operator incremented each row to more rows by grouping columns. In addition,
+ * the operator must creates each row because of aggregation non-distinct columns.
+ *  - In second stage, tajo operator aggregates the output of the first stage. For reference,
+ * it shuffled by grouping columns and aggregation columns.
+ *  - In third stage, tajo operator merges the output of the second stage. For reference,
+ * it shuffled by just grouping columns.
+ *
+ * This class serves on the operator for the first stage.
+ *
+ */
 public class DistinctGroupbyFirstWriterExec extends UnaryPhysicalExec {
   private DistinctGroupbyNode plan;
   private PhysicalExec child;
-  private float progress;
-  private Map<Tuple, Tuple> hashTable;
+  private List<Tuple> tupleList;
   private boolean computed = false;
-  private Iterator<Map.Entry<Tuple, Tuple>> iterator = null;
+  private Iterator<Tuple> iterator = null;
 
   protected final int groupingKeyNum;
   protected int groupingKeyIds[];
@@ -67,7 +82,7 @@ public class DistinctGroupbyFirstWriterExec extends UnaryPhysicalExec {
       }
     }
 
-    hashTable = new HashMap<Tuple, Tuple>(100000);
+    tupleList = new ArrayList<Tuple>(100000);
     aggFunctions = plan.getAggFunctions();
     aggFunctionsNum = aggFunctions.length;
   }
@@ -76,123 +91,74 @@ public class DistinctGroupbyFirstWriterExec extends UnaryPhysicalExec {
   public Tuple next() throws IOException {
     if(!computed) {
       compute();
-      iterator = hashTable.entrySet().iterator();
+      iterator = tupleList.iterator();
       computed = true;
     }
 
     if (iterator.hasNext()) {
-      Map.Entry<Tuple, Tuple> entry = iterator.next();
-      return entry.getValue();
+      return iterator.next();
     } else {
       return null;
     }
   }
 
-
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
     Tuple outputTuple;
+    boolean matched = false;
+    List<Column> originalGroupingColumns = Lists.newArrayList(plan.getGroupingColumns());
 
     while((tuple = child.next()) != null && !context.isStopped()) {
-      keyTuple = new VTuple(groupingKeyIds.length);
-      // build one key tuple
-      for(int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.get(groupingKeyIds[i]));
-      }
+      // If there is no grouping columns, we don't need to set NullDatum.
+      if (groupingKeyIds.length == 0) {
+        tupleList.add(tuple);
+      } else {
+        matched = false;
+        keyTuple = new VTuple(groupingKeyIds.length);
+        // build one key tuple
+        for(int i = 0; i < groupingKeyIds.length; i++) {
+          keyTuple.put(i, tuple.get(groupingKeyIds[i]));
+        }
 
-      outputTuple = tuple;
-      hashTable.put(outputTuple, outputTuple);
+        outputTuple = tuple;
+        tupleList.add(outputTuple);
 
-      for (int i = 0; i < child.outColumnNum; i++) {
-        outputTuple = new VTuple(outColumnNum);
-        for (int j = 0; j < child.outColumnNum; j++) {
-          if (i == j) {
-            outputTuple.put(j, tuple.get(j));
-          } else {
-            outputTuple.put(j, DatumFactory.createDistinctNullDatum());
+        for (int i = 0; i < child.outColumnNum; i++) {
+          matched = false;
+          outputTuple = new VTuple(outColumnNum);
+          for (int j = 0; j < child.outColumnNum; j++) {
+            if (i == j) {
+              outputTuple.put(j, tuple.get(j));
+            } else {
+              outputTuple.put(j, DatumFactory.createNullDatum());
+              Column column = child.outSchema.getColumn(j);
+              if (originalGroupingColumns.contains(column)) {
+                matched = true;
+              }
+            }
+          }
+
+          if (!matched) {
+            tupleList.add(outputTuple);
           }
         }
-        hashTable.put(outputTuple, outputTuple);
       }
-
-//      for (int i = 0; i < aggFunctionsNum; i++) {
-//        outputTuple = new VTuple(outColumnNum);
-//        int tupleIdx = 0;
-//        for (; tupleIdx < groupingKeyNum; tupleIdx++) {
-//          outputTuple.put(tupleIdx, keyTuple.get(tupleIdx));
-//        }
-//
-//        for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
-//          if (i == funcIdx) {
-//            outputTuple.put(tupleIdx, tuple.get(tupleIdx));
-//          } else {
-//            outputTuple.put(tupleIdx, DatumFactory.createDistinctNullDatum());
-//          }
-//        }
-//        hashTable.put(outputTuple, outputTuple);
-//      }
     }
   }
 
-//  @Override
-//  public TableStats getInputStats() {
-//    System.out.println("### 100 ###");
-//    if (child != null) {
-//      System.out.println("### 110 ###");
-//      return child.getInputStats();
-//    } else {
-//      System.out.println("### 120 ###");
-//      return inputStats;
-//    }
-//  }
-
-//  @Override
-//  public void init() throws IOException {
-//    progress = 0.0f;
-//    if (child != null) {
-//      child.init();
-//    }
-//  }
-
   @Override
   public void rescan() throws IOException {
-//    progress = 0.0f;
-//    if (child != null) {
-//      child.rescan();
-//    }
     super.rescan();
-    iterator = hashTable.entrySet().iterator();
+    iterator = tupleList.iterator();
   }
 
   @Override
   public void close() throws IOException {
-//    progress = 1.0f;
-//    if (child != null) {
-//      child.close();
-//      try {
-//        TableStats stat = child.getInputStats();
-//        if (stat != null) {
-//          inputStats = (TableStats)(stat.clone());
-//        }
-//      } catch (CloneNotSupportedException e) {
-//        e.printStackTrace();
-//      }
-//      child = null;
-//    }
     super.close();
-    hashTable.clear();
-    hashTable = null;
+    tupleList.clear();
+    tupleList = null;
     iterator = null;
   }
-
-//  @Override
-//  public float getProgress() {
-//    if (child != null) {
-//      return child.getProgress();
-//    } else {
-//      return progress;
-//    }
-//  }
 
 }
