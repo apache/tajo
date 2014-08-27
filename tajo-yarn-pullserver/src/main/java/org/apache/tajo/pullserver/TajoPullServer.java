@@ -60,8 +60,8 @@ public class TajoPullServer extends CompositeService {
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(PullServer.class, args, LOG);
 
-    if (!TajoPullServerService.getPullServerMode().equalsIgnoreCase("dedicated")) {
-      LOG.fatal("TAJO_PULLSERVER_MODE env variable is not 'dedicated'");
+    if (!TajoPullServerService.getPullServerMode().equalsIgnoreCase("true")) {
+      LOG.fatal("TAJO_PULLSERVER_STANDALONE env variable is not 'true'");
       return;
     }
 

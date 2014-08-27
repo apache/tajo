@@ -203,7 +203,7 @@ public class TajoWorker extends CompositeService {
     addService(tajoWorkerManagerService);
 
     if(!yarnContainerMode) {
-      if(taskRunnerMode && TajoPullServerService.getPullServerMode().equalsIgnoreCase("embedded")) {
+      if(taskRunnerMode && TajoPullServerService.isStandaloneMode()) {
         pullService = new TajoPullServerService();
         addService(pullService);
       }

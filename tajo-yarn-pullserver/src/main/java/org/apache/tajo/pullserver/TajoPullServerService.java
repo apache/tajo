@@ -240,7 +240,7 @@ public class TajoPullServerService extends AbstractService {
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
 
-    if ("dedicated".equalsIgnoreCase(getPullServerMode())) {
+    if (isStandaloneMode()) {
       File pullServerPortFile = getPullServerPortFile();
       if (pullServerPortFile.exists()) {
         pullServerPortFile.delete();
@@ -269,16 +269,16 @@ public class TajoPullServerService extends AbstractService {
     return new File(pullServerPortInfoFile + "/pullserver.port");
   }
 
-  public static String getPullServerMode() {
-    String mode = System.getenv("TAJO_PULLSERVER_MODE");
+  public static boolean isStandaloneMode() {
+    String mode = System.getenv("TAJO_PULLSERVER_STANDALONE");
     if (mode == null || mode.trim().isEmpty()) {
-      mode = System.getProperty("TAJO_PULLSERVER_MODE");
+      mode = System.getProperty("TAJO_PULLSERVER_STANDALONE");
     }
 
     if (mode == null || mode.trim().isEmpty()) {
-      return "dedicated"; //default mode
+      return true;
     } else {
-      return mode.trim();
+      return mode.equalsIgnoreCase("true");
     }
   }
 
@@ -423,9 +423,7 @@ public class TajoPullServerService extends AbstractService {
         }
         int remain = remainFiles.decrementAndGet();
         if (remain <= 0) {
-          synchronized(processingStatusMap) {
-            processingStatusMap.remove(requestUri);
-          }
+          processingStatusMap.remove(requestUri);
           LOG.info("PullServer processing status: totalTime=" + (System.currentTimeMillis() - startTime) + " ms, " +
               "makeFileListTime=" + makeFileListTime + " ms, minTime=" + minTime + " ms, maxTime=" + maxTime + " ms, " +
               "numFiles=" + numFiles + ", numSlowFile=" + numSlowFile);

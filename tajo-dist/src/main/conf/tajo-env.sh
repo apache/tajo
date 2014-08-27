@@ -76,5 +76,5 @@ export TAJO_WORKER_STANDBY_MODE=true
 # export HIVE_HOME=
 # export HIVE_JDBC_DRIVER_DIR=
 
-# Tajo PullServer mode. the default mode is dedicated mode(dedicated or embedded)
- export TAJO_PULLSERVER_MODE=dedicated
+# Tajo PullServer mode. the default mode is standalone mode
+export TAJO_PULLSERVER_STANDALONE=true
