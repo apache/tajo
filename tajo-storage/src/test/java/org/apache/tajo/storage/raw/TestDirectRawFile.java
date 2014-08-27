@@ -30,6 +30,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
@@ -38,23 +40,21 @@ import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.BeforeClass;
+import org.apache.tajo.util.ProtoUtil;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestDirectRawFile {
   private static final Log LOG = LogFactory.getLog(TestDirectRawFile.class);
 
   static String TEXT_FIELD_PREFIX = "가나다_abc_";
 
-  static Schema schema;
+  public static Schema schema;
 
-  @BeforeClass
-  public static void setUp() {
+  static {
     schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.BOOLEAN);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -66,16 +66,15 @@ public class TestDirectRawFile {
     schema.addColumn("col7", TajoDataTypes.Type.TIMESTAMP);
     schema.addColumn("col8", TajoDataTypes.Type.DATE);
     schema.addColumn("col9", TajoDataTypes.Type.TIME);
-    schema.addColumn("col10", TajoDataTypes.Type.INET4);
-    schema.addColumn("col11", TajoDataTypes.Type.PROTOBUF);
+    schema.addColumn("col10", TajoDataTypes.Type.INTERVAL);
+    schema.addColumn("col11", TajoDataTypes.Type.INET4);
+    schema.addColumn("col12",
+        CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()));
   }
 
-  @Test
-  public void testRWForAllTypes() throws IOException {
-    int rowNum = 10;
-
+  public static RowOrientedRowBlock createRowBlock(int rowNum) {
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
+    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 8);
     long allocatedEnd = System.currentTimeMillis();
     LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -95,20 +94,39 @@ public class TestDirectRawFile {
       rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
       rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
       rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      rowBlock.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
       rowBlock.endRow();
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
 
+    return rowBlock;
+  }
 
+  public static Path writeRowBlock(TajoConf conf, TableMeta meta, RowOrientedRowBlock rowBlock) throws IOException {
     Path testDir = CommonTestingUtil.getTestDir();
     Path outputFile = new Path(testDir, "output.draw");
-    TajoConf conf = new TajoConf();
-    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
     writer.init();
     writer.writeRowBlock(rowBlock);
     writer.close();
+
+    FileSystem fs = FileSystem.getLocal(conf);
+    FileStatus status = fs.getFileStatus(outputFile);
+    assertTrue(status.getLen() > 0);
+    LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
+
+    return outputFile;
+  }
+
+  @Test
+  public void testRWForAllTypes() throws IOException {
+    int rowNum = 50000;
+    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
+
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
+    Path outputFile = writeRowBlock(conf, meta, rowBlock);
 
     rowBlock.free();
 
@@ -140,6 +158,7 @@ public class TestDirectRawFile {
         assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
         assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
         assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+        assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
         j++;
       }
     }
@@ -154,50 +173,15 @@ public class TestDirectRawFile {
 
   @Test
   public void testRWForAllTypesWithNextTuple() throws IOException {
-    int rowNum = 3000000;
+    int rowNum = 10000;
 
-    long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 300);
-    long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
-        + (allocatedEnd - allocateStart) + " msec");
+    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
 
-    long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < rowNum; i++) {
-      rowBlock.startRow();
-      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
-      rowBlock.putInt2((short) 1);                 // 1
-      rowBlock.putInt4(i);                         // 2
-      rowBlock.putInt8(i);                         // 3
-      rowBlock.putFloat4(i);                       // 4
-      rowBlock.putFloat8(i);                       // 5
-      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
-      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
-      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
-      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
-      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
-      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-      rowBlock.endRow();
-    }
-    long writeEnd = System.currentTimeMillis();
-    LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
-
-
-    Path testDir = CommonTestingUtil.getTestDir();
-    Path outputFile = new Path(testDir, "output.draw");
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
-    DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
-    writer.init();
-    writer.writeRowBlock(rowBlock);
-    writer.close();
+    Path outputFile = writeRowBlock(conf, meta, rowBlock);
 
     rowBlock.free();
-
-    FileSystem fs = FileSystem.getLocal(conf);
-    FileStatus status = fs.getFileStatus(outputFile);
-    assertTrue(status.getLen() > 0);
-    LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
 
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
@@ -218,6 +202,7 @@ public class TestDirectRawFile {
       assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
       assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
       assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+      assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
       j++;
     }
 
@@ -229,35 +214,78 @@ public class TestDirectRawFile {
   }
 
   @Test
+  public void testRepeatedScan() throws IOException {
+    int rowNum = 2;
+
+    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
+
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
+    Path outputFile = writeRowBlock(conf, meta, rowBlock);
+
+    rowBlock.free();
+
+    DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
+    reader.init();
+
+    int j = 0;
+    while (reader.next() != null) {
+      j++;
+    }
+    assertEquals(rowNum, j);
+
+    for (int i = 0; i < 5; i++) {
+      assertNull(reader.next());
+    }
+
+    reader.close();
+  }
+
+  @Test
+  public void testReset() throws IOException {
+    int rowNum = 2;
+
+    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
+
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
+    Path outputFile = writeRowBlock(conf, meta, rowBlock);
+
+    rowBlock.free();
+
+    DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
+    reader.init();
+
+    int j = 0;
+    while (reader.next() != null) {
+      j++;
+    }
+    assertEquals(rowNum, j);
+
+    for (int i = 0; i < 5; i++) {
+      assertNull(reader.next());
+    }
+
+    reader.reset();
+
+    j = 0;
+    while (reader.next() != null) {
+      j++;
+    }
+    assertEquals(rowNum, j);
+
+    for (int i = 0; i < 5; i++) {
+      assertNull(reader.next());
+    }
+
+    reader.close();
+  }
+
+  @Test
   public void testRWWithAddTupleForAllTypes() throws IOException {
     int rowNum = 10;
 
-    long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
-    long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
-        + (allocatedEnd - allocateStart) + " msec");
-
-    long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < rowNum; i++) {
-      rowBlock.startRow();
-      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
-      rowBlock.putInt2((short) 1);                 // 1
-      rowBlock.putInt4(i);                         // 2
-      rowBlock.putInt8(i);                         // 3
-      rowBlock.putFloat4(i);                       // 4
-      rowBlock.putFloat8(i);                       // 5
-      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
-      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
-      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
-      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
-      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
-      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-      rowBlock.endRow();
-    }
-    long writeEnd = System.currentTimeMillis();
-    LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
-
+    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
 
     Path testDir = CommonTestingUtil.getTestDir();
     Path outputFile = new Path(testDir, "output.draw");
@@ -270,7 +298,6 @@ public class TestDirectRawFile {
     int i = 0;
     UnSafeTuple tuple = new UnSafeTuple();
     while(rowBlock.next(tuple)) {
-      System.out.println(writer.getOffset());
       writer.addTuple(tuple);
     }
     writer.close();
@@ -305,6 +332,7 @@ public class TestDirectRawFile {
         assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
         assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
         assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+        assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
         j++;
       }
     }
@@ -401,6 +429,12 @@ public class TestDirectRawFile {
         rowBlock.skipField();
       } else {
         rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      }
+
+      if (i % 12 == 0) {
+        rowBlock.skipField();
+      } else {
+        rowBlock.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + "")));
       }
       rowBlock.endRow();
     }
@@ -506,6 +540,12 @@ public class TestDirectRawFile {
           tuple.isNull(11);
         } else {
           assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+        }
+
+        if (j % 12 == 0) {
+          tuple.isNull(12);
+        } else {
+          assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
         }
 
         j++;

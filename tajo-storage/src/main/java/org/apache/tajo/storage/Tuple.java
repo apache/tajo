@@ -66,9 +66,9 @@ public interface Tuple extends Cloneable {
 	
 	public String getText(int fieldId);
 
-  public ProtobufDatum getProtobufDatum(int fieldId);
+  public Datum getProtobufDatum(int fieldId);
 
-  public IntervalDatum getInterval(int fieldId);
+  public Datum getInterval(int fieldId);
 
   public char [] getUnicodeChars(int fieldId);
 

@@ -33,10 +33,12 @@ import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
+import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
@@ -95,6 +97,19 @@ public class DirectRawFileWriter extends FileAppender {
     pos = channel.position();
   }
 
+  private ByteBuffer buffer;
+  private void ensureSize(int size) throws IOException {
+    if (buffer.remaining() < size) {
+
+      buffer.limit(buffer.position());
+      buffer.flip();
+      channel.write(buffer);
+
+      buffer.clear();
+    }
+  }
+
+
   private RowStoreUtil.DirectRowStoreEncoder encoder;
 
   @Override
@@ -105,10 +120,18 @@ public class DirectRawFileWriter extends FileAppender {
       }
     }
 
+    if (buffer == null) {
+      buffer = ByteBuffer.allocateDirect(64 * StorageUnit.KB);
+    }
+
+
+
     if (t instanceof UnSafeTuple) {
       UnSafeTuple unSafeTuple = (UnSafeTuple) t;
 
-      channel.write(unSafeTuple.nioBuffer());
+      ByteBuffer bb = unSafeTuple.nioBuffer();
+      ensureSize(bb.limit());
+      buffer.put(bb);
 
       pos = channel.position();
     } else {
@@ -117,7 +140,9 @@ public class DirectRawFileWriter extends FileAppender {
         encoder = RowStoreUtil.createDirectRawEncoder(schema);
       }
 
-      channel.write(encoder.encode(t));
+      ByteBuffer bb = encoder.encode(t);
+      ensureSize(bb.limit());
+      buffer.put(bb);
 
       pos = channel.position();
     }
@@ -129,6 +154,12 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public void flush() throws IOException {
+    if (buffer != null) {
+      buffer.limit(buffer.position());
+      buffer.flip();
+      channel.write(buffer);
+      buffer.clear();
+    }
   }
 
   @Override

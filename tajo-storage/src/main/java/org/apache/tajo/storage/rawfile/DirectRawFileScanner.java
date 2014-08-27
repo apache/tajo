@@ -79,7 +79,6 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     } catch (IllegalArgumentException iae) {
       throw new IOException(iae);
     }
-
     fis = new FileInputStream(file);
     channel = fis.getChannel();
     fileSize = channel.size();
@@ -117,6 +116,8 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 64 * StorageUnit.KB);
   private boolean fetchNeeded = true;
 
+  int cnt = 0;
+
   @Override
   public Tuple next() throws IOException {
     if(eof) {
@@ -141,6 +142,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   @Override
   public void reset() throws IOException {
     // reload initial buffer
+    fetchNeeded = true;
     channel.position(0);
     eof = false;
   }

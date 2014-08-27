@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -36,7 +35,11 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.raw.TestDirectRawFile;
+import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
@@ -44,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -60,7 +64,8 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 3000000;
+  //private final int numTuple = 5;
+  private final int numTuple = 10;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -190,6 +195,66 @@ public class TestExternalSortExec {
     }
     assertEquals(numTuple, cnt);
     exec.close();
-    System.out.println("Sort Time: " + (end - start) + " msc");
+    System.out.println("Sort and final write time: " + (end - start) + " msc");
+  }
+
+  @Test
+  public void testPairWiseMerger() throws IOException {
+    int leftRowNum = 1000;
+    int rightRowNum = 1234;
+    RowOrientedRowBlock rowBlock1 = TestDirectRawFile.createRowBlock(leftRowNum);
+    RowOrientedRowBlock rowBlock2 = TestDirectRawFile.createRowBlock(rightRowNum);
+
+    TupleComparator comparator = new TupleComparator(TestDirectRawFile.schema,
+        new SortSpec[] {new SortSpec(new Column("col2", Type.INT4))});
+    List<Tuple> tupleList1 = ExternalSortExec.sortTuples(rowBlock1, comparator);
+    List<Tuple> tupleList2 = ExternalSortExec.sortTuples(rowBlock2, comparator);
+
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
+    Path dir = CommonTestingUtil.getTestDir();
+    Path file1 = new Path(dir, "file1.out");
+    Path file2 = new Path(dir, "file2.out");
+
+    DirectRawFileWriter writer1 = new DirectRawFileWriter(conf, TestDirectRawFile.schema, meta, file1);
+    writer1.init();
+    for (Tuple t:tupleList1) {
+      writer1.addTuple(t);
+    }
+    writer1.close();
+
+    DirectRawFileWriter writer2 = new DirectRawFileWriter(conf, TestDirectRawFile.schema, meta, file2);
+    writer2.init();
+    for (Tuple t:tupleList2) {
+      writer2.addTuple(t);
+    }
+    writer2.close();
+
+
+
+    DirectRawFileScanner scanner1 = new DirectRawFileScanner(conf, TestDirectRawFile.schema, meta, file1);
+    DirectRawFileScanner scanner2 = new DirectRawFileScanner(conf, TestDirectRawFile.schema, meta, file2);
+
+    PairWiseMerger merger = new PairWiseMerger(TestDirectRawFile.schema, scanner1, scanner2, comparator);
+    merger.init();
+
+    Tuple tuple;
+    Tuple curVal;
+    Tuple preVal = null;
+    int cnt = 0;
+    while((tuple = merger.next()) != null) {
+      curVal = tuple;
+      if (preVal != null) {
+        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
+      }
+      preVal = curVal;
+      cnt++;
+    }
+
+    merger.close();
+
+    scanner1.close();
+    scanner2.close();
+
+    assertEquals(leftRowNum + rightRowNum, cnt);
   }
 }

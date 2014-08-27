@@ -338,7 +338,7 @@ public class RowStoreUtil {
       buffer.clear();
       rowOffset = 0;
 
-      int rowStartPos = buffer.position();
+      int rowStartPos = 0;
       int curFieldIdx = 0;
       int [] fieldOffset = new int[types.length];
       rowOffset += SizeOf.SIZE_OF_INT * (types.length + 1); // record size + offset list
@@ -409,7 +409,7 @@ public class RowStoreUtil {
         case INTERVAL:
           ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
 
-          IntervalDatum interval = tuple.getInterval(i);
+          IntervalDatum interval = (IntervalDatum) tuple.getInterval(i);
 
           UNSAFE.putInt(address + rowOffset, interval.getMonths());
           rowOffset += SizeOf.SIZE_OF_INT;
@@ -432,7 +432,7 @@ public class RowStoreUtil {
         offset += SizeOf.SIZE_OF_INT;
       }
 
-      buffer.position(rowStartPos).limit(rowOffset);
+      buffer.position(0).limit(rowOffset);
       return buffer;
     }
   }

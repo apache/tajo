@@ -18,19 +18,19 @@
 
 package org.apache.tajo.storage.directmem;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 import com.sun.tools.javac.util.Convert;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class UnSafeTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
@@ -38,16 +38,26 @@ public class UnSafeTuple implements Tuple {
   private DirectBuffer bb;
   private int relativePos;
   private int length;
-  private Type [] types;
+  private DataType [] types;
 
-  void set(ByteBuffer bb, int relativePos, int length, Type [] types) {
+  public UnSafeTuple() {
+  }
+
+  public UnSafeTuple(int length, DataType [] types) {
+    bb = (DirectBuffer) ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    this.relativePos = 0;
+    this.length = length;
+    this.types = types;
+  }
+
+  void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
     this.bb = (DirectBuffer) bb;
     this.relativePos = relativePos;
     this.length = length;
     this.types = types;
   }
 
-  void set(ByteBuffer bb, Type [] types) {
+  void set(ByteBuffer bb, DataType [] types) {
     set(bb, 0, bb.limit(), types);
   }
 
@@ -58,6 +68,18 @@ public class UnSafeTuple implements Tuple {
 
   public ByteBuffer nioBuffer() {
     return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
+  }
+
+  public void put(UnSafeTuple tuple) {
+    ((ByteBuffer)bb).clear();
+    if (length < tuple.length) {
+      UnsafeUtil.free((ByteBuffer) bb);
+      bb = (DirectBuffer) ByteBuffer.allocateDirect(tuple.length).order(ByteOrder.nativeOrder());
+      this.relativePos = 0;
+      this.length = tuple.length;
+    }
+
+    ((ByteBuffer) bb).put(tuple.nioBuffer());
   }
 
   private int getFieldOffset(int fieldId) {
@@ -106,7 +128,7 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public Datum get(int fieldId) {
-    switch (types[fieldId]) {
+    switch (types[fieldId].getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(getBool(fieldId));
     case INT1:
@@ -114,6 +136,8 @@ public class UnSafeTuple implements Tuple {
       return DatumFactory.createInt2(getInt2(fieldId));
     case INT4:
       return DatumFactory.createInt4(getInt4(fieldId));
+    case INT8:
+      return DatumFactory.createInt8(getInt4(fieldId));
     case FLOAT4:
       return DatumFactory.createFloat4(getFloat4(fieldId));
     case FLOAT8:
@@ -126,8 +150,12 @@ public class UnSafeTuple implements Tuple {
       return DatumFactory.createDate(getInt4(fieldId));
     case TIME:
       return DatumFactory.createTime(getInt8(fieldId));
+    case INTERVAL:
+      return getInterval(fieldId);
     case INET4:
       return DatumFactory.createInet4(getInt4(fieldId));
+    case PROTOBUF:
+      return getProtobufDatum(fieldId);
     default:
       throw new UnsupportedException("Unknown type: " + types[fieldId]);
     }
@@ -214,8 +242,18 @@ public class UnSafeTuple implements Tuple {
   }
 
   @Override
-  public ProtobufDatum getProtobufDatum(int fieldId) {
-    throw new UnsupportedException("UnSafeTuple does not support getOffset().");
+  public Datum getProtobufDatum(int fieldId) {
+    byte [] bytes = getBytes(fieldId);
+
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId].getCode());
+    Message.Builder builder = factory.newBuilder();
+    try {
+      builder.mergeFrom(bytes);
+    } catch (InvalidProtocolBufferException e) {
+      return NullDatum.get();
+    }
+
+    return new ProtobufDatum(builder.build());
   }
 
   @Override
@@ -231,15 +269,19 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return this;
+    throw new UnsupportedException("clone");
   }
 
   @Override
   public Datum[] getValues() {
     Datum [] datums = new Datum[size()];
-//    for (int i = 0; i < size(); i++) {
-//      datums[i] = get(i);
-//    }
+    for (int i = 0; i < size(); i++) {
+      if (contains(i)) {
+        datums[i] = get(i);
+      } else {
+        datums[i] = NullDatum.get();
+      }
+    }
     return datums;
   }
 

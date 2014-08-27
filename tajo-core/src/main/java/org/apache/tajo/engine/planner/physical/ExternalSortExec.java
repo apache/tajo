@@ -25,12 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -54,7 +49,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -122,6 +116,7 @@ public class ExternalSortExec extends SortExec {
     }
     // TODO - sort buffer and core num should be changed to use the allocated container resource.
     //this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
+    //this.sortBufferBytesNum = 38;
     this.sortBufferBytesNum = 100 * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
@@ -165,7 +160,7 @@ public class ExternalSortExec extends SortExec {
     return this.plan;
   }
 
-  private List<Tuple> sortTuples(RowOrientedRowBlock sortBuffer) {
+  public static List<Tuple> sortTuples(RowOrientedRowBlock sortBuffer, Comparator<Tuple> comparator) {
     List<Tuple> tupleList = Lists.newArrayList();
     UnSafeTuple unSafeTuple = new UnSafeTuple();
     sortBuffer.resetRowCursor();
@@ -173,7 +168,7 @@ public class ExternalSortExec extends SortExec {
       tupleList.add(unSafeTuple);
       unSafeTuple = new UnSafeTuple();
     }
-    Collections.sort(tupleList, getComparator());
+    Collections.sort(tupleList, comparator);
     return tupleList;
   }
 
@@ -186,7 +181,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = sortBuffer.rows();
 
     long sortStart = System.currentTimeMillis();
-    List<Tuple> tupleList = sortTuples(sortBuffer);
+    List<Tuple> tupleList = sortTuples(sortBuffer, getComparator());
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -263,7 +258,7 @@ public class ExternalSortExec extends SortExec {
           info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
         }
       } else { // this case means that all data does not exceed a sort buffer
-        sortedTuples = sortTuples(inMemoryTable);
+        sortedTuples = sortTuples(inMemoryTable, getComparator());
       }
     }
 
@@ -302,7 +297,7 @@ public class ExternalSortExec extends SortExec {
         info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
-          this.result = new MemTableScanner();
+          this.result = new MemTableScanner(sortedTuples, sortAndStoredBytes);
         } else { // if input data exceeds main-memory at least once
 
           try {
@@ -514,235 +509,11 @@ public class ExternalSortExec extends SortExec {
       throws IOException {
     if (num > 1) {
       final int mid = (int) Math.ceil((float)num / 2);
-      return new PairWiseMerger(
+      return new PairWiseMerger(inSchema,
           createKWayMergerInternal(sources, startIdx, mid),
-          createKWayMergerInternal(sources, startIdx + mid, num - mid));
+          createKWayMergerInternal(sources, startIdx + mid, num - mid), getComparator());
     } else {
       return sources[startIdx];
-    }
-  }
-
-  private class MemTableScanner implements Scanner {
-    Iterator<Tuple> iterator;
-
-    // for input stats
-    float scannerProgress;
-    int numRecords;
-    int totalRecords;
-    TableStats scannerTableStats;
-
-    @Override
-    public void init() throws IOException {
-      iterator = sortedTuples.iterator();
-
-      totalRecords = sortedTuples.size();
-      scannerProgress = 0.0f;
-      numRecords = 0;
-
-      // it will be returned as the final stats
-      scannerTableStats = new TableStats();
-      scannerTableStats.setNumBytes(sortAndStoredBytes);
-      scannerTableStats.setReadBytes(sortAndStoredBytes);
-      scannerTableStats.setNumRows(totalRecords);
-    }
-
-    @Override
-    public Tuple next() throws IOException {
-      if (iterator.hasNext()) {
-        numRecords++;
-        return iterator.next();
-      } else {
-        return null;
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      init();
-    }
-
-    @Override
-    public void close() throws IOException {
-      scannerProgress = 1.0f;
-    }
-
-    @Override
-    public boolean isProjectable() {
-      return false;
-    }
-
-    @Override
-    public void setTarget(Column[] targets) {
-    }
-
-    @Override
-    public boolean isSelectable() {
-      return false;
-    }
-
-    @Override
-    public void setSearchCondition(Object expr) {
-    }
-
-    @Override
-    public boolean isSplittable() {
-      return false;
-    }
-
-    @Override
-    public Schema getSchema() {
-      return null;
-    }
-
-    @Override
-    public float getProgress() {
-      if (numRecords > 0) {
-        return (float)numRecords / (float)totalRecords;
-
-      } else { // if an input is empty
-        return scannerProgress;
-      }
-    }
-
-    @Override
-    public TableStats getInputStats() {
-      return scannerTableStats;
-    }
-  }
-
-  /**
-   * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
-   */
-  private class PairWiseMerger implements Scanner {
-    private Scanner leftScan;
-    private Scanner rightScan;
-
-    private Tuple leftTuple;
-    private Tuple rightTuple;
-
-    private final Comparator<Tuple> comparator = getComparator();
-
-    private float mergerProgress;
-    private TableStats mergerInputStats;
-
-    public PairWiseMerger(Scanner leftScanner, Scanner rightScanner) throws IOException {
-      this.leftScan = leftScanner;
-      this.rightScan = rightScanner;
-    }
-
-    @Override
-    public void init() throws IOException {
-      leftScan.init();
-      rightScan.init();
-
-      leftTuple = leftScan.next();
-      rightTuple = rightScan.next();
-
-      mergerInputStats = new TableStats();
-      mergerProgress = 0.0f;
-    }
-
-    public Tuple next() throws IOException {
-      Tuple outTuple;
-      if (leftTuple != null && rightTuple != null) {
-        if (comparator.compare(leftTuple, rightTuple) < 0) {
-          outTuple = leftTuple;
-          leftTuple = leftScan.next();
-        } else {
-          outTuple = rightTuple;
-          rightTuple = rightScan.next();
-        }
-        return outTuple;
-      }
-
-      if (leftTuple == null) {
-        outTuple = rightTuple;
-        rightTuple = rightScan.next();
-      } else {
-        outTuple = leftTuple;
-        leftTuple = leftScan.next();
-      }
-      return outTuple;
-    }
-
-    @Override
-    public void reset() throws IOException {
-      leftScan.reset();
-      rightScan.reset();
-      init();
-    }
-
-    public void close() throws IOException {
-      IOUtils.cleanup(LOG, leftScan, rightScan);
-      getInputStats();
-      leftScan = null;
-      rightScan = null;
-      mergerProgress = 1.0f;
-    }
-
-    @Override
-    public boolean isProjectable() {
-      return false;
-    }
-
-    @Override
-    public void setTarget(Column[] targets) {
-    }
-
-    @Override
-    public boolean isSelectable() {
-      return false;
-    }
-
-    @Override
-    public void setSearchCondition(Object expr) {
-    }
-
-    @Override
-    public boolean isSplittable() {
-      return false;
-    }
-
-    @Override
-    public Schema getSchema() {
-      return inSchema;
-    }
-
-    @Override
-    public float getProgress() {
-      if (leftScan == null) {
-        return mergerProgress;
-      }
-      return leftScan.getProgress() * 0.5f + rightScan.getProgress() * 0.5f;
-    }
-
-    @Override
-    public TableStats getInputStats() {
-      if (leftScan == null) {
-        return mergerInputStats;
-      }
-      TableStats leftInputStats = leftScan.getInputStats();
-      if (mergerInputStats == null) {
-        mergerInputStats = new TableStats();
-      }
-      mergerInputStats.setNumBytes(0);
-      mergerInputStats.setReadBytes(0);
-      mergerInputStats.setNumRows(0);
-
-      if (leftInputStats != null) {
-        mergerInputStats.setNumBytes(leftInputStats.getNumBytes());
-        mergerInputStats.setReadBytes(leftInputStats.getReadBytes());
-        mergerInputStats.setNumRows(leftInputStats.getNumRows());
-      }
-
-      TableStats rightInputStats = rightScan.getInputStats();
-      if (rightInputStats != null) {
-        mergerInputStats.setNumBytes(mergerInputStats.getNumBytes() + rightInputStats.getNumBytes());
-        mergerInputStats.setReadBytes(mergerInputStats.getReadBytes() + rightInputStats.getReadBytes());
-        mergerInputStats.setNumRows(mergerInputStats.getNumRows() + rightInputStats.getNumRows());
-      }
-
-      return mergerInputStats;
     }
   }
 

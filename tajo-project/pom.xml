@@ -736,6 +736,13 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage</artifactId>
+        <type>test-jar</type>
+        <scope>test</scope>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-yarn-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>

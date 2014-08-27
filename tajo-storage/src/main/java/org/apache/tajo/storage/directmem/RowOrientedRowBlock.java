@@ -21,9 +21,10 @@ package org.apache.tajo.storage.directmem;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -36,7 +37,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private static final Log LOG = LogFactory.getLog(RowOrientedRowBlock.class);
@@ -44,8 +45,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   private static final float DEFAULT_BUF_INCREASE_RATIO = 1.0f;
 
-  private Type[] types;
-  private int [] maxLengths;
+  private DataType [] dataTypes;
   private int bytesLen;
   private ByteBuffer buffer;
   private long address;
@@ -74,13 +74,8 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     this.address = ((DirectBuffer) buffer).address();
     this.bytesLen = buffer.limit();
 
-    types = new Type[schema.size()];
-    maxLengths = new int[schema.size()];
-    for (int i = 0; i < schema.size(); i++) {
-      TajoDataTypes.DataType dataType = schema.getColumn(i).getDataType();
-      types[i] = dataType.getType();
-      maxLengths[i] = dataType.getLength();
-    }
+    dataTypes = SchemaUtil.toDataTypes(schema);
+
     fieldIndexesForWrite = new int[schema.size()];
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
 
@@ -158,7 +153,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
       long recordStartPtr = address + curPosForRead;
       int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(buffer, curPosForRead, recordLen, types);
+      tuple.set(buffer, curPosForRead, recordLen, dataTypes);
 
       curPosForRead += recordLen;
       curRowIdxForRead++;
@@ -204,12 +199,12 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   public void addTuple(Tuple tuple) {
     startRow();
 
-    for (int i = 0; i < types.length; i++) {
+    for (int i = 0; i < dataTypes.length; i++) {
       if (tuple.isNull(i)) {
         skipField();
         continue;
       }
-      switch (types[i]) {
+      switch (dataTypes[i].getType()) {
       case BOOLEAN:
         putBool(tuple.getBool(i));
         break;
@@ -237,10 +232,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
         putText(tuple.getBytes(i));
         break;
       case INTERVAL:
-        putInterval(tuple.getInterval(i));
+        putInterval((IntervalDatum) tuple.getInterval(i));
         break;
       default:
-        throw new UnsupportedException("Unknown data type: " + types[i]);
+        throw new UnsupportedException("Unknown data type: " + dataTypes[i]);
       }
     }
 
@@ -259,6 +254,12 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
         rowStartAddrForWrite = address + curOffsetForWrite;
 
         rowOffsetForWrite = 0;
+
+        if (remain() < SizeOf.SIZE_OF_INT) {
+          channel.position(channel.position() - remain());
+          return true;
+        }
+
         int recordSize = UNSAFE.getInt(rowStartAddrForWrite + rowOffsetForWrite);
 
         if (remain() < recordSize) {
@@ -306,7 +307,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
       UNSAFE.putInt(rowHeaderPos, fieldIndexesForWrite[i]);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
-    for (int i = curFieldIdxForWrite; i < types.length; i++) {
+    for (int i = curFieldIdxForWrite; i < dataTypes.length; i++) {
       UNSAFE.putInt(rowHeaderPos, -1);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
@@ -445,5 +446,9 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
   public void putInet4(int val) {
     putInt4(val);
+  }
+
+  public void putProtoDatum(ProtobufDatum val) {
+    putBlob(val.asByteArray());
   }
 }
