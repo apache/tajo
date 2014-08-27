@@ -49,7 +49,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   protected int groupingKeyIds[];
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
-  private boolean hasCountRowAggregation = false;
 
   public DistinctGroupbySecondAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
@@ -78,13 +77,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
     aggFunctions = plan.getAggFunctions();
     aggFunctionsNum = aggFunctions.length;
-
-    for(int i = 0; i < aggFunctions.length; i++) {
-      if (!aggFunctions[i].isDistinct() && aggFunctions[i].getName().equals("count")) {
-        hasCountRowAggregation = true;
-        break;
-      }
-    }
 
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
@@ -169,7 +161,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       hashTable.put(keyTuple, contexts);
 
       // If original data was found, we must add it to global count rows.
-      if (isOriginalTuple && hasCountRowAggregation) {
+      if (isOriginalTuple) {
         if (countRows.get(keyTuple) == null) {
           countRows.put(keyTuple, DatumFactory.createInt8(1l));
         } else {

@@ -729,16 +729,16 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 // select max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key
 // from lineitem where l_orderkey = 1000
     Map<String, String> variables = new HashMap<String, String>();
-//    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
-//    client.updateSessionVariables(variables);
-//    ResultSet res = executeQuery();
-//    assertResultSet(res);
-//    cleanupQuery(res);
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
+    client.updateSessionVariables(variables);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
 
     variables.clear();
     variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
-    ResultSet res = executeQuery();
+    res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
@@ -748,6 +748,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
     assertTableExists("table1");
 
+//    select count(1) as unique_key from table1;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

@@ -773,7 +773,7 @@ public class PlannerUtil {
       }
     }
 
-    if (distinctColumns.size() == 1) {
+    if (distinctColumns.size() > 1) {
       isMultDistinct = true;
     }
 

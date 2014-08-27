@@ -43,14 +43,12 @@ public class HashAggregateExec extends AggregationExec {
   private Map<Tuple, FunctionContext[]> hashTable;
   private boolean computed = false;
   private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
-  private boolean isMultiDistinct = false;
   private boolean finished = false;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
     hashTable = new HashMap<Tuple, FunctionContext []>(100000);
     this.tuple = new VTuple(plan.getOutSchema().size());
-    isMultiDistinct = PlannerUtil.isPlanMultiDistinct(plan);
   }
 
   private void compute() throws IOException {
@@ -103,15 +101,18 @@ public class HashAggregateExec extends AggregationExec {
 
     // If this operator received empty data in DistinctFunctions Single Stage,
     // we need to handle the return value. Because it will cause NPE.
-    if (isMultiDistinct && aggFunctionsNum == 0 && hashTable.entrySet().size() == 0) {
+    if (plan.isSingleDistinctFunction() && hashTable.entrySet().size() == 0) {
       finished = true;
       if (groupingKeyNum > 1) {
         return null;
       } else {
-        return getEmptyTuple();
+        Tuple tuple = new VTuple(outColumnNum);
+        for (int i = 0; i < outColumnNum; i++) {
+          tuple.put(i, DatumFactory.createNullDatum());
+        }
+        return tuple;
       }
     }
-
     FunctionContext [] contexts;
 
     if (iterator.hasNext()) {
@@ -131,33 +132,6 @@ public class HashAggregateExec extends AggregationExec {
     } else {
       return null;
     }
-  }
-
-
-  private Tuple getEmptyTuple() {
-    Tuple tuple = new VTuple(outColumnNum);
-    NullDatum nullDatum = DatumFactory.createNullDatum();
-
-    for (int i = 0; i < outColumnNum; i++) {
-      TajoDataTypes.Type type = outSchema.getColumn(i).getDataType().getType();
-      if (type == TajoDataTypes.Type.INT8) {
-        tuple.put(i, DatumFactory.createInt8(nullDatum.asInt8()));
-      } else if (type == TajoDataTypes.Type.INT4) {
-        tuple.put(i, DatumFactory.createInt4(nullDatum.asInt4()));
-      } else if (type == TajoDataTypes.Type.INT2) {
-        tuple.put(i, DatumFactory.createInt2(nullDatum.asInt2()));
-      } else if (type == TajoDataTypes.Type.FLOAT4) {
-        tuple.put(i, DatumFactory.createFloat4(nullDatum.asFloat4()));
-      } else if (type == TajoDataTypes.Type.FLOAT8) {
-        tuple.put(i, DatumFactory.createFloat8(nullDatum.asFloat8()));
-      } else {
-        tuple.put(i, DatumFactory.createNullDatum());
-      }
-    }
-
-    finished = true;
-
-    return tuple;
   }
 
   @Override

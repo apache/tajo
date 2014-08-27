@@ -38,6 +38,10 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose private Target [] targets;
   @Expose private boolean hasDistinct = false;
 
+  @Expose
+  private boolean singleDistinctFunction = false;
+
+
   public GroupbyNode(int pid) {
     super(pid, NodeType.GROUP_BY);
   }
@@ -72,6 +76,14 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
   public void setAggFunctions(AggregationFunctionCallEval[] evals) {
     this.aggrFunctions = evals;
+  }
+
+  public boolean isSingleDistinctFunction() {
+    return singleDistinctFunction;
+  }
+
+  public void setSingleDistinctFunction(boolean singleDistinctFunction) {
+    this.singleDistinctFunction = singleDistinctFunction;
   }
 
   @Override
