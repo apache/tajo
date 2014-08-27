@@ -346,7 +346,7 @@ public class TajoConf extends Configuration {
     $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
     // Algorith for count distinct
-    $COUNT_DISTINCT_ALGORITHM("tajo.groupby.distinct.algorithm", "two_stages"),
+    $GROUPBY_MULTI_LEVEL_ENABLED("ajo.dist-query.groupby.multi-level-aggr", true),
 
     // Only for Debug and Testing
     $DEBUG_ENABLED("tajo.debug.enabled", false),

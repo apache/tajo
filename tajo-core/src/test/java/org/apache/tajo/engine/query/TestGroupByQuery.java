@@ -35,6 +35,7 @@ import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import javax.xml.transform.Result;
 import java.sql.ResultSet;
 import java.util.*;
 
@@ -222,14 +223,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem
     // group by l_orderkey;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -243,14 +244,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation2() throws Exception {
     // select l_orderkey, count(*) as cnt, count(distinct l_linenumber) as unique_key from lineitem group by l_orderkey;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -261,14 +262,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregation3() throws Exception {
     // select count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -280,14 +281,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey)
     // from lineitem group by l_linenumber;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -299,14 +300,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
     // from lineitem group by l_linenumber;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -318,14 +319,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select count(distinct l_orderkey) v0, sum(l_orderkey) v1, sum(l_linenumber) v2, count(*) as v4 from lineitem
     // group by l_orderkey;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -337,14 +338,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select count(*), count(distinct c_nationkey), count(distinct c_mktsegment) from customer
     // tpch scale 1000: 15000000	25	5
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -361,14 +362,64 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 //    from lineitem
 //    group by l_orderkey;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+
+  @Test
+  public final void testDistinctAggregation9() throws Exception {
+//    select l_orderkey, count(distinct l_orderkey) as cnt2
+//    , count(distinct l_linenumber) as cnt3
+//    , count(*) as cnt1
+//    , count(distinct l_returnflag) as cnt4
+//    , sum(l_discount) as sum1
+//    from lineitem
+//    group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
+    client.updateSessionVariables(variables);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
+    client.updateSessionVariables(variables);
+    res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+
+  @Test
+  public final void testDistinctAggregation10() throws Exception {
+//    select l_orderkey, count(distinct l_orderkey) as cnt2
+//    , count(distinct l_linenumber) as cnt3
+//    , count(*) as cnt1
+//    , count(distinct l_returnflag) as cnt4
+//    , sum(l_discount) as sum1
+//    from lineitem
+//    group by l_orderkey;
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
+    client.updateSessionVariables(variables);
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    variables.clear();
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -381,14 +432,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem
     // group by l_linenumber having sum(distinct l_orderkey) >= 6;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -400,7 +451,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     // select sum(distinct l_orderkey), l_linenumber, count(distinct l_orderkey), count(*) as total
     // from (select * from lineitem union select * from lineitem) group by l_linenumber;
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -408,7 +459,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // TODO: fix error
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -417,13 +468,13 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testDistinctAggregationCasebyCase() throws Exception {
-    for (int index = 0; index < 2; index++) {
+    for (int index = 0; index < 1; index++) {
       Map<String, String> variables = new HashMap<String, String>();
 
       if (index == 0) {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
       } else {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
       }
       client.updateSessionVariables(variables);
 
@@ -527,9 +578,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       Map<String, String> variables = new HashMap<String, String>();
 
       if (index == 0) {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
       } else {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
       }
       client.updateSessionVariables(variables);
 
@@ -568,9 +619,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       Map<String, String> variables = new HashMap<String, String>();
 
       if (index == 0) {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
       } else {
-        variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+        variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
       }
       client.updateSessionVariables(variables);
 
@@ -678,14 +729,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 // select max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key
 // from lineitem where l_orderkey = 1000
     Map<String, String> variables = new HashMap<String, String>();
-//    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+//    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
 //    client.updateSessionVariables(variables);
 //    ResultSet res = executeQuery();
 //    assertResultSet(res);
 //    cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -712,14 +763,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertTableExists("table1");
 
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -734,14 +785,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertTableExists("table1");
 
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -768,14 +819,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertTableExists("table1");
 
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -787,14 +838,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testGroupByWithNullData10() throws Exception {
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -804,14 +855,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testGroupByWithNullData11() throws Exception {
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);
@@ -821,14 +872,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testGroupByWithNullData12() throws Exception {
     Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     client.updateSessionVariables(variables);
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
     variables.clear();
-    variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "three_stages");
+    variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     client.updateSessionVariables(variables);
     res = executeQuery();
     assertResultSet(res);

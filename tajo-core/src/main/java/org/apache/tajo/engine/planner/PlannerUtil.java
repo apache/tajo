@@ -32,6 +32,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.TUtil;
 
@@ -762,4 +763,21 @@ public class PlannerUtil {
 
     return explains.toString();
   }
+
+  public static boolean isPlanMultiDistinct(GroupbyNode groupbyNode) {
+    boolean isMultDistinct = false;
+    Set<Column> distinctColumns = new HashSet<Column>();
+    for (AggregationFunctionCallEval eachEval: groupbyNode.getAggFunctions()) {
+      if (eachEval.isDistinct()) {
+        distinctColumns.addAll(EvalTreeUtil.findUniqueColumns(eachEval));
+      }
+    }
+
+    if (distinctColumns.size() == 1) {
+      isMultDistinct = true;
+    }
+
+    return isMultDistinct;
+  }
+
 }

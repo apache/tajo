@@ -824,19 +824,24 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      String distinctAlgorithm = context.getPlan().getContext().get(SessionVars.COUNT_DISTINCT_ALGORITHM, "two_stages");
-      if (distinctAlgorithm.equals("two_stages")) {
-        DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-        return builder.buildPlan(context, lastBlock, groupbyNode);
-      } else if (distinctAlgorithm.equals("three_stages")) {
-        DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-        return builder.buildMultiStagePlan(context, lastBlock, groupbyNode);
-      } else if (distinctAlgorithm.equals("single_function")) {
-        return buildGroupByIncludingDistinctFunctionsMultiStage(context, lastBlock, groupbyNode);
-      } else {
-        throw new PlanningException(String.format("Not supported distinct algorithm :%s",
-            distinctAlgorithm));
-      }
+      boolean multiLevelEnabled = context.getPlan().getContext().getBool(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED);
+
+//      if (PlannerUtil.isPlanMultiDistinct(groupbyNode)) {
+//        return buildGroupByIncludingDistinctFunctionsMultiStage(context, lastBlock, groupbyNode);
+//      } else {
+        if (multiLevelEnabled) {
+          if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
+            DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+            return builder.buildMultiStagePlan(context, lastBlock, groupbyNode);
+          } else {
+            DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+            return builder.buildPlan(context, lastBlock, groupbyNode);
+          }
+        } else {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildPlan(context, lastBlock, groupbyNode);
+        }
+//      }
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 

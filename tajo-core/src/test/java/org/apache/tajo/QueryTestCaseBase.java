@@ -350,7 +350,7 @@ public class QueryTestCaseBase {
     }
     try {
       Map<String, String> variables = new HashMap<String, String>();
-      variables.put(SessionVars.COUNT_DISTINCT_ALGORITHM.keyname(), "two_stages");
+      variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
       client.updateSessionVariables(variables);
 
       resultSet.close();

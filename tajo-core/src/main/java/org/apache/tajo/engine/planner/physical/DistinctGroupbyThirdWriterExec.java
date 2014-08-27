@@ -19,13 +19,10 @@
 package org.apache.tajo.engine.planner.physical;
 
 
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.builtin.CountRows;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -37,7 +34,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This is the sort-based aggregation operator for count distinct third stage
+ * This is the sort-based aggregation operator.
+ *
+ * <h3>Implementation</h3>
+ * Sort Aggregation has two states while running.
+ *
+ * <h4>Aggregate state</h4>
+ * If lastkey is null or lastkey is equivalent to the current key, sort aggregation is changed to this state.
+ * In this state, this operator aggregates measure values via aggregation functions.
+ *
+ * <h4>Finalize state</h4>
+ * If currentKey is different from the last key, it computes final aggregation results, and then
+ * it makes an output tuple.
  */
 public class DistinctGroupbyThirdWriterExec extends AggregationExec {
   private DistinctGroupbyNode distinctGroupbyPlan;
@@ -84,8 +92,8 @@ public class DistinctGroupbyThirdWriterExec extends AggregationExec {
             contexts[i] = aggFunctions[i].newContext();
 
             // Merge when aggregator doesn't receive NullDatum
-              Datum param = getParam(aggFunctions[i], tuple);
-              setCountValues(currentKey, Integer.valueOf(aggFunctions[i].hashCode()), param);
+            Datum param = getParam(aggFunctions[i], tuple);
+            setCountValues(currentKey, Integer.valueOf(aggFunctions[i].hashCode()), param);
           }
           lastKey = currentKey;
         } else {
@@ -98,13 +106,14 @@ public class DistinctGroupbyThirdWriterExec extends AggregationExec {
       } else { /** Finalization State */
         // finalize aggregate and return
         outputTuple = new VTuple(outSchema.size());
-        int tupleIdx = 0;
 
-        for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-          outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
-        }
-        for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
-          outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
+        int tupleIdx = 0;
+        for (; tupleIdx < outColumnNum; tupleIdx++) {
+          for (int j = 0; j < groupingKeyIds.length; j++) {
+            if (tupleIdx == groupingKeyIds[j]) {
+              outputTuple.put(tupleIdx, lastKey.get(j));
+            }
+          }
         }
 
         for(int evalIdx = 0; evalIdx < aggFunctionsNum; evalIdx++) {
@@ -113,8 +122,13 @@ public class DistinctGroupbyThirdWriterExec extends AggregationExec {
           setCountValues(currentKey, Integer.valueOf(aggFunctions[evalIdx].hashCode()), param);
         }
 
+        tupleIdx = groupingKeyNum;
+        for (int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; aggFuncIdx++, tupleIdx++) {
+          outputTuple.put(tupleIdx, hashTable.get(lastKey).get(Integer.valueOf(aggFunctions[aggFuncIdx].hashCode())));
+        }
+
         lastKey = currentKey;
-        setOutputTuple(outputTuple);
+
         return outputTuple;
       }
     } // while loop
@@ -128,31 +142,22 @@ public class DistinctGroupbyThirdWriterExec extends AggregationExec {
       outputTuple = new VTuple(outSchema.size());
 
       int tupleIdx = 0;
-      for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-        outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+      for (; tupleIdx < outColumnNum; tupleIdx++) {
+        for (int j = 0; j < groupingKeyIds.length; j++) {
+          if (tupleIdx == groupingKeyIds[j]) {
+            outputTuple.put(tupleIdx, lastKey.get(j));
+          }
+        }
       }
 
-      setOutputTuple(outputTuple);
+      tupleIdx = groupingKeyNum;
+      for (int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; aggFuncIdx++, tupleIdx++) {
+        outputTuple.put(tupleIdx, hashTable.get(lastKey).get(Integer.valueOf(aggFunctions[aggFuncIdx].hashCode())));
+      }
       finished = true;
     }
 
     return outputTuple;
-  }
-
-  private void setOutputTuple(Tuple outputTuple) {
-    Tuple keyTuple = new VTuple(groupingKeyIds.length);
-    for(int i = 0; i < groupingKeyIds.length; i++) {
-      keyTuple.put(i, outputTuple.get(groupingKeyIds[i]));
-    }
-
-    for(int evalIdx = 0; evalIdx < aggFunctionsNum; evalIdx++) {
-      int index = getColumnIndex(aggFunctions[evalIdx]);
-      if (index > -1) {
-        if (hashTable.get(keyTuple) != null) {
-          outputTuple.put(index, hashTable.get(keyTuple).get(Integer.valueOf(aggFunctions[evalIdx].hashCode())));
-        }
-      }
-    }
   }
 
   private void setCountValues(Tuple keyTuple, Integer hashCode, Datum param) {

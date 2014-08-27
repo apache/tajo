@@ -106,43 +106,39 @@ public class DistinctGroupbyFirstWriterExec extends UnaryPhysicalExec {
     Tuple tuple;
     Tuple keyTuple;
     Tuple outputTuple;
-    boolean matched = false;
     List<Column> originalGroupingColumns = Lists.newArrayList(plan.getGroupingColumns());
 
     while((tuple = child.next()) != null && !context.isStopped()) {
-      // If there is no grouping columns, we don't need to set NullDatum.
-      if (groupingKeyIds.length == 0) {
-        tupleList.add(tuple);
-      } else {
-        matched = false;
-        keyTuple = new VTuple(groupingKeyIds.length);
-        // build one key tuple
-        for(int i = 0; i < groupingKeyIds.length; i++) {
-          keyTuple.put(i, tuple.get(groupingKeyIds[i]));
-        }
+      try {
+        // If there is no grouping columns, we don't need to set NullDatum.
+        if (groupingKeyIds.length == 0) {
+          tupleList.add(tuple);
+        } else {
+          keyTuple = new VTuple(groupingKeyIds.length);
+          // build one key tuple
+          for(int i = 0; i < groupingKeyIds.length; i++) {
+            keyTuple.put(i, tuple.get(groupingKeyIds[i]));
+          }
 
-        outputTuple = tuple;
-        tupleList.add(outputTuple);
+          outputTuple = new VTuple(outSchema.size());
+          outputTuple = tuple.clone();
 
-        for (int i = 0; i < child.outColumnNum; i++) {
-          matched = false;
-          outputTuple = new VTuple(outColumnNum);
-          for (int j = 0; j < child.outColumnNum; j++) {
-            if (i == j) {
-              outputTuple.put(j, tuple.get(j));
-            } else {
-              outputTuple.put(j, DatumFactory.createNullDatum());
-              Column column = child.outSchema.getColumn(j);
-              if (originalGroupingColumns.contains(column)) {
-                matched = true;
-              }
+          tupleList.add(outputTuple);
+
+          // Created tuples which have been updated NullDatum at aggregation column.
+          for (int i = 0; i < child.outColumnNum; i++) {
+            Column column = outSchema.getColumn(i);
+            outputTuple = new VTuple(outSchema.size());
+            outputTuple = tuple.clone();
+
+            if (!originalGroupingColumns.contains(column)) {
+              outputTuple.put(i, DatumFactory.createNullDatum());
+              tupleList.add(outputTuple);
             }
           }
-
-          if (!matched) {
-            tupleList.add(outputTuple);
-          }
         }
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e.getMessage());
       }
     }
   }

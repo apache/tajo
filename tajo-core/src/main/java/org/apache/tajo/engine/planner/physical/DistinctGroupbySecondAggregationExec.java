@@ -105,9 +105,11 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       contexts =  entry.getValue();
 
       int tupleIdx = 0;
+
       for (; tupleIdx < groupingKeyNum; tupleIdx++) {
         tuple.put(tupleIdx, keyTuple.get(tupleIdx));
       }
+
       for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
         if (!aggFunctions[funcIdx].isDistinct() && aggFunctions[funcIdx].getName().equals("count")) {
           tuple.put(tupleIdx, countRows.get(keyTuple));
@@ -126,19 +128,18 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    boolean matched = false;
+    boolean isOriginalTuple = false;
 
     while((tuple = child.next()) != null && !context.isStopped()) {
-      matched = true;
+      isOriginalTuple = true;
 
-      keyTuple = new VTuple(groupingKeyIds.length);
       // build one key tuple
+      keyTuple = new VTuple(groupingKeyIds.length);
       for(int i = 0; i < groupingKeyIds.length; i++) {
         keyTuple.put(i, tuple.get(groupingKeyIds[i]));
       }
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
-
       if (contexts == null) {
         contexts = new FunctionContext[aggFunctionsNum];
       }
@@ -152,23 +153,23 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
         Tuple param = getAggregationParams(aggFunctions[i].getArgs(), inSchema, tuple);
         if (param.size() > 0 && param.get(0).isNull()) {
-          matched = false;
+          isOriginalTuple = false;
         }
       }
 
+      // Merge aggregation context in two cases. First case is that current tuple is origin and aggregation function
+      // is not count function. And second case is that aggregation function is distinct function.
       for(int i = 0; i < aggFunctions.length; i++) {
-        if (aggFunctions[i].isDistinct()) {
+        if ((isOriginalTuple && !aggFunctions[i].getName().equals("count"))
+            || (aggFunctions[i].isDistinct())) {
           aggFunctions[i].merge(contexts[i], inSchema, tuple);
-        } else {
-          if (matched && !aggFunctions[i].getName().equals("count")) {
-            aggFunctions[i].merge(contexts[i], inSchema, tuple);
-          }
         }
       }
+
       hashTable.put(keyTuple, contexts);
 
       // If original data was found, we must add it to global count rows.
-      if (matched && hasCountRowAggregation) {
+      if (isOriginalTuple && hasCountRowAggregation) {
         if (countRows.get(keyTuple) == null) {
           countRows.put(keyTuple, DatumFactory.createInt8(1l));
         } else {
@@ -176,7 +177,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
           countRows.put(keyTuple, (Int8Datum)rows.plus(DatumFactory.createInt8(1l)));
         }
       }
-    }
+    } //end while loop
+
 
     // If DistinctGroupbyIntermediateAggregationExec received NullDatum and didn't has any grouping keys,
     // it should return primitive values for NullLDatum.

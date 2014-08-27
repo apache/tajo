@@ -67,7 +67,7 @@ public enum SessionVars implements ConfigKey {
 
   ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", CLI_SIDE_VAR),
 
-  COUNT_DISTINCT_ALGORITHM(ConfVars.$COUNT_DISTINCT_ALGORITHM, "Algorithm for count distinct", CLI_SIDE_VAR),
+  GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", CLI_SIDE_VAR),
 
 
   // Timezone & Date ----------------------------------------------------------
