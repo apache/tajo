@@ -46,6 +46,14 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     this.end = end;
   }
 
+  public boolean isNot() {
+    return not;
+  }
+
+  public boolean isSymmetric() {
+    return symmetric;
+  }
+
   public void setPredicand(EvalNode predicand) {
     this.predicand = predicand;
   }
@@ -167,6 +175,24 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   @Override
   public TajoDataTypes.DataType getValueType() {
     return RES_TYPE;
+  }
+
+  @Override
+  public int childNum() {
+    return 3;
+  }
+
+  @Override
+  public EvalNode getChild(int idx) {
+    if (idx == 0) {
+      return predicand;
+    } else if (idx == 1) {
+      return begin;
+    } else if (idx == 2) {
+      return end;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
   }
 
   @Override

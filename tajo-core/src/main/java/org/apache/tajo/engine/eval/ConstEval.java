@@ -52,7 +52,17 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
     return CatalogUtil.newSimpleDataType(datum.type());
 	}
 
-	@Override
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public EvalNode getChild(int idx) {
+    return null;
+  }
+
+  @Override
 	public String getName() {
 		return this.datum.toString();
 	}

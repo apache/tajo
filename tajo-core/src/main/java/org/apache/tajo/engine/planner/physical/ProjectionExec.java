@@ -46,7 +46,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
     super.init();
 
     this.outTuple = new VTuple(outSchema.size());
-    this.projector = new Projector(inSchema, outSchema, this.plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, this.plan.getTargets());
   }
 
   @Override

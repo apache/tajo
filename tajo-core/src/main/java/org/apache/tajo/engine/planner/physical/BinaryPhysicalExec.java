@@ -52,6 +52,8 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
     leftChild.init();
     rightChild.init();
     progress = 0.0f;
+
+    super.init();
   }
 
   @Override

@@ -161,7 +161,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.serializedData = p.getSerializedData();
 		return this.serializedData;
 	}
-	
+
 	public boolean isInterQuery() {
 	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (interQuery != null) {

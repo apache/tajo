@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -35,6 +36,16 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
   public UnaryEval(EvalType type, EvalNode child) {
     super(type);
     this.child = child;
+  }
+
+  @Override
+  public int childNum() {
+    return 1;
+  }
+
+  public EvalNode getChild(int idx) {
+    Preconditions.checkArgument(idx == 0, "UnaryEval always has one child.");
+    return child;
   }
 
   public void setChild(EvalNode child) {

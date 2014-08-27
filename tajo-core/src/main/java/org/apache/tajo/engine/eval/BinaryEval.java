@@ -35,6 +35,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class BinaryEval extends EvalNode implements Cloneable {
   @Expose protected EvalNode leftExpr;
   @Expose protected EvalNode rightExpr;
+  @Expose protected DataType returnType;
 
   protected BinaryEval(EvalType type) {
     super(type);
@@ -88,6 +89,12 @@ public class BinaryEval extends EvalNode implements Cloneable {
     return (T) this.rightExpr;
   }
 
+  @Override
+  public int childNum() {
+    return 2;
+  }
+
+  @Override
   public EvalNode getChild(int id) {
     if (id == 0) {
       return this.leftExpr;

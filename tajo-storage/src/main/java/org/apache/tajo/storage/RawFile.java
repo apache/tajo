@@ -729,6 +729,7 @@ public class RawFile {
     @Override
     public TableStats getStats() {
       if (enabledStats) {
+        stats.setNumBytes(pos);
         return stats.getTableStat();
       } else {
         return null;

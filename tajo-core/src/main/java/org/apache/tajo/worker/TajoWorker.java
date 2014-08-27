@@ -28,13 +28,16 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.shell.PathData;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.master.ha.TajoMasterInfo;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -42,10 +45,8 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.util.*;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -56,6 +57,7 @@ import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -83,9 +85,7 @@ public class TajoWorker extends CompositeService {
 
   private TajoWorkerManagerService tajoWorkerManagerService;
 
-  private InetSocketAddress tajoMasterAddress;
-
-  private InetSocketAddress workerResourceTrackerAddr;
+  private TajoMasterInfo tajoMasterInfo;
 
   private CatalogClient catalogClient;
 
@@ -120,6 +120,8 @@ public class TajoWorker extends CompositeService {
   private DeletionService deletionService;
 
   private TajoSystemMetrics workerSystemMetrics;
+
+  private HashShuffleAppenderManager hashShuffleAppenderManager;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -203,12 +205,12 @@ public class TajoWorker extends CompositeService {
     addService(tajoWorkerManagerService);
 
     if(!yarnContainerMode) {
-      if(taskRunnerMode && TajoPullServerService.isStandaloneMode()) {
+      if(taskRunnerMode && !TajoPullServerService.isStandaloneMode()) {
         pullService = new TajoPullServerService();
         addService(pullService);
       }
 
-      if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+      if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
         try {
           httpPort = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS).getPort();
           if(queryMasterMode && !taskRunnerMode) {
@@ -238,8 +240,9 @@ public class TajoWorker extends CompositeService {
 
     super.init(conf);
 
+    tajoMasterInfo = new TajoMasterInfo();
     if(yarnContainerMode && queryMasterMode) {
-      tajoMasterAddress = NetUtils.createSocketAddr(cmdArgs[2]);
+      tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(cmdArgs[2]));
       connectToCatalog();
 
       QueryId queryId = TajoIdUtils.parseQueryId(cmdArgs[1]);
@@ -248,14 +251,28 @@ public class TajoWorker extends CompositeService {
     } else if(yarnContainerMode && taskRunnerMode) { //TaskRunner mode
       taskRunnerManager.startTask(cmdArgs);
     } else {
-      tajoMasterAddress = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
-      workerResourceTrackerAddr = NetUtils.createSocketAddr(systemConf.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        tajoMasterInfo.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+      } else {
+        tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));
+        tajoMasterInfo.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
+            .RESOURCE_TRACKER_RPC_ADDRESS)));
+      }
       connectToCatalog();
     }
 
     workerHeartbeatThread = new WorkerHeartbeatService(workerContext);
     workerHeartbeatThread.init(conf);
     addIfService(workerHeartbeatThread);
+
+    try {
+      hashShuffleAppenderManager = new HashShuffleAppenderManager(systemConf);
+    } catch (IOException e) {
+      LOG.fatal(e.getMessage(), e);
+      System.exit(-1);
+    }
   }
 
   private void initWorkerMetrics() {
@@ -335,11 +352,18 @@ public class TajoWorker extends CompositeService {
   }
 
   public class WorkerContext {
+    private ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource> sharedResourceMap =
+        new ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource>();
+
     public QueryMaster getQueryMaster() {
       if(queryMasterManagerService == null) {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
+    }
+
+    public TajoConf getConf() {
+      return systemConf;
     }
 
     public TajoWorkerManagerService getTajoWorkerManagerService() {
@@ -382,6 +406,25 @@ public class TajoWorker extends CompositeService {
       if(force) {
         System.exit(0);
       }
+    }
+
+    public void initSharedResource(QueryContext queryContext, ExecutionBlockId blockId, String planJson)
+        throws InterruptedException {
+
+      if (!sharedResourceMap.containsKey(blockId)) {
+        ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
+        if (sharedResourceMap.putIfAbsent(blockId, resource) == null) {
+          resource.initialize(queryContext, planJson);
+        }
+      }
+    }
+
+    public ExecutionBlockSharedResource getSharedResource(ExecutionBlockId blockId) {
+      return sharedResourceMap.get(blockId);
+    }
+
+    public void releaseSharedResource(ExecutionBlockId blockId) {
+      sharedResourceMap.remove(blockId).release();
     }
 
     protected void cleanup(String strPath) {
@@ -449,11 +492,19 @@ public class TajoWorker extends CompositeService {
     }
 
     public InetSocketAddress getTajoMasterAddress() {
-      return tajoMasterAddress;
+      return tajoMasterInfo.getTajoMasterAddress();
+    }
+
+    public void setTajoMasterAddress(InetSocketAddress tajoMasterAddress) {
+      tajoMasterInfo.setTajoMasterAddress(tajoMasterAddress);
     }
 
     public InetSocketAddress getResourceTrackerAddress() {
-      return workerResourceTrackerAddr;
+      return tajoMasterInfo.getWorkerResourceTrackerAddr();
+    }
+
+    public void setWorkerResourceTrackerAddr(InetSocketAddress workerResourceTrackerAddr) {
+      tajoMasterInfo.setWorkerResourceTrackerAddr(workerResourceTrackerAddr);
     }
 
     public int getPeerRpcPort() {
@@ -470,6 +521,10 @@ public class TajoWorker extends CompositeService {
 
     public TajoSystemMetrics getWorkerSystemMetrics() {
       return workerSystemMetrics;
+    }
+
+    public HashShuffleAppenderManager getHashShuffleAppenderManager() {
+      return hashShuffleAppenderManager;
     }
   }
 

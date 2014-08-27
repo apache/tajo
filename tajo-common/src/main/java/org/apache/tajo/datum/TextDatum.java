@@ -20,17 +20,23 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
+import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.MurmurHash;
 
+import java.nio.charset.Charset;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
+  static Charset defaultCharset = Charset.forName("UTF-8");
+
   @Expose private final int size;
+  /* encoded in UTF-8 */
   @Expose private final byte[] bytes;
 
+  public static final int UNICODE_CHAR_BITS_NUM = Character.MAX_VALUE; // bits number for 2 bytes
   public static final TextDatum EMPTY_TEXT = new TextDatum("");
   public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 
@@ -41,7 +47,7 @@ public class TextDatum extends Datum {
   }
 
   public TextDatum(String string) {
-    this(string.getBytes());
+    this(string.getBytes(defaultCharset));
   }
 
   @Override
@@ -84,8 +90,14 @@ public class TextDatum extends Datum {
     return this.bytes;
   }
 
+  @Override
   public String asChars() {
-    return new String(this.bytes);
+    return new String(this.bytes, defaultCharset);
+  }
+
+  @Override
+  public char[] asUnicodeChars() {
+    return Convert.utf2chars(this.bytes);
   }
 
   @Override

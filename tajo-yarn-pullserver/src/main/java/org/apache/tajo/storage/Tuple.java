@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.ProtobufDatum;
 
 public interface Tuple extends Cloneable {
   
@@ -44,25 +45,37 @@ public interface Tuple extends Cloneable {
 	
 	public long getOffset();
 
+  @SuppressWarnings("unused")
 	public boolean getBool(int fieldId);
 
+  @SuppressWarnings("unused")
 	public byte getByte(int fieldId);
 
+  @SuppressWarnings("unused")
   public char getChar(int fieldId);
-	
+
 	public byte [] getBytes(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public short getInt2(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public int getInt4(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public long getInt8(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public float getFloat4(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public double getFloat8(int fieldId);
-	
+
+  @SuppressWarnings("unused")
 	public String getText(int fieldId);
+
+  @SuppressWarnings("unused")
+  public ProtobufDatum getProtobufDatum(int field);
 
   public Tuple clone() throws CloneNotSupportedException;
 

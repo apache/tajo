@@ -48,6 +48,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
@@ -206,10 +207,12 @@ public class TajoPullServerService extends AbstractService {
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
-      super.init(new Configuration(conf));
+      super.init(conf);
 
       this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
           , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
+
+      LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
       LOG.error(t);
     }
@@ -227,9 +230,11 @@ public class TajoPullServerService extends AbstractService {
       throw new RuntimeException(ex);
     }
     bootstrap.setPipelineFactory(pipelineFact);
+
     port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
         ConfVars.PULLSERVER_PORT.defaultIntVal);
     Channel ch = bootstrap.bind(new InetSocketAddress(port));
+
     accepted.add(ch);
     port = ((InetSocketAddress)ch.getLocalAddress()).getPort();
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
@@ -497,10 +502,11 @@ public class TajoPullServerService extends AbstractService {
       final List<String> taskIdList = params.get("ta");
       final List<String> subQueryIds = params.get("sid");
       final List<String> partIds = params.get("p");
+      final List<String> offsetList = params.get("offset");
+      final List<String> lengthList = params.get("length");
 
-      if (types == null || taskIdList == null || subQueryIds == null || qids == null
-          || partIds == null) {
-        sendError(ctx, "Required queryId, type, taskIds, subquery Id, and part id",
+      if (types == null || subQueryIds == null || qids == null || partIds == null) {
+        sendError(ctx, "Required queryId, type, subquery Id, and part id",
             BAD_REQUEST);
         return;
       }
@@ -511,12 +517,18 @@ public class TajoPullServerService extends AbstractService {
         return;
       }
 
-      final List<FileChunk> chunks = Lists.newArrayList();
-
+      String partId = partIds.get(0);
       String queryId = qids.get(0);
       String shuffleType = types.get(0);
       String sid = subQueryIds.get(0);
-      String partId = partIds.get(0);
+
+      long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
+      long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
+
+      if (!shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
+        sendError(ctx, "Required taskIds", BAD_REQUEST);
+      }
+
       List<String> taskIds = splitMaps(taskIdList);
 
       String queryBaseDir = queryId.toString() + "/output";
@@ -528,6 +540,8 @@ public class TajoPullServerService extends AbstractService {
         // the working dir of tajo worker for each query
         LOG.debug("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
       }
+
+      final List<FileChunk> chunks = Lists.newArrayList();
 
       // if a subquery requires a range shuffle
       if (shuffleType.equals("r")) {
@@ -557,19 +571,29 @@ public class TajoPullServerService extends AbstractService {
 
         // if a subquery requires a hash shuffle or a scattered hash shuffle
       } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
-        for (String ta : taskIds) {
-          String targetFile = queryBaseDir + "/" + sid + "/" + ta + "/output/" + partId;
-          if (!lDirAlloc.ifExists(targetFile, conf)) {
-            LOG.warn("Fetcher target file:" + targetFile + " not exists");
-            sendError(ctx, NO_CONTENT);
-            return;
-          }
-          Path path = localFS.makeQualified(
-              lDirAlloc.getLocalPathToRead(targetFile, conf));
-          File file = new File(path.toUri());
-          FileChunk chunk = new FileChunk(file, 0, file.length());
-          chunks.add(chunk);
+        int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
+        String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+        if (!lDirAlloc.ifExists(partPath, conf)) {
+          LOG.warn("Partition shuffle file not exists: " + partPath);
+          sendError(ctx, NO_CONTENT);
+          return;
         }
+
+        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
+
+        File file = new File(path.toUri());
+        long startPos = (offset >= 0 && length >= 0) ? offset : 0;
+        long readLen = (offset >= 0 && length >= 0) ? length : file.length();
+
+        if (startPos >= file.length()) {
+          String errorMessage = "Start pos[" + startPos + "] great than file length [" + file.length() + "]";
+          LOG.error(errorMessage);
+          sendError(ctx, errorMessage, BAD_REQUEST);
+          return;
+        }
+        LOG.info("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
+        FileChunk chunk = new FileChunk(file, startPos, readLen);
+        chunks.add(chunk);
       } else {
         LOG.error("Unknown shuffle type: " + shuffleType);
         sendError(ctx, "Unknown shuffle type:" + shuffleType, BAD_REQUEST);

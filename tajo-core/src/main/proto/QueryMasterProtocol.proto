@@ -35,6 +35,7 @@ service QueryMasterProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
   rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
   rpc done (TaskCompletionReport) returns (BoolProto);
+  rpc doneExecutionBlock(ExecutionBlockReport) returns (BoolProto);
 
   //from TajoMaster's QueryJobManager
   rpc killQuery(QueryIdProto) returns (BoolProto);

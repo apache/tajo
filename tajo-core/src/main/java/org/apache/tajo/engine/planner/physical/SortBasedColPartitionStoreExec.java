@@ -21,13 +21,9 @@
  */
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
@@ -40,13 +36,8 @@ import java.io.IOException;
  * ascending or descending order of partition columns.
  */
 public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
-  private static Log LOG = LogFactory.getLog(SortBasedColPartitionStoreExec.class);
-
   private Tuple currentKey;
   private Tuple prevKey;
-
-  private Appender appender;
-  private TableStats aggregated;
 
   public SortBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
@@ -57,12 +48,6 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     super.init();
 
     currentKey = new VTuple(keyNum);
-    aggregated = new TableStats();
-  }
-
-  private Appender getAppender(String partition) throws IOException {
-    this.appender = makeAppender(partition);
-    return appender;
   }
 
   private void fillKeyTuple(Tuple inTuple, Tuple keyTuple) {
@@ -93,19 +78,30 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       fillKeyTuple(tuple, currentKey);
 
       if (prevKey == null) {
-        appender = getAppender(getSubdirectory(currentKey));
+        appender = getNextPartitionAppender(getSubdirectory(currentKey));
         prevKey = new VTuple(currentKey);
       } else {
-        if (!prevKey.equals(currentKey) && !getSubdirectory(prevKey).equalsIgnoreCase(getSubdirectory(currentKey))) {
+        if (!prevKey.equals(currentKey)) {
           appender.close();
-          StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
+          StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
-          appender = getAppender(getSubdirectory(currentKey));
+          appender = getNextPartitionAppender(getSubdirectory(currentKey));
           prevKey = new VTuple(currentKey);
+
+          // reset all states for file rotating
+          writtenFileNum = 0;
         }
       }
 
       appender.addTuple(tuple);
+
+      if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
+        appender.close();
+        writtenFileNum++;
+        StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
+
+        openAppender(writtenFileNum);
+      }
     }
 
     return null;
@@ -115,8 +111,10 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   public void close() throws IOException {
     if (appender != null) {
       appender.close();
-      StatisticsUtil.aggregateTableStat(aggregated, appender.getStats());
-      context.setResultStats(aggregated);
+
+      // Collect statistics data
+      StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
+      context.setResultStats(aggregatedStats);
     }
   }
 

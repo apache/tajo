@@ -27,6 +27,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -173,6 +174,7 @@ public class TajoAdmin {
 
   private void processDesc(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
@@ -194,7 +196,7 @@ public class TajoAdmin {
         long end = queryInfo.getFinishTime();
         long start = queryInfo.getStartTime();
         String executionTime = decimalF.format((end-start) / 1000) + " sec";
-        if (!TajoClient.isQueryRunnning(queryInfo.getState())) {
+        if (TajoClient.isInCompleteState(queryInfo.getState())) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
         }
@@ -212,6 +214,7 @@ public class TajoAdmin {
 
   private void processCluster(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<WorkerResourceInfo> workerList = tajoClient.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
@@ -376,6 +379,7 @@ public class TajoAdmin {
 
   private void processList(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     StringBuilder builder = new StringBuilder();
@@ -416,10 +420,25 @@ public class TajoAdmin {
 
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
-    writer.write(masterAddress.getHostName());
-    writer.write("\n");
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+    if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+
+      List<String> list = HAServiceUtil.getMasters(tajoConf);
+      int i = 0;
+      for (String master : list) {
+        if (i > 0) {
+          writer.write(" ");
+        }
+        writer.write(master);
+        i++;
+      }
+      writer.write("\n");
+    } else {
+      String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+      InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
+      writer.write(masterAddress.getHostName());
+      writer.write("\n");
+    }
   }
 
   public static void main(String [] args) throws Exception {

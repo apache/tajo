@@ -58,6 +58,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -186,13 +187,38 @@ public class QueryMasterTask extends CompositeService {
 
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
+    try {
+      resourceAllocator.stop();
+    } catch (Throwable t) {
+      LOG.fatal(t.getMessage(), t);
+    }
+
     CallFuture future = new CallFuture();
 
     RpcConnectionPool connPool = RpcConnectionPool.getPool(queryMasterContext.getConf());
     NettyClientBase tmClient = null;
     try {
-      tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-          TajoMasterProtocol.class, true);
+      // In TajoMaster HA mode, if backup master be active status,
+      // worker may fail to connect existing active master. Thus,
+      // if worker can't connect the master, worker should try to connect another master and
+      // update master address in worker context.
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        try {
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        } catch (Exception e) {
+          queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(
+              HAServiceUtil.getResourceTrackerAddress(systemConf));
+          queryMasterContext.getWorkerContext().setTajoMasterAddress(
+              HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        }
+      } else {
+        tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+            TajoMasterProtocol.class, true);
+      }
+
       TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
       masterClientService.stopQueryMaster(null, queryId.getProto(), future);
     } catch (Exception e) {
@@ -296,7 +322,7 @@ public class QueryMasterTask extends CompositeService {
       QueryId queryId = event.getQueryId();
       LOG.info("Query completion notified from " + queryId);
 
-      while (!isTerminatedState(query.getState())) {
+      while (!isTerminatedState(query.getSynchronizedState())) {
         try {
           synchronized (this) {
             wait(10);
@@ -305,17 +331,17 @@ public class QueryMasterTask extends CompositeService {
           LOG.error(e);
         }
       }
-      LOG.info("Query final state: " + query.getState());
+      LOG.info("Query final state: " + query.getSynchronizedState());
       queryMasterContext.stopQuery(queryId);
     }
+  }
 
-    private boolean isTerminatedState(QueryState state) {
-      return
-          state == QueryState.QUERY_SUCCEEDED ||
-          state == QueryState.QUERY_FAILED ||
-          state == QueryState.QUERY_KILLED ||
-          state == QueryState.QUERY_ERROR;
-    }
+  private static boolean isTerminatedState(QueryState state) {
+    return
+        state == QueryState.QUERY_SUCCEEDED ||
+        state == QueryState.QUERY_FAILED ||
+        state == QueryState.QUERY_KILLED ||
+        state == QueryState.QUERY_ERROR;
   }
 
   public synchronized void startQuery() {
@@ -442,8 +468,10 @@ public class QueryMasterTask extends CompositeService {
     return query;
   }
 
-  public void expiredSessionTimeout() {
-    stop();
+  protected void expireQuerySession() {
+    if(!isTerminatedState(query.getState()) && !(query.getState() == QueryState.QUERY_KILL_WAIT)){
+      query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    }
   }
 
   public QueryMasterTaskContext getQueryTaskContext() {

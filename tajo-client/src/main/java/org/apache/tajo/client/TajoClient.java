@@ -29,7 +29,10 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
@@ -46,6 +49,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 
@@ -130,15 +134,30 @@ public class TajoClient implements Closeable {
     return sessionId;
   }
 
+  private InetSocketAddress getTajoMasterAddr() {
+    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      return tajoMasterAddr;
+    } else {
+      if (!HAServiceUtil.isMasterAlive(tajoMasterAddr, conf)) {
+        return HAServiceUtil.getMasterClientAddress(conf);
+      } else {
+        return tajoMasterAddr;
+      }
+    }
+  }
+
+  public String getBaseDatabase() {
+    return baseDatabase;
+  }
+
   @Override
   public void close() {
     // remove session
     try {
-      NettyClientBase client = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+      NettyClientBase client = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
       tajoMaster.removeSession(null, sessionId);
     } catch (Exception e) {
-      LOG.error(e);
     }
 
     if(connPool != null) {
@@ -203,7 +222,7 @@ public class TajoClient implements Closeable {
   }
 
   public String getCurrentDatabase() throws ServiceException {
-    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<String>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public String call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -215,7 +234,7 @@ public class TajoClient implements Closeable {
   }
 
   public Boolean selectDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -227,7 +246,7 @@ public class TajoClient implements Closeable {
   }
 
   public Boolean updateSessionVariables(final Map<String, String> variables) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -245,7 +264,7 @@ public class TajoClient implements Closeable {
   }
 
   public Boolean unsetSessionVariables(final List<String> variables)  throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -260,7 +279,7 @@ public class TajoClient implements Closeable {
   }
 
   public String getSessionVariable(final String varname) throws ServiceException {
-    return new ServerCallable<String>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<String>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public String call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -272,7 +291,7 @@ public class TajoClient implements Closeable {
   }
 
   public Boolean existSessionVariable(final String varname) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -284,7 +303,7 @@ public class TajoClient implements Closeable {
   }
 
   public Map<String, String> getAllSessionVariables() throws ServiceException {
-    return new ServerCallable<Map<String, String>>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class,
+    return new ServerCallable<Map<String, String>>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class,
         false, true) {
 
       public Map<String, String> call(NettyClientBase client) throws ServiceException {
@@ -304,7 +323,7 @@ public class TajoClient implements Closeable {
    * or {@link #getQueryResultAndWait(org.apache.tajo.QueryId)}.
    */
   public SubmitQueryResponse executeQuery(final String sql) throws ServiceException {
-    return new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
+    return new ServerCallable<SubmitQueryResponse>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -320,7 +339,7 @@ public class TajoClient implements Closeable {
   }
 
   public SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
-    return new ServerCallable<SubmitQueryResponse>(connPool, tajoMasterAddr,
+    return new ServerCallable<SubmitQueryResponse>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -412,7 +431,7 @@ public class TajoClient implements Closeable {
     } else {
       NettyClientBase tmClient = null;
       try {
-        tmClient = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+        tmClient = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
 
         checkSessionAndGet(tmClient);
         builder.setSessionId(sessionId);
@@ -446,12 +465,26 @@ public class TajoClient implements Closeable {
     return new QueryStatus(res);
   }
 
-  public static boolean isQueryRunnning(QueryState state) {
-    return state == QueryState.QUERY_NEW ||
-        state == QueryState.QUERY_RUNNING ||
-        state == QueryState.QUERY_MASTER_LAUNCHED ||
+  /* query submit */
+  public static boolean isInPreNewState(QueryState state) {
+    return state == QueryState.QUERY_NOT_ASSIGNED ||
         state == QueryState.QUERY_MASTER_INIT ||
-        state == QueryState.QUERY_NOT_ASSIGNED;
+        state == QueryState.QUERY_MASTER_LAUNCHED;
+  }
+
+  /* query submitted. but is not running */
+  public static boolean isInInitState(QueryState state) {
+    return  state == QueryState.QUERY_NEW || state == QueryState.QUERY_INIT;
+  }
+
+  /* query started. but is not complete */
+  public static boolean isInRunningState(QueryState state) {
+    return isInInitState(state) || state == QueryState.QUERY_RUNNING;
+  }
+
+  /* query complete */
+  public static boolean isInCompleteState(QueryState state) {
+    return !isInPreNewState(state) && !isInRunningState(state);
   }
 
   public ResultSet getQueryResult(QueryId queryId)
@@ -507,7 +540,7 @@ public class TajoClient implements Closeable {
     }
     QueryStatus status = getQueryStatus(queryId);
 
-    while(status != null && isQueryRunnning(status.getState())) {
+    while(status != null && !isInCompleteState(status.getState())) {
       try {
         Thread.sleep(500);
       } catch (InterruptedException e) {
@@ -564,7 +597,7 @@ public class TajoClient implements Closeable {
   }
 
   public boolean updateQuery(final String sql) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -588,7 +621,7 @@ public class TajoClient implements Closeable {
   }
 
   public boolean updateQueryWithJson(final String json) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -619,7 +652,7 @@ public class TajoClient implements Closeable {
    * @throws ServiceException
    */
   public boolean createDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -636,7 +669,7 @@ public class TajoClient implements Closeable {
    * @throws ServiceException
    */
   public boolean existDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -653,7 +686,7 @@ public class TajoClient implements Closeable {
    * @throws ServiceException
    */
   public boolean dropDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -663,7 +696,7 @@ public class TajoClient implements Closeable {
   }
 
   public List<String> getAllDatabaseNames() throws ServiceException {
-    return new ServerCallable<List<String>>(connPool, tajoMasterAddr, TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<String>>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public List<String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -679,7 +712,7 @@ public class TajoClient implements Closeable {
    * @return True if so.
    */
   public boolean existTable(final String tableName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -704,7 +737,7 @@ public class TajoClient implements Closeable {
   public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
                                        final TableMeta meta)
       throws SQLException, ServiceException {
-    return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
+    return new ServerCallable<TableDesc>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
         checkSessionAndGet(client);
@@ -745,7 +778,7 @@ public class TajoClient implements Closeable {
    * @return True if the table is dropped successfully.
    */
   public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, tajoMasterAddr,
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -763,7 +796,7 @@ public class TajoClient implements Closeable {
   }
 
   public List<BriefQueryInfo> getRunningQueryList() throws ServiceException {
-    return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
+    return new ServerCallable<List<BriefQueryInfo>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -778,7 +811,7 @@ public class TajoClient implements Closeable {
   }
 
   public List<BriefQueryInfo> getFinishedQueryList() throws ServiceException {
-    return new ServerCallable<List<BriefQueryInfo>>(connPool, tajoMasterAddr,
+    return new ServerCallable<List<BriefQueryInfo>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -792,7 +825,7 @@ public class TajoClient implements Closeable {
   }
 
   public List<WorkerResourceInfo> getClusterInfo() throws ServiceException {
-    return new ServerCallable<List<WorkerResourceInfo>>(connPool, tajoMasterAddr,
+    return new ServerCallable<List<WorkerResourceInfo>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<WorkerResourceInfo> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -815,7 +848,7 @@ public class TajoClient implements Closeable {
    *                     in the current database of this session.
    */
   public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
-    return new ServerCallable<List<String>>(connPool, tajoMasterAddr,
+    return new ServerCallable<List<String>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -840,8 +873,7 @@ public class TajoClient implements Closeable {
    * @return Table description
    */
   public TableDesc getTableDesc(final String tableName) throws ServiceException {
-    return new ServerCallable<TableDesc>(connPool, tajoMasterAddr,
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<TableDesc>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
         checkSessionAndGet(client);
 
@@ -868,7 +900,7 @@ public class TajoClient implements Closeable {
     NettyClientBase tmClient = null;
     try {
       /* send a kill to the TM */
-      tmClient = connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false);
+      tmClient = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
 
       checkSessionAndGet(tmClient);
@@ -901,7 +933,7 @@ public class TajoClient implements Closeable {
   }
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
-    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connPool, tajoMasterAddr,
+    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
         checkSessionAndGet(client);

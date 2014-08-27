@@ -31,13 +31,12 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, 10);\n"
         + "10",
     returnType = TajoDataTypes.Type.INT8,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8_ARRAY})}
 )
 public class CoalesceLong extends Coalesce {
 
   public CoalesceLong() {
     super(new Column[] {
-        new Column("column", TajoDataTypes.Type.INT8),
         new Column("params", TajoDataTypes.Type.INT8_ARRAY),
     });
   }

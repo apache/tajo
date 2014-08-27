@@ -69,6 +69,7 @@ if [ $# = 0 ]; then
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
   echo "  admin                run the tajo admin util"
+  echo "  haadmin              run the tajo master HA admin util"
   echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
@@ -185,8 +186,8 @@ fi
 # Allow alternate conf dir location.
 HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-$HADOOP_HOME/etc/hadoop}"
 
-# CLASSPATH initially contains $HADOOP_CONF_DIR
-CLASSPATH="${HADOOP_CONF_DIR}"
+# CLASSPATH initially contains $HADOOP_CONF_DIR and tools.jar
+CLASSPATH="${HADOOP_CONF_DIR}:${JAVA_HOME}/lib/tools.jar"
 
 ##############################################################################
 # Hadoop Version Checking Section End
@@ -356,6 +357,10 @@ elif [ "$COMMAND" = "cli" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "admin" ] ; then
   CLASS='org.apache.tajo.client.TajoAdmin'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
+elif [ "$COMMAND" = "haadmin" ] ; then
+  CLASS='org.apache.tajo.client.TajoHAAdmin'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "getconf" ] ; then

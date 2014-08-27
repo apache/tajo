@@ -25,7 +25,20 @@ bin=`cd "$bin"; pwd`
 . "$bin"/tajo-config.sh
 
 # start the tajo master daemon
-"$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR start master
+AUTOHA_ENABLED=$("$bin"/tajo getconf tajo.master.ha.enable)
+
+if [ "$AUTOHA_ENABLED" = "true" ]; then
+  echo "Starting TajoMasters on HA mode"
+  if [ -f "${TAJO_CONF_DIR}/masters" ]; then
+    MASTER_FILE=${TAJO_CONF_DIR}/masters
+    MASTER_NAMES=$(cat "$MASTER_FILE" | sed  's/#.*$//;/^$/d')
+    "$bin/tajo-daemons.sh" --hosts masters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start master
+  fi
+else
+  echo "Starting single TajoMaster"
+  "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR start master
+fi
+
 
 if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
   . "${TAJO_CONF_DIR}/tajo-env.sh"
